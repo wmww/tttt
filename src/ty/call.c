@@ -1722,18 +1722,6 @@ static Span callee_span(CallInfo const* info) {
     return callee->inner_span;
 }
 
-// Where tsc's getErrorNodeForCallNode puts TS2769 when its overloads' errors are in different places: the callee (its
-// name if a property access) of a call or `new` alike, a tagged template's tag
-static Span overload_error_span(CallInfo const* info) {
-    if (info->jsx || !(info->call->uses_new || info->tagged_template) || !span_valid(info->call_span)) return callee_span(info);
-    Expr const* callee = &info->call->callable;
-    while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
-    if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
-        return callee->property->prop.inner_span;
-    }
-    return callee->inner_span;
-}
-
 // The callee of a `new` or `extends` without its type arguments (tsc's NewExpression.expression,
 // ExpressionWithTypeArguments.expression)
 static Span constructor_span(Expr const* callee) {
@@ -2053,20 +2041,6 @@ static void move_error_into_chain(Error* error, Error* parent, VecError* related
     vec_error_push(&parent->sub_errors, line);
 }
 
-// The signature a candidate was checked as (tsc's checkCandidate: the instantiation with what was inferred)
-static Signature const* candidate_instantiation(Checker* me, Candidate const* candidate) {
-    Signature const* sig = candidate->sig;
-    if (!candidate->mapper || !sig->type_params.len) return sig;
-    Ty const* stack_args[16];
-    u32 len = sig->type_params.len;
-    Ty const** args = len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * len);
-    panic_if(!args, "out of memory");
-    for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, sig->type_params.data[i], candidate->mapper);
-    Signature const* ret = ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = len });
-    if (args != stack_args) free(args);
-    return ret;
-}
-
 // An error a candidate's check logs directly (Error.always_logged), once however many candidates do (tsc's
 // diagnostics collection drops duplicates)
 static void append_logged_once(ErrorCtx* errs, Error const* error) {
@@ -2076,127 +2050,33 @@ static void append_logged_once(ErrorCtx* errs, Error const* error) {
     error_ctx_append_error(errs, error_clone(*error));
 }
 
+// tsgo's reportCallResolutionErrors: the last candidate's errors, each its own "No overload matches this call." chain
+// when there were several candidates (TypeScript 6 listed every candidate's errors for two or three)
 static void report_no_match(
-    Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
-    Span call_span, ErrorCtx* errs
+    Checker* me, Candidate const* unfit, u32 unfit_count, Args* args, CallInfo const* info, Span call_span, ErrorCtx* errs
 ) {
     ErrorCtx collected = error_ctx_scratch(errs);
-    if (unfit_count == 1 || unfit_count > 3) {
-        // The last candidate's errors (each with a chain of its own when there were many candidates)
-        Candidate const* last = &unfit[unfit_count - 1];
-        report_unfit_argument(me, last, args, info, call_span, &collected);
-        // tsc passes every diagnostic of the last candidate one shared "The last overload" chain object, and
-        // checkTypeRelatedTo concatenates each one's elaboration onto it in place (concatenateDiagnosticMessageChains
-        // appends at the deepest first child), so with several (an array literal's elements) every diagnostic shows
-        // all of their chains nested one under the other
-        Error shared = {0};
-        u32 chained = 0;
-        if (unfit_count > 3) {
-            for_each (e, vec_error, &collected.errors) chained += !e->always_logged;
+    Candidate const* last = &unfit[unfit_count - 1];
+    report_unfit_argument(me, last, args, info, call_span, &collected);
+    for_each (e, vec_error, &collected.errors) {
+        Error error = *e;
+        if (unfit_count > 1) {
+            if (e->always_logged) append_logged_once(errs, e);
+            error = (Error){ .ts_code = 2769, .phase = e->phase, .span = e->span,
+                .message = cstr_lit("No overload matches this call.") };
+            error_sub_error_s(&error, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));
+            VecError related = {0};
+            move_error_into_chain(e, vec_error_back_mut(&error.sub_errors), &related);
+            for_each (r, vec_error, &related) vec_error_push(&error.sub_errors, *r);
+            related.size = 0;
+            vec_error_drop(&related);
+            error_add_related_s(&error, signature_decl_span(last->sig), 2771, cstr_lit("The last overload is declared here."));
         }
-        if (chained > 1) {
-            Error* deepest = &shared;
-            for_each (e, vec_error, &collected.errors) {
-                if (e->always_logged) continue;
-                Error line = { .message = cstr_clone(e->message) };
-                for_each (sub, vec_error, &e->sub_errors) {
-                    if (!span_valid(sub->span)) vec_error_push(&line.sub_errors, error_clone(*sub));
-                }
-                vec_error_push(&deepest->sub_errors, line);
-                deepest = vec_error_back_mut(&deepest->sub_errors);
-                while (vec_error_size(&deepest->sub_errors)) deepest = vec_error_begin(&deepest->sub_errors).ref;
-            }
-        }
-        for_each (e, vec_error, &collected.errors) {
-            Error error = *e;
-            if (unfit_count > 3 && e->always_logged) append_logged_once(errs, e);
-            if (unfit_count > 3) {
-                error = (Error){ .ts_code = 2769, .phase = e->phase, .span = e->span,
-                    .message = cstr_lit("No overload matches this call.") };
-                error_sub_error_s(&error, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));
-                VecError related = {0};
-                if (chained > 1 && !e->always_logged) {
-                    Error* head = vec_error_back_mut(&error.sub_errors);
-                    for_each (sub, vec_error, &shared.sub_errors) vec_error_push(&head->sub_errors, error_clone(*sub));
-                    for_each (sub, vec_error, &e->sub_errors) {
-                        if (span_valid(sub->span)) vec_error_push(&related, *sub);
-                        else error_drop(sub);
-                    }
-                    e->sub_errors.size = 0;
-                    vec_error_drop(&e->sub_errors);
-                    cstr_drop(&e->message);
-                } else {
-                    move_error_into_chain(e, vec_error_back_mut(&error.sub_errors), &related);
-                }
-                for_each (r, vec_error, &related) vec_error_push(&error.sub_errors, *r);
-                related.size = 0;
-                vec_error_drop(&related);
-                error_add_related_s(&error, signature_decl_span(last->sig), 2771,
-                    cstr_lit("The last overload is declared here."));
-            }
-            add_implementation_success(me, last, args, info, call_span, &error);
-            error_ctx_append_error(errs, error);
-        }
-        collected.errors.size = 0;
-        error_ctx_drop(&collected);
-        error_drop(&shared);
-        return;
+        add_implementation_success(me, last, args, info, call_span, &error);
+        error_ctx_append_error(errs, error);
     }
-    // Two or three: every candidate's errors, unless one of them had several (then only the one with the fewest)
-    VecError per[3] = {0};
-    isize_t max = 0, min = INTPTR_MAX;
-    u32 min_index = 0;
-    for (u32 i = 0; i < unfit_count; i++) {
-        error_ctx_clear(&collected);
-        report_unfit_argument(me, &unfit[i], args, info, call_span, &collected);
-        per[i] = collected.errors;
-        collected.errors = (VecError){0};
-        isize_t count = vec_error_size(&per[i]);
-        if (count <= min) {
-            min = count;
-            min_index = i;
-        }
-        if (count > max) max = count;
-    }
+    collected.errors.size = 0;
     error_ctx_drop(&collected);
-    Error head = { .ts_code = 2769, .phase = errs->phase, .message = cstr_lit("No overload matches this call.") };
-    VecError related = {0};
-    Span common_span = span_null;
-    bool same_span = true, any = false;
-    for (u32 i = 0; i < unfit_count; i++) {
-        if (max > 1 && i != min_index) continue;
-        cstr rendered = cstr_null;
-        ty_display_call_signature(me, (TyDisplay){ .target = &rendered }, candidate_instantiation(me, &unfit[i]));
-        for_each (e, vec_error, &per[i]) {
-            if (!any) common_span = e->span;
-            any = true;
-            same_span &= span_eq(e->span, common_span);
-            // (One the candidate's check logged directly has no "Overload" chain of its own, tsc's
-            // createDiagnosticForNode: its message is the line)
-            if (e->always_logged) {
-                append_logged_once(errs, e);
-                move_error_into_chain(e, &head, &related);
-                continue;
-            }
-            error_sub_error_d(&head, span_null, TS_CODE_NONE,
-                "Overload ", i + 1, " of ", signature_count, ", '", rendered, "', gave the following error.");
-            move_error_into_chain(e, vec_error_back_mut(&head.sub_errors), &related);
-        }
-        cstr_drop(&rendered);
-    }
-    for (u32 i = 0; i < unfit_count; i++) {
-        if (max > 1 && i != min_index) vec_error_drop(&per[i]);
-        else {
-            per[i].size = 0; // messages and chains were moved
-            vec_error_drop(&per[i]);
-        }
-    }
-    for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
-    related.size = 0;
-    vec_error_drop(&related);
-    head.span = any && same_span && span_valid(common_span) ? common_span : overload_error_span(info);
-    add_implementation_success(me, &unfit[0], args, info, call_span, &head);
-    error_ctx_append_error(errs, head);
 }
 
 static u32 min_type_arguments(Checker* me, Signature const* sig) {
@@ -2580,7 +2460,7 @@ static Resolution resolve_with_signatures_inner(
                     }
                 }
             } else if (unfit_count) {
-                report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
+                report_no_match(me, unfit, unfit_count, args, info, call_span, errs);
             } else if (arity_candidate.sig) {
                 Signature* sig = (Signature*)arity_candidate.sig;
                 report_arity(me, &sig, 1, args, info, arity_candidate.mapper, errs);

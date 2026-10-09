@@ -14,9 +14,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 ## From plan 53 stage 1 (CLI parity, 2026-10-08)
 - `scripts/clidiff.py` (tttt's stdout against `tsc -p --noEmit --pretty false`, byte for byte) finds message text the
   head-message oracles never compared, all checker side, none CLI:
-  - **Overload elaboration chains print untruncated types**: tsc's `Overload 2 of 3, '(...): Promise<...>', gave the
-    following error.` truncates the signature's types (signatureToString without NoTruncation); tttt prints them whole
-    (jose/test, nest/sample/02-gateways). Probably one flag in the overload chain's signature printing.
   - **TS6059/TS6307 lack the "The file is in the program because:" chain** under them: every inclusion reason of the
     file (`Imported via "../x" from file '/abs/a.ts'`, `with packageId '...'`), in tsc's order of discovery
     (socket.io/examples/basic-crud-application/server, nest/integration/file-upload). tttt only keeps

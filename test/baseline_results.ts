@@ -1011,7 +1011,7 @@ const baselines = {
         types: true,
     },
     'arrayBestCommonTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1041,7 +1041,7 @@ const baselines = {
         types: true,
     },
     'arrayConcatMap': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2326,7 +2326,7 @@ const baselines = {
         types: false,
     },
     'bigintWithLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5521,7 +5521,7 @@ const baselines = {
         types: true,
     },
     'conditionalTypeDoesntSpinForever': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5981,7 +5981,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10141,7 +10141,7 @@ const baselines = {
         types: true,
     },
     'destructuringTuple': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10361,7 +10361,7 @@ const baselines = {
         types: true,
     },
     'dissallowSymbolAsWeakType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12876,7 +12876,7 @@ const baselines = {
         types: true,
     },
     'excessPropertiesInOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14681,7 +14681,7 @@ const baselines = {
         types: true,
     },
     'functionOverloads2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14796,12 +14796,12 @@ const baselines = {
         types: true,
     },
     'functionOverloads40': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'functionOverloads41': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16211,7 +16211,7 @@ const baselines = {
         types: false,
     },
     'heterogeneousArrayAndOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17251,7 +17251,7 @@ const baselines = {
         types: true,
     },
     'incompatibleTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17806,7 +17806,7 @@ const baselines = {
         types: true,
     },
     'inferenceOuterResultNotIncorrectlyInstantiatedWithInnerResult': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18206,7 +18206,7 @@ const baselines = {
         types: true,
     },
     'inheritedConstructorWithRestParams2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20566,7 +20566,7 @@ const baselines = {
         types: true,
     },
     'jsxChildrenArrayWrongType(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20586,7 +20586,7 @@ const baselines = {
         types: true,
     },
     'jsxChildrenWrongType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20596,7 +20596,7 @@ const baselines = {
         types: true,
     },
     'jsxComplexSignatureHasApplicabilityError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20621,7 +20621,7 @@ const baselines = {
         types: true,
     },
     'jsxElementType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23531,7 +23531,7 @@ const baselines = {
         types: true,
     },
     'namespaceMergedWithFunctionWithOverloadsUsage': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25726,7 +25726,7 @@ const baselines = {
         types: true,
     },
     'orderMattersForSignatureGroupIdentity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25741,7 +25741,7 @@ const baselines = {
         types: true,
     },
     'overload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25926,7 +25926,7 @@ const baselines = {
         types: true,
     },
     'overloadResolutionTest1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25966,7 +25966,7 @@ const baselines = {
         types: true,
     },
     'overloadingOnConstants2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25981,7 +25981,7 @@ const baselines = {
         types: true,
     },
     'overloadresolutionWithConstraintCheckingDeferred': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26011,7 +26011,7 @@ const baselines = {
         types: true,
     },
     'overloadsWithProvisionalErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27471,7 +27471,7 @@ const baselines = {
         types: false,
     },
     'reactDefaultPropsInferenceSuccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27781,7 +27781,7 @@ const baselines = {
         types: true,
     },
     'recursiveFunctionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29186,7 +29186,7 @@ const baselines = {
         types: true,
     },
     'signatureLengthMismatchInOverload': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29781,7 +29781,7 @@ const baselines = {
         types: true,
     },
     'specializedSignatureAsCallbackParameter1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29816,7 +29816,7 @@ const baselines = {
         types: true,
     },
     'spellingSuggestionJSXAttribute': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32976,7 +32976,7 @@ const baselines = {
         types: true,
     },
     'underscoreTest1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38956,12 +38956,12 @@ const baselines = {
         types: true,
     },
     'controlFlowIterationErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'controlFlowIterationErrorsAsync': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42951,7 +42951,7 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern28': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43301,7 +43301,7 @@ const baselines = {
         types: true,
     },
     'for-of39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43951,7 +43951,7 @@ const baselines = {
         types: true,
     },
     'iteratorSpreadInArray6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44086,12 +44086,12 @@ const baselines = {
         types: true,
     },
     'taggedTemplateStringsWithOverloadResolution1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplateStringsWithOverloadResolution1_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44106,12 +44106,12 @@ const baselines = {
         types: true,
     },
     'taggedTemplateStringsWithOverloadResolution3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplateStringsWithOverloadResolution3_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47576,17 +47576,17 @@ const baselines = {
         types: true,
     },
     'overloadResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overloadResolutionClassConstructors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overloadResolutionConstructors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50171,7 +50171,7 @@ const baselines = {
         types: true,
     },
     'strictBindCallApply1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53181,7 +53181,7 @@ const baselines = {
         types: false,
     },
     'checkJsxChildrenCanBeTupleType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53771,7 +53771,7 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54191,12 +54191,12 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentOverload4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxStatelessFunctionComponentOverload5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63731,7 +63731,7 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedStringLiteralsInJsxAttributes02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67371,7 +67371,7 @@ const baselines = {
         types: true,
     },
     'genericCallToOverloadedMethodWithOverloadedArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67506,7 +67506,7 @@ const baselines = {
         types: true,
     },
     'genericCallWithOverloadedConstructorTypedArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67596,7 +67596,7 @@ const baselines = {
         types: true,
     },
     'unionAndIntersectionInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67676,7 +67676,7 @@ const baselines = {
         types: true,
     },
     'unionTypeCallSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67711,7 +67711,7 @@ const baselines = {
         types: true,
     },
     'unionTypeConstructSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

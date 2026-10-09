@@ -2075,11 +2075,6 @@ void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig) 
     display_signature(me, d, sig, " => ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
 }
 
-// tsc's signatureToString without a kind: a construct signature prints like a call signature
-void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig) {
-    display_signature(me, d, sig, ": ", false);
-}
-
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n) {
     char buf[256];
     int len = snprintf(buf, sizeof buf, "%.*s", (int)base.size, base.buf);
