@@ -1484,8 +1484,9 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 Expr const* value = decl->node;
                 SourceFile const* file = decl->full.source;
                 bool undefined_alias = value->tag == EXPR_LITERAL && value->literal.tag == VALUE_UNDEFINED;
+                // (After getWidenedType: without strictNullChecks what widens is any already, nothing to report)
                 if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
-                    ty_only_nullable(type)
+                    ty_only_nullable(ty_widened_nullable(me, type))
                 ) {
                     *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
                     return ty_intrinsic(me, TY_ANY);
@@ -1883,7 +1884,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // Nothing but null and undefined is any in JavaScript
     SourceFile const* file = symbol->decls[0].full.source;
-    if (file && file->is_js && ty_only_nullable(ret)) {
+    if (file && file->is_js && ty_only_nullable(ty_widened_nullable(me, ret))) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
     }

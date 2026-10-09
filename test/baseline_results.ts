@@ -14181,7 +14181,7 @@ const baselines = {
         types: true,
     },
     'flakyDiagnosticsJsClassPropertyInitializedToUndefined(noemit=false,strictnullchecks=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14191,7 +14191,7 @@ const baselines = {
         types: true,
     },
     'flakyDiagnosticsJsClassPropertyInitializedToUndefined(noemit=true,strictnullchecks=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
