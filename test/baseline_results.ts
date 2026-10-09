@@ -27591,7 +27591,7 @@ const baselines = {
         types: true,
     },
     'readonlyTupleAndArrayElaboration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48516,7 +48516,7 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_errorLocations1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

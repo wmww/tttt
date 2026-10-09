@@ -940,7 +940,9 @@ static bool relation_line_said(Checker* me, RelationState* st, Ty const* source,
         case 2353: case 2561:
             return true;
         case 4104:
-            return missing_props_line_matches(me, below, source, target);
+            if (!missing_props_line_matches(me, below, source, target)) return false;
+            if (top) below->missing_head = true; // (whatever the head message)
+            return true;
         case 2741: case 2739: case 2740:
             if (top && (st->head_code == 2352 || st->head_code == 2420 || st->head_code == 2720)) return false;
             if (!missing_props_line_matches(me, below, source, target)) return false;
