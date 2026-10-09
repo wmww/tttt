@@ -1480,15 +1480,6 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     for_each (i, vec_initialized_binding, &my initializers) {
-        Expr const* value = initialized_binding_value(i);
-        // (tsgo's reparser casts the initializer of a `@satisfies` declaration, whose outer parentheses have the cast's type)
-        if (i->binding.has_explicit_type && i->binding.explicit_type.from_jsdoc && value->tag == EXPR_AS_TYPE &&
-            value->as_type->is_jsdoc && value->as_type->is_satisfies &&
-            !span_eq(expr_outer_span(value), expr_outer_span(&value->as_type->expr))
-        ) {
-            ctx->jsdoc_paren_span = expr_outer_span(value);
-            ctx->jsdoc_paren_type = ty_of_node(&i->binding.explicit_type);
-        }
         TypeNode const* type_literal = ctx->variable_type_literal;
         Span type_literal_name = ctx->variable_type_literal_name;
         if (i->binding.tag == BINDING_IDENTIFIER && i->binding.has_explicit_type && !i->binding.explicit_type.from_jsdoc &&
@@ -1499,7 +1490,6 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
         initialized_binding_compile_test_info(i, ctx);
         ctx->variable_type_literal = type_literal;
         ctx->variable_type_literal_name = type_literal_name;
-        ctx->jsdoc_paren_span = span_null;
     }
 }
 

@@ -4341,6 +4341,12 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
 
 // The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
 static FunctionImpl* jsdoc_function_of(Expr* expr) {
+    // (Through the `satisfies` a JSDoc `@satisfies` made: tsgo's getFunctionLikeHost skips them)
+    while (expr->tag == EXPR_AS_TYPE && expr->as_type->is_jsdoc && expr->as_type->is_satisfies &&
+        expr_outer_span(expr).sv.size == expr->inner_span.sv.size
+    ) {
+        expr = &expr->as_type->expr;
+    }
     if (expr->tag != EXPR_FUNCTION || expr_outer_span(expr).sv.size != expr->inner_span.sv.size) return nullptr;
     return expr->function;
 }
@@ -13609,13 +13615,8 @@ static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBind
     // (Not under a type annotation, which tsc's checkVariableLikeDeclaration checks the initializer against instead:
     // checkDeclarationInitializer, which looks at `@satisfies`, only infers an unannotated declaration's type)
     if (initializer->binding.has_explicit_type || jsdoc_find_typed(tags, JSDOC_TAG_TYPE)) return;
-    // (Not an empty object literal: that's a JavaScript container, whose type isn't the initializer's, tsc's
-    // getJSContainerObjectType)
-    if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY ||
-        (initialized_binding_value(initializer)->tag == EXPR_OBJECT && !initialized_binding_value(initializer)->object.size)
-    ) {
-        return;
-    }
+    // (An empty object literal too: tsgo's reparser casts any initializer)
+    if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY) return;
     Expr* value = initialized_binding_value(initializer);
     Expr inner = *value;
     *value = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {

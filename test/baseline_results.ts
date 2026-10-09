@@ -20441,9 +20441,9 @@ const baselines = {
         types: true,
     },
     'jsdocSatisfiesTagWithParamTag': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocThisTagWithThisParameter': {
         errors: true,
@@ -51536,9 +51536,9 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocSatisfiesTag10': {
         errors: true,
@@ -51551,7 +51551,7 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51566,9 +51566,9 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag15': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocSatisfiesTag2': {
         errors: true,
@@ -51578,10 +51578,10 @@ const baselines = {
     'checkJsdocSatisfiesTag3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocSatisfiesTag4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

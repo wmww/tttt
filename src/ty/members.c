@@ -3874,8 +3874,7 @@ Span ty_prop_decl_span(Prop const* prop) {
     ) {
         return symbol->decls[0].name;
     }
-    // A JSDoc `@property` is the whole tag (tsc's getErrorSpanForNode of a JSDocPropertyTag)
-    if (prop->decl->decl_span_count && span_is_jsdoc_tag(prop->decl->decl_spans[0])) return prop->decl->decl_spans[0];
+    // (A JSDoc `@property` too: tsgo reparses it into a PropertySignature, whose error span is its name)
     // A parameter property is the whole parameter, its modifiers first
     if (prop->decl->parameter_property && prop->decl->decl_span_count) return prop->decl->decl_spans[0];
     return prop->decl->name_span;
@@ -4213,7 +4212,10 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 params[j].type = ty_union(me, parts, 2, nullptr, (TyList){0});
             }
         }
-        if (function_is_untyped_js(function)) sig->min_args = 0;
+        // (Nor one with a contextual signature: tsgo's isUntypedSignatureInJSFile asks getContextualType)
+        if (function_is_untyped_js(function) && !(function->is_expression && ty_function_assigned_contextual_signature(me, function))) {
+            sig->min_args = 0;
+        }
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
             // `this: T` is about how the function is called, not an argument
             if (sig->min_args && !params[0].optional) sig->min_args--;
