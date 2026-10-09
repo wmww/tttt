@@ -160,3 +160,19 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
   fine: the difference is in how `spans` becomes unknown).
+
+## JS fan-out, agent D (2026-10-09)
+- Returned object literals aren't widened in tsgo: `function f() { return { x: [] } }` is `() => { x: undefined[] }`
+  with strict off (tttt: any[]), but `{ x: [], y: null }` widens both and `const o = { x: [] }` is any[]
+  (argumentsReferenceInObjectLiteral_Js and probes). Some object flag (ContainsObjectOrArrayLiteral /
+  RequiresWidening) propagates differently in tsgo; find which and port it.
+- importTag13: `@import x = require("m")` after 'from' expected, tsgo parses the module specifier as an expression and
+  says TS1141 over `= require("types")`; tttt's JSDoc @import parser stops.
+- webpack (160 missing after D): owners by mechanism. C: TS2370/TS2345 `@param {...string} args` in a @callback
+  is a rest parameter of type string in tsgo (ProgressPlugin ReportProgress, ~12), `@overload` on an arrow
+  function ignored (`decodeEntities`, ~40 TS2345/TS2339 'string | DecodedEntitiesWithMap'), `@template` on a
+  variable statement not a host (TS2304 'T'). B: TS2315/TS2694 "Type 'export=' is not generic" / "Namespace
+  '...export=' has no exported member" (module.exports = class with JSDoc typedefs, ~20), TS2309. A: a typed
+  this-property assignment checks its value against its own @type even when a base class or another method
+  declares the property (`/** @type {string} */ this.details = error.stack`, ~10 TS2322), TS2565, TS2683/TS7009
+  (constructor functions), `typeof SourceProcessor` static expandos (TS2339 deferredWrite).
