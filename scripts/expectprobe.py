@@ -17,7 +17,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def mismatches(d):
     d = os.path.abspath(d)
-    out = subprocess.run(['node', os.path.join(ROOT, 'test/sweep_tsc.js'), '--expect'], input=d + '\n',
+    subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True)
+    out = subprocess.run([os.path.join(ROOT, 'thirdparty/typescript/built/tttt-oracle'), '--expect'], input=d + '\n',
                          capture_output=True, text=True, cwd='/').stdout
     asserts = json.loads(out).get('asserts', [])
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:

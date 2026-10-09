@@ -2,7 +2,7 @@
 """Mutation testing (plan 46 stage 2): missing and wrong diagnostics on code tsc complains about.
 
 Takes single-file suite tests that pass all three components, applies one small source mutation to each (operators in
-OPS, tagged in the mutant's name), has tsc baseline the mutants (one harness process per core, cached) and tttt check
+OPS, tagged in the mutant's name), has tsc (tsgo's test runner, scripts/tsgoprobe.sh) baseline the mutants (one process per core, cached) and tttt check
 them, and buckets the errors-component mismatches by root-cause key, like failstats.
 
   scripts/mutate.py                      2000 mutants, seed 1: generate, tsc (cached), tttt, report
@@ -16,7 +16,7 @@ them, and buckets the errors-component mismatches by root-cause key, like failst
   scripts/mutate.py --syntax             include the mutants whose tsc baseline gained a syntax error (parser recovery:
                                    separated by default, plan 27's territory)
 
-The mutants live in /tmp/mutate/KEY/t/tests/cases/conformance (KEY hashes their contents and the tsc commit, so a
+The mutants live in /tmp/mutate/KEY/t/tests/cases/conformance, tsc's baselines in KEY/t/baselines/reference/conformance (KEY hashes their contents and the tsgo commit, so a
 rerun after a tttt change reuses tsc's baselines; MUTATE_DIR overrides /tmp/mutate, eg for parallel worktrees); `log.json` there says which test, operator, line and text. Keys:
 `missing TSx` / `spurious TSx` (the first unmatched diagnostic by (line, code)), `TSa->TSb` (a missing and a spurious
 code on the same line), `position TSx` (same line and code, other column), `text TSx` (same code and position, other
@@ -24,8 +24,11 @@ message: mostly type printing), `elaboration TSx` (same first line, the chain or
 """
 import argparse, collections, hashlib, json, os, random, re, shutil, subprocess, sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import suite  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TSC = os.path.join(ROOT, 'thirdparty/tsc')
+TSGO = os.path.join(ROOT, 'thirdparty/typescript')
 BASE = os.environ.get('MUTATE_DIR', '/tmp/mutate')
 ANSI = re.compile(r'\x1b\][^\x1b]*\x1b\\|\x1b\[[0-9;]*m')
 ERR_LINE = re.compile(r'^(?:(.*?)\((\d+),(\d+)\): )?error (TS\d+): (.*)$')
@@ -109,12 +112,10 @@ def suite_tests(kinds=()):
     res = open(f'{ROOT}/test/baseline_results.ts').read()
     passing = set(re.findall(r"'([^']+)': \{\s*errors: true,\s*symbols: true,\s*types: true", res))
     paths = {}
-    for d, _, fs in os.walk(f'{TSC}/tests/cases'):
-        if 'fourslash' in d:
-            continue
-        for f in fs:
-            if f.endswith('.ts') and f[:-3] in passing:
-                paths[f[:-3]] = os.path.join(d, f)
+    for p in suite.test_files():
+        f = os.path.basename(p)
+        if f.endswith('.ts') and f[:-3] in passing:
+            paths[f[:-3]] = p
     out = {}
     for n, p in sorted(paths.items()):
         if os.path.getsize(p) >= 6000:
@@ -163,29 +164,27 @@ def generate(n, seed, kinds=()):
 
 
 def run_tsc(work, names):
-    """tsc's baselines for the mutants, one warm harness process per core, merged into work/t/tests/baselines/reference"""
+    """tsc's (tsgo's) baselines for the mutants, one warm probe process per core (scripts/tsgoprobe.sh), merged into
+    work/t/baselines/reference/conformance"""
     jobs = min(os.cpu_count() or 1, 4, len(names))
     procs = []
     for j in range(jobs):
         shard = f'{work}/tsc{j}'
         shutil.rmtree(shard, ignore_errors=True)
         os.makedirs(f'{shard}/tests/cases/conformance')
-        os.makedirs(f'{shard}/tests/cases/compiler')
-        shutil.copytree(f'{TSC}/tests/lib', f'{shard}/tests/lib')
-        open(f'{shard}/baseline_results.ts', 'w').write("const tsCommit = '';\n")
         for name in names[j::jobs]:
             shutil.copy(f'{work}/t/tests/cases/conformance/{name}.ts', f'{shard}/tests/cases/conformance/')
-        env = dict(os.environ, NODE_PATH=f'{TSC}/node_modules/')
-        procs.append(subprocess.Popen(['node', f'{ROOT}/test/diffapp/tsc_custom_baseline.js', shard], env=env,
-                                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+        procs.append(subprocess.Popen([f'{ROOT}/scripts/tsgoprobe.sh', shard], stdin=subprocess.DEVNULL,
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     for p in procs:
         p.wait()
-    ref = f'{work}/t/tests/baselines/reference'
+    ref = f'{work}/t/baselines/reference/conformance'
     os.makedirs(ref, exist_ok=True)
     for j in range(jobs):
-        local = f'{work}/tsc{j}/tests/baselines/local'
+        local = f'{work}/tsc{j}/baselines/local/conformance'
         for f in os.listdir(local) if os.path.isdir(local) else []:
-            shutil.move(f'{local}/{f}', f'{ref}/{f}')
+            if f.endswith(('.errors.txt', '.types', '.symbols')):
+                shutil.move(f'{local}/{f}', f'{ref}/{f}')
         shutil.rmtree(f'{work}/tsc{j}')
 
 
@@ -196,11 +195,6 @@ def run_tttt(work):
     shutil.rmtree(dump, ignore_errors=True)
     os.makedirs(dump)
     names = sorted(f[:-3] for f in os.listdir(f'{work}/t/tests/cases/conformance'))
-    # (The harness reads tsgo's layout, baselines/reference/conformance beside tests. TODO(plan 54 stage 2): these are
-    # still tsc 6.0's baselines, with `^^^` lines tttt no longer prints)
-    os.makedirs(f'{work}/t/baselines/reference', exist_ok=True)
-    if not os.path.lexists(f'{work}/t/baselines/reference/conformance'):
-        os.symlink(f'{work}/t/tests/baselines/reference', f'{work}/t/baselines/reference/conformance')
     results = f'{work}/results.ts'
     crashed = []
     todo = names
@@ -284,14 +278,14 @@ def classify(ours_text, exp_text):
 
 def has_new_syntax_error(exp_text, orig_name):
     """Whether tsc's baseline of the mutant has a TS1xxx code the original test's baseline doesn't"""
-    orig = {e[2] for e in parse_errors(read(f'{TSC}/tests/baselines/reference/{orig_name}.errors.txt'))}
+    orig = {e[2] for e in parse_errors(read(suite.ref(orig_name, '.errors.txt')))}
     return any(e[2].startswith('TS1') and e[2] not in orig for e in parse_errors(exp_text))
 
 
 def analyse(work):
     log = json.load(open(f'{work}/log.json'))
     crashed = json.load(open(f'{work}/crashed.json')) if os.path.exists(f'{work}/crashed.json') else []
-    ref, dump = f'{work}/t/tests/baselines/reference', f'{work}/dump'
+    ref, dump = f'{work}/t/baselines/reference/conformance', f'{work}/dump'
     rows = []  # (name, test name incl. configuration, key, line, syntax?)
     for f in sorted(os.listdir(dump)):
         if not f.endswith('.errors.txt'):
@@ -309,7 +303,7 @@ def analyse(work):
 
 def productive(work, log):
     """The mutants whose tsc diagnostics (codes) differ from the original test's: the ones that test anything"""
-    ref, out = f'{work}/t/tests/baselines/reference', set()
+    ref, out = f'{work}/t/baselines/reference/conformance', set()
     for f in os.listdir(ref):
         if f.endswith('.errors.txt') or f.endswith('.types'):
             name = f.split('.')[0].split('(')[0]
@@ -318,7 +312,7 @@ def productive(work, log):
                 # no errors.txt: productive only if the original had one
                 f, orig = f[:-6] + '.errors.txt', orig[:-6] + '.errors.txt'
             codes = lambda t: collections.Counter(e[2] for e in parse_errors(t))
-            if codes(read(f'{ref}/{f}')) != codes(read(f'{TSC}/tests/baselines/reference/{orig}')):
+            if codes(read(f'{ref}/{f}')) != codes(read(suite.ref(orig[:-len('.errors.txt')], '.errors.txt'))):
                 out.add(name)
     return out
 
@@ -361,7 +355,7 @@ def show(work, name):
     e = log[name]
     print(f'{name}: {e["test"]} line {e["line"]}: {e["before"]!r} -> {e["after"]!r}')
     print(f'source: {work}/t/tests/cases/conformance/{name}.ts')
-    ref, dump = f'{work}/t/tests/baselines/reference', f'{work}/dump'
+    ref, dump = f'{work}/t/baselines/reference/conformance', f'{work}/dump'
     for f in sorted(os.listdir(dump)):
         if f.startswith(name) and f.endswith('.errors.txt'):
             ours, exp = read(f'{dump}/{f}'), read(f'{ref}/{f}')
@@ -404,7 +398,7 @@ def main():
         return show(work, args.show) if args.show else report(work, args)
 
     mutants = generate(args.count, args.seed, tuple(args.tests.split(',')))
-    commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=TSC, capture_output=True, text=True).stdout.strip()
+    commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=TSGO, capture_output=True, text=True).stdout.strip()
     h = hashlib.sha1(commit.encode())
     for name, (src, _) in sorted(mutants.items()):
         h.update(name.encode() + b'\0' + src.encode() + b'\0')
@@ -420,7 +414,8 @@ def main():
         print(f'tsc: baselining {len(mutants)} mutants in {work}', file=sys.stderr)
         run_tsc(work, sorted(mutants))
         open(f'{work}/tsc_done', 'w').close()
-    shutil.copytree(f'{TSC}/tests/lib', f'{work}/t/tests/lib', dirs_exist_ok=True)
+    if not os.path.lexists(f'{work}/t/tests/lib'):
+        os.symlink(f'{suite.TESTS}/lib', f'{work}/t/tests/lib')
     print('tttt: checking', file=sys.stderr)
     crashed = run_tttt(work)
     json.dump(crashed, open(f'{work}/crashed.json', 'w'))

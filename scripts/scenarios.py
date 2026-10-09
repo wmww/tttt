@@ -87,6 +87,11 @@ def parse(path):
     return cwd, files, symlinks, command, output
 
 
+# Option errors tsc's program reports only when it emits (verifyCompilerOptions under !noEmit): the common source
+# directory (TS5011), outputs overwriting inputs or each other (TS5055, TS5056). (A composite project's TS6059 isn't)
+EMIT_ONLY_CODES = {5011, 5055, 5056}
+
+
 def expected_diagnostics(output):
     ret = Counter()
     for line in output:
@@ -148,14 +153,15 @@ def run(name, scenario, tttt, keep, verbose):
             os.symlink(root + target, full)
         os.makedirs(root + cwd, exist_ok=True)
         args = translate(command, root)
-        # (tttt is `tsc --noEmit` unless told otherwise: tsc's command emits)
-        if "-b" not in args and "--build" not in args and not any(a.lower() == "--noemit" for a in args):
-            args += ["--as-emitting"]
         proc = subprocess.run([tttt] + args, cwd=root + cwd, capture_output=True, text=True,
                               timeout=60, env=dict(os.environ, TTTT_NO_REEXEC="1"))
         out = proc.stdout + proc.stderr
         # Paths tttt prints relative to the current directory, tsc too
         expected = expected_diagnostics(output)
+        # (tttt is `tsc --noEmit` and tsc's command emits: the option errors only an emitting program reports aren't
+        # tttt's, plan 54)
+        if "-b" not in args and "--build" not in args and not any(a.lower() == "--noemit" for a in args):
+            expected = Counter({k: n for k, n in expected.items() if k[2] not in EMIT_ONLY_CODES})
         actual = actual_diagnostics(out, root)
         unknown = "Unknown option" in out or "isn't supported" in out
         return expected, actual, args, out, unknown, proc.returncode

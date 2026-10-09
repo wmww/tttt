@@ -25,9 +25,11 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    tests fixed, suite scripts on `scripts/suite.py`. Corpora, `$ExpectType`, flagflip unchanged; DT sweep 8586 (8 new
    spurious: 7.1 `lib.dom` vs 6.0's caches, stage 3). filetest.sh/mutate.py still use 6.0's baselines (underlines
    stripped) until entry 4.
-4. **Plan 54 stage 2: oracle tools on tsgo.** `test/oracle/` Go overlay: the probe (`tscbaseline.sh`,
-   `filetest.sh`, diffapp, `mutate.py`) and `tttt-oracle` (per-project diagnostics with CLI semantics,
-   `$ExpectType`), replacing `test/sweep_tsc.js`; `--as-emitting` goes.
+4. ~~Plan 54 stage 2: oracle tools on tsgo~~ **done**: `test/oracle` (Go overlay, built by ensure-typescript.sh):
+   the probe (`scripts/tsgoprobe.sh`, 184/184 baselines identical) behind tscbaseline/filetest/mutate/diffapp, and
+   `tttt-oracle` (= `tsc -p P --noEmit`, verified on 60 projects) behind every sweep; `test/sweep_tsc.js` and
+   `--as-emitting` gone; exit codes are 7.1's (2 with diagnostics); clidiff vs 7.1 176 / 261. The 6.0 caches' emit-only
+   codes are filtered in `sweep.compare` until entry 5 regenerates them (sourcesweep 736 / 822).
 5. **Plan 54 stage 3: regenerate every cache** (DT sweep + flag variants, `$ExpectType`, source sweep, flagflip,
    mutate, corpora expectations, scenarios if cheap), port the scripts that read tsc's JS sources, TypeScript 6's
    `src` becomes a corpus, **`thirdparty/tsc` deleted**; documentation.md, CLAUDE.md, measurements.md rewritten.

@@ -52,43 +52,8 @@ def list_projects(filter=None):
 
 
 def run_tsc(projects, jobs):
-    """tsc on the projects (test/sweep_tsc.js), `jobs` node processes each handed the next project when it finishes
-    one: a few projects take minutes, a static share would leave the others idle"""
-    queue = sorted(projects, key=lambda p: p.split('/')[0])
-    lock = threading.Lock()
-    results = {}
-    start = time.time()
-
-    def worker():
-        p = subprocess.Popen(['node', '--max-old-space-size=8192', os.path.join(ROOT, 'test/sweep_tsc.js')], cwd=SOURCES,
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        while True:
-            with lock:
-                if not queue:
-                    break
-                project = queue.pop(0)
-            p.stdin.write(project + '\n')
-            p.stdin.flush()
-            line = p.stdout.readline()
-            if not line:
-                # node died (out of memory): this project crashes tsc, the others go to a new process
-                with lock:
-                    results[project] = {'project': project, 'ms': 0, 'crash': 'tsc process died', 'diags': []}
-                p.wait()
-                p = subprocess.Popen(['node', '--max-old-space-size=8192', os.path.join(ROOT, 'test/sweep_tsc.js')],
-                                     cwd=SOURCES, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-                continue
-            r = json.loads(line)
-            with lock:
-                results[project] = r
-                if len(results) % 50 == 0:
-                    print(f'  tsc: {len(results)} / {len(projects)} projects, {time.time() - start:.0f}s', flush=True)
-        p.stdin.close()
-        p.wait()
-    threads = [threading.Thread(target=worker) for _ in range(jobs)]
-    [t.start() for t in threads]
-    [t.join() for t in threads]
-    return results
+    """tsc on the projects (sweep.run_tsc: tsgo's tttt-oracle), grouped by repository"""
+    return sweep.run_tsc(sorted(projects, key=lambda p: p.split('/')[0]), jobs, cwd=SOURCES, progress=True)
 
 
 def root_cause(project, diag, spurious):

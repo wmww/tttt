@@ -62,7 +62,8 @@ types components) are the oracle, not the goal; real projects that are clean und
     `getTypeAtLocation`). **Prototyped (plan 54)**: the Go route works without touching the checkout (`go build
     -overlay` maps our Go files into tsgo's tree: the test runner gives any file's baselines in 45 ms, an overlay
     main calls the checker), and the native suite through tttt's harness is already 87.3% with a lib swap and three
-    harness changes, nearly every failure a baseline 7 changed or a test 7 added.
+    harness changes, nearly every failure a baseline 7 changed or a test 7 added. **Done through stage 2**: the
+    suite is tsgo's, and every tool runs tsgo (`test/oracle`: the probe, `tttt-oracle`); only the caches are 6.0's.
   - **Expect the suite to fall to ~90% at the switch** (mostly JS, where 7 removed features), then recover by fan-out
     on the 7.x mechanisms. These are mechanism changes, not per-test drains: the no-special-cases rule stands.
   - **Open question for the human** (in report.md): does emit (`.d.ts` and/or JS) enter scope? "Drop-in" for most

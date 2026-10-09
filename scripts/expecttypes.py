@@ -3,7 +3,7 @@
 `// $ExpectType` assertions in its tests is checked by tttt, which prints the type of each asserted node; that is
 compared with what tsc prints for the same node (not with the comment: DT's CI runs a newer TypeScript). tsc's
 side is cached in test/sweep/DefinitelyTyped.expect.jsonl.gz (`--tsc` regenerates it, ~2-10 minutes on 4 cores): the node
-DefinitelyTyped's `expect` lint rule picks for each assertion (test/sweep_tsc.js --expect), its span and kind, and
+DefinitelyTyped's `expect` lint rule picks for each assertion (test/oracle's tttt-oracle --expect, tsgo 7.1), its span and kind, and
 `typeToString(getTypeAtLocation(node), undefined, NoTruncation)` read after checking every file but the default libs
 (tttt's order: union member order is creation order, and lazy getTypeAtLocation without the check made ~100
 assertions differ by order alone; DT's own comments come from that lazier order). tttt gets the spans (`--expect-types FILE`) and
@@ -56,7 +56,7 @@ def run_tttt(package, asserts, timeout, mem_gb):
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         code = proc.returncode
         out, err = proc.stdout, proc.stderr
-        status = 'ok' if code in (0, 1) else f'exit {code}' if code > 0 else f'signal {-code}'
+        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
     except subprocess.TimeoutExpired as e:
         out, err, status = e.stdout or b'', e.stderr or b'', 'timeout'
     os.unlink(spans.name)

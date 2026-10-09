@@ -9,6 +9,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 2: the oracle tools on tsgo (2026-10-09, thirteenth window's todo entry 4)
+Probe (`scripts/tsgoprobe.sh`): 50 random suite tests in 0.18 s, 184 / 184 baselines byte-identical to the reference
+(APISample_jsdoc differs: tsgo skips it). `tttt-oracle` = `built/tsc -p P --noEmit` on 30 DT packages and 30 source
+sweep projects (diagnostics, order, exit codes). `mutate.py -n 400 --seed 3`: 1.6 s end to end. With the CLI now
+always `--noEmit` (no `--as-emitting`) the 6.0 caches' emit-only codes (TS5011/5055/5056/5096) are filtered in
+`sweep.compare` until stage 3: sourcesweep sample 736 / 822 (737 before the switch), DT sweep 8586, every other oracle
+unchanged (suite 11860, corpora, `$ExpectType` 68631, flagflip 17 / 11 / 4, scenarios 244). `scripts/clidiff.py
+--sample 12 --max-ms 10000` against tsgo 7.1: **176 / 261** byte-identical, 0 exit code mismatches after moving to 7.1's
+exit codes (2 with diagnostics; 102 mismatched before), 81 checker differences (7.1 deltas), 4 text. Instructions:
+tsc 4.716, type-fest 19.646, valibot 3.876, react 1.519, nest 1.154, webpack 10.485, zod 5.048, xstate 2.989, drizzle
+7.128, vue 6.551, effect 10.176, vscode 91.235, excalidraw 7.934, tanstack-router 5.453 G (flat).
+
 ## Plan 54 stage 1: the switch to the 7.1 suite (2026-10-08, thirteenth window's todo entry 3)
 Suite (tsgo's native tree, fed0bf24): **11860 / 13571** (errors 12597, symbols 12909, types 12585; 1721 skipped
 configurations), 10.3 s wall (intersectionConstructorReductionCrash 63 s -> 0.2 s). Libs are 7.1's. Corpora unchanged

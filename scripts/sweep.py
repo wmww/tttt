@@ -19,7 +19,7 @@ shows up as a spurious TS2578.
 A package that wants an older major of a dependency gets it (test/sweep_links.py writes pnpm's links), and the
 versioned directories (types/NAME/vN) are packages of their own.
 """
-import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, time
+import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, threading, time
 import tscformat
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,37 +52,61 @@ def list_packages(filter=None):
     return packages
 
 
-def run_tsc(packages, jobs, extra=(), cwd=DT):
-    """tsc on the packages, `jobs` node processes each checking a share in one process (test/sweep_tsc.js)"""
-    procs = []
-    for i in range(jobs):
-        share = packages[i::jobs]
-        p = subprocess.Popen(['node', '--max-old-space-size=4096', os.path.join(ROOT, 'test/sweep_tsc.js'), *extra],
-                             cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        p.stdin.write('\n'.join(share) + '\n')
-        p.stdin.close()
-        procs.append(p)
+ORACLE_BIN = os.path.join(ROOT, 'thirdparty/typescript/built/tttt-oracle')
+
+
+def run_tsc(projects, jobs, extra=(), cwd=DT, progress=False):
+    """tsc (tsgo 7.1, test/oracle/tttt-oracle: what `tsc -p P --noEmit` reports, in-process) on the projects, `jobs`
+    processes each handed the next project when it finishes one (a few take minutes: a static share would leave the
+    others idle). A project that kills the process gets a crash verdict, the rest go to a new one"""
+    subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True)
+    queue = list(projects)
+    lock = threading.Lock()
     results = {}
-    for p in procs:
-        for line in p.stdout:
+    start = time.time()
+
+    def spawn():
+        return subprocess.Popen([ORACLE_BIN, *extra], cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+
+    def worker():
+        p = spawn()
+        while True:
+            with lock:
+                if not queue:
+                    break
+                project = queue.pop(0)
+            p.stdin.write(project + '\n')
+            p.stdin.flush()
+            line = p.stdout.readline()
+            if not line:
+                with lock:
+                    results[project] = {'project': project, 'ms': 0, 'crash': 'tsc process died', 'diags': []}
+                p.wait()
+                p = spawn()
+                continue
             r = json.loads(line)
-            results[r['project']] = r
+            with lock:
+                results[project] = r
+                if progress and len(results) % 50 == 0:
+                    print(f'  tsc: {len(results)} / {len(projects)} projects, {time.time() - start:.0f}s', flush=True)
+        p.stdin.close()
         p.wait()
+    threads = [threading.Thread(target=worker) for _ in range(jobs)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
     return results
 
 
 def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, keep_going='--keep-going'):
-    # (--as-emitting: test/sweep_tsc.js's cached diagnostics are a program's without --noEmit, emit-only option errors
-    # included)
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--as-emitting', keep_going, '--threads', '1',
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', keep_going, '--threads', '1',
                                '--checkers', '1', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
-        status = 'ok' if code in (0, 1) else f'exit {code}' if code > 0 else f'signal {-code}'
+        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'  # (tsc 7.1's exit codes: 2 with diagnostics)
     except subprocess.TimeoutExpired as e:
         out, status = e.stdout or b'', 'timeout'
     wall = time.time() - start
@@ -103,16 +127,24 @@ def shape(message):
 def lib_key(f, l, cwd=DT):
     """A default lib's diagnostic: tsc's lib.X.d.ts and tttt's own copy (thirdparty/lib/X.d.ts) number lines
     differently, so only the lib's name counts"""
-    m = re.search(r'(?:/tsc/lib/lib\.|/tsc/built/local/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
+    m = re.search(r'(?:/tsc/lib/lib\.|/tsc/built/local/lib\.|^bundled:///libs/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
     # (Relative to DefinitelyTyped in the main tree, where thirdparty/corpora isn't a symlink: ../../lib/dom.d.ts)
     if not m and f.startswith('../') and os.path.realpath(os.path.join(cwd, f)).startswith(os.path.join(ROOT, 'thirdparty/lib/')):
         m = re.search(r'([^/]+)\.d\.ts$', f)
     return (f'lib.{m.group(1)}.d.ts', 0) if m else (f, l)
 
 
+# Option errors only an emitting program reports (rootDir / common source directory, outputs overwriting inputs,
+# allowImportingTsExtensions without noEmit). tsc 6's caches were made without noEmit; tttt is `tsc --noEmit`.
+# TODO(plan 54 stage 3): goes with the caches regenerated through tttt-oracle
+EMIT_ONLY_CODES = {5011, 5055, 5056, 5096}
+
+
 def compare(package, tsc, tttt, cwd=DT):
     """The diagnostics tttt reports that tsc doesn't (spurious) and the other way round (missing), by (file, line,
     code) multiset"""
+    if 'status' not in tsc:  # (a tsc 6 cache entry: no exit status)
+        tsc = {**tsc, 'diags': [d for d in tsc['diags'] if d[3] not in EMIT_ONLY_CODES]}
     want = collections.Counter((*lib_key(f, l, cwd), c) for f, l, _, c in tsc['diags'])
     got = collections.Counter((*lib_key(f, l, cwd), c) for f, l, c, _ in tttt['diags'])
     spurious, missing = [], []

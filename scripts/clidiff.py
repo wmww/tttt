@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """tttt as a drop-in tsc (plan 53 stage 1): `tttt -p P --pretty false` against `tsc -p P --noEmit --pretty false` on
 real projects, byte for byte, exit codes included. Projects are the source sweep's (thirdparty/sources) and the -p
-corpora; tsc is the oracle's tsc.js (4d4f005c) or, with --tsgo, the `tsc` on PATH (7.x).
+corpora; tsc is the pinned tsgo 7.1 (thirdparty/typescript/built/tsc).
 
   scripts/clidiff.py --sample 8              # every 8th source sweep project (by name), tsc's slow ones skipped
   scripts/clidiff.py -f '^vite/' -v          # print the first differing lines of each mismatch
   scripts/clidiff.py --corpora               # the -p corpora (all clean under tsc: tttt must print nothing)
   scripts/clidiff.py --pretty ...            # compare the pretty format (colours, code frames, summary) instead
 
-Exit codes: tttt follows tsc 7 (1 with any diagnostic under --noEmit, 2 when the program has no file; tsc 6 says 2),
-so against tsc 6 an exit code matches when it is 0 for no output and 1 or 2 otherwise. Projects tsc takes more than --max-ms for (the source sweep's cached
+Exit codes: tttt follows tsc 7 (1 with any diagnostic under --noEmit, 2 when the program has no file). Projects tsc
+takes more than --max-ms for (the source sweep's cached
 timing) are skipped. Verdicts: match, `exit code`, `order` (the same lines in another order), `text` (the same
 diagnostics by file, line, column and code, other text) and `diagnostics` (a checker difference, the source sweep's
 business: -v shows those too). tsc writes .tsbuildinfo files for incremental projects even with --noEmit: new ones are deleted."""
@@ -22,7 +22,7 @@ import sourcesweep  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCES = os.path.join(ROOT, 'thirdparty/sources')
-TSC6 = ['node', '--max-old-space-size=8192', os.path.join(ROOT, 'thirdparty/tsc/built/local/tsc.js')]
+TSC = [os.path.join(ROOT, 'thirdparty/typescript/built/tsc')]
 
 
 def run(cmd, cwd, timeout):
@@ -36,12 +36,11 @@ def run(cmd, cwd, timeout):
 
 def compare(cwd, project, args):
     pretty = ['--pretty', 'true' if args.pretty else 'false']
-    tsc_out, tsc_code = run((['tsc'] if args.tsgo else TSC6) + ['-p', project, '--noEmit', *pretty], cwd, args.timeout)
+    tsc_out, tsc_code = run(TSC + ['-p', project, '--noEmit', *pretty], cwd, args.timeout)
     out, code = run([os.path.join(ROOT, 'release/tttt'), '-p', project, *pretty], cwd, args.timeout)
     if tsc_out is None or out is None:
         return 'timeout', tsc_out, out, tsc_code, code
-    # (Against tsc 6 only whether there were diagnostics: 7's 1 or 2 depends on whether anything would be emitted)
-    want_code = tsc_code if args.tsgo else (code if code in (1, 2) else 1) if tsc_out else 0
+    want_code = tsc_code
     if out == tsc_out:
         verdict = 'match' if code == want_code else 'exit code'
     elif sorted(out.split('\n')) == sorted(tsc_out.split('\n')):
@@ -58,7 +57,6 @@ def main():
     ap.add_argument('-f', help='regex on the source sweep project names')
     ap.add_argument('--sample', type=int, default=1, help='every Nth project')
     ap.add_argument('--corpora', action='store_true', help='the -p corpora instead of the source sweep')
-    ap.add_argument('--tsgo', action='store_true', help='tsc 7 on PATH as the oracle')
     ap.add_argument('--pretty', action='store_true')
     ap.add_argument('--max-ms', type=int, default=20000, help="skip projects tsc took longer for (source sweep cache)")
     ap.add_argument('--timeout', type=int, default=300)

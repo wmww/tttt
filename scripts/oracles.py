@@ -39,7 +39,7 @@ def corpora():
         out = run(['scripts/realworld.py', '--corpus', c, '--no-build'])
         m = re.search(r'(\d+) diagnostics', out)
         n = int(m.group(1)) if m else None
-        crash = '' if re.search(r'exit [01],', out) else ' (' + (out.splitlines() or ['?'])[0][:40] + ')'
+        crash = '' if re.search(r'exit [012],', out) else ' (' + (out.splitlines() or ['?'])[0][:40] + ')'
         rows.append(f'{c} {n if n is not None else "?"}{crash}' + ('' if n == EXPECTED.get(c, 0) else ' !'))
     print('corpora: ' + ', '.join(rows), flush=True)
 

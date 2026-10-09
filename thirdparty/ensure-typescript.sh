@@ -8,7 +8,8 @@
 #   thirdparty/ensure-typescript.sh --env    # print the Go environment the scripts use (eval it)
 #
 # Go reads its module cache and build cache from thirdparty/typescript-gopath (not ~/go). Building against the
-# checkout without changing it: `go build -overlay` (tttt's own Go files are mapped into the tree at build time).
+# checkout without changing it: `go build -overlay` (tttt's own Go files in test/oracle are mapped into the tree at
+# build time, see test/oracle/README.md): built/tttt-oracle and built/tttt-probe.test, rebuilt when test/oracle changes.
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
@@ -58,4 +59,26 @@ eval "$GOENV"
 if test ! -e typescript/built/tsc; then
     printf "${BLUE}Building tsgo $TS_VERSION...$EOL"
     (cd typescript/tsc && go build -o ../built/tsc ./cmd/tsc)
+fi
+
+# tttt's overlay (test/oracle): FILE -> where it goes in the checkout
+OVERLAY=(
+    testdata.go internal/repo/tttt_testdata.go
+    probe_test.go internal/testrunner/tttt_probe_test.go
+    tttt-oracle/main.go cmd/tttt-oracle/main.go
+)
+ORACLE_DIR="$HERE/../test/oracle"
+if test -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-oracle 2>/dev/null)" -o ! -e typescript/built/tttt-oracle \
+        -o -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-probe.test 2>/dev/null)" -o ! -e typescript/built/tttt-probe.test; then
+    printf "${BLUE}Building tttt's tsgo oracle tools (test/oracle)...$EOL"
+    {
+        printf '{"Replace": {'
+        for ((i = 0; i < ${#OVERLAY[@]}; i += 2)); do
+            test $i = 0 || printf ', '
+            printf '"%s": "%s"' "$HERE/typescript/tsc/${OVERLAY[i+1]}" "$(realpath "$ORACLE_DIR/${OVERLAY[i]}")"
+        done
+        printf '}}\n'
+    } > typescript/built/overlay.json
+    (cd typescript/tsc && go build -overlay ../built/overlay.json -o ../built/tttt-oracle ./cmd/tttt-oracle &&
+        go test -overlay ../built/overlay.json -c -o ../built/tttt-probe.test ./internal/testrunner)
 fi

@@ -94,7 +94,8 @@ def cache_path(corpus, flag):
 def run_tsc(corpus, flag):
     cwd, project = corpus_cwd(corpus)
     start = time.time()
-    tsc = ['node', '--max-old-space-size=12288', os.path.join(ROOT, 'thirdparty/tsc/built/local/tsc.js'), '-p', project]
+    # (tsgo 7.1's CLI, single-threaded: the cells run several at once)
+    tsc = [os.path.join(ROOT, 'thirdparty/typescript/built/tsc'), '--singleThreaded', '-p', project]
     # An incremental (or composite) project writes its .tsbuildinfo even with --noEmit, and the next cell would reuse
     # its diagnostics (tsc's es2015 cell got es5's TS2802s): each run gets a build info file of its own
     config = json.loads(subprocess.run([*tsc, '--showConfig'], cwd=cwd, capture_output=True, text=True).stdout or '{}')
@@ -131,7 +132,7 @@ def run_tttt(corpus, flags, timeout=600, mem_gb=12):
                                *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
-        status = 'ok' if code in (0, 1) else f'exit {code}' if code > 0 else f'signal {-code}'
+        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
     except subprocess.TimeoutExpired as e:
         out, status = e.stdout or b'', 'timeout'
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))

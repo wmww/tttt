@@ -7,14 +7,13 @@ const port = 3030;
 // Earlier in the list takes precedence
 const ttttRoot = path.dirname(path.dirname(__dirname));
 const ttttBuildDir = path.join(ttttRoot, 'debug');
-const tscRoot = path.join(ttttRoot, 'thirdparty', 'tsc');
 const publicDirectories = [
   path.join(__dirname, 'public'),
   path.join(ttttRoot, 'thirdparty', 'javascript'),
 ];
 const tmpBaseDir = path.join('/tmp', 'diffapp');
 const codePath = path.join(tmpBaseDir, 'tests', 'cases', 'conformance', 'customTest.ts');
-const tscOutputDir = path.join(tmpBaseDir, 'tests', 'baselines', 'local');
+const tscOutputDir = path.join(tmpBaseDir, 'baselines', 'local', 'conformance');
 const tscTestName = 'customTest';
 let initialTestPath = path.join(__dirname, 'defaultCustomTest.ts');
 if (process.argv.length >= 3 && process.argv[2]) {
@@ -318,13 +317,11 @@ class TscRunner extends Runner {
       return;
     }
 
+    // (tsgo's test runner on the test, again after each line of stdin: scripts/tsgoprobe.sh)
     this.process = child_process.spawn(
-      'node',
-      [path.join(__dirname, 'tsc_custom_baseline.js'), tmpBaseDir, initialTestPath],
+      path.join(ttttRoot, 'scripts', 'tsgoprobe.sh'),
+      [tmpBaseDir, '--rerun'],
       {
-        env: {
-          NODE_PATH: path.join(tscRoot, 'node_modules')
-        },
         stdio: [
           'pipe', // stdin
           'pipe', // stdout

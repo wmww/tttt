@@ -9,8 +9,8 @@ if test ! -e debug; then
     meson setup debug --buildtype debug
 fi
 
-# We need a copy of the TypeScript repo to run tests
-thirdparty/ensure-tsc.sh
+# tsgo and its probe (scripts/tsgoprobe.sh)
+thirdparty/ensure-typescript.sh
 
 if test $# -gt 0; then
     # If we're given an argument
@@ -44,8 +44,3 @@ else
     # Start diffapp
     node test/diffapp/server.js ${TEST_PATH:-}
 fi
-
-# This is how you can run the tsc test runner manually, useful for debugging it
-# mkdir -p /tmp/diffapp/tests/cases/conformance
-# touch /tmp/diffapp/tests/cases/conformance/customTest.ts
-# NODE_PATH="$PWD/thirdparty/tsc/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp

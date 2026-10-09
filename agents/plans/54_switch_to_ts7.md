@@ -105,7 +105,12 @@ Result: 11860 / 13571 (87.4%), 10 s. Done as written below; module `none` is ski
 - Validate: `scripts/fasttest.sh --summary` clean on a rerun, no crash under `findcrash.py`, suite wall time back to
   ~11 s, `TTTT_TS7`-style hacks absent (the prototype's are not to be copied).
 
-### Stage 2: the oracle tools on tsgo (1 session)
+### Stage 2: the oracle tools on tsgo (1 session) — done 2026-10-09
+Result: `test/oracle/README.md` (probe + `tttt-oracle`, both validated as below); CLI semantics everywhere, so tttt's
+exit codes moved to 7.1's too (2 whenever diagnostics are printed, 1 only for a noEmitOnError-skipped emit). Left for
+stage 3: `sweep.EMIT_ONLY_CODES` (filters 6.0's cached emit-only codes: delete with the regenerated caches; new cache
+entries have a `status`), `scripts/tsctypeat.js`, `scripts/tscinstcount.js`, `test/probes/sweep/*/*.js` (tsc 6's
+`typescript.js`). `sweep.py --tsc` etc. now run tsgo through `tttt-oracle` (DT: ~60 ms a package).
 - `test/oracle/` (Go, our code): the probe test (arbitrary-file baselines) and `tttt-oracle` (diagnostics per
   project, `$ExpectType`), built by `ensure-typescript.sh` with an overlay map generated from `test/oracle/`.
   `tscbaseline.sh`, `filetest.sh`, diffapp and `mutate.py` move to the probe.

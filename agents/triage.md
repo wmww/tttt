@@ -35,7 +35,13 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - failstats.py counts "pass: all" over its own notion of ran tests (12128 / 13835 on the native suite at plan 54 stage
   1) while the harness says 11860 / 13571: the errors-only tests without any baseline and skipped configurations are
   counted differently. Make failstats read the harness's saved results for its totals.
-- `scripts/sourcesweep.py` counts tttt's exit code 2 as a crash: 36 "crashes" in `--sample 4` (astro fixtures with
-  TS18003/TS5090, dyad/floating-ui with TS5101) since plan 53 stage 1 made the CLI exit like tsc 7 (2 = config errors
-  only / no inputs). Same at 4ff04051, so not plan 54's. The sweep should treat 2 as a normal exit (stage 2 rewrites
-  its oracle anyway).
+
+## From plan 54 stage 2 (oracle tools on tsgo, 2026-10-09)
+- tsgo's CLI names a default lib file `bundled:///libs/lib.es5.d.ts` (not relative to the cwd) and sorts it after the
+  project's files (`a.ts` before `bundled:...`); tttt prints `../home/.../thirdparty/lib/es5.d.ts` and sorts it first.
+  A clidiff mismatch whenever a diagnostic lands in a lib (`type Partial<T> = T;` in a project). `sweep.lib_key`
+  accepts both spellings.
+- `scripts/tsctypeat.js`, `scripts/tscinstcount.js` and `test/probes/sweep/*/*.js` still load tsc 6's
+  `typescript.js`: port to an overlay tool in `test/oracle` or delete them with `thirdparty/tsc` (plan 54 stage 3).
+- tsgo 7.1's `-b` exit codes weren't compared (stage 2 moved the non-build CLI to 7.1's: 2 with diagnostics, 1 only
+  when noEmitOnError skips the emit). `build()` in main.c still returns 1 for any project with errors.

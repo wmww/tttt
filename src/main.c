@@ -35,7 +35,6 @@ typedef struct Options {
     bool list_files; // --listFiles: the program's files after its diagnostics
     bool list_files_only; // --listFilesOnly: the program's files, nothing checked
     bool ignore_config; // --ignoreConfig: files on the command line next to a tsconfig.json
-    bool as_emitting; // --as-emitting: no implied --noEmit, the config's noEmit decides (an oracle cached that way)
     bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
@@ -448,7 +447,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (config.size) verify_references(program, projects, project, true);
 
     SourceFile* source = nullptr;
-    bool loaded_any = false;
     for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
         csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
         bool from_config = i >= opts->path_count;
@@ -467,7 +465,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             vec_error_drop(&shown);
             destroy_program(program, errs, last);
         }
-        loaded_any = true;
     }
     str_list_drop(&root_files);
     program_load_automatic_types(program);
@@ -565,8 +562,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
 
     if (counts) counts->errors += printed;
-    // (tsgo: diagnostics and no file to emit, every root file missing, is 2)
-    if (ret && !loaded_any) ret = 2;
+    // tsgo 7.1's EmitAndReportStatistics: diagnostics are ExitStatus.DiagnosticsPresent_OutputsGenerated (2), --noEmit
+    // included (handleNoEmitOptions doesn't count as a skipped emit), unless noEmitOnError skipped the emit (1)
+    if (ret) ret = options->no_emit_on_error && !options->no_emit ? 1 : 2;
     destroy_program(program, errs, last);
     if (!last) phase_done(opts, out, "free", &last_time);
     return ok(ret);
@@ -864,8 +862,7 @@ static int run(int argc, const char** argv) {
                 "  --no-lib      don't load the standard library\n"
                 "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
                 "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)\n"
-                "  --keep-going=options  only options errors don't stop anything\n"
-                "  --as-emitting  check like tsc without --noEmit (the config's noEmit decides): emit-only option errors"
+                "  --keep-going=options  only options errors don't stop anything"
             );
             return 0;
         } else if (!opts.build && (streq(argv[i], "--version") || streq(argv[i], "-v"))) {
@@ -881,8 +878,6 @@ static int run(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--keep-going=options")) {
             opts.keep_going_options = true;
-        } else if (streq(argv[i], "--as-emitting")) {
-            opts.as_emitting = true;
         } else if (streq(argv[i], "--ignoreConfig")) {
             opts.ignore_config = true;
         } else if (streq(argv[i], "--listFiles")) {
@@ -942,11 +937,11 @@ static int run(int argc, const char** argv) {
         }
     }
     if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
-    // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise or
-    // --as-emitting (an oracle cached without it). -b is tsc -b's, which emits
+    // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise. -b is
+    // tsc -b's, which emits
     bool no_emit_given = false;
     for (intptr_t i = 0; i < opts.option_count; i++) no_emit_given |= !strcasecmp(opts.option_names[i], "noEmit");
-    if (!opts.build && !no_emit_given && !opts.as_emitting) {
+    if (!opts.build && !no_emit_given) {
         if (opts.option_count == MAX_COMPILER_OPTION_ARGS) {
             eprintln("tttt: too many options");
             return 1;
