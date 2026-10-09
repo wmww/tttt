@@ -529,7 +529,23 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             } else {
                 u32 ka = object_kind(a), kb = object_kind(b);
                 if (ka != kb) return ka < kb ? -1 : 1;
-                if (a->kind == TY_ANONYMOUS && b->kind == TY_ANONYMOUS) {
+                // (Reverse mapped types by their source, then their constraint: tsgo's compareTypes)
+                ReverseMapped const* rva = ty_reverse_of(a);
+                ReverseMapped const* rvb = ty_reverse_of(b);
+                if (rva && rvb) {
+                    c = ty_compare(rva->source, rvb->source);
+                    if (c) return c;
+                    // (The mapped types: by their type parameter, which is where they are declared)
+                    if (rva->mapped != rvb->mapped && rva->mapped->type_param && rvb->mapped->type_param) {
+                        c = ty_compare(rva->mapped->type_param, rvb->mapped->type_param);
+                        if (c) return c;
+                    }
+                    if (rva->operand != rvb->operand && rva->operand && rvb->operand) {
+                        c = ty_compare(rva->operand, rvb->operand);
+                        if (c) return c;
+                    }
+                }
+                if (a->kind == TY_ANONYMOUS && b->kind == TY_ANONYMOUS && !rva && !rvb) {
                     c = cmp_mappers(a->anonymous.mapper, b->anonymous.mapper);
                     if (c) return c;
                 }
