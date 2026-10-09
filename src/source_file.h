@@ -70,8 +70,8 @@ typedef struct ModuleRef {
     cstr unbuilt_output; // MODULE_REF_NOT_BUILT: the output declaration file, absolute
     // `with { type: "css" }` of the import, export or import type (owned by it), and `import("m", options)`'s call:
     // which pattern ambient modules it can be (binder_find_module(), tsgo's tryResolvePatternAmbientModule)
-    struct ImportAttributes const* attributes;
-    struct CallExpr const* import_call;
+    // (A copy: the AST it was read off may be a speculative parse's, freed since. Owned, null for none)
+    struct ModuleRefAttrs* attrs;
     Symbol* module; // Memo of binder_module_of_ref()
     Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
     AliasState module_state;

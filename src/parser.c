@@ -3103,7 +3103,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         rare.import_ref = add_module_ref(&p, path, path_span);
         rare.import_ref->resolution_override = import_attributes_resolution_mode(rare.import_attributes, nullptr);
         rare.import_ref->import_type = true;
-        rare.import_ref->attributes = rare.import_attributes;
+        module_ref_set_attributes(rare.import_ref, rare.import_attributes, nullptr);
     } else {
         cstr_drop(&path);
     }
@@ -9384,7 +9384,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (left_and_ret->call->callable.tag == EXPR_IDENTIFIER && left_and_ret->call->callable.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
             identifier_module_ref(&left_and_ret->call->callable.identifier)
         ) {
-            identifier_module_ref(&left_and_ret->call->callable.identifier)->import_call = left_and_ret->call;
+            module_ref_set_attributes(identifier_module_ref(&left_and_ret->call->callable.identifier), nullptr, left_and_ret->call);
         }
         if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
             // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
@@ -9408,7 +9408,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
             ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
             ref->syntax = MODULE_REF_DYNAMIC;
-            ref->import_call = left_and_ret->call;
+            module_ref_set_attributes(ref, nullptr, left_and_ret->call);
             left_and_ret->call->callable.generic_params->expr.identifier.module_ref_ = ref;
         } else if (p.shared->source->is_js && expr_is_define_property_call(left_and_ret, nullptr) &&
             expr_is_exports_object(vec_expr_at(&left_and_ret->call->args, 0))
@@ -11653,7 +11653,7 @@ done:
             statement.module_ref->ambient_only = true;
         }
         statement.main.module_ref = statement.module_ref;
-        statement.module_ref->attributes = statement.attributes;
+        module_ref_set_attributes(statement.module_ref, statement.attributes, nullptr);
         if (statement.main.type_only) {
             statement.module_ref->resolution_override = import_attributes_resolution_mode(statement.attributes, nullptr);
             statement.module_ref->type_only_import = span_equals(statement.keyword_span, "import");
@@ -14265,6 +14265,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         source->ast.statements = vec_statement_init();
         for (u32 i = module_refs_before; i < source->module_ref_count; i++) {
             cstr_drop(&source->module_refs[i]->path);
+            module_ref_attrs_free(source->module_refs[i]->attrs);
             free(source->module_refs[i]);
         }
         source->module_ref_count = module_refs_before;

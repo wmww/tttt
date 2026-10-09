@@ -702,6 +702,19 @@ typedef struct ModuleAttrs {
 } ModuleAttrs;
 // The attributes ref has (from its import, export, import type, or `import()`'s literal options)
 void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret);
+struct ImportAttributes;
+struct CallExpr;
+// Keeps a copy of the attributes of an import (`attributes`) or of `import(m, options)` (`call`) in ref (parser)
+void module_ref_set_attributes(ModuleRef* ref, struct ImportAttributes const* attributes, struct CallExpr const* call);
+typedef struct ModuleRefAttrs {
+    ModuleAttrs attrs; // Views into storage
+    char* storage;
+} ModuleRefAttrs;
+static inline void module_ref_attrs_free(ModuleRefAttrs* me) {
+    if (!me) return;
+    free(my storage);
+    free(me);
+}
 // What ref is with these attributes (the checker's, for `import("m", options)`)
 Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes);
 // Whether any pattern ambient module has attributes: only then do attributes change what an import is

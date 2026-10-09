@@ -2195,9 +2195,13 @@ static bool attributes_identical(TypeNode const* a, TypeNode const* b) {
 }
 
 void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret) {
+    *ret = ref->attrs ? ref->attrs->attrs : (ModuleAttrs){0};
+}
+
+static void ast_attributes(struct ImportAttributes const* attributes, CallExpr const* call, ModuleAttrs* ret) {
     *ret = (ModuleAttrs){0};
-    if (ref->attributes) {
-        for_each (i, vec_import_attribute, &ref->attributes->elements) {
+    if (attributes) {
+        for_each (i, vec_import_attribute, &attributes->elements) {
             if (ret->count == c_arraylen(ret->items)) break;
             bool known = i->value.tag == EXPR_LITERAL && i->value.literal.tag == VALUE_STRING;
             ret->items[ret->count++] = (ModuleAttr){
@@ -2206,9 +2210,9 @@ void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret) {
         }
         return;
     }
-    if (!ref->import_call || vec_expr_size(&ref->import_call->args) < 2) return;
+    if (!call || vec_expr_size(&call->args) < 2) return;
     // `import("m", { with: { type: "css" } })` (parentheses are fine)
-    Expr const* options = vec_expr_at(&ref->import_call->args, 1);
+    Expr const* options = vec_expr_at(&call->args, 1);
     if (options->tag != EXPR_OBJECT) {
         ret->needs_types = true;
         return;
@@ -2237,6 +2241,30 @@ void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret) {
             };
         }
     }
+}
+
+void module_ref_set_attributes(ModuleRef* ref, struct ImportAttributes const* attributes, CallExpr const* call) {
+    ModuleAttrs found;
+    ast_attributes(attributes, call, &found);
+    module_ref_attrs_free(ref->attrs);
+    ref->attrs = nullptr;
+    if (!found.count && !found.needs_types) return;
+    isize size = 0;
+    for (u32 i = 0; i < found.count; i++) size += found.items[i].name.size + found.items[i].value.size;
+    ModuleRefAttrs* copy = c_new(ModuleRefAttrs, { .attrs = found });
+    copy->storage = malloc((size_t)size + 1);
+    panic_if(!copy->storage, "out of memory");
+    char* at = copy->storage;
+    for (u32 i = 0; i < found.count; i++) {
+        ModuleAttr* item = &copy->attrs.items[i];
+        memcpy(at, item->name.buf, (size_t)item->name.size);
+        item->name.buf = at;
+        at += item->name.size;
+        memcpy(at, item->value.buf, (size_t)item->value.size);
+        item->value.buf = at;
+        at += item->value.size;
+    }
+    ref->attrs = copy;
 }
 
 bool binder_has_attributed_patterns(Binder const* me) {

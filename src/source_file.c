@@ -1,6 +1,7 @@
 #include "source_file.h"
 #include "import_attributes.h"
 #include "module_resolution.h"
+#include "scope.h"
 #include "error.h"
 #include "string_helpers.h"
 #include "compiler_options.h"
@@ -136,6 +137,7 @@ void source_file_drop(SourceFile* me) {
         cstr_drop(&my module_refs[i]->alternate_result);
         cstr_drop(&my module_refs[i]->unbuilt_output);
         cstr_drop(&my module_refs[i]->augmented_path);
+        module_ref_attrs_free(my module_refs[i]->attrs);
         free(my module_refs[i]);
     }
     free(my module_refs);
