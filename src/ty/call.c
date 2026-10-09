@@ -3997,7 +3997,9 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
         for (u32 i = 0; i < members->call_count && uncalled; i++) {
             Signature const* s = members->call[i];
             signature_resolve(me, s);
-            uncalled = s->min_args == 0 && !ty_signature_has_rest(s) &&
+            // (signatureHasRestParameter: any rest parameter, a tuple's too)
+            bool has_rest = s->param_count && s->params[s->param_count - 1].rest;
+            uncalled = s->min_args == 0 && !has_rest &&
                 s->param_count < decorator_arg_count(dc.arity, dc.count, s->param_count);
         }
         if (uncalled) {
