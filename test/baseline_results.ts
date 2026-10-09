@@ -8293,17 +8293,17 @@ const baselines = {
     'declarationEmitExportAssignmentWithTypeExports(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExportAssignmentWithTypeExports(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExportAssignmentWithTypeExports(module=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExportDeclaration(target=es2015)': {
         errors: true,
@@ -9123,7 +9123,7 @@ const baselines = {
     'declarationEmitTwoMergedExportAliases(module=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasTypeParameterExtendingUnknownSymbol': {
         errors: true,
@@ -17238,7 +17238,7 @@ const baselines = {
     'incompatibleExports1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incompatibleExports2': {
         errors: true,
