@@ -604,7 +604,9 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         options->capture_suggestions = capture_suggestions;
         options->case_insensitive_file_names = case_insensitive;
         bool loaded = true;
-        try (tsconfig_load(mock_fs_get_fs(my fs), cstr_sv(&i->path), program_options(my program), &my tsconfig_roots)) if_err (e) {
+        TsconfigDiagnostics diagnostics = {0};
+        try (tsconfig_load_diagnosed(mock_fs_get_fs(my fs), cstr_sv(&i->path), program_options(my program),
+            &my tsconfig_roots, &diagnostics)) if_err (e) {
             ignore e;
             current_error_destroy();
             loaded = false;
@@ -612,7 +614,17 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         if (loaded) {
             my has_tsconfig = true;
             i->config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
+            // Its parsing diagnostics (those of a config it extends have no location here)
+            for (u32 j = 0; j < diagnostics.count; j++) {
+                TsconfigDiagnostic* d = &diagnostics.items[j];
+                Error* error = cstr_eq(&d->config, &i->path) ?
+                    program_config_error(my program, d->start, d->end, d->code, d->message) :
+                    error_ctx_global_error_s(program_errors(my program), d->code, d->message);
+                error->phase = ERROR_PHASE_PARSE;
+                d->message = cstr_null;
+            }
         }
+        tsconfig_diagnostics_drop(&diagnostics);
         VecCStr directives = my directives;
         my directives = (VecCStr){0};
         for (isize j = 0; j + 1 < vec_cstr_size(&directives); j += 2) {

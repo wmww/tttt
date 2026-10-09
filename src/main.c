@@ -928,6 +928,10 @@ static int run(int argc, const char** argv) {
             cstr message = cstr_null;
             unsigned unknown = compiler_option_unknown_diagnostic(csview_from(argv[i] + 2), true, csview_from(argv[i]), &message);
             if (unknown) return command_line_error(opts.pretty, unknown, message);
+            if (has_value) {
+                message = compiler_option_bad_value_message(csview_from(argv[i] + 2), csview_from(argv[i + 1]));
+                if (cstr_size(&message)) return command_line_error(opts.pretty, 6046, message);
+            }
             opts.option_names[opts.option_count] = argv[i] + 2;
             opts.option_values[opts.option_count++] = has_value ? argv[++i] : "true";
             if (!strcasecmp(argv[i - has_value] + 2, "pretty")) opts.pretty = !has_value || !streq(argv[i], "false");

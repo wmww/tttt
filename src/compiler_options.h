@@ -4,7 +4,6 @@
 
 // Values are ordered, so `target >= SCRIPT_TARGET_ES2015` works
 typedef enum ScriptTarget {
-    SCRIPT_TARGET_ES3,
     SCRIPT_TARGET_ES5,
     SCRIPT_TARGET_ES2015,
     SCRIPT_TARGET_ES2016,
@@ -39,6 +38,7 @@ typedef enum ModuleKind {
 } ModuleKind;
 
 typedef enum ModuleResolutionKind {
+    MODULE_RESOLUTION_NONE,
     MODULE_RESOLUTION_CLASSIC,
     MODULE_RESOLUTION_NODE10,
     MODULE_RESOLUTION_NODE16,
@@ -163,9 +163,9 @@ typedef struct CompilerOptions {
     COMPILER_BOOL_OPTIONS(X)
 #undef X
     ScriptTarget target;
-    bool target_es3; // `target: es3` was given (6.0 computes the target as if it weren't, the option is reported)
     ModuleKind module;
-    ModuleResolutionKind module_resolution;
+    ModuleResolutionKind module_resolution; // Never classic or node10 (removed in TypeScript 7)
+    ModuleResolutionKind module_resolution_removed; // `moduleResolution: classic|node10|node` as given (TS5108)
     bool capture_suggestions; // The test harness's `@captureSuggestions`: suggestion diagnostics are reported too
     // The harness's `@useCaseSensitiveFileNames: false` (tsc's host setting): only compares file names' roots (TS5009)
     bool case_insensitive_file_names;
@@ -181,8 +181,6 @@ typedef struct CompilerOptions {
     cstr map_root; // Emit options only validated (verifyCompilerOptions), as written
     cstr source_root;
     cstr ts_build_info_file;
-    cstr ignore_deprecations; // "5.0" silences the 5.0 deprecations (anything else is TS5103)
-    cstr typescript_version; // The harness's `@typeScriptVersion`: the version deprecations are judged by, "" for ours
     // Emit paths, only for tsc's output path checks (TS5055/TS5056): tttt doesn't emit. Relative to config_dir like
     // the module resolution ones below
     cstr out_dir;
@@ -202,7 +200,6 @@ typedef struct CompilerOptions {
     StrList types;
     StrList module_suffixes;
     StrList custom_conditions;
-    StrList removed_options; // Options tsc no longer has that were given a value anyway (TS5102), in tsc's spelling
     // tsc's configFileSpecs, for why a root file is in the program (tsconfig_root_file_reason()): the config's `files`
     // (absolute), its `include` specs as written and as absolute patterns, and config_default_include: neither given
     StrList config_files, config_include_specs, config_include_patterns;
@@ -269,6 +266,8 @@ bool compiler_option_varies(csview name);
 // For "@target: *" and exclusions ("-es3"): the values of an enum option (or true/false), and which spellings mean the
 // same thing. Writes up to max names into out, returns how many there are. ids[i] is equal for equal values
 isize compiler_option_values(csview name, const char** out, int* ids, isize max);
+// TS6046's message if `name` is an enum option that doesn't take `value` (case insensitive), else empty
+cstr compiler_option_bad_value_message(csview name, csview value);
 
 // The options of the program being parsed or checked, per thread (a program's load pool and checker threads set
 // them for themselves)

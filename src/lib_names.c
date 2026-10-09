@@ -140,3 +140,37 @@ char const* const lib_aliases[][2] = {
     { "esnext.typedarrays", "es2026.typedarrays" },
 };
 u32 const lib_alias_count = 15;
+
+char const* const tsc_option_names[] = {
+    "help", "help", "watch", "preserveWatchOutput", "listFiles", "explainFiles", "listEmittedFiles", "pretty",
+    "traceResolution", "diagnostics", "extendedDiagnostics", "generateCpuProfile", "generateTrace", "incremental",
+    "declaration", "declarationMap", "emitDeclarationOnly", "sourceMap", "inlineSourceMap", "noCheck",
+    "deduplicatePackages", "noEmit", "assumeChangesOnlyAffectDirectDependencies", "locale", "quiet", "singleThreaded",
+    "pprofDir", "checkers", "runExternalCode", "all", "version", "init", "project", "showConfig", "listFilesOnly",
+    "ignoreConfig", "target", "module", "lib", "allowJs", "checkJs", "jsx", "outFile", "outDir", "rootDir", "composite",
+    "tsBuildInfoFile", "removeComments", "importHelpers", "downlevelIteration", "isolatedModules",
+    "verbatimModuleSyntax", "isolatedDeclarations", "erasableSyntaxOnly", "libReplacement", "strict", "noImplicitAny",
+    "strictNullChecks", "strictFunctionTypes", "strictBindCallApply", "strictPropertyInitialization",
+    "strictBuiltinIteratorReturn", "noImplicitThis", "useUnknownInCatchVariables", "alwaysStrict", "stableTypeOrdering",
+    "noUnusedLocals", "noUnusedParameters", "exactOptionalPropertyTypes", "noImplicitReturns",
+    "noFallthroughCasesInSwitch", "noUncheckedIndexedAccess", "noImplicitOverride",
+    "noPropertyAccessFromIndexSignature", "moduleResolution", "baseUrl", "paths", "rootDirs", "typeRoots", "types",
+    "allowSyntheticDefaultImports", "esModuleInterop", "preserveSymlinks", "allowUmdGlobalAccess", "moduleSuffixes",
+    "allowImportingTsExtensions", "rewriteRelativeImportExtensions", "resolvePackageJsonExports",
+    "resolvePackageJsonImports", "customConditions", "noUncheckedSideEffectImports", "sourceRoot", "mapRoot",
+    "inlineSources", "experimentalDecorators", "emitDecoratorMetadata", "jsxFactory", "jsxFragmentFactory",
+    "jsxImportSource", "resolveJsonModule", "allowArbitraryExtensions", "reactNamespace", "skipDefaultLibCheck",
+    "emitBOM", "newLine", "noErrorTruncation", "noLib", "noResolve", "stripInternal", "disableSizeLimit",
+    "disableSourceOfProjectReferenceRedirect", "disableSolutionSearching", "disableReferencedProjectLoad",
+    "noEmitHelpers", "noEmitOnError", "preserveConstEnums", "declarationDir", "skipLibCheck", "allowUnusedLabels",
+    "allowUnreachableCode", "forceConsistentCasingInFileNames", "maxNodeModuleJsDepth", "useDefineForClassFields",
+    "plugins", "moduleDetection", "ignoreDeprecations",
+};
+u32 const tsc_option_names_count = 126;
+
+u32 const tsc_common_options_with_build = 29;
+
+char const* const tsc_build_only_option_names[] = {
+    "build", "verbose", "dry", "force", "clean", "builders", "stopBuildOnErrors",
+};
+u32 const tsc_build_only_option_names_count = 7;

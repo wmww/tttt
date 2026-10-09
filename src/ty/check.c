@@ -1215,9 +1215,7 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
         ty_check_assignable(me, source, with_undefined(me, target), expr_outer_span(options), errs);
     }
     // `import(m, { assert: ... })`: deprecated in 6.0
-    if (options->tag == EXPR_OBJECT && !expr_is_perenthisized(options) &&
-        !cstr_equals(&compiler_options()->ignore_deprecations, "6.0")
-    ) {
+    if (options->tag == EXPR_OBJECT && !expr_is_perenthisized(options)) {
         for_each (i, vec_object_expr_item, &options->object) {
             ObjectExprItem const* prop = i;
             if (prop->tag == OBJECT_ITEM_PROPERTY && !prop->computed_key && prop->name_span.sv.size &&

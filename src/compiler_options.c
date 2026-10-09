@@ -12,7 +12,7 @@ typedef struct EnumValue {
 
 // In tsc's order, which is the order "@target: *" expands in
 static const EnumValue target_values[] = {
-    {"es3", SCRIPT_TARGET_ES3}, {"es5", SCRIPT_TARGET_ES5}, {"es6", SCRIPT_TARGET_ES2015},
+    {"es5", SCRIPT_TARGET_ES5}, {"es6", SCRIPT_TARGET_ES2015},
     {"es2015", SCRIPT_TARGET_ES2015}, {"es2016", SCRIPT_TARGET_ES2016}, {"es2017", SCRIPT_TARGET_ES2017},
     {"es2018", SCRIPT_TARGET_ES2018}, {"es2019", SCRIPT_TARGET_ES2019}, {"es2020", SCRIPT_TARGET_ES2020},
     {"es2021", SCRIPT_TARGET_ES2021}, {"es2022", SCRIPT_TARGET_ES2022}, {"es2023", SCRIPT_TARGET_ES2023},
@@ -20,7 +20,7 @@ static const EnumValue target_values[] = {
 };
 
 static const EnumValue module_values[] = {
-    {"none", MODULE_KIND_NONE}, {"commonjs", MODULE_KIND_COMMONJS}, {"amd", MODULE_KIND_AMD},
+    {"commonjs", MODULE_KIND_COMMONJS}, {"amd", MODULE_KIND_AMD},
     {"system", MODULE_KIND_SYSTEM}, {"umd", MODULE_KIND_UMD}, {"es6", MODULE_KIND_ES2015},
     {"es2015", MODULE_KIND_ES2015}, {"es2020", MODULE_KIND_ES2020}, {"es2022", MODULE_KIND_ES2022},
     {"esnext", MODULE_KIND_ESNEXT}, {"node16", MODULE_KIND_NODE16}, {"node18", MODULE_KIND_NODE18}, {"node20", MODULE_KIND_NODE20},
@@ -28,14 +28,13 @@ static const EnumValue module_values[] = {
 };
 
 static const EnumValue module_resolution_values[] = {
-    {"node10", MODULE_RESOLUTION_NODE10}, {"node", MODULE_RESOLUTION_NODE10}, {"classic", MODULE_RESOLUTION_CLASSIC},
-    {"node16", MODULE_RESOLUTION_NODE16}, {"nodenext", MODULE_RESOLUTION_NODENEXT},
-    {"bundler", MODULE_RESOLUTION_BUNDLER}, {},
+    {"node16", MODULE_RESOLUTION_NODE16}, {"nodenext", MODULE_RESOLUTION_NODENEXT}, {"bundler", MODULE_RESOLUTION_BUNDLER},
+    {"classic", MODULE_RESOLUTION_CLASSIC}, {"node", MODULE_RESOLUTION_NODE10}, {"node10", MODULE_RESOLUTION_NODE10}, {},
 };
 
 static const EnumValue jsx_values[] = {
-    {"preserve", JSX_PRESERVE}, {"react-native", JSX_REACT_NATIVE}, {"react", JSX_REACT},
-    {"react-jsx", JSX_REACT_JSX}, {"react-jsxdev", JSX_REACT_JSXDEV}, {},
+    {"preserve", JSX_PRESERVE}, {"react-native", JSX_REACT_NATIVE}, {"react-jsx", JSX_REACT_JSX},
+    {"react-jsxdev", JSX_REACT_JSXDEV}, {"react", JSX_REACT}, {},
 };
 
 static const EnumValue module_detection_values[] = {
@@ -46,7 +45,6 @@ static const EnumValue bool_values[] = { {"true", 1}, {"false", 0}, {} };
 
 // Enum options we don't otherwise read, the harness still has to know what "*" means for them
 static const EnumValue new_line_values[] = { {"crlf", 0}, {"lf", 1}, {} };
-static const EnumValue imports_not_used_values[] = { {"remove", 0}, {"preserve", 1}, {"error", 2}, {} };
 
 static const struct { const char* name; EnumValue const* values; } enum_options[] = {
     {"target", target_values},
@@ -55,17 +53,15 @@ static const struct { const char* name; EnumValue const* values; } enum_options[
     {"jsx", jsx_values},
     {"moduledetection", module_detection_values},
     {"newline", new_line_values},
-    {"importsnotusedasvalues", imports_not_used_values},
 };
 
 // tsc's string, number and list options plus the harness's own: a comma in these is part of the value
 static const char* const non_varying_options[] = {
-    "baseurl", "charset", "customconditions", "declarationdir", "generatecpuprofile", "generatetrace",
+    "baseurl", "customconditions", "declarationdir", "generatecpuprofile", "generatetrace",
     "ignoredeprecations", "jsxfactory", "jsxfragmentfactory", "jsximportsource", "lib", "locale", "maproot",
-    "maxnodemodulejsdepth", "modulesuffixes", "out", "outdir", "outfile", "paths", "plugins", "project",
+    "maxnodemodulejsdepth", "modulesuffixes", "outdir", "outfile", "paths", "plugins", "project",
     "reactnamespace", "rootdir", "rootdirs", "sourceroot", "tsbuildinfofile", "typeroots", "types",
     "filename", "libfiles", "currentdirectory", "symlink", "link", "baselinefile", "includebuiltfile",
-    "typescriptversion",
 };
 
 static bool name_equals(csview name, const char* lowercase) {
@@ -97,7 +93,7 @@ void compiler_options_drop(CompilerOptions* me) {
     cstr_drop(&my config_dir);
     cstr_drop(&my base_url);
     c_drop(cstr, &my jsx_factory, &my jsx_fragment_factory, &my jsx_import_source, &my react_namespace);
-    c_drop(cstr, &my ignore_deprecations, &my typescript_version, &my map_root, &my source_root, &my ts_build_info_file);
+    c_drop(cstr, &my map_root, &my source_root, &my ts_build_info_file);
     c_drop(cstr, &my out_dir, &my out_file, &my root_dir, &my declaration_dir);
     cstr_drop(&my paths_base);
     compiler_options_clear_paths(me);
@@ -106,7 +102,6 @@ void compiler_options_drop(CompilerOptions* me) {
     str_list_drop(&my types);
     str_list_drop(&my module_suffixes);
     str_list_drop(&my custom_conditions);
-    str_list_drop(&my removed_options);
     str_list_drop(&my config_files);
     str_list_drop(&my config_include_specs);
     str_list_drop(&my config_include_patterns);
@@ -175,22 +170,6 @@ void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList subs
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value) {
     value = csview_trim_whitespace(value);
 
-    static const char* const removed[] = {
-        "noImplicitUseStrict", "keyofStringsOnly", "suppressExcessPropertyErrors", "suppressImplicitAnyIndexErrors",
-        "noStrictGenericChecks", "charset", "out", "importsNotUsedAsValues", "preserveValueImports",
-    };
-    for (isize i = 0; i < (isize)c_arraylen(removed); i++) {
-        // tsc complains about a truthy value: not `false`, not an empty string
-        cstr lowercase = cstr_from(removed[i]);
-        cstr_lowercase(&lowercase);
-        bool found = name_equals(name, cstr_str(&lowercase)) && value.size && !name_equals(value, "false");
-        for (isize j = 0; j < my removed_options.count && found; j++) {
-            if (cstr_equals(&my removed_options.items[j], removed[i])) found = false;
-        }
-        if (found) str_list_push(&my removed_options, csview_from(removed[i]));
-        cstr_drop(&lowercase);
-    }
-
 #define X(field, lowercase, strict_family) \
     if (name_equals(name, lowercase)) { \
         /* Like tsc's harness, anything but "true" is false; null takes back a value given before (an extended */ \
@@ -247,11 +226,9 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
     STRING_OPTION("outfile", out_file)
     STRING_OPTION("rootdir", root_dir)
     STRING_OPTION("declarationdir", declaration_dir)
-    STRING_OPTION("ignoredeprecations", ignore_deprecations)
     STRING_OPTION("maproot", map_root)
     STRING_OPTION("sourceroot", source_root)
     STRING_OPTION("tsbuildinfofile", ts_build_info_file)
-    STRING_OPTION("typescriptversion", typescript_version)
 #undef STRING_OPTION
     if (name_equals(name, "maxnodemodulejsdepth")) {
         u32 depth = 0;
@@ -295,11 +272,8 @@ void compiler_options_resolve(CompilerOptions* me) {
 #define DEFAULT(field, value) if (!my is_set[COMPILER_OPTION_##field]) my field = (value)
     DEFAULT(always_strict, true);
 
-    // (tsc's computed target: ES3 counts as unset, the default is the latest standard)
-    if (my target_set && my target == SCRIPT_TARGET_ES3) my target_es3 = true;
-    if (!my target_set || my target == SCRIPT_TARGET_ES3) {
-        my target = SCRIPT_TARGET_ES2026;
-    }
+    // (tsc's computed target: the latest standard)
+    if (!my target_set) my target = SCRIPT_TARGET_ES2026;
     if (!my module_set) {
         my module = my target == SCRIPT_TARGET_ESNEXT ? MODULE_KIND_ESNEXT :
             my target >= SCRIPT_TARGET_ES2022 ? MODULE_KIND_ES2022 :
@@ -307,12 +281,16 @@ void compiler_options_resolve(CompilerOptions* me) {
             my target >= SCRIPT_TARGET_ES2015 ? MODULE_KIND_ES2015 : MODULE_KIND_COMMONJS;
     }
     bool node_module = my module >= MODULE_KIND_NODE16 && my module <= MODULE_KIND_NODENEXT;
+    // TypeScript 7 removed classic and node10 (TS5108): tsgo's GetModuleResolutionKind computes the resolution as if
+    // they weren't given
+    if (my module_resolution_set &&
+        (my module_resolution == MODULE_RESOLUTION_CLASSIC || my module_resolution == MODULE_RESOLUTION_NODE10)
+    ) {
+        my module_resolution_removed = my module_resolution;
+        my module_resolution_set = false;
+    }
     if (!my module_resolution_set) {
         switch (my module) {
-            case MODULE_KIND_NONE:
-            case MODULE_KIND_AMD:
-            case MODULE_KIND_UMD:
-            case MODULE_KIND_SYSTEM: my module_resolution = MODULE_RESOLUTION_CLASSIC; break;
             case MODULE_KIND_NODE16:
             case MODULE_KIND_NODE18:
             case MODULE_KIND_NODE20: my module_resolution = MODULE_RESOLUTION_NODE16; break;
@@ -379,7 +357,6 @@ cstr compiler_options_lib_files(CompilerOptions const* me) {
     if (!cstr_size(&my lib) && my lib_set) return cstr_null;
     if (!cstr_size(&my lib)) {
         switch (my target) {
-            case SCRIPT_TARGET_ES3:
             case SCRIPT_TARGET_ES5: return cstr_lit("default");
             case SCRIPT_TARGET_ES2015: return cstr_lit("es6"); // tsc doesn't use lib.es2015.full.d.ts either
             default: break;
@@ -413,38 +390,6 @@ bool compiler_option_is_boolean(csview name) {
     return false;
 }
 
-// tsc's optionDeclarations in its order (the order getSpellingSuggestion sees them in): its commonOptionsWithBuild, then
-// from `all` on its commandOptionsWithoutBuild
-static const char* const tsc_option_names[] = {
-    "help", "help", "watch", "preserveWatchOutput", "listFiles", "explainFiles", "listEmittedFiles", "pretty",
-    "traceResolution", "diagnostics", "extendedDiagnostics", "generateCpuProfile", "generateTrace", "incremental",
-    "declaration", "declarationMap", "emitDeclarationOnly", "sourceMap", "inlineSourceMap", "noCheck", "noEmit",
-    "assumeChangesOnlyAffectDirectDependencies", "locale", "all", "version", "init", "project", "showConfig",
-    "listFilesOnly", "ignoreConfig", "target", "module", "lib", "allowJs", "checkJs", "jsx", "outFile", "outDir",
-    "rootDir", "composite", "tsBuildInfoFile", "removeComments", "importHelpers", "importsNotUsedAsValues",
-    "downlevelIteration", "isolatedModules", "verbatimModuleSyntax", "isolatedDeclarations", "erasableSyntaxOnly",
-    "libReplacement", "strict", "noImplicitAny", "strictNullChecks", "strictFunctionTypes", "strictBindCallApply",
-    "strictPropertyInitialization", "strictBuiltinIteratorReturn", "stableTypeOrdering", "noImplicitThis",
-    "useUnknownInCatchVariables", "alwaysStrict", "noUnusedLocals", "noUnusedParameters",
-    "exactOptionalPropertyTypes", "noImplicitReturns", "noFallthroughCasesInSwitch", "noUncheckedIndexedAccess",
-    "noImplicitOverride", "noPropertyAccessFromIndexSignature", "moduleResolution", "baseUrl", "paths", "rootDirs",
-    "typeRoots", "types", "allowSyntheticDefaultImports", "esModuleInterop", "preserveSymlinks",
-    "allowUmdGlobalAccess", "moduleSuffixes", "allowImportingTsExtensions", "rewriteRelativeImportExtensions",
-    "resolvePackageJsonExports", "resolvePackageJsonImports", "customConditions", "noUncheckedSideEffectImports",
-    "sourceRoot", "mapRoot", "inlineSources", "experimentalDecorators", "emitDecoratorMetadata", "jsxFactory",
-    "jsxFragmentFactory", "jsxImportSource", "resolveJsonModule", "allowArbitraryExtensions", "out",
-    "reactNamespace", "skipDefaultLibCheck", "charset", "emitBOM", "newLine", "noErrorTruncation", "noLib",
-    "noResolve", "stripInternal", "disableSizeLimit", "disableSourceOfProjectReferenceRedirect",
-    "disableSolutionSearching", "disableReferencedProjectLoad", "noImplicitUseStrict", "noEmitHelpers",
-    "noEmitOnError", "preserveConstEnums", "declarationDir", "skipLibCheck", "allowUnusedLabels",
-    "allowUnreachableCode", "suppressExcessPropertyErrors", "suppressImplicitAnyIndexErrors",
-    "forceConsistentCasingInFileNames", "maxNodeModuleJsDepth", "noStrictGenericChecks", "useDefineForClassFields",
-    "preserveValueImports", "keyofStringsOnly", "plugins", "moduleDetection", "ignoreDeprecations",
-};
-#define TSC_COMMON_OPTIONS_WITH_BUILD 23
-// What buildOpts adds to commonOptionsWithBuild (tsc's optionsForBuild)
-static const char* const tsc_build_only_option_names[] = { "build", "verbose", "dry", "force", "clean", "stopBuildOnErrors" };
-
 static bool option_name_equals(csview a, const char* b, bool ignore_case) {
     isize len = (isize)strlen(b);
     if (a.size != len) return false;
@@ -456,11 +401,11 @@ static bool option_name_equals(csview a, const char* b, bool ignore_case) {
 }
 
 unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csview shown, cstr* message) {
-    for (isize i = 0; i < (isize)c_arraylen(tsc_option_names); i++) {
+    for (isize i = 0; i < (isize)tsc_option_names_count; i++) {
         if (option_name_equals(name, tsc_option_names[i], ignore_case)) return 0;
     }
     // (createUnknownOptionError's alternate mode, looked up in lowercase: the --build options)
-    for (isize i = 0; i < (isize)c_arraylen(tsc_build_only_option_names); i++) {
+    for (isize i = 0; i < (isize)tsc_build_only_option_names_count; i++) {
         if (!option_name_equals(name, tsc_build_only_option_names[i], true)) continue;
         if (!i) {
             *message = cstr_lit("Option '--build' must be the first command line argument.");
@@ -469,9 +414,10 @@ unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csvie
         *message = cstr_d("Compiler option '--", name, "' may only be used with '--build'.");
         return 5093;
     }
-    csview candidates[c_arraylen(tsc_option_names)];
-    for (isize i = 0; i < (isize)c_arraylen(tsc_option_names); i++) candidates[i] = csview_from(tsc_option_names[i]);
-    isize suggestion = spelling_suggestion(name, candidates, (isize)c_arraylen(tsc_option_names));
+    csview candidates[256];
+    check(tsc_option_names_count <= c_arraylen(candidates));
+    for (isize i = 0; i < (isize)tsc_option_names_count; i++) candidates[i] = csview_from(tsc_option_names[i]);
+    isize suggestion = spelling_suggestion(name, candidates, (isize)tsc_option_names_count);
     if (suggestion >= 0) {
         *message = cstr_d("Unknown compiler option '", shown, "'. Did you mean '", tsc_option_names[suggestion], "'?");
         return 5025;
@@ -481,7 +427,7 @@ unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csvie
 }
 
 bool compiler_option_is_command_option_without_build(csview name) {
-    for (isize i = TSC_COMMON_OPTIONS_WITH_BUILD; i < (isize)c_arraylen(tsc_option_names); i++) {
+    for (isize i = tsc_common_options_with_build; i < (isize)tsc_option_names_count; i++) {
         if (option_name_equals(name, tsc_option_names[i], false)) return true;
     }
     return false;
@@ -492,6 +438,33 @@ bool compiler_option_varies(csview name) {
         if (name_equals(name, non_varying_options[i])) return false;
     }
     return true;
+}
+
+cstr compiler_option_bad_value_message(csview name, csview value) {
+    // (tsgo's formatEnumTypeKeys: not the values TypeScript 7 removed, which still parse to be reported)
+    static const char* const removed[] = { "es5", "amd", "system", "umd", "classic", "node", "node10" };
+    for (isize i = 0; i < (isize)c_arraylen(enum_options); i++) {
+        if (!name_equals(name, enum_options[i].name)) continue;
+        if (find_enum_value(enum_options[i].values, csview_trim_whitespace(value))) return cstr_null;
+        csview canonical = name;
+        for (u32 j = 0; j < tsc_option_names_count; j++) {
+            if (name_equals(csview_from(tsc_option_names[j]), enum_options[i].name)) canonical = csview_from(tsc_option_names[j]);
+        }
+        cstr ret = cstr_d("Argument for '--", canonical, "' option must be: ");
+        bool first = true;
+        for (EnumValue const* v = enum_options[i].values; v->name; v++) {
+            bool skip = false;
+            for (isize j = 0; j < (isize)c_arraylen(removed) && !skip; j++) skip = !strcmp(v->name, removed[j]);
+            if (skip) continue;
+            cstr_append(&ret, first ? "'" : ", '");
+            cstr_append(&ret, v->name);
+            cstr_append(&ret, "'");
+            first = false;
+        }
+        cstr_append(&ret, ".");
+        return ret;
+    }
+    return cstr_null;
 }
 
 isize compiler_option_values(csview name, const char** out, int* ids, isize max) {

@@ -145,7 +145,10 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
         } else if (value->tag == JSON_BOOL) {
             ignore compiler_options_set(my options, csview_from(name), value->boolean ? c_sv("true") : c_sv("false"));
         } else if (value->tag == JSON_STRING) {
-            ignore compiler_options_set(my options, csview_from(name), cstr_sv(&value->string));
+            // A value an enum option doesn't take: TS6046 at it, and the option stays as it was
+            cstr bad = compiler_option_bad_value_message(csview_from(name), cstr_sv(&value->string));
+            if (cstr_size(&bad)) config_diagnostic(me, 6046, bad, config, value->start, value->end);
+            else ignore compiler_options_set(my options, csview_from(name), cstr_sv(&value->string));
         } else if (value->tag == JSON_ARRAY) {
             cstr joined = cstr_null;
             for (isize j = 0; j < value->count; j++) {

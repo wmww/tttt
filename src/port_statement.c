@@ -535,9 +535,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         }
         return;
     }
-    // (Deprecated in 6.0; an error regardless of ignoreDeprecations from node20 on)
     bool node20 = module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT;
-    if (node->is_assert && (node20 || !cstr_equals(&options->ignore_deprecations, "6.0"))) {
+    if (node->is_assert) {
         error_ctx_grammar_error_d(errs, node->keyword, 2880,
             "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
         if (node20) return;

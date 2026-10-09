@@ -727,7 +727,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     IdentifierTypeRare const* rare = my rare;
     if (rare && rare->import_attributes) { // tsc's checkImportType
         ImportAttributes const* attributes = rare->import_attributes;
-        if (attributes->is_assert && !cstr_equals(&compiler_options()->ignore_deprecations, "6.0") && attributes->span.sv.size &&
+        if (attributes->is_assert && attributes->span.sv.size &&
             *attributes->span.sv.buf == '{'
         ) {
             // (On the first token: the `{` of the attributes)

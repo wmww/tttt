@@ -9,3 +9,11 @@ extern u32 const lib_name_count;
 // The names whose file isn't lib.NAME.d.ts: { name, the file's NAME }
 extern char const* const lib_aliases[][2];
 extern u32 const lib_alias_count;
+// tsc's optionDeclarations, in its order (the order getSpellingSuggestion sees them in): commonOptionsWithBuild (the
+// first tsc_common_options_with_build), then optionsForCompiler
+extern char const* const tsc_option_names[];
+extern u32 const tsc_option_names_count;
+extern u32 const tsc_common_options_with_build;
+// `build` and what tsc's optionsForBuild adds to commonOptionsWithBuild
+extern char const* const tsc_build_only_option_names[];
+extern u32 const tsc_build_only_option_names_count;

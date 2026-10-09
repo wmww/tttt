@@ -2426,7 +2426,7 @@ const baselines = {
         types: true,
     },
     'blockScopedBindingsInDownlevelGenerator(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9951,32 +9951,32 @@ const baselines = {
         types: true,
     },
     'deprecatedCompilerOptions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16631,7 +16631,7 @@ const baselines = {
         types: true,
     },
     'importAssertionsDeprecatedIgnored': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17301,7 +17301,7 @@ const baselines = {
         types: true,
     },
     'incrementalInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26451,7 +26451,7 @@ const baselines = {
         types: true,
     },
     'pathMappingBasedModuleResolution1_node': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29696,7 +29696,7 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationVarInDownLevelGenerator(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35111,7 +35111,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction11_es5(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42411,7 +42411,7 @@ const baselines = {
         types: true,
     },
     'destructuringArrayBindingPatternAndAssignment1ES5iterable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42431,7 +42431,7 @@ const baselines = {
         types: true,
     },
     'destructuringArrayBindingPatternAndAssignment4(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42536,7 +42536,7 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration1ES5iterable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42556,7 +42556,7 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration3ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42586,7 +42586,7 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration7ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42686,7 +42686,7 @@ const baselines = {
         types: true,
     },
     'destructuringVariableDeclaration1ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42746,7 +42746,7 @@ const baselines = {
         types: true,
     },
     'emptyAssignmentPatterns01_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42761,7 +42761,7 @@ const baselines = {
         types: true,
     },
     'emptyAssignmentPatterns02_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42776,7 +42776,7 @@ const baselines = {
         types: true,
     },
     'emptyAssignmentPatterns03_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42791,7 +42791,7 @@ const baselines = {
         types: true,
     },
     'emptyAssignmentPatterns04_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42826,7 +42826,7 @@ const baselines = {
         types: true,
     },
     'emptyVariableDeclarationBindingPatterns01_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42841,7 +42841,7 @@ const baselines = {
         types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43901,7 +43901,7 @@ const baselines = {
         types: true,
     },
     'arrayLiteralSpreadES5iterable(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50246,7 +50246,7 @@ const baselines = {
         types: true,
     },
     'restParameterInDownlevelGenerator(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63141,7 +63141,7 @@ const baselines = {
         types: true,
     },
     'forAwaitPerIterationBindingDownlevel(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63336,27 +63336,27 @@ const baselines = {
         types: true,
     },
     'ES5For-of33(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-of34(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-of35(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-of36(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-of37(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1655,38 +1655,74 @@ static void program_validate_paths(Program* me) {
                     error_ctx_error_d(my errs, at, 5062, "Substitution '", substitution->string, "' in pattern '",
                         pattern->key, "' can have at most one '*' character.");
                 }
-                if (!my options.base_url_set && !path_is_relative_or_absolute(cstr_sv(&substitution->string))) {
-                    error_ctx_error_d(my errs, at, 5090,
-                        "Non-relative paths are not allowed when 'baseUrl' is not set. Did you forget a leading './'?");
+                if (!path_is_relative_or_absolute(cstr_sv(&substitution->string))) {
+                    error_ctx_error_d(my errs, at, 5090, "Non-relative paths are not allowed. Did you forget a leading './'?");
                 }
             }
         }
     }
 }
 
-// "5.4" as 5 * 1000 + 4, 0 if it isn't a version
-static unsigned parse_major_minor(csview version) {
-    unsigned major = 0, minor = 0;
-    isize i = 0;
-    while (i < version.size && version.buf[i] >= '0' && version.buf[i] <= '9') major = major * 10 + (unsigned)(version.buf[i++] - '0');
-    if (i < version.size && version.buf[i] == '.') i++;
-    while (i < version.size && version.buf[i] >= '0' && version.buf[i] <= '9') minor = minor * 10 + (unsigned)(version.buf[i++] - '0');
-    return major * 1000 + minor;
-}
-
 // tsc's verifyCompilerOptions(), the part that doesn't depend on emit. With a tsconfig the diagnostics are on the
 // option there (option_sites())
 static void program_validate_options(Program* me) {
     CompilerOptions const* o = &my options;
-    // tsc's verifyDeprecatedCompilerOptions: deprecated in 5.0, removed in 5.5. Before that (the harness's
-    // `@typeScriptVersion`) they're only deprecated, which `"ignoreDeprecations": "5.0"` silences
-    unsigned version = parse_major_minor(cstr_size(&o->typescript_version) ? cstr_sv(&o->typescript_version) : c_sv("6.0"));
-    unsigned ignore_version = 0;
-    if (cstr_size(&o->ignore_deprecations)) {
-        if (cstr_equals(&o->ignore_deprecations, "5.0") || cstr_equals(&o->ignore_deprecations, "6.0")) {
-            ignore_version = parse_major_minor(cstr_sv(&o->ignore_deprecations));
-        } else {
-            option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
+    // Removed in TypeScript 7: an option (TS5102, on its name) or a value (TS5108, on the value), which stop checking
+    if (o->base_url_set) {
+        Span sites[4];
+        u32 site_count = option_sites(me, "baseUrl", nullptr, true, sites);
+        // (With a tsconfig: what `paths` says the same with, relative to the config's file)
+        cstr instead = cstr_null;
+        if (my config_source) {
+            csview cwd = program_cwd(me);
+            cstr config_dir = absolute_path_of(cwd, cstr_sv(&o->config_dir));
+            cstr base = module_resolver_option_path(program_resolver(me), cstr_sv(&o->base_url));
+            cstr relative = relative_path_of(cstr_sv(&config_dir), cstr_sv(&base));
+            if (cstr_equals(&relative, ".")) cstr_clear(&relative);
+            while (cstr_ends_with(&relative, "/")) cstr_resize(&relative, cstr_size(&relative) - 1, '\0');
+            if (!cstr_starts_with(&relative, "./") && !cstr_starts_with(&relative, "../")) cstr_insert(&relative, 0, "./");
+            if (!cstr_ends_with(&relative, "/")) cstr_append(&relative, "/");
+            instead = cstr_lit("\"paths\": {\"*\": [\"");
+            for (isize i = 0; i < cstr_size(&relative); i++) {
+                char c = cstr_str(&relative)[i];
+                if (c == '"' || c == '\\') cstr_append_n(&instead, "\\", 1);
+                cstr_append_n(&instead, &c, 1);
+            }
+            cstr_append(&instead, "*\"]}");
+            c_drop(cstr, &config_dir, &base, &relative);
+        }
+        for (u32 j = 0; j < site_count; j++) {
+            Error* error = option_error_d_one(me, sites[j], 5102,
+                "Option 'baseUrl' has been removed. Please remove it from your configuration.");
+            if (cstr_size(&instead)) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
+        }
+        cstr_drop(&instead);
+    }
+    {
+        // (In tsc's order)
+        struct { char const* name; char const* value; bool given; } const removed[] = {
+            { "outFile", nullptr, cstr_size(&o->out_file) > 0 },
+            { "target", "ES5", o->target_set && o->target == SCRIPT_TARGET_ES5 },
+            { "module", "AMD", o->module_set && o->module == MODULE_KIND_AMD },
+            { "module", "System", o->module_set && o->module == MODULE_KIND_SYSTEM },
+            { "module", "UMD", o->module_set && o->module == MODULE_KIND_UMD },
+            { "moduleResolution", "Classic", o->module_resolution_removed == MODULE_RESOLUTION_CLASSIC },
+            { "alwaysStrict", "false", o->is_set[COMPILER_OPTION_always_strict] && !o->always_strict },
+            { "esModuleInterop", "false", o->is_set[COMPILER_OPTION_es_module_interop] && !o->es_module_interop },
+            { "allowSyntheticDefaultImports", "false",
+                o->is_set[COMPILER_OPTION_allow_synthetic_default_imports] && !o->allow_synthetic_default_imports },
+            { "moduleResolution", "node10", o->module_resolution_removed == MODULE_RESOLUTION_NODE10 },
+            { "downlevelIteration", nullptr, o->is_set[COMPILER_OPTION_downlevel_iteration] },
+        };
+        for (u32 i = 0; i < c_arraylen(removed); i++) {
+            if (!removed[i].given) continue;
+            if (removed[i].value) {
+                option_error_d(me, removed[i].name, nullptr, false, 5108, "Option '", removed[i].name, "=", removed[i].value,
+                    "' has been removed. Please remove it from your configuration.");
+            } else {
+                option_error_d(me, removed[i].name, nullptr, true, 5102, "Option '", removed[i].name,
+                    "' has been removed. Please remove it from your configuration.");
+            }
         }
     }
     // The top of tsc's verifyCompilerOptions
@@ -1700,10 +1736,6 @@ static void program_validate_options(Program* me) {
     if (o->exact_optional_property_types && !o->strict_null_checks) {
         option_error_d(me, "exactOptionalPropertyTypes", "strictNullChecks", true, 5052,
             "Option 'exactOptionalPropertyTypes' cannot be specified without specifying option 'strictNullChecks'.");
-    }
-    if ((o->isolated_modules || o->verbatim_module_syntax) && cstr_size(&o->out_file)) {
-        const char* with = o->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
-        option_error_d(me, "outFile", with, true, 5053, "Option 'outFile' cannot be specified with option '", with, "'.");
     }
     if (o->isolated_declarations && o->allow_js) {
         option_error_d(me, "allowJs", "isolatedDeclarations", true, 5053,
@@ -1727,83 +1759,11 @@ static void program_validate_options(Program* me) {
             option_error_d(me, "declaration", nullptr, true, 6379, "Composite projects may not disable incremental compilation.");
         }
     }
-    if (!cstr_size(&o->ts_build_info_file) && o->incremental && !cstr_size(&o->out_file) && !my config_source) {
-        error_ctx_global_error_d(my errs, 5074, "Option '--incremental' can only be specified using tsconfig, emitting to ",
-            "single file or when option '--tsBuildInfoFile' is specified.");
+    if (!cstr_size(&o->ts_build_info_file) && o->incremental && !my config_source) {
+        error_ctx_global_error_d(my errs, 5074, "Option '--incremental' is only valid with a known configuration file ",
+            "(like 'tsconfig.json') or when '--tsBuildInfoFile' is explicitly provided.");
     }
     program_validate_paths(me);
-    bool removed = version >= parse_major_minor(c_sv("5.5"));
-    bool deprecated = !removed && ignore_version < parse_major_minor(c_sv("5.0"));
-    if (o->target_es3 && removed) {
-        option_error_d(me, "target", nullptr, false, 5108,
-            "Option 'target=ES3' has been removed. Please remove it from your configuration.");
-    } else if (o->target_es3 && deprecated) {
-        option_error_d(me, "target", nullptr, false, 5107, "Option 'target=ES3' is deprecated and will stop functioning ",
-            "in TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
-    }
-    for (isize i = 0; i < o->removed_options.count && (removed || deprecated); i++) {
-        cstr const* name = &o->removed_options.items[i];
-        // (6.0 no longer says to use outFile instead of out: outFile is deprecated too)
-        const char* instead = cstr_equals(name, "importsNotUsedAsValues") || cstr_equals(name, "preserveValueImports") ?
-            "verbatimModuleSyntax" : nullptr;
-        Span sites[4];
-        u32 site_count = option_sites(me, cstr_str(name), nullptr, true, sites);
-        for (u32 j = 0; j < site_count; j++) {
-            Error* error = removed ?
-                option_error_d_one(me, sites[j], 5102, "Option '", *name,
-                    "' has been removed. Please remove it from your configuration.") :
-                option_error_d_one(me, sites[j], 5101, "Option '", *name, "' is deprecated and will stop functioning in ",
-                    "TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
-            if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
-        }
-    }
-    // The 6.0 deprecations (removed in 7.0), "ignoreDeprecations": "6.0" silences them
-    bool removed7 = version >= parse_major_minor(c_sv("7.0"));
-    bool deprecated6 = !removed7 && ignore_version < parse_major_minor(c_sv("6.0"));
-    if (removed7 || deprecated6) {
-        struct { char const* name; char const* value; bool given; bool visit; } const deps[] = {
-            { "alwaysStrict", "false", o->is_set[COMPILER_OPTION_always_strict] && !o->always_strict, false },
-            { "target", "ES5", o->target_set && o->target == SCRIPT_TARGET_ES5, false },
-            { "moduleResolution", "node10", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_NODE10, true },
-            { "moduleResolution", "classic", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_CLASSIC, false },
-            { "baseUrl", nullptr, o->base_url_set, true },
-            { "esModuleInterop", "false", o->is_set[COMPILER_OPTION_es_module_interop] && !o->es_module_interop, false },
-            { "allowSyntheticDefaultImports", "false",
-                o->is_set[COMPILER_OPTION_allow_synthetic_default_imports] && !o->allow_synthetic_default_imports, false },
-            { "outFile", nullptr, cstr_size(&o->out_file) > 0, false },
-            { "module", o->module == MODULE_KIND_NONE ? "None" : o->module == MODULE_KIND_AMD ? "AMD" :
-                o->module == MODULE_KIND_UMD ? "UMD" : "System",
-                o->module_set && (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_AMD ||
-                    o->module == MODULE_KIND_UMD || o->module == MODULE_KIND_SYSTEM), false },
-            { "downlevelIteration", nullptr, o->is_set[COMPILER_OPTION_downlevel_iteration], false },
-        };
-        for (u32 i = 0; i < c_arraylen(deps); i++) {
-            if (!deps[i].given) continue;
-            Span sites[4];
-            u32 site_count = option_sites(me, deps[i].name, nullptr, !deps[i].value, sites);
-            for (u32 j = 0; j < site_count; j++) {
-                Error* error;
-                if (deps[i].value) {
-                    error = removed7 ?
-                        option_error_d_one(me, sites[j], 5108, "Option '", deps[i].name, "=", deps[i].value,
-                            "' has been removed. Please remove it from your configuration.") :
-                        option_error_d_one(me, sites[j], 5107, "Option '", deps[i].name, "=", deps[i].value,
-                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
-                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
-                } else {
-                    error = removed7 ?
-                        option_error_d_one(me, sites[j], 5102, "Option '", deps[i].name,
-                            "' has been removed. Please remove it from your configuration.") :
-                        option_error_d_one(me, sites[j], 5101, "Option '", deps[i].name,
-                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
-                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
-                }
-                if (deps[i].visit) {
-                    error_sub_error_d(error, span_null, TS_CODE_NONE, "Visit https://aka.ms/ts6 for migration information.");
-                }
-            }
-        }
-    }
     if (!o->source_map && !o->inline_source_map) {
         if (o->inline_sources) {
             option_error_d(me, "inlineSources", nullptr, true, 5051, "Option 'inlineSources can only be used when either ",
@@ -1827,25 +1787,6 @@ static void program_validate_options(Program* me) {
         const char* with = o->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
         option_error_d(me, with, "preserveConstEnums", true, 5091, "Option 'preserveConstEnums' cannot be disabled when '",
             with, "' is enabled.");
-    }
-    if (o->verbatim_module_syntax &&
-        (o->module == MODULE_KIND_AMD || o->module == MODULE_KIND_UMD || o->module == MODULE_KIND_SYSTEM)
-    ) {
-        option_error_d(me, "verbatimModuleSyntax", nullptr, true, 5105,
-            "Option 'verbatimModuleSyntax' cannot be used when 'module' is set to 'UMD', 'AMD', or 'System'.");
-    }
-    if (o->resolve_json_module) {
-        if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) {
-            option_error_d(
-                me, "resolveJsonModule", nullptr, true, 5070,
-                "Option '--resolveJsonModule' cannot be specified when 'moduleResolution' is set to 'classic'."
-            );
-        } else if (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_SYSTEM || o->module == MODULE_KIND_UMD) {
-            option_error_d(
-                me, "resolveJsonModule", "module", true, 5071,
-                "Option '--resolveJsonModule' cannot be specified when 'module' is set to 'none', 'system', or 'umd'."
-            );
-        }
     }
     if (o->allow_importing_ts_extensions && !(o->no_emit || o->emit_declaration_only || o->rewrite_relative_import_extensions)) {
         option_error_d(me, "allowImportingTsExtensions", nullptr, false, 5096,
@@ -1902,10 +1843,9 @@ static void program_validate_options(Program* me) {
         if (needs_declarations[i]) option_error_d(me, needs_declarations[i], "declaration", true, 5069, "Option '",
             needs_declarations[i], "' cannot be specified without specifying option 'declaration' or option 'composite'.");
     }
-    if (cstr_size(&o->out_file) && !o->emit_declaration_only && o->module_set && o->module != MODULE_KIND_NONE &&
-        o->module != MODULE_KIND_AMD && o->module != MODULE_KIND_SYSTEM
-    ) {
-        option_error_d(me, "outFile", "module", true, 6082, "Only 'amd' and 'system' modules are supported alongside --outFile.");
+    if (o->check_js && !o->allow_js) {
+        option_error_d(me, "checkJs", "allowJs", true, 5052,
+            "Option 'checkJs' cannot be specified without specifying option 'allowJs'.");
     }
     if (o->emit_declaration_only && !declarations) {
         option_error_d(me, "emitDeclarationOnly", "declaration", true, 5069,
@@ -2059,31 +1999,6 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
         hmap_source_file_ptr_insert(seen, key, nullptr);
     }
     cstr_drop(&output);
-}
-
-// The part of tsc's verifyCompilerOptions that blames the first module (tsc's firstNonAmbientExternalModuleSourceFile):
-// modules need a module kind (TS1148), and one that can be bundled into an outFile (TS6131)
-static void program_verify_module_kind(Program* me) {
-    CompilerOptions const* o = &my options;
-    SourceFile const* first = nullptr;
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile const* source = *i;
-        if (source->is_module && !source->is_commonjs && !source->is_json && !source->is_declaration && !source->is_stdlib) {
-            first = source;
-            break;
-        }
-    }
-    // (tsc's indicator of a module by moduleDetection has a span of its own: not reported)
-    if (!first || !span_valid(first->module_indicator)) return;
-    bool isolated = o->isolated_modules || o->verbatim_module_syntax;
-    if (!isolated && o->target < SCRIPT_TARGET_ES2015 && o->module_set && o->module == MODULE_KIND_NONE) {
-        error_ctx_error_d(my errs, first->module_indicator, 1148,
-            "Cannot use imports, exports, or module augmentations when '--module' is 'none'.");
-    }
-    if (cstr_size(&o->out_file) && !o->emit_declaration_only && !o->module_set) {
-        error_ctx_error_d(my errs, first->module_indicator, 6131,
-            "Cannot compile modules using option 'outFile' unless the '--module' flag is 'amd' or 'system'.");
-    }
 }
 
 // The end of tsc's verifyCompilerOptions: no output file may overwrite an input file or another output file
@@ -2623,7 +2538,6 @@ static void program_resolve_walk(Program* me) {
 
 void program_verify_options(Program* me) {
     program_validate_options(me);
-    program_verify_module_kind(me);
     program_verify_inferred_root_dir(me);
     program_verify_emit_paths(me);
     program_verify_project_files(me);
