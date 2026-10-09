@@ -2059,7 +2059,8 @@ static bool is_comparable_or_coercible(Checker* me, Ty const* member, void const
 
 static bool is_not_unit_comparable_to(Checker* me, Ty const* member, void const* arg) {
     Ty const* value = arg;
-    bool unit_like = is_unit_type(member) ||
+    // (A computed enum is a unit type to tsc's isUnitLikeType here: `x !== 1` takes out an `EE` it's comparable to)
+    bool unit_like = is_unit_type(member) || (member->kind != TY_UNION && (member->flags & TYF_ENUM)) ||
         ((member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_INTERSECTION)) && is_unit_like_type(me, member));
     return !(unit_like && ty_is_comparable_either_way(me, member, value));
 }
@@ -2791,7 +2792,8 @@ static bool is_not_case_unit(Checker* me, Ty const* member, void const* arg) {
             if (is_unit_type(member->composite.types.data[i])) unit = member->composite.types.data[i];
         }
     }
-    if (!is_unit_type(unit)) return true;
+    // (A computed enum is a unit type to tsc's isUnitLikeType, comparable to every number case)
+    if (!is_unit_type(unit) && !(unit->kind != TY_UNION && (unit->flags & TYF_ENUM))) return true;
     if (buf_contains(switch_types, unit)) return false;
     // (A case whose unit type is comparable to it covers it too, `case E.cat` for "cat": tsc 6.0)
     for (u32 i = 0; i < switch_types->len; i++) {
