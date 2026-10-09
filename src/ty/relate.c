@@ -2518,17 +2518,22 @@ static Ternary props_related_impl(
             goto done;
         }
         Ty const* target_type = prop_type(me, target_prop);
-        Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
-        if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-            Ty const* parts[2] = { target_type, undefined };
-            target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
+        // (Anything is related to an any property, unknown too unless strict subtypes: tsc's isPropertySymbolTypeRelated
+        // doesn't ask for the source property's type then, a getter's that would be circular)
+        Ternary related = TERNARY_TRUE;
+        if (!(target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN))) {
+            Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
+            if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
+                Ty const* parts[2] = { target_type, undefined };
+                target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
+            }
+            // (An optional source is only related to a required target when comparing: it may be undefined too)
+            if ((source_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
+                Ty const* source_parts[2] = { source_type, undefined };
+                source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
+            }
+            related = is_related_to(me, st, source_type, target_type, report);
         }
-        // (An optional source is only related to a required target when comparing: it may be undefined too)
-        if ((source_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-            Ty const* source_parts[2] = { source_type, undefined };
-            source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
-        }
-        Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
             if (report) {
                 cstr name = ty_prop_written_name(me, target_prop);
