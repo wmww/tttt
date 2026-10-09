@@ -6389,7 +6389,10 @@ drop_and_fail:
 static AwaitPlace parser_await_place(Parser const* p) {
     if (p->shared->in_static_block) return AWAIT_IN_STATIC_BLOCK;
     // (tsc: an await expression in an await context has nothing to check, one the first pass made is checked)
-    if (p->shared->function_depth == 0) return p->shared->in_async ? AWAIT_ALLOWED : AWAIT_AT_TOP_LEVEL;
+    // (A namespace body isn't the top level: tsgo's IsInTopLevelContext stops at the ModuleDeclaration)
+    if (p->shared->function_depth == 0) {
+        return p->shared->in_async ? AWAIT_ALLOWED : p->shared->in_namespace_body ? AWAIT_IN_FUNCTION : AWAIT_AT_TOP_LEVEL;
+    }
     return p->shared->in_async ? AWAIT_ALLOWED : AWAIT_IN_FUNCTION;
 }
 
@@ -10132,7 +10135,8 @@ static const char* parse_jsx_attributes(Parser* p, const char* end, VecJsxAttrib
                 if (attr.tag == JSX_ATTRIBUTE_EMPTY_EXPR) attr.value = expr_implicit_any(span_from(value_a));
             } else if (quote == '<') {
                 attr.tag = JSX_ATTRIBUTE_ELEMENT;
-                parse_jsx_element(p, true, nullptr, false, nullptr, &attr.value);
+                // (Unary: no sibling-element recovery, tsgo 7.1's parseJsxAttributeValue)
+                parse_jsx_element(p, true, nullptr, true, nullptr, &attr.value);
             } else {
                 parse_error(p, span_from_token(p), 1145, "'{' or JSX element expected.");
             }
