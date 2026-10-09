@@ -34,9 +34,10 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    is the `TypeScript6` corpus), corpora compared against tsgo's own diagnostics. Against 7.1: DT sweep 8553 / 8595,
    `$ExpectType` 68619, source sweep 2242 / 3363 (removed options: entry 6), flagflip 8139 / 113 / 222 (928 / 23 / 210
    without webpack), corpora 0 but webpack 589, drizzle 41, vue 14, vscode 10, effect 3 / 5 missing; scenarios 185 / 213.
-6. **Plan 54 stage 4: delete what 7 deleted** (plan 53 stage 2's option errors, then the es5/amd/umd/system/
-   node10/classic/baseUrl/outFile/downlevelIteration code paths). A net deletion. The source sweep measures it: ~540
-   projects where tsgo stops at TS5108/TS5102 (`scripts/sourcesweep.py -k=-TS5108`), and scenarios.py's TS5107s.
+6. ~~Plan 54 stage 4: delete what 7 deleted~~ **done**: 7's option errors (TS5102/TS5108, TS6046, TS5023 from tsgo's
+   generated option names), ~460 lines of removed-option code deleted; the sweeps no longer pass `--keep-going` (the
+   CLI caches stop at option errors). Source sweep 2242 -> **3018 / 3363** (78 repos), scenarios **203 / 213**, suite
+   **11892**, every other oracle unchanged.
 7. **Fan-out on the 7.x TS deltas** (4 sub-agents by mechanism, plan 54 "Stage 5+"): elaboration codes, TS6196,
    TS2300, the suggestion limit, TS2303, source quote style (109 tests), alias naming, lib declaration lists,
    `ty/order.c`'s 7.1 fixes.

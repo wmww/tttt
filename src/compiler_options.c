@@ -191,7 +191,8 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
     }
     ENUM_OPTION("target", target_values, target, my target_set = true)
     ENUM_OPTION("module", module_values, module, my module_set = true)
-    ENUM_OPTION("moduleresolution", module_resolution_values, module_resolution, my module_resolution_set = true)
+    ENUM_OPTION("moduleresolution", module_resolution_values, module_resolution,
+        my module_resolution_set = true; my module_resolution_removed = MODULE_RESOLUTION_NONE)
     ENUM_OPTION("jsx", jsx_values, jsx, )
     ENUM_OPTION("moduledetection", module_detection_values, module_detection, my module_detection_set = true)
 #undef ENUM_OPTION

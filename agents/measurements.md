@@ -11,6 +11,22 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 4: TypeScript 7's option errors, the removed options' code deleted (2026-10-09, todo entry 6)
+- source sweep **2242 -> 3018 / 3363** projects, 30 -> **78 / 174** repos; sample 4 559 -> **741 / 822**. Three causes:
+  tttt says TS5108/TS5102 and stops where tsgo does (+120 projects alone, 2362), **sweep.py and sourcesweep.py no longer
+  pass `--keep-going`** (the caches are tsgo's CLI since entry 4, which stops at syntactic and options diagnostics:
+  +618; realworld.py dropped it too, `--keep-going=options` is gone), and TS5090 on an extended config's `paths` (+38).
+  What's left is 7.x checker deltas (+TS2345 87 projects, +TS2322 43, -TS2552 25 ...) and 12 projects' +TS6305.
+- scenarios 185 -> **203 / 213**; suite 11860 -> **11892 / 13571** (+32: the `deprecatedCompilerOptions*` tests, the
+  ES5iterable/downlevel ones whose baselines are just TS5102, incrementalInvalid...), 0 lost; corpora, DT sweep 8553,
+  `$ExpectType` 68619, flagflip 8139 / 113 / 222 unchanged.
+- Code: ~460 lines deleted (classic/node10 resolution, baseUrl lookups, the esModuleInterop=false paths, ES5 checks,
+  outFile ordering and bundle names, downlevelIteration).
+- `scripts/clidiff.py` on every source sweep project: **2918 / 3353** byte-identical with tsgo's `-p --noEmit` (342
+  diagnostics differ, 93 text only).
+- Instructions (callgrind): tsc 4.715, type-fest 19.642, valibot 3.874, react 1.518, nest 1.153, webpack 10.483, zod
+  5.048, xstate 2.988, drizzle 7.132, vue 6.550, effect 10.171, vscode 91.199, excalidraw 7.930, tanstack-router 5.452 G (flat).
+
 ## Plan 54 stage 3: every cache regenerated with tsgo 7.1 (2026-10-09, thirteenth window's todo entry 5)
 tsgo's time to regenerate (4 cores): DT sweep 553 s, its nuia / eopt variants 527 / 492 s, `$ExpectType` 87 s, source
 sweep 704 s, flagflip (182 cells) 735 s, the 17 corpora ~2 min. Against the new caches:

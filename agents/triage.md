@@ -47,3 +47,18 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   branch, never committed; README's "instrument the oracle").
 - tsgo 7.1's `-b` exit codes weren't compared (stage 2 moved the non-build CLI to 7.1's: 2 with diagnostics, 1 only
   when noEmitOnError skips the emit). `build()` in main.c still returns 1 for any project with errors.
+
+## From plan 54 stage 4 (removed options, 2026-10-09)
+- **TS2880 (`assert` import attributes) is a parse error in tsgo** (parser.go: import declarations, import types and
+  `export ... from`), tttt reports it from the checker (`port_statement.c`, `several_types.c`; the dynamic `import(m,
+  { assert })` one is still the checker's in tsgo too). As a syntactic diagnostic it gates semantic checking on the
+  CLI. failstats: missing TS2880 in 8 tests, spurious in 5. Plan 54 "Stage 5+" (7.1's new diagnostics) territory.
+- source sweep `+TS6059` (react-router/packages/create-react-router, 11 projects in 2 repos): a file outside rootDir
+  brought in by an import (`tsdown.config.ts` imports `../../build.utils.ts`) is TS6059 at the import in tttt, nothing
+  in tsgo; a root file outside rootDir is TS6059 in both (`/tmp/rd`-style probe matches). tsgo adds it as a
+  processing diagnostic from CommonSourceDirectory(), maybe only for files known at that point.
+- `EMIT_HELPER_EXTENDS/ASSIGN/GENERATOR/VALUES/READ/SPREAD_ARRAY/MAKE_TEMPLATE_OBJECT` are never requested any more
+  (their checks were ES5 / downlevelIteration only); `helpers.c`'s table is indexed by bit, so they stay in the enum.
+- `tsgo_skips_configuration()` (harness) still reads module/moduleResolution as written to skip tsgo's removed
+  configurations; `@module: none` no longer parses (TS6046), so such configurations run with the default module unless
+  they have no baselines (all 7 `@module: none` tests have none).

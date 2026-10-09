@@ -149,7 +149,12 @@ the DT sweep's, corpora's and flagflip's remaining differences are 7.x checker d
 - Validate: `scripts/oracles.py` runs every oracle against the new caches with nothing reading `thirdparty/tsc`
   (`grep -rn thirdparty/tsc scripts src test` is empty apart from the corpus).
 
-### Stage 4: delete what 7 deleted (1 session)
+### Stage 4: delete what 7 deleted (1 session) — done 2026-10-09
+Result: source sweep 3018 / 3363, scenarios 203 / 213, suite +32 (measurements.md). Ported tsgo's verifyCompilerOptions
+(the "Removed in TS7" block first, the checks tsgo dropped deleted), tsgo's option names generated (lib_names.py), TS6046
+for es3/none, classic/node10 computed as tsgo's GetModuleResolutionKind; then the code behind the removed options
+deleted. Beyond the plan: the sweeps ran tttt with `--keep-going` against CLI caches (fixed), TS5090 on extended
+`paths`, `-b` skips a solution config's options. The original stage text follows.
 Plan 53 stage 2: 7.0's option errors (TS5108 for es5/amd/umd/system/node10/classic/esModuleInterop=false/...,
 TS5102 for baseUrl/outFile/downlevelIteration, TS5023 for 6.0's TS5102 set, TS6046 for es3/none, TS5095,
 `ignoreDeprecations: "6.0"` silences nothing), then delete the code paths behind them (es5 lowering checks,
