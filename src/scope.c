@@ -4031,9 +4031,7 @@ void binder_link(Binder* me) {
             cross_file = true;
         }
         if (cross_file) continue;
-        // (tsc's checkJSDocImportTag checks only the attributes, no checkAliasSymbol for an `@import`: a local
-        // declaration of the same name, like a `@typedef`, doesn't conflict)
-        if (item->jsdoc) continue;
+        // (An `@import` too: tsgo reparses it into an import declaration, checkAliasSymbol, a `@typedef` conflicts)
         if (port_item_is_export(item)) {
             error_ctx_error_d(errs, item->full_span, 2484,
                 "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
