@@ -389,7 +389,8 @@ static bool extension_is_ts_source(csview extension) {
 static bool load_file_no_implicit_extensions(State* me, csview candidate, int extensions, Found* out) {
     csview name = basename_of(candidate);
     isize dot = c_NPOS;
-    for (isize i = name.size - 1; i > 0; i--) {
+    // (A leading dot counts: "./empty/.js" means empty/.ts, tsgo's loadModuleFromFileNoImplicitExtensions)
+    for (isize i = name.size - 1; i >= 0; i--) {
         if (name.buf[i] == '.') {
             dot = i;
             break;
