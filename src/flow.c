@@ -286,7 +286,15 @@ static Expr* reference_root_name(Expr* me) {
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword ? me : nullptr;
 }
 
+// `this.x`, a member that may be auto-typed (tsc's autoArrayType of a constructor-declared property)
+static bool is_this_property(Expr const* me) {
+    return my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(me) &&
+        my property->expr.tag == EXPR_IDENTIFIER && my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS &&
+        !expr_is_perenthisized(&my property->expr);
+}
+
 static void mark_evolving_array_target(Expr* object, EvolvingArrayOp op, Expr const* index) {
+    if (op == EVOLVING_OP_ACCESS && is_this_property(object)) object->property->evolving_access = true;
     Expr* name = reference_root_name(object);
     if (!name) return;
     name->identifier.evolving_op = op;
@@ -317,6 +325,7 @@ static bool may_evolve(Expr const* object) {
             return false;
         }
     }
+    if (is_this_property(object)) return true;
     Expr const* name = object->tag == EXPR_IDENTIFIER && !object->identifier.keyword ? object : nullptr;
     Symbol const* symbol = name ? name->identifier.target : nullptr;
     if (!symbol || !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_parameter) return false;
@@ -582,7 +591,7 @@ static bool post_super(FlowNode const* flow, PostSuperMemo* memo, u32 depth) {
         }
         FlowNode const* at = flow;
         bool result;
-        if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION | FLOW_SWITCH_CLAUSE)) {
+        if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION | FLOW_SWITCH_CLAUSE | FLOW_ARRAY_MUTATION)) {
             flow = flow->antecedent;
             continue;
         } else if (flags & FLOW_CALL) {

@@ -31376,9 +31376,9 @@ const baselines = {
         types: true,
     },
     'thisPropertyAssignmentTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisPropertyAssignmentUsedBeforeAssignedJs1': {
         errors: true,

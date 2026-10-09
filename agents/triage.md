@@ -214,10 +214,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   callback infers its own return type in tsgo (`obj => void obj.title` is `=> undefined`, not the callback's `any`).
   C's @type-on-function host rules.
 ## JS fan-out, agent A (2026-10-09)
-- Evolving arrays through `this.x` (tsgo's isEvolvingArrayOperationTarget on property references): a constructor's
-  `this.bar = []; this.bar.push("baz")` makes bar `string[]` (getFlowTypeInConstructor on an autoArrayType
-  property). tttt's flow builder only makes FLOW_ARRAY_MUTATION nodes for auto-typed variables (`may_evolve()`),
-  so bar is any[] with TS7008 (thisPropertyAssignmentTyping C4). Same for TS fields under noImplicitAny.
 - `obj3.y = Object.values(obj3)` (expandoObjectIndexSignatures, expandoNoInferredIndex): tsgo reports TS7022 for the
   cycle through the container's type inside the call's inference; tttt's guarded_assignment_symbol_type() doesn't
   see it past the call's resolving barrier (Checker.resolving_start).

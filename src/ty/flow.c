@@ -52,7 +52,7 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
             return ret;
         }
         use_cache = true;
-        if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION)) {
+        if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION | FLOW_ARRAY_MUTATION)) {
             flow = flow->antecedent;
         } else if (flags & FLOW_CALL) {
             Expr const* call_expr = flow->node;
@@ -230,6 +230,7 @@ static bool is_number_like_index(Checker* me, Expr const* index) {
 }
 
 bool ty_is_evolving_array_operation_target(Checker* me, Expr const* reference) {
+    if (reference->tag == EXPR_PROPERTY) return reference->property->evolving_access;
     if (reference->tag != EXPR_IDENTIFIER) return false;
     switch ((EvolvingArrayOp)reference->identifier.evolving_op) {
         case EVOLVING_OP_NONE: return false;
