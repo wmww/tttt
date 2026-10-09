@@ -11,6 +11,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 5, the TS checker deltas fan-out (2026-10-09, todo entry 7)
+4 agents (A relation elaboration, B diagnostic code deltas, C types printer, D symbols/alias naming/union order), ~95
+picks, 0 lost components at every merge. The failing non-JS tests that existed in 6.0's tree went **904 -> 182**
+(JS 560 -> 530: entry 8; tests new in 7.1's tree 211 -> 174: entry 9).
+- suite **11892 -> 12681 / 13568** (93.5%); errors 12629 -> 13047, symbols 12909 -> 13083, types 12585 -> 12970.
+- corpora 0 / 0 but webpack 0 / 589, drizzle 41 -> **25**, vue 14 -> **6**, effect 3 / 5 -> **3 / 3**, vscode 0 / 10
+  (TS2769 overload reporting). DT sweep 8553 -> **8581 / 8595** (0 spurious, 14 missing), `$ExpectType` 68619,
+  flagflip 8139 / 113 / 222 -> **7818 / 106 / 6**, source sweep 3018 -> **3057 / 3363** (sample 4: 741 -> 752 / 822),
+  scenarios 203 / 213.
+- Instructions (callgrind): tsc 4.714, type-fest 19.613, valibot 3.858, react 1.515, nest 1.152, webpack 10.430, zod 5.035, xstate 2.968, drizzle 7.070, vue 6.557, effect 10.166, vscode 91.009, excalidraw 7.920, tanstack-router 5.423 G (flat: -0.9% .. +0.1%).
+
 ## Plan 54 stage 4: TypeScript 7's option errors, the removed options' code deleted (2026-10-09, todo entry 6)
 - source sweep **2242 -> 3018 / 3363** projects, 30 -> **78 / 174** repos; sample 4 559 -> **741 / 822**. Three causes:
   tttt says TS5108/TS5102 and stops where tsgo does (+120 projects alone, 2362), **sweep.py and sourcesweep.py no longer

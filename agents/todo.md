@@ -38,9 +38,9 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    generated option names), ~460 lines of removed-option code deleted; the sweeps no longer pass `--keep-going` (the
    CLI caches stop at option errors). Source sweep 2242 -> **3018 / 3363** (78 repos), scenarios **203 / 213**, suite
    **11892**, every other oracle unchanged.
-7. **Fan-out on the 7.x TS deltas** (4 sub-agents by mechanism, plan 54 "Stage 5+"): elaboration codes, TS6196,
-   TS2300, the suggestion limit, TS2303, source quote style (109 tests), alias naming, lib declaration lists,
-   `ty/order.c`'s 7.1 fixes.
+7. ~~Fan-out on the 7.x TS deltas~~ **done**: suite 11892 -> **12681 / 13568** (93.5%), failing non-JS old-tree tests
+   904 -> 182 (leftovers in triage.md "From the TS 7.1 delta fan-out"; plan 55 written: tsgo's pseudochecker); DT sweep
+   8581, source sweep 3057, flagflip 7818 / 106 / 6, drizzle 25, vue 6, effect 3 / 3; instructions flat.
 8. **Fan-out on the JS rework** (4 sub-agents by CHANGES.md table; 452 tests): deletions first; webpack's corpus
    expectations re-checked.
 9. **7.1 language and the new tests** (281 tests; fan-out if they split cleanly): source phase imports,

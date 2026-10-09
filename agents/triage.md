@@ -93,12 +93,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
   `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
   newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
-- Nested instantiations of one mapped type share tttt's type parameter (tsgo clones it): `Compute<A>` prints `[K in ...]`
-  inside `[K in ...]`, tsgo `K_1` (computedTypesKeyofNoIndexSignatureType, declarationsWithRecursiveInternalTypes...).
-- 7.1's import attributes on module symbols: `typeof import("./0", { with: { type: "json" } })`
-  (getTypeOfModuleImportAttributes, importAttributes2/3, importAssertion2/3, typeOnlyESMImportFromCJS).
-- A rest parameter expanded from a tuple: tsgo's fake scope names the *original* parameters by index (enterNewScope),
-  so `typeof a` of the rest `a` is reused (declarationEmitTypeofRest); tttt's name_accessible() has TS 6.0's rule.
 - Accessor bodies in type literals/interfaces are kept by tsgo's parser and typed (accessorBodyInTypeContext:
   `get foo() { return 0 }` is number); tttt drops them.
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
@@ -114,9 +108,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - Index symbols (`__index`) of an object rest (`const { ...t2 } = strMap; t2.z`) are named after the rest's binding
   (`t2.__index`: tsgo's getRestType gives the rest type the binding element's symbol); tttt's rest type has none
   (noUncheckedIndexedAccessDestructuring).
-- Signature printing reuses lib annotations where tsgo doesn't: `Iterator.from`'s
-  `Iterator<T, ...> | Iterable<T, ...>` (tsgo sorts it, reuses the node for a local declaration only: builtinIterator,
-  awaitUsingDeclarationsWithIteratorObject). Printer reuse rule, agent C's area.
 - Union order left: tuples of different lengths each have an Array base of their own in tsgo (sliceResultCast:
   `x.slice` is a union of two identical-looking signatures), comparisonReverseMappedTypes `sameSource` (tttt's
   homomorphic `identity(nested)` isn't a reverse mapped type?), noImplicitAnyUnionNormalizedObjectLiteral1
@@ -133,7 +124,8 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   instrumented tsgo (pseudoTypeEquivalentToType false under the signature's mapper). tttt's ty_instantiate() returns
   the method's type unchanged for a `this`-only mapper that it doesn't mention, so ty_display can't tell; a display-only
   emulation needs the access path. Making the instantiation real is a checker identity change (perf, caches).
-- Left from agent B's 7.1 diagnostic-code fan-out (todo entry 7):
+
+## From the TS 7.1 delta fan-out, agent B (diagnostic codes, 2026-10-09)
   - Object literal method `this` (thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement,
     checkingObjectWithThisInNamePositionNoCrash): 6.0's TS7023 where tsgo has none. tsgo seems to know a literal's
     member names without resolving a method's return type (`this.spaaace` is TS2339): lazy member types, plan-sized.

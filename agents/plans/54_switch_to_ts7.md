@@ -162,7 +162,8 @@ amd/system/umd module kinds, node10/classic resolution, baseUrl/paths-without-ba
 are only the option codes. Suite: 0 lost except tests that passed only through deleted paths (count them).
 
 ### Stage 5+: the deltas (fan-outs, 3 sessions)
-- **TS checker deltas** (fan-out, 4 sub-agents by signature): the 404 errors + 302 types/symbols + 109 quote-style
+- **TS checker deltas** — done 2026-10-09 (todo entry 7): 904 -> 182 failing tests, suite 12681 / 13568; leftovers in
+  triage.md, plan 55 (pseudochecker) written. Original text: (fan-out, 4 sub-agents by signature): the 404 errors + 302 types/symbols + 109 quote-style
   tests above. Mechanisms, biggest first: elaboration codes (TS2345/2344 -> TS2741/2740/2739, TS2696 -> TS2322),
   unused type parameters TS6196, duplicate identifiers TS2300 (+20), the suggestion limit (TS2552), circular imports
   TS2303, source quote style in the printer, alias symbol naming, lib declaration lists, the 7.1 ordering fixes in

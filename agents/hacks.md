@@ -442,6 +442,9 @@ src` finds the code-side markers; every significant one has an entry here.
   types?) may wrongly relate to index signatures.
 
 ## Type core (`src/ty/`)
+- TS5114/TS5115's instantiation stack (`instantiate_inner()`): recorded past the leaf kinds rather than in
+  `ty_instantiate()` (any store or branch there cost drizzle +1%), so a tail call overwrites its caller's entry where
+  tsgo keeps it; the cycle names printed could differ on a tail-called chain (no test shows one).
 - Function expression types are instantiated by what their resolved signature mentions (`ty_function_type_mentions()`,
   a `mentions_type_variables` collect walk), where tsc keys by the outer type parameters: tttt's contextually typed
   parameters can carry a call's type parameters (plan 51), so the syntactic set isn't safe. Asked before the signature
