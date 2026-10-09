@@ -126,3 +126,11 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   `type VNode` lists one declaration in tsgo and doesn't name `react.ReactNode` (tttt merges them into an alias+type).
 - expandoFunctionContextualTypesNoValue: `import Foo` + `export function Foo` (TS2440): tsgo's lookupName finds the
   function for `Foo.bar = v`, tttt the import.
+- **Generic methods of a class or non-thisless interface get fresh type parameters in tsgo when accessed through the
+  type** (resolveObjectTypeMembers instantiates every member that isn't syntactically thisless with the `this` mapper;
+  instantiateSignature clones type parameters), so an annotation mentioning them isn't reused: `Iterator.from` (lib
+  `IteratorConstructor extends typeof Iterator`) prints its `Iterator<T, ...> | Iterable<T, ...>` sorted
+  (builtinIterator, awaitUsingDeclarationsWithIteratorObject, usingDeclarationsWithIteratorObject). Verified with an
+  instrumented tsgo (pseudoTypeEquivalentToType false under the signature's mapper). tttt's ty_instantiate() returns
+  the method's type unchanged for a `this`-only mapper that it doesn't mention, so ty_display can't tell; a display-only
+  emulation needs the access path. Making the instantiation real is a checker identity change (perf, caches).
