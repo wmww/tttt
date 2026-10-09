@@ -135,7 +135,7 @@ The statement/expression walk (`statement_typecheck()`, `expr_typecheck()`, `bin
   `Ty.declared.type_params` are the outer ones followed by its own (`outer_count`; `ty_local_type_params()` are the
   ones type arguments are written for), a reference inside the scope passes the outer ones as themselves, and the
   enclosing function's mapper instantiates them like any type argument: `f(3)` of `function f<T>() { class C {} ...}`
-  is `f<number>.C`. A local class's value is its static side applied to the outer parameters.
+  is `f<number>.C` (printed `f.C`: tsgo drops outer type arguments). A local class's value is its static side applied to the outer parameters.
 - **Mixin classes** (`members.c`): a class whose `extends` expression is a type variable `T` (or an intersection with
   one, `ty_class_base_type_variable()`) has the value `typeof C & T`, printed structurally; its base instance comes
   from T's constraint's construct signatures (`class_base()` accepts tsc's isValidBaseType), and an intersection's

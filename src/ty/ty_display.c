@@ -414,8 +414,8 @@ static void display_class_literal(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 // The name of a declared type: by its symbol when it has one
-// The outer type arguments of a local class or interface (tsc's typeReferenceToTypeNode): `f<number>.` for each
-// enclosing declaration whose type parameters aren't passed as themselves. `outer` is innermost first, the lists
+// The outer type arguments of a local class or interface (tsc's typeReferenceToTypeNode): `f.` for each enclosing
+// declaration whose type parameters aren't passed as themselves. `outer` is innermost first, the lists
 // outermost first; returns how many parameters it covered
 static u32 out_outer_type_args(Checker* me, TyDisplay d, OuterGenerics const* outer, TyList params, TyList args) {
     if (!outer) return 0;
@@ -429,10 +429,10 @@ static u32 out_outer_type_args(Checker* me, TyDisplay d, OuterGenerics const* ou
             out(d, outer->owner_class.sv);
             out_lit(d, ".");
         }
+        // (Without its type arguments: tsgo's appendReferenceToType keeps only the last reference's, unless
+        // UseInstantiationExpressions, which only hover sets)
         out(d, outer->owner.sv);
-        out_lit(d, "<");
-        display_list(me, d, (TyList){ .data = args.data + start, .len = len });
-        out_lit(d, ">.");
+        out_lit(d, ".");
     }
     return start + len;
 }

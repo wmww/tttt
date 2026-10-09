@@ -43,7 +43,7 @@ typedef struct Generic {
 struct OuterGenerics {
     struct OuterGenerics const* parent;
     Generic const* generic;
-    Span owner; // The name of what declares them (a function, class, interface or alias), `f<number>.C` prints it
+    Span owner; // The name of what declares them (a function, class, interface or alias), `f.C` prints it
     Span owner_class; // A method's class, which qualifies its name (`X.m<number>.C`). Invalid otherwise
 };
 

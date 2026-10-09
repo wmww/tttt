@@ -310,7 +310,7 @@ struct Ty {
             // local class or interface is declared in, see OuterGenerics) and then its own (localTypeParameters),
             // which are what type arguments are written for. The static side of a class has only the outer ones
             TyList type_params;
-            OuterGenerics const* outer; // Where the outer ones come from (display: `f<number>.C`)
+            OuterGenerics const* outer; // Where the outer ones come from (display: `f.C`, tsgo drops their arguments)
             // Classes, and interfaces that mention `this` (tsc's isThislessInterface): the polymorphic `this` type, a
             // type parameter constrained to the type itself. Null otherwise
             Ty const* this_param;
