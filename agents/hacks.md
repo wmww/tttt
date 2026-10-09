@@ -523,6 +523,9 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc would still compute. A cut-short conditional instance is re-reported only within its epoch.
 - `lower_node()` TYPE_VALUE makes a literal's fresh twin, which nothing needs (permanent: perf, unexplained; without it
   the tsc corpus costs 1% more instructions in union_with_origin).
+- Deep nesting identity (isDeeplyNestedType's recursion identity) uses ObjectFlags.FromTypeNode only for array/tuple
+  nodes, not generic interface references (commit "Arrays and tuples written as type nodes are their own recursion
+  identity"): a partial port.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `checker_defer_function_body()` (ty/checker.c): a function expression's body is queued from its first check
@@ -570,8 +573,10 @@ src` finds the code-side markers; every significant one has an entry here.
   spans (permanent: tttt's diagnostic representation)
 - `ty_check_destructured_member` (check.c HACK, `from_this`): `({ m } = this)` inside method m isn't a read of private m
   (tsc's markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m.
+- `EMIT_HELPER_EXTENDS/ASSIGN/GENERATOR/VALUES/READ/SPREAD_ARRAY/MAKE_TEMPLATE_OBJECT` are never requested any more
+  (their checks were ES5 / downlevelIteration only); `helpers.c`'s table is indexed by bit, so they stay in the enum.
 
-## JavaScript and JSDoc (plan 26)
+## JavaScript and JSDoc (bugs/js.md)
 - A `@returns`/`@throws` type is only resolved in tsc (never checkSourceElement'd), but `function_impl_typecheck`
   runs `type_typecheck` on it, skipping just the constraint check (`IdentifierType.jsdoc_unchecked` in
   `identifier_type_check_arity()`). Real fix: a resolution-only walk (arity errors must stay:

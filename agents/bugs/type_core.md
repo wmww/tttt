@@ -321,3 +321,47 @@ fails types in both configurations.
   `any` in tttt, TS2322 in tsc. Belongs next to `field_type_from_assignments()` (class_decl.c), which needs the class.
 - Generators: no next type inferred from how `yield` results are used (tsc's getReturnTypeFromBody collects
   contextual types of yield expressions); `ty_generator_context` filters only unions.
+
+## TS 7.1 window leftovers (triage 2026-10-09)
+- Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
+  (`() => Generator<any, void, unknown>` for a generator referencing itself).
+- A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
+  callSignaturesWithParameterInitializers2 types; duplicateClassElements, propertyAndAccessorMerging symbols;
+  symbolProperty44 (late-bound name vs method). duplicateIdentifierChecks: the parser merges a name's accessor
+  declarations of a type literal/interface into one member, tsgo keeps a symbol per conflicting declaration.
+- TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
+  instantiation depth limit in tttt; recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
+  recursiveIndexedAccessSimplification lacks TS4109 and two TS2589; xstate under sloppy/nosnc (flagflip) gets spurious
+  TS2589/TS5114/TS5115 (State.ts:395, graph/utils.ts:91, instantiation depth on `Values` without strictNullChecks);
+  webpack misses zod's TS5115 at node_modules/zod/v4/classic/schemas.d.cts:806 (reached through webpack's use of zod).
+- distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
+  `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
+- contextualTypingGenericFunction2 (TypeScript#61979): a context-sensitive arrow returned from a generic arrow argument
+  gets `unknown` for parameters typed by the outer call's still-inferring type parameter P; tttt leaves P.
+- circularControlFlowNarrowingWithCurrentElement01: spurious TS7022 on `const child = current.children[i]` in a loop
+  assigning `current = firstChild || current.next` (firstChild an evolving `let = null`); tsgo 7.1 no longer cycles.
+  Not located in tsgo's flow.go yet.
+- circularVariance1: `Bar<U> = (x: Baz<U[]>) => void` with Baz/Foo mutually recursive: tsgo reports `bar1 = bar2`
+  (Bar<string> -> Bar<unknown>), tttt measures Bar's variance differently (TTTT_DUMP_VARIANCES).
+- nestedSpreadsAndWidening: the spread of an 11-member union of nested spreads prints a 6 MB type (tsc 1.4 MB): tttt's
+  spread of unions doesn't reduce/dedupe like tsc's getSpreadType.
+- crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1: `props?.w` of a big union of intersections: tsc's type
+  has `(X["w"] & number) | ...` members (union property type intersected with the declared number), tttt plain X["w"].
+- recursiveTypeInference2: `children: any[]` vs tsc's `children: any` in a zod-like recursive schema inference.
+- reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
+  TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
+- inferFromGenericFunctionReturnTypes3: spurious errors (relation path differs too).
+- Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
+  inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
+  literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348
+  (objectRestBindingContextualInference, `K extends Object`): with `const { prepare, ...rest } =` tsgo infers
+  K = "image" from the binding pattern + argument, tttt widens to string; mut2626 (noInferCommonPropertyCheck1,
+  `test2(null, ...)`): tsgo's `NoInfer<T1> & NoInfer<T2>` with T1 = null is `never`, tttt keeps `null &
+  NoInfer<Partial<...>>`; webpack NormalModuleFactory.js:658-666 (TS2322 missing): `/** @type {TypedHookMap<...>} */
+  createParser: new HookMap(() => new SyncBailHook([...]))`: tsgo infers HookMap<SyncBailHook<ParserOptions |
+  [EmptyParserOptions], ...>> under that context and it isn't assignable; tttt's inference produces something that is.
+- types/koa-router (DT sweep): tsgo's TS2345 at koa-router-tests.ts:100 (`.use(router3.routes())`, a deep
+  ParameterizedContext comparison through `router.use`'s overloads); tttt relates them. Not reduced.
+- types/redux-define (DT sweep): TS2344 "only assignable to the non-distributed 'SubAction'" (distributed type
+  parameters, plan 57's area).
+- flagflip xstate/eopt: one spurious TS2322 (input.test.ts:272, a spawn signature); vue/nuia 2 spurious + 2 other-code.

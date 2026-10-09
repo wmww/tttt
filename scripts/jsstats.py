@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""JS/JSDoc accounting (plan 26): classifies the failing JS tests (a .js/.jsx/.cjs/.mjs unit, @allowJs or @checkJs)
+"""JS/JSDoc accounting (bugs/js.md): classifies the failing JS tests (a .js/.jsx/.cjs/.mjs unit, @allowJs or @checkJs)
 by the features they need, from their sources and tsc's baselines. Run scripts/failstats.py first (reads its dump).
 
   scripts/jsstats.py                  counts per category, category combinations, cumulative "could pass" upper bounds

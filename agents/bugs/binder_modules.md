@@ -1,7 +1,7 @@
 # Binder, symbols, merging, modules, CommonJS: open divergences
 
 Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test, tsc's mechanism, why tttt differs,
-and what a fix needs. JS/JSDoc-specific items are in plans/26_js_jsdoc.md's Leftovers.
+and what a fix needs. JS/JSDoc-specific items are in bugs/js.md.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
 Plan 50 (2026-10-08) did tsc 6's getCommonJsExportEquals in place at link time; tsgo 7.1 has no getCommonJsExportEquals
@@ -93,7 +93,7 @@ mergeSymbol, which resolves an alias target first.
   (jsDeclarationsTypeReassignmentFromDeclaration mutation): a hand-made probe of that order matches tsc.
 
 ## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate scripts/mutate.py --tests multi,js -n 3000 --seed 16`)
-22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers are in plan 26's Leftovers. TypeScript ones:
+22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to plan 26 (since retired; bugs/js.md). TypeScript ones:
 - mut0806 (typeGuardNarrowsIndexedAccessOfKnownProperty8, `export const key: never = "a"`): spurious TS2564 for
   `[a.key]: string` that the constructor assigns as `this[a.key]`. tsc's tryGetNameFromEntityNameExpression falls back
   to the initializer's type when the annotation gives no name, so the access is named "a" and matches; tttt goes by
@@ -109,3 +109,25 @@ mergeSymbol, which resolves an alias target first.
 Declarations merged into a UMD global (`export as namespace X` plus a script declaring `X`) move into its module
 whatever the file order; tsc drops the UMD global when a script declared the name first. A conflicting target is
 skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.)
+
+## TS 7.1 window leftovers (triage 2026-10-09)
+- Duplicate declarations across merges: tsgo's addDuplicateDeclarationError makes a fresh diagnostic per merge (each
+  starts with "'x' was also declared here.", TS6203) and compactAndMergeRelatedInfos joins them; tttt's scope.c counts
+  the related information already on one diagnostic and says "and here." (TS6204): duplicateIdentifierRelatedSpans1,
+  exportAsNamespace_augment. The merge itself is ported (error.c merge_related_info()).
+- TS expandos follow tsgo's binder, but the binder still adds 6.0's SYMBOL_DECL_EXPANDO to the host (filtered in
+  symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
+  meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
+  time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
+- expandoFunctionContextualTypesNoValue: `import Foo` + `export function Foo` (TS2440): tsgo's lookupName finds the
+  function for `Foo.bar = v`, tttt the import.
+- checkerInitializationCrash: a global namespace's `export import VNode = react.ReactNode` merged with another file's
+  `type VNode` lists one declaration in tsgo and doesn't name `react.ReactNode` (tttt merges them into an alias+type).
+- globalArrayAugmentationWithAmbientModuleReexportMerge1 (SYM/TYP): tsgo's failed cross-file merge of an export alias
+  with a const keeps two symbols (mergeSymbol returns source), tttt's binder merged them into one.
+- declarationEmitAugmentationUsesCorrectSourceFile (SYM/TYP): an augmentation merging into an `export { Knex }` alias's
+  target merges into a clone in tsgo 7.1 (mergeSymbol's resolveSymbol + cloneSymbol), leaving the original namespace
+  uninstantiated (`any`) and naming it `knex.Knex`; tttt's merge_into_exports merges into the target itself.
+- jsonRawJSON2 (symbols): a script's `interface RawJSON` merged with lib.es2026.json's `declare global` one lists the
+  script's declaration first in tsgo (global augmentations merge after every file's globals, initializeTypeChecker);
+  tttt's shared-lib program has the lib's augmentation merged into the globals already. Harness/lib-sharing work.

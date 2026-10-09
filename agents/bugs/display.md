@@ -240,3 +240,65 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - bundledDtsLateExportRenaming: with outFile tsc names modules non-relative from the common source directory with
   minimal endings (getSpecifierForModuleSymbol's isBundle: baseUrl = common source dir, `non-relative`):
   `import("nested").B`; module_specifiers.c has no bundle mode (needs the common source directory in Generator).
+
+## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
+- **Anonymous types inside generic declarations are instantiated even when they reference no outer type parameter**
+  (tsc filters getOuterTypeParameters by isTypeParameterPossiblyReferenced): `Promise<number>.finally`'s parameter type
+  is a new union, so its annotation `(() => void) | undefined | null` isn't reused and prints `| null | undefined`
+  (es2018ObjectAssign, usePromiseFinally). Also an identity/perf question. Reusing parameter annotations with the
+  signature's mapper (tsgo does) was tried: 94 regressions (`this` must map, `then` isn't reused by tsgo).
+- **Generic methods of a class or non-thisless interface get fresh type parameters in tsgo when accessed through the
+  type** (resolveObjectTypeMembers instantiates every member that isn't syntactically thisless with the `this` mapper;
+  instantiateSignature clones type parameters), so an annotation mentioning them isn't reused: `Iterator.from` (lib
+  `IteratorConstructor extends typeof Iterator`) prints its `Iterator<T, ...> | Iterable<T, ...>` sorted
+  (builtinIterator, awaitUsingDeclarationsWithIteratorObject, usingDeclarationsWithIteratorObject). Verified with an
+  instrumented tsgo. tttt's ty_instantiate() returns the method's type unchanged for a `this`-only mapper it doesn't
+  mention, so ty_display can't tell; a display-only emulation needs the access path; making the instantiation real is
+  a checker identity change (perf, caches). Same family as the item above.
+- Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
+  `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
+  newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
+- Accessor bodies in type literals/interfaces are kept by tsgo's parser and typed (accessorBodyInTypeContext:
+  `get foo() { return 0 }` is number); tttt drops them.
+- `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
+  baseline_test_traversal.c); the checker path that makes them any wasn't found.
+- Index symbols (`__index`) of an object rest (`const { ...t2 } = strMap; t2.z`) are named after the rest's binding
+  (`t2.__index`: tsgo's getRestType gives the rest type the binding element's symbol); tttt's rest type has none
+  (noUncheckedIndexedAccessDestructuring).
+- Union order left: tuples of different lengths each have an Array base of their own in tsgo (sliceResultCast:
+  `x.slice` is a union of two identical-looking signatures), comparisonReverseMappedTypes (tttt infers a homomorphic
+  `T[K]` template's source itself instead of a reverse mapped type: infer.c's "A plain homomorphic T[K] template"
+  shortcut; tsgo orders reverse mapped types by source, then mapped type declaration),
+  noImplicitAnyUnionNormalizedObjectLiteral1 (normalized spread literal ordered first in tsgo), instantiationExpressions,
+  `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
+- **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
+  `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
+  truncation is sticky. tttt only truncates by depth (MAX_DISPLAY_DEPTH hack in ty_display.c).
+- declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
+  `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
+  gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
+- symbolToNodeBoundaryNoStackOverflow: `wrapNode<typeof node.getNextNode<any>>(...)`: tsgo prints the type argument
+  (an instantiation expression type whose typeof node can't be reused out of scope) as `any`; tttt expands it.
+- declarationEmitUnserializableTypes: `function inner<T>(): typeof inner<T>` recursion prints one level too many;
+  `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers the arrow's return while grow's
+  return is in flight (any at depth 2) and reports TS7056 on grow; tttt infers it lazily afterwards and prints 10+
+  levels.
+- varianceComputationNoCrash: a mapped type reprinted inside its own `as` clause prints an empty `as ]` (reprint_range
+  of a range still being printed?), and `CamelCase<T, {}>` where tsc elides a default type argument.
+- mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.
+- importAttributesDeclarationEmit: tsgo prints an import type's attribute keys `any` or `error` depending on what was
+  checked before (order-dependent in tsgo, not chased).
+- regexInvalidUtf8WithUnicodeFlag: `text_decode()` replaces invalid UTF-8 with U+FFFD when a file is loaded; tsgo keeps
+  the raw bytes, its scanner reads them as RuneError one byte wide. Only the echoed source lines differ; dropping the
+  replacement touches the scanner, TS1490 and every UTF-16 column computation.
+- Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
+  repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
+- Relation paths that differ from tsgo's (not elaboration rules): conditionalTypes2 (`Extract<Extract<T, Foo>, Bar>`
+  explained through `Extract<T, Bar>`), mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
+  keyofAndIndexedAccessErrors, complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
+  (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
+  mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
+  `use(): this`), conditionalTypes1's `Partial<T>[keyof T] & {}` target display.
+- The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
+  declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.

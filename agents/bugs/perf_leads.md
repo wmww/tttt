@@ -202,3 +202,9 @@ In valibot's `*.test-d.ts`, `ty_base_constraint` of expect-type's `Expected` (co
 5-10 ms per type parameter (about 250M instructions over the corpus, 5%) when constrained type variable reduction asked
 for it; `primitive_constraint_of` (checker.c) now skips deferred declared constraints because of it. Worth a look: tsc
 computes the same constraint without it showing up.
+
+## A later resolution lowers more (2026-10-09)
+9dee2f20 (skip the source property's type against an any/unknown target property, tsgo's isPropertySymbolTypeRelated)
+cost type-fest +0.8% because the skipped property types got resolved later by costlier paths (+128k lower_node calls
+from ty_cond_branch_type / tuple_element_type); limited to getters in d361bdba. Why a later resolution lowers more (a
+memo that only fills on the early path?) isn't known: worth finding, it may cost elsewhere too.

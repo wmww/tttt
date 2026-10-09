@@ -4,7 +4,7 @@
 Only *parser* diagnostics count: the codes tsc's parser.ts / scanner.ts report (grammar errors from the checker are
 not parse errors, even when they're TS1xxx). A test is listed when tttt's parser diagnostics differ from tsc's.
 
-Divergence kinds (TS tests; JS tests are counted apart, plan 26 covers them):
+Divergence kinds (TS tests; JS tests are counted apart, bugs/js.md):
   A  tsc's parser reports nothing, tttt rejects the file (valid syntax, or tsc parses it and complains later)
   B  tttt's first parse error comes before tsc's first one
   C  same first position, different code

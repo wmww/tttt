@@ -83,3 +83,28 @@
   path as given (absolute). The CLI's unknown option exits before anything else (tsc too) but doesn't know tsc's
   short names (`-p`, `-b`, `-w`... are tttt's own handling). tsc's TS5024 (an option given a value of the wrong type)
   and watchOptions/typeAcquisition keys aren't checked.
+
+## TS 7.1 window leftovers (triage 2026-10-09)
+- `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1). `--listFiles` prints tttt's own lib paths
+  (thirdparty/lib/X.d.ts, not lib.X.d.ts) in tttt's file order: not compared against tsc.
+- `tsgo_skips_configuration()` still reads module/moduleResolution as written to skip tsgo's removed configurations;
+  `@module: none` no longer parses (TS6046), so such configurations run with the default module unless they have no
+  baselines (all 7 `@module: none` tests have none).
+- If a TS2589 runaway needs tsc's per-node instantiation budget again (the deleted tsc 6 `scripts/tscinstcount.js`),
+  port it as a `test/oracle` overlay: a patched copy of `internal/checker/checker.go` logging `c.instantiationCount`
+  where it's reset (scratch branch, never committed; test/oracle/README.md's "instrument the oracle").
+- scenarios 209 / 213 left: tsbuild/dependencyUpdate/rebuilds-when-absolute-non-root-dependency-is-updated (spurious
+  TS2307 for an absolute import of a non-root dependency under -b), tsbuild/inferredTypeFromMonorepoReference (spurious
+  TS2883, declaration emit across references), tsbuild/projectReferenceRedirect/uses-correct-project-reference-
+  redirect-when-file-belongs-to-multiple-sub-projects (spurious TS2322: a file in two sub-projects should take the
+  redirect of the project that imports it), tsbuild/contentMapperOptionDiagnostics (plan 56).
+- clidiff `--sample 4` text mismatches (type printing in messages): nodemailer (`typeof nmfetch` where tsc prints the
+  function's structural type `{ (url...): ...; DEFAULT_TIMEOUT }` for a function with expando properties),
+  query-codemods (`import('jscodeshift')` quoting/union order in a long TS2345), vitest/browser-preview (TS2339 type
+  text), vitest/test/coverage-test (an extra "is missing the following properties" line under a TS2345).
+- File include explanations (program_error_explaining_file()): type reference directives, automatic type directives
+  and lib files aren't recorded as reasons.
+- source sweep `+TS6059` (react-router/packages/create-react-router, 11 projects in 2 repos): a file outside rootDir
+  brought in by an import (`tsdown.config.ts` imports `../../build.utils.ts`) is TS6059 at the import in tttt, nothing
+  in tsgo; a root file outside rootDir is TS6059 in both. tsgo adds it as a processing diagnostic from
+  CommonSourceDirectory(), maybe only for files known at that point.
