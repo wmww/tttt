@@ -1262,6 +1262,30 @@ static bool is_closely_matched(Ty const* source, Ty const* target) {
     return source->alias && target->alias_args.len && source->alias == target->alias;
 }
 
+// tsgo's getTypeDepth: one more than the deepest type argument of a generic alias or reference, a union's or
+// intersection's deepest member's, else 0, up to `max`
+static u32 type_depth(Checker* me, Ty const* ty, u32 max) {
+    if (!max) return 0;
+    TyList list = {0};
+    if (ty->alias && ty->alias_args.len) list = ty->alias_args;
+    else if (ty->kind == TY_REFERENCE) list = ty_reference_args(me, ty);
+    else if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        u32 depth = 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            u32 d = type_depth(me, ty->composite.types.data[i], max);
+            if (d > depth) depth = d;
+        }
+        return depth;
+    }
+    if (!list.len) return 0;
+    u32 depth = 0;
+    for (u32 i = 0; i < list.len; i++) {
+        u32 d = type_depth(me, list.data[i], max - 1);
+        if (d > depth) depth = d;
+    }
+    return depth + 1;
+}
+
 static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     TyList sources = source->kind == TY_UNION ? source->composite.types : (TyList){ .data = &source, .len = 1 };
     TyList targets = target->composite.types;
@@ -1271,20 +1295,55 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
 
     // Identical members are inferred between and cancel out, then closely matched ones (tsc's inferFromMatchingTypes:
     // identical isn't the same, `IK<number>` is identical to `IK<T>` when the alias doesn't use T)
-    for (u32 pass = 0; pass < 2; pass++) {
+    for (u32 t = 0; t < targets.len; t++) {
+        if (target_done[t]) continue;
+        for (u32 s = 0; s < sources.len; s++) {
+            if (!is_identical_or_base(me, sources.data[s], targets.data[t])) continue;
+            infer_from(me, inf, sources.data[s], targets.data[t]);
+            source_done[s] = true;
+            target_done[t] = true;
+        }
+    }
+    // The closely matched targets by decreasing depth of type arguments, then in union order (tsgo 7.1's
+    // compareTypesAndDepth: string[][] to T[][] infers better than to T[]), each from every closely matched source
+    {
+        u32* order = malloc(sizeof(u32) * (targets.len ? targets.len : 1));
+        u32* depths = malloc(sizeof(u32) * (targets.len ? targets.len : 1));
+        panic_if(!order || !depths, "out of memory");
+        u32 matched = 0;
         for (u32 t = 0; t < targets.len; t++) {
             if (target_done[t]) continue;
             for (u32 s = 0; s < sources.len; s++) {
-                if (source_done[s] && pass == 1) continue;
-                bool matches = pass == 0 ?
-                    is_identical_or_base(me, sources.data[s], targets.data[t]) :
-                    is_closely_matched(sources.data[s], targets.data[t]);
-                if (!matches) continue;
-                infer_from(me, inf, sources.data[s], targets.data[t]);
-                source_done[s] = true;
-                target_done[t] = true;
+                if (source_done[s] || !is_closely_matched(sources.data[s], targets.data[t])) continue;
+                depths[matched] = type_depth(me, targets.data[t], 3);
+                order[matched++] = t;
+                break;
             }
         }
+        for (u32 i = 1; i < matched; i++) { // (Stable insertion sort: few members)
+            u32 t = order[i], d = depths[i], j = i;
+            for (; j > 0 && depths[j - 1] < d; j--) {
+                order[j] = order[j - 1];
+                depths[j] = depths[j - 1];
+            }
+            order[j] = t;
+            depths[j] = d;
+        }
+        bool* matched_source = calloc(sources.len ? sources.len : 1, sizeof(bool));
+        panic_if(!matched_source, "out of memory");
+        for (u32 i = 0; i < matched; i++) {
+            u32 t = order[i];
+            for (u32 s = 0; s < sources.len; s++) {
+                if (source_done[s] || !is_closely_matched(sources.data[s], targets.data[t])) continue;
+                infer_from(me, inf, sources.data[s], targets.data[t]);
+                matched_source[s] = true;
+            }
+            target_done[t] = true;
+        }
+        for (u32 s = 0; s < sources.len; s++) source_done[s] |= matched_source[s];
+        free(matched_source);
+        free(order);
+        free(depths);
     }
     u32 sources_left = 0, targets_left = 0;
     for (u32 s = 0; s < sources.len; s++) sources_left += !source_done[s];
