@@ -38,6 +38,8 @@ core_files = files(
     'lib_features.c',
     'lib_names.c',
     'unicode_identifiers.c',
+    'unicode_case.c',
+    'unicode_case_tables.c',
     'regex_check.c',
     'regex_tables.c',
     'unused.c',

@@ -267,6 +267,11 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
         CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
+    } else if (my symbol && my type.tag == TYPE_TEMPLATE) {
+        // (A template body: TS2590 at the template, getTemplateLiteralType's checkCrossProductUnion)
+        CurrentNode saved = ty_enter_node(current_checker, my type.template_->span);
+        ty_declared_type_of(current_checker, my symbol);
+        ty_leave_node(current_checker, saved);
     } else if (my symbol && my type.tag == TYPE_TUPLE && span_valid(my type.tuple.span)) {
         // (Likewise a tuple body, where the elements are spread: TS2799 at the tuple node)
         CurrentNode saved = ty_enter_node(current_checker, my type.tuple.span);

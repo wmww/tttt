@@ -217,6 +217,7 @@ typedef struct TemplateType {
     VecCStr texts;
     VecTypeNode types;
     VecSpan type_spans; // Where each type was written
+    Span span; // From the opening backtick to the closing one
 } TemplateType;
 
 void template_type_drop(TemplateType* me);

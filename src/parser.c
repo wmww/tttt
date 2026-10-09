@@ -9141,6 +9141,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     if (*p.pos != '`') {
         return parse_fail(&p);
     }
+    Anchor template_a = anchor(&p);
     p.pos++;
 
     TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init(), .type_spans = vec_span_init() };
@@ -9192,6 +9193,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
         parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
     }
 
+    template.span = span_from(template_a);
     *ret = (TypeNode){ .tag = TYPE_TEMPLATE, .template_ = c_new(TemplateType, template) };
     return parse_success(&p);
 }

@@ -496,10 +496,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - `lower_identifier`: `object` is a builtin declaration named "object".
 - `builder_add_interface_member`: index signature types lowered eagerly; non-literal computed keys dropped (tsc:
   late-bound index signatures).
-- Cross-product caps give the error type silently: `intersect_unions` and `ty_template_literal` (100k, TS2590
-  unreported), `normalized_tuple` (10k).
-- `append_mapped_code_point()` (template.c HACK): Uppercase & co. cover ASCII, Latin-1, basic Greek, Cyrillic;
-  `apply_mapping`'s placeholders step code points (JS: UTF-16 units). `${symbol}` templates are silently `string`.
+- Cross-product caps give the error type silently: `normalized_tuple` (10k).
+- `apply_mapping`'s placeholders step code points (JS: UTF-16 units). `${symbol}` templates are silently `string`.
 - Unique symbols: escaped names (`__@sym@12`) mapped back through `ty_unique_symbol_of_name`, so a string property
   `__@x@3` passes as a symbol; `instanceof_target_ok` matches `__@hasInstance@<id>` by text; one unique symbol per
   declaration (tsc: per merged property), so `check_subsequent_property` (check.c HACK) skips TS2717 between two.

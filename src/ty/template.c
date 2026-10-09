@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "unicode_case.h"
 #include <math.h>
 
 // Template literal types (`a${B}c`) and string mappings (`Uppercase<T>` & co.): the string-like types that aren't
@@ -71,6 +72,28 @@ static bool append_template_string(cstr* out, Ty const* ty) {
     return true;
 }
 
+// tsgo's CombineSurrogatePairs: a lone high surrogate followed by a lone low one (each kept as its WTF-8, ED A0-AF xx
+// and ED B0-BF xx) is the character they make, like "\uD83D" + "\uDE00" in JavaScript
+static void combine_surrogate_pairs(cstr* text) {
+    char* s = cstr_data(text);
+    isize n = cstr_size(text);
+    if (!memchr(s, 0xED, (size_t)n)) return;
+    isize w = 0;
+    for (isize r = 0; r < n;) {
+        unsigned char const* u = (unsigned char const*)s + r;
+        if (r + 6 <= n && u[0] == 0xED && u[1] >= 0xA0 && u[1] <= 0xAF && u[3] == 0xED && u[4] >= 0xB0 && u[4] <= 0xBF) {
+            u32 high = 0xD000 | ((u32)(u[1] & 0x3F) << 6) | (u[2] & 0x3F);
+            u32 low = 0xD000 | ((u32)(u[4] & 0x3F) << 6) | (u[5] & 0x3F);
+            u32 cp = 0x10000 + ((high - 0xD800) << 10) + (low - 0xDC00);
+            w += cutf8_encode(s + w, cp);
+            r += 6;
+        } else {
+            s[w++] = s[r++];
+        }
+    }
+    cstr_resize(text, w, 0);
+}
+
 typedef struct TemplateBuilder {
     cstr text; // The text since the last kept type
     Atom const** texts;
@@ -89,6 +112,7 @@ static void builder_push(Checker* me, TemplateBuilder* b, Ty const* type) {
         panic_if(!b->texts || !b->types, "out of memory");
     }
     b->texts_length += cstr_size(&b->text);
+    combine_surrogate_pairs(&b->text);
     b->texts[b->len] = checker_atom(me, cstr_sv(&b->text));
     b->types[b->len++] = type;
     cstr_clear(&b->text);
@@ -154,12 +178,16 @@ Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* c
         Ty const* t = types[i];
         if (t->flags & TYF_NEVER) return t;
         if (t->kind != TY_UNION) continue;
+        // (tsc's checkCrossProductUnion: a never anywhere makes it empty)
         u64 product = 1;
-        for (u32 j = 0; j < len && product < MAX_CROSS_PRODUCT; j++) {
+        for (u32 j = 0; j < len && product && product < MAX_CROSS_PRODUCT; j++) {
             if (types[j]->kind == TY_UNION) product *= types[j]->composite.types.len;
+            else if (types[j]->flags & TYF_NEVER) product = 0;
         }
-        // TODO: TS2590 "Expression produces a union type that is too complex to represent."
-        if (product >= MAX_CROSS_PRODUCT) return ty_intrinsic(me, TY_ERROR);
+        if (product >= MAX_CROSS_PRODUCT) {
+            ty_error_at_current_node_d(me, 2590, "Expression produces a union type that is too complex to represent.");
+            return ty_intrinsic(me, TY_ERROR);
+        }
         Ty const** replaced = malloc(sizeof(Ty const*) * len);
         panic_if(!replaced, "out of memory");
         memcpy(replaced, types, sizeof(Ty const*) * len);
@@ -185,6 +213,7 @@ Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* c
             ret = ty_intrinsic(me, TY_STRING);
         }
     } else if (!b.len) {
+        combine_surrogate_pairs(&b.text);
         ret = ty_string_literal(me, cstr_sv(&b.text));
     } else {
         builder_push(me, &b, nullptr); // The last text
@@ -210,69 +239,21 @@ Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* c
 
 // String mappings
 
-// One code point, JavaScript's toUpperCase()/toLowerCase(). HACK: ASCII, Latin-1, basic Greek and Cyrillic only (JS
-// maps all of Unicode, and some characters to several)
-static void append_mapped_code_point(cstr* out, u32 c, bool upper) {
-    if (upper) {
-        if (c >= 'a' && c <= 'z') c -= 32;
-        else if (c == 0xDF) { cstr_append(out, "SS"); return; }
-        else if (c == 0xB5) c = 0x39C;
-        else if (c >= 0xE0 && c <= 0xFE && c != 0xF7) c -= 32;
-        else if (c == 0xFF) c = 0x178;
-        else if (c >= 0x3B1 && c <= 0x3C9 && c != 0x3C2) c -= 32;
-        else if (c == 0x3C2) c = 0x3A3;
-        else if (c >= 0x430 && c <= 0x44F) c -= 32;
-        else if (c >= 0x450 && c <= 0x45F) c -= 80;
-    } else {
-        if (c >= 'A' && c <= 'Z') c += 32;
-        else if (c >= 0xC0 && c <= 0xDE && c != 0xD7) c += 32;
-        else if (c == 0x178) c = 0xFF;
-        else if (c >= 0x391 && c <= 0x3A9 && c != 0x3A2) c += 32;
-        else if (c >= 0x410 && c <= 0x42F) c += 32;
-        else if (c >= 0x400 && c <= 0x40F) c += 80;
-    }
-    if (c >= 0xD800 && c <= 0xDFFF) { // (A lone surrogate, kept as its WTF-8 like the parser does)
-        char wtf8[3] = { (char)0xED, (char)(0x80 | ((c >> 6) & 0x3F)), (char)(0x80 | (c & 0x3F)) };
-        cstr_append_n(out, wtf8, 3);
-        return;
-    }
-    char buf[8];
-    int n = cutf8_encode(buf, c);
-    cstr_append_n(out, buf, n);
-}
-
-// `limit`: how many code points to map (the rest is copied), -1 for all
-static void append_mapped(cstr* out, csview sv, bool upper, i32 limit) {
-    char const* p = sv.buf;
-    char const* end = sv.buf + sv.size;
-    while (p < end) {
-        if (limit == 0) {
-            cstr_append_n(out, p, end - p);
-            return;
-        }
-        int size = cutf8_chr_size(p);
-        if (size <= 0 || p + size > end) size = 1;
-        u32 c = (unsigned char)*p;
-        if (size > 1) {
-            c = size == 2 ? ((u32)(p[0] & 0x1F) << 6) | (p[1] & 0x3F) :
-                size == 3 ? ((u32)(p[0] & 0x0F) << 12) | ((u32)(p[1] & 0x3F) << 6) | (p[2] & 0x3F) :
-                ((u32)(p[0] & 0x07) << 18) | ((u32)(p[1] & 0x3F) << 12) | ((u32)(p[2] & 0x3F) << 6) | (p[3] & 0x3F);
-        }
-        if (c < 0x80 || (size > 1)) append_mapped_code_point(out, c, upper);
-        else cstr_append_n(out, p, size);
-        p += size;
-        if (limit > 0) limit--;
-    }
-}
-
 // tsc's applyStringMapping
 static Atom const* apply_mapping(Checker* me, TyStringMapping mapping, csview sv) {
     cstr out = cstr_null;
     switch (mapping) {
-        case TY_MAPPING_UPPERCASE: append_mapped(&out, sv, true, -1); break;
-        case TY_MAPPING_LOWERCASE: append_mapped(&out, sv, false, -1); break;
-        case TY_MAPPING_CAPITALIZE: append_mapped(&out, sv, true, 1); break;
-        case TY_MAPPING_UNCAPITALIZE: append_mapped(&out, sv, false, 1); break;
+        case TY_MAPPING_UPPERCASE: unicode_to_upper_js(&out, sv); break;
+        case TY_MAPPING_LOWERCASE: unicode_to_lower_js(&out, sv); break;
+        case TY_MAPPING_CAPITALIZE:
+        case TY_MAPPING_UNCAPITALIZE: {
+            // (The first character alone: Final_Sigma doesn't see the rest)
+            isize first = unicode_first_char_size(sv);
+            csview head = csview_from_n(sv.buf, first);
+            if (mapping == TY_MAPPING_CAPITALIZE) unicode_to_upper_js(&out, head);
+            else unicode_to_lower_js(&out, head);
+            cstr_append_n(&out, sv.buf + first, sv.size - first);
+        }   break;
     }
     Atom const* ret = checker_atom(me, cstr_sv(&out));
     cstr_drop(&out);

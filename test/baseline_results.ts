@@ -30346,9 +30346,9 @@ const baselines = {
         types: true,
     },
     'stringMappingSpecialCasing': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringMatchAll': {
         errors: true,
@@ -31146,12 +31146,12 @@ const baselines = {
         types: true,
     },
     'templateLiteralTypeSurrogatePairConcatenation': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralTypeTooComplex': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
