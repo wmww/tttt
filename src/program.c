@@ -732,7 +732,8 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 my adding_package_redirect = nullptr;
                 // (Only an extension the name itself has counts, not one a package.json or an export map wrote:
                 // tsc's candidateIsFromPackageJsonField, tryExtractTSExtension of the name)
-                ref->used_ts_extension = resolved.used_ts_extension && name_has_ts_extension(cstr_sv(&ref->path));
+                ref->used_ts_extension = resolved.used_ts_extension &&
+                    (resolved.ts_extension_from_star || name_has_ts_extension(cstr_sv(&ref->path)));
                 if (dedup && ref->file) {
                     if (first) {
                         if (first != ref->file) {
@@ -784,7 +785,9 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 ref->failure = MODULE_REF_JSON_WITHOUT_OPTION;
             } else if (resolved.needs_extension) {
                 ref->failure = MODULE_REF_NEEDS_EXTENSION;
-                if (cstr_size(&resolved.suggested_extension)) {
+                // (None for a path ending in a separator: tsgo's HasTrailingDirectorySeparator check, `./foo/` isn't
+                // `./foo/.js`)
+                if (cstr_size(&resolved.suggested_extension) && !cstr_ends_with(&ref->path, "/")) {
                     cstr_take(&ref->resolved_path, cstr_d(ref->path, resolved.suggested_extension));
                 }
             }

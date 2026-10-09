@@ -502,8 +502,21 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
     if (my used_ts_extension && !allowed && !type_only && my file && !dts.size) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
-        error_ctx_error_d(errs, my span, 5097,
-            "An import path can only end with a '.", csview_slice(cstr_sv(&my path), dot, cstr_size(&my path)),
+        csview extension = csview_slice(cstr_sv(&my path), dot > 0 ? dot - 1 : 0, cstr_size(&my path));
+        if (!csview_equals(extension, ".ts") && !csview_equals(extension, ".tsx") && !csview_equals(extension, ".mts") &&
+            !csview_equals(extension, ".cts")
+        ) {
+            // (A `*` of a package.json target matched it inside the name, `#/foo.ts.omg`: the first one it contains,
+            // tsgo's fallback over SupportedTSExtensionsFlat)
+            static char const* const flat[] = { ".ts", ".tsx", ".d.ts", ".cts", ".d.cts", ".mts", ".d.mts" };
+            for (u32 i = 0; i < c_arraylen(flat); i++) {
+                if (csview_contains(cstr_sv(&my path), flat[i])) {
+                    extension = csview_from(flat[i]);
+                    break;
+                }
+            }
+        }
+        error_ctx_error_d(errs, my span, 5097, "An import path can only end with a '", extension,
             "' extension when 'allowImportingTsExtensions' is enabled.");
     }
     if (options->rewrite_relative_import_extensions && !type_only && my file && !dts.size &&

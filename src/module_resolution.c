@@ -25,6 +25,7 @@ typedef struct Found {
     cstr path;
     ResolvedKind kind;
     bool used_ts_extension;
+    bool ts_extension_from_star; // used_ts_extension of a package.json target's `*` (load_package_json_field())
     bool arbitrary_extension;
 } Found;
 
@@ -750,6 +751,9 @@ static bool load_package_json_field(State* me, csview candidate, csview value, i
         if (try_file(me, candidate, extension, &out->path)) {
             out->kind = kind_of_extension(extension);
             out->used_ts_extension = value.size && !(value.size >= extension.size && memcmp(value.buf + value.size - extension.size, extension.buf, (size_t)extension.size) == 0);
+            // (The specifier's part a `*` matched had it: `#/foo.ts.omg` of "#/*.omg": "./src/*", tsgo's
+            // loadFileNameFromPackageJSONField)
+            out->ts_extension_from_star = out->used_ts_extension && csview_ends_with(value, "*");
             return true;
         }
     }
@@ -1481,6 +1485,7 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.path = found.path;
         ret.is_external_library = external;
         ret.used_ts_extension = found.used_ts_extension;
+        ret.ts_extension_from_star = found.ts_extension_from_star;
         ret.arbitrary_extension = found.arbitrary_extension;
         ret.package_id = package_id_of(&state, cstr_sv(&ret.path), &ret.package_name);
         apply_realpath(me, &ret);
