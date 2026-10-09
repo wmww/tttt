@@ -1710,7 +1710,15 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_SYMBOL: out_lit(d, "symbol"); break;
         case TYPE_BIGINT: out_lit(d, "bigint"); break;
         case TYPE_VALUE: {
-            // Literals print normalized, like tsc's printer does a cloned literal node (`'a'` is `"a"`, `0x10` is 16)
+            // A string literal keeps its quotes, its text escaped again (tsgo's node copy clones the node, which keeps
+            // its TokenFlagsSingleQuote, with NoAsciiEscaping, and the printer can't reach the original text of a
+            // clone): `'a"b'` stays `'a"b'`, `'\x41'` prints `'A'`
+            if (node->value.tag == VALUE_STRING) {
+                bool single = node->value_span.sv.size && node->value_span.sv.buf[0] == '\'';
+                display_quoted_string(d, cstr_sv(&node->value.string), single, false);
+                break;
+            }
+            // Other literals print normalized (`0x10` is 16)
             Ty const* literal = ty_literal(me, &node->value);
             if (literal->kind == TY_LITERAL && !(literal->flags & (TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL)) &&
                 !literal->literal.string && node->value.tag == VALUE_NUMBER && node->value.number < 0
