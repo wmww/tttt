@@ -5209,7 +5209,7 @@ static bool only_trivia_until(const char* at, const char* end) {
 // containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
 // eof: the comments are the end of the file's, whose JSDoc host is the end of file token (checked like any other)
 static void jsdoc_bind_comments(
-    Parser* parent, const char* from, const char* to, const char* inner_from, const char* inner_to, bool bind, bool toplevel,
+    Parser* parent, const char* from, const char* to, const char* inner_from, bool bind, bool toplevel,
     bool eof, VecStatement* out
 ) {
     VecJsDocRange* comments = &parent->shared->jsdoc_comments;
@@ -5295,11 +5295,6 @@ static void jsdoc_bind_comments(
                     .type = type,
                     .jsdoc = true,
                     .jsdoc_twice = *after == '(',
-                    // (A comment inside a statement no inner list claimed, a class member's: its typedef isn't named
-                    // when printed, like a local one)
-                    // (Not one after the statement's last token, which its span may include: its parse hopped the
-                    // trivia looking for a `;`)
-                    .local = inner_from && range.start > inner_from && !only_trivia_until(range.end, inner_to),
                 }),
                 .span = span,
             });
@@ -12778,22 +12773,11 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 p.shared->jsdoc_after = nullptr;
             }
             if (p.shared->source->is_js) {
-                isize before = vec_statement_size(ret);
-                jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span),
-                    span_end_ptr(ret->data[statement_index].span), true, toplevel, false, ret);
+                jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span), true, toplevel,
+                    false, ret);
                 jsdoc_from = p.pos;
-                // The typedefs of the comments of a class declaration's members resolve names in the class
-                Statement const* host = vec_statement_at(ret, statement_index);
-                ClassDecl const* host_class = host->tag == STATEMENT_DECL_CLASS ? host->decl.class : nullptr;
-                for (isize i = before; host_class && i < vec_statement_size(ret); i++) {
-                    Statement* declaration = vec_statement_at_mut(ret, i);
-                    if (declaration->tag == STATEMENT_DECL_TYPE && declaration->decl.type->jsdoc &&
-                        span_start_ptr(declaration->span) > span_start_ptr(host_class->full_span) &&
-                        span_end_ptr(declaration->span) <= span_end_ptr(host_class->full_span)
-                    ) {
-                        declaration->decl.type->jsdoc_class = host_class;
-                    }
-                }
+                // (The typedefs of a class body's comments are hoisted out of the class: tsgo resolves their names
+                // where the class is, without its `@template`s)
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
         } else if (*p.pos == '\\') {
@@ -12827,7 +12811,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
     if (p.shared->source->is_js) {
         bool eof = ctx == PARSING_SOURCE_ELEMENTS && toplevel && !*p.pos;
-        jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, eof, ret);
+        jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, eof, ret);
     }
 
     return parse_success(&p);

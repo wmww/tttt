@@ -32728,7 +32728,7 @@ const baselines = {
     'typedefHoisting': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofAmbientExternalModules': {
         errors: true,
@@ -51458,7 +51458,7 @@ const baselines = {
     'callbackOnConstructor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackTag1': {
         errors: true,
@@ -52721,9 +52721,9 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateClass': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateConstructorFunction': {
         errors: true,

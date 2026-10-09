@@ -1767,7 +1767,6 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 break;
             }
             // (A class member's typedef sees the class's type parameters)
-            if (my decl.type->jsdoc_class && my decl.type->jsdoc_class->jsdoc_scope) names = my decl.type->jsdoc_class->jsdoc_scope;
             Scope* self_scope = scope_new_self(names, my decl.type->symbol, my decl.props.declared);
             // (A JSDoc `@typedef`'s `@template`s aren't checked for use: tsc's checkJSDocTypeAliasTag doesn't
             // registerForUnusedIdentifiersCheck)

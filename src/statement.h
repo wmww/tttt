@@ -81,10 +81,6 @@ typedef struct TypeDecl {
     // statement), which tsc declares in the enclosing container (bindTypeParameter: no
     // getEffectiveContainerForJSDocTemplateTag)
     bool jsdoc_free_templates;
-    // A JavaScript typedef in the comment of a member of this class: declared where the class is (tsc's
-    // getEnclosingBlockScopeContainer of the host), its type resolved where it's written, which sees the class's
-    // `@template`s (ClassDecl.jsdoc_scope)
-    struct ClassDecl const* jsdoc_class;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
