@@ -9193,7 +9193,7 @@ const baselines = {
     'declarationEmitTypeofRest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeofThisInClass': {
         errors: true,

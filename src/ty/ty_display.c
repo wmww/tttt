@@ -959,6 +959,13 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
             for (u32 j = 0; j < i->count; j++) {
                 SigParam const* param = &i->params[j];
+                // (Where the rest tuple was expanded, the original parameter at that index is the name, if any:
+                // tsgo's enterNewScope; `typeof a` of the rest `a` means it)
+                if (i->originals && i->originals != i->params) {
+                    SigParam const* original = j < i->original_count ? &i->originals[j] : nullptr;
+                    if (!original) continue;
+                    if (original->decl != param->decl || original->name != param->name) param = original;
+                }
                 if (!csview_equals_sv(atom_sv(param->name), first)) continue;
                 return symbol && param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER &&
                     param->decl->initializer.binding.symbol == symbol;
@@ -2400,7 +2407,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     u32 param_count = sig->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
-    TyDisplayParams printed = { .params = params, .count = param_count, .function = function, .outer = d.printed_params };
+    TyDisplayParams printed = {
+        .params = params, .count = param_count, .originals = sig->params, .original_count = sig->param_count,
+        .function = function, .outer = d.printed_params,
+    };
     if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
     if (sig->this_type) {
         // (A `this` from a contextual signature whose own is a JSDoc `@this` has no declaration: tsc's

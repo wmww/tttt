@@ -2344,6 +2344,10 @@ typedef struct TyDisplay {
 typedef struct TyDisplayParams {
     struct SigParam const* params;
     u32 count;
+    // The signature's own parameters when `params` expanded a rest tuple: what the names mean (tsgo's fake scope has the
+    // original parameter at each index where the expanded one differs)
+    struct SigParam const* originals;
+    u32 original_count;
     struct FunctionImpl const* function; // Whose parameters they are, if known
     struct TyDisplayParams const* outer;
 } TyDisplayParams;
