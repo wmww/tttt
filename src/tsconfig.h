@@ -36,6 +36,10 @@ failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* opt
 // of the config's `files` or `include` specs (tsconfig_load() recorded them in options) has the file at path
 // (absolute); config_name is the config as messages name it
 cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name);
+// Which spec makes the file at path (absolute) a root file (tsgo's GetMatchedFileSpec, then GetMatchedIncludeSpec):
+// *index is its index among options' config_files or config_include_specs
+typedef enum ConfigSpecMatch { CONFIG_SPEC_NONE, CONFIG_SPEC_FILES, CONFIG_SPEC_INCLUDE, CONFIG_SPEC_DEFAULT_INCLUDE } ConfigSpecMatch;
+ConfigSpecMatch tsconfig_match_root_file(CompilerOptions const* options, csview path, isize* index);
 
 // The nearest tsconfig.json in directory or above it, null if there is none
 cstr tsconfig_find(Fs const* fs, csview directory);

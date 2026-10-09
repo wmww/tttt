@@ -40,7 +40,7 @@ CompilerOptions* program_options(Program* me);
 
 // The tsconfig.json the options came from (tsc's options.configFile): diagnostics about the options go on it. Returns
 // its source file, which isn't part of the program (nothing parses or checks it), null if it can't be read
-SourceFile const* program_set_config_file(Program* me, csview path, bool report_syntax);
+SourceFile const* program_set_config_file(Program* me, csview path);
 
 // A diagnostic at those byte offsets of the config file (a global one without a config)
 typedef struct Error Error;

@@ -249,7 +249,7 @@ static void program_drop(Program* me) {
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
 
-SourceFile const* program_set_config_file(Program* me, csview path, bool report_syntax) {
+SourceFile const* program_set_config_file(Program* me, csview path) {
     cstr contents = cstr_null;
     try (fs_read_file(my fs, path, &contents)) if_err (e) {
         ignore e;
@@ -267,14 +267,11 @@ SourceFile const* program_set_config_file(Program* me, csview path, bool report_
     my config_source->is_config = true;
     my config_source->unchecked = true;
     // tsc's parseJsonText: the config's syntax errors (TS1005 & co) are its parsing diagnostics, reported whatever
-    // else is wrong (they stop nothing); what json_parse() recovers of a broken config is still what's read.
-    // Without report_syntax they're dropped, like tsc's test harness does (it ignores the ParsedCommandLine's errors,
-    // and the program only reports the config's program diagnostics)
+    // else is wrong (they stop nothing); what json_parse() recovers of a broken config is still what's read. tsgo's
+    // test harness reports them too (tsconfigRootdirInclude)
     bool own_options = !compiler_options_private;
     if (own_options) set_compiler_options(&my options);
-    ErrorCtx dropped = error_ctx_scratch(my errs);
-    parse_file(my config_source, report_syntax ? my errs : &dropped);
-    error_ctx_drop(&dropped);
+    parse_file(my config_source, my errs);
     if (own_options) clear_compiler_options();
     if (!json_parse(cstr_sv(&my config_source->contents), &my config_json)) my config_json = (JsonValue){0};
     return my config_source;
@@ -2295,6 +2292,50 @@ static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReas
     return cstr_null;
 }
 
+// The string element of the config's own (not an extended config's) `files` or `include` array (tsgo's
+// GetTsConfigPropArrayElementValue): the index-th string of `files`, the first `include` spec equal to spec
+static JsonValue const* config_spec_element(Program const* me, char const* key, isize index, csview spec) {
+    if (!my config_source || my config_json.tag != JSON_OBJECT) return nullptr;
+    JsonValue const* array = json_get_tagged(&my config_json, key, JSON_ARRAY);
+    for (isize i = 0, strings = 0; array && i < array->count; i++) {
+        JsonValue const* item = &array->items[i];
+        if (item->tag != JSON_STRING) continue;
+        if (spec.buf ? csview_equals_sv(cstr_sv(&item->string), spec) : strings == index) return item;
+        strings++;
+    }
+    return nullptr;
+}
+
+// tsgo's FileIncludeReason.toRelatedInfo: where a reason that isn't the diagnostic's location is (an import or
+// reference; for a root file the config's `files` element or non-default `include` pattern naming it)
+static void add_include_related_info(Program* me, Error* error, SourceFile const* file, IncludeReason const* reason) {
+    switch (reason->kind) {
+        case INCLUDE_IMPORT:
+            if (span_valid(reason->at)) error_add_related_d(error, reason->at, 1399, "File is included via import here.");
+            return;
+        case INCLUDE_REFERENCE:
+            if (span_valid(reason->at)) error_add_related_d(error, reason->at, 1401, "File is included via reference here.");
+            return;
+        case INCLUDE_ROOT: {
+            cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&file->canonical_path));
+            isize index = 0;
+            ConfigSpecMatch match = tsconfig_match_root_file(&my options, cstr_sv(&absolute), &index);
+            cstr_drop(&absolute);
+            JsonValue const* at = match == CONFIG_SPEC_FILES ? config_spec_element(me, "files", index, (csview){0}) :
+                match == CONFIG_SPEC_INCLUDE ?
+                config_spec_element(me, "include", 0, cstr_sv(&my options.config_include_specs.items[index])) : nullptr;
+            if (!at || at->end > cstr_size(&my config_source->contents)) return;
+            if (match == CONFIG_SPEC_FILES) {
+                error_add_related_d(error, config_span(me, at->start, at->end), 1410, "File is matched by 'files' list specified here.");
+            } else {
+                error_add_related_d(error, config_span(me, at->start, at->end), 1408, "File is matched by include pattern specified here.");
+            }
+            return;
+        }
+        case INCLUDE_NONE: return;
+    }
+}
+
 // tsc's explainRedirectAndImpliedFormat: why a module file has the format it has (GetImpliedNodeFormatForEmit)
 static void explain_implied_format(Error* error, SourceFile const* file) {
     if (!file->is_module) return;
@@ -2345,6 +2386,9 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
             if (cstr_size(&text)) error_sub_error_s(chain, span_null, TS_CODE_NONE, text);
             else cstr_drop(&text);
         }
+    }
+    for (u32 i = 0; i < file->include_reason_count; i++) {
+        if (&file->include_reasons[i] != preferred) add_include_related_info(me, error, file, &file->include_reasons[i]);
     }
     CompilerOptions const* saved = compiler_options_private;
     set_compiler_options(program_options_of(me, file));

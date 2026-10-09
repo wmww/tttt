@@ -893,24 +893,38 @@ static void record_config_specs(ConfigLoad* me) {
     o->config_exclude_given = my exclude != nullptr;
 }
 
-cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name) {
-    if (!options->config_files.count && !options->config_include_specs.count && !options->config_default_include) {
-        return cstr_lit("Root file specified for compilation");
-    }
+ConfigSpecMatch tsconfig_match_root_file(CompilerOptions const* options, csview path, isize* index) {
     // getMatchedFileSpec, then getMatchedIncludeSpec (a JSON file only by a spec ending in .json)
     for (isize i = 0; i < options->config_files.count; i++) {
         if (csview_equals_sv(cstr_sv(&options->config_files.items[i]), path)) {
-            return cstr_lit("Part of 'files' list in tsconfig.json");
+            *index = i;
+            return CONFIG_SPEC_FILES;
         }
     }
-    if (options->config_default_include) return cstr_lit("Matched by default include pattern '**/*'");
+    if (options->config_default_include) return CONFIG_SPEC_DEFAULT_INCLUDE;
     bool json = csview_ends_with(path, ".json");
     for (isize i = 0; i < options->config_include_patterns.count; i++) {
         csview pattern = cstr_sv(&options->config_include_patterns.items[i]);
         if (json && !csview_ends_with(pattern, ".json")) continue;
         if (glob_matches(pattern, path, false)) {
-            return cstr_d("Matched by include pattern '", options->config_include_specs.items[i], "' in '", config_name, "'");
+            *index = i;
+            return CONFIG_SPEC_INCLUDE;
         }
+    }
+    return CONFIG_SPEC_NONE;
+}
+
+cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name) {
+    if (!options->config_files.count && !options->config_include_specs.count && !options->config_default_include) {
+        return cstr_lit("Root file specified for compilation");
+    }
+    isize index = 0;
+    switch (tsconfig_match_root_file(options, path, &index)) {
+        case CONFIG_SPEC_FILES: return cstr_lit("Part of 'files' list in tsconfig.json");
+        case CONFIG_SPEC_DEFAULT_INCLUDE: return cstr_lit("Matched by default include pattern '**/*'");
+        case CONFIG_SPEC_INCLUDE:
+            return cstr_d("Matched by include pattern '", options->config_include_specs.items[index], "' in '", config_name, "'");
+        case CONFIG_SPEC_NONE: break;
     }
     return cstr_lit("Root file specified for compilation");
 }

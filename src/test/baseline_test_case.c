@@ -612,7 +612,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
         if (loaded) {
             my has_tsconfig = true;
-            i->config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
+            i->config_source = program_set_config_file(my program, cstr_sv(&i->path));
             // Its parsing diagnostics (those of a config it extends have no location here). The loader names the
             // config absolute, the test by its own spelling (`/tsconfig.json`, `tsconfig.json`)
             cstr harness_cwd = cstr_null;
@@ -748,17 +748,22 @@ static void format_error_tree(
     }
 
     // Add toplevel errors and non-related errors (sub-errors that don't have a valid span) to the global string
+    // (tsgo's harness removes the test path prefixes from messages too: `File '/.src/a.ts'` is `File 'a.ts'`)
     if (indent_level == 0 || !span_valid(error->span)) {
+        isize from = cstr_size(global_target);
         cstr_append_d(global_target, DEFAULT_DISPLAY, repeated_d("  ", indent_level), error->message, "\r\n");
+        remove_test_path_prefixes(global_target, from);
     }
 
     if (indent_level == 0 || !span_valid(error->span)) {
         // Handle toplevel errors and non-related errors (sub-errors that don't have a valid span)
+        isize from = cstr_size(file_target);
         cstr_append_d(
             file_target, DEFAULT_DISPLAY,
             "\r\n!!! ", error_category_name(toplevel), " TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level),
             error->message
         );
+        remove_test_path_prefixes(file_target, from);
     } else {
         // Handle related errors (sub-errors that do have a valid span): in their own file, lib files without a position
         SourceFile const* related_source = error->span.source ? error->span.source : current_source;
