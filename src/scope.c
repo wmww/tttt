@@ -4555,6 +4555,8 @@ static void report_misspelled_or(
 // `canonical`: the code of the error there would be without a suggestion (tsc's nameNotFoundMessage), which the
 // suggestion's diagnostic sorts by (its canonicalHead)
 static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, unsigned canonical, ErrorCtx* errs) {
+    // (Not where nothing is reported, a skipLibCheck declaration file's: a suggestion looks at every name in scope)
+    if (!errs || (at.source && !source_file_is_checked(at.source))) return false;
     Suggestion suggestion = {0};
     if (!scope_suggest(me, name, meaning, &suggestion)) return false;
     Error* error = namespace ?
