@@ -5360,6 +5360,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 return type;
             }
             Ty const* checked = ty_check_expr(me, &as_type->expr, type);
+            // (tsc's checkSatisfiesExpression relates the two right away, and makes the message of TS1360 there: what
+            // printing the target resolves, the return type in flight of `const f = () => 1 satisfies typeof f`, is
+            // circular then (TS7023, `() => any`). The diagnostic itself is the walk's)
+            if (!(type->flags & TYF_ERROR) && !ty_is_related(me, ty_regular(me, checked), type, TY_RELATION_ASSIGNABLE)) {
+                cstr printed = ty_to_cstr(me, type);
+                cstr_drop(&printed);
+            }
             return type->flags & TYF_ERROR ? type : checked; // (tsc's checkSatisfiesExpressionWorker)
         }
 

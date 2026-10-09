@@ -24671,14 +24671,14 @@ const baselines = {
         types: true,
     },
     'noTypeToStringRecursion': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noTypeToStringStackOverflow': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noUncheckedIndexAccess': {
         errors: true,

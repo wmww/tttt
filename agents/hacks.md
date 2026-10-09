@@ -374,6 +374,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `contains_spread` (members.c HACK, ObjectFlags.ContainsSpread): read off the properties (one not the literal's own),
   so `{ ...{} }` doesn't count.
 
+- `x satisfies T` (`ty/expr.c` EXPR_AS_TYPE): relates right away and, when that fails, prints T and throws the text
+  away, because tsc builds TS1360's message there and printing T resolves what it resolves (a return type in flight:
+  `const f = () => 1 satisfies typeof f` is TS7023). The diagnostic itself is still the walk's. A message built for
+  its side effects; the general fix is reporting satisfies where it's checked (tsgo's checkSatisfiesExpression).
+
 ## Relations (`ty/relate.c`)
 - `find_prop()` of an intersection: optional property types are kept without undefined (readers add it; tsc's
   getTypeOfSymbol includes it). An optional intersection property with a non-member part (`typeof f & { m?: X }`) is
