@@ -2519,9 +2519,13 @@ static Ternary props_related_impl(
         }
         Ty const* target_type = prop_type(me, target_prop);
         // (Anything is related to an any property, unknown too unless strict subtypes: tsc's isPropertySymbolTypeRelated
-        // doesn't ask for the source property's type then, a getter's that would be circular)
+        // doesn't ask for the source property's type then, a getter's that would be circular. Only skipped for a getter:
+        // elsewhere asking is unobservable, and type-fest costs 0.8% more instructions when its property types are
+        // resolved later instead)
         Ternary related = TERNARY_TRUE;
-        if (!(target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN))) {
+        bool skip = (target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN)) &&
+            source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
+        if (!skip) {
             Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
             if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
                 Ty const* parts[2] = { target_type, undefined };
