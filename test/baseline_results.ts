@@ -2553,7 +2553,7 @@ const baselines = {
     'bluebirdStaticThis': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bom-utf16be': {
         errors: true,
@@ -4073,7 +4073,7 @@ const baselines = {
     'classdecl(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'clinterfaces': {
         errors: true,
@@ -5253,7 +5253,7 @@ const baselines = {
     'complexRecursiveCollections': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'complicatedGenericRecursiveBaseClassReference': {
         errors: true,
@@ -5273,7 +5273,7 @@ const baselines = {
     'complicatedPrivacy(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compositeContextualSignature': {
         errors: true,
@@ -7508,12 +7508,12 @@ const baselines = {
     'declFileGenericType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileGenericType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileImportChainInExportAssignment': {
         errors: true,
@@ -7553,7 +7553,7 @@ const baselines = {
     'declFileModuleContinuation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileModuleWithPropertyOfTypeModule': {
         errors: true,
@@ -7723,17 +7723,17 @@ const baselines = {
     'declFileWithInternalModuleNameConflictsInExtendsClause1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileWithInternalModuleNameConflictsInExtendsClause2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileWithInternalModuleNameConflictsInExtendsClause3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declInput-2': {
         errors: true,
@@ -15453,12 +15453,12 @@ const baselines = {
     'genericConstraintOnExtendedBuiltinTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericConstraintOnExtendedBuiltinTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericConstraintSatisfaction1': {
         errors: true,
@@ -16208,7 +16208,7 @@ const baselines = {
     'heritageClauseTypeReferenceTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'heterogeneousArrayAndOverloads': {
         errors: true,
@@ -18528,12 +18528,12 @@ const baselines = {
     'interfaceDeclaration3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceDeclaration4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceDeclaration5': {
         errors: true,
@@ -18658,7 +18658,7 @@ const baselines = {
     'interfacePropertiesWithSameName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfacePropertiesWithSameName3': {
         errors: true,
@@ -20598,7 +20598,7 @@ const baselines = {
     'jsxComplexSignatureHasApplicabilityError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxComponentTypeErrors': {
         errors: true,
@@ -26683,7 +26683,7 @@ const baselines = {
     'privacyClassImplementsClauseDeclFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyFunc': {
         errors: true,
@@ -27683,7 +27683,7 @@ const baselines = {
     'recursiveClassReferenceTest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveCloduleReference': {
         errors: true,
@@ -33123,7 +33123,7 @@ const baselines = {
     'unionReductionWithStringMappingAndIdenticalBaseTypeExistsNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionRelationshipCheckPasses': {
         errors: true,
@@ -49808,7 +49808,7 @@ const baselines = {
     'implementsClause': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importClause_default': {
         errors: true,
@@ -49903,7 +49903,7 @@ const baselines = {
     'nestedNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'renamed': {
         errors: true,
@@ -53333,7 +53333,7 @@ const baselines = {
     'inlineJsxFactoryDeclarationsLocalTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryLocalTypeGlobalFallback': {
         errors: true,
@@ -65373,7 +65373,7 @@ const baselines = {
     'genericTypeReferenceWithoutTypeArgument': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeReferenceWithoutTypeArgument2': {
         errors: true,

@@ -1182,13 +1182,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                             .text = symbol_text(ctx, decl),
                         });
                     }
+                    // (Of type any, whatever it names: tsgo's getTypeAtLocation of an `implements` or interface
+                    // `extends` clause's qualifier, where TS 6.0 had its value's type)
                     ctx->any_keeps_rendering = true;
-                    if (decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
-                        !symbol_type_only_declaration(decl)) {
-                        baseline_test_case_add_symbol_value(ctx, prefix, decl);
-                    } else {
-                        baseline_test_case_add_type_node(ctx, prefix, &type_any);
-                    }
+                    baseline_test_case_add_type_node(ctx, prefix, &type_any);
                 }
             }
             VecSpan so_far = vec_span_init();
@@ -1198,14 +1195,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 Symbol const* decl = index < vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier)) ?
                     *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), index) :
                     nullptr;
-                ctx->any_keeps_rendering = true; // Part of a qualified name
-                if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
-                    (i_index == 0 || !symbol_type_only_declaration(decl))) {
-                    // A heritage clause's name is an expression to tsc's writer (ExpressionWithTypeArguments)
-                    baseline_test_case_add_symbol_value(ctx, *i, decl);
-                } else {
-                    baseline_test_case_add_type_node(ctx, *i, &type_any);
-                }
+                ctx->any_keeps_rendering = true; // Part of a qualified name (any in a heritage clause too, see above)
+                baseline_test_case_add_type_node(ctx, *i, &type_any);
                 // (After an unresolved name of a heritage clause, the rest are expressions of no symbol)
                 if (heritage && (!decl || heritage_unresolved)) {
                     heritage_unresolved = true;
