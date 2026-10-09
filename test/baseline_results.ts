@@ -52128,7 +52128,7 @@ const baselines = {
     'jsDeclarationsTypedefAndImportTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypedefAndLatebound': {
         errors: true,

@@ -707,7 +707,10 @@ static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol
     }
     // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`)
     Symbol const* module = declaring_module(symbol);
-    if (module && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
+    // (Not through a CommonJS module's `export=` when the module has types too, see above)
+    bool commonjs_namespace = module && module->is_module && module->module && module->module->file &&
+        module->module->file->is_commonjs && commonjs_module_has_types(module);
+    if (module && !commonjs_namespace && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
     return 0;
 }
 
