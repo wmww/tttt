@@ -20351,9 +20351,9 @@ const baselines = {
         types: true,
     },
     'jsdocImportTypeNodeNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocImportTypeResolution': {
         errors: true,
@@ -52166,9 +52166,9 @@ const baselines = {
         types: true,
     },
     'enumTagImported': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumTagOnExports': {
         errors: true,
@@ -52531,9 +52531,9 @@ const baselines = {
         types: true,
     },
     'jsdocImportTypeReferenceToStringLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocIndexSignature': {
         errors: true,

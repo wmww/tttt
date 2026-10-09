@@ -45,7 +45,8 @@ static Symbol const* get_symbol_from_namespace(
     if (!namespace) return nullptr;
     Symbol const* member = symbol_get_export(namespace, item_name.sv);
     Symbol const* decl = symbol_for_meaning(member, meaning);
-    if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
+    // (A value is TS2749 below in a qualified name, tsc's canSuggestTypeof; an import type's is TS2694 here)
+    if (!decl && meaning == SYMBOL_TYPE && suggest) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING);
     if (!decl) {
         cstr qualified = symbol_fully_qualified_name(shown ? shown : namespace);
         if (!suggest || !scope_report_misspelled_export(namespace, item_name, cstr_sv(&qualified), false, errs)) {
