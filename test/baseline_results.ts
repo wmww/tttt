@@ -51497,7 +51497,7 @@ const baselines = {
     },
     'checkExportsObjectAssignProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkExportsObjectAssignPrototypeProperty': {
