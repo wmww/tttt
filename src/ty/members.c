@@ -199,7 +199,7 @@ static int prop_order_cmp(PropOrder const* a, PropOrder const* b) {
 
 static void builder_sort_stable(MembersBuilder* builder) {
     u32 n = builder->props_count;
-    if (n < 2 || !compiler_options()->stable_type_ordering) return;
+    if (n < 2) return;
     PropOrder stack[32];
     PropOrder* order = n <= c_arraylen(stack) ? stack : malloc(sizeof(PropOrder) * n);
     panic_if(!order, "out of memory");
@@ -237,7 +237,6 @@ static void builder_sort_stable(MembersBuilder* builder) {
 // tsc's getNamedMembers lists a class's static members declared in the class first, then the others by declaration
 // (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
 static void builder_prototype_last(MembersBuilder* builder) {
-    if (!compiler_options()->stable_type_ordering) return;
     for (u32 i = 0; i < builder->props_count; i++) {
         Prop* prop = builder->props[i];
         if (!(prop->flags & PROP_PROTOTYPE)) continue;
@@ -3534,7 +3533,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     }
     // A tuple has no symbol, so tsc 6's getNamedMembers sorts all of its properties: the array's by declaration (the
     // order they are in already), then the element properties and `length`, which have no declaration, by name
-    if (compiler_options()->stable_type_ordering && array && builder.props_count > fixed + 1) {
+    if (array && builder.props_count > fixed + 1) {
         Prop* stack[16];
         Prop** own = fixed + 1 <= c_arraylen(stack) ? stack : malloc(sizeof(Prop*) * (fixed + 1));
         panic_if(!own, "out of memory");
@@ -3731,13 +3730,9 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
                 // (tsc 6's getNamedMembers puts the late-bound ones back in declaration order: the members are in it
                 // already unless there are some)
-                if (!compiler_options()->stable_type_ordering) {
-                    builder_late_bound_last(&builder, 0);
-                } else {
-                    bool late = false;
-                    for (u32 i = 0; i < builder.props_count && !late; i++) late = name_span_is_late_bound(builder.props[i]->decl->name_span);
-                    if (late) builder_sort_stable(&builder);
-                }
+                bool late = false;
+                for (u32 i = 0; i < builder.props_count && !late; i++) late = name_span_is_late_bound(builder.props[i]->decl->name_span);
+                if (late) builder_sort_stable(&builder);
             }
             return builder_finish(me, &builder);
         }

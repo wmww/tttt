@@ -342,8 +342,6 @@ static u64 object_prefix(ObjectSym s) {
 }
 
 static u64 compute_key(Ty const* t) {
-    // (stableTypeOrdering false: creation order, tsc 5's type ids)
-    if (!compiler_options()->stable_type_ordering) return (u64)t->id << 1 | 1;
     u64 rank = ty_order_rank(t);
     u64 key = rank << KEY_RANK_SHIFT | 1;
     TypeName n = type_name(t);
@@ -393,6 +391,26 @@ u64 ty_order_key(Ty const* t) {
     k = compute_key(t);
     ((Ty*)t)->order_key = k; // (A cache: the checker that owns the type is the only one reading it)
     return k;
+}
+
+// By value (tsgo's compareTypes: PseudoBigInt.Compare), as decimal digits
+static int cmp_bigints(BigintValue a, BigintValue b) {
+    cstr x = cstr_init(), y = cstr_init();
+    bigint_append_decimal(&x, a);
+    bigint_append_decimal(&y, b);
+    csview xs = cstr_sv(&x), ys = cstr_sv(&y);
+    bool xn = xs.size && xs.buf[0] == '-', yn = ys.size && ys.buf[0] == '-';
+    int c = 0;
+    if (xn != yn) {
+        c = xn ? -1 : 1;
+    } else {
+        // (Same sign: more digits is further from zero, else the digits decide)
+        c = xs.size != ys.size ? (xs.size < ys.size ? -1 : 1) : cmp_sv(xs, ys);
+        if (xn) c = -c;
+    }
+    cstr_drop(&x);
+    cstr_drop(&y);
+    return c;
 }
 
 // The whole of compareTypes, for types whose keys are equal (same rank)
@@ -452,6 +470,9 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             } else if (ra == RANK_NUMBER_LITERAL) {
                 double x = a->literal.value.number, y = b->literal.value.number;
                 if (x != y) return x < y ? -1 : 1;
+            } else if (ra == RANK_BIGINT_LITERAL) {
+                int c = cmp_bigints(a->literal.value.bigint, b->literal.value.bigint);
+                if (c) return c;
             } else if (ra == RANK_BOOLEAN_LITERAL) {
                 bool x = a->literal.value.boolean, y = b->literal.value.boolean;
                 if (x != y) return x ? 1 : -1;

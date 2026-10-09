@@ -5213,7 +5213,7 @@ const baselines = {
     'comparisonBigIntLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOfPartialDeepAndIndexedAccessTerminatesWithoutError': {
         errors: true,
@@ -26251,9 +26251,9 @@ const baselines = {
         types: true,
     },
     'parseBigInt': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseCommaSeparatedNewlineNew': {
         errors: true,
@@ -29948,7 +29948,7 @@ const baselines = {
     'stableTypeOrdering(stabletypeordering=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stableTypeOrdering(stabletypeordering=true)': {
         errors: true,
@@ -31188,7 +31188,7 @@ const baselines = {
     'temporal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ternaryExpressionSourceMap': {
         errors: true,
