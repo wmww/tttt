@@ -406,6 +406,14 @@ typedef struct PropSymbolInfo {
     u32 seen_count;
 } PropSymbolInfo;
 
+// tsc's createUnionOrIntersectionProperty lists each declaration once (AppendIfUnique)
+static void push_unique_declaration(VecSpan* declarations, Span span) {
+    for (isize q = 0; q < vec_span_size(declarations); q++) {
+        if (span_eq(*vec_span_at(declarations, q), span)) return;
+    }
+    vec_span_push(declarations, span);
+}
+
 static void collect_found_prop(Checker* checker, Ty const* object, Prop const* prop, PropSymbolInfo* info);
 
 // The property symbol a union's or intersection's members' properties (collected into `inner`) make, added to `info`
@@ -435,7 +443,7 @@ static void merge_composite_info(PropSymbolInfo* info, PropSymbolInfo const* inn
         if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
     }
     if (!repeated) {
-        for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
+        for_each (k, vec_span, &inner.declarations) push_unique_declaration(&info->declarations, *k);
     }
 }
 
@@ -556,23 +564,14 @@ static void collect_found_prop(Checker* checker, Ty const* object, Prop const* p
         info->seen[info->seen_count++].type = type;
     }
     // (A declaration once per property: some members' PropDecl repeat one, an enum merged with a namespace)
-    for (u32 j = 0; j < root->decl->decl_span_count; j++) {
-        Span span = root->decl->decl_spans[j];
-        bool repeated = false;
-        for (u32 k = 0; k < j; k++) repeated |= span_eq(root->decl->decl_spans[k], span);
-        if (!repeated) vec_span_push(&info->declarations, span);
-    }
+    for (u32 j = 0; j < root->decl->decl_span_count; j++) push_unique_declaration(&info->declarations, root->decl->decl_spans[j]);
     // A mapped type over an intersection: where each member's property is declared too (tsc's intersection property)
     Ty const* intersection = root->decl->rare ? prop_decl_rare(root->decl)->mapped_intersection : nullptr;
     for (u32 m = 0; intersection && m < intersection->composite.types.len; m++) {
         Ty const* part = ty_apparent_type(checker, intersection->composite.types.data[m]);
         Prop const* other = (part->flags & TYF_OBJECT) ? ty_get_prop(checker, part, prop->name) : nullptr;
         while (other && other->target && !other->decl->decl_span_count) other = other->target;
-        for (u32 k = 0; other && k < other->decl->decl_span_count; k++) {
-            bool seen = false;
-            for (isize q = 0; q < vec_span_size(&info->declarations) && !seen; q++) seen = span_eq(*vec_span_at(&info->declarations, q), other->decl->decl_spans[k]);
-            if (!seen) vec_span_push(&info->declarations, other->decl->decl_spans[k]);
-        }
+        for (u32 k = 0; other && k < other->decl->decl_span_count; k++) push_unique_declaration(&info->declarations, other->decl->decl_spans[k]);
     }
 }
 
