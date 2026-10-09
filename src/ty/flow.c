@@ -3024,7 +3024,21 @@ static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_) {
             }
         }
     } else {
-        Ty const* type = ty_regular(me, ty_flow_expr_type(me, needle));
+        // (Of a type parameter its constraint's: tsgo 7.1's getBaseConstraintOrType, `T extends keyof X`)
+        Ty const* type = ty_flow_expr_type(me, needle);
+        if (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            if (type->kind == TY_UNION) {
+                TyBuf parts = {0};
+                for (u32 i = 0; i < type->composite.types.len; i++) {
+                    ty_buf_push(&parts, non_nullable_constraint_or(me, type->composite.types.data[i]));
+                }
+                type = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+                ty_buf_drop(&parts);
+            } else {
+                type = non_nullable_constraint_or(me, type);
+            }
+        }
+        type = ty_regular(me, type);
         if (is_literal_type(type) || (type->flags & TYF_BOOLEAN)) {
             TyBuf switch_types = {0};
             switch_clause_types(me, switch_, &switch_types);
