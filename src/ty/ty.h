@@ -363,10 +363,6 @@ struct Ty {
             bool applies_type_args : 1;
             bool realiased : 1; // the same type as `target` + `mapper` by another alias name, see ty_realias()
             bool free_params_unknown : 1;
-            // A JSDoc node: tsc's isTypeParameterPossiblyReferenced walks up from it and never meets the `@template` tag
-            // declaring a type parameter, so every type parameter in scope counts as referenced (see
-            // assignment_mentions()). free_params still says what it really mentions
-            bool jsdoc_references_all : 1;
             bool object_literal : 1; // Made by an object literal expression (ty_object_literal())
             // OBJECT_LITERAL_REGULAR: TYF_FRESH_OBJECT means it still widens, but it isn't fresh (ty_is_fresh_object())
             bool regular : 1;
