@@ -4546,6 +4546,21 @@ Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* cont
     return widen_literals(me, type);
 }
 
+// A spread operand checked with tsc's forceTuple check mode, which reaches the array literals of a conditional's
+// branches too: `[...(c ? r : [r])]` spreads `R | [r]` (checkConditionalExpression's subtype-reduced union)
+static Ty const* force_tuple_operand(Checker* me, Expr const* expr, u32 depth) {
+    if (expr->tag == EXPR_ARRAY) return ty_array_literal_as_tuple(me, expr, nullptr);
+    if (expr->tag == EXPR_TERNARY && depth < 8) {
+        Ty const* yes = force_tuple_operand(me, &expr->ternary->yes, depth + 1);
+        Ty const* no = force_tuple_operand(me, &expr->ternary->no, depth + 1);
+        if (yes != ty_expr_type(me, &expr->ternary->yes) || no != ty_expr_type(me, &expr->ternary->no)) {
+            Ty const* both[2] = { yes, no };
+            return ty_union_subtype_reduced(me, both, 2);
+        }
+    }
+    return ty_expr_type(me, expr);
+}
+
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual) {
     u32 len = (u32)vec_expr_size(&expr->array);
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
@@ -4555,10 +4570,10 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
         if (i->tag == EXPR_SPREAD) {
             // As check_array() makes a spread element of a tuple. An array literal is a tuple too (tsc passes
             // forceTuple on to the spread expression)
-            Ty const* operand = i->spread->tag == EXPR_ARRAY ? ty_array_literal_as_tuple(me, i->spread, nullptr) :
-                ty_expr_type(me, i->spread);
+            Ty const* operand = force_tuple_operand(me, i->spread, 0);
             flags[i_index] = TUPLE_ELEMENT_REST;
-            elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ?
+            elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ||
+                is_union_of_arrays(me, operand) ?
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             continue;
         }
