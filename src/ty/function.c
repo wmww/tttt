@@ -365,7 +365,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
     if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
-    if (function_impl_rare(function)->jsdoc_signature_type || function_impl_rare(function)->jsdoc_host_type) {
+    if (function_impl_rare(function)->jsdoc_signature_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
         if (tagged) return tagged;
     }

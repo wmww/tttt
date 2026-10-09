@@ -2864,6 +2864,9 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     ) {
         assigned_context = annotated_property_context(me, binary);
     }
+    // (An assignment declaration's JSDoc `@type` is its value's context, whatever it declares: tsgo's reparser makes
+    // it the binary expression's type, getContextualTypeForAssignmentDeclaration)
+    if (binary->op == BINARY_OP_EQUAL && binary->jsdoc_type) assigned_context = ty_of_node(binary->jsdoc_type);
     if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
         (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS && binary->right.tag != EXPR_CALL
     ) {

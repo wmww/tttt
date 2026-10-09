@@ -105,12 +105,6 @@ typedef struct FunctionImplRare {
     Span first_this_or_super;
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
-    // A function expression typed by the JSDoc `@type` of the variable it initializes: the return type node of that
-    // signature, which tsc reuses when it prints the function's type (getReturnTypeOfTypeTag). Display only
-    struct TypeNode const* jsdoc_tag_ret;
-    // A function expression initializing a variable that a JSDoc `@type` annotates (not owned): the return type of that
-    // type's one call signature is the function's (tsc's getReturnTypeOfTypeTag walks up to the variable's tag)
-    struct TypeNode const* jsdoc_host_type;
     // The type of its JSDoc `@type` tag (TS8030 for a declaration whose type has no call signature that takes as many
     // arguments as it needs: tsc's getContextualCallSignature in checkFunctionOrMethodDeclaration). The mismatch of a
     // written signature, which the parser moves into the function, is found by the parser

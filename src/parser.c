@@ -7162,10 +7162,12 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
             bool signature = tag && (tag->type.tag == TYPE_CALLABLE || tag->type.tag == TYPE_INTERFACE);
             bool accessor = item.tag == OBJECT_ITEM_GETTER || item.tag == OBJECT_ITEM_SETTER; // (The function's, see below)
-            if (tag && !(function && signature) && !accessor) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            // (A method's is its signature only, tsgo's FullSignature: no declared type, TS8030 if no call signature fits)
+            bool method = item.tag == OBJECT_ITEM_METHOD;
+            if (tag && !(function && signature) && !accessor && !method) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
             if (function) jsdoc_apply_function(&p, &tags, function);
-            if (tag && function && signature && (item.tag == OBJECT_ITEM_PROPERTY || item.tag == OBJECT_ITEM_METHOD)) {
+            if (tag && function && signature && item.tag == OBJECT_ITEM_PROPERTY) {
                 // The signature typed the function; it's also the property's declared type, which tsc's printer
                 // reuses (getEffectiveTypeAnnotationNode of the PropertyAssignment): the comment again for a copy
                 VecJsDocTag again = {0};
@@ -13617,6 +13619,23 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
     }
 }
 
+// Whether an assignment's target makes it a JavaScript assignment declaration (tsgo's GetAssignmentDeclarationKind):
+// `module.exports`, a property of an entity name (`a.b.c`, `this.x`, `exports.x`), by name or element access
+static bool jsdoc_assignment_declares(Expr const* left) {
+    if (left->tag != EXPR_PROPERTY || expr_is_perenthisized(left)) return false;
+    if (left->property->form == PROPERTY_EXPR_DOT && left->property->prop.inner_span.sv.size &&
+        left->property->prop.inner_span.sv.buf[0] == '#'
+    ) {
+        return false;
+    }
+    Expr const* object = &left->property->expr;
+    while (object->tag == EXPR_PROPERTY && object->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(object)) {
+        object = &object->property->expr;
+    }
+    return object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) &&
+        (!object->identifier.keyword || object->identifier.keyword == KEYWORD_IDENTIFIER_THIS);
+}
+
 static void jsdoc_apply_statement(Parser* p, const char* start, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before_leading(p, start, &tags)) return;
@@ -13679,17 +13698,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                     });
                 }
             }
-            if (function && !function->ret_explicit && initializer->binding.has_explicit_type &&
-                initializer->binding.explicit_type.from_jsdoc
-            ) {
-                FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
-                if (signature && signature->ret_explicit) function_impl_rare_mut(function)->jsdoc_tag_ret = &signature->ret;
-                function_impl_rare_mut(function)->jsdoc_host_type = &initializer->binding.explicit_type;
-                // (Where errors about the signature go when the tag names it: tsc's returnTypeErrorLocation)
-                if (initializer->binding.explicit_type.tag == TYPE_IDENTIFIER) {
-                    function_impl_rare_mut(function)->jsdoc_signature_span = binding_explicit_type_span(&initializer->binding);
-                }
-            }
+            // (The variable's `@type` is its declared type only, the function's contextual type: tsgo has no
+            // getReturnTypeOfTypeTag, the function's return type is inferred)
             if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
             if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl), class_host = true;
         }   break;
@@ -13718,14 +13728,30 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 ) {
                     assigned = &assigned->binary_op->right;
                 }
+                // (`/** @type {T} */ (a).b = v`: the comment is the parenthesized expression's cast, not the statement's)
+                Expr const* leftmost = &assignment->left;
+                while (leftmost->tag == EXPR_PROPERTY && !expr_is_perenthisized(leftmost)) leftmost = &leftmost->property->expr;
+                if ((expr_is_perenthisized(leftmost) || (leftmost->tag == EXPR_AS_TYPE && leftmost->as_type->is_jsdoc)) &&
+                    span_start_ptr(expr_outer_span(leftmost)) == span_start_ptr(expr_outer_span(&statement->expr))
+                ) {
+                    break;
+                }
+                // An assignment declaration (tsgo's GetAssignmentDeclarationKind, syntactic) takes the `@type` as its
+                // declared type, which a function value is only contextually typed by; another assignment's function
+                // takes it as its signature (getFunctionLikeHost: FullSignature)
+                bool declares = jsdoc_assignment_declares(&assignment->left);
                 FunctionImpl* function = jsdoc_function_of(assigned);
+                if (function && declares) {
+                    JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                    if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                }
                 if (function) {
                     jsdoc_apply_function(p, &tags, function);
                     hosts = true;
                 } else if (assigned->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(assigned)) {
                     jsdoc_apply_class(p, &tags, assigned->class_decl);
                     class_host = true;
-                } else {
+                } else if (declares) {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                     if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));

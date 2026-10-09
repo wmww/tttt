@@ -8558,7 +8558,7 @@ const baselines = {
     'declarationEmitJsExportAssignedArrowNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitJsReExportDefault': {
         errors: true,
@@ -19828,7 +19828,7 @@ const baselines = {
     'jsExportsImportedIntoTsxLosesTypeInfo': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsExtendsImplicitAny': {
         errors: true,
@@ -35361,9 +35361,9 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration16_es5(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration1_es5(target=es2015)': {
         errors: true,
@@ -51443,7 +51443,7 @@ const baselines = {
     'assertionsAndNonReturningFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOfPropertylessConstructorFunction': {
         errors: true,
@@ -51463,12 +51463,12 @@ const baselines = {
     'callbackTag1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackTag2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackTag3': {
         errors: true,
@@ -51478,7 +51478,7 @@ const baselines = {
     'callbackTag4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'callbackTagNamespace': {
         errors: true,
@@ -51631,12 +51631,12 @@ const baselines = {
         types: true,
     },
     'checkJsdocTypeTag5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTag6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51651,14 +51651,14 @@ const baselines = {
         types: true,
     },
     'checkJsdocTypeTagOnObjectProperty1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnObjectProperty2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypedefInParamTag1': {
         errors: true,
@@ -52461,7 +52461,7 @@ const baselines = {
         types: true,
     },
     'jsdocFunction_missingReturn': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52786,7 +52786,7 @@ const baselines = {
         types: true,
     },
     'jsdocThisType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53173,7 +53173,7 @@ const baselines = {
     'typedefTagTypeResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typedefTagWrapping': {
         errors: false,

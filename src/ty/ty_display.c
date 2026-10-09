@@ -2465,7 +2465,6 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
-        function_impl_rare(function)->jsdoc_tag_ret ? function_impl_rare(function)->jsdoc_tag_ret :
         single_return_node(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
@@ -2498,9 +2497,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     }
     // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
     // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
-    if (!reusable && !d.types_baseline && function && !function->ret_explicit && !root->class_instance && !instantiated &&
-        !function_impl_rare(function)->jsdoc_tag_ret
-    ) {
+    if (!reusable && !d.types_baseline && function && !function->ret_explicit && !root->class_instance && !instantiated) {
         TypeNode const* node = single_return_assertion(me, function, ret);
         if (node && type_node_names_nothing(node, 0) && annotation_is(me, node, ret, false)) {
             ret_d.reuse_nodes = true;

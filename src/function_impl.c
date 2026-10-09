@@ -924,7 +924,7 @@ bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const
 }
 
 FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me) {
-    TypeNode const* tag = function_impl_rare(me)->jsdoc_signature_type ? function_impl_rare(me)->jsdoc_signature_type : function_impl_rare(me)->jsdoc_host_type;
+    TypeNode const* tag = function_impl_rare(me)->jsdoc_signature_type;
     if (!tag) return nullptr;
     if (tag->tag == TYPE_CALLABLE) return tag->callable->function;
     if (tag->tag == TYPE_INTERFACE && vec_interface_member_size(&tag->interface.members) == 1 &&
@@ -960,7 +960,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
         type = ty_from_node(checker, function_impl_setter_type(me), (LowerCtx){ .generic = true });
         if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
-    } else if ((function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) && !my is_generator) {
+    } else if (function_impl_rare(me)->jsdoc_signature_type && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
         // that signature's return type node if it's written (getJSDocReturnType). An async function's is what it
         // awaits to (unwrapReturnType)
@@ -1174,15 +1174,16 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[i].type, errs);
-    // A declaration's `@type` needs a call signature that takes its parameters (not a function expression's, which is
-    // checked as a value against it, nor an accessor's: tsc's checkFunctionOrMethodDeclaration, not checkAccessorDeclaration)
-    if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && !my is_expression && my has_body && !my accessor) {
+    // A function's `@type` needs a call signature that takes its parameters (tsgo's FullSignature check in
+    // checkFunctionOrMethodDeclaration and checkFunctionExpressionOrObjectLiteralMethod; not an accessor's)
+    if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && my has_body && !my accessor) {
         bool mismatch = my jsdoc_signature_mismatch;
         if (!mismatch && function_impl_rare(me)->jsdoc_signature_type) {
             mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(function_impl_rare(me)->jsdoc_signature_type), jsdoc_required_params(me));
         }
         if (mismatch) {
-            error_ctx_error_d(errs, function_impl_rare(me)->jsdoc_signature_span, 8030, "The type of a function declaration must match the function's signature.");
+            error_ctx_error_d(errs, function_impl_rare(me)->jsdoc_signature_span, 8030,
+                "A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.");
         }
     }
     if (!my is_constructor) function_impl_check_jsdoc_overloads(me, my name, errs);
@@ -1248,7 +1249,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
     Ty const* tagged_return = !my ret_explicit && !my is_generator &&
-        (function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
+        function_impl_rare(me)->jsdoc_signature_type ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
     // (An async function's returns are checked against what it awaits to)
     if (tagged_return && my is_async) tagged_return = ty_unwrap_return_type(current_checker, me, tagged_return);
     BlockTypecheckCtx ctx = {

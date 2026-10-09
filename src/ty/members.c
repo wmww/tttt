@@ -4079,7 +4079,7 @@ Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function) {
 }
 
 static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function, bool* self) {
-    TypeNode const* node = function_impl_rare(function)->jsdoc_signature_type ? function_impl_rare(function)->jsdoc_signature_type : function_impl_rare(function)->jsdoc_host_type;
+    TypeNode const* node = function_impl_rare(function)->jsdoc_signature_type;
     if (!node) return nullptr;
     Ty const* type = ty_of_node(node);
     if (!(type->flags & TYF_OBJECT)) return nullptr;

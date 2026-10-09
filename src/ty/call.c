@@ -1048,7 +1048,7 @@ static void infer_from_annotated_params_of(Checker* me, Inference* inf, Function
         infer_types(me, inf, source, target, INFER_PRIORITY_NORMAL);
     }
     // And its annotated return type (tsc 6's inferFromAnnotatedParametersAndReturn): `test((arg): number => 1)`
-    TypeNode const* ret = function->ret_explicit ? &function->ret : function_impl_rare(function)->jsdoc_tag_ret;
+    TypeNode const* ret = function->ret_explicit ? &function->ret : nullptr;
     if (ret) infer_types(me, inf, ty_from_node(me, ret, (LowerCtx){ .generic = true }), signature_return_type(me, contextual), INFER_PRIORITY_NORMAL);
 }
 

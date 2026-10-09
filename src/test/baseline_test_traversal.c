@@ -1138,7 +1138,6 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ctx->parameter_property_class = span_null;
             u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
-            FunctionImpl const* function = my callable->function;
             for_each (i, vec_function_arg, &my callable->function->args) {
                 binding_content_compile_test_info(&i->initializer.binding, ctx);
                 if (i->initializer.binding.has_explicit_type) {

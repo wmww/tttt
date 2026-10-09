@@ -612,8 +612,7 @@ void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function,
     // (Or the written return type of a JSDoc `@type` signature: tsc's getEffectiveReturnTypeNode)
     FunctionImpl const* tag = function->ret_explicit ? nullptr : function_impl_jsdoc_tag_signature(function);
     // (A JavaScript `@type` naming a type with a single call signature: that signature's declaration)
-    TypeNode const* tag_type = function_impl_rare(function)->jsdoc_signature_type ?
-        function_impl_rare(function)->jsdoc_signature_type : function_impl_rare(function)->jsdoc_host_type;
+    TypeNode const* tag_type = function_impl_rare(function)->jsdoc_signature_type;
     if (!function->ret_explicit && !tag && tag_type && tag_type->tag == TYPE_IDENTIFIER) {
         Ty const* named = ty_from_node(me, tag_type, (LowerCtx){ .generic = true });
         Members const* members = named->flags & TYF_OBJECT ? ty_members(me, named) : nullptr;
