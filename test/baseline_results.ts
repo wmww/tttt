@@ -34096,7 +34096,7 @@ const baselines = {
         types: true,
     },
     'unusedTypeParameters_templateTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51466,7 +51466,7 @@ const baselines = {
         types: true,
     },
     'callbackTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51491,7 +51491,7 @@ const baselines = {
         types: true,
     },
     'callbackTagVariadicType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53026,9 +53026,9 @@ const baselines = {
         types: true,
     },
     'templateInsideCallback': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisPrototypeMethodCompoundAssignment': {
         errors: true,
@@ -61716,7 +61716,7 @@ const baselines = {
         types: true,
     },
     'typeFromPropertyAssignment6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
