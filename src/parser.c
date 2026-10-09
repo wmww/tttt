@@ -104,6 +104,8 @@ typedef struct ParserShared {
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    // Inside the body of a `with` statement, which tsc's checkWithStatement never checks: no checkGrammarModifiers
+    u32 with_body_depth;
     // tsc's checkGrammarTypeOperatorNode: a `unique symbol` is only allowed as the whole annotation of a variable, a
     // class property or a property signature. unique_annotation_next: the next parse_binding_type_ex() is such an
     // annotation; unique_allowed_at: where its type starts (parentheses moving it in), unique_allowed_found: set to
@@ -2279,6 +2281,7 @@ static void check_js_modifiers(Parser* parent, ModifierList const* me, ModifiedN
 static bool check_modifiers(Parser* parent, ModifierList const* me, ModifiedNode node) {
     if (vec_spanned_modifier_is_empty(&me->spanned)) return false;
     check_js_modifiers(parent, me, node);
+    if (parent->shared->with_body_depth) return false;
     node.parent_ambient |= parent->shared->in_ambient;
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     bool reported = modifier_list_check_grammar(me, &node, &errs);
@@ -12596,7 +12599,9 @@ static bool parse_with_statement(Parser* parent, Statement* ret) {
     hop_whitespace(&p);
 
     Statement body = statement_noop;
+    p.shared->with_body_depth++;
     expect_statement(&p, false, &body);
+    p.shared->with_body_depth--;
 
     *ret = (Statement){
         .tag = STATEMENT_WITH,

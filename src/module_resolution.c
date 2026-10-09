@@ -1572,7 +1572,9 @@ ResolvedModule module_resolver_resolve_type_reference(
         cstr candidate = candidate_from_type_root(cstr_sv(&roots.items[i]), name);
         if (directory_exists(&state, cstr_sv(&roots.items[i]))) {
             // Custom type roots resolve as file or directory, like modules
-            if (my options->type_roots_set) resolved = load_file(&state, cstr_sv(&candidate), EXT_DTS, &found);
+            // (Not a name ending in '/': a directory only, tsgo's resolutionCandidate.directoryOnly)
+            bool directory_only = name.size && name.buf[name.size - 1] == '/';
+            if (my options->type_roots_set && !directory_only) resolved = load_file(&state, cstr_sv(&candidate), EXT_DTS, &found);
             if (!resolved && directory_exists(&state, cstr_sv(&candidate))) {
                 resolved = load_directory(&state, cstr_sv(&candidate), package_json_of(&state, cstr_sv(&candidate)), EXT_DTS, &found);
             }

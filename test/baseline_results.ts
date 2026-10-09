@@ -31661,7 +31661,7 @@ const baselines = {
         types: true,
     },
     'tslibImportDefaultHelperCommonJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32546,9 +32546,9 @@ const baselines = {
         types: true,
     },
     'typeReferenceDirectiveTrailingSlashName': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeReferenceDirectiveWithFailedFromTypeRoot': {
         errors: true,
@@ -34596,7 +34596,7 @@ const baselines = {
         types: true,
     },
     'withStatementCommonJsEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

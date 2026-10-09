@@ -260,3 +260,20 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   (symbol_add_decl's reordering doesn't reach this merge).
 - `isolatedDeclarationsJsThisPropertyAssignmentInference`: TS9013 for `this.x = foo()` in a JS constructor under
   isolatedDeclarations (declaration diagnostics: agent C's area).
+
+## 7.1 new tests fan-out (agent A, 2026-10-09)
+- jsonRawJSON2 (symbols): a script's `interface RawJSON` merged with lib.es2026.json's `declare global` one lists the
+  script's declaration first in tsgo (global augmentations merge after every file's globals, initializeTypeChecker);
+  tttt's shared-lib program has the lib's augmentation merged into the globals already. Needs the lib augmentations
+  to merge after the program's script globals (or declaration order fixed up), not done: harness/lib-sharing work.
+- tsconfigRootdirInclude: in the harness, TS6059 with a tsconfig `include` match is tsgo's related info TS1408 ("File
+  is matched by include pattern specified here", FileIncludeReason.toRelatedInfo) with relative paths, plus the
+  config's TS1005; tttt prints the CLI-style chain and loses the config's syntax error. Also a CLI divergence: tsgo's
+  chain says "Matched by include pattern 'src1/*' in '/abs/tsconfig.json'" (absolute), tttt 'tsconfig.json'.
+- cjsObjectDefinePropertyPrivateModuleDeclarationEmit: TS4023 for `Object.defineProperty(exports, "api", { value:
+  require("pkg") })` whose type uses a non-exported interface of an `export =` module (declaration emit of a CommonJS
+  defineProperty export, name `'"api"'`): declaration diagnostics (agent C's area).
+- importAttributes12: import type attributes (TS2858 non-string values in `import("m", { with: {...} })` types, TS2322
+  against ImportAttributes): agent B's import-attributes mechanism.
+- Harness: a positioned tsconfig diagnostic (TS5092 at the root value) comes out without location in the harness
+  (`cstr_eq(&d->config, &i->path)` in baseline_test_case.c compares different path spellings); the CLI is right.
