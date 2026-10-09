@@ -3263,6 +3263,23 @@ typedef struct DupRecord {
 #define g_key DupRecord, dup_record
 #include <cleat/generic/vec.h>
 
+// tsc's combineSymbolTables of the early and late members: a late-bound symbol merges with the early one of its name
+// (mergeSymbol, unless one excludes the other), the early declarations first
+static void merge_late_members(MemberTables* tables, VecDupRecord* records) {
+    for (u32 l = 0; l < tables->count; l++) {
+        MemberEntry* late = &tables->entries[l];
+        if (late->table < LATE_TABLE) continue;
+        MemberEntry* early = find_member(tables, late->name, late->table - LATE_TABLE);
+        if (!early || (early->flags & symbol_excludes(late->flags)) || (late->flags & symbol_excludes(early->flags))) continue;
+        i32 early_index = (i32)(early - tables->entries);
+        for_each (r, vec_dup_record, records) {
+            if (r->entry == (i32)l) r->entry = early_index;
+        }
+        early->total += late->total;
+        late->total = 0;
+    }
+}
+
 // How tsc prints a member's symbol (symbolToString): its first declaration's name as written
 static csview dup_record_display(MemberTables const* tables, DupRecord const* record) {
     return record->entry >= 0 && tables->entries[record->entry].decl_count ? tables->entries[record->entry].decls[0].sv : record->span.sv;
@@ -3454,6 +3471,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
         bool late_bound = computed_key && computed_key->tag != EXPR_LITERAL && !(computed_key->tag == EXPR_UNARY_OP &&
             computed_key->unary_op->expr.tag == EXPR_LITERAL);
+        // (A name that isn't an entity name, `[f()]`, isn't late bindable: a symbol of its own, tsc's hasLateBindableName)
+        if (late_bound && !expr_is_entity_name(computed_key)) continue;
         i32 entry;
         if (!late_bound) {
             entry = declare_member(tables, name, is_static, kind, name_span, errs);
@@ -3492,6 +3511,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         ClassItem* first_item = (ClassItem*)first->member;
         check_subsequent_property(me, item->field.name_span, class_item_get_type(first_item), class_item_get_type(item), first->span, errs);
     }
+    merge_late_members(tables, &records);
     check_duplicate_declarations(tables, &records, 0, true, errs);
     vec_dup_record_drop(&records);
     if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
@@ -3791,6 +3811,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
         }
         check_subsequent_property(me, i->key.span, first_type, member_declared_type(me, i), first->key.span, errs);
     }
+    merge_late_members(tables, &records);
     for (u32 l = 0; l < list_count; l++) check_duplicate_declarations(tables, &records, l, false, errs);
     vec_dup_record_drop(&records);
     free(tables->entries);

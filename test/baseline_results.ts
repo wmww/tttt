@@ -11066,7 +11066,7 @@ const baselines = {
         types: true,
     },
     'dynamicNamesErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -67791,7 +67791,7 @@ const baselines = {
         types: true,
     },
     'uniqueSymbolsPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
