@@ -299,7 +299,40 @@ void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl) {
     });
 }
 
-Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
+static void add_pattern_module(Binder* me, Symbol* module) {
+    if (my pattern_module_count == my pattern_module_cap) {
+        my pattern_module_cap = my pattern_module_cap ? my pattern_module_cap * 2 : 4;
+        my pattern_modules = realloc(my pattern_modules, sizeof(Symbol*) * my pattern_module_cap);
+    }
+    my pattern_modules[my pattern_module_count++] = module;
+}
+
+static bool attributes_identical(TypeNode const* a, TypeNode const* b);
+
+Symbol* binder_ambient_module(Binder* me, csview name, Span name_span, TypeNode const* attributes) {
+    bool pattern = memchr(name.buf, '*', (size_t)name.size);
+    // `with {}` is the attributes of a pattern without any (tsgo merges patterns of identical attribute types)
+    if (attributes && !vec_interface_member_size(&attributes->interface.members)) attributes = nullptr;
+    if (pattern && attributes) {
+        // A symbol of its own per pattern and attributes, which no name finds (tsgo's binder names it after its node)
+        for (u32 i = 0; i < my pattern_module_count; i++) {
+            Symbol* existing = my pattern_modules[i];
+            if (csview_equals_sv(csview_slice(existing->name, 1, existing->name.size - 1), name) &&
+                existing->module->attributes && attributes_identical(existing->module->attributes, attributes)
+            ) {
+                return existing;
+            }
+        }
+        Symbol* ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
+        ret->is_module = true;
+        ret->module = arena_new(binder_arena(me), SymbolModule);
+        ret->module->attributes = attributes;
+        ret->name_span = name_span;
+        symbol_ensure_exports(ret);
+        add_pattern_module(me, ret);
+        my attributed_patterns = true;
+        return ret;
+    }
     u64 hash = symbol_name_hash(name);
     // TODO: one of the shared lib program would want an overlay like the globals (no lib declares any)
     Symbol* ret = symbol_table_lookup(&my ambient_modules, name, hash);
@@ -307,16 +340,11 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
     ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
     ret->is_module = true;
     ret->module = arena_new(binder_arena(me), SymbolModule);
+    ret->module->attributes = attributes; // (Printed, TS1550: a name without `*` matches no attributes)
     ret->name_span = name_span;
     symbol_ensure_exports(ret);
     symbol_table_insert(&my ambient_modules, binder_arena(me), name, hash, ret);
-    if (memchr(name.buf, '*', (size_t)name.size)) {
-        if (my pattern_module_count == my pattern_module_cap) {
-            my pattern_module_cap = my pattern_module_cap ? my pattern_module_cap * 2 : 4;
-            my pattern_modules = realloc(my pattern_modules, sizeof(Symbol*) * my pattern_module_cap);
-        }
-        my pattern_modules[my pattern_module_count++] = ret;
-    }
+    if (pattern) add_pattern_module(me, ret);
     return ret;
 }
 
@@ -2063,36 +2091,219 @@ static bool pattern_module_matches(Symbol const* pattern, csview path, isize* pr
     return true;
 }
 
-static Symbol* binder_find_module(Binder const* me, ModuleRef const* ref) {
-    csview path = cstr_sv(&ref->path);
-    bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") ||
-        csview_equals(path, ".") || csview_equals(path, "..");
-    if (!relative) {
-        Symbol* ambient = symbol_table_get(&my ambient_modules, path);
-        if (ambient) return ambient;
+// Import attributes against pattern ambient modules' (tsgo's tryResolvePatternAmbientModule), on the syntax: what a
+// pattern's attributes are is their type literal, whose members the grammar wants to be `name: "string"` (TS1555).
+// Other annotations are approximated: a union of strings, `string`, and what needs types to tell (a type reference)
+// take any string, the rest none (hacks.md)
+
+static csview unquoted(csview name) {
+    if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) return csview_slice(name, 1, name.size - 1);
+    return name;
+}
+
+// Whether a value (a string) is of a pattern attribute's annotation
+static bool attribute_type_accepts(TypeNode const* type, ModuleAttr const* attr) {
+    switch (type->tag) {
+        case TYPE_VALUE:
+            return type->value.tag == VALUE_STRING && attr->known && csview_equals_sv(cstr_sv(&type->value.string), attr->value);
+        case TYPE_UNION:
+            for_each (i, vec_type, &type->composite) {
+                if (attribute_type_accepts(i, attr)) return true;
+            }
+            return false;
+        case TYPE_STRING: case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_IDENTIFIER: case TYPE_TEMPLATE: case TYPE_INDEXED:
+        case TYPE_TERNARY: case TYPE_TYPEOF: case TYPE_KEYOF: case TYPE_INTERSECTION:
+            return true;
+        default:
+            return false;
     }
-    if (ref->file) return source_file_module_symbol(ref->file);
-    // The longest prefix wins
-    Symbol* best = nullptr;
-    isize best_prefix = -1;
+}
+
+static InterfaceMember const* attributes_member(TypeNode const* attributes, csview name) {
+    for_each (i, vec_interface_member, &attributes->interface.members) {
+        if (i->key.tag == INTERFACE_KEY_NAME && !i->is_method && csview_equals_sv(cstr_sv(&i->key.name_string), name)) return i;
+    }
+    return nullptr;
+}
+
+// The import's attributes type is assignable to the pattern's
+static bool attributes_accept(TypeNode const* pattern, ModuleAttrs const* attributes) {
+    if (!pattern) return true;
+    for_each (i, vec_interface_member, &pattern->interface.members) {
+        if (i->key.tag != INTERFACE_KEY_NAME || i->is_method) continue;
+        ModuleAttr const* found = nullptr;
+        for (u32 j = 0; j < attributes->count && !found; j++) {
+            if (csview_equals_sv(attributes->items[j].name, cstr_sv(&i->key.name_string))) found = &attributes->items[j];
+        }
+        if (!found ? !i->optional : !attribute_type_accepts(&i->type, found)) return false;
+    }
+    return true;
+}
+
+// The strings an annotation is: a string literal type, or a union of them. False if it's something else
+static bool attribute_type_strings(TypeNode const* type, csview* out, u32* count, u32 cap) {
+    if (type->tag == TYPE_VALUE && type->value.tag == VALUE_STRING) {
+        if (*count == cap) return false;
+        out[(*count)++] = cstr_sv(&type->value.string);
+        return true;
+    }
+    if (type->tag != TYPE_UNION) return false;
+    for_each (i, vec_type, &type->composite) {
+        if (!attribute_type_strings(i, out, count, cap)) return false;
+    }
+    return true;
+}
+
+// Annotation a is a subtype of b (identical included)
+static bool attribute_type_subtype(TypeNode const* a, TypeNode const* b) {
+    if (a == b) return true;
+    csview strings[16];
+    u32 count = 0;
+    if (!attribute_type_strings(a, strings, &count, c_arraylen(strings))) return false;
+    for (u32 i = 0; i < count; i++) {
+        if (!attribute_type_accepts(b, &(ModuleAttr){ .value = strings[i], .known = true })) return false;
+    }
+    return true;
+}
+
+static u32 attributes_property_count(TypeNode const* attributes) {
+    u32 ret = 0;
+    if (!attributes) return 0;
+    for_each (i, vec_interface_member, &attributes->interface.members) ret += i->key.tag == INTERFACE_KEY_NAME && !i->is_method;
+    return ret;
+}
+
+// Pattern attributes a are a subtype of b's: every property of b is one of a's, of a subtype
+static bool attributes_subtype(TypeNode const* a, TypeNode const* b) {
+    if (!b) return true;
+    for_each (i, vec_interface_member, &b->interface.members) {
+        if (i->key.tag != INTERFACE_KEY_NAME || i->is_method) continue;
+        InterfaceMember const* other = a ? attributes_member(a, cstr_sv(&i->key.name_string)) : nullptr;
+        if (!other ? !i->optional : (other->optional && !i->optional) || !attribute_type_subtype(&other->type, &i->type)) return false;
+    }
+    return true;
+}
+
+static bool attributes_identical(TypeNode const* a, TypeNode const* b) {
+    return attributes_property_count(a) == attributes_property_count(b) && attributes_subtype(a, b) && attributes_subtype(b, a);
+}
+
+void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret) {
+    *ret = (ModuleAttrs){0};
+    if (ref->attributes) {
+        for_each (i, vec_import_attribute, &ref->attributes->elements) {
+            if (ret->count == c_arraylen(ret->items)) break;
+            bool known = i->value.tag == EXPR_LITERAL && i->value.literal.tag == VALUE_STRING;
+            ret->items[ret->count++] = (ModuleAttr){
+                .name = unquoted(i->name.sv), .value = known ? cstr_sv(&i->value.literal.string) : c_sv(""), .known = known,
+            };
+        }
+        return;
+    }
+    if (!ref->import_call || vec_expr_size(&ref->import_call->args) < 2) return;
+    // `import("m", { with: { type: "css" } })` (parentheses are fine)
+    Expr const* options = vec_expr_at(&ref->import_call->args, 1);
+    if (options->tag != EXPR_OBJECT) {
+        ret->needs_types = true;
+        return;
+    }
+    for_each (i, vec_object_expr_item, &options->object) {
+        if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) {
+            ret->needs_types = true;
+            return;
+        }
+        if (!cstr_equals(&i->name_string, "with")) continue;
+        if (i->tag != OBJECT_ITEM_PROPERTY || i->value.tag != EXPR_OBJECT) {
+            ret->needs_types = true;
+            return;
+        }
+        ret->count = 0;
+        for_each (j, vec_object_expr_item, &i->value.object) {
+            if (j->tag != OBJECT_ITEM_PROPERTY || j->computed_key) {
+                ret->needs_types = true;
+                return;
+            }
+            if (ret->count == c_arraylen(ret->items)) break;
+            bool known = j->value.tag == EXPR_LITERAL && j->value.literal.tag == VALUE_STRING;
+            if (!known) ret->needs_types = true;
+            ret->items[ret->count++] = (ModuleAttr){
+                .name = cstr_sv(&j->name_string), .value = known ? cstr_sv(&j->value.literal.string) : c_sv(""), .known = known,
+            };
+        }
+    }
+}
+
+bool binder_has_attributed_patterns(Binder const* me) {
     for (Binder const* binder = me; binder; binder = binder->parent) {
-        for (u32 i = 0; i < binder->pattern_module_count; i++) {
+        if (binder->attributed_patterns) return true;
+    }
+    return false;
+}
+
+// tsgo's tryResolvePatternAmbientModule: the pattern ambient modules that match the name and whose attributes the
+// import's are assignable to; the most specific attributes, then the longest prefix. Null if none
+static Symbol* best_pattern_module(Binder const* me, csview path, ModuleAttrs const* attributes) {
+    Symbol* candidates[16];
+    u32 count = 0;
+    for (Binder const* binder = me; binder; binder = binder->parent) {
+        for (u32 i = 0; i < binder->pattern_module_count && count < c_arraylen(candidates); i++) {
+            Symbol* pattern = binder->pattern_modules[i];
             isize prefix;
-            if (pattern_module_matches(binder->pattern_modules[i], path, &prefix) && prefix > best_prefix) {
-                best = binder->pattern_modules[i];
-                best_prefix = prefix;
+            if (pattern_module_matches(pattern, path, &prefix) && attributes_accept(pattern->module->attributes, attributes)) {
+                candidates[count++] = pattern;
             }
         }
     }
-    if (best) {
-        Symbol* augmented = symbol_table_get_own(&me->pattern_augmentations, path, symbol_name_hash(path));
-        if (augmented) {
-            // (The pattern is known once some import asks: its exports are the parent of the name's own)
-            if (!augmented->exports->parent) augmented->exports->parent = best->exports;
-            return augmented;
+    // (Dropping those whose attributes another's are a strict subtype of)
+    Symbol* best = nullptr;
+    isize best_prefix = -1;
+    for (u32 i = 0; i < count; i++) {
+        TypeNode const* own = candidates[i]->module->attributes;
+        bool dominated = false;
+        for (u32 j = 0; j < count && !dominated; j++) {
+            TypeNode const* other = candidates[j]->module->attributes;
+            dominated = i != j && other != own && attributes_subtype(other, own) && !attributes_subtype(own, other);
+        }
+        isize prefix;
+        if (!dominated && pattern_module_matches(candidates[i], path, &prefix) && prefix > best_prefix) {
+            best = candidates[i];
+            best_prefix = prefix;
         }
     }
     return best;
+}
+
+Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes) {
+    csview path = cstr_sv(&ref->path);
+    bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") ||
+        csview_equals(path, ".") || csview_equals(path, "..");
+    // Attributes make a pattern ambient module win over the ambient module or file of the name (tsgo's
+    // tryResolvePatternAmbientModule with a resolved symbol)
+    bool attributed = attributes->count;
+    Symbol* resolved = nullptr;
+    if (!relative) resolved = symbol_table_get(&my ambient_modules, path);
+    if (resolved && !attributed) return resolved;
+    if (!resolved && ref->file) {
+        resolved = source_file_module_symbol(ref->file);
+        if (!attributed) return resolved;
+    }
+    Symbol* best = best_pattern_module(me, path, attributes);
+    if (!best) return resolved;
+    Symbol* augmented = symbol_table_get_own(&me->pattern_augmentations, path, symbol_name_hash(path));
+    if (augmented) {
+        // (What it augments is the pattern without attributes, tsgo's mergeModuleAugmentation: known once some import
+        // asks, its exports are the parent of the name's own)
+        Symbol* target = attributed ? best_pattern_module(me, path, &(ModuleAttrs){0}) : best;
+        if (target && !augmented->exports->parent) augmented->exports->parent = target->exports;
+        if (best == target) return augmented;
+    }
+    return best;
+}
+
+static Symbol* binder_find_module(Binder const* me, ModuleRef const* ref) {
+    ModuleAttrs attributes;
+    module_ref_syntactic_attributes(ref, &attributes);
+    return binder_find_module_with(me, ref, &attributes);
 }
 
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {

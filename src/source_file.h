@@ -68,6 +68,10 @@ typedef struct ModuleRef {
     cstr alternate_result;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any. MODULE_REF_NOT_BUILT: the source, absolute
     cstr unbuilt_output; // MODULE_REF_NOT_BUILT: the output declaration file, absolute
+    // `with { type: "css" }` of the import, export or import type (owned by it), and `import("m", options)`'s call:
+    // which pattern ambient modules it can be (binder_find_module(), tsgo's tryResolvePatternAmbientModule)
+    struct ImportAttributes const* attributes;
+    struct CallExpr const* import_call;
     Symbol* module; // Memo of binder_module_of_ref()
     Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
     AliasState module_state;

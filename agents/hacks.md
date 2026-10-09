@@ -197,6 +197,13 @@ src` finds the code-side markers; every significant one has an entry here.
   under `BaselineTestCase.in_with`) and `yield x` outside a generator (`UnaryOpExpr.outside_generator`). Real fix: the
   resolve walk stops reporting checker errors.
 
+- `attribute_type_accepts()`/`attributes_subtype()`/`best_pattern_module()` (`scope.c`): which pattern ambient module
+  (`declare module "*.css" with { type: "css" }`) an import with attributes is, decided by the binder on the syntax
+  rather than by tsgo's isTypeAssignableTo/isTypeStrictSubtypeOf of attribute types: string literal annotations exact,
+  unions of them as sets, `string` and anything needing types (a type reference, a template) take any value, the rest
+  none. Only erroneous code (TS1555) sees the approximation. `import("m", options)` of a non-literal options asks the
+  checker (`ty_dynamic_import_module()`), whose answer the resolve walk's TS2307 doesn't see. Candidates capped at 16.
+
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - Array mutations: `flow_array_mutation()` makes nodes only where `may_evolve()` (permanent: tsc makes one for every
   narrowable reference and ignores it unless the variable is auto-typed); only an `x.push(...)` callee marks an

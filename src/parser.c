@@ -3099,6 +3099,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         rare.import_ref = add_module_ref(&p, path, path_span);
         rare.import_ref->resolution_override = import_attributes_resolution_mode(rare.import_attributes, nullptr);
         rare.import_ref->import_type = true;
+        rare.import_ref->attributes = rare.import_attributes;
     } else {
         cstr_drop(&path);
     }
@@ -9334,6 +9335,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .args = parsed.args,
             })
         );
+        // (`import("m", options)`: its attributes, binder_find_module())
+        if (left_and_ret->call->callable.tag == EXPR_IDENTIFIER && left_and_ret->call->callable.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+            identifier_module_ref(&left_and_ret->call->callable.identifier)
+        ) {
+            identifier_module_ref(&left_and_ret->call->callable.identifier)->import_call = left_and_ret->call;
+        }
         if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
             // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
             p.shared->saw_commonjs = true;
@@ -9356,6 +9363,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
             ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
             ref->syntax = MODULE_REF_DYNAMIC;
+            ref->import_call = left_and_ret->call;
             left_and_ret->call->callable.generic_params->expr.identifier.module_ref_ = ref;
         } else if (p.shared->source->is_js && expr_is_define_property_call(left_and_ret, nullptr) &&
             expr_is_exports_object(vec_expr_at(&left_and_ret->call->args, 0))
@@ -11600,6 +11608,7 @@ done:
             statement.module_ref->ambient_only = true;
         }
         statement.main.module_ref = statement.module_ref;
+        statement.module_ref->attributes = statement.attributes;
         if (statement.main.type_only) {
             statement.module_ref->resolution_override = import_attributes_resolution_mode(statement.attributes, nullptr);
             statement.module_ref->type_only_import = span_equals(statement.keyword_span, "import");
@@ -13142,6 +13151,19 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 ret->module_ref->nested_in_ambient_module = p.shared->ambient_module_depth > 0;
                 value_drop(&val);
                 hop_whitespace(&p);
+                // `declare module "*.css" with { type: "css" } {}` (tsgo's parseAmbientExternalModuleDeclaration)
+                if (hop_start_if_ends_on_word_break(&p, "with")) {
+                    hop_whitespace(&p);
+                    TypeNode attributes = {0};
+                    if (*p.pos == '{' && parse_interface(&p, false, &attributes.interface)) {
+                        attributes.tag = TYPE_INTERFACE;
+                        attributes.parsed = true;
+                        ret->attributes = c_new(TypeNode, attributes);
+                    } else {
+                        expected_token_error(&p, "{");
+                    }
+                    hop_whitespace(&p);
+                }
                 bool outer_in_namespace = p.shared->in_namespace_body;
                 p.shared->in_namespace_body = false;
                 p.shared->ambient_module_depth++;

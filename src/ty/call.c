@@ -3293,6 +3293,27 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
     return chosen_effects(me, &chosen);
 }
 
+// What `import("m", options)` imports: what the resolve walk found, unless the attributes are in options' type only
+// (`import("m", options)` of a variable): then the `with` property's type says (tsgo's checkImportCallExpression)
+Symbol* ty_dynamic_import_module(Checker* me, CallExpr const* call, ModuleRef const* ref) {
+    if (vec_expr_size(&call->args) < 2 || !binder_has_attributed_patterns(my binder)) return ref->module;
+    ModuleAttrs attributes;
+    module_ref_syntactic_attributes(ref, &attributes);
+    if (!attributes.needs_types) return ref->module;
+    Ty const* options = ty_expr_type(me, vec_expr_at(&call->args, 1));
+    Ty const* with = ty_prop_type_of(me, options, checker_atom(me, c_sv("with")));
+    attributes = (ModuleAttrs){0};
+    Members const* members = with ? ty_members(me, with) : nullptr;
+    for (u32 i = 0; members && i < members->prop_count && attributes.count < c_arraylen(attributes.items); i++) {
+        Ty const* type = ty_prop_type_of(me, with, members->props[i]->name);
+        bool known = type && type->kind == TY_LITERAL && type->flags & TYF_STRING_LITERAL;
+        attributes.items[attributes.count++] = (ModuleAttr){
+            .name = atom_sv(members->props[i]->name), .value = known ? atom_sv(type->literal.string) : c_sv(""), .known = known,
+        };
+    }
+    return binder_find_module_with(my binder, ref, &attributes);
+}
+
 // `import("./a")`: a promise of the module (of what its `export =` names)
 static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     // (`import<T>("./a")` too: TS1326, typed all the same)
@@ -3304,10 +3325,11 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     Ty const* module = ty_intrinsic(me, TY_ANY);
     // `import.source("m")`: a promise of the module's source, whatever the module (tsgo's checkImportCallExpression;
     // no arguments: any, like any import call)
+    Symbol* resolved = ref && !callee->identifier.import_source ? ty_dynamic_import_module(me, call, ref) : nullptr;
     if (callee->identifier.import_source && vec_expr_size(&call->args)) {
         module = ty_abstract_module_source_type(me);
-    } else if (ref && ref->module && !ref->module->is_shorthand_module) {
-        module = ty_dynamic_import_module_type(me, ref->module, ref->span.source);
+    } else if (resolved && !resolved->is_shorthand_module) {
+        module = ty_dynamic_import_module_type(me, resolved, ref->span.source);
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2711

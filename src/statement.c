@@ -296,6 +296,10 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
+    if (my attributes) {
+        type_drop(my attributes);
+        free(my attributes);
+    }
 }
 
 // The blocks of the namespaces around the one being looked at, innermost first (tsc walks up the parent nodes)
@@ -458,6 +462,9 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         char const* star = memchr(path.buf, '*', (size_t)path.size);
         if (star && memchr(star + 1, '*', (size_t)(path.buf + path.size - star - 1))) {
             error_ctx_error_d(errs, my name, 5061, "Pattern '", path, "' can have at most one '*' character.");
+        } else if (!star && my attributes) {
+            error_ctx_error_d(errs, my name, 1550, "An ambient module declaration with import attributes must use a pattern "
+                "name with an '*' character.");
         }
     }
     // tsc's bindModuleDeclaration: an ambient module or augmentation is visible anyway (on the first token, `export`)
@@ -522,7 +529,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 binder_add_module_declaration(module, me);
             }
             if (!module) {
-                module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
+                module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name, my attributes);
                 binder_add_module_declaration(module, me);
             }
             if (my is_shorthand) module->is_shorthand_module = true;
@@ -570,6 +577,8 @@ void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* err
     // The scope was made when the namespace was declared
     my inner_scope->flow = names->flow;
     my inner_scope->self = my symbol;
+    // (The attributes are named from outside the module: tsgo's resolveName skips a module's exports for them)
+    if (my attributes) type_lookup_names(my attributes, names, errs);
     block_lookup_names_container(&my contents, c_sv("namespace"), my name, my inner_scope, errs);
     my inner_scope->flow = nullptr;
 }
@@ -602,7 +611,64 @@ static Symbol const* same_block_counterpart(Symbol const* symbol, SymbolDecl con
     return nullptr;
 }
 
+// tsgo's checkGrammarImportAttributesType: each member of `declare module "*.x" with { ... }` is `name: "string"`.
+// Reports the first that isn't
+static bool module_attributes_check_grammar(Interface const* attributes, ErrorCtx* errs) {
+    for_each (i, vec_interface_member, &attributes->members) {
+        Span decl = i->declaration;
+        if (i->is_method || i->accessor || i->computed_accessor || (i->key.tag != INTERFACE_KEY_NAME && i->key.tag != INTERFACE_KEY_EXPR)) {
+            error_ctx_grammar_error_d(errs, decl, 1552, "An import attributes type may only contain property signatures.");
+            return true;
+        }
+        if (i->readonly) {
+            Span modifier = decl;
+            if (csview_starts_with(decl.sv, "readonly")) modifier.sv.size = 8;
+            error_ctx_grammar_error_d(errs, modifier, 1558, "An import attributes property cannot have a 'readonly' modifier.");
+            return true;
+        }
+        if (i->implicit_any) {
+            error_ctx_grammar_error_d(errs, decl, 1553, "An import attributes property must have a type annotation.");
+            return true;
+        }
+        if (i->optional) {
+            error_ctx_grammar_error_d(errs, decl, 1556, "An import attributes property cannot be optional.");
+            return true;
+        }
+        csview key = i->key.span.sv;
+        if (i->key.tag != INTERFACE_KEY_NAME || (key.size && (isdigit((unsigned char)*key.buf) || *key.buf == '.'))) {
+            error_ctx_grammar_error_d(errs, i->key.span, 1554, "An import attributes property must have a string literal or identifier name.");
+            return true;
+        }
+        if (cstr_equals(&i->key.name_string, "resolution-mode")) {
+            error_ctx_grammar_error_d(errs, i->key.span, 1557, "'resolution-mode' is not a valid key for an import attributes type.");
+            return true;
+        }
+        // (The annotation: after the name's `?` and `:`, to the end of the member. A string literal, not a template)
+        char const* start = span_end_ptr(i->key.span);
+        char const* end = span_end_ptr(decl);
+        while (start < end && (isspace((unsigned char)*start) || *start == '?' || *start == ':')) start++;
+        while (end > start && isspace((unsigned char)end[-1])) end--;
+        if (i->type.tag != TYPE_VALUE || i->type.value.tag != VALUE_STRING || i->type.parenthesized || start == end ||
+            (*start != '"' && *start != '\'')
+        ) {
+            error_ctx_grammar_error_d(errs, span_make(decl.source, start, end), 1555,
+                "An import attributes property must have a string literal type annotation.");
+            return true;
+        }
+    }
+    return false;
+}
+
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
+    // tsgo's checkImportAttributesType, and no attributes on an augmentation (TS1551)
+    if (my attributes) {
+        module_attributes_check_grammar(&my attributes->interface, errs);
+        type_typecheck(my attributes, errs);
+        ty_check_module_attributes(current_checker, my attributes, my attributes->interface.span, errs);
+        if (my is_augmentation) {
+            error_ctx_error_d(errs, my attributes->interface.span, 1551, "Import attributes are not allowed on a module augmentation.");
+        }
+    }
     // tsc's checkModuleDeclaration: an instantiated namespace merged with a class or function comes after it, in the
     // same file
     SymbolDecl const* own = nullptr;
@@ -960,7 +1026,7 @@ void statement_hoist_names(Statement* me, Scope* scope) {
             // declares into the same module symbol when its turn comes
             NamespaceDecl const* ns = my decl.namespace;
             if (scope->kind == SCOPE_SCRIPT && ns->is_ambient_module && !ns->is_global && ns->module_ref) {
-                binder_ambient_module(scope->binder, cstr_sv(&ns->module_ref->path), ns->name);
+                binder_ambient_module(scope->binder, cstr_sv(&ns->module_ref->path), ns->name, ns->attributes);
             }
         }   break;
 

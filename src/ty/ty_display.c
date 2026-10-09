@@ -231,6 +231,44 @@ static bool is_nested_expando_function(Ty const* ty) {
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
 static bool is_identifier_name(csview name);
 
+// The string literal attributes of an ambient module's declaration (`declare module "*.css" with { type: "css" }`)
+static u32 module_attributes_count(Symbol const* module) {
+    if (!module->is_module || !module->module || !module->module->attributes) return 0;
+    u32 count = 0;
+    for_each (i, vec_interface_member, &module->module->attributes->interface.members) {
+        count += i->key.tag == INTERFACE_KEY_NAME && !i->is_method && i->type.tag == TYPE_VALUE && i->type.value.tag == VALUE_STRING;
+    }
+    return count;
+}
+
+// `, { with: { type: "css" } }` of them, by name (tsgo's createImportAttributesForModuleSpecifier with
+// getTypeOfModuleImportAttributes)
+static void out_module_attributes(TyDisplay d, Symbol const* module) {
+    struct { csview name; csview value; } found[16];
+    u32 count = 0;
+    for_each (i, vec_interface_member, &module->module->attributes->interface.members) {
+        if (count == c_arraylen(found)) break;
+        if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->type.tag != TYPE_VALUE || i->type.value.tag != VALUE_STRING) continue;
+        csview name = cstr_sv(&i->key.name_string);
+        u32 at = count++;
+        while (at > 0 && csview_cmp(&found[at - 1].name, &name) > 0) {
+            found[at] = found[at - 1];
+            at--;
+        }
+        found[at].name = name;
+        found[at].value = cstr_sv(&i->type.value.string);
+    }
+    out_lit(d, ", { with: { ");
+    for (u32 i = 0; i < count; i++) {
+        if (i) out_lit(d, ", ");
+        if (is_identifier_name(found[i].name)) out(d, found[i].name);
+        else display_quoted_string(d, found[i].name, false, true);
+        out_lit(d, ": ");
+        display_quoted_string(d, found[i].value, false, true);
+    }
+    out_lit(d, " } }");
+}
+
 // `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode), named from a place
 // as program_module_display_name() says
 static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
@@ -257,7 +295,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     // createImportAttributesForModuleSpecifier: `resolution-mode` first, then the string-valued ones by name)
     ImportAttributes const* attributes = d.usage_attributes && d.usage_ref && d.usage_ref->module == module ?
         d.usage_attributes : nullptr;
-    struct { csview name; Expr const* value; } found[16];
+    struct { csview name; csview value; } found[16];
     u32 count = 0;
     if (attributes) {
         for_each (i, vec_import_attribute, &attributes->elements) {
@@ -271,8 +309,10 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
                 at--;
             }
             found[at].name = name;
-            found[at].value = &i->value;
+            found[at].value = cstr_sv(&i->value.literal.string);
         }
+    } else if (module_attributes_count(module)) {
+        out_module_attributes(d, module);
     }
     if (resolution_mode || count) {
         out_lit(d, ", { with: { ");
@@ -282,7 +322,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
             if (is_identifier_name(found[i].name)) out(d, found[i].name);
             else display_quoted_string(d, found[i].name, false, true);
             out_lit(d, ": ");
-            display_quoted_string(d, cstr_sv(&found[i].value->literal.string), false, true);
+            display_quoted_string(d, found[i].value, false, true);
         }
         out_lit(d, " } }");
     }
@@ -500,6 +540,7 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
         cstr module_name = module_name_for_error(symbol_members(symbol), nullptr, false);
         out_lit(d, "import(");
         out(d, cstr_sv(&module_name));
+        if (module_attributes_count(symbol_members(symbol))) out_module_attributes(d, symbol_members(symbol));
         out_lit(d, ")");
         cstr_drop(&module_name);
         return;

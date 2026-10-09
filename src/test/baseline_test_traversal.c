@@ -2193,6 +2193,12 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             baseline_test_case_add_type(ctx, my name, ty_intrinsic(current_checker, TY_ERROR));
         }
     }
+    if (my attributes) {
+        Scope const* inner = ctx->enclosing;
+        ctx->enclosing = outer;
+        type_compile_test_info(my attributes, ctx);
+        ctx->enclosing = inner;
+    }
     block_compile_test_info(&my contents, ctx);
     ctx->enclosing = outer;
 }
@@ -2937,6 +2943,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             ModuleRef* ref = callee->tag == EXPR_IDENTIFIER ? identifier_module_ref(&callee->identifier) : nullptr;
             SourceFile const* in_file = my inner_span.source;
             Symbol const* module = ref && in_file && in_file->scope ? binder_module_of_ref(in_file->scope->binder, ref) : ref ? ref->module : nullptr;
+            if (ref && module && !callee->identifier.require_call) module = ty_dynamic_import_module(current_checker, my call, ref);
             // (A `require("./a")` only where a declaration's alias imports it: tsgo's
             // isVariableDeclarationInitializedToRequire of the grandparent)
             bool require = callee->tag == EXPR_IDENTIFIER && callee->identifier.require_call;

@@ -251,6 +251,9 @@ typedef struct SymbolModule {
     // Every export's alias chain was resolved, as tsc does when it resolves the members of the module's type (see
     // resolve_module_type_members()): later visits see the members as resolved, not in flight
     bool type_members_resolved;
+    // A pattern ambient module's `with { type: "css" }` (a type literal, TYPE_INTERFACE, with members), which imports
+    // must have to be it (tsgo's getTypeOfModuleImportAttributes). Null for none (or `with {}`)
+    struct TypeNode const* attributes;
 } SymbolModule;
 
 // What few symbols have (namespace imports, export defaults, JavaScript members...): behind Symbol.rare, read through
@@ -565,6 +568,9 @@ typedef struct Binder {
     Symbol** pattern_modules; // malloc'd
     u32 pattern_module_count;
     u32 pattern_module_cap;
+    // Some pattern has attributes (`declare module "*.css" with { type: "css" }`): not in ambient_modules, a symbol
+    // of their own per pattern and attributes (tsgo's mergePatternAmbientModules), see binder_find_module()
+    bool attributed_patterns;
     // Augmentations of a name only a pattern matches (`declare module "a.foo"` in a module against `"*.foo"`), by
     // name: a module of its own whose exports' parent is the pattern's (tsc's patternAmbientModuleAugmentations, the
     // unidirectional merge), which binder_find_module() gives that name instead of the pattern
@@ -679,12 +685,30 @@ Symbol* binder_new_module_symbol(Binder* me, SourceFile* file);
 void binder_declare_global_this(Binder* me);
 // The ambient module of that name (no quotes), made if it doesn't exist yet: every `declare module "m"` block and
 // every augmentation of it (binder_link()) declare into the same symbol
-Symbol* binder_ambient_module(Binder* me, csview name, Span name_span);
+Symbol* binder_ambient_module(Binder* me, csview name, Span name_span, struct TypeNode const* attributes);
 // A `declare module "m" {}` block of a script is a declaration of the ambient module
 void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl);
 // The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
 // ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);
+// An import's attributes as pattern ambient modules are matched against them: name -> string value
+typedef struct ModuleAttr {
+    csview name;
+    csview value;
+    bool known; // The value is a string literal (else only a pattern's `string`, or what it can't tell, takes it)
+} ModuleAttr;
+typedef struct ModuleAttrs {
+    ModuleAttr items[16];
+    u32 count;
+    // From a type the checker knows (`import("m", options)` of a variable): binder_module_of_ref() can't tell
+    bool needs_types;
+} ModuleAttrs;
+// The attributes ref has (from its import, export, import type, or `import()`'s literal options)
+void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret);
+// What ref is with these attributes (the checker's, for `import("m", options)`)
+Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes);
+// Whether any pattern ambient module has attributes: only then do attributes change what an import is
+bool binder_has_attributed_patterns(Binder const* me);
 // What importing the module gives: the target of its `export =` if it has one (merged with the module's other
 // exports), else itself
 Symbol* module_export_equals(Symbol* module);

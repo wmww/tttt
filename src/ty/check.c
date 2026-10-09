@@ -1153,6 +1153,14 @@ void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes,
     ty_check_assignable(me, source, with_undefined(me, target), attributes->span, errs);
 }
 
+// `declare module "*.css" with { type: "css" } {}`: the type literal against the global ImportAttributes (tsgo's
+// checkImportAttributesType)
+void ty_check_module_attributes(Checker* me, TypeNode const* attributes, Span span, ErrorCtx* errs) {
+    Ty const* target = global_import_type(me, "ImportAttributes");
+    if (!target) return;
+    ty_check_assignable(me, ty_from_node(me, attributes, (LowerCtx){0}), target, span, errs);
+}
+
 // The options of `import("m", options)`, which were checked with ImportCallOptions as their contextual type (tsc's
 // checkImportCallExpression)
 // tsc's checkImportCallExpression: the specifier is a string (null and undefined aren't, whatever strictNullChecks says)

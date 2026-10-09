@@ -1228,6 +1228,9 @@ struct ImportAttributes;
 void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attributes, ErrorCtx* errs);
 // `import(x)`: x is a string (TS7036)
 void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx* errs);
+// What `import("m", options)` imports (`options`' type may say which pattern ambient module), call.c
+Symbol* ty_dynamic_import_module(Checker* me, CallExpr const* call, ModuleRef const* ref);
+void ty_check_module_attributes(Checker* me, TypeNode const* attributes, Span span, ErrorCtx* errs);
 void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs);
 // tsgo's getGlobalAbstractModuleSourceType: the type of a source phase import (`{}` and TS2318 without the lib)
 Ty const* ty_abstract_module_source_type(Checker* me);

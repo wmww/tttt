@@ -93,6 +93,9 @@ typedef struct NamespaceDecl {
     bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
     bool is_shorthand; // `declare module "name";`: everything imported from it is any
     ModuleRef* module_ref; // Of an ambient module
+    // `declare module "*.css" with { type: "css" } {}`: the type literal after `with` (a TYPE_INTERFACE), owned. Which
+    // imports a pattern module is for (tsgo's ModuleDeclaration.Attributes, see module_attributes.h)
+    TypeNode* attributes;
     bool is_augmentation; // `declare module "./a" {}` in a module: adds to the module it names
     bool labeled; // The body of a labeled statement (a context it isn't allowed in, TS1234/TS1235)
     bool module_keyword; // `module N {}` (and each part of `module A.B {}`): TS1540, `namespace` is the way now
