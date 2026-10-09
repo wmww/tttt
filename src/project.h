@@ -23,6 +23,7 @@ typedef struct Project {
     bool root_files_listed;
     TsconfigReference* references;
     u32 reference_count;
+    bool has_references; // A `references` array, maybe empty: without files the config is a solution (tsgo's -b)
     u32* referenced; // The project of each of references
 } Project;
 

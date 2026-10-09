@@ -74,7 +74,10 @@ def parse(path):
     if command is None:
         return None
     i += 1
+    status = None
     while i < len(lines) and (not lines[i].strip() or lines[i].startswith("ExitStatus::")):
+        if lines[i].startswith("ExitStatus::"):
+            status = EXIT_STATUS.get(lines[i].split("::", 1)[1].strip())
         i += 1
     if i >= len(lines) or lines[i] != "Output::":
         return None  # (A builder API scenario: an exit code, no output)
@@ -85,7 +88,12 @@ def parse(path):
         output.append(ANSI.sub("", lines[i]))
         i += 1
     files = {k: "\n".join(v).rstrip("\n") + "\n" for k, v in files.items()}
-    return cwd, files, symlinks, command, output
+    return cwd, files, symlinks, command, output, status
+
+
+# tsgo's ExitStatus, as the baselines name it, to the process's exit code
+EXIT_STATUS = {"Success": 0, "DiagnosticsPresent_OutputsSkipped": 1, "DiagnosticsPresent_OutputsGenerated": 2,
+               "InvalidProject_OutputsSkipped": 3, "ProjectReferenceCycle_OutputsSkipped": 4}
 
 
 # Option errors tsc's program reports only when it emits (verifyCompilerOptions under !noEmit): the common source
@@ -142,7 +150,7 @@ def translate(command, root):
 
 
 def run(name, scenario, tttt, keep, verbose):
-    cwd, files, symlinks, command, output = scenario
+    cwd, files, symlinks, command, output, _ = scenario
     root = keep and os.path.join(keep, name.replace("/", "__")) or tempfile.mkdtemp(prefix="tttt-scenario-")
     if os.path.exists(root):
         shutil.rmtree(root)
@@ -210,7 +218,9 @@ def main():
             if a.v:
                 print(f"SKIP {name}: {' '.join(args)}: {out.strip().splitlines()[-1] if out.strip() else ''}")
             continue
-        if expected == actual and code >= 0:
+        # (The exit code: tsc's command emits and tttt's doesn't, but tsc 7's codes don't depend on that, plan 54)
+        want_code = scenario[5]
+        if expected == actual and code >= 0 and (want_code is None or code == want_code):
             passed.append(name)
             continue
         failed.append(name)
@@ -220,6 +230,8 @@ def main():
             print(name)
             continue
         print(f"FAIL {name}   (tttt {' '.join(args)})")
+        if want_code is not None and code >= 0 and code != want_code:
+            print(f"   exit code {code}, tsc's {want_code}")
         for k in sorted(expected - actual, key=str):
             print(f"   missing  {k[0]}:{k[1]} TS{k[2]}" + (f" x{(expected - actual)[k]}" if (expected - actual)[k] > 1 else ""))
         for k in sorted(actual - expected, key=str):

@@ -396,9 +396,12 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         // A solution config: only references (tsc says nothing, and builds nothing without -b). -b doesn't build it,
         // so not even its options are checked
         bool solution = config.size && project_set_at(projects, project)->reference_count;
-        bool built = config.size && !(opts->build && solution);
+        // (tsgo's -b: a config without files and with a `references` array, even an empty one, is a solution: nothing
+        // is built, only its config's parsing diagnostics are reported, and those are ExitStatus 1)
+        bool build_solution = opts->build && config.size && project_set_at(projects, project)->has_references;
+        bool built = config.size && !(opts->build && solution) && !build_solution;
         if (built) verify_references(program, projects, project, false);
-        bool no_inputs = built && program_report_no_inputs(program);
+        bool no_inputs = (built || build_solution) && program_report_no_inputs(program);
         if (built) program_verify_options(program);
         report_errors(&shown, errs);
         intptr_t config_errors = print_diagnostics(opts, out, program, &shown);
@@ -406,6 +409,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         str_list_drop(&root_files);
         destroy_program(program, errs, last);
         // (tsgo: diagnostics and no file to emit is ExitStatus.DiagnosticsPresent_OutputsGenerated, 2)
+        if (build_solution) return ok(config_errors ? 1 : 0);
         if (solution || no_inputs) return ok(config_errors ? 2 : 0);
         return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
@@ -555,6 +559,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         name_errors = report_errors(&shown, errs);
         if (name_errors) ret = 1;
     }
+    // (A declaration diagnostic blocks its file's .d.ts: tsgo's emitDeclarationFile says EmitSkipped)
+    bool declaration_blocked = false;
+    for_each (e, vec_error, &shown) declaration_blocked |= e->declaration;
     intptr_t printed = print_diagnostics(opts, out, program, &shown);
     if (opts->expect_types && typecheck) {
         output_flush(out);
@@ -563,8 +570,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
 
     if (counts) counts->errors += printed;
     // tsgo 7.1's EmitAndReportStatistics: diagnostics are ExitStatus.DiagnosticsPresent_OutputsGenerated (2), --noEmit
-    // included (handleNoEmitOptions doesn't count as a skipped emit), unless noEmitOnError skipped the emit (1)
-    if (ret) ret = options->no_emit_on_error && !options->no_emit ? 1 : 2;
+    // included (handleNoEmitOptions doesn't count as a skipped emit), unless the emit was skipped (1): noEmitOnError, or
+    // (-b, which emits) a declaration diagnostic
+    if (ret) ret = !options->no_emit && (options->no_emit_on_error || declaration_blocked) ? 1 : 2;
     destroy_program(program, errs, last);
     if (!last) phase_done(opts, out, "free", &last_time);
     return ok(ret);
@@ -653,7 +661,7 @@ static void build_run(Build* me, u32 i) {
         job->out.pretty = my opts->pretty >= 0 ? my opts->pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
         job->counts.errors += print_diagnostics(my opts, &job->out, nullptr, &shown);
         error_ctx_drop(&errs);
-        job->ret = 1;
+        job->ret = 1; // (tsgo's ExitStatusDiagnosticsPresent_OutputsSkipped)
         return;
     }
     // (The project set is complete and only read from here on: build() listed every root file up front)
@@ -684,7 +692,11 @@ static_failable build(Options const* opts, returns int) {
     u32* roots = c_new_n(u32, root_count);
     for (isize i = 0; i < root_count; i++) {
         csview path = opts->path_count ? csview_from(opts->paths[i]) : c_sv(".");
-        roots[i] = project_set_load(projects, path);
+        // (tsgo's ResolveConfigFileNameOfProjectReference: a .json path is the config, anything else its directory's
+        // tsconfig.json, whether or not it exists)
+        cstr config = csview_ends_with(path, ".json") ? cstr_from_sv(path) : cstr_d(path, "/tsconfig.json");
+        roots[i] = project_set_load(projects, cstr_sv(&config));
+        cstr_drop(&config);
     }
     u32* order = nullptr;
     StrList cycles = {0};
@@ -755,8 +767,10 @@ static_failable build(Options const* opts, returns int) {
             break;
         }
         counts.errors += job->counts.errors;
+        // (tsgo's build result is the highest of its projects' exit statuses: 2 for diagnostics with the outputs
+        // written, 1 when they're skipped, as `tsc -p` says for each)
+        if (job->ret > ret) ret = job->ret;
         if (job->ret || job->counts.errors) {
-            ret = 1;
             if (opts->stop_build_on_errors) {
                 atomic_store(&b.end, 0);
                 break;

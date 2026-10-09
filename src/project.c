@@ -80,7 +80,8 @@ u32 project_set_load(ProjectSet* me, csview path) {
     }
     compiler_options_resolve(&project.options);
     if (project.readable) {
-        try (tsconfig_load_references(my fs, cstr_sv(&project.config), &project.references, &project.reference_count))
+        try (tsconfig_load_references(my fs, cstr_sv(&project.config), &project.references, &project.reference_count,
+            &project.has_references))
             if_err (e) {
             ignore e;
             current_error_destroy();

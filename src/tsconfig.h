@@ -55,6 +55,7 @@ typedef struct TsconfigReference {
 } TsconfigReference;
 
 // The `references` of the config at path itself (they aren't inherited through `extends`), appended to out. Fails if the
-// config can't be read
-failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference** out, u32* count);
+// config can't be read. *has_references: it has a `references` array, even an empty one (tsgo's ProjectReferences() is
+// non-nil: with no files that's a solution -b builds nothing of)
+failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference** out, u32* count, bool* has_references);
 void tsconfig_references_drop(TsconfigReference* references, u32 count);

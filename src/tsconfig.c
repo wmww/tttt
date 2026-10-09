@@ -981,7 +981,7 @@ cstr tsconfig_find(Fs const* fs, csview directory) {
     return cstr_null;
 }
 
-failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference** out, u32* count) {
+failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference** out, u32* count, bool* has_references) {
     cstr cwd = cstr_null;
     try (fs_get_cwd(fs, &cwd)) bubble;
     cstr absolute = absolute_path_of(cstr_sv(&cwd), path);
@@ -995,6 +995,7 @@ failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference**
     bool parsed = json_parse(cstr_sv(&contents), &document);
     cstr_drop(&contents);
     JsonValue const* references = parsed ? json_get_tagged(&document, "references", JSON_ARRAY) : nullptr;
+    *has_references = references != nullptr;
     csview dir = parent_of(cstr_sv(&absolute));
     for (isize i = 0; references && i < references->count; i++) {
         JsonValue const* entry = &references->items[i];
