@@ -5162,7 +5162,9 @@ static Ternary structured_related_members(
                 result &= index_signatures_related(me, st, source, target, false, report);
             }
         }
-        return result;
+        // (A type variable source goes on to its constraint, against the whole intersection, below what failed:
+        // tsgo's structuredTypeRelatedToWorker keeps the error chain)
+        if (result || !source_is_generic || source->kind == TY_CONDITIONAL) return result;
     }
     if (source->kind == TY_INTERSECTION && comparable && (target->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN |
         TYF_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE))
@@ -6968,7 +6970,8 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     // (And a class or interface that adds nothing to its base, as written: tsc's reportErrorResults)
     Ty const* report_target = original_target->alias ? original_target : target;
     if (report && unnormalized_target != original_target && ty_non_augmenting_base(me, unnormalized_target)) report_target = unnormalized_target;
-    Ty const* report_source = source_has_base ? unnormalized_source : source;
+    Ty const* report_source = source_has_base || (unnormalized_source->alias && unnormalized_source != source) ?
+        unnormalized_source : source;
     // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
     if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {
         return TERNARY_TRUE;
