@@ -13776,9 +13776,9 @@ const baselines = {
         types: true,
     },
     'expressionWithJSDocTypeArguments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'expressionsForbiddenInParameterInitializers': {
         errors: true,
@@ -20406,9 +20406,9 @@ const baselines = {
         types: true,
     },
     'jsdocParameterParsingInfiniteLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParameterParsingInvalidName': {
         errors: true,
@@ -20431,9 +20431,9 @@ const baselines = {
         types: true,
     },
     'jsdocRestParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocRestParameter_es6': {
         errors: true,
@@ -34891,9 +34891,9 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction_allowJs': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncUnParenthesizedArrowFunction_es2017': {
         errors: true,
@@ -51611,14 +51611,14 @@ const baselines = {
         types: true,
     },
     'checkJsdocTypeTag1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTag3': {
         errors: true,
@@ -51988,12 +51988,12 @@ const baselines = {
     'jsDeclarationsMissingTypeParameters(target=es2015)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsModuleReferenceHasEmit(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsMultipleExportFromMerge(target=es2015)': {
         errors: true,
@@ -52066,9 +52066,9 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsRestArgsWithThisTypeInJSDocFunction(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReusesExistingNodesMappingJSDocTypes': {
         errors: false,
@@ -52463,7 +52463,7 @@ const baselines = {
     'jsdocFunction_missingReturn': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocImplementsTag': {
         errors: true,
@@ -52628,7 +52628,7 @@ const baselines = {
     'jsdocParamTagNoName': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParamTagTypeLiteral': {
         errors: true,
@@ -52646,9 +52646,9 @@ const baselines = {
         types: true,
     },
     'jsdocParseDotDotDotInJSDocFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParseErrorsInTypescript': {
         errors: true,
@@ -52656,9 +52656,9 @@ const baselines = {
         types: true,
     },
     'jsdocParseHigherOrderFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParseMatchingBackticks': {
         errors: true,
@@ -52666,9 +52666,9 @@ const baselines = {
         types: true,
     },
     'jsdocParseParenthesizedJSDocParameter': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocParseStarEquals': {
         errors: false,
@@ -52681,7 +52681,7 @@ const baselines = {
         types: true,
     },
     'jsdocPrefixPostfixParsing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52736,9 +52736,9 @@ const baselines = {
         types: false,
     },
     'jsdocTemplateTag': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTag2': {
         errors: true,
@@ -52787,8 +52787,8 @@ const baselines = {
     },
     'jsdocThisType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocTwoLineTypedef': {
         errors: true,
@@ -52871,14 +52871,14 @@ const baselines = {
         types: true,
     },
     'jsdocTypeTagParameterType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeTagRequiredParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocVariableDeclarationWithTypeAnnotation': {
         errors: true,
@@ -52886,14 +52886,14 @@ const baselines = {
         types: true,
     },
     'jsdocVariadicInOverload': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'jsdocVariadicType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'linkTagEmit1': {
         errors: true,
@@ -52983,7 +52983,7 @@ const baselines = {
     'paramTagWrapping': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseLinkTag': {
         errors: true,
@@ -53138,7 +53138,7 @@ const baselines = {
     'typedefInnerNamepaths': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typedefMultipleTypeParameters': {
         errors: true,
@@ -53178,7 +53178,7 @@ const baselines = {
     'typedefTagWrapping': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenCanBeTupleType': {
         errors: true,

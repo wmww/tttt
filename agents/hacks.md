@@ -120,9 +120,8 @@ src` finds the code-side markers; every significant one has an entry here.
   if entity names (`parse_heritage_element()`); TS2864/TS2840 recognised by text; unchecked parts in
   `unchecked_*`/`invalid_*` fields resolved silently for baselines; TS1172-TS1176/TS1097 from the parser.
   `BaselineTestCase.hidden_type_spans` hides what isPartOfTypeNode drops.
-- JSDoc types outside JSDoc (`jsdoc_type_outside_jsdoc()`): `?T`/`T!` are a `TYPE_JSDOC` wrapper; `*`, `?`,
-  `function(...)` report TS8020 without a node. Unnamed `function(...)` parameters (and `jsdoc_parameter_name()`) are
-  `argN` spans into static strings (`span_is_written()`); position arithmetic on them reads garbage.
+- JSDoc types outside JSDoc (`jsdoc_type_outside_jsdoc()`): `?T`/`T!` are a `TYPE_JSDOC` wrapper; `*` reports TS8020
+  without a node.
 - Top-level await (`parse_file()`): the whole file is reparsed with the statements that saw an `await` identifier as
   await contexts (`ParserShared.await_statements`); module-ness guessed by `parsed_file_is_module()`, a copy of
   program.c's rules.

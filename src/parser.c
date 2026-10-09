@@ -2691,122 +2691,6 @@ static TypeNode jsdoc_union(TypeNode type, TypeNode added) {
     return ret;
 }
 
-// The names tsc gives the parameters of a JSDoc function type (`arg0`...), which aren't written anywhere
-static Span jsdoc_parameter_name(SourceFile const* source, u32 index) {
-    static const char* const names[] = {
-        "arg0", "arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg8", "arg9", "arg10", "arg11", "arg12",
-        "arg13", "arg14", "arg15",
-    };
-    return (Span){ .source = source, .sv = csview_from(names[index < c_arraylen(names) ? index : c_arraylen(names) - 1]) };
-}
-
-// `function(string, number=, ...boolean): R`, `function(this: T, ...)`, `function(new: T, ...)` (tsc's
-// parseJSDocFunctionType): p is past `function`
-static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
-    Parser p = parser(parent);
-    hop_whitespace(&p);
-    if (!hop_char(&p, '(')) return parse_fail(&p);
-    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true, .jsdoc_unchecked = p.shared->jsdoc_unchecked };
-    Anchor args_start = { .parser = &p, .start = p.pos - 1 };
-    hop_whitespace(&p);
-    u32 index = 0;
-    while (*p.pos && *p.pos != ')') {
-        Anchor arg_start = anchor(&p);
-        FunctionArg arg = {0};
-        Span name = span_null;
-        bool is_new = false;
-        Parser word = parser(&p);
-        Anchor word_a = anchor(&word);
-        if ((hop_start_if_ends_on_word_break(&word, "this") || (is_new = hop_start_if_ends_on_word_break(&word, "new"))) &&
-            (hop_whitespace(&word), hop_char(&word, ':'))
-        ) {
-            name = span_make(p.shared->source, word_a.start, word_a.start + (is_new ? 3 : 4));
-            parse_success(&word);
-            hop_whitespace(&p);
-        } else {
-            parse_fail(&word);
-            is_new = false;
-        }
-        if (!span_valid(name) && hop_start(&p, "...")) {
-            arg.rest = true;
-            arg.initializer.is_rest_parameter = true;
-            hop_whitespace(&p);
-        }
-        TypeNode type;
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            // tsc's isStartOfParameter(isJSDocParameter) takes a decorator or modifier: then the type is missing
-            // (parseJSDocParameter), and the list skips what it couldn't parse
-            Tok t = tok_peek(&p);
-            if (!tok_is(t, "@") && !tok_is_modifier(t)) {
-                vec_function_arg_drop(&function.args);
-                return parse_fail(&p);
-            }
-            expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
-            type.synthesized = true; // (No node of tsc's: printed, not reused)
-        }
-        if (!is_new) hop_jsdoc_optional(&p, &type);
-        if (is_new) {
-            // The type the construct signature makes
-            function.is_constructor = true;
-            function_impl_rare_mut(&function)->jsdoc_new = name;
-            function.ret = type;
-            function.ret_explicit = true;
-        } else {
-            if (type.jsdoc_optional) arg.explicit_optional = true;
-            if (arg.rest) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
-            arg.initializer.binding = (Binding){
-                .tag = BINDING_IDENTIFIER,
-                .content_span = span_valid(name) ? name : jsdoc_parameter_name(p.shared->source, index),
-                .has_explicit_type = true,
-                .explicit_type = type,
-            };
-            arg.span = span_from(arg_start);
-            list_push(vec_function_arg, &function.args, arg);
-        }
-        index++;
-        hop_whitespace(&p);
-        if (!hop_char(&p, ',')) {
-            if (*p.pos == ')' || p.pos != arg_start.start) break;
-            // (tsc's parseDelimitedList: an element that consumed nothing, skip a token)
-            expected_token_error(&p, ",");
-            hop_token(&p);
-            hop_whitespace(&p);
-            continue;
-        }
-        hop_whitespace(&p);
-    }
-    if (!hop_char(&p, ')')) {
-        vec_function_arg_drop(&function.args);
-        return parse_fail(&p);
-    }
-    function_impl_set_args_span(&function, span_from(args_start));
-    Parser colon = parser(&p);
-    hop_whitespace(&colon);
-    if (hop_char(&colon, ':')) {
-        hop_whitespace(&colon);
-        Anchor ret_a = anchor(&colon);
-        TypeNode written;
-        if (parse_type(&colon, TYPE_PRECEDENCE_NULL, &written)) {
-            // (A construct signature's is what `new:` says, the written one is ignored)
-            if (function.is_constructor) {
-                type_drop(&written);
-            } else {
-                function.ret = written;
-                function_impl_set_ret_span(&function, span_from(ret_a));
-                function.ret_explicit = true;
-            }
-            parse_success(&colon);
-        } else {
-            parse_fail(&colon);
-        }
-    } else {
-        parse_fail(&colon);
-    }
-    function.full_span = span_make(p.shared->source, a.start, p.pos); // (`a` is the caller's, before `function`)
-    *ret = function_impl_into_type(function);
-    return parse_success(&p);
-}
-
 // A JSDoc-only type form outside JSDoc: tsc parses it all the same, then its checker says it isn't TypeScript
 // (checkJSDocTypeIsInJsFile, not in JavaScript files). TS8020 is reported here; `?T`, `T?`, `!T` and `T!` become
 // TYPE_JSDOC nodes, whose TS17019/TS17020 print a type
@@ -2827,33 +2711,19 @@ static void jsdoc_type_outside_jsdoc(Parser* p, char const* start, TypeNode* ret
     };
 }
 
-// JSDoc's type forms that come first: `*` (any), `?` alone (any), `?T` (T | null), `!T` (T), `function(...)`
+// JSDoc's type forms that come first: `*` (any), `?T` (T | null), `!T` (T). tsgo has no Closure `function(...)` (a
+// type reference to `function`) nor a standalone `?` (a missing type)
 static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     bool in_jsdoc = p.shared->in_jsdoc;
-    if (hop_start_if_ends_on_word_break(&p, "function") && parse_jsdoc_function_type(&p, a, ret)) {
-        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
-        return parse_success(&p);
-    }
-    p.pos = a.start;
     if (hop_char(&p, '*')) {
         *ret = type_any;
         if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
         return parse_success(&p);
     }
     if (hop_char(&p, '?')) {
-        Parser next = parser(&p);
-        hop_whitespace(&next);
-        char c = *next.pos;
-        if (c == ',' || c == '}' || c == ')' || c == '>' || c == '=' || c == '|' || c == ']' || !c) {
-            parse_fail(&next);
-            *ret = type_any;
-            ret->jsdoc_unknown = true;
-            if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
-            return parse_success(&p);
-        }
-        parse_success(&next);
+        hop_whitespace(&p);
         TypeNode inner;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &inner);
         *ret = jsdoc_union(inner, jsdoc_synthesized(type_null));
@@ -3716,24 +3586,6 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     bool outer_unchecked = p.shared->jsdoc_unchecked;
     p.shared->jsdoc_unchecked = outer_unchecked || tag->kind == JSDOC_TAG_RETURNS || tag->kind == JSDOC_TAG_THROWS;
     hop_whitespace(&p);
-    Anchor module_start = anchor(&p);
-    if (hop_start_if_ends_on_word_break(&p, "module")) {
-        // `{module:foo/bar}` (tsc's parseJSDocType: a JSDocNamepathType, which is the error type): every token up to
-        // a `}`, `,` or whitespace
-        while (p.pos < end && *p.pos != '}' && *p.pos != ',' && !is_jsdoc_space(*p.pos)) p.pos++;
-        if (tag->has_type) type_drop(&tag->type);
-        tag->has_type = true;
-        tag->type = type_self_referential_error; // (The error type node)
-        tag->type_span = span_from(module_start);
-        hop_whitespace(&p);
-        if (p.pos < end && *p.pos == '}') p.pos++;
-        *pos = p.pos;
-        p.shared->in_jsdoc = outer_in_jsdoc;
-        p.shared->jsdoc_end = outer_end;
-        p.shared->jsdoc_unchecked = outer_unchecked;
-        parse_fail(&p);
-        return;
-    }
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);
     TypeNode type;
@@ -4419,20 +4271,9 @@ static bool jsdoc_reparse_type(Parser* parent, JsDocTag const* tag, TypeNode* re
     return parsed;
 }
 
-// The `@param` tag for a function's parameter (tsc's getJSDocParameterTags): by name, or for a pattern by position,
-// with or without a type
-static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
-    Binding const* binding = &arg->initializer.binding;
-    if (binding->tag == BINDING_IDENTIFIER) {
-        for_each (i, vec_jsdoc_tag, tags) {
-            if (i->kind == JSDOC_TAG_PARAM && !i->nested && span_valid(i->name) && jsdoc_name_is(i->name.sv, binding->content_span.sv)) {
-                return i;
-            }
-        }
-        return nullptr;
-    }
-    // (By position among the tags, the `o.a` children of an `{Object} o` aside: tsc's parser makes them its type)
-    isize index = arg - function->args.data;
+// The `@param` tag at a position among the tags, the `o.a` children of an `{Object} o` aside (tsc's parser makes them
+// its type)
+static JsDocTag* jsdoc_param_tag_at(VecJsDocTag* tags, isize index) {
     JsDocTag const* parent = nullptr;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
@@ -4440,6 +4281,20 @@ static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* func
         bool array;
         parent = span_valid(i->name) && (jsdoc_is_object_type(i, &array) || i->type.tag == TYPE_INTERFACE) ? i : nullptr;
         if (!index--) return i;
+    }
+    return nullptr;
+}
+
+// The `@param` tag for a function's parameter, with or without a type (tsgo's findMatchingParameter): the first that
+// names it, or a nameless one (a parse error) at its position; a pattern's by position
+static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
+    Binding const* binding = &arg->initializer.binding;
+    isize index = arg - function->args.data;
+    if (binding->tag != BINDING_IDENTIFIER) return jsdoc_param_tag_at(tags, index);
+    JsDocTag* positional = jsdoc_param_tag_at(tags, index);
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
+        if (span_valid(i->name) ? jsdoc_name_is(i->name.sv, binding->content_span.sv) : i == positional) return i;
     }
     return nullptr;
 }
@@ -4770,14 +4625,15 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested || i->earlier) continue;
         if (!span_valid(i->name)) {
-            // (A missing name is an identifier '' to tsc, which no parameter has)
+            // (A missing name is an identifier '' to tsc, which takes the parameter at its position and is no TS8024:
+            // tsgo's findMatchingParameter, checkUnmatchedJSDocParameters skips it)
             if (!span_valid(i->missing_name) || i->name_first) continue;
-            index++;
+            bool taken = false;
+            for (isize a = 0; a < vec_function_arg_size(&function->args) && !taken; a++) {
+                taken = jsdoc_param_tag_any(tags, function, &function->args.data[a]) == i;
+            }
             FunctionImplRare* rare = function_impl_rare_mut(function);
-            rare->jsdoc_param_issues = realloc(rare->jsdoc_param_issues, sizeof(JsDocParamIssue) * (rare->jsdoc_param_issue_count + 1));
-            panic_if(!rare->jsdoc_param_issues, "out of memory");
-            rare->jsdoc_param_issues[rare->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->missing_name, span_null };
-            if (i->has_type) {
+            if (i->has_type && !taken) {
                 // (Its type is still checked: tsc's checkJSDocParameterTag)
                 rare->jsdoc_unmatched = realloc(rare->jsdoc_unmatched, sizeof(JsDocUnmatchedParam) * (rare->jsdoc_unmatched_count + 1));
                 panic_if(!rare->jsdoc_unmatched, "out of memory");
@@ -4969,26 +4825,10 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             else i->jsdoc_optional_initialized = true;
             if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag));
         }
-        i->jsdoc_variadic = variadic && !i->rest;
-        if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {
-            // `{...T=}` is optional of variadic in tsc (parseJSDocType): getTypeFromJSDocVariadicType sees no parameter
-            // tag above it, so the parameter is `T | undefined`, which the printer shows as `T[] | undefined`
-            binding->explicit_type.jsdoc_variadic = true;
-        } else if (variadic && i->rest) {
+        // `{...T}` is only `T[]` (tsgo's JSDocVariadicType): it makes no parameter a rest parameter
+        if (variadic) {
             binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
             binding->explicit_type.parsed = true;
-        } else if (variadic) {
-            // Not a rest parameter: T | undefined (tsc's getTypeFromJSDocVariadicType: addOptionality). Unless it's the
-            // last parameter it's TS1014 (checkJSDocVariadicType), at the `...T`
-            binding->explicit_type = jsdoc_union(binding->explicit_type, jsdoc_synthesized(type_undefined));
-            binding->explicit_type.jsdoc_variadic = true;
-            if (i + 1 < function->args.data + function->args.size && binding->has_explicit_type_span) {
-                Span type = binding_explicit_type_span(binding);
-                const char* dots = span_start_ptr(type);
-                while (dots > source_file_start(type.source) && dots[-1] == '.') dots--;
-                jsdoc_error(p, span_make(type.source, dots, span_end_ptr(type)), 1014,
-                    "A rest parameter must be last in a parameter list.");
-            }
         }
         binding->explicit_type.from_jsdoc = true;
     }
@@ -5078,10 +4918,10 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             type = jsdoc_synthesized(type_any); // (No type node: tsc's printer makes an `any`)
         }
         if (type.jsdoc_optional || tag->bracketed) arg.explicit_optional = true;
+        // (`{...T}` makes a rest parameter of type T: tsgo's reparser, which TS2370 complains about unless T is an array)
         if (tag->variadic) {
             arg.rest = true;
             arg.initializer.is_rest_parameter = true;
-            type = type_array(c_new(TypeNode, type), false), type.parsed = true;
         }
         arg.initializer.binding = (Binding){
             .tag = BINDING_IDENTIFIER,

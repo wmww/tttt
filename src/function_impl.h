@@ -41,7 +41,6 @@ typedef struct FunctionArg {
     // A parameter of a signature in a type written as just a name that is a type (`(string) => void`), set when
     // resolving names: TS7051 instead of TS7006 (tsc's reportImplicitAny)
     bool name_is_type : 1;
-    bool jsdoc_variadic : 1; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
     // `constructor(public x: T)`: also declares a property of the class
     bool is_parameter_property : 1;
     bool is_readonly_property : 1;
@@ -106,7 +105,6 @@ typedef struct FunctionImplRare {
     Span first_this_or_super;
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
-    Span jsdoc_new; // The `new` of a JSDoc `function(new: T, ...)` (what T is for), a parameter to tsc's baselines
     // A function expression typed by the JSDoc `@type` of the variable it initializes: the return type node of that
     // signature, which tsc reuses when it prints the function's type (getReturnTypeOfTypeTag). Display only
     struct TypeNode const* jsdoc_tag_ret;

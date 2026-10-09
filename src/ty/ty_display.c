@@ -1369,16 +1369,12 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
     for_each (i, vec_function_arg, &function->args) {
         if (i_index) out_lit(d, ", ");
         Binding const* binding = &i->initializer.binding;
-        // (tsc's printer makes a JSDoc `...T` parameter `...args`, of which the name counts as reused)
-        bool jsdoc_rest = function->jsdoc_type && i->rest && !span_is_written(binding->content_span);
-        if (i->rest) out(jsdoc_rest ? reused_if(d, false) : d, c_sv("..."));
+        if (i->rest) out_lit(d, "...");
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
             append_binding_pattern(&pattern, binding);
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
-        } else if (jsdoc_rest) {
-            out(d, c_sv("args"));
         } else {
             out(d, binding->content_span.sv);
         }
@@ -1695,21 +1691,6 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             }
             break;
         case TYPE_UNION:
-            if (node->jsdoc_variadic && vec_type_size(&node->composite) == 2) {
-                TypeNode const* element = vec_type_at(&node->composite, 0);
-                bool parens = !element->parenthesized && (element->tag == TYPE_UNION || element->tag == TYPE_INTERSECTION ||
-                    element->tag == TYPE_CALLABLE);
-                if (parens) out(reused_if(d, false), c_sv("("));
-                display_node(me, d, element);
-                if (parens) out(reused_if(d, false), c_sv(")"));
-                out_lit(d, "[]");
-                // (`...T=`: tsc's JSDocOptionalType around it, whose `undefined` is synthesized)
-                if (node->jsdoc_optional) {
-                    out_lit(d, " | ");
-                    out(reused_if(d, false), c_sv("undefined"));
-                }
-                break;
-            }
             display_node_list(me, d, &node->composite, " | ");
             break;
         case TYPE_INTERSECTION:
@@ -1736,10 +1717,7 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             if (node->predicate->asserts) out_lit(d, "void");
             else out_lit(d, "boolean");
             break;
-        case TYPE_ANY:
-            if (node->jsdoc_unknown) out_lit(d, "unknown");
-            else out_lit(d, "any");
-            break;
+        case TYPE_ANY: out_lit(d, "any"); break;
         case TYPE_UNKNOWN: out_lit(d, "unknown"); break;
         case TYPE_NEVER: out_lit(d, "never"); break;
         case TYPE_VOID: out_lit(d, "void"); break;
@@ -1833,7 +1811,7 @@ static void display_node_plus_undefined(Checker* me, TyDisplay d, TypeNode const
         out(reused_if(d, false), c_sv("("));
         display_node(me, d, node);
         out(reused_if(d, false), c_sv(")"));
-    } else if (node->tag == TYPE_UNION && !node->parenthesized && !node->jsdoc_variadic && vec_type_size(&node->composite)) {
+    } else if (node->tag == TYPE_UNION && !node->parenthesized && vec_type_size(&node->composite)) {
         for_each (i, vec_type, &node->composite) {
             if (i_index) out(reused_if(d, false), c_sv(" | "));
             display_node(me, d, i);

@@ -177,8 +177,6 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) {
         // (A method signature is its name, a function type the whole type)
         FunctionImpl const* function = ty->anonymous.node->callable->function;
-        // (A JSDoc `function(...)` type has no symbol in tsc)
-        if (function->jsdoc_type && !function->jsdoc_callback) return (Span){0};
         return span_valid(function_impl_member_name(function)) ? function_impl_member_name(function) : function->full_span;
     }
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;
