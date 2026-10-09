@@ -2006,6 +2006,23 @@ static FunctionImpl const* single_return_function(Checker* me, FunctionImpl cons
     return ty_expr_type(me, expr) == ret ? expr->function : nullptr;
 }
 
+// The keyword type of a number, string, boolean or bigint literal (`-1` too), null for any other expression (tsgo's
+// pseudochecker outside a const context)
+static Ty const* primitive_literal_keyword(Checker* me, Expr const* expr) {
+    if (expr->tag == EXPR_UNARY_OP && (expr->unary_op->op == UNARY_OP_MINUS || expr->unary_op->op == UNARY_OP_PLUS)) {
+        expr = &expr->unary_op->expr;
+        if (expr->tag != EXPR_LITERAL || (expr->literal.tag != VALUE_NUMBER && expr->literal.tag != VALUE_BIGINT)) return nullptr;
+    }
+    if (expr->tag != EXPR_LITERAL) return nullptr;
+    switch (expr->literal.tag) {
+        case VALUE_NUMBER: return ty_intrinsic(me, TY_NUMBER);
+        case VALUE_STRING: return ty_intrinsic(me, TY_STRING);
+        case VALUE_BOOLEAN: return ty_intrinsic(me, TY_BOOLEAN);
+        case VALUE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
+        default: return nullptr;
+    }
+}
+
 // A function without a return annotation whose only return is a number, string, boolean or bigint literal prints its
 // keyword (tsc's typeFromExpression of a primitive literal). Only observable where the checker's type is another:
 // `return; return 1;` under strictNullChecks is `1 | undefined` to the checker, `number` to the printer
@@ -2446,6 +2463,13 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
             // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
             display_node_plus_undefined(me, param_d, &binding->explicit_type);
+        } else if (reusable && reuses_nodes(param_d) && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER &&
+            initializer && param->decl->explicit_optional && !function->syntactically_contextual && !instantiated &&
+            primitive_literal_keyword(me, initializer) == ty_without_undefined(me, param->type)
+        ) {
+            // `p? = 0` (TS1015): the initializer's keyword, without the undefined the `?` adds (tsgo's pseudo type of
+            // the parameter, equivalent to its type for an optional declaration)
+            ty_display(me, param_d, primitive_literal_keyword(me, initializer));
         } else {
             display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
         }
@@ -3043,10 +3067,17 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
-        if ((mapped_from || reverse) && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
+        // (A mapped one from an optional declaration reuses the annotation as it is: tsgo's pseudoTypeEquivalentToType
+        // with isOptionalAnnotated, requiresAddingImplicitUndefined being only for reverse mapped ones)
+        if (reverse && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
             annotation_plus_undefined(me, annotation, shown)
         ) {
             display_node_plus_undefined(me, d, annotation);
+        }
+        else if (mapped_from && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
+            annotation_is(me, annotation, shown, true)
+        ) {
+            display_node(me, d, annotation);
         }
         else if (literal_initializer && !d.reused) out(reused_if(d, true), literal_initializer->inner_span.sv);
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);

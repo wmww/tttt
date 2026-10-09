@@ -8238,12 +8238,12 @@ const baselines = {
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoArrowFunctionParameter': {
         errors: true,
@@ -16288,7 +16288,7 @@ const baselines = {
     'identityAndDivergentNormalizedTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'identityForSignaturesWithTypeParametersAndAny': {
         errors: true,
@@ -58743,7 +58743,7 @@ const baselines = {
     'parserParameterList2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserParameterList3': {
         errors: true,
@@ -58908,7 +58908,7 @@ const baselines = {
     'parserharness': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserindenter': {
         errors: true,
@@ -64288,7 +64288,7 @@ const baselines = {
     'mappedTypeErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeErrors2': {
         errors: true,
