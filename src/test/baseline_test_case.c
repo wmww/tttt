@@ -850,8 +850,8 @@ static void process_errors(BaselineTestCase* me) {
             LineNumberedStr item = { .line = line, .str = cstr_null };
             const char* squiggle_start = start > line_start ? start : line_start;
             cstr_append_lit(&item.str, "    ");
-            // (in UTF-16 code units, like tsc's harness; its `.replace(/\S/g, " ")` keeps whitespace, a tab or a no-break
-            // space, as it is)
+            // (one per code point, like tsgo's harness; its `\S` replacement keeps whitespace, a tab or a no-break space,
+            // as it is)
             for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
                 unsigned space = js_whitespace_length(c, line_end);
                 if (space) {
@@ -859,11 +859,11 @@ static void process_errors(BaselineTestCase* me) {
                     c += space - 1;
                     continue;
                 }
-                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_lit(&item.str, " ");
+                if (((unsigned char)*c & 0xC0) != 0x80) cstr_append_lit(&item.str, " ");
             }
             const char* squiggle_end = end < line_end ? end : line_end;
             for (const char* c = squiggle_start; c < squiggle_end; c++) {
-                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_lit(&item.str, "~");
+                if (((unsigned char)*c & 0xC0) != 0x80) cstr_append_lit(&item.str, "~");
             }
             bool finishes = is_last_line || next_line_start > end;
             if (finishes) format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);
