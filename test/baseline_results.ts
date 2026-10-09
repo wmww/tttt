@@ -7963,7 +7963,7 @@ const baselines = {
     'declarationEmitComputedNameConstEnumAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedNameWithQuestionToken': {
         errors: true,
@@ -7983,7 +7983,7 @@ const baselines = {
     'declarationEmitComputedPropertyNameEnum1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedPropertyNameEnum2': {
         errors: true,
@@ -9048,7 +9048,7 @@ const baselines = {
     'declarationEmitStringEnumUsedInNonlocalSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitStringNamedPropertyConsistency': {
         errors: true,
@@ -10908,12 +10908,12 @@ const baselines = {
     'duplicateObjectLiteralProperty_computedName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateObjectLiteralProperty_computedName3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateObjectLiteralProperty_computedNameNegative1': {
         errors: true,
@@ -11538,7 +11538,7 @@ const baselines = {
     'enumComputedPropertyDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumConflictsWithGlobalIdentifier': {
         errors: true,
@@ -19273,7 +19273,7 @@ const baselines = {
     'isolatedDeclarationErrorsObjects': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsReturnTypes': {
         errors: true,
@@ -25343,7 +25343,7 @@ const baselines = {
     'objectLiteralEnumPropertyNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralExcessProperties': {
         errors: true,
@@ -28033,7 +28033,7 @@ const baselines = {
     'reducibleIndexedAccessTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'redundantDeclareInEnumComputedNameNoFlake': {
         errors: false,
@@ -32028,12 +32028,12 @@ const baselines = {
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty2': {
         errors: true,
@@ -41978,22 +41978,22 @@ const baselines = {
     'computedPropertyNames47_ES5(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames47_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames48_ES5(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames48_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames49_ES5': {
         errors: true,
@@ -42063,12 +42063,12 @@ const baselines = {
     'computedPropertyNames7_ES5(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames7_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames8_ES5(target=es2015)': {
         errors: true,
@@ -42508,7 +42508,7 @@ const baselines = {
     'destructuringObjectBindingPatternAndAssignment7(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment8(target=esnext)': {
         errors: true,

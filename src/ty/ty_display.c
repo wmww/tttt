@@ -776,6 +776,32 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
         display_prop_name(me, d, prop->name);
         return;
     }
+    // A name that is an enum member's value prints as that member, where the enum is accessible as a value (tsgo's
+    // getPropertyNameNodeForSymbolFromNameType: `{ [E.A]: x }`, `{ [K in E]: x }`). Not in a message: tsc has no
+    // enclosing file there
+    if (d.enclosing) {
+        Prop const* declared = prop;
+        while (declared->target && !declared->decl->decl_span_count && !declared->decl->name_type) declared = declared->target;
+        Ty const* name_type = declared->decl->name_type;
+        if (name_type && (name_type->flags & TYF_ENUM_LITERAL) && name_type->kind == TY_LITERAL) {
+            Symbol const* enum_symbol = name_type->literal.enum_decl;
+            csview member_name = name_type->literal.enum_member->name;
+            if (enum_symbol && symbol_accessible_without_modules_at(d.enclosing, enum_symbol, SYMBOL_VALUE)) {
+                out_lit(d, "[");
+                out_symbol_name(me, d, enum_symbol, SYMBOL_VALUE);
+                if (is_identifier_name(member_name)) {
+                    out_lit(d, ".");
+                    out(d, member_name);
+                } else {
+                    out_lit(d, "[");
+                    display_quoted_string(d, member_name, false, true);
+                    out_lit(d, "]");
+                }
+                out_lit(d, "]");
+                return;
+            }
+        }
+    }
     uint8_t form = ty_prop_name_form_of(prop);
     bool string_named = form & PROP_NAME_STRING;
     bool single = form & PROP_NAME_SINGLE_QUOTED;

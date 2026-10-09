@@ -500,7 +500,8 @@ static void builder_add_interface_member(
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
                 if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
-                if (key && (key->flags & TYF_NUMBER_LITERAL)) prop->decl->name_type = ty_regular(me, key);
+                // (A computed enum member name is that member, tsc's late bound nameType: keyof gives it, it prints `[E.A]`)
+                if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop->decl->name_type = ty_regular(me, key);
                 { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, prop, d, n); }
                 builder_push(builder, props, prop);
             }   break;
@@ -3278,6 +3279,12 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 if (existing) {
                     // Two keys with one name (members of different enums with the same value, or an `as` clause
                     // mapping several keys to one name): the property is about both
+                    // (tsc's nameType becomes the union of both names, which is no member's: the plain literal)
+                    Ty const* existing_name = existing->decl->name_type;
+                    if (existing_name && (existing_name->flags & TYF_ENUM_LITERAL) && existing_name != ty_regular(me, prop_name)) {
+                        existing->decl->name_type = (existing_name->flags & TYF_NUMBER_LITERAL) ?
+                            ty_literal(me, &existing_name->literal.value) : nullptr;
+                    }
                     Ty const* both[2] = { existing->mapper->targets[0], key };
                     Ty const* merged = ty_union(me, both, 2, nullptr, (TyList){0});
                     existing->mapper = ty_mapper_new(
@@ -3339,8 +3346,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     }
                 }
                 // A number key is a number to keyof (tsc's mapped symbol's nameType, getLiteralTypeFromProperty), which
-                // the name, a string, doesn't say
-                if (prop_name->flags & TYF_NUMBER_LITERAL) {
+                // the name, a string, doesn't say; an enum member is that member (and prints as one, `[E.A]`)
+                if (prop_name->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL)) {
                     if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
                     prop->decl->name_type = ty_regular(me, prop_name);
                 }

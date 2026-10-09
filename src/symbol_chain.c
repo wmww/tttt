@@ -1215,3 +1215,7 @@ bool symbol_value_accessible_at(Scope const* enclosing, Symbol const* symbol) {
 bool symbol_type_accessible_at(Scope const* enclosing, Symbol const* symbol) {
     return accessibility_at(enclosing, symbol, SYMBOL_TYPE, true).kind == SYMBOL_ACCESSIBLE;
 }
+
+bool symbol_accessible_without_modules_at(Scope const* enclosing, Symbol const* symbol, u32 meaning) {
+    return accessibility_at(enclosing, symbol, meaning, false).kind == SYMBOL_ACCESSIBLE;
+}

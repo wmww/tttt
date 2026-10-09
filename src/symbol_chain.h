@@ -64,6 +64,8 @@ SymbolAccess symbol_accessibility_at(Scope const* enclosing, Symbol const* symbo
 bool symbol_value_accessible_at(Scope const* enclosing, Symbol const* symbol);
 // tsc's isTypeSymbolAccessible, the same as a type
 bool symbol_type_accessible_at(Scope const* enclosing, Symbol const* symbol);
+// tsc's IsSymbolAccessibleByFlags: accessible with `meaning` without going through a module (allowModules false)
+bool symbol_accessible_without_modules_at(Scope const* enclosing, Symbol const* symbol, u32 meaning);
 // tsc's hasVisibleDeclarations with late painting: every declaration is visible or directly in a visible statement
 // list (a file, a visible namespace's block)
 bool symbol_has_visible_declarations(Symbol const* symbol);
