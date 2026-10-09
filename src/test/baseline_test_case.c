@@ -683,12 +683,14 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
 
 // The name the baselines' headers give the file: as the test writes it
 static const char* baseline_test_file_header(BaselineTestFile const* file) {
-    return cstr_str(cstr_size(&file->header) ? &file->header : &file->path);
+    char const* ret = cstr_str(cstr_size(&file->header) ? &file->header : &file->path);
+    // (tsgo's harness normalizes the unit name: `// @filename: ./b.ts` is `b.ts` there too)
+    return strncmp(ret, "./", 2) == 0 ? ret + 2 : ret;
 }
 
 static const char* error_file_name(SourceFile const* source) {
     char const* ret = source->display_path_override ? source->display_path_override : cstr_str(&source->canonical_path);
-    // (`// @filename: ./b.ts` is `b.ts` in the diagnostics, the file's normalized name, and `./b.ts` in its header)
+    // (`// @filename: ./b.ts` is `b.ts` in the diagnostics, the file's normalized name)
     return strncmp(ret, "./", 2) == 0 ? ret + 2 : ret;
 }
 
@@ -796,7 +798,9 @@ static void process_errors(BaselineTestCase* me) {
     }
     if (my pretty) {
         // (the minimal list is made below all the same, into a string that is thrown away)
+        // (tsgo's FormatDiagnosticsWithColorAndContext: a line break between two)
         for_each (error, vec_error, &my error_ctx->errors) {
+            if (cstr_size(&my formatted_pretty_errors)) cstr_append_lit(&my formatted_pretty_errors, "\r\n");
             error_format_pretty(&my formatted_pretty_errors, error, "\r\n", error_file_name);
         }
         remove_test_path_prefixes(&my formatted_pretty_errors, 0);

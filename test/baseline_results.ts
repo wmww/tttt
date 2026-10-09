@@ -5111,9 +5111,9 @@ const baselines = {
         types: true,
     },
     'commonJsExportTypeDeclarationError(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'commonJsImportClassExpression': {
         errors: true,
@@ -5311,12 +5311,12 @@ const baselines = {
         types: true,
     },
     'computedEnumMemberSyntacticallyString2(isolatedmodules=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedEnumMemberSyntacticallyString2(isolatedmodules=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9552,13 +9552,13 @@ const baselines = {
     },
     'decoratorMetadataTypeOnlyExport': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataTypeOnlyImport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataWithConstructorType(target=es2015)': {
         errors: true,
@@ -9696,7 +9696,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedAssignabilityIssue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11636,7 +11636,7 @@ const baselines = {
         types: true,
     },
     'enumNoInitializerFollowsNonLiteralInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11701,7 +11701,7 @@ const baselines = {
         types: true,
     },
     'enumWithNonLiteralStringInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12617,8 +12617,8 @@ const baselines = {
     },
     'es6ImportWithJsDocTags': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es6ImportWithoutFromClause': {
         errors: true,
@@ -12781,7 +12781,7 @@ const baselines = {
         types: true,
     },
     'esModuleInteropPrettyErrorRelatedInformation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19496,17 +19496,17 @@ const baselines = {
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21931,19 +21931,19 @@ const baselines = {
         types: true,
     },
     'mergeSymbolReexportInterface': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mergeSymbolReexportedTypeAliasInstantiation': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mergeSymbolRexportFunction': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mergeWithImportedNamespace': {
         errors: true,
@@ -26546,12 +26546,12 @@ const baselines = {
         types: true,
     },
     'prettyContextNotDebugAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'prettyFileWithErrorsAndTabs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30967,8 +30967,8 @@ const baselines = {
     },
     'taggedTemplateWithoutDeclaredHelper(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'taggedTemplatesInDifferentScopes': {
         errors: true,
@@ -32067,8 +32067,8 @@ const baselines = {
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty8': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty9': {
         errors: true,
@@ -33202,8 +33202,8 @@ const baselines = {
     },
     'uniqueSymbolJs': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'uniqueSymbolJs2': {
         errors: true,
@@ -48486,9 +48486,9 @@ const baselines = {
         types: true,
     },
     'typeSatisfactionWithDefaultExport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeSatisfaction_asConstArrays': {
         errors: true,
@@ -49781,9 +49781,9 @@ const baselines = {
         types: true,
     },
     'exportSpecifiers_js': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendsClause': {
         errors: true,
@@ -49866,9 +49866,9 @@ const baselines = {
         types: true,
     },
     'importSpecifiers_js': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mergedWithLocalValue': {
         errors: true,
@@ -50321,14 +50321,14 @@ const baselines = {
         types: false,
     },
     'importAttributes10': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importAttributes11': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importAttributes12': {
         errors: false,
@@ -50397,7 +50397,7 @@ const baselines = {
     },
     'importAttributes9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'dynamicImportDefer(module=commonjs)': {

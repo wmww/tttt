@@ -18,8 +18,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
     file (`Imported via "../x" from file '/abs/a.ts'`, `with packageId '...'`), in tsc's order of discovery
     (socket.io/examples/basic-crud-application/server, nest/integration/file-upload). tttt only keeps
     `SourceFile.included_at`; the root-file chain (`program_explain_root()`) exists already.
-- tsgo's **pretty** related information differs from tsc 6's: `a.ts:2:16 - message` on one line, then the code frame
-  (tsc 6: location, frame, then the message). tttt prints 6's (the harness's pretty tests); the 7.x switch flips it.
 - `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1). `--listFiles` prints tttt's own lib paths
   (thirdparty/lib/X.d.ts, not lib.X.d.ts) in tttt's file order: not compared against tsc.
 - TS7016 at a package's import of its own name (`@vitest/browser/internal/vendor-types` from inside

@@ -127,21 +127,16 @@ static void pretty_location(cstr* out, Span span, ErrorFileNamer file_name) {
         PRETTY_YELLOW, span_col_index(span) + 1, PRETTY_RESET);
 }
 
-// JavaScript's trimEnd() of a line's text (without its line break), for what tsc's source files contain
+// Go's strings.TrimRightFunc(unicode.IsSpace) of a line's text (some of it), for what tsc's source files contain
 static char const* pretty_trim_end(char const* start, char const* end) {
     while (end > start) {
         unsigned char c = (unsigned char)end[-1];
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f') end--;
         else if (end - start >= 2 && (unsigned char)end[-2] == 0xC2 && c == 0xA0) end -= 2; // U+00A0
-        else if (end - start >= 3 && (unsigned char)end[-3] == 0xEF && (unsigned char)end[-2] == 0xBB && c == 0xBF) end -= 3;
         else if (end - start >= 3 && (unsigned char)end[-3] == 0xE2 && (unsigned char)end[-2] == 0x80 && (c & 0xFE) == 0xA8) end -= 3;
         else break;
     }
     return end;
-}
-
-static bool pretty_is_space(char const* c) {
-    return *c == ' ' || *c == '\t' || *c == '\v' || *c == '\f' || ((unsigned char)c[0] == 0xC2 && (unsigned char)c[1] == 0xA0);
 }
 
 // tsc's formatCodeSpan: the lines of the span with a gutter of line numbers, squiggled (UTF-16 code units, like tsc)
@@ -155,6 +150,7 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
     unsigned first_char = span_col_index(span);
     unsigned last_char = 0;
     for (char const* c = text + source->line_starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c);
+    if (span_start_ptr(span) == span_end_ptr(span)) last_char++; // (the character after an empty span)
 
     bool more_than_five = last_line - first_line >= 4;
     char digits[16];
@@ -174,20 +170,14 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
         for (char const* c = line_start; c < line_end; c++) cstr_append_n(out, *c == '\t' ? " " : c, 1);
         cstr_append(out, newline);
         cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter), PRETTY_RESET " ", squiggle);
-        // Columns in UTF-16 units: before the squiggle, non-space characters become spaces
-        unsigned col = 0;
-        unsigned from = i == first_line ? first_char : 0;
-        unsigned to = i == last_line ? last_char : UINT32_MAX;
-        for (char const* c = line_start; c < line_end && col < to; c++) {
-            unsigned units = utf8_byte_utf16_units(c);
-            if (col < from) {
-                if (units && pretty_is_space(c)) cstr_append_n(out, *c == '\t' ? " " : c, *c == '\xC2' ? 2 : 1);
-                else if (units) cstr_append_lit(out, " ");
-                if ((unsigned char)*c == 0xC2 && pretty_is_space(c)) c++;
-            } else {
-                for (unsigned n = units; n; n--) cstr_append_lit(out, "~");
-            }
-            col += units;
+        // Columns in UTF-16 units: spaces up to the first character, then tildes (tsgo's writeCodeSnippet)
+        unsigned line_units = 0;
+        for (char const* c = line_start; c < line_end; c++) line_units += utf8_byte_utf16_units(c);
+        if (i == first_line) {
+            unsigned to = i == last_line ? last_char : line_units;
+            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", first_char), repeated_d("~", to > first_char ? to - first_char : 0));
+        } else {
+            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d("~", i == last_line ? last_char : line_units));
         }
         cstr_append_lit(out, PRETTY_RESET);
     }
@@ -202,17 +192,19 @@ static void pretty_message(cstr* out, Error const* me, char const* newline, int 
     }
 }
 
+// tsgo's FormatDiagnosticWithColorAndContext: each related information at a location as `  file:line:col - message`
+// over its code frame, then a line break (only that for one without a location)
 static void pretty_related(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
     for_each (i, vec_error, &my sub_errors) {
         if (i->detached) {
-            cstr_append_d(out, DEFAULT_DISPLAY, newline, "    ");
-            pretty_message(out, i, newline, 0);
+            cstr_append(out, newline);
         } else if (span_valid(i->span) && i->span.source) {
             cstr_append_d(out, DEFAULT_DISPLAY, newline, "  ");
             pretty_location(out, i->span, file_name);
-            pretty_code_span(out, i->span, "    ", PRETTY_CYAN, newline);
-            cstr_append_d(out, DEFAULT_DISPLAY, newline, "    ");
+            cstr_append_lit(out, " - ");
             pretty_message(out, i, newline, 0);
+            pretty_code_span(out, i->span, "    ", PRETTY_CYAN, newline);
+            cstr_append(out, newline);
         } else {
             pretty_related(out, i, newline, file_name);
         }
@@ -237,12 +229,11 @@ void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorF
     if (located) {
         cstr_append(out, newline);
         pretty_code_span(out, my span, "", PRETTY_RED, newline);
-    }
-    if (has_related(me)) {
         cstr_append(out, newline);
-        pretty_related(out, me, newline, file_name);
     }
-    cstr_append(out, newline);
+    bool related = has_related(me);
+    pretty_related(out, me, newline, file_name);
+    if (!located && !related) cstr_append(out, newline);
 }
 
 // tsc's formatDiagnostic (`--pretty false`): file(line,column): error TSxxxx: the flattened message chain
