@@ -283,8 +283,6 @@ src` finds the code-side markers; every significant one has an entry here.
   covariant candidates literal-reduced (tsc: subtype-reduced).
 - Intra-expression sites (`ty_add_intra_expression_site()`): not for JSX attributes; `context_is_tuple_like()` misses
   call spreads.
-- JSDoc type parameters (`meets_jsdoc_node_in()` in `assignment_mentions()`): fixing only, "in scope" by source
-  position; tsc instantiates every JSDoc node for its outer type parameters (triage).
 - `const` type parameters: nested array literals found by syntax (`add_nested_array_literals`) plus
   `Inference.array_literals` (ty_internal.h HACK) because interned tuples can't carry ObjectFlags.ArrayLiteral.
 - `clone_type_params`: fresh type parameters only when bounded or the mapper brings type variables, else shared with
