@@ -27147,7 +27147,7 @@ const baselines = {
     },
     'propertyAndAccessorMerging': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAssignment': {

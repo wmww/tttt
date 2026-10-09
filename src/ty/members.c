@@ -518,6 +518,10 @@ static void builder_add_interface_member(
                         // A property after a class accessor of its name (a merged class) joins its symbol, which stays
                         // what it was: only a declaration more. (After a method it conflicts: a symbol of its own, TS2300)
                         { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
+                    } else if (!is_method && !i->computed_accessor && !(existing->flags & PROP_METHOD)) {
+                        // An accessor pair after a property of its name (another declaration of the interface) merges
+                        // into its symbol: a declaration more (tsgo 7.1, TypeScript issue 3613)
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     }
                     break;
                 }
@@ -1145,6 +1149,10 @@ static Prop* builder_add_class_prop(
         // after a property or accessor, an accessor after a property), the first declaration's type. A field after a
         // parameter property of its name, or after an interface's member merged with the class, joins it too
         bool joins = item->symbol_first ? item->symbol_first != item : item->tag == CLASS_ITEM_FIELD;
+        // (An interface's property before it: a property and an accessor merge, tsgo 7.1)
+        bool accessor = (item->tag == CLASS_ITEM_FIELD && item->field.is_auto_accessor) ||
+            (item->tag == CLASS_ITEM_METHOD && item->method.accessor);
+        if (accessor && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) && !existing->decl->parameter_property && !existing->decl->function) joins = true;
         if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         return nullptr;
     }

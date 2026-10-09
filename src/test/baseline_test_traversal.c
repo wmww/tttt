@@ -710,14 +710,28 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 }
                 if (mine) joined = prop;
             }
+            // A property and an accessor pair of one name in declarations of an interface are one symbol (tsgo 7.1)
+            Prop const* shared = nullptr;
+            if (!my key.name_is_member_function && ctx->member_owner && !redeclared && !joined && span_valid(my declaration)) {
+                Checker* checker = current_checker;
+                Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+                bool mine = false;
+                for (u32 i = 0; prop && !(prop->flags & PROP_METHOD) && i < prop->decl->decl_span_count; i++) {
+                    mine |= span_eq(prop->decl->decl_spans[i], my declaration);
+                }
+                u32 own;
+                interface_member_declarations(me, &own);
+                if (mine && prop->decl->decl_span_count > own) shared = prop;
+            }
             VecSpan declarations = vec_span_init();
             // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
             csview written = my key.span.sv;
             // (An instantiation's declarations are its target's: `interface Array<T>` merged with the lib's)
             Prop const* merged_root = merged;
             while (merged_root && !merged_root->decl->decl_span_count && merged_root->target) merged_root = merged_root->target;
-            if ((merged_root && merged_root->decl->decl_span_count) || redeclared || joined) {
-                Prop const* shown = merged ? merged_root : redeclared ? redeclared : joined;
+            if ((merged_root && merged_root->decl->decl_span_count) || redeclared || joined || shared) {
+                Prop const* shown = merged ? merged_root : redeclared ? redeclared : joined ? joined : shared;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
             } else {
@@ -762,8 +776,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
             }
             if (pair) {
+                VecSpan second_decls = vec_span_init();
+                if (shared) {
+                    for (u32 i = 0; i < shared->decl->decl_span_count; i++) vec_span_push(&second_decls, shared->decl->decl_spans[i]);
+                } else {
+                    second_decls = interface_member_declaration_vec(me);
+                }
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = interface_member_declaration_vec(me),
+                    .declarations = second_decls,
                     .span = second_name,
                     .text = member_text(ctx, ctx->member_container, scope, second_name.sv, false),
                 });
