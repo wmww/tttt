@@ -2032,7 +2032,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // reported at the setter if there is one (TS7032), else at the getter (TS7033)
         if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && compiler_options()->no_implicit_any &&
             !(my is_ambient && i->access == ACCESS_MODIFIER_PRIVATE) && span_valid(i->method.name_span) &&
-            i->method.name_span.source && !i->method.name_span.source->is_js
+            i->method.name_span.source
         ) {
             FunctionImpl const* func = &i->method.func;
             if (i->method.accessor == CLASS_ACCESSOR_SET) {

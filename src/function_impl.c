@@ -583,7 +583,7 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
         return true;
     }
     if (is_getter) return false;
-    if (my ret_explicit && !my ret.from_jsdoc) { // (a JSDoc `@returns {void}` is fine)
+    if (my ret_explicit) { // (A JSDoc `@returns` too: tsgo reparses it as the return type)
         error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1095, "A 'set' accessor cannot have a return type annotation.");
         return true;
     }

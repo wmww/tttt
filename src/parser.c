@@ -4747,6 +4747,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     }
     if (this_tag && function_impl_is_arrow(function)) {
         jsdoc_error(p, this_tag->tag_name, 2730, "An arrow function cannot have a 'this' parameter.");
+    } else if (this_tag && function->accessor) {
+        // (tsgo's reparsed `this` parameter, checkParameter)
+        jsdoc_error(p, this_tag->tag_name, 2784, "'get' and 'set' accessors cannot declare 'this' parameters.");
     }
     FunctionArg const* first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
     bool has_this = first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
@@ -12110,9 +12113,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         if (p.shared->source->is_js) {
-            // A declaration's own JSDoc (`var /** @type {T} */ x`: tsc's VariableDeclaration is a JSDoc host). Not a
-            // `for` loop's: a for...of variable has the element type whatever it says (getTypeForVariableLikeDeclaration)
-            if (!initializer.binding.has_explicit_type && !in_for) {
+            // A declaration's own JSDoc (`var /** @type {T} */ x`: tsc's VariableDeclaration is a JSDoc host). A for...of
+            // or for...in variable's is the TS2483/TS2404 grammar error a written annotation is (tsgo's reparser)
+            if (!initializer.binding.has_explicit_type) {
                 VecJsDocTag tags = {0};
                 if (jsdoc_before(&p, declaration_start, &tags)) jsdoc_apply_type_to_binding(&tags, &initializer.binding);
                 vec_jsdoc_tag_drop(&tags);

@@ -4577,7 +4577,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 // tsc's getTypeOfAccessors: a setter without a parameter annotation or a getter to take the type from is
                 // implicitly any
                 if (i->tag == OBJECT_ITEM_SETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
-                    i->name_span.source && !i->name_span.source->is_js && !i->jsdoc_type
+                    i->name_span.source && !i->jsdoc_type
                 ) {
                     FunctionArg const* value = nullptr;
                     for_each (arg, vec_function_arg, &i->value.function->args) {
