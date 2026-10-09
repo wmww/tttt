@@ -438,6 +438,13 @@ static_failable load_config(ConfigLoad* me, csview path) {
     bool root_option_reported = false;
     for (isize i = 0; document->tag == JSON_OBJECT && i < document->count; i++) {
         JsonMember const* member = &document->members[i];
+        // (tsc's convertJsonOption of the root's list options)
+        bool list = cstr_equals(&member->key, "files") || cstr_equals(&member->key, "include") ||
+            cstr_equals(&member->key, "exclude") || cstr_equals(&member->key, "references");
+        if (list && member->value.tag != JSON_ARRAY && member->value.tag != JSON_NULL) {
+            config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type Array."), path,
+                member->value.start, member->value.end);
+        }
         if (cstr_equals(&member->key, "excludes")) {
             config_diagnostic(me, 6114, cstr_lit("Unknown option 'excludes'. Did you mean 'exclude'?"), path,
                 member->key_start, member->key_end);
