@@ -3051,9 +3051,16 @@ static PredicateSemantics nullish_semantics(Expr const* me) {
             switch (my binary_op->op) {
                 case BINARY_OP_OR_OR: case BINARY_OP_OR_OR_EQUAL: case BINARY_OP_AND_AND: case BINARY_OP_AND_AND_EQUAL:
                     return PREDICATE_SOMETIMES;
-                // (The right operand decides, 6.0)
-                case BINARY_OP_COMMA: case BINARY_OP_EQUAL: case BINARY_OP_EH_EH: case BINARY_OP_EH_EH_EQUAL:
+                // (The right operand decides)
+                case BINARY_OP_COMMA: case BINARY_OP_EQUAL:
                     return nullish_semantics(&my binary_op->right);
+                // (tsgo: the left operand's non-null path, and the right operand's if the left may be nullish)
+                case BINARY_OP_EH_EH: case BINARY_OP_EH_EH_EQUAL: {
+                    PredicateSemantics left = nullish_semantics(&my binary_op->left);
+                    PredicateSemantics result = left & PREDICATE_NEVER;
+                    if (left & PREDICATE_ALWAYS) result |= nullish_semantics(&my binary_op->right);
+                    return result;
+                }
                 default:
                     return PREDICATE_NEVER;
             }

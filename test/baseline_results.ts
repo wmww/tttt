@@ -25071,7 +25071,7 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingAlwaysNullFalsePositive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26521,7 +26521,7 @@ const baselines = {
         types: true,
     },
     'predicateSemantics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
