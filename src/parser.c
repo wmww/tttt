@@ -5415,6 +5415,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         ClassItem item;
         char const* member_start = p.pos;
         p.shared->no_mapped_member = is_declaration || member_count;
+        bool accessor_body = false;
         bool parsed_member = parse_list_member(&p, PARSING_TYPE_MEMBERS, true, true, &item);
         p.shared->no_mapped_member = outer_no_mapped_member;
         if (parsed_member) {
@@ -5434,6 +5435,9 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                 member_error_spans[member_count] = span_valid(error_span) ? error_span : span_make(p.shared->source, member_start, p.pos);
             }
             member_count++;
+            // An accessor with a body ends there: no separator follows (tsc's parseFunctionBlockOrSemicolon; a `;` or
+            // `,` after it starts no member, TS1131)
+            accessor_body = item.tag == CLASS_ITEM_METHOD && item.method.accessor && item.method.func.has_body;
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     if (item.method.accessor) {
@@ -5556,6 +5560,10 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         }
         hop_whitespace(&p);
 
+        if (accessor_body) {
+            accessor_body = false;
+            continue;
+        }
         // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them!
         bool separated = hop_char(&p, ',');
         if (!separated &&
