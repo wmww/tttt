@@ -873,6 +873,20 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             }
             return ty;
 
+        default:
+            break;
+    }
+    // The instantiation stack, for TS5114 (tsc's instantiationStack): recorded here, out of ty_instantiate()'s hot
+    // path, for the types that instantiate others (a leaf never has a deeper frame above it). HACK: a tail call
+    // replaces its caller's entry, where tsc keeps it
+    if (my instantiation_depth) my instantiation_stack[my instantiation_depth - 1] = ty;
+    switch ((TyKind)ty->kind) {
+        case TY_INTRINSIC:
+        case TY_LITERAL:
+        case TY_DECLARED:
+        case TY_TYPE_PARAM:
+            impossible;
+
         case TY_REFERENCE: {
             if (ty->reference.deferred) {
                 // Another deferred reference, whether or not this one's arguments are resolved by now (tsc's
@@ -1109,7 +1123,6 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
         my active_mappers[my active_mapper_count++].mapper = mapper;
         pushed = true;
     }
-    my instantiation_stack[my instantiation_depth] = ty;
     my instantiation_depth++;
     my instantiation_count++;
     // Tail calls are counted per conditional type being resolved (tsc's tailCount is local to getConditionalType): what
