@@ -921,6 +921,32 @@ static void flush_incompatible(RelationState* st) {
     if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target);
 }
 
+// The last line reported, if it says which properties source lacks (TS2741, TS2739, TS2740)
+static TyReportLine* last_missing_props_line(RelationState* st) {
+    for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0; i--) {
+        TyReportLine* line = vec_ty_report_line_at_mut(&st->lines, i - 1);
+        if (line->related) continue;
+        return line->ts_code == 2741 || line->ts_code == 2739 || line->ts_code == 2740 ? line : nullptr;
+    }
+    return nullptr;
+}
+
+// Whether a missing properties line is about source and target as the relation error line about them would print
+// them (tsgo's chainArgsMatch compares the arguments as strings)
+[[gnu::cold]] static bool missing_props_line_matches(Checker* me, TyReportLine const* line, Ty const* source, Ty const* target) {
+    bool widen = report_widens(me, target);
+    Ty const* generalized = widen && is_literal_type(source) ? ty_base_type_of_literal(me, source) : source;
+    cstr source_str, target_str;
+    display_pair(me, generalized, widen, target, &source_str, &target_str);
+    cstr expected = line->ts_code == 2741 ?
+        cstr_d("' is missing in type '", source_str, "' but required in type '", target_str, "'.") :
+        cstr_d("Type '", source_str, "' is missing the following properties from type '", target_str, "': ");
+    bool matches = line->ts_code == 2741 ? cstr_ends_with_sv(&line->message, cstr_sv(&expected)) :
+        cstr_starts_with_sv(&line->message, cstr_sv(&expected));
+    c_drop(cstr, &source_str, &target_str, &expected);
+    return matches;
+}
+
 // tsc's reportErrorResults
 static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty);
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top,
@@ -975,6 +1001,21 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         // reported: lastSkippedInfo waits for a stack that stays empty)
         report_missing_constraint(me, st, source, target);
         return;
+    }
+    if (suppress && top && !pending) {
+        // The pair's own line, the head, is left out for a missing property of the same pair below it, which then
+        // heads the diagnostic whatever its head message would have been (tsgo's reportRelationError: chainArgsMatch,
+        // but for conversions). Of another pair (a type said differently), the head stays
+        TyReportLine* missing = last_missing_props_line(st);
+        if (missing) {
+            if (st->head_code != 2352 && missing_props_line_matches(me, missing, source, target)) {
+                missing->missing_head = true;
+                report_missing_constraint(me, st, source, target);
+                return;
+            }
+            report_relation_error_now(me, st, source, target);
+            return;
+        }
     }
     if (suppress) {
         if (!top || !pending) {

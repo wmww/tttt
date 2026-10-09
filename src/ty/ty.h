@@ -821,6 +821,9 @@ typedef struct TyReportLine {
     // Heads the diagnostic in place of what the check would say (tsc: isRelatedTo reports it without
     // reportRelationError), at the check's span: the weak type errors
     bool replaces_head;
+    // A missing property of the checked pair itself: heads the diagnostic in place of a head message, but stays below
+    // a containing message (tsgo's reportRelationError, chainArgsMatch)
+    bool missing_head;
     // The whole diagnostic goes to `span`, while this line stays where it is in the chain (an excess JSX attribute)
     bool relocates;
     // While relating: a step down (tsc's reportIncompatibleError) that becomes a line once the path through the
