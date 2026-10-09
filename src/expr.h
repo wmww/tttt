@@ -163,7 +163,6 @@ typedef struct Expr {
     // expr_lookup_names()
     bool assignment_pattern : 1;
     // An object literal that initializes a JavaScript `/** @enum {T} */` variable: not open-ended (set by the parser)
-    bool jsdoc_enum_literal : 1;
     // An EXPR_IMPLICIT_ANY that stands for a missing expression (`var x = ;`, parse error), not for an absent optional
     // one (`var x;`): the baselines show it like tsc's missing identifier
     bool missing : 1;
@@ -519,7 +518,6 @@ typedef struct BinaryOpExpr {
     // C as a type alias too,
     // the binder adds the namespace declaration of C's name (tsc's delayedBindJSDocTypedefTag:
     // bindPotentiallyMissingNamespaces)
-    bool jsdoc_enum_export : 1;
     uint8_t jsdoc_modifiers; // JsDocModifiers: `/** @private */ this.x = v` (SymbolDecl.jsdoc_modifiers)
     Expr left;
     Expr right;

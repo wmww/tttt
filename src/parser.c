@@ -101,9 +101,8 @@ typedef struct ParserShared {
     // an optional element (tsc's parseTupleElementType)
     const char* jsdoc_postfix_nullable_start;
     const char* jsdoc_postfix_nullable_end;
-    // The type alias an `@enum` on the statement just parsed declares (or the scope-level `@template`s of a variable
-    // statement), for the statement list to append after it
-    Statement* jsdoc_enum;
+    // The scope-level `@template`s of the variable statement just parsed, for the statement list to append after it
+    Statement* jsdoc_after;
     // The check-only declarations of the JSDoc types the statement just parsed didn't take (jsdoc_push_check_only()),
     // for the statement list to append after it
     VecStatement jsdoc_checks;
@@ -171,9 +170,9 @@ typedef struct FunctionCtx {
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
     vec_jsdoc_range_drop(&my jsdoc_comments);
-    if (my jsdoc_enum) {
-        statement_drop(my jsdoc_enum);
-        free(my jsdoc_enum);
+    if (my jsdoc_after) {
+        statement_drop(my jsdoc_after);
+        free(my jsdoc_after);
     }
     vec_statement_drop(&my jsdoc_checks);
     vec_error_drop(&my errors);
@@ -3628,7 +3627,6 @@ typedef enum JsDocTagKind {
     JSDOC_TAG_TYPEDEF,
     JSDOC_TAG_CALLBACK,
     JSDOC_TAG_PROPERTY, // Also `@prop`
-    JSDOC_TAG_ENUM,
     JSDOC_TAG_THIS,
     JSDOC_TAG_EXTENDS, // Also `@augments`
     JSDOC_TAG_IMPLEMENTS,
@@ -3890,7 +3888,7 @@ static JsDocTagKind jsdoc_tag_kind(csview name) {
         {"type", JSDOC_TAG_TYPE}, {"param", JSDOC_TAG_PARAM}, {"arg", JSDOC_TAG_PARAM}, {"argument", JSDOC_TAG_PARAM},
         {"returns", JSDOC_TAG_RETURNS}, {"return", JSDOC_TAG_RETURNS}, {"template", JSDOC_TAG_TEMPLATE},
         {"typedef", JSDOC_TAG_TYPEDEF}, {"callback", JSDOC_TAG_CALLBACK}, {"property", JSDOC_TAG_PROPERTY},
-        {"prop", JSDOC_TAG_PROPERTY}, {"enum", JSDOC_TAG_ENUM}, {"this", JSDOC_TAG_THIS},
+        {"prop", JSDOC_TAG_PROPERTY}, {"this", JSDOC_TAG_THIS},
         {"extends", JSDOC_TAG_EXTENDS}, {"augments", JSDOC_TAG_EXTENDS}, {"implements", JSDOC_TAG_IMPLEMENTS},
         {"class", JSDOC_TAG_CLASS}, {"constructor", JSDOC_TAG_CLASS}, {"overload", JSDOC_TAG_OVERLOAD},
         {"satisfies", JSDOC_TAG_SATISFIES}, {"import", JSDOC_TAG_IMPORT}, {"throws", JSDOC_TAG_THROWS},
@@ -4041,7 +4039,6 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             break;
         case JSDOC_TAG_TYPE:
         case JSDOC_TAG_RETURNS:
-        case JSDOC_TAG_ENUM:
         case JSDOC_TAG_THIS:
         case JSDOC_TAG_SATISFIES:
         case JSDOC_TAG_THROWS:
@@ -4071,11 +4068,11 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 // (Without its `{`, no `}` is expected: parseExpected's false result is hasBrace)
                 jsdoc_keep_errors(&e);
                 parse_fail(&e);
-            } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM || tag.kind == JSDOC_TAG_EXTENDS ||
+            } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_EXTENDS ||
                     tag.kind == JSDOC_TAG_IMPLEMENTS || tag.kind == JSDOC_TAG_THIS) && after < end && after > c &&
                 !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
             ) {
-                // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`, `@enum number`,
+                // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`,
                 // `@this Node`
                 const char* type_start = after;
                 TypeNode type;
@@ -4365,14 +4362,6 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
 static JsDocTag* jsdoc_find_typed(VecJsDocTag* tags, JsDocTagKind kind) {
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind == kind && i->has_type && !i->nested) return i;
-    }
-    return nullptr;
-}
-
-// The `@enum` tag, typed or not (`@enum` alone is TS1110 Type expected, and still declares the alias)
-static JsDocTag* jsdoc_find_enum(VecJsDocTag* tags) {
-    for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind == JSDOC_TAG_ENUM && !i->nested) return i;
     }
     return nullptr;
 }
@@ -5256,44 +5245,6 @@ static Statement jsdoc_wrap_in_namespaces(Statement alias, Span full_name, Span 
     return alias;
 }
 
-// `A.B.C = v` as a statement, A an identifier other than `exports`, `module` (CommonJS exports have containers of their
-// own in tsc) and `this`: the dotted name as written without trivia, an invalid span otherwise
-static Span jsdoc_namespace_assignment_name(Statement const* host) {
-    if (host->tag != STATEMENT_EXPR || expr_is_perenthisized(&host->expr)) return span_null;
-    // (Or of a bare `A.B.C;`: tsc's nameForNamelessJSDocTypedef takes a property access statement's name too)
-    bool assignment = host->expr.tag == EXPR_BINARY_OP && host->expr.binary_op->op == BINARY_OP_EQUAL;
-    if (!assignment && host->expr.tag != EXPR_PROPERTY) return span_null;
-    Expr const* left = assignment ? &host->expr.binary_op->left : &host->expr;
-    if (left->tag != EXPR_PROPERTY || !expr_is_entity_name(left)) return span_null;
-    Expr const* root = left;
-    while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
-    csview root_name = root->inner_span.sv;
-    if (csview_equals(root_name, "exports") || csview_equals(root_name, "module")) return span_null;
-    Span name = expr_outer_span(left);
-    for (isize k = 0; k < name.sv.size; k++) {
-        char c = name.sv.buf[k];
-        if (!(c == '.' || c == '_' || c == '$' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
-            return span_null;
-        }
-    }
-    return name;
-}
-
-// `exports.C = v` or `module.exports.C = v` as a statement: C, an invalid span otherwise
-static Span jsdoc_commonjs_export_assignment_name(Statement const* host) {
-    if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
-        expr_is_perenthisized(&host->expr)
-    ) {
-        return span_null;
-    }
-    Expr const* left = &host->expr.binary_op->left;
-    if (left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_DOT || !expr_is_entity_name(left)) return span_null;
-    Expr const* object = &left->property->expr;
-    bool exports = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) && span_equals(object->inner_span, "exports");
-    if (!exports && !expr_is_module_exports(object)) return span_null;
-    return left->property->prop.inner_span;
-}
-
 // Whether there is nothing but whitespace and comments from `at` to `end`
 static bool only_trivia_until(const char* at, const char* end) {
     while (at < end) {
@@ -5321,7 +5272,7 @@ static void jsdoc_push_check_only(VecJsDocTag* tags, bool templates, VecStatemen
     Span template_span = span_null;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->nested || i->earlier) continue;
-        typed |= i->has_type && (i->kind == JSDOC_TAG_TYPE || i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_SATISFIES || i->kind == JSDOC_TAG_ENUM);
+        typed |= i->has_type && (i->kind == JSDOC_TAG_TYPE || i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_SATISFIES);
         alias |= i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK;
         if (!named_templates && i->kind == JSDOC_TAG_TEMPLATE && span_valid(i->name)) {
             named_templates = true;
@@ -5342,7 +5293,7 @@ static void jsdoc_push_check_only(VecJsDocTag* tags, bool templates, VecStatemen
     }
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->nested || i->earlier || !i->has_type) continue;
-        if (i->kind != JSDOC_TAG_TYPE && i->kind != JSDOC_TAG_PARAM && i->kind != JSDOC_TAG_SATISFIES && i->kind != JSDOC_TAG_ENUM) continue;
+        if (i->kind != JSDOC_TAG_TYPE && i->kind != JSDOC_TAG_PARAM && i->kind != JSDOC_TAG_SATISFIES) continue;
         Span span = jsdoc_tag_decl_span(i);
         TypeNode type = jsdoc_take_type(i, nullptr);
         type.from_jsdoc = false;
@@ -5405,33 +5356,7 @@ static void jsdoc_bind_comments(
                 continue;
             }
             if (i->kind != JSDOC_TAG_TYPEDEF && i->kind != JSDOC_TAG_CALLBACK) continue;
-            Span tag_span = jsdoc_tag_decl_span(i); // (Before a borrowed name: the tag's own)
-            if (!span_valid(i->name) && i->kind == JSDOC_TAG_TYPEDEF) {
-                // A typedef without a name is named by the variable it's the comment of (tsc's parseTypedefTag:
-                // getJSDocTypeAliasName of the host's first declaration)
-                for (isize k = out->size; k-- > 0;) {
-                    Statement const* host = &out->data[k];
-                    const char* host_start = span_valid(host->span) ? span_start_ptr(host->span) : nullptr;
-                    if (!host_start || host_start < range.end) continue;
-                    const char* between = range.end;
-                    while (between < host_start && is_js_ascii_space(*between)) between++;
-                    if (between == host_start && host->tag == STATEMENT_DECL_VARIABLE &&
-                        vec_initialized_binding_size(&host->decl.variable.initializers) &&
-                        host->decl.variable.initializers.data[0].binding.tag == BINDING_IDENTIFIER
-                    ) {
-                        i->name = host->decl.variable.initializers.data[0].binding.content_span;
-                    } else if (between == host_start && toplevel) {
-                        // Of a top-level `A.B.C = v`: C in A.B's namespace (delayedBindJSDocTypedefTag with
-                        // isTopLevelNamespaceAssignment)
-                        Span dotted = jsdoc_namespace_assignment_name(host);
-                        if (span_valid(dotted)) {
-                            i->name = dotted;
-                            if (host->expr.tag == EXPR_BINARY_OP) ((Statement*)host)->expr.binary_op->jsdoc_enum_export = true;
-                        }
-                    }
-                    break;
-                }
-            }
+            Span tag_span = jsdoc_tag_decl_span(i);
             if (!span_valid(i->name)) continue;
             // `@typedef {T} A.B.C` declares C in namespace A.B (tsc's JSDocNamespaceDeclaration)
             Span full_name = i->name;
@@ -10678,7 +10603,6 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     VecCStr texts;
     // (Some branches below fill in ret's fields one by one: ret isn't zeroed)
     ret->assignment_pattern = false;
-    ret->jsdoc_enum_literal = false;
     ret->missing = false;
     ret->spread_into_call = false;
     // Most branches below need a particular first character: test it before trying the branch
@@ -12847,12 +12771,12 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
 
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
 // What a statement parsed outside of a statement list (an `if` arm) left behind
-static void jsdoc_drop_enum(Parser* p) {
+static void jsdoc_drop_after(Parser* p) {
     vec_statement_clear(&p->shared->jsdoc_checks);
-    if (!p->shared->jsdoc_enum) return;
-    statement_drop(p->shared->jsdoc_enum);
-    free(p->shared->jsdoc_enum);
-    p->shared->jsdoc_enum = nullptr;
+    if (!p->shared->jsdoc_after) return;
+    statement_drop(p->shared->jsdoc_after);
+    free(p->shared->jsdoc_after);
+    p->shared->jsdoc_after = nullptr;
 }
 
 // Whether the statement at p could be one tsc's isStartOfStatement rejects but parse_statement() accepts (as an
@@ -12947,15 +12871,15 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             p.pos++;
         } else if (
             (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
-            (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement))
+            (jsdoc_drop_after(&p), parse_statement(&p, toplevel, &statement))
         ) {
             // (Its index: the JSDoc declarations that follow it are pushed after it)
             isize statement_index = vec_statement_size(ret);
             list_push(vec_statement, ret, statement);
-            if (p.shared->jsdoc_enum) {
-                list_push(vec_statement, ret, *p.shared->jsdoc_enum);
-                free(p.shared->jsdoc_enum);
-                p.shared->jsdoc_enum = nullptr;
+            if (p.shared->jsdoc_after) {
+                list_push(vec_statement, ret, *p.shared->jsdoc_after);
+                free(p.shared->jsdoc_after);
+                p.shared->jsdoc_after = nullptr;
             }
             for_each (i, vec_statement, &p.shared->jsdoc_checks) list_push(vec_statement, ret, *i);
             p.shared->jsdoc_checks.size = 0;
@@ -13810,7 +13734,7 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
     }
 }
 
-static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, Statement* statement) {
+static void jsdoc_apply_statement(Parser* p, const char* start, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before_leading(p, start, &tags)) return;
     bool hosts = false; // A function took the tags (which checks what it doesn't take itself)
@@ -13832,28 +13756,6 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             if (vec_initialized_binding_size(list) != 1) break;
             InitializedBinding* initializer = list->data;
-            JsDocTag* enum_tag = jsdoc_find_enum(&tags);
-            if (enum_tag && initializer->binding.tag == BINDING_IDENTIFIER) {
-                // `/** @enum {T} */ const E = {...}`: E is also a type alias of T (tsc's JSDocEnumTag)
-                Span span = jsdoc_tag_decl_span(enum_tag);
-                if (p->shared->jsdoc_enum) {
-                    statement_drop(p->shared->jsdoc_enum);
-                    free(p->shared->jsdoc_enum);
-                }
-                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
-                type.from_jsdoc = false;
-                if (initialized_binding_value(initializer)->tag == EXPR_OBJECT) initialized_binding_value(initializer)->jsdoc_enum_literal = true;
-                p->shared->jsdoc_enum = c_new(Statement, (Statement){
-                    .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = c_new(TypeDecl, {
-                        .name = initializer->binding.content_span, .full_span = span, .type = type, .jsdoc = true,
-                        .jsdoc_enum = true,
-                    }),
-                    // Exported with its variable only (tsc's jsdocTreatAsExported)
-                    .decl.props.exported = statement->decl.props.exported,
-                    .span = span,
-                });
-            }
             bool type_tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             if (type_tag && initialized_binding_rare(initializer)->require_port_count) {
@@ -13872,7 +13774,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             jsdoc_apply_satisfies_initializer(&tags, initializer);
             FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));
-            if (!function && initialized_binding_value(initializer)->tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
+            if (!function && initialized_binding_value(initializer)->tag != EXPR_CLASS_DECL && !p->shared->jsdoc_after) {
                 // `@template T` here declares T in the enclosing scope: tsc's host for it is a signature, and there is
                 // none (getHostSignatureFromJSDoc), so bindTypeParameter declares it in the container
                 bool alias = false, templates = false;
@@ -13883,7 +13785,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 if (templates && !alias) {
                     Generic generic = jsdoc_template_generic(&tags);
                     Span span = statement->span;
-                    p->shared->jsdoc_enum = c_new(Statement, (Statement){
+                    p->shared->jsdoc_after = c_new(Statement, (Statement){
                         .tag = STATEMENT_DECL_TYPE,
                         .decl.type = c_new(TypeDecl, {
                             .full_span = span, .generic = generic, .type = type_any, .jsdoc = true,
@@ -13920,48 +13822,6 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                 if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
-            }
-            JsDocTag* enum_tag = toplevel ? jsdoc_find_enum(&tags) : nullptr;
-            Span export_name = enum_tag ? jsdoc_commonjs_export_assignment_name(statement) : span_null;
-            Span enum_name = enum_tag && !span_valid(export_name) && statement->expr.tag == EXPR_BINARY_OP ?
-                jsdoc_namespace_assignment_name(statement) : span_null;
-            if (span_valid(export_name)) {
-                // `/** @enum {T} */ exports.C = {...}` (or `module.exports.C`) at the top level: C is also an exported type
-                // alias of T (delayedBindJSDocTypedefTag: an ExportsProperty declares into the file)
-                Span span = jsdoc_tag_decl_span(enum_tag);
-                jsdoc_drop_enum(p);
-                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
-                type.from_jsdoc = false;
-                Expr* value = &statement->expr.binary_op->right;
-                if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;
-                Statement alias = {
-                    .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = c_new(TypeDecl, { .name = export_name, .full_span = span, .type = type, .jsdoc = true, .jsdoc_enum = true }),
-                    .span = span,
-                };
-                alias.decl.props.exported = DECL_EXPORTED_YES;
-                p->shared->jsdoc_enum = c_new(Statement, alias);
-                statement->expr.binary_op->jsdoc_enum_export = true;
-            }
-            if (span_valid(enum_name)) {
-                // `/** @enum {T} */ A.B.C = {...}` at the top level: C is also a type alias of T in A.B's namespace
-                // (tsc's delayedBindJSDocTypedefTag with isTopLevelNamespaceAssignment)
-                Span span = jsdoc_tag_decl_span(enum_tag);
-                jsdoc_drop_enum(p);
-                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
-                type.from_jsdoc = false;
-                Expr* value = &statement->expr.binary_op->right;
-                if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;
-                char const* last_dot = span_end_ptr(enum_name);
-                while (last_dot[-1] != '.') last_dot--;
-                Span name = span_make(enum_name.source, last_dot, span_end_ptr(enum_name));
-                Statement alias = {
-                    .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = c_new(TypeDecl, { .name = name, .full_span = span, .type = type, .jsdoc = true, .jsdoc_enum = true }),
-                    .span = span,
-                };
-                p->shared->jsdoc_enum = c_new(Statement, jsdoc_wrap_in_namespaces(alias, enum_name, name, span));
-                statement->expr.binary_op->jsdoc_enum_export = true;
             }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
@@ -14138,7 +13998,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     if (ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) ret->jump_label = label;
     ret->span = span_from(a);
     if (p.shared->source->is_js) {
-        jsdoc_apply_statement(&p, a.start, toplevel, ret);
+        jsdoc_apply_statement(&p, a.start, ret);
         if (ret->tag == STATEMENT_DECL_VARIABLE) jsdoc_apply_initializer_types(&p, &ret->decl.variable);
     }
 

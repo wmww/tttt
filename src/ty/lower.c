@@ -269,10 +269,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
                 ret = lower(me, body, ctx, symbol, params);
                 if (ty_resolving_pop(me)) links->circular = true;
                 if (links->circular) {
-                    // (An `@enum {T}`'s alias is reported at T: tsc's declaration is the tag, which has no name)
-                    Span at = type_decl->jsdoc_enum && type_decl->type.tag == TYPE_IDENTIFIER ?
-                        identifier_type_span(type_decl->type.identifier) : decl->name;
-                    ty_error_at(me, at, 2456, cstr_d("Type alias '", symbol->name, "' circularly references itself."));
+                    ty_error_at(me, decl->name, 2456, cstr_d("Type alias '", symbol->name, "' circularly references itself."));
                     ret = ty_intrinsic(me, TY_ERROR);
                 }
             }

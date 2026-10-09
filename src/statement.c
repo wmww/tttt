@@ -123,30 +123,6 @@ static void variable_statement_check_let_names(VariableStatement const* me, Init
     binding_check_let_name(&i->binding, errs);
 }
 
-// `/** @enum {T} */ const E = { a: v }`: every member's value is checked against T (tsc's checkObjectLiteral)
-static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* errs) {
-    if (my binding.tag != BINDING_IDENTIFIER || !my binding.symbol || initialized_binding_value(me)->tag != EXPR_OBJECT) return;
-    SourceFile const* file = my binding.content_span.source;
-    if (!file || !file->is_js) return;
-    jsdoc_enum_check_members(my binding.symbol, initialized_binding_value(me), errs);
-}
-
-// The members of the object literal a JavaScript `@enum` symbol (a variable, or `A.B.C = {}`) is initialized with
-void jsdoc_enum_check_members(Symbol const* symbol, Expr const* object, ErrorCtx* errs) {
-    TypeDecl const* enum_decl = nullptr;
-    for (u32 d = 0; d < symbol->decl_count && !enum_decl; d++) {
-        TypeDecl const* decl = symbol->decls[d].kind == SYMBOL_DECL_TYPE_ALIAS ? symbol->decls[d].node : nullptr;
-        if (decl && decl->jsdoc_enum) enum_decl = decl;
-    }
-    if (!enum_decl) return;
-    // (The alias's type, which names it: lowering the node on its own first would give the alias an unnamed type)
-    Ty const* type = ty_declared_type_of(current_checker, symbol);
-    for_each (i, vec_object_expr_item, &object->object) {
-        if (i->tag != OBJECT_ITEM_PROPERTY || i->jsdoc_type) continue;
-        ty_check_assignable_expr(current_checker, expr_get_type(&i->value), type, i->span, &i->value, errs);
-    }
-}
-
 // tsc's checkESModuleMarker: the first name a binding declares
 static void binding_check_es_module_marker(Binding const* me, ErrorCtx* errs) {
     switch (my tag) {
@@ -223,7 +199,6 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             variable_statement_check_let_names(me, i, errs);
         }
         initialized_binding_typecheck(i, errs);
-        variable_check_jsdoc_enum(i, errs);
         if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY) {
             // tsc widens it first: no excess property checks
             Ty const* type = ty_widened_objects(current_checker, expr_get_type(initialized_binding_value(i)));
@@ -275,7 +250,7 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = my jsdoc && !my jsdoc_enum && scope->kind == SCOPE_MODULE ? DECL_EXPORTED_YES : props.exported,
+        .exported = my jsdoc && scope->kind == SCOPE_MODULE ? DECL_EXPORTED_YES : props.exported,
         .kind = SYMBOL_DECL_TYPE_ALIAS,
         .node = me,
         .declare_keyword = span_valid(props.declare_keyword),

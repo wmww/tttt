@@ -1964,17 +1964,6 @@ static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
-// `/** @enum */ exports.C = {}`: C's name is a namespace declaration of the export (BinaryOpExpr.jsdoc_enum_export)
-static void add_jsdoc_enum_export_namespace_decl(Scope* me, BinaryOpExpr* op, Span name) {
-    Symbol* exported = op->jsdoc_enum_export && my container->exports ? symbol_table_get(my container->exports, name.sv) : nullptr;
-    if (!exported) return;
-    Span id = expr_outer_span(&op->left.property->prop);
-    symbol_ensure_exports(exported);
-    symbol_add_decl(exported, (SymbolDecl){
-        .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
-    });
-}
-
 // `exports.x = v`, `module.exports.x = v` declare the export x, `module.exports = v` the `export=` (tsc's
 // getAssignmentDeclarationKind: syntactic, wherever the assignment is, bindModuleExportsAssignment and
 // bindExportsOrObjectDefineProperty)
@@ -1992,13 +1981,10 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
             declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
             // (The property access is the declaration, which a read in its flow container finds undefined before it:
             // expr_link_assignment_declaration())
-            if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !op->left.property->declares &&
-                !op->jsdoc_enum_export
-            ) {
+            if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !op->left.property->declares) {
                 Symbol* exported = symbol_table_get(my container->exports, name.sv);
                 if (exported && !(exported->flags & SYMBOL_ALIAS)) op->left.property->declares = exported;
             }
-            add_jsdoc_enum_export_namespace_decl(me, op, name);
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS:
             // (`module.exports = exports` declares nothing)
@@ -5243,14 +5229,6 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
         return;
     }
     add_expando_decl(me, &op->left, &op->right, op->jsdoc_type, top_level);
-    Symbol* member = op->jsdoc_enum_export && op->left.tag == EXPR_PROPERTY ? (Symbol*)op->left.property->declares : nullptr;
-    if (member) {
-        // (The `@enum`'s namespace declarations reach the member's own name too)
-        Span id = expr_outer_span(&op->left.property->prop);
-        symbol_add_decl(member, (SymbolDecl){
-            .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
-        });
-    }
 }
 
 // `left = right`, or a JavaScript `/** @type {T} */ left;` (right is left then)

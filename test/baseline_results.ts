@@ -19791,9 +19791,9 @@ const baselines = {
         types: true,
     },
     'jsEnumTagOnObjectFrozen': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsExpandoAssignmentElementAccess': {
         errors: true,
@@ -20173,7 +20173,7 @@ const baselines = {
     'jsFileESModuleWithEnumTag': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsFileFunctionOverloads': {
         errors: true,
@@ -20487,7 +20487,7 @@ const baselines = {
     },
     'jsdocTypedefNoCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocTypedefNoCrash2': {
@@ -22302,7 +22302,7 @@ const baselines = {
     },
     'misspelledJsDocTypedefTags': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'misspelledNewMetaProperty': {
@@ -51791,9 +51791,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsEnumTag(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsEnums(target=es2015)': {
         errors: true,
@@ -52026,7 +52026,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsParameterTagReusesInputNodeInEmit1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -52156,24 +52156,24 @@ const baselines = {
         types: true,
     },
     'enumTag': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'enumTagCircularReference': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'enumTagImported': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumTagOnExports': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumTagOnExports2': {
         errors: true,
@@ -52181,9 +52181,9 @@ const baselines = {
         types: true,
     },
     'enumTagUseBeforeDefCrash': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'errorIsolation': {
         errors: true,
@@ -52201,9 +52201,9 @@ const baselines = {
         types: false,
     },
     'exportedEnumTypeAndValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendsTag1': {
         errors: true,

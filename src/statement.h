@@ -55,7 +55,6 @@ void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclState
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, bool case_clause, bool ambient_using, ErrorCtx* errs);
 // `/** @enum {T} */`: the members of the object literal `object` that initializes `symbol` checked against T
-void jsdoc_enum_check_members(Symbol const* symbol, Expr const* object, ErrorCtx* errs);
 
 // Type declaration
 
@@ -72,7 +71,6 @@ typedef struct TypeDecl {
     // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;
-    bool jsdoc_enum; // `/** @enum {T} */ const E = ...`: named by the variable, of type T
     // A typedef whose comment is before a parenthesized expression statement: tsc attaches the comment to the statement
     // and to the parenthesized expression, declaring it twice, and doesn't reuse references to it when printing
     bool jsdoc_twice;

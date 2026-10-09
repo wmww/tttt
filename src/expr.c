@@ -4114,21 +4114,6 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     logical_operand = nullptr;
     if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_typecheck(my binary_op->jsdoc_type, errs);
     js_assignment_implicit_any_check(me, errs);
-    // `/** @enum {T} */ A.B.C = { ... }`: its members against T, like a variable's (tsc's checkObjectLiteral)
-    if (my binary_op->op == BINARY_OP_EQUAL && my binary_op->right.tag == EXPR_OBJECT && my binary_op->right.jsdoc_enum_literal &&
-        my binary_op->left.tag == EXPR_PROPERTY
-    ) {
-        Symbol const* declared = my binary_op->left.property->declares;
-        Span name = span_null;
-        SourceFile const* file = my inner_span.source;
-        // (`exports.C = {}`: the export, which the type alias merged into)
-        if (!declared && file && file->scope && file->scope->container && file->scope->container->exports &&
-            expr_commonjs_target(&my binary_op->left, &name) == COMMONJS_TARGET_EXPORTS_PROPERTY
-        ) {
-            declared = symbol_table_get(file->scope->container->exports, name.sv);
-        }
-        if (declared) jsdoc_enum_check_members(declared, &my binary_op->right, errs);
-    }
     if (my binary_op->defaulted_expando) {
         expr_typecheck(&my binary_op->right, errs);
         return;
