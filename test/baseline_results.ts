@@ -21206,7 +21206,7 @@ const baselines = {
         types: false,
     },
     'largeStringLiteralUnionSuggestion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33046,7 +33046,7 @@ const baselines = {
         types: true,
     },
     'unicodeSpellingSuggestions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -3311,11 +3311,56 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
     out_lit(d, "]");
 }
 
+// How many members of a union formatUnionTypes() leaves (booleans and whole enums are one), nullables included
+static u32 union_display_count(Checker* me, TyList types, Ty const** last) {
+    u32 count = 0;
+    u32 nullable = 0;
+    *last = nullptr;
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* t = types.data[i];
+        if (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE)) {
+            nullable |= t->flags;
+            continue;
+        }
+        count++;
+        *last = t;
+        if (ty_regular(me, t) == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len &&
+            ty_regular(me, types.data[i + 1]) == ty_intrinsic(me, TY_TRUE)
+        ) {
+            i++;
+            *last = nullptr; // (`boolean`: not worth printing alone, no truncation)
+            continue;
+        }
+        if (t->kind == TY_LITERAL && t->literal.enum_decl) {
+            Ty const* enum_type = ty_enum_of_member(me, t);
+            if (enum_type->kind == TY_UNION) {
+                u32 n = enum_type->composite.types.len;
+                if (i + n <= types.len && ty_regular(me, types.data[i + n - 1]) == enum_type->composite.types.data[n - 1]) {
+                    i += n - 1;
+                    *last = enum_type;
+                }
+            }
+        }
+    }
+    if (nullable & TYF_NULL) count++, *last = ty_intrinsic(me, TY_NULL);
+    if (nullable & TYF_UNDEFINED) count++, *last = ty_intrinsic(me, TY_UNDEFINED);
+    return count;
+}
+
+// tsc's defaultMaximumTruncationLength: a message's type longer than this (as far as tsc's approximateLength tells, here
+// the text so far with two characters per separator) elides the rest of a union
+#define DEFAULT_MAXIMUM_TRUNCATION_LENGTH 160
+
 static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     // tsc's formatUnionTypes(): `true | false` prints as `boolean`, `null` and `undefined` go last
     TyList types = ty->composite.types;
     bool first = true;
     u32 nullable = 0;
+    // (tsc's mapToTypeNodes: past the truncation length, `... N more ...` and the last member)
+    Ty const* last = nullptr;
+    u32 display_count = truncating(d) && types.len > 3 ? union_display_count(me, types, &last) : 0;
+    u32 display_index = 0;
+    isize separators = 0;
     bool* collisions = name_collisions(me, d, types);
     for (u32 i = 0; i < types.len; i++) {
         Ty const* t = types.data[i];
@@ -3323,7 +3368,27 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             nullable |= t->flags;
             continue;
         }
-        if (!first) out_lit(d, " | ");
+        display_index++;
+        bool over = last && (isize)cstr_size(d.target) - separators > DEFAULT_MAXIMUM_TRUNCATION_LENGTH;
+        // (Already past it before the first member: the first, how many more, the last)
+        if (over && display_index == 1) {
+            ty_display(me, d, t);
+            char more[48];
+            snprintf(more, sizeof more, " | ... %u more ... | ", display_count - 2);
+            out(d, csview_from(more));
+            ty_display(me, d, last);
+            free(collisions);
+            return;
+        }
+        if (over && display_index + 2 < display_count - 1) {
+            char more[48];
+            snprintf(more, sizeof more, " | ... %u more ... | ", display_count - display_index);
+            out(d, csview_from(more));
+            ty_display(me, d, last);
+            free(collisions);
+            return;
+        }
+        if (!first) out_lit(d, " | "), separators++;
         first = false;
         if (ty_regular(me, t) == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len &&
             ty_regular(me, types.data[i + 1]) == ty_intrinsic(me, TY_TRUE)
