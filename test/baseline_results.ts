@@ -22961,7 +22961,7 @@ const baselines = {
         types: true,
     },
     'modulePreserveRequireDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

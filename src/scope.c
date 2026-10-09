@@ -3784,7 +3784,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     if (file->is_js && is_type) return;
     const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
     ErrorCtx* errs = binder_errs(scope->binder);
-    bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require;
+    bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require || item->require_binding;
     // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns`, a default import's
     // whole clause (to its named imports)
     Span at = item->decl_name;

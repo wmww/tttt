@@ -11960,6 +11960,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
             .decl_name = binding->content_span,
             .full_span = binding->content_span,
             .is_require = true,
+            .require_binding = true,
             .module_ref = ref,
         });
         initializer->rare->require_port_count = 1;
@@ -11975,6 +11976,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
             .decl_name = name,
             .full_span = span_start_ptr(i->source_span) < span_start_ptr(name) ? span_between(i->source_span, name) : name,
             .source_name = i->source_span,
+            .require_binding = true,
             .module_ref = ref,
         };
     }

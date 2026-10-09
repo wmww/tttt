@@ -53,6 +53,7 @@ typedef struct PortItem {
     Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
     Span clause; // PORT_IMPORT_DEFAULT: the import clause, `A, { b }` (tsc's error node for the default import)
     bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
+    bool require_binding; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)
     ModuleRef* module_ref; // The module to import from, null for forms that have none
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
