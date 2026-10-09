@@ -9,7 +9,6 @@
 #include "enum_decl.h"
 #include "function_impl.h"
 
-static cstr reference_path_for_message(csview containing, csview reference);
 #include "program.h"
 #include "flow.h"
 #include "unused.h"
@@ -1888,11 +1887,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     error_ctx_error_d(errs, span, 2688,
                         "Cannot find type definition file for '", my source_directive->not_found, "'.");
                 } else {
-                    cstr shown = names->file ? source_file_message_path(names->file) : cstr_null;
-                    csview containing = cstr_sv(&shown);
-                    if (csview_starts_with(containing, "./")) containing = csview_slice(containing, 2, containing.size);
-                    cstr path = reference_path_for_message(containing, cstr_sv(&my source_directive->not_found));
-                    cstr_drop(&shown);
+                    // (The reference as written, slashes normalized: tsgo's getSourceFileFromReference)
+                    cstr path = cstr_clone(my source_directive->not_found);
+                    cstr_replace(&path, "\\", "/");
                     if (my source_directive->not_found_extensionless) {
                         // (tsc's getSourceFileFromReferenceWorker lists every supported extension)
                         error_ctx_error_d(errs, span, 6231, "Could not resolve the path '", path,
@@ -1910,40 +1907,6 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         case STATEMENT_NOOP:
             break;
     }
-}
-
-// tsc's resolveTripleslashReference: a `/// <reference path>` joined to the directory of the file's name (as messages
-// have it) and normalized, which stays relative when that name is (TS6053: '../x.ts')
-static cstr reference_path_for_message(csview containing, csview reference) {
-    isize dir = containing.size;
-    while (dir > 0 && containing.buf[dir - 1] != '/') dir--;
-    bool rooted = (reference.size && reference.buf[0] == '/') || path_is_drive_rooted(reference);
-    cstr joined = rooted ? cstr_from_sv(reference) :
-        cstr_d(csview_slice(containing, 0, dir), reference);
-    csview rest = cstr_sv(&joined);
-    bool absolute = rest.size && rest.buf[0] == '/';
-    csview segments[256];
-    u32 count = 0, parents = 0; // parents: leading `..` of a relative path, which the others can't cancel
-    while (rest.size) {
-        isize end = 0;
-        while (end < rest.size && rest.buf[end] != '/') end++;
-        csview segment = { rest.buf, end };
-        rest = csview_slice(rest, end < rest.size ? end + 1 : end, rest.size);
-        if (!segment.size || csview_equals(segment, ".")) continue;
-        if (csview_equals(segment, "..")) {
-            if (count > parents) count--;
-            else if (!absolute) segments[count++] = segment, parents++;
-            continue;
-        }
-        if (count < c_arraylen(segments)) segments[count++] = segment;
-    }
-    cstr ret = cstr_from(absolute ? "/" : "");
-    for (u32 i = 0; i < count; i++) {
-        if (i) cstr_append(&ret, "/");
-        cstr_append_sv(&ret, segments[i]);
-    }
-    cstr_drop(&joined);
-    return ret;
 }
 
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {

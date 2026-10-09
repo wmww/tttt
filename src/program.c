@@ -94,6 +94,8 @@ typedef struct Program {
     bool reference_outputs; // A referenced project's sources are read as their outputs (tsc's command line)
     u32 node_modules_depth; // How many node_modules lookups the file being loaded was reached through (tsc's currentNodeModulesDepth)
     Span include_site; // The module name or `/// <reference path>` the file being loaded is loaded for (SourceFile.included_at)
+    IncludeKind include_kind; // Why the file being loaded is: its next SourceFile.include_reasons entry (with include_site)
+    csview include_package_id; // And the package id of the resolution, for INCLUDE_IMPORT
     ModuleResolver** reference_resolvers;
     u32 reference_count;
     RealpathFn realpath; // program_set_realpath()
@@ -699,8 +701,12 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     ref->external_library = resolved.is_external_library;
     if (resolved.is_external_library) my node_modules_depth++;
     my include_site = ref->span;
+    my include_kind = INCLUDE_IMPORT;
+    my include_package_id = cstr_sv(&resolved.package_id);
     program_load_resolved(me, source, ref, &resolved);
     my include_site = span_null;
+    my include_kind = INCLUDE_NONE;
+    my include_package_id = c_sv("");
     if (resolved.is_external_library) my node_modules_depth--;
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
     if (ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
@@ -833,8 +839,10 @@ static SourceFile* program_load_reference_path(
         if (output.size) source = output;
         if (source.size) {
             my include_site = path_span;
+            my include_kind = INCLUDE_REFERENCE;
             ret = program_add_source_idempotent(me, source);
             my include_site = span_null;
+            my include_kind = INCLUDE_NONE;
             if (ret && !span_valid(ret->included_at)) ret->included_at = path_span;
         }
         cstr_drop(&candidate);
@@ -1326,6 +1334,20 @@ static bool program_share_redirect_ref(SourceFile const* target, ModuleRef* ref)
     return false;
 }
 
+// Records why the file being added is (Program.include_kind, once)
+static void record_include_reason(Program* me, SourceFile* file) {
+    if (!my include_kind) return;
+    if (file->include_reason_count == file->include_reason_cap) {
+        file->include_reason_cap = file->include_reason_cap ? file->include_reason_cap * 2 : 2;
+        file->include_reasons = realloc(file->include_reasons, sizeof(IncludeReason) * file->include_reason_cap);
+        panic_if(!file->include_reasons, "out of memory");
+    }
+    file->include_reasons[file->include_reason_count++] = (IncludeReason){
+        .kind = my include_kind, .at = my include_site, .package_id = cstr_from_sv(my include_package_id),
+    };
+    my include_kind = INCLUDE_NONE;
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
@@ -1333,6 +1355,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
     if (cached_source) {
+        record_include_reason(me, cached_source->second.get);
         // A source file is already created for this path
         cstr_drop(&canonical_path);
         SourceFile* found = cached_source->second.get;
@@ -1358,6 +1381,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
     source_file->found_searching_node_modules = my node_modules_depth > 0;
     // (Before what it refers to is loaded, which may refer back to it: tsc adds the file's include reason first)
+    record_include_reason(me, source_file);
     if (span_valid(my include_site)) source_file->included_at = my include_site;
     my include_site = span_null;
 
@@ -1456,10 +1480,21 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 // tsc's chain under a diagnostic about a root file: "The file is in the program because:" and how the config (or the
 // command line) has it
+// The config file as messages name it (tsc's toFileName(config.ConfigName()): absolute on the command line)
+static cstr program_config_name_for_message(Program* me) {
+    if (!my config_source) return cstr_null;
+    cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
+    cstr ret = program_path_for_message(me, cstr_sv(&absolute));
+    cstr_drop(&absolute);
+    return ret;
+}
+
 static void program_explain_root(Program* me, Error* error, csview path) {
     cstr absolute = absolute_path_of(program_cwd(me), path);
-    csview config = my config_source ? cstr_sv(&my config_source->canonical_path) : c_sv("");
+    cstr config_name = program_config_name_for_message(me);
+    csview config = cstr_sv(&config_name);
     cstr reason = tsconfig_root_file_reason(&my options, cstr_sv(&absolute), config);
+    cstr_drop(&config_name);
     error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
     error_sub_error_d(vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, reason);
     c_drop(cstr, &reason, &absolute);
@@ -1492,7 +1527,9 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
             cstr candidate = cstr_d(path, completions[i]);
             if (fs_is_reg_file(my fs, cstr_sv(&candidate))) {
                 set_compiler_options(&my options);
+                if (!my loading_stdlib) my include_kind = INCLUDE_ROOT;
                 SourceFile* found = program_add_source_idempotent(me, cstr_sv(&candidate));
+                my include_kind = INCLUDE_NONE;
                 clear_compiler_options();
                 cstr_drop(&candidate);
                 return ok(found);
@@ -1534,7 +1571,9 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     set_compiler_options(&my options);
 
     // Add the source file to the program
+    if (!my loading_stdlib) my include_kind = INCLUDE_ROOT;
     SourceFile* main_source = program_add_source_idempotent(me, path);
+    my include_kind = INCLUDE_NONE;
     if (main_source && !my loading_stdlib) main_source->is_root = true;
 
     clear_compiler_options();
@@ -2211,21 +2250,89 @@ static void program_verify_emit_paths(Program* me) {
     hmap_source_file_ptr_drop(&seen);
 }
 
-// tsc's addLazyProgramDiagnosticExplainingFile: at what first brought the file in (an import), else (a root file) a
-// global diagnostic saying why it is in the program
+// One of tsc's file include reasons as its chain says it (FileIncludeReason.toDiagnostic, file names absolute)
+static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReason const* reason) {
+    switch (reason->kind) {
+        case INCLUDE_ROOT: {
+            cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&file->canonical_path));
+            cstr config = program_config_name_for_message(me);
+            cstr ret = tsconfig_root_file_reason(&my options, cstr_sv(&absolute), cstr_sv(&config));
+            c_drop(cstr, &absolute, &config);
+            return ret;
+        }
+        case INCLUDE_IMPORT:
+        case INCLUDE_REFERENCE: {
+            SourceFile const* from = reason->at.source;
+            cstr absolute = from ? absolute_path_of(program_cwd(me), cstr_sv(&from->canonical_path)) : cstr_null;
+            cstr from_name = program_path_for_message(me, cstr_sv(&absolute));
+            cstr ret = reason->kind == INCLUDE_REFERENCE ?
+                cstr_d("Referenced via '", reason->at, "' from file '", from_name, "'") :
+                cstr_size(&reason->package_id) ?
+                cstr_d("Imported via ", reason->at, " from file '", from_name, "' with packageId '", reason->package_id, "'") :
+                cstr_d("Imported via ", reason->at, " from file '", from_name, "'");
+            c_drop(cstr, &absolute, &from_name);
+            return ret;
+        }
+        case INCLUDE_NONE: break;
+    }
+    return cstr_null;
+}
+
+// tsc's explainRedirectAndImpliedFormat: why a module file has the format it has (GetImpliedNodeFormatForEmit)
+static void explain_implied_format(Error* error, SourceFile const* file) {
+    if (!file->is_module) return;
+    ModuleKind format = source_file_implied_format_for_emit(file);
+    csview package = cstr_sv(&file->package_json);
+    if (format == MODULE_KIND_ESNEXT && file->package_has_type && package.size) {
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "File is ECMAScript module because '", package,
+            "' has field \"type\" with value \"module\"");
+    } else if (format == MODULE_KIND_COMMONJS) {
+        if (file->package_has_type && package.size) {
+            error_sub_error_d(error, span_null, TS_CODE_NONE, "File is CommonJS module because '", package,
+                "' has field \"type\" whose value is not \"module\"");
+        } else if (package.size) {
+            error_sub_error_d(error, span_null, TS_CODE_NONE, "File is CommonJS module because '", package,
+                "' does not have field \"type\"");
+        } else {
+            error_sub_error_d(error, span_null, TS_CODE_NONE, "File is CommonJS module because 'package.json' was not found");
+        }
+    }
+}
+
+// tsc's createDiagnosticExplainingFile: at the first import or reference that brought the file in (else a global
+// diagnostic), with "The file is in the program because:" and every reason unless that import is the only one, then
+// what decides its module format
 static void program_error_explaining_file(Program* me, SourceFile const* file, unsigned code, cstr message) {
-    if (span_valid(file->included_at)) {
+    IncludeReason const* preferred = nullptr;
+    for (u32 i = 0; i < file->include_reason_count && !preferred; i++) {
+        if (file->include_reasons[i].kind != INCLUDE_ROOT) preferred = &file->include_reasons[i];
+    }
+    Error* error;
+    if (preferred) {
         // (Not in a file that isn't checked, a skipLibCheck declaration file: tsc's getProgramDiagnostics skips them)
-        SourceFile const* at = file->included_at.source;
+        SourceFile const* at = preferred->at.source;
         if (at && at->unchecked && !at->plain_js) {
             cstr_drop(&message);
             return;
         }
-        error_ctx_error_s(my errs, file->included_at, code, message);
-        return;
+        error = error_ctx_error_s(my errs, preferred->at, code, message);
+    } else {
+        error = error_ctx_global_error_s(my errs, code, message);
     }
-    Error* error = error_ctx_global_error_s(my errs, code, message);
-    if (file->is_root) program_explain_root(me, error, cstr_sv(&file->canonical_path));
+    if (!error) return;
+    if (file->include_reason_count && (!preferred || file->include_reason_count != 1)) {
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+        Error* chain = vec_error_back_mut(&error->sub_errors);
+        for (u32 i = 0; i < file->include_reason_count; i++) {
+            cstr text = include_reason_text(me, file, &file->include_reasons[i]);
+            if (cstr_size(&text)) error_sub_error_s(chain, span_null, TS_CODE_NONE, text);
+            else cstr_drop(&text);
+        }
+    }
+    CompilerOptions const* saved = compiler_options_private;
+    set_compiler_options(program_options_of(me, file));
+    explain_implied_format(error, file);
+    compiler_options_private = saved;
 }
 
 // tsc's verifyCompilerOptions on the files of the program: a composite project lists every file it emits (TS6307),

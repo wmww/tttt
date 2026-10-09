@@ -124,6 +124,8 @@ unsigned source_file_line_index(SourceFile const* me, const char* pos) {
 
 void source_file_drop(SourceFile* me) {
     names_unregister_source(me);
+    for (u32 i = 0; i < my include_reason_count; i++) cstr_drop(&my include_reasons[i].package_id);
+    free(my include_reasons);
     cstr_drop(&my canonical_path);
     cstr_drop(&my contents);
     free(my line_starts);

@@ -88,6 +88,19 @@ typedef struct CommentDirective {
     bool used;
 } CommentDirective;
 
+typedef enum IncludeKind : uint8_t {
+    INCLUDE_NONE = 0,
+    INCLUDE_ROOT, // A root file (the command line, a config's files or include)
+    INCLUDE_IMPORT, // A module name (an import, export, require, import type...)
+    INCLUDE_REFERENCE, // `/// <reference path>`
+} IncludeKind;
+
+typedef struct IncludeReason {
+    IncludeKind kind;
+    Span at; // INCLUDE_IMPORT: the module name literal; INCLUDE_REFERENCE: the path
+    cstr package_id; // INCLUDE_IMPORT of a package's file: its name, path in it and version (tsc's packageId)
+} IncludeReason;
+
 typedef struct SourceFile {
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
@@ -106,6 +119,11 @@ typedef struct SourceFile {
     // file reason), where tsc's diagnostics explaining a file go (TS6307, TS6059); invalid for a root file nothing
     // refers to, which gets a global one
     Span included_at;
+    // Every reason the file is in the program, in tsc's order (its fileIncludeReasons: the loader's depth-first walk,
+    // every edge), for the chains of diagnostics explaining the file (program_error_explaining_file()). malloc'd
+    struct IncludeReason* include_reasons;
+    u32 include_reason_count;
+    u32 include_reason_cap;
     // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
     // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
     u32 node_modules_js_depth;
