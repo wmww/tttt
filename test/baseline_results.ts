@@ -61486,7 +61486,7 @@ const baselines = {
         types: true,
     },
     'thisTypeOfConstructorFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

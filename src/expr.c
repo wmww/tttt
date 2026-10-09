@@ -4041,12 +4041,22 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     }
 }
 
+// JavaScript `/** @type {T} */ this.x = v` in a function, which declares nothing: tsgo only resolves the reparsed
+// binary.Type when the value asks for its contextual type, never checks it as such (no TS2526 for `{this}`)
+static bool is_undeclared_this_assignment(BinaryOpExpr const* op) {
+    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || op->left.property->declares) return false;
+    IdentifierExpr const* this = expr_this_keyword(&op->left.property->expr);
+    return this && this->this_kind == THIS_ANY && op->right.tag != EXPR_FUNCTION && op->right.tag != EXPR_OBJECT;
+}
+
 // The binary case of expr_typecheck(). A chain (`a + b + c + ...`) is walked down its left spine with a loop, not a
 // recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
 static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     bool root = logical_operand != me;
     logical_operand = nullptr;
-    if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_typecheck(my binary_op->jsdoc_type, errs);
+    if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed && !is_undeclared_this_assignment(my binary_op)) {
+        type_typecheck(my binary_op->jsdoc_type, errs);
+    }
     js_assignment_implicit_any_check(me, errs);
     if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
         !expr_is_perenthisized(&my binary_op->left)

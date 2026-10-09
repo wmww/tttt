@@ -217,9 +217,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - `obj3.y = Object.values(obj3)` (expandoObjectIndexSignatures, expandoNoInferredIndex): tsgo reports TS7022 for the
   cycle through the container's type inside the call's inference; tttt's guarded_assignment_symbol_type() doesn't
   see it past the call's resolving barrier (Checker.resolving_start).
-- thisTypeOfConstructorFunctions: `/** @type {this} */ this.dit = this` in a plain function: tsgo never resolves the
-  reparsed binary.Type there (nothing asks for the contextual type of `this`), so no TS2526; tttt checks
-  BinaryOpExpr.jsdoc_type eagerly.
 - typeFromContextualThisType symbols: `this` in a method of a literal typed by `@type {{...}}` on `const o1` is
   `Symbol(o1, Decl(type literal))` in tsgo (the reparsed type literal is named by the variable): C's reparse naming.
 
