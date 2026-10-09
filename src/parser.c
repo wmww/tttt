@@ -14164,6 +14164,23 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         Anchor a = anchor(&p);
         Expr value;
         if (parse_expr(&p, expr_ctx_null, &value)) {
+            hop_whitespace(&p);
+            if (*p.pos) {
+                // More than one value: TS1012 at the second, and the file is an array of them all (tsc's parseJsonText
+                // error recovery)
+                parse_error(&p, span_from_token(&p), 1012, "Unexpected token.");
+                VecExpr values = vec_expr_init();
+                list_push(vec_expr, &values, value);
+                char const* end = span_end_ptr(expr_outer_span(&value));
+                while (*p.pos) {
+                    Expr more;
+                    if (!parse_expr(&p, expr_ctx_null, &more)) break;
+                    end = span_end_ptr(expr_outer_span(&more));
+                    list_push(vec_expr, &values, more);
+                    hop_whitespace(&p);
+                }
+                value = (Expr){ .tag = EXPR_ARRAY, .array = values, .inner_span = span_make(source, a.start, end), .lazy_type.tag = LAZY_TYPE_EXPR };
+            }
             json_check_value(&p, &value);
             Statement statement = { .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = value, .export_equals = true };
             statement.span = span_from(a);
