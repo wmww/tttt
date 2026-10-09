@@ -3500,7 +3500,10 @@ static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
             (module->exports->entries[i].symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE));
     }
     if (!any) return;
-    target->flags |= SYMBOL_VALUE_MODULE;
+    // (In a CommonJS module the target is only a namespace by it, tsgo's SymbolFlags.NamespaceModule: its value doesn't
+    // get the merged exports' value meanings, `module.exports.T = T` next to a typedef T)
+    bool commonjs = module->module->file && module->module->file->is_commonjs;
+    target->flags |= commonjs ? SYMBOL_NAMESPACE_MODULE : SYMBOL_VALUE_MODULE;
     symbol_rare_mut(target)->export_equals_module = module;
     // (What a function, class, enum or namespace exports is its value's members: an expando declaration, like `f.x = v`
     // gives. A variable's or an assignment's members are its initializer's)
@@ -3509,7 +3512,7 @@ static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
         SymbolDeclKind kind = target->decls[i].kind;
         has_value_members = kind == SYMBOL_DECL_EXPANDO || kind == SYMBOL_DECL_ASSIGNMENT || kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY;
     }
-    if (!has_value_members) symbol_add_decl(target, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
+    if (!has_value_members && !commonjs) symbol_add_decl(target, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
     symbol_ensure_exports(target);
     for (u32 i = 0; i < module->exports->count; i++) {
         SymbolEntry* entry = &module->exports->entries[i];

@@ -20266,9 +20266,9 @@ const baselines = {
         types: true,
     },
     'jsTypedefMergedWithModuleExportProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsdocAccessEnumType': {
         errors: true,
