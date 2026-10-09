@@ -20466,9 +20466,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeTagFunctionTypePredicate': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypecastNoTypeNoCrash': {
         errors: true,

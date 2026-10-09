@@ -4475,6 +4475,12 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         function->ret_explicit = true;
         signature->ret_explicit = false;
         signature->ret = (TypeNode){0};
+        // (`(e: unknown) => e is T`: its predicate too, tsgo's FullSignature)
+        if (signature->predicate && !function->predicate) {
+            function->predicate = signature->predicate;
+            function->predicate->jsdoc = true;
+            signature->predicate = nullptr;
+        }
     }
 }
 
