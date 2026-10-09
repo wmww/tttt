@@ -177,6 +177,12 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) {
         // (A method signature is its name, a function type the whole type)
         FunctionImpl const* function = ty->anonymous.node->callable->function;
+        if (function->jsdoc_callback && span_valid(function->full_span) && csview_starts_with(function->full_span.sv, "@callback")) {
+            // (A `@callback`'s reparsed signature starts after its name: the next tag, past the comment's `*`s)
+            char const* c = span_end_ptr(function->full_span);
+            while (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || (*c == '*' && c[1] != '/')) c++;
+            return span_make(function->full_span.source, c, c);
+        }
         return span_valid(function_impl_member_name(function)) ? function_impl_member_name(function) : function->full_span;
     }
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;

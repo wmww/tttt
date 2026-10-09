@@ -4089,7 +4089,10 @@ static void clone_type_params(Checker* me, Signature* sig) {
 // called where it is made. Every argument is optional (getMinArgumentCount)
 static bool function_is_untyped_js(FunctionImpl const* function) {
     SourceFile const* file = function->full_span.source;
-    if (!file || !file->is_js || function->is_type || function->is_iife || function->jsdoc_typed) return false;
+    // (A `@type` that isn't a signature, `{function}` or `{number}` on a declaration, leaves it untyped: tsgo's
+    // getSignaturesOfSymbol falls back to getSignatureFromDeclaration)
+    bool typed = function->jsdoc_typed && !function_impl_rare(function)->jsdoc_signature_type;
+    if (!file || !file->is_js || function->is_type || function->is_iife || typed) return false;
     // (Nor with a parameter of its own JSDoc type, `/** @type {string} */ message`: getJSDocType of a parameter)
     for_each (i, vec_function_arg, &function->args) {
         if (i->initializer.binding.has_explicit_type && i->initializer.binding.explicit_type.from_jsdoc) return false;
