@@ -11627,6 +11627,16 @@ done:
 
 // Only parses content, sets type and value to defaults
 // An element of an array or object pattern: `x`, `...x`, `x = 1`, `[a, b] = c`
+// At `...` followed by `{` or `[` (an object pattern's rest element with a pattern)
+static bool rest_then_pattern(Parser* parent) {
+    Parser p = parser(parent);
+    p.pos += 3;
+    hop_whitespace(&p);
+    bool ret = *p.pos == '{' || *p.pos == '[';
+    parse_fail(&p);
+    return ret;
+}
+
 static bool parse_binding_element(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -11721,6 +11731,29 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             Expr* computed_key = nullptr;
             bool shorthand_allowed = false;
             binding = (Binding){0};
+            if (p.pos[0] == '.' && p.pos[1] == '.' && p.pos[2] == '.' && rest_then_pattern(&p)) {
+                // `...{ }` / `...[]`: tsgo's parseObjectBindingElement reads a property name there, missing (TS1003,
+                // its ':' expected at the same place isn't reported), then the pattern as the name
+                Parser q = parser(&p);
+                q.pos += 3;
+                hop_whitespace(&q);
+                Span missing = span_make(q.shared->source, q.pos, q.pos);
+                parse_error(&q, span_from_token(&q), 1003, "Identifier expected.");
+                Binding target = {0};
+                if (parse_binding_element(&q, &target)) {
+                    parse_success(&q);
+                    target.rest = true;
+                    target.rest_property_name = true;
+                    binding_set_element_span(&target, span_from(key_anchor));
+                    vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                        .source = value_string(cstr_init()),
+                        .source_span = missing,
+                        .target = target,
+                    });
+                    goto object_item_done;
+                }
+                parse_fail(&q);
+            }
             if (*p.pos == '.' && parse_binding_element(&p, &binding)) {
                 // `...rest`. `...rest: x` is a rest element with a property name to tsc's parseObjectBindingElement
                 // (TS2566 from the checker)
