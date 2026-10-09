@@ -71,14 +71,15 @@ ORACLE_DIR="$HERE/../test/oracle"
 if test -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-oracle 2>/dev/null)" -o ! -e typescript/built/tttt-oracle \
         -o -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-probe.test 2>/dev/null)" -o ! -e typescript/built/tttt-probe.test; then
     printf "${BLUE}Building tttt's tsgo oracle tools (test/oracle)...$EOL"
+    # (Go matches overlay paths against real paths: in a worktree, typescript/ is a symlink to the main tree's)
     {
         printf '{"Replace": {'
         for ((i = 0; i < ${#OVERLAY[@]}; i += 2)); do
             test $i = 0 || printf ', '
-            printf '"%s": "%s"' "$HERE/typescript/tsc/${OVERLAY[i+1]}" "$(realpath "$ORACLE_DIR/${OVERLAY[i]}")"
+            printf '"%s": "%s"' "$(realpath "$HERE/typescript/tsc")/${OVERLAY[i+1]}" "$(realpath "$ORACLE_DIR/${OVERLAY[i]}")"
         done
         printf '}}\n'
     } > typescript/built/overlay.json
-    (cd typescript/tsc && go build -overlay ../built/overlay.json -o ../built/tttt-oracle ./cmd/tttt-oracle &&
+    (cd "$(realpath typescript/tsc)" && go build -overlay ../built/overlay.json -o ../built/tttt-oracle ./cmd/tttt-oracle &&
         go test -overlay ../built/overlay.json -c -o ../built/tttt-probe.test ./internal/testrunner)
 fi
