@@ -112,6 +112,8 @@ static Ty const* instantiate_with_defaults(Checker* me, Symbol const* symbol, Ty
     symbol = binder_redirect(my binder, symbol);
     Ty const* declared = ty_declared_type_of(me, symbol);
     bool alias = (symbol->flags & SYMBOL_TYPE_ALIAS) != 0;
+    // (Only of a type alias, class or interface: tsgo's instantiateAliasOrInterfaceWithDefaults, an enum is none)
+    if (!alias && !(symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE))) return nullptr;
     TyList params = alias ? ty_alias_type_params(me, symbol) :
         declared->kind == TY_DECLARED ? declared->declared.type_params : (TyList){0};
     if (params.len < count) return nullptr;
