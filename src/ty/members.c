@@ -1865,6 +1865,11 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
                 for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
                 existing = copy;
             }
+            // (Unless the export is an alias, `export import X = ...`, which has no value flags of its own: the inherited
+            // static stays, tsgo's addInheritedMembers replaces a member without SymbolFlagsValue)
+            Symbol const* own_export = existing && existing->parent && existing->parent != decl ?
+                symbol_get_export(decl, atom_sv(members->props[j]->name)) : nullptr;
+            if (own_export && (own_export->flags & SYMBOL_ALIAS) && !(own_export->flags & SYMBOL_VALUE)) continue;
             if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
