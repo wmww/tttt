@@ -9276,7 +9276,7 @@ const baselines = {
         types: true,
     },
     'declarationFileNoCrashOnExtraExportModifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13181,8 +13181,8 @@ const baselines = {
         types: true,
     },
     'exportAssignmentMerging3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'exportAssignmentMerging4': {
@@ -13201,9 +13201,9 @@ const baselines = {
         types: true,
     },
     'exportAssignmentMerging7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentMerging8': {
         errors: true,

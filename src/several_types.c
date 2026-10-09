@@ -152,8 +152,8 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     }
 
     if (container != module) {
-        // A CommonJS module's other exports (its `@typedef`s) merge into what `module.exports =` assigns (tsc's
-        // getCommonJsExportEquals)
+        // A CommonJS module's other exports (its `@typedef`s) are found next to what `module.exports =` assigns
+        // (tsgo's getExportsOfModuleWorker: the original module's type exports)
         bool qualified = vec_span_size(&rare->namespaces);
         Symbol const* own = symbol_get_export(module, (qualified ? *rare->namespaces.data : my name).sv);
         if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
@@ -244,8 +244,7 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
 // A symbol that is a namespace only through its expandos (`f.x = v`): tsc's binder adds the expando to the exports
 // of the function's or initializer's symbol without the Namespace meaning, so the name isn't a namespace in types
 static bool namespace_from_expandos_only(Symbol const* symbol) {
-    // (What a CommonJS module's `module.exports =` assigns has the module's types: tsc's bindCommonJSTypeExports)
-    if (!symbol || symbol_rare(symbol)->export_equals_module) return false;
+    if (!symbol) return false;
     bool expando = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (!(symbol->decls[i].flags & SYMBOL_NAMESPACE)) continue;

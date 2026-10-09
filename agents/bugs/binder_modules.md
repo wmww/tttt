@@ -4,9 +4,10 @@ Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test,
 and what a fix needs. JS/JSDoc-specific items are in plans/26_js_jsdoc.md's Leftovers.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
-Plan 50 (2026-10-08, deleted once done; its write-up is commit 319c0951) did getCommonJsExportEquals in place at
-link time: `merge_commonjs_export_equals()` merges a module's other exports into what its `export =` assigns, no
-clone (tttt's binder merges in place, so a clone recorded as the merged symbol is the same thing). Stage 0 found
+Plan 50 (2026-10-08) did tsc 6's getCommonJsExportEquals in place at link time; tsgo 7.1 has no getCommonJsExportEquals
+at all (bindCommonJSTypeExports for every module: the module's types move onto the `export=` symbol), and since
+2026-10-09 tttt follows it (`bind_type_exports()`, merge_commonjs_export_equals() is gone). The entries below that
+blame getCommonJsExportEquals were written against tsc 6 and need rechecking against tsgo before any work. Stage 0 found
 tsc clones whenever the module's own file is checked, not only on import. The entries below are what is left
 (single-test ordering quirks of tsc): an augmentation into a cloneTypeAsModuleType clone, JS `module.exports = {...}`
 as an augmentable export=, mergeSymbol's alias rules across files.

@@ -1823,18 +1823,10 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     return prop;
 }
 
-// Whether prop is one of a module's exports that merge_commonjs_export_equals() added to host, what its `export =`
-// assigns. A variable's function or class initializer doesn't have them: tsc's type of the expression is cached when
-// it is checked, before getCommonJsExportEquals clones the variable
-static bool is_commonjs_merged_export(Symbol const* host, Prop const* prop) {
-    Symbol const* module = symbol_rare(host)->export_equals_module;
-    return module && prop->decl->symbol && prop->decl->symbol->parent == module;
-}
-
 // The members of every value declaration of a merged declaration, see ty_merged_value_type()
 static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty const* ty, Symbol const* decl) {
     Ty const** entries;
-    u32 entry_count = ty_merged_value_entries(me, ty, decl, &entries);
+    u32 entry_count = ty_merged_value_entries(me, decl, &entries);
     // A class whose base's type arguments mention the merged value (`class S extends B<typeof S.Base>` with `namespace
     // S { export const Base }`): its namespace's exports are already there for them (tsc's class symbol has them among
     // its exports, published before the base is resolved)
@@ -1904,40 +1896,6 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
     }
     free(entries);
     ty_buf_drop(&shared);
-    // What a module's `export =` assigns, with the module's other exports (merged_export_equals_type())
-    if (ty->kind == TY_ANONYMOUS ? ty->anonymous.export_equals_view : ty->declared.export_equals_view) {
-        for (u32 i = 0; i < decl->exports->count; i++) {
-            SymbolEntry const* entry = &decl->exports->entries[i];
-            Prop* existing = builder_find_prop(builder, checker_atom(me, symbol_entry_name(entry)));
-            if (existing && existing->decl->symbol == entry->symbol) continue;
-            if (existing) {
-                // `module.exports = { a: 1 }; module.exports.a = "s"` in one file: `a` is both (tsc's
-                // getInitializerTypeFromAssignmentDeclaration unions the two declarations' types)
-                Symbol const* value = symbol_for_meaning(entry->symbol, SYMBOL_VALUE);
-                SourceFile const* here = existing->decl->name_span.source;
-                bool same_file = value && value->decl_count && here && value->decls[0].full.source == here;
-                if (value && !(entry->symbol->flags & SYMBOL_ALIAS) && !value->is_placeholder && same_file &&
-                    value->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
-                ) {
-                    Prop* copy = arena_new(&my arena, Prop);
-                    prop_copy_into(me, copy, existing);
-                    Ty const* parts[2] = { prop_type(me, existing), ty_type_of_symbol(me, value) };
-                    copy->type = ty_union(me, parts, 2, nullptr, (TyList){0});
-                    copy->type_state = LAZY_STATE_DONE;
-                    VecSpan spans = symbol_declaration_spans(entry->symbol);
-                    prop_add_decl_spans(me, copy, spans.data, (u32)vec_span_size(&spans));
-                    vec_span_drop(&spans);
-                    for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
-                }
-                continue;
-            }
-            Prop* prop = namespace_export_prop(me, entry);
-            if (!prop) continue;
-            // (`module.exports.f = f` of a `const f` is an alias, which isn't readonly: tsc's isReadonlySymbol)
-            if (entry->symbol->flags & SYMBOL_ALIAS) prop->flags &= ~PROP_READONLY;
-            builder_push(builder, props, prop);
-        }
-    }
 }
 
 static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDecl const* enum_decl) {
@@ -2562,7 +2520,6 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (host && host != decl) {
                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
                     for (u32 i = 0; i < expandos->prop_count; i++) {
-                        if (is_commonjs_merged_export(host, expandos->props[i])) continue;
                         if (!builder_find_prop(&builder, expandos->props[i]->name)) builder_push(&builder, props, expandos->props[i]);
                     }
                 }
@@ -3673,7 +3630,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 if (host) {
                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
                     for (u32 i = 0; i < expandos->prop_count; i++) {
-                        if (!is_commonjs_merged_export(host, expandos->props[i])) builder_push(&builder, props, expandos->props[i]);
+                        builder_push(&builder, props, expandos->props[i]);
                     }
                 }
             } else if (ty->anonymous.overload_count) {

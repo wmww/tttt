@@ -599,14 +599,17 @@ src` finds the code-side markers; every significant one has an entry here.
   `exports.x = undefined` then `exports.x = a` (moduleExportDuplicateAlias*): tsgo makes every one an alias, tttt a
   property + alias symbol; an alias declaration keeps its value (`SymbolDeclJs.commonjs_value`) for the union. `module.exports` of the `module` variable gets its symbols line from a span override in
   the traversal (`EXPR_PROPERTY` case: tsgo's `exports` member symbol of `module`, which tttt doesn't make).
-- TypeScript `export =`: absorbs the module's other exports that have a type or namespace meaning in place at link time
-  (`merge_commonjs_export_equals()`, tsc 6's getCommonJsExportEquals clone, into the resolved target; CommonJS JS
-  modules use tsgo's model instead, `bind_commonjs_type_exports()`), with two of tsc's laziness artifacts emulated by
-  rules: a variable's function/class initializer lacks the merged exports (`is_commonjs_merged_export()`), and `export
-  import a = x.c`'s TS2708 ignores a value meaning only the merge gave (`symbol_is_commonjs_merged_value_only()`).
-  `merged_export_equals_type()` (lower.c) keeps a typed view (`export_equals_view`) under its own keys; conflicting
-  same-named exports stay unmerged (only `check_export_equals_merge()` reports); a module target
-  (`module.exports = require("./y")`) isn't merged.
+- `export =` next to other exports: tsgo 7.1's model for every module (`bind_type_exports()`, tsgo's
+  bindCommonJSTypeExports: the type/namespace exports move onto the `export=` symbol, which becomes a namespace and
+  stops being a pure alias), but run at link time (binder_link()) rather than per file in the binder, so the TS2309
+  check before it (`export_equals_shadows_namespace()`) recomputes whether the promotion will happen. A named import
+  from such a module drops the module's own exports with a value meaning (tsgo's getExportsOfModuleWorker) in
+  resolve_alias_target(), not through module_resolved_exports().
+- Package deduplication (`program_load_resolved()`): the second copy of a package (SourceFile.package_redirect) is still
+  parsed and bound with its own AST (tsc's redirect file has the first copy's AST and binds nothing), only unchecked;
+  its imports share the first copy's resolutions by path text (`program_share_redirect_ref()`), falling back to its
+  own resolution when the copies differ or the first is still loading. Its globals (`declare global`, `export as
+  namespace`, script declarations) still merge.
 - Named class expressions a CommonJS module exports are named by their own name inside their body only through a
   thread-local the baseline traversal sets (`symbol_chain_enter_class()`): error messages name from the file.
 - tsc reports a member's widening errors (TS7008) only when something resolves its type,

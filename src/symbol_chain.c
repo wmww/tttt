@@ -536,12 +536,7 @@ static Symbol const* alias_in_container(ChainCtx* me, Symbol const* container, S
     Symbol const* members = symbol_members(container);
     if (!members) return nullptr;
     Symbol const* export_equals = members->exports ? symbol_table_get(members->exports, c_sv("export=")) : nullptr;
-    // (Not when the module has other exports: what references from elsewhere reach is tsc's getCommonJsExportEquals
-    // clone of it, which getSymbolIfSameReference doesn't take for the assigned symbol. Named by an alias in scope,
-    // else by its own name)
-    if (export_equals && same_reference(me, export_equals, symbol)) {
-        return symbol_rare(symbol)->export_equals_module ? nullptr : container;
-    }
+    if (export_equals && same_reference(me, export_equals, symbol)) return container;
     // (A module defined by an `export =` has the exports of what it assigns: tsc's getExportsOfModuleWorker, so a
     // `declare namespace rules { export type { Docs } }` merged with the assigned `rules` exports the file's Docs)
     if (export_equals) {

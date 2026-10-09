@@ -1118,7 +1118,6 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
-static Ty const* merged_export_equals_type(Checker* me, Symbol const* symbol, bool in_file);
 static Ty const* own_type_of_symbol(Checker* me, Symbol const* symbol);
 
 Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
@@ -1127,7 +1126,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
-        exports = symbol_rare(assigned)->export_equals_module ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
+        exports = ty_type_of_symbol(me, assigned);
         // Nothing but null, undefined or never assigned is any in JavaScript (tsc's getTypeOfFuncClassEnumModule through
         // getWidenedTypeForAssignmentDeclaration of `export=`, which reports it: TS7008 in expr.c)
         if (file->is_js && !(exports->flags & TYF_ANY) && ty_only_nullable(exports)) exports = ty_intrinsic(me, TY_ANY);
@@ -2049,7 +2048,6 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    if (symbol && symbol_rare(symbol)->export_equals_module) return merged_export_equals_type(me, symbol, false);
     return own_type_of_symbol(me, symbol);
 }
 
@@ -2089,20 +2087,15 @@ static Ty const* own_type_of_symbol(Checker* me, Symbol const* symbol) {
 
 // The value of a symbol that several declarations contribute a value to: function overloads, a function, class
 // or enum merged with a namespace. The members of all of them (members.c: builder_add_merged_value)
-static Ty const* merged_value_type(Checker* me, Symbol const* symbol, bool view) {
-    u64 key[2] = { view ? KEY_MERGED_EXPORT_EQUALS : KEY_MERGED_VALUE, (u64)(uintptr_t)symbol };
+Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
+    u64 key[2] = { KEY_MERGED_VALUE, (u64)(uintptr_t)symbol };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
 
     // With a namespace, class or enum among them it goes by name (`typeof f`), overloads alone are anonymous
     Ty const* named = nullptr;
     Ty const** entries;
-    u32 count = view ? 1 : value_entries(me, symbol, &entries);
-    if (view) {
-        entries = malloc(sizeof(Ty const*));
-        panic_if(!entries, "out of memory");
-        entries[0] = own_type_of_symbol(me, symbol);
-    }
+    u32 count = value_entries(me, symbol, &entries);
     for (u32 i = 0; i < count && !named; i++) {
         if (entries[i]->kind == TY_DECLARED) named = entries[i];
     }
@@ -2117,13 +2110,11 @@ static Ty const* merged_value_type(Checker* me, Symbol const* symbol, bool view)
             ret->declared.state = arena_new(&my arena, TyObjectState);
         }
         ret->declared.merged_value = symbol;
-        ret->declared.export_equals_view = view;
         if (!ret->declared.name->len) ret->declared.name = ty_qualified_name(me, symbol);
     } else {
         // A function body can mention every type parameter in scope
         ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | TYF_COULD_CONTAIN_TYPE_VARIABLES);
         ret->anonymous.merged_value = symbol;
-        ret->anonymous.export_equals_view = view;
         ret->anonymous.ctx = (LowerCtx){ .generic = true };
         ret->anonymous.free_params_unknown = true;
         ret->anonymous.state = arena_new(&my arena, TyObjectState);
@@ -2132,65 +2123,8 @@ static Ty const* merged_value_type(Checker* me, Symbol const* symbol, bool view)
     return ret;
 }
 
-Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
-    return merged_value_type(me, symbol, false);
-}
-
-static bool is_export_equals_view(Ty const* ty) {
-    if (ty->kind == TY_ANONYMOUS) return ty->anonymous.export_equals_view;
-    return ty->kind == TY_DECLARED && ty->declared.export_equals_view;
-}
-
-u32 ty_merged_value_entries(Checker* me, Ty const* ty, Symbol const* symbol, Ty const*** out) {
-    if (is_export_equals_view(ty)) {
-        *out = malloc(sizeof(Ty const*));
-        panic_if(!*out, "out of memory");
-        (*out)[0] = own_type_of_symbol(me, symbol);
-        return 1;
-    }
+u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
     return value_entries(me, symbol, out);
-}
-
-// What a module's `export =` assigns merged with its other exports (export_equals_module): a function, class, enum
-// or namespace has them among its members (merge_commonjs_export_equals() gives it an expando declaration). An
-// object type of an assignment (`module.exports = <expression>`) gets them as properties (tsc's
-// getInitializerTypeFromAssignmentDeclaration), anything else is what is assigned
-// `in_file`: as the module's own `module.exports` (tsc's getTypeOfFuncClassEnumModule of the file: the exports are
-// always merged in, getWidenedTypeForAssignmentDeclaration), else as a reference sees it (tsc's type of
-// getCommonJsExportEquals' clone, where a variable keeps its own type: `module.exports = f; module.exports.x = 1` of a
-// `const f`)
-static Ty const* merged_export_equals_type(Checker* me, Symbol const* symbol, bool in_file) {
-    Ty const* original = own_type_of_symbol(me, symbol);
-    if (!(original->flags & TYF_OBJECT)) return original;
-    bool variable = false;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
-        variable = symbol->decls[i].kind == SYMBOL_DECL_VARIABLE;
-        break;
-    }
-    if (variable && !in_file) return original;
-    // (Of `module.exports = <expression>` or of a variable every export counts, type-only typedefs too: tsc's
-    // getInitializerTypeFromAssignmentDeclaration adds all of them to the type's members, and keeps no symbol or
-    // alias when it added any)
-    if (!variable && !csview_equals(symbol->name, "export=")) return original;
-    // A class or interface instance becomes an anonymous type with its members and the exports (tsc keeps the type's
-    // symbol only if nothing was added)
-    bool instance = original->kind == TY_REFERENCE || (original->kind == TY_DECLARED &&
-        (original->declared.kind == TY_DECLARED_CLASS_INSTANCE || original->declared.kind == TY_DECLARED_INTERFACE));
-    if (!instance && original->kind != TY_DECLARED && original->kind != TY_ANONYMOUS) return original;
-    bool any = false;
-    for (u32 i = 0; i < symbol->exports->count && !any; i++) any = !symbol->exports->entries[i].symbol->is_placeholder;
-    if (!any) return original;
-    if (!instance) return merged_value_type(me, symbol, true);
-    u64 key[2] = { KEY_MERGED_EXPORT_EQUALS_INSTANCE, (u64)(uintptr_t)symbol };
-    Ty const* existing = intern_get(&my links, key, 2);
-    if (existing) return existing;
-    Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT);
-    ret->anonymous.merged_value = symbol;
-    ret->anonymous.export_equals_view = true;
-    ret->anonymous.state = arena_new(&my arena, TyObjectState);
-    *intern_slot(me, &my links, key, 2) = ret;
-    return ret;
 }
 
 static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {

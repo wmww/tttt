@@ -270,9 +270,6 @@ typedef struct SymbolRare {
     // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
     // exportSymbol of a local symbol)
     struct Symbol* export_symbol;
-    // What a module's `export =` assigns while the module has other exports: the module, whose other exports binder_link()
-    // added to this symbol's (tsc's getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`)
-    struct Symbol* export_equals_module;
     // JavaScript members `this.x = v` declares in a class constructor: the first such `this.x` and the constructor,
     // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
     struct Expr const* constructor_assigned;
@@ -709,12 +706,9 @@ void module_ref_syntactic_attributes(ModuleRef const* ref, ModuleAttrs* ret);
 Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes);
 // Whether any pattern ambient module has attributes: only then do attributes change what an import is
 bool binder_has_attributed_patterns(Binder const* me);
-// What importing the module gives: the target of its `export =` if it has one (merged with the module's other
-// exports), else itself
+// What importing the module gives: the target of its `export =` if it has one (the `export =` itself when the
+// module's types made it a namespace, bind_type_exports()), else itself
 Symbol* module_export_equals(Symbol* module);
-// What a module's `export =` assigns that is a value only by the module's other exports (an uninstantiated namespace
-// merge_commonjs_export_equals() gave the module's values)
-bool symbol_is_commonjs_merged_value_only(Symbol const* me);
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier);

@@ -1542,31 +1542,22 @@ Span symbol_decl_error_span(SymbolDecl const* decl) {
 
 static u32 excluded_flags(u32 flags);
 
-// tsc's getCommonJsExportEquals: the module's other exports merge into what `export =` assigns, a conflict with a
-// name that has (an alias to something of) excluded meanings is TS2300 at both (mergeSymbol resolves the target side)
-static void check_export_equals_merge(Symbol const* module, Symbol* export_equals, ErrorCtx* errs) {
-    Symbol const* target = export_equals->flags & SYMBOL_ALIAS ? symbol_resolve_alias(export_equals) : export_equals;
-    if (!target || target == module || target->is_placeholder || target->is_module || !target->exports) return;
-    SymbolTable const* exports = module->exports;
-    for (u32 i = 0; i < exports->count; i++) {
-        Symbol const* source = exports->entries[i].symbol;
-        if (csview_equals(symbol_entry_name(&exports->entries[i]), "export=")) continue;
-        Symbol* existing = symbol_table_get(target->exports, symbol_entry_name(&exports->entries[i]));
-        if (!existing || existing == source) continue;
-        Symbol const* resolved = existing->flags & SYMBOL_ALIAS ? symbol_resolve_alias(existing) : existing;
-        if (!resolved || resolved->is_placeholder || !(resolved->flags & excluded_flags(source->flags))) continue;
-        // (A merge of the checker: each side points at the other's declarations, tsc's addDuplicateDeclarationError,
-        // with reportMergeSymbolError's message)
-        unsigned code = (existing->flags | source->flags) & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
-        for (u32 d = 0; d < existing->decl_count; d++) {
-            Error* error = report_conflict(errs, existing->decls[d].name, code);
-            for (u32 o = 0; o < source->decl_count; o++) add_duplicate_related(error, existing->decls[d].name, source->decls[o].name);
-        }
-        for (u32 d = 0; d < source->decl_count; d++) {
-            Error* error = report_conflict(errs, source->decls[d].name, code);
-            for (u32 o = 0; o < existing->decl_count; o++) add_duplicate_related(error, source->decls[d].name, existing->decls[o].name);
-        }
+// tsgo's hasShadowedNamespace: an `export =` alias the module's types make a namespace (bind_type_exports(), which
+// binder_link() runs later) of a namespace that exports types or namespaces itself
+static bool export_equals_shadows_namespace(Symbol const* module, Symbol* export_equals) {
+    if (!(export_equals->flags & SYMBOL_ALIAS)) return false;
+    bool promoted = false;
+    for (u32 i = 0; i < module->exports->count && !promoted; i++) {
+        Symbol const* other = module->exports->entries[i].symbol;
+        promoted = other != export_equals && (other->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE));
     }
+    if (!promoted) return false;
+    Symbol const* target = symbol_resolve_alias(export_equals);
+    if (!target || !(target->flags & SYMBOL_NAMESPACE) || !target->exports) return false;
+    for (u32 i = 0; i < target->exports->count; i++) {
+        if (symbol_resolved_flags(target->exports->entries[i].symbol) & (SYMBOL_TYPE | SYMBOL_NAMESPACE)) return true;
+    }
+    return false;
 }
 
 static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
@@ -1583,11 +1574,10 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
             // (A CommonJS export's alias is a value: its target may be in a file not declared yet)
             values = (other->flags & SYMBOL_ALIAS && !commonjs ? symbol_resolved_flags(other) : other->flags | (other->flags & SYMBOL_ALIAS ? SYMBOL_VALUE : 0)) & SYMBOL_VALUE;
         }
-        if (values) {
+        if (values || (container->is_module && export_equals_shadows_namespace(container, export_equals))) {
             error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
                 "An export assignment cannot be used in a module with other exported elements.");
         }
-        if (container->is_module && !commonjs) check_export_equals_merge(container, export_equals, errs);
     }
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
@@ -2341,17 +2331,9 @@ Symbol* module_export_equals(Symbol* module) {
     }
     // (`export = C.B` of a static B and a namespace's interface B: the alias, which has both meanings)
     if (assigned->flags & SYMBOL_ALIAS && assigned->alias->value_target) return assigned;
-    // (So is a CommonJS `module.exports = C` that the module's typedefs made a namespace, bind_commonjs_type_exports())
+    // (So is an `export = C` that the module's types made a namespace, bind_type_exports())
     if (assigned->flags & SYMBOL_ALIAS && assigned->flags & SYMBOL_NAMESPACE_MODULE) return assigned;
     return target;
-}
-
-bool symbol_is_commonjs_merged_value_only(Symbol const* me) {
-    if (!symbol_rare(me)->export_equals_module) return false;
-    for (u32 i = 0; i < my decl_count; i++) {
-        if (my decls[i].flags & SYMBOL_VALUE && (my decls[i].kind != SYMBOL_DECL_EXPANDO || my decls[i].node)) return false;
-    }
-    return true;
 }
 
 static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash);
@@ -3242,14 +3224,15 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 check_es_module_symbol(item, module, assigned);
             }
             // (An `export =` of nothing is tsc's unknownSymbol, whose exports are all there is: not the module's
-            // other exports, which only getCommonJsExportEquals' clone of a real target gets)
+            // other exports)
             Symbol* found = assigned && assigned->is_placeholder && assigned->is_unresolved ? nullptr :
                 symbol_get_export(module, port_item_name(item->source_name));
-            // A CommonJS module's `export=` hides its other exports, but for its types (its typedefs: tsc's
-            // bindCommonJSTypeExports moves them to the `export=`), whose value half is the assigned value's property
+            // A module's `export=` hides its other exports, but for its types (tsgo's getExportsOfModuleWorker: those
+            // without a value meaning; bind_type_exports() moves them to the `export=`). A CommonJS module's typedefs'
+            // value half is the assigned value's property
             bool commonjs = assigned && module->is_module && module->module && module->module->file &&
                 module->module->file->is_commonjs;
-            if (commonjs && found && (symbol_resolved_flags(found) & SYMBOL_VALUE)) found = nullptr;
+            if (assigned && found && (symbol_resolved_flags(found) & SYMBOL_VALUE)) found = nullptr;
             if (assigned && (!found || (commonjs && !(symbol_resolved_flags(found) & SYMBOL_VALUE)))) {
                 if (assigned->is_placeholder) {
                     // (tsc's unknownSymbol has no members)
@@ -3617,23 +3600,6 @@ static void retarget_decl(SymbolDecl const* decl, Symbol* symbol) {
     }
 }
 
-// The same for any declaration: those whose node has no symbol to point at (JavaScript assignments) keep none
-static void retarget_decl_if_named(SymbolDecl const* decl, Symbol* symbol) {
-    switch (decl->kind) {
-        case SYMBOL_DECL_VARIABLE:
-        case SYMBOL_DECL_FUNCTION:
-        case SYMBOL_DECL_CLASS:
-        case SYMBOL_DECL_INTERFACE:
-        case SYMBOL_DECL_ENUM:
-        case SYMBOL_DECL_ENUM_MEMBER:
-        case SYMBOL_DECL_TYPE_ALIAS:
-        case SYMBOL_DECL_NAMESPACE:
-            if (decl->node) retarget_decl(decl, symbol);
-            return;
-        default: return;
-    }
-}
-
 static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs);
 
 // tsc's mergeSymbol(): source's declarations (and exports) move to target, whose nodes then point at target. Source is
@@ -3736,16 +3702,17 @@ static bool augmentation_entry_needs_resolving(Symbol const* module, csview name
     return module->is_module && module->module->export_star_count;
 }
 
-// tsc's getCommonJsExportEquals: a module that has other exports next to its `export =` (a CommonJS
-// `module.exports = C; module.exports.x = 1`, its `@typedef`s) adds them to the exports of what `export =` assigns,
-// merging a same-named one in (mergeSymbol). tsc does it to a clone it records as the assigned symbol's merged symbol,
-// which every reference then sees, the module's own file too: here in place, before the augmentations merge into it
-// tsgo's bindCommonJSTypeExports for a CommonJS JavaScript module: the exports that have a type or namespace meaning
-// (its typedefs) become exports of the `export=` symbol itself, which is a namespace by them. An aliasing `export=`
-// (`module.exports = C`) then has a meaning of its own and isn't a pure alias any more: the module's value is still
-// C's (symbol_for_meaning() resolves it), but C isn't what the module is (resolveExternalModuleSymbol and the symbol
-// chain's getSymbolIfSameReference stop at the `export=`), nor does C get the typedefs
-static void bind_commonjs_type_exports(Binder* me, Symbol* module, Symbol* assigned) {
+// tsgo's bindCommonJSTypeExports, for every module and ambient module since TypeScript 7.1: the exports that have a
+// type or namespace meaning (a CommonJS module's typedefs, a TypeScript module's `export type`/`export namespace` next
+// to its `export =`) become exports of the `export=` symbol itself, which is a namespace by them. An aliasing
+// `export=` (`module.exports = C`, `export = C`) then has a meaning of its own and isn't a pure alias any more: the
+// module's value is still C's (symbol_for_meaning() resolves it), but C isn't what the module is
+// (resolveExternalModuleSymbol and the symbol chain's getSymbolIfSameReference stop at the `export=`), nor does C
+// get the types (no merge into C: tsc 6's getCommonJsExportEquals is gone)
+static void bind_type_exports(Binder* me, Symbol* module) {
+    if (!module->is_module || !module->module || module->exports->count < 2 || module->exports->parent) return;
+    Symbol* assigned = symbol_table_get_own(module->exports, c_sv("export="), symbol_name_hash(c_sv("export=")));
+    if (!assigned || assigned->binder != me) return;
     for (u32 i = 0; i < module->exports->count; i++) {
         SymbolEntry* entry = &module->exports->entries[i];
         if (entry->symbol == assigned || !(entry->symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE))) continue;
@@ -3754,81 +3721,6 @@ static void bind_commonjs_type_exports(Binder* me, Symbol* module, Symbol* assig
             symbol_table_insert(assigned->exports, binder_arena(me), symbol_entry_name(entry), entry->hash, entry->symbol);
         }
         assigned->flags |= SYMBOL_NAMESPACE_MODULE;
-    }
-}
-
-static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
-    if (!module->is_module || !module->module || module->exports->count < 2 || module->exports->parent) return;
-    Symbol* assigned = symbol_table_get_own(module->exports, c_sv("export="), symbol_name_hash(c_sv("export=")));
-    if (!assigned) return;
-    if (module->module->file && module->module->file->is_commonjs) {
-        if (assigned->binder == me) bind_commonjs_type_exports(me, module, assigned);
-        return;
-    }
-    // (`export = C.B` of a static B and a namespace's interface B: the alias, which has both meanings)
-    if (assigned->flags & SYMBOL_ALIAS && assigned->alias->value_target) return;
-    Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
-    // TODO: a module (`module.exports = require("./y")`, tsc's clone of the `export=` property) and a symbol of the
-    // shared lib program
-    if (!target || target == module || target->is_placeholder || target->is_module || target->binder != me) return;
-    // (Only what has a type or namespace meaning: tsgo's bindCommonJSTypeExports, values stay hidden)
-    bool any = false;
-    for (u32 i = 0; i < module->exports->count && !any; i++) {
-        any = !csview_equals(symbol_entry_name(&module->exports->entries[i]), "export=") &&
-            (module->exports->entries[i].symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE));
-    }
-    if (!any) return;
-    target->flags |= SYMBOL_VALUE_MODULE;
-    symbol_rare_mut(target)->export_equals_module = module;
-    // (What a function, class, enum or namespace exports is its value's members: an expando declaration, like `f.x = v`
-    // gives. A variable's or an assignment's members are its initializer's)
-    bool has_value_members = (target->flags & SYMBOL_VARIABLE) != 0;
-    for (u32 i = 0; i < target->decl_count && !has_value_members; i++) {
-        SymbolDeclKind kind = target->decls[i].kind;
-        has_value_members = kind == SYMBOL_DECL_EXPANDO || kind == SYMBOL_DECL_ASSIGNMENT || kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY;
-    }
-    if (!has_value_members) symbol_add_decl(target, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
-    symbol_ensure_exports(target);
-    for (u32 i = 0; i < module->exports->count; i++) {
-        SymbolEntry* entry = &module->exports->entries[i];
-        csview name = symbol_entry_name(entry);
-        if (csview_equals(name, "export=")) continue;
-        Symbol* source = entry->symbol;
-        if (!(source->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE))) continue;
-        Symbol* existing = symbol_table_get(target->exports, name);
-        if (existing == source) continue;
-        if (!existing) {
-            symbol_table_insert(target->exports, binder_arena(me), name, entry->hash, source);
-            continue;
-        }
-        // mergeSymbol: an assignment declaration merges with anything, else what may share the name. TODO: tsc reports
-        // the conflict (reportMergeSymbolError); the assigned symbol's own export stays
-        bool assignment = false;
-        for (u32 k = 0; k < existing->decl_count && !assignment; k++) assignment = existing->decls[k].kind == SYMBOL_DECL_ASSIGNMENT;
-        for (u32 k = 0; k < source->decl_count && !assignment; k++) assignment = source->decls[k].kind == SYMBOL_DECL_ASSIGNMENT;
-        if (existing->binder != me || (existing->flags | source->flags) & SYMBOL_ALIAS || source->is_placeholder ||
-            (!assignment && existing->flags & excluded_flags(source->flags))
-        ) {
-            continue;
-        }
-        existing->decl_flags_before = existing->flags;
-        existing->flags |= source->flags;
-        existing->is_ambient |= source->is_ambient;
-        for (u32 k = 0; k < source->decl_count; k++) {
-            symbol_add_decl(existing, source->decls[k]);
-            retarget_decl_if_named(&source->decls[k], existing);
-        }
-        if (source->exports) {
-            symbol_ensure_exports(existing);
-            for (u32 k = 0; k < source->exports->count; k++) {
-                SymbolEntry const* member = &source->exports->entries[k];
-                if (!symbol_table_get(existing->exports, symbol_entry_name(member))) {
-                    symbol_table_insert(existing->exports, binder_arena(me), symbol_entry_name(member), member->hash, member->symbol);
-                }
-            }
-            source->exports = existing->exports;
-        }
-        entry->symbol = existing;
     }
 }
 
@@ -4196,7 +4088,7 @@ void binder_link(Binder* me) {
     // module augmentations)
     merge_into_umd_globals(me);
     for (u32 i = 0, count = my symbol_count; i < count; i++) {
-        if (my symbols[i]->is_module) merge_commonjs_export_equals(me, my symbols[i]);
+        if (my symbols[i]->is_module) bind_type_exports(me, my symbols[i]);
     }
     merge_augmentations(me);
     // Resolving makes placeholder symbols: by index

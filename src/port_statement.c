@@ -494,10 +494,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         ) {
             Span first = *vec_span_at(&alias->alias_path, 0);
             Scope const* scope = alias->symbol->alias->scope;
-            // (A namespace that is a value only by a module's other exports, merge_commonjs_export_equals(), isn't one yet:
-            // tsc checks this before checkExternalModuleExports clones it)
             Symbol const* value_found = scope_resolve(scope, first.sv, SYMBOL_VALUE);
-            if (value_found && symbol_is_commonjs_merged_value_only(value_found)) value_found = nullptr;
             if (!value_found && scope_resolve(scope, first.sv, SYMBOL_NAMESPACE)) {
                 error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
             } else if (!value_found) {

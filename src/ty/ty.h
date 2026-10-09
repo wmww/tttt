@@ -293,9 +293,6 @@ struct Ty {
             // TY_DECLARED_NAMESPACE of a JavaScript `var ns = {}` with expandos (is_js_container()): open-ended like
             // the object literal it is (tsc's getJSContainerObjectType makes it ObjectFlags.JSLiteral)
             bool js_container;
-            // With merged_value: the value of what a module's `export =` assigns plus the module's other exports, see
-            // merged_export_equals_type()
-            bool export_equals_view;
             u32 outer_count; // See type_params
             Symbol const* symbol; // null for tuple targets and synthetics
             struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
@@ -373,7 +370,6 @@ struct Ty {
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
-            bool export_equals_view : 1; // See TyDeclared.export_equals_view
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
             bool module_clone : 1;
@@ -1553,7 +1549,7 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct Sour
 // A JavaScript member that only `this.x = v` assignments declare, one of them in a constructor (tsc's
 // isConstructorDeclaredProperty): its type is what the constructor assigns
 bool ty_is_constructor_declared(Symbol const* symbol);
-u32 ty_merged_value_entries(Checker* me, Ty const* ty, Symbol const* symbol, Ty const*** out); // malloc'd
+u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out); // malloc'd
 Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
 // The symbol's name as printed: its name_span, but an anonymous class expression is called what it's assigned to
 Span ty_symbol_display_name(Symbol const* symbol);
