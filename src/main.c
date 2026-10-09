@@ -640,7 +640,12 @@ static void build_run(Build* me, u32 i) {
     Project const* project = project_set_at(my projects, my order[i]);
     if (!project->readable) {
         ErrorCtx errs = error_ctx_init();
-        error_ctx_global_error_d(&errs, 5083, "Cannot read file '", project->config, "'.");
+        // (tsgo's build task: a config that isn't there is TS6053)
+        if (access(cstr_str(&project->config), F_OK) != 0) {
+            error_ctx_global_error_d(&errs, 6053, "File '", project->config, "' not found.");
+        } else {
+            error_ctx_global_error_d(&errs, 5083, "Cannot read file '", project->config, "'.");
+        }
         VecError shown = {0};
         report_errors(&shown, &errs);
         job->out.pretty = my opts->pretty >= 0 ? my opts->pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
@@ -825,44 +830,90 @@ static bool count_value(int argc, const char** argv, int i) {
     return i + 1 < argc && atoi(argv[i + 1]) > 0;
 }
 
+// tsc's --locale validation (Go's language.Parse, approximately): a 2-3 letter language, then subtags of 1-8 letters
+// or digits separated by `-` or `_` ("en", "ja-jp", "zh_TW", "pt-BR")
+static bool locale_is_valid(char const* locale) {
+    size_t n = 0;
+    while (isalpha((unsigned char)locale[n])) n++;
+    if (n < 2 || n > 3) return false;
+    char const* p = locale + n;
+    while (*p) {
+        if (*p != '-' && *p != '_') return false;
+        p++;
+        size_t k = 0;
+        while (isalnum((unsigned char)p[k])) k++;
+        if (k < 1 || k > 8) return false;
+        p += k;
+    }
+    return true;
+}
+
+static void print_help(void) {
+    println(
+        "The Tess TypeScript Typechecker: checks like `tsc --noEmit` (nothing is emitted)\n\n"
+        "USAGE: tttt [OPTIONS] [TSPATH...]\n\n"
+        "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
+        "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards. Referenced\n"
+        "                projects are read from their sources, not built outputs, and aren't checked\n"
+        "  -b, --build [PROJECT...]  check each project (`.` by default) and everything it references, each\n"
+        "                with its own options, references first (-v, -f are accepted and ignored)\n"
+        "  --stopBuildOnErrors  with -b, stop after the first project with errors\n"
+        "  --pretty [false]  tsc's formats: with colours and code frames and a summary (the default when the\n"
+        "                output is a terminal), else `file(line,col): error TSxxxx: message`\n"
+        "  -q, --quiet   don't print diagnostics (only the summary, when pretty)\n"
+        "  --listFiles   print the program's files after its diagnostics\n"
+        "  --listFilesOnly  print the program's files and stop\n"
+        "  -v, --version print the version of TypeScript tttt checks like\n"
+        "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
+        "                order of union members in messages depends on K\n"
+        "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
+        "                4 threads, else 1). The output doesn't depend on it\n"
+        "  --singleThreaded  one checker on one thread, one project at a time\n"
+        "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
+        "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
+        "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n"
+        "tttt's own (debugging and oracles):\n"
+        "  --time        print how long each phase took to stderr\n"
+        "  --print-ast   print the parsed AST of the last file\n"
+        "  --no-lib      don't load the standard library\n"
+        "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
+        "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)"
+    );
+}
+
 static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
     Options opts = { .paths = argv, .pretty = -1, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
     bool single_threaded = false;
+    // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it
+    // (TS5093): every such error is reported, then nothing is done
+    ErrorCtx arg_errors = error_ctx_init();
+    bool help = false;
+    bool build_first = argc > 1 && (streq(argv[1], "-b") || streq(argv[1], "--b") || streq(argv[1], "--build"));
     for (int i = 1; i < argc; i++) {
+        if (!build_first && argv[i][0] == '-') {
+            char const* name = argv[i] + (argv[i][1] == '-' ? 2 : 1);
+            if (!strcasecmp(name, "build") || (argv[i][1] != '-' && streq(name, "b")) || !strcasecmp(name, "b")) {
+                error_ctx_global_error_d(&arg_errors, 6369, "Option '--build' must be the first command line argument.");
+                continue;
+            }
+            static char const* const build_only[] = { "verbose", "dry", "force", "clean", "stopBuildOnErrors", "builders" };
+            bool only = false;
+            for (u32 k = 0; k < c_arraylen(build_only) && !only; k++) only = !strcasecmp(name, build_only[k]) && argv[i][1] == '-';
+            if (only) {
+                error_ctx_global_error_d(&arg_errors, 5093, "Compiler option '--", name, "' may only be used with '--build'.");
+                if (!strcasecmp(name, "builders") && i + 1 < argc && argv[i + 1][0] != '-') i++;
+                continue;
+            }
+        }
+        if ((streq(argv[i], "--locale") || streq(argv[i], "--Locale")) && i + 1 < argc && !locale_is_valid(argv[i + 1])) {
+            error_ctx_global_error_d(&arg_errors, 6048, "Locale must be an IETF BCP 47 language tag. Examples: 'en', 'ja-jp'.");
+            i++;
+            continue;
+        }
         if (streq(argv[i], "--help") || streq(argv[i], "-h")) {
-            println(
-                "The Tess TypeScript Typechecker: checks like `tsc --noEmit` (nothing is emitted)\n\n"
-                "USAGE: tttt [OPTIONS] [TSPATH...]\n\n"
-                "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
-                "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards. Referenced\n"
-                "                projects are read from their sources, not built outputs, and aren't checked\n"
-                "  -b, --build [PROJECT...]  check each project (`.` by default) and everything it references, each\n"
-                "                with its own options, references first (-v, -f are accepted and ignored)\n"
-                "  --stopBuildOnErrors  with -b, stop after the first project with errors\n"
-                "  --pretty [false]  tsc's formats: with colours and code frames and a summary (the default when the\n"
-                "                output is a terminal), else `file(line,col): error TSxxxx: message`\n"
-                "  -q, --quiet   don't print diagnostics (only the summary, when pretty)\n"
-                "  --listFiles   print the program's files after its diagnostics\n"
-                "  --listFilesOnly  print the program's files and stop\n"
-                "  -v, --version print the version of TypeScript tttt checks like\n"
-                "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
-                "                order of union members in messages depends on K\n"
-                "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
-                "                4 threads, else 1). The output doesn't depend on it\n"
-                "  --singleThreaded  one checker on one thread, one project at a time\n"
-                "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
-                "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
-                "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n"
-                "tttt's own (debugging and oracles):\n"
-                "  --time        print how long each phase took to stderr\n"
-                "  --print-ast   print the parsed AST of the last file\n"
-                "  --no-lib      don't load the standard library\n"
-                "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
-                "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)"
-            );
-            return 0;
-        } else if (!opts.build && (streq(argv[i], "--version") || streq(argv[i], "-v"))) {
+            help = true;
+        } else if (!opts.build && !help && (streq(argv[i], "--version") || streq(argv[i], "-v"))) {
             println("Version " TTTT_TYPESCRIPT_VERSION);
             return 0;
         } else if (streq(argv[i], "--quiet") || streq(argv[i], "-q")) {
@@ -934,6 +985,23 @@ static int run(int argc, const char** argv) {
             // Paths are compacted to the front of argv, which is fine as they never outnumber what we've already read
             opts.paths[opts.path_count++] = argv[i];
         }
+    }
+    if (vec_error_size(&arg_errors.errors)) {
+        cstr text = cstr_null;
+        bool colors = opts.pretty >= 0 ? opts.pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
+        for_each (e, vec_error, &arg_errors.errors) {
+            if (colors) error_format_pretty(&text, e, "\n", cli_file_name);
+            else error_format_plain(&text, e, "\n", cli_file_name);
+        }
+        fputs(cstr_str(&text), stdout);
+        cstr_drop(&text);
+        error_ctx_drop(&arg_errors);
+        return 1;
+    }
+    error_ctx_drop(&arg_errors);
+    if (help) {
+        print_help();
+        return 0;
     }
     if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
     // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise. -b is

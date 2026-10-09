@@ -113,19 +113,24 @@ def actual_diagnostics(out, root):
     return ret
 
 
+# Build-only flags: dropped (tttt prints nothing about builds) only where tsc takes them, with --build first
+BUILD_ONLY = {"--verbose", "-v", "--v", "--force", "-f"}
+
+
 def translate(command, root):
     args = []
+    build_first = bool(command) and command[0] in ("--b", "-b", "--build")
     i = 0
     while i < len(command):
         a = command[i]
-        if a in DROP:
+        if a in BUILD_ONLY and not build_first and a.startswith("--"):
+            args.append(a)  # (tsc's TS5093 without a leading --build)
+        elif a in DROP:
+            pass
+        elif a in DROP_VALUE:
             i += 1
-            continue
-        if a in DROP_VALUE:
-            i += 2
-            continue
-        if a in ("--b", "-b", "--build"):
-            args.append("-b")
+        elif a in ("--b", "-b", "--build"):
+            args.append("-b" if i == 0 else a)  # (TS6369 anywhere else)
         elif a in ("--p", "-p", "--project"):
             args.append("-p")
         elif a.startswith("/"):
