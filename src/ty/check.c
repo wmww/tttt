@@ -2246,6 +2246,8 @@ IndexInfo const* ty_generic_write_index_info(Checker* me, PropertyExpr const* ac
     if (!access->assignment_target || property_private_class(access)) return nullptr;
     if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return nullptr;
     key = ty_regular(me, key);
+    // (A generic index, `string | keyof T` included, defers the whole access: tsc's getIndexedAccessTypeOrUndefined)
+    if (ty_is_generic_index(key)) return nullptr;
     if (key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) && access->form == PROPERTY_EXPR_BRACKET) {
         // (tsc's getIndexedAccessType asks every constituent: the first one that would use an index signature)
         for (u32 i = 0; i < key->composite.types.len; i++) {
