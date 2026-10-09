@@ -1121,8 +1121,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
-        // (In a CommonJS JavaScript module the merge added types only: the value is the assigned one's)
-        exports = symbol_rare(assigned)->export_equals_module && !file->is_commonjs ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
+        exports = symbol_rare(assigned)->export_equals_module ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
         // Nothing but null, undefined or never assigned is any in JavaScript (tsc's getTypeOfFuncClassEnumModule through
         // getWidenedTypeForAssignmentDeclaration of `export=`, which reports it: TS7008 in expr.c)
         if (file->is_js && !(exports->flags & TYF_ANY) && ty_only_nullable(exports)) exports = ty_intrinsic(me, TY_ANY);
@@ -1159,10 +1158,8 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
 static bool is_js_container(Symbol const* symbol, Expr const* value);
 
 // Whether symbol's value declaration makes it a JavaScript container (see value_entry_type())
-static bool has_own_exports(Symbol const* symbol);
-
 static bool symbol_is_js_container(Symbol const* symbol) {
-    if (!has_own_exports(symbol) || !symbol->decl_count) return false;
+    if (!symbol->exports || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
     if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return is_js_container(symbol, decl->node);
     if (decl->kind != SYMBOL_DECL_VARIABLE) return false;
@@ -1360,20 +1357,8 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
 // getJSContainerObjectType). `value` is the initializer or assigned value
-// Whether a symbol has exports of its own, not only the types merge_commonjs_export_equals() gave a CommonJS module's
-// `export=` target (tsgo puts those on the `export=` symbol: `var o = {}; module.exports = o` stays `{}`)
-static bool has_own_exports(Symbol const* symbol) {
-    if (!symbol->exports || !symbol->exports->count) return false;
-    Symbol const* module = symbol_rare(symbol)->export_equals_module;
-    if (!module) return true;
-    for (u32 i = 0; i < symbol->exports->count; i++) {
-        if (symbol->exports->entries[i].symbol->parent != module) return true;
-    }
-    return false;
-}
-
 static bool is_js_container(Symbol const* symbol, Expr const* value) {
-    if (!has_own_exports(symbol) || !value) return false;
+    if (!symbol->exports || !value) return false;
     SourceFile const* file = value->inner_span.source;
     if (!file || !file->is_js) return false;
     Expr const* init = expando_initializer((Expr*)value, true, false);
@@ -2020,11 +2005,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    // (A CommonJS JavaScript module's merge added types only: its value is its own)
-    Symbol const* merged_module = symbol ? symbol_rare(symbol)->export_equals_module : nullptr;
-    if (merged_module && !(merged_module->module && merged_module->module->file && merged_module->module->file->is_commonjs)) {
-        return merged_export_equals_type(me, symbol, false);
-    }
+    if (symbol && symbol_rare(symbol)->export_equals_module) return merged_export_equals_type(me, symbol, false);
     return own_type_of_symbol(me, symbol);
 }
 

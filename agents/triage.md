@@ -196,10 +196,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - A module augmentation's module in the types baseline (`declare module "./test"` of a JS module): tsgo prints
   `typeof import("./test")` from the augmenting file, tttt `typeof import(".")` (jsExportMemberMergedWithModuleAugmentation2);
   naming it from outside the augmentation in the traversal lost two TS tests.
-- tsgo keeps a CommonJS module's typedefs on its export= symbol, which an aliasing export= then doesn't resolve past
-  (resolveExternalModuleSymbol: a non-local alias with a namespace meaning). tttt merges them into the resolved
-  target and emulates the visible effects (hacks.md "CommonJS `export =`"); a real export= symbol with its own type
-  exports would remove those rules.
 - Valgrind reports the thread-local `alias_stack` (scope.c symbol_resolve_alias) as possibly lost in every test that
   resolves an alias (`scripts/test.sh -f importNonExportedMember11`): noise that stops `test.sh` at the first test.
 - JSDoc `@type {() => 'b'}` on an object literal property whose value is an arrow (`n: () => 'b'`): the property's

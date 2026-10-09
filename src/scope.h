@@ -342,6 +342,9 @@ static inline SymbolRare* symbol_rare_mut(Symbol* me) {
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
 // Placeholders mean everything
 Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning);
+// The export `name` of a namespace (as symbol_for_meaning(..., SYMBOL_NAMESPACE) gives it), else of what it resolves
+// to when it is an alias with a namespace meaning of its own (tsc's resolveQualifiedName)
+Symbol const* symbol_namespace_member(Symbol const* me, csview name);
 // A symbol that isn't a module but that a module augmentation (`declare module "./a" {}`) declares too: what an
 // `export =` assigns (tsc's hasNonGlobalAugmentationExternalModuleSymbol of one of its declarations)
 bool symbol_is_augmented_export_equals(Symbol const* me);

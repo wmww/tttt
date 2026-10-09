@@ -9111,18 +9111,18 @@ const baselines = {
         types: true,
     },
     'declarationEmitTwoMergedExportAliases(module=commonjs)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitTwoMergedExportAliases(module=nodenext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitTwoMergedExportAliases(module=preserve)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeAliasTypeParameterExtendingUnknownSymbol': {

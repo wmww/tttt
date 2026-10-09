@@ -675,15 +675,6 @@ static bool is_inside_class(ClassDecl const* class_decl) {
     return false;
 }
 
-// A CommonJS module that exports types (typedefs) next to its `export=`
-static bool commonjs_module_has_types(Symbol const* module) {
-    for (u32 i = 0; module->exports && i < module->exports->count; i++) {
-        if (csview_equals(symbol_entry_name(&module->exports->entries[i]), "export=")) continue;
-        if (module->exports->entries[i].symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE)) return true;
-    }
-    return false;
-}
-
 // A named class expression whose body symbols are named from: its own name is in scope there
 static bool is_inside_class_of(Symbol const* symbol) {
     if (!inside_class_count || !(symbol->flags & SYMBOL_CLASS)) return false;
@@ -697,20 +688,19 @@ static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol
     Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
     if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return with_alternative_containers(me, symbol, container, meaning, out);
     // A JavaScript class expression a CommonJS module exports (`module.exports = class {}`, `exports.C = class {}`),
-    // unless the module has types too, which make its `export=` a namespace of its own rather than the class
-    // (tsgo's bindCommonJSTypeExports: the alias stays unresolved, resolveExternalModuleSymbol)
+    // unless the module's typedefs made its `export=` a namespace of its own (tsgo's resolveExternalModuleSymbol
+    // doesn't resolve it then)
+    Symbol const* export_equals = class_expression && class_expression->is_expression && class_expression->commonjs_module ?
+        symbol_get_export((Symbol*)class_expression->commonjs_module, c_sv("export=")) : nullptr;
     if (class_expression && class_expression->is_expression && class_expression->commonjs_module &&
-        !commonjs_module_has_types(class_expression->commonjs_module)
+        !(export_equals && (export_equals->flags & SYMBOL_ALIAS) && (export_equals->flags & SYMBOL_NAMESPACE_MODULE))
     ) {
         out[0] = class_expression->commonjs_module;
         return 1;
     }
     // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`)
     Symbol const* module = declaring_module(symbol);
-    // (Not through a CommonJS module's `export=` when the module has types too, see above)
-    bool commonjs_namespace = module && module->is_module && module->module && module->module->file &&
-        module->module->file->is_commonjs && commonjs_module_has_types(module);
-    if (module && !commonjs_namespace && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
+    if (module && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
     return 0;
 }
 
