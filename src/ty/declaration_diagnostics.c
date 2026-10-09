@@ -2282,7 +2282,21 @@ bool declaration_diagnostics_wanted(SourceFile const* file) {
     return !(file->loaded_by_import && strstr(cstr_str(&file->canonical_path), "node_modules/"));
 }
 
+// What JavaScript declaration emit reports (the rest of the walk is TypeScript's only so far): a CommonJS module
+// assigning `module.exports` more than once (tsgo's transformSourceFile)
+static void js_declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if ((!options->declaration && !options->composite) || !file->is_commonjs || file->is_stdlib || file->is_config) return;
+    if (file->loaded_by_import && strstr(cstr_str(&file->canonical_path), "node_modules/")) return;
+    Symbol const* module = file->scope ? file->scope->container : nullptr;
+    Symbol const* export_equals = module && module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
+    for (u32 i = 0; export_equals && export_equals->decl_count > 1 && i < export_equals->decl_count; i++) {
+        error_ctx_error_d(errs, export_equals->decls[i].full, 6424, "Multiple 'module.exports' assignments cannot be serialized for declaration emit.");
+    }
+}
+
 void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
+    if (file->is_js) js_declaration_diagnostics_check(file, errs);
     if (!declaration_diagnostics_wanted(file)) return;
     Walk walk = {
         .file = file,

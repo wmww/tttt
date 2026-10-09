@@ -1827,6 +1827,8 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         }
     }
     u32 count = 0;
+    // (`module.exports = v`, `exports.x = v`: tsgo's getAssignmentDeclarationInitializerType keeps their literals)
+    bool commonjs_export = csview_equals(symbol->name, "export=") || (symbol->parent && symbol->parent->is_module);
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
@@ -1834,12 +1836,16 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         // (A constructor function's `F.prototype.x = v` is another symbol than its `this.x = v` to tsc: the
         // prototype's member, not the instance's)
         if ((in_constructor || in_method) && decl->assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
-        types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, decl) :
-            assignment_declaration_type(me, symbol, decl);
+        Ty const* type = commonjs_export && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY ?
+            ty_regular(me, ty_expr_type(me, decl->node)) : assignment_declaration_type(me, symbol, decl);
+        // (A CommonJS export's first assignment of undefined is ignored when there are others: tsgo's
+        // getWidenedTypeForAssignmentDeclaration)
+        if (commonjs_export && i == 0 && symbol->decl_count > 1 && (type->flags & TYF_UNDEFINED)) continue;
+        types[count++] = type;
     }
     // (Object literals are widened together: the union has their properties as optional in each other. Reduced to
-    // subtypes: tsc's getUnionType(types, UnionReduction.Subtype))
-    Ty const* ret = ty_widened_objects(me, count > 1 ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0}));
+    // subtypes: tsc's getUnionType(types, UnionReduction.Subtype), a CommonJS export's literals only, like tsgo's)
+    Ty const* ret = ty_widened_objects(me, count > 1 && !commonjs_export ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0}));
     if (types != stack) free(types);
     // Only methods assign it: what a base class declares it as, else possibly undefined
     Ty const* base_type = in_method && !in_constructor ? base_class_property_type(me, symbol) : nullptr;

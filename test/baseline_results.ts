@@ -19808,7 +19808,7 @@ const baselines = {
     'jsExportAssignmentNonMutableLocation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsExportMemberMergedWithModuleAugmentation': {
         errors: true,
@@ -23441,9 +23441,9 @@ const baselines = {
         types: true,
     },
     'multipleModuleExportsAssignments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'multivar': {
         errors: true,
@@ -53113,7 +53113,7 @@ const baselines = {
     'typedefCrossModule2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typedefCrossModule3': {
         errors: false,
