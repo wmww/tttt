@@ -1203,6 +1203,7 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
         case SYMBOL_DECL_VARIABLE:
         case SYMBOL_DECL_BUILTIN:
         case SYMBOL_DECL_EXPR:
+        case SYMBOL_DECL_SOURCE_PHASE:
             once = SYMBOL_VARIABLE; // `var a; var a;`, a parameter and a `var`: the first one gives the type. TODO: TS2403
             break;
         case SYMBOL_DECL_FUNCTION:
@@ -1499,6 +1500,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             Ty const* type = export_equals_property_type_of(me, symbol);
             return type ? type : ty_intrinsic(me, TY_ERROR);
         }
+        case SYMBOL_DECL_SOURCE_PHASE: return ty_abstract_module_source_type(me);
         default:
             return ty_intrinsic(me, TY_ERROR);
     }

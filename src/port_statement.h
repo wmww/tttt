@@ -58,6 +58,9 @@ typedef struct PortItem {
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
     bool jsdoc; // Of an `@import` tag (PortStatement.jsdoc)
+    // Of a source phase import (PortStatement.source_phase): its module isn't resolved, the default binding is the
+    // module's source (tsgo's getTargetOfImportClause), the others nothing (TS18112)
+    bool source_phase;
     // PORT_IMPORT_ALIAS: an unresolved `import x = A.B` was used as a value, which checked `A` as a value (tsc's
     // markAliasSymbolAsReferenced: checkExpressionCached of the module reference)
     bool value_use_checked;
@@ -113,9 +116,12 @@ typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
-    // `import defer * as ns from "m"`: the import clause, from `defer` to the bindings' end (tsc's ImportClause with
-    // the defer phase modifier, TS18058-TS18060)
-    Span defer_clause;
+    // `import defer * as ns from "m"`, `import source s from "m"`: the import clause, from the phase modifier to the
+    // bindings' end (tsc's ImportClause with a defer or source PhaseModifier, TS18058-TS18060, TS18111-TS18115)
+    Span phase_clause;
+    // The phase modifier is `source` (a source phase import: nothing is resolved, the default binding is an
+    // AbstractModuleSource), else `defer` when phase_clause is valid
+    bool source_phase;
     bool side_effect_only; // `import "./abc"`
     bool is_import_require; // `import a = require("m")`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes

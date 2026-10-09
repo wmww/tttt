@@ -1193,6 +1193,18 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
     }
 }
 
+// tsgo's getGlobalAbstractModuleSourceType: what a source phase import gives, `{}` and TS2318 (once) when the lib
+// doesn't have it (esnext.modulesource)
+Ty const* ty_abstract_module_source_type(Checker* me) {
+    Symbol const* symbol = program_get_global(my program, c_sv("AbstractModuleSource"), SYMBOL_TYPE);
+    if (symbol && (symbol->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS))) {
+        Ty const* type = ty_declared_type_of(me, symbol);
+        if (type->kind == TY_DECLARED && !type->declared.type_params.len) return type;
+    }
+    if (!symbol) error_ctx_global_error_d(my errs, 2318, "Cannot find global type 'AbstractModuleSource'.");
+    return ty_empty_object_type(me);
+}
+
 // tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
 static Ty const* global_disposable_type(Checker* me, char const* name, ErrorCtx* errs) {
     Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);

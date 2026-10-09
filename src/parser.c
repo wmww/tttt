@@ -3136,21 +3136,27 @@ static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
     Parser ahead = parser(&p);
     hop_whitespace(&ahead);
     if (*ahead.pos == '.') {
-        // `import.defer(...)`, `import.defer<T>(...)`: a deferred import call (tsc's MetaProperty callee), one
-        // identifier like the `import` of `import(...)`
+        // `import.defer(...)`, `import.defer<T>(...)`, `import.source?.(...)`: a deferred or source phase import call
+        // (tsgo's IsImportCall of a phase MetaProperty callee), one identifier like the `import` of `import(...)`
         Parser defer = parser(&ahead);
         defer.pos++;
         hop_whitespace(&defer);
-        bool is_defer = hop_start_if_ends_on_word_break(&defer, "defer");
+        bool is_source = false;
+        bool is_defer = hop_start_if_ends_on_word_break(&defer, "defer") ||
+            (is_source = hop_start_if_ends_on_word_break(&defer, "source"));
         if (is_defer) {
             Anchor end = anchor(&defer);
             hop_whitespace(&defer);
-            is_defer = *defer.pos == '(' || *defer.pos == '<';
+            // (A JavaScript file has no type arguments: `import.source<T>(...)` isn't a call there, tsc's
+            // parseCallExpressionRest)
+            is_defer = *defer.pos == '(' || (*defer.pos == '<' && !p.shared->source->is_js) || tok_is(tok_peek(&defer), "?.");
             if (is_defer) {
                 defer.pos = end.start;
                 parse_success(&defer);
                 parse_success(&ahead);
-                *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_IMPORT, .import_defer = true });
+                *ret = expr_identifier(span_from(a), (IdentifierExpr){
+                    .keyword = KEYWORD_IDENTIFIER_IMPORT, .import_defer = !is_source, .import_source = is_source,
+                });
                 ahead = parser(&p);
                 hop_whitespace(&ahead);
             }
@@ -3162,7 +3168,8 @@ static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
             return parse_success(&p);
         }
     }
-    if (*ahead.pos == '<') {
+    // (A source phase import resolves nothing, no module to load: tsgo's fileloader skips IsSourcePhaseImport)
+    if (ret->identifier.import_source || *ahead.pos == '?' || *ahead.pos == '<') {
         // `import<T>(...)`, `import<T>`: type arguments, which the checker rejects (TS1326, tsc's parseCallExpressionRest)
         parse_fail(&ahead);
         return parse_success(&p);
@@ -9331,6 +9338,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         } else if (left_and_ret->call->callable.tag == EXPR_GENERIC_PARAMS && !optional_chain &&
             left_and_ret->call->callable.generic_params->expr.tag == EXPR_IDENTIFIER &&
             left_and_ret->call->callable.generic_params->expr.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+            !left_and_ret->call->callable.generic_params->expr.identifier.import_source &&
             vec_expr_size(&left_and_ret->call->args) &&
             vec_expr_at(&left_and_ret->call->args, 0)->tag == EXPR_LITERAL &&
             vec_expr_at(&left_and_ret->call->args, 0)->literal.tag == VALUE_STRING
@@ -10552,9 +10560,13 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ExprCtx sub_ctx = ctx;
         sub_ctx.min_precedence = new_keyword_precedence;
         CallExpr call = { .uses_new = true };
-        if (*p.pos == '<' && !p.shared->source->is_jsx) {
+        Parser import_p = parser(&p);
+        bool import_callee = *p.pos == 'i' && hop_start_if_ends_on_word_break(&import_p, "import");
+        parse_fail(&import_p);
+        if ((*p.pos == '<' && !p.shared->source->is_jsx) || import_callee) {
             // A type assertion is no member expression (tsc's parseMemberExpressionOrHigher): `new <T>F()` is `new`
-            // of a missing expression, then `< T > F()`
+            // of a missing expression, then `< T > F()`. Nor is `import` (tsc's parsePrimaryExpression: `new
+            // import("m")`, `new import.meta` are `new` of a missing expression, then the import expression)
             expected_expression_error(&p);
             unhop_trivia(&p); // (tsc's missing node is at the `<`'s full start)
             call.callable = expr_implicit_any(span_from_pos(&p));
@@ -11123,8 +11135,10 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             return parse_fail(&p);
         }
         hop_whitespace(&p);
-    } else if (span_equals(name, "defer") && *p.pos != '=' && *p.pos != ',' && !tok_is(tok_peek(&p), "from")) {
-        // (`import defer * as ns from "m"`: the phase modifier, never an import-equals)
+    } else if ((span_equals(name, "defer") || span_equals(name, "source")) && *p.pos != '=' && *p.pos != ',' &&
+        !tok_is(tok_peek(&p), "from")
+    ) {
+        // (`import defer * as ns from "m"`, `import source s from "m"`: the phase modifier, never an import-equals)
         return parse_fail(&p);
     }
     if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
@@ -11381,17 +11395,24 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         }
     } else {
         parse_fail(&type_p);
-        // `import defer * as ns from "m"` (tsc's parseImportDeclarationOrImportEqualsDeclaration: not `import defer
-        // from "m"`, a default import named defer, nor `import defer, ...` / `import defer = ...`)
+        // `import defer * as ns from "m"`, `import source s from "m"` (tsc's parseImportDeclarationOrImportEqualsDeclaration,
+        // shouldParseImportPhaseModifier: not `import defer from "m"`, a default import named defer, nor `import defer,
+        // ...` / `import defer = ...`)
         Parser defer_p = parser(&p);
         Anchor defer_start = anchor(&defer_p);
-        if (!is_export && hop_start_if_ends_on_word_break(&defer_p, "defer")) {
+        bool is_source = false;
+        // (Spelled out: an escaped `s\u006furce` is a name, tsc's currentImportPhaseModifier looks at the token's text)
+        if (!is_export && *defer_p.pos != '\\' && (hop_start_if_ends_on_word_break(&defer_p, "defer") ||
+            (is_source = hop_start_if_ends_on_word_break(&defer_p, "source"))) &&
+            !memchr(defer_start.start, '\\', (size_t)(defer_p.pos - defer_start.start))
+        ) {
             Tok t = tok_peek(&defer_p);
             bool is_defer = tok_is(t, "from") ? *tok_next(&defer_p, t).start != '"' && *tok_next(&defer_p, t).start != '\'' :
                 !tok_is(t, ",") && !tok_is(t, "=");
             if (is_defer) {
                 hop_whitespace(&defer_p);
-                statement.defer_clause = span_from(defer_start);
+                statement.phase_clause = span_from(defer_start);
+                statement.source_phase = is_source;
                 parse_success(&defer_p);
             } else {
                 parse_fail(&defer_p);
@@ -11461,6 +11482,10 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         }
     } else if (parse_import_item_list(&p, !is_export, &statement)) {
         statement.main.tag = PORT_NOOP; // Only the item list is imported, no main import
+    } else if (span_valid(statement.phase_clause) && (*p.pos == '"' || *p.pos == '\'')) {
+        // `import source "m"`: a phase modifier and no bindings (tsc's tryParseImportClause makes an empty clause)
+        statement.main.tag = PORT_NOOP;
+        no_clause = true;
     } else if (!is_export && !statement.main.type_only && tok_is_word(tok_peek(&p))) {
         // `import` and a reserved word (tsc's isStartOfDeclaration says it's an import declaration): no import
         // clause, the module specifier is an expression (tsc's parseModuleSpecifier)
@@ -11474,10 +11499,10 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         while (end > span_start_ptr(statement.main.decl_name) && isspace((unsigned char)end[-1])) end--;
         statement.main.clause = span_make(statement.main.decl_name.source, span_start_ptr(statement.main.decl_name), end);
     }
-    if (span_valid(statement.defer_clause)) {
+    if (span_valid(statement.phase_clause)) {
         char const* end = p.pos;
-        while (end > span_start_ptr(statement.defer_clause) && isspace((unsigned char)end[-1])) end--;
-        statement.defer_clause = span_make(statement.defer_clause.source, span_start_ptr(statement.defer_clause), end);
+        while (end > span_start_ptr(statement.phase_clause) && isspace((unsigned char)end[-1])) end--;
+        statement.phase_clause = span_make(statement.phase_clause.source, span_start_ptr(statement.phase_clause), end);
     }
     hop_whitespace(&p);
 
@@ -11551,7 +11576,12 @@ done:
             }
         }
     }
-    if (span_valid(statement.target_path_span)) {
+    if (statement.source_phase) {
+        statement.main.source_phase = true;
+        for_each (i, vec_port_item, &statement.items) i->source_phase = true;
+    }
+    // (A source phase import resolves nothing, no module to load: tsgo's fileloader skips IsSourcePhaseImport)
+    if (span_valid(statement.target_path_span) && !statement.source_phase) {
         statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
         if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
         // A relative name in an ambient module declaration is never resolved to a file (tsc's collectModuleReferences

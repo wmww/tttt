@@ -287,6 +287,10 @@ done:
 }
 
 Span span_comma_after(Span after) {
+    return span_token_after(after, ",");
+}
+
+Span span_token_after(Span after, char const* token) {
     if (!span_valid(after) || !after.source) return span_null;
     char const* at = span_end_ptr(after);
     char const* file_end = cstr_str(&after.source->contents) + cstr_size(&after.source->contents);
@@ -303,5 +307,6 @@ Span span_comma_after(Span after) {
             break;
         }
     }
-    return at < file_end && *at == ',' ? span_make(after.source, at, at + 1) : span_null;
+    isize len = (isize)strlen(token);
+    return at + len <= file_end && memcmp(at, token, len) == 0 ? span_make(after.source, at, at + len) : span_null;
 }

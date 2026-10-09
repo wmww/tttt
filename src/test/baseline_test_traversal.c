@@ -3203,9 +3203,16 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
         // The `import` of `import("m")` and `import.meta` isn't an expression of its own. The `defer` of
         // `import.defer("m")` is a name, of type any (tsc's MetaProperty callee isn't checked as an expression)
-        if (my identifier.import_defer && my inner_span.sv.size >= 5) {
+        if (my identifier.import_defer || my identifier.import_source) {
+            // (The name, maybe escaped: `import.s\u006furce(...)`)
             Span name = my inner_span;
-            name.sv = csview_from_range(span_end_ptr(name) - 5, span_end_ptr(name));
+            char const* start = span_end_ptr(name);
+            while (start > span_start_ptr(name) && (isalnum((unsigned char)start[-1]) || start[-1] == '\\' ||
+                start[-1] == '{' || start[-1] == '}' || start[-1] == '_' || start[-1] == '$')
+            ) {
+                start--;
+            }
+            name.sv = csview_from_range(start, span_end_ptr(name));
             ctx->any_keeps_rendering = true;
             baseline_test_case_add_type(ctx, name, ty_intrinsic(current_checker, TY_ANY));
         }

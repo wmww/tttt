@@ -96,6 +96,8 @@ Span span_with_member_separator(Span member);
 bool span_only_trivia_between(char const* from, char const* to, bool allow_semicolon);
 /// The `,` that follows `after` (whitespace and comments between), else null
 Span span_comma_after(Span after);
+/// The token (punctuation) that follows `after` (whitespace and comments between), else null
+Span span_token_after(Span after, char const* token);
 int span_cmp(Span a, Span b);
 void cstr_append_span(cstr* target, Span me);
 

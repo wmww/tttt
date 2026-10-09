@@ -1126,6 +1126,7 @@ static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* ex
         case SYMBOL_DECL_COMMONJS_MODULE:
         case SYMBOL_DECL_COMMONJS_EXPORTS:
         case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY:
+        case SYMBOL_DECL_SOURCE_PHASE:
         case SYMBOL_DECL_NONE:
             break;
     }
@@ -1731,8 +1732,9 @@ void scope_add_port(Scope* me, PortItem* item) {
     item->symbol = symbol;
 
     bool needs_module = item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC;
-    if (needs_module && !item->module_ref) {
-        // The parser complained
+    // (A source phase import has no module: its default binding is resolved like any alias, see resolve_alias_target())
+    if (needs_module && !item->module_ref && !(item->source_phase && item->tag == PORT_IMPORT_DEFAULT)) {
+        // The parser complained, or a source phase import's other bindings (TS18112), which are any
         symbol->alias->target = binder_new_placeholder(my binder, item->decl_name, item->full_span);
         symbol->alias->state = ALIAS_DONE;
     }
@@ -2976,6 +2978,16 @@ static Symbol* resolve_alias_target(Symbol* me) {
         }
         unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
         return resolve_if_pure_alias(found);
+    }
+    if (item->source_phase) {
+        // `import source s from "m"`: no module, a variable of the module's source type (tsgo's
+        // getTargetOfImportClause). Named and namespace imports (TS18112) are of nothing, any
+        if (item->tag != PORT_IMPORT_DEFAULT) return nullptr;
+        Symbol* target = binder_new_symbol(my binder, my name, SYMBOL_FUNCTION_SCOPED_VARIABLE);
+        target->name_span = item->decl_name;
+        symbol_add_decl(target, (SymbolDecl){ .kind = SYMBOL_DECL_SOURCE_PHASE, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE,
+            .node = item, .name = item->decl_name, .full = item->full_span });
+        return target;
     }
     Symbol* module = nullptr;
     Symbol* assigned = nullptr; // What its `export =` names, if it has one

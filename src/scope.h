@@ -139,6 +139,9 @@ typedef enum SymbolDeclKind : uint8_t {
     // Symbol const*: what `export =` names in a module a named import is from; the value is its property of the
     // import's name (tsc's symbolFromVariable in getExternalModuleMember)
     SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
+    // PortItem const*: what the default binding of a source phase import (`import source s from "m"`) stands for, a
+    // variable of the global AbstractModuleSource type (tsgo's getTargetOfImportClause)
+    SYMBOL_DECL_SOURCE_PHASE,
 } SymbolDeclKind;
 
 // What kind of assignment a SYMBOL_DECL_ASSIGNMENT is (tsc's AssignmentDeclarationKind, as far as typing cares)

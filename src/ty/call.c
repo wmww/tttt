@@ -3302,7 +3302,11 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     }
     ModuleRef const* ref = identifier_module_ref(&callee->identifier);
     Ty const* module = ty_intrinsic(me, TY_ANY);
-    if (ref && ref->module && !ref->module->is_shorthand_module) {
+    // `import.source("m")`: a promise of the module's source, whatever the module (tsgo's checkImportCallExpression;
+    // no arguments: any, like any import call)
+    if (callee->identifier.import_source && vec_expr_size(&call->args)) {
+        module = ty_abstract_module_source_type(me);
+    } else if (ref && ref->module && !ref->module->is_shorthand_module) {
         module = ty_dynamic_import_module_type(me, ref->module, ref->span.source);
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);

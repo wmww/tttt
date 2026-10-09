@@ -3009,7 +3009,13 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
         return;
     }
     Expr const* callee = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
-    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.import_defer) {
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.import_source) {
+        if (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_NODENEXT && module != MODULE_KIND_PRESERVE) {
+            error_ctx_grammar_error_d(errs, my inner_span, 18113, "Source phase imports are only supported when the "
+                "'--module' option is set to 'esnext', 'nodenext', or 'preserve'.");
+            return;
+        }
+    } else if (callee->tag == EXPR_IDENTIFIER && callee->identifier.import_defer) {
         if (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE) {
             error_ctx_grammar_error_d(errs, my inner_span, 18060,
                 "Deferred imports are only supported when the '--module' flag is set to 'esnext' or 'preserve'.");
@@ -3019,6 +3025,11 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
         error_ctx_grammar_error_d(errs, my inner_span, 1323,
             "Dynamic imports are only supported when the '--module' flag is set to 'es2020', 'es2022', 'esnext', "
             "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', 'node20', or 'nodenext'.");
+        return;
+    }
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.import_source && my call->optional_chain) {
+        Span question_dot = span_token_after(callee->inner_span, "?.");
+        error_ctx_grammar_error_d(errs, question_dot, 18114, "Optional chaining cannot be used with 'import.source'.");
         return;
     }
     if (my call->callable.tag == EXPR_GENERIC_PARAMS) {

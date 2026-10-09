@@ -132,6 +132,33 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 }
 
 
+// What tsc's checkGrammarImportClause says about a phase modifier (`import defer`, `import source`), 0 if nothing
+static unsigned phase_clause_error(PortStatement const* me) {
+    if (!span_valid(my phase_clause)) return 0;
+    ModuleKind module = compiler_options()->module;
+    bool name = my main.tag == PORT_IMPORT_DEFAULT;
+    // (The clause is the modifier alone when there are no bindings: `import source "m"`)
+    bool bindings = my main.tag == PORT_IMPORT_GATHER || vec_port_item_size(&my items) ||
+        my phase_clause.sv.size > (my source_phase ? 6 : 5);
+    bindings &= !(name && !vec_port_item_size(&my items));
+    if (my source_phase) {
+        if (bindings) return 18112;
+        if (!name) return 18111;
+        if (module == MODULE_KIND_ESNEXT || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE) {
+            // (tsc's getEmitSyntaxForModuleSpecifierExpression, of a string literal specifier)
+            bool string_specifier = span_valid(my target_path_span);
+            return string_specifier && source_file_emit_module_kind(my phase_clause.source) == MODULE_KIND_COMMONJS ? 18115 : 0;
+        }
+        return 18113;
+    }
+    if (name) return 18058;
+    if (!bindings) return 18117;
+    bool named = my main.tag == PORT_NOOP;
+    for_each (i, vec_port_item, &my items) named |= i->tag != PORT_IMPORT_GATHER;
+    if (named) return 18059;
+    return module == MODULE_KIND_ESNEXT || module == MODULE_KIND_PRESERVE ? 0 : 18060;
+}
+
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
     if (my bad_specifier) expr_lookup_names(my bad_specifier, scope, nullptr);
@@ -166,16 +193,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     // (An import clause with a grammar error resolves nothing either: tsc's checkImportDeclaration skips its bindings
     // when checkGrammarImportClause reports, TS1363 or a deferred import's TS18058-TS18060)
     if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items)) unchecked = true;
-    if (span_valid(my defer_clause)) {
-        ModuleKind module = compiler_options()->module;
-        bool named = false;
-        for_each (i, vec_port_item, &my items) named |= i->tag != PORT_IMPORT_GATHER;
-        if (my main.tag == PORT_IMPORT_DEFAULT || named || (my main.tag == PORT_NOOP && !vec_port_item_size(&my items)) ||
-            (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE)
-        ) {
-            unchecked = true;
-        }
-    }
+    if (phase_clause_error(me)) unchecked = true;
     if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
@@ -505,19 +523,37 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         error_ctx_grammar_error_d(errs, span_make(my keyword_span.source, start, end), 1363,
             "A type-only import can specify a default import or named bindings, but not both.");
     }
-    // tsc's checkGrammarImportClause: a deferred import is of a namespace, where the module format can defer it
-    if (span_valid(my defer_clause)) {
-        ModuleKind module = compiler_options()->module;
-        bool named = false;
-        for_each (i, vec_port_item, &my items) named |= i->tag != PORT_IMPORT_GATHER;
-        if (my main.tag == PORT_IMPORT_DEFAULT) {
-            error_ctx_grammar_error_d(errs, my defer_clause, 18058, "Default imports are not allowed in a deferred import.");
-        } else if (named || (my main.tag == PORT_NOOP && !vec_port_item_size(&my items))) {
-            error_ctx_grammar_error_d(errs, my defer_clause, 18059, "Named imports are not allowed in a deferred import.");
-        } else if (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE) {
-            error_ctx_grammar_error_d(errs, my defer_clause, 18060,
+    // tsc's checkGrammarImportClause: a deferred import is of a namespace, where the module format can defer it; a
+    // source phase import is of a default binding alone, where the module format has them
+    switch (phase_clause_error(me)) {
+        case 18058:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18058, "Default imports are not allowed in a deferred import.");
+            break;
+        case 18117:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18117, "A deferred import must specify a namespace binding.");
+            break;
+        case 18059:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18059, "Named imports are not allowed in a deferred import.");
+            break;
+        case 18060:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18060,
                 "Deferred imports are only supported when the '--module' flag is set to 'esnext' or 'preserve'.");
-        }
+            break;
+        case 18112:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18112,
+                "Named and namespace imports are not allowed in a source phase import.");
+            break;
+        case 18111:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18111, "A source phase import must specify a local binding.");
+            break;
+        case 18115:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18115,
+                "Source phase imports are not allowed on statements that compile to CommonJS 'require' calls.");
+            break;
+        case 18113:
+            error_ctx_grammar_error_d(errs, my phase_clause, 18113, "Source phase imports are only supported when the "
+                "'--module' option is set to 'esnext', 'nodenext', or 'preserve'.");
+            break;
     }
     port_item_check_export_equals_property(&my main, errs);
     for_each (i, vec_port_item, &my items) port_item_check_export_equals_property(i, errs);

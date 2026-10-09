@@ -1229,6 +1229,8 @@ void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attr
 // `import(x)`: x is a string (TS7036)
 void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx* errs);
 void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs);
+// tsgo's getGlobalAbstractModuleSourceType: the type of a source phase import (`{}` and TS2318 without the lib)
+Ty const* ty_abstract_module_source_type(Checker* me);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
 TupleShape const* ty_tuple_shape(Ty const* ty);

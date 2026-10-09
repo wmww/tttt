@@ -77,6 +77,7 @@ typedef struct IdentifierExpr {
     bool super_invalid : 1; // Where `super` can't be (an error was reported): the error type
     bool class_base : 1; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
     bool import_defer : 1; // `import.defer` of `import.defer("m")` (the identifier spans both): a deferred import call
+    bool import_source : 1; // `import.source` of `import.source("m")`: a source phase import call (like import_defer)
     bool call_child : 1; // The callee or an argument of a call (not `new`): `await(x)` is TS2311 when not found
     // `x` of `x.length`, `x.push(...)`, `x[i] = v`...: EvolvingArrayOp, see ty_is_evolving_array_operation_target()
     uint8_t evolving_op : 2;
