@@ -1516,8 +1516,15 @@ static Symbol const* shorthand_module_of(PortItem const* item, BaselineTestCase*
     return module;
 }
 
+static void port_statement_compile_test_info_inner(PortStatement const* me, BaselineTestCase* ctx);
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
     if (my jsdoc) return;
+    ctx->usage_attributes = my attributes;
+    port_statement_compile_test_info_inner(me, ctx);
+    ctx->usage_attributes = nullptr;
+}
+
+static void port_statement_compile_test_info_inner(PortStatement const* me, BaselineTestCase* ctx) {
     shorthand_module_of(&my main, ctx);
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT:

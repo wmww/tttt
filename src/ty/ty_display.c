@@ -8,6 +8,7 @@
 #include "source_file.h"
 #include "callable_type.h"
 #include "symbol_chain.h"
+#include "import_attributes.h"
 #include "enum_decl.h"
 #include "unicode_identifiers.h"
 #include "port_statement.h"
@@ -235,6 +236,9 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando && !top_level;
 }
 
+static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
+static bool is_identifier_name(csview name);
+
 // `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode), named from a place
 // as program_module_display_name() says
 static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
@@ -257,7 +261,39 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     } else {
         out(d, name);
     }
-    if (resolution_mode) out_lit(d, ", { with: { \"resolution-mode\": \"import\" } }");
+    // The attributes of the import or export the name is printed for, when its specifier is this module (tsgo's
+    // createImportAttributesForModuleSpecifier: `resolution-mode` first, then the string-valued ones by name)
+    ImportAttributes const* attributes = d.usage_attributes && d.usage_ref && d.usage_ref->module == module ?
+        d.usage_attributes : nullptr;
+    struct { csview name; Expr const* value; } found[16];
+    u32 count = 0;
+    if (attributes) {
+        for_each (i, vec_import_attribute, &attributes->elements) {
+            if (count == c_arraylen(found)) break;
+            if (i->value.tag != EXPR_LITERAL || i->value.literal.tag != VALUE_STRING) continue;
+            csview name = i->name.sv;
+            if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
+            u32 at = count++;
+            while (at > 0 && csview_cmp(&found[at - 1].name, &name) > 0) {
+                found[at] = found[at - 1];
+                at--;
+            }
+            found[at].name = name;
+            found[at].value = &i->value;
+        }
+    }
+    if (resolution_mode || count) {
+        out_lit(d, ", { with: { ");
+        if (resolution_mode) out_lit(d, "\"resolution-mode\": \"import\"");
+        for (u32 i = 0; i < count; i++) {
+            if (i || resolution_mode) out_lit(d, ", ");
+            if (is_identifier_name(found[i].name)) out(d, found[i].name);
+            else display_quoted_string(d, found[i].name, false, true);
+            out_lit(d, ": ");
+            display_quoted_string(d, cstr_sv(&found[i].value->literal.string), false, true);
+        }
+        out_lit(d, " } }");
+    }
     out_lit(d, ")");
     cstr_drop(&module_name);
 }

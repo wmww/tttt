@@ -73,6 +73,7 @@ typedef struct BaselineTestCase {
     // Where the traversal is: types are printed the way they're named from there
     struct Scope const* enclosing;
     struct ModuleRef const* usage_ref; // See TyDisplay.usage_ref: set while an import or export name is added
+    struct ImportAttributes const* usage_attributes; // See TyDisplay.usage_attributes
     // The class whose constructor's parameter properties are being walked: their names are its members (`C.x`)
     Span parameter_property_class;
     struct Symbol const* class_symbol; // The class whose members are being walked

@@ -2296,6 +2296,9 @@ typedef struct TyDisplay {
     // The module specifier of the import or export declaration whose name is printed (tsc's
     // tryGetModuleSpecifierFromDeclaration of the enclosing declaration): its usage mode picks the specifier ending
     struct ModuleRef const* usage_ref;
+    // ... and its import attributes (`with { type: "json" }`), which an `import("m")` naming that module repeats (tsgo's
+    // getSpecifierForModuleSymbol: originalImportAttributesType)
+    struct ImportAttributes const* usage_attributes;
     bool fully_qualified;
     // Printing for the types baseline or declaration emit: tsc's typeToTypeNode, which reuses annotation nodes from the
     // source (see display_signature()) and can't name a local alias

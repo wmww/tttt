@@ -2997,12 +2997,15 @@ cstr program_module_specifier_ending(
     // An import that already names it (computeModuleSpecifiers' existingSpecifier, by the file's include reasons)
     SpecifierImport* imports = malloc(sizeof(SpecifierImport) * (importing->module_ref_count + 1));
     u32 import_count = 0;
+    // (Only the first import of it counts: one of another mode means none, tsgo's computeModuleSpecifiers)
+    bool seen_target = false;
     for (u32 i = 0; i < importing->module_ref_count; i++) {
         ModuleRef const* ref = importing->module_refs[i];
         if (ref->is_declaration || ref->ambient_only || ref == importing->helpers_ref || ref == importing->jsx_runtime_ref) continue;
         SpecifierMode mode = program_usage_mode(me, importing, ref);
         imports[import_count++] = (SpecifierImport){ .text = cstr_sv(&ref->path), .mode = mode };
-        if (ref->file != target) continue;
+        if (ref->file != target || seen_target) continue;
+        seen_target = true;
         if (mode != wanted && mode != SPECIFIER_MODE_NONE && wanted != SPECIFIER_MODE_NONE) continue;
         free(imports);
         return cstr_clone(ref->path);

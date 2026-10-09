@@ -49913,17 +49913,17 @@ const baselines = {
     'typeOnlyESMImportFromCJS(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeOnlyESMImportFromCJS(module=node20)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeOnlyESMImportFromCJS(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeQuery': {
         errors: true,
@@ -50273,27 +50273,27 @@ const baselines = {
     'importAssertion2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion2(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion2(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion3(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion3(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion4': {
         errors: true,
@@ -50338,27 +50338,27 @@ const baselines = {
     'importAttributes2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes2(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes2(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes3(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes3(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes4': {
         errors: true,
