@@ -7,6 +7,7 @@
 #include "program.h"
 #include "port_statement.h"
 #include "function_impl.h"
+#include "callable_type.h"
 #include "class_decl.h"
 #include "interface_decl.h"
 #include <math.h>
@@ -393,6 +394,13 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
                 // declares the member, not its host. PROTOTYPE: JavaScript keeps 6.0's until its rework, todo entry 8)
                 if (my decls[j].kind == SYMBOL_DECL_EXPANDO && !my decls[j].full.source->is_js) continue;
                 if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) {
+                    // (A JavaScript function's `@overload` tags are declarations of their own before it, at their tag
+                    // names: tsgo's reparsed signatures)
+                    FunctionImpl const* function = my decls[j].kind == SYMBOL_DECL_FUNCTION ? my decls[j].node : nullptr;
+                    for (u32 o = 0; function && o < function_impl_rare(function)->jsdoc_overload_count; o++) {
+                        Span at = function_impl_rare(function)->jsdoc_overloads[o].callable->function->full_span;
+                        if (span_valid(at) && at.sv.size > 1) vec_span_push(&ret, span_make(at.source, at.sv.buf + 1, at.sv.buf + at.sv.size));
+                    }
                     vec_span_push(&ret, my decls[j].full);
                     assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;
                     jsdoc |= span_is_jsdoc_tag(my decls[j].full) || is_delayed_jsdoc_decl(&my decls[j]);

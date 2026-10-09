@@ -13,9 +13,6 @@ typedef struct GenericItem {
     bool extends_explicit : 1;
     bool fallback_explicit : 1; // fallback is set
     bool jsdoc : 1; // A JSDoc `@template`: not part of the baselines' walk
-    // A JSDoc `@overload` in its host's comment: the host's `@template` of that name (symbol_ref, set when the host's
-    // names are resolved), which it doesn't declare again (tsc: the same TypeParameterDeclaration)
-    bool jsdoc_shared : 1;
     TypeNode extends;
     Span extends_span; // Null for a JSDoc `@template`
     TypeNode* fallback; // Owned, the default (`= T`); null without one

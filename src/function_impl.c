@@ -377,13 +377,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (js) identifier_type_set_jsdoc_host(saved_ret_host);
     }
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count; i++) {
-        for_each (item, vec_generic_item, &function_impl_rare(me)->jsdoc_overloads[i].callable->function->generic.items) {
-            if (!item->jsdoc_shared) continue;
-            for_each (own, vec_generic_item, &my generic.items) {
-                if (name_equals(own->name.sv, item->name.sv)) item->symbol_ref = own->owned_symbol;
-            }
-        }
         type_lookup_names(&function_impl_rare(me)->jsdoc_overloads[i], function_scope, errs);
+        // (A JSDoc `@overload`'s implementation is its host)
+        if (function_impl_rare(me)->jsdoc_overloads[i].tag == TYPE_CALLABLE) {
+            function_impl_rare_mut(function_impl_rare(me)->jsdoc_overloads[i].callable->function)->overload_implementation = me;
+        }
     }
     if (function_impl_rare(me)->jsdoc_signature_type) {
         type_lookup_names(function_impl_rare(me)->jsdoc_signature_type, names, errs);
@@ -739,8 +737,8 @@ static void report_pattern_initializers(Binding const* me, ErrorCtx* errs) {
     }
 }
 
-// JSDoc `@overload`s: an overload without `@returns` implicitly returns any (TS7012, tsc's reportImplicitAny of a
-// JSDocSignature), and each has to fit the implementation (TS2394): both at the tag's name. `name` is the
+// JSDoc `@overload`s: an overload without `@returns` implicitly returns any (TS7010, tsgo's reportImplicitAny of the
+// reparsed declaration), and each has to fit the implementation (TS2394): both at the tag's name. `name` is the
 // implementation's (a constructor's is its keyword, which the class knows)
 void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, ErrorCtx* errs) {
     if (!function_impl_rare(me)->jsdoc_overload_count || !my has_body) return;
@@ -753,9 +751,11 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
         Span full = overload->full_span;
         Span tag_name = span_valid(full) && full.sv.size > 1 ?
             span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size) : full;
-        if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name)) {
-            error_ctx_error_d(errs, tag_name, 7012,
-                "This overload implicitly returns the type 'any' because it lacks a return type annotation.");
+        if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name) &&
+            span_valid(name)
+        ) {
+            // (tsgo's reparsed overload is a declaration without a body: reportImplicitAny's TS7010 with its name)
+            error_ctx_error_d(errs, tag_name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
         }
         overloads[count] = overload;
         names[count++] = tag_name;

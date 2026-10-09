@@ -1980,7 +1980,9 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
         if (function->has_body) impl = function;
     }
     if (!impl || impl == failed->function) return;
-    Signature const* sig = single_call_or_construct(me, ty_function_type(me, impl));
+    // (A JSDoc `@overload` host's type is its overloads: its own signature)
+    Signature const* sig = function_impl_rare(impl)->jsdoc_overload_count ? ty_implementation_signature(me, impl) :
+        single_call_or_construct(me, ty_function_type(me, impl));
     if (!sig) return;
     Signature* impl_sig = (Signature*)sig;
     // (Its check may be the first full one of a context-sensitive function argument after the failing one, which then
@@ -2001,6 +2003,13 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 // Where a signature is declared, as tsc's createDiagnosticForNode(signature.declaration) points at it
 static Span signature_decl_span(Signature const* sig) {
     while (sig->target) sig = sig->target;
+    // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)
+    if (sig->function && sig->function->jsdoc_callback && span_valid(sig->function->full_span) &&
+        csview_starts_with(sig->function->full_span.sv, "@overload")
+    ) {
+        Span full = sig->function->full_span;
+        return span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size);
+    }
     if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
     if (sig->function && span_valid(function_impl_member_name(sig->function))) return function_impl_member_name(sig->function); // A method signature
     if (span_valid(sig->name_span)) return sig->name_span;

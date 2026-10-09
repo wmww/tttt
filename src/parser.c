@@ -3544,6 +3544,7 @@ typedef struct JsDocTag {
     TypePredicateNode* predicate;
     bool has_default;
     TypeNode default_type; // `@template [T=D]`, owned while has_default
+    const char* default_start; // Where D starts (to parse it again)
     // From a JSDoc comment before the one right before the host: only its `@overload` tags (with their children and
     // the comment's `@template`s) are kept, nothing else about the host (tsc's filterOwnedJSDocTags)
     bool earlier;
@@ -3901,6 +3902,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                             if (tag.has_default) type_drop(&tag.default_type);
                             tag.default_type = type;
                             tag.has_default = true;
+                            tag.default_start = before;
                         } else {
                             while (before < end && (*before == ' ' || *before == '\t')) before++;
                             parse_error(&e, span_make(source, before, before + (before < end)), 1110, "Type expected.");
@@ -4733,8 +4735,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     jsdoc_find_param_issues(tags, function);
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
     // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
-    // (getEffectiveTypeParameterDeclarations of a JSDocSignature)
-    if (!function_impl_rare(function)->jsdoc_overload_count) {
+    // (getEffectiveTypeParameterDeclarations of a JSDocSignature). Only of a function declaration, class method or
+    // constructor: tsgo's reparser ignores them elsewhere (arrows, function expressions, object literal methods)
+    if (!function_impl_rare(function)->jsdoc_overload_count && declaration && !function->accessor) {
         for_each (i, vec_jsdoc_tag, tags) {
             if (i->kind != JSDOC_TAG_OVERLOAD) continue;
             isize children = 0;
@@ -4743,13 +4746,33 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             if (i->earlier) {
                 type.callable->function->generic = jsdoc_comment_template_generic(tags, i->comment);
             } else {
-                // (The host's own comment: its `@template`s, which are the host's too)
+                // (The host's own comment: its `@template`s, which each overload declares again, tsgo's
+                // gatherTypeParameters: the host takes the tags' types later, the overloads parse them again)
                 Generic* generic = &type.callable->function->generic;
                 for_each (t, vec_jsdoc_tag, tags) {
                     if (t->kind != JSDOC_TAG_TEMPLATE || t->earlier || !span_valid(t->name)) continue;
-                    list_push(vec_generic_item, &generic->items, (GenericItem){
-                        .name = t->name, .full_span = t->name, .jsdoc = true, .jsdoc_shared = true,
-                    });
+                    GenericItem item = {
+                        .name = t->name, .full_span = t->name, .jsdoc = true,
+                        .is_const = t->is_const, .is_in = t->is_in, .is_out = t->is_out,
+                    };
+                    if (t->has_type && jsdoc_reparse_type(p, t, &item.extends)) {
+                        item.extends.from_jsdoc = false;
+                        item.extends_explicit = true;
+                    }
+                    if (t->has_default && t->default_start) {
+                        const char* c = t->default_start;
+                        TypeNode fallback;
+                        isize errors = vec_error_size(&p->shared->jsdoc_errors);
+                        if (parse_jsdoc_bare_type(p, &c, source_file_start(p->shared->source) + cstr_size(&p->shared->source->contents), &fallback)) {
+                            item.fallback = c_new(TypeNode, fallback);
+                            item.fallback_explicit = true;
+                        }
+                        while (vec_error_size(&p->shared->jsdoc_errors) > errors) {
+                            error_drop(vec_error_back_mut(&p->shared->jsdoc_errors));
+                            vec_error_pop(&p->shared->jsdoc_errors);
+                        }
+                    }
+                    list_push(vec_generic_item, &generic->items, item);
                 }
             }
             FunctionImplRare* rare = function_impl_rare_mut(function);

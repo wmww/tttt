@@ -337,6 +337,47 @@ static void prop_add_shared_decl_spans(Checker* me, Prop* prop, Span const* span
     prop_add_decl_spans(me, prop, spans, count);
 }
 
+// A JavaScript method's `@overload` tags are declarations before it, at their tag names (tsgo's reparsed signatures):
+// the declarations of the method's prop again, each method's overloads first
+static void add_jsdoc_overload_decl_spans(Checker* me, Prop* prop, ClassDecl const* class_decl, ClassItem const* first, bool static_side) {
+    u32 overloads = 0, methods = 0;
+    for_each (other, vec_class_item, &class_decl->items) {
+        if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
+            !cstr_eq(&other->method.name_string, &first->method.name_string)
+        ) {
+            continue;
+        }
+        methods++;
+        overloads += function_impl_rare(&other->method.func)->jsdoc_overload_count;
+    }
+    if (!overloads || prop->decl == prop_decl_none()) return;
+    Span* spans = arena_new_n(&my arena, Span, overloads + methods + prop->decl->decl_span_count);
+    u32 count = 0;
+    for_each (other, vec_class_item, &class_decl->items) {
+        if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
+            !cstr_eq(&other->method.name_string, &first->method.name_string)
+        ) {
+            continue;
+        }
+        FunctionImplRare const* rare = function_impl_rare(&other->method.func);
+        for (u32 o = 0; o < rare->jsdoc_overload_count; o++) {
+            Span at = rare->jsdoc_overloads[o].callable->function->full_span;
+            if (span_valid(at) && at.sv.size > 1) spans[count++] = span_make(at.source, at.sv.buf + 1, at.sv.buf + at.sv.size);
+        }
+        for (u32 k = 0; k < prop->decl->decl_span_count; k++) {
+            if (span_eq(prop->decl->decl_spans[k], other->span)) spans[count++] = other->span;
+        }
+    }
+    // (Whatever else it had, an interface's: after)
+    for (u32 k = 0; k < prop->decl->decl_span_count; k++) {
+        bool seen = false;
+        for (u32 q = 0; q < count && !seen; q++) seen = span_eq(spans[q], prop->decl->decl_spans[k]);
+        if (!seen) spans[count++] = prop->decl->decl_spans[k];
+    }
+    prop->decl->decl_spans = spans;
+    prop->decl->decl_span_count = count;
+}
+
 // tsc's isThislessType: types that syntactically can't mention `this` (keywords, literals, arrays of those, names
 // whose type arguments are those). Anything else is assumed to
 static bool type_node_is_thisless(TypeNode const* node) {
@@ -1377,7 +1418,8 @@ static void builder_add_class_items(
                         functions = arena_new_n(&my arena, FunctionImpl const*, count);
                         for (u32 f = 0; f < count; f++) functions[f] = function_impl_rare(method)->jsdoc_overloads[f].callable->function;
                     }
-                    Span* spans = arena_new_n(&my arena, Span, visible);
+                    u32 span_cap = visible;
+                    Span* spans = arena_new_n(&my arena, Span, span_cap);
                     u32 span_count = 0;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other != i && other->tag == CLASS_ITEM_METHOD && !other->method.accessor &&
@@ -1418,6 +1460,7 @@ static void builder_add_class_items(
                     prop->thisless = true;
                     for (u32 f = 0; f < count; f++) prop->thisless &= function_is_thisless(functions[f]);
                     prop_add_shared_decl_spans(me, prop, spans, span_count);
+                    add_jsdoc_overload_decl_spans(me, prop, class_decl, i, static_side);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
                         prop->decl->overloads = functions;

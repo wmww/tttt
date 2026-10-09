@@ -122,7 +122,7 @@ typedef struct FunctionImplRare {
     // `arguments` could be (tsc's checkUnmatchedJSDocParameters: TS8029 unless its type is an array)
     u32 jsdoc_arguments_candidate;
     // An overload signature of a class method or constructor: the first declaration of its symbol with a body (tsc's
-    // addImplementationSuccessElaboration looks there). Set by the resolve walk
+    // addImplementationSuccessElaboration looks there); of a JSDoc `@overload`, its host. Set by the resolve walk
     struct FunctionImpl const* overload_implementation;
     struct Symbol const* static_method_of; // A static method's class (display: `typeof C.m`), set by the resolve walk
     // A getter without a return type annotation whose setter's parameter has one: that annotation, which is the
