@@ -113,3 +113,11 @@ isize unicode_first_char_size(csview text) {
     decode(text.buf, text.buf + text.size, &size);
     return size;
 }
+
+u32 unicode_simple_lower(u32 c) {
+    CaseMapping const* m = c >= 0xD800 && c <= 0xDFFF ? nullptr : find(c);
+    if (!m) return c;
+    isize size;
+    u32 lower = decode(unicode_case_pool + m->lower, unicode_case_pool + m->lower + m->lower_len, &size);
+    return size == m->lower_len ? lower : c;
+}

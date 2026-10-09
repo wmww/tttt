@@ -1,4 +1,5 @@
 #include "scope.h"
+#include "unicode_case.h"
 #include "ast_walk.h"
 #include "several_types.h"
 #include "error.h"
@@ -4324,9 +4325,33 @@ bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
     return my container && my container->exports && symbol_table_lookup(my container->exports, symbol->name, hash) == symbol;
 }
 
-// tsc's levenshteinWithMax: case differences cost 0.1. A negative result: more than max
-static double levenshtein_with_max(csview s1, csview s2, double max) {
-    isize n = s2.size;
+// A string's code points for the spelling suggestions (tsgo's []rune(name)); `stack` if they fit
+static u32 const* spelling_runes(csview s, u32* stack, isize stack_len, isize* len) {
+    isize n = 0;
+    for (isize i = 0; i < s.size; i++) n += ((unsigned char)s.buf[i] & 0xC0) != 0x80;
+    u32* out = n <= stack_len ? stack : malloc(sizeof(u32) * (size_t)(n ? n : 1));
+    panic_if(!out, "out of memory");
+    isize k = 0;
+    for (isize i = 0; i < s.size && k < n;) {
+        unsigned char b = (unsigned char)s.buf[i];
+        isize size = b < 0x80 ? 1 : b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
+        if (i + size > s.size) size = 1;
+        u32 c = size == 1 ? b : b & (0xFF >> (size + 1));
+        for (isize j = 1; j < size; j++) c = (c << 6) | ((unsigned char)s.buf[i + j] & 0x3F);
+        out[k++] = c;
+        i += size;
+    }
+    *len = k;
+    return out;
+}
+
+static u32 rune_lower(u32 c) {
+    if (c < 0x80) return c >= 'A' && c <= 'Z' ? c + 32 : c;
+    return unicode_simple_lower(c);
+}
+
+// tsc's levenshteinWithMax over code points (tsgo's runes): case differences cost 0.1. A negative result: more than max
+static double levenshtein_with_max(u32 const* s1, isize s1_len, u32 const* s2, isize n, double max) {
     double stack[2][64] = {0};
     double* previous = n + 1 <= 64 ? stack[0] : malloc(sizeof(double) * (size_t)(n + 1));
     double* current = n + 1 <= 64 ? stack[1] : malloc(sizeof(double) * (size_t)(n + 1));
@@ -4334,16 +4359,16 @@ static double levenshtein_with_max(csview s1, csview s2, double max) {
     for (isize i = 0; i <= n; i++) previous[i] = (double)i;
     double result = -1;
     bool gave_up = false;
-    for (isize i = 1; i <= s1.size && !gave_up; i++) {
-        char c1 = s1.buf[i - 1];
+    for (isize i = 1; i <= s1_len && !gave_up; i++) {
+        u32 c1 = s1[i - 1];
         isize min_j = (isize)ceil((double)i > max ? (double)i - max : 1);
         isize max_j = (isize)floor((double)n > max + (double)i ? max + (double)i : (double)n);
         current[0] = (double)i;
         double col_min = (double)i;
         for (isize j = 1; j < min_j; j++) current[j] = big;
         for (isize j = min_j; j <= max_j; j++) {
-            char c2 = s2.buf[j - 1];
-            double substitution = tolower((unsigned char)c1) == tolower((unsigned char)c2) ? previous[j - 1] + 0.1 : previous[j - 1] + 2;
+            u32 c2 = s2[j - 1];
+            double substitution = rune_lower(c1) == rune_lower(c2) ? previous[j - 1] + 0.1 : previous[j - 1] + 2;
             double dist = c1 == c2 ? previous[j - 1] : fmin(fmin(previous[j] + 1, current[j - 1] + 1), substitution);
             current[j] = dist;
             if (dist < col_min) col_min = dist;
@@ -4371,21 +4396,29 @@ static bool equals_ignoring_case(csview a, csview b) {
 }
 
 isize spelling_suggestion(csview name, csview const* names, isize count) {
-    isize maximum_length_difference = name.size * 34 / 100 > 2 ? name.size * 34 / 100 : 2;
-    double best_distance = (double)(name.size * 4 / 10) + 1;
+    // (tsgo counts the name in runes, but compares that with the candidate's length in bytes)
+    u32 name_stack[64], candidate_stack[64];
+    isize name_len;
+    u32 const* name_runes = spelling_runes(name, name_stack, 64, &name_len);
+    isize maximum_length_difference = name_len * 34 / 100 > 2 ? name_len * 34 / 100 : 2;
+    double best_distance = (double)(name_len * 4 / 10) + 1;
     isize best = -1;
     for (isize i = 0; i < count; i++) {
         csview candidate = names[i];
         if (!candidate.buf) continue;
-        isize difference = candidate.size > name.size ? candidate.size - name.size : name.size - candidate.size;
+        isize difference = candidate.size > name_len ? candidate.size - name_len : name_len - candidate.size;
         if (difference > maximum_length_difference || csview_equals_sv(candidate, name)) continue;
         // Short names only when they differ by case
         if (candidate.size < 3 && !equals_ignoring_case(candidate, name)) continue;
-        double distance = levenshtein_with_max(name, candidate, best_distance - 0.1);
+        isize candidate_len;
+        u32 const* candidate_runes = spelling_runes(candidate, candidate_stack, 64, &candidate_len);
+        double distance = levenshtein_with_max(name_runes, name_len, candidate_runes, candidate_len, best_distance - 0.1);
+        if (candidate_runes != candidate_stack) free((void*)candidate_runes);
         if (distance < 0) continue;
         best_distance = distance;
         best = i;
     }
+    if (name_runes != name_stack) free((void*)name_runes);
     return best;
 }
 
