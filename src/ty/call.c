@@ -2815,6 +2815,20 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 return any;
             }
         }
+        // (A call of a union whose members share construct signatures: tsc's resolveCallExpression counts the union's
+        // construct signatures, TS2348)
+        if (lacking && !construct && !call->uses_new && !super_call && !info->decorator && !info->jsx && !info->tagged_template) {
+            u32 construct_count = 0;
+            ty_union_signatures(me, apparent->composite.types, true, &construct_count);
+            if (construct_count) {
+                if (errs) {
+                    cstr rendered = ty_to_cstr(me, callee);
+                    error_ctx_error_d(errs, call_span, 2348, "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
+                    cstr_drop(&rendered);
+                }
+                return ty_intrinsic(me, TY_ERROR);
+            }
+        }
         if (lacking && !super_call && !info->decorator && !info->jsx) { // (A tagged template too: resolveTaggedTemplateExpression's invocationError)
             if (errs) {
                 cstr rendered = ty_to_cstr(me, apparent);
