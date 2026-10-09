@@ -11101,7 +11101,7 @@ const baselines = {
         types: true,
     },
     'elidedJSImport1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17901,7 +17901,7 @@ const baselines = {
         types: true,
     },
     'inferredRestTypeFixedOnce': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25221,9 +25221,9 @@ const baselines = {
         types: true,
     },
     'objectBindingPatternDefaultMissingElements': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectBindingPattern_restElementWithPropertyName': {
         errors: true,

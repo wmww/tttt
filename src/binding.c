@@ -277,7 +277,23 @@ bool binding_is_parameter(Binding const* pattern) {
 }
 
 void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initializer, ErrorCtx* errs) {
-    if (my tag != BINDING_ARRAY || !compiler_options()->no_implicit_any) return;
+    if (!compiler_options()->no_implicit_any) return;
+    if (my tag == BINDING_OBJECT) {
+        // (tsgo's padObjectLiteralType: an element without a default the object literal lacks is reported by
+        // getTypeFromBindingElement)
+        if (initializer->kind != TY_ANONYMOUS || !initializer->anonymous.object_literal) return;
+        for_each (item, vec_object_binding_item, &my object) {
+            Binding const* element = &item->target;
+            if (element->default_value || element->rest || item->computed_key || element->tag != BINDING_IDENTIFIER) continue;
+            bool is_number = false;
+            Atom const* name = ty_property_name_of_key(current_checker, ty_literal(current_checker, &item->source), &is_number);
+            if (!name || ty_get_prop(current_checker, initializer, name)) continue;
+            error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", span_name_text(element->content_span),
+                "' implicitly has an 'any' type.");
+        }
+        return;
+    }
+    if (my tag != BINDING_ARRAY) return;
     TupleShape const* shape = ty_tuple_shape(initializer);
     if (!shape) return;
     for (u32 i = 0; i < shape->arity; i++) {
@@ -508,7 +524,9 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
     if (my default_value) {
         Ty const* default_type = ty_binding_default_type(current_checker, me);
         expr_typecheck(my default_value, errs);
-        if (my tag == BINDING_ARRAY && binding_is_parameter(me)) binding_add_padded_implicit_any_errors(me, default_type, errs);
+        if ((my tag == BINDING_ARRAY || my tag == BINDING_OBJECT) && binding_is_parameter(me)) {
+            binding_add_padded_implicit_any_errors(me, default_type, errs);
+        }
         // An element's default is assigned to the element (tsc's checkVariableLikeDeclaration: the initializer of the
         // symbol's value declaration, or of a pattern, against its widened type). Only a written type on the root can
         // make that fail: else the element's type is the union of its property and the default

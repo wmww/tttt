@@ -270,8 +270,10 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
     } else {
         csview name = port_item_name(at);
         csview specifier = my module_ref ? cstr_sv(&my target_path) : c_sv("...");
+        // (`import("m").T` for a named import, `import("m")` for a default one: tsgo's checkAliasSymbol)
+        bool named = item->tag == PORT_IMPORT_SPECIFIC;
         error_ctx_error_d(errs, at, 18042, "'", name, "' is a type and cannot be imported in JavaScript files. Use 'import(\"",
-            specifier, "\").", name, "' in a JSDoc type annotation.");
+            specifier, "\")", named ? "." : "", named ? name : c_sv(""), "' in a JSDoc type annotation.");
     }
 }
 

@@ -1162,7 +1162,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             continue;
         }
         initialized_binding_typecheck_parameter(&i->initializer, i->span, !my has_body, errs);
-        if (i->initializer.binding.tag == BINDING_ARRAY && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY &&
+        if ((i->initializer.binding.tag == BINDING_ARRAY || i->initializer.binding.tag == BINDING_OBJECT) &&
+            initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
         ) {
             binding_add_padded_implicit_any_errors(&i->initializer.binding,

@@ -3013,12 +3013,13 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
 Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pattern) {
     if (!binding_is_parameter(pattern)) return type;
     if (pattern->tag == BINDING_OBJECT && type->kind == TY_ANONYMOUS && type->anonymous.object_literal) {
-        // The elements with a default the literal lacks are optional properties (tsc's padObjectLiteralType)
+        // The elements the literal lacks are optional properties, of their default's type or any (tsgo's
+        // padObjectLiteralType: getTypeFromBindingElement)
         Members const* members = ty_members(me, type);
         ObjectLiteralProp* props = nullptr;
         u32 count = 0;
         for_each (item, vec_object_binding_item, &pattern->object) {
-            if (!item->target.default_value || item->target.rest || item->computed_key) continue;
+            if (item->target.rest || item->computed_key) continue;
             bool is_number = false;
             Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
             if (!name || ty_get_prop(me, type, name)) continue;
