@@ -76,6 +76,7 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   `Partial<T>[keyof T] & {}` target display.
 - Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
   (`() => Generator<any, void, unknown>` for a generator referencing itself).
+
 ## From the TS 7.1 types-printer fan-out (agent C, 2026-10-09)
 - **tsgo's pseudochecker is only partly emulated.** serializeTypeForDeclaration/serializeReturnTypeForSignature print a
   declaration's type from its syntax (pseudochecker, `internal/pseudochecker`) when equivalent to the checker's type,
