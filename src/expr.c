@@ -656,14 +656,14 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     my target = csview_equals(identifier_expr_name(me).sv, "default") ? nullptr : scope_get_value(names, identifier_expr_name(me).sv, &my symbol);
     if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
         // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
-        if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
+        if (my require_call != 2) require_call_report(identifier_module_ref(me), names, errs);
         return;
     }
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
             my target = my symbol = binder_require_symbol(names->binder);
-            if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
+            if (my require_call != 2) require_call_report(identifier_module_ref(me), names, errs);
             return;
         }
     }

@@ -1916,10 +1916,11 @@ static void declare_commonjs_export(
     // (A class expression is an alias of its class, tsc's isAliasableExpression: at the top level, where the declare
     // step can make the class's symbol in the scope the resolve walk would)
     bool class_alias = value->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(value) && top_level &&
-        (kind == ASSIGNMENT_DECL_PROPERTY || kind == ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY) && !jsdoc_type;
+        kind == ASSIGNMENT_DECL_PROPERTY && !jsdoc_type;
     // (`exports.x = a.b` too, of `exports` or `module.exports` itself: tsc's bindExportsPropertyAssignment)
-    bool entity = entity_ok && !jsdoc_type && is_unparenthesized_entity_name(value);
-    bool alias = (value->tag == EXPR_IDENTIFIER && !value->identifier.keyword) || class_alias || entity;
+    // (Only at the top level, where the alias's scope is the module's: elsewhere a property of the value's type)
+    bool entity = top_level && entity_ok && !jsdoc_type && is_unparenthesized_entity_name(value);
+    bool alias = (top_level && value->tag == EXPR_IDENTIFIER && !value->identifier.keyword) || class_alias || entity;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_PROPERTY;
     bool merged;
     Symbol* symbol = declare_symbol(me, my container->exports, name, name_span, includes, 0, false, &merged);
@@ -1999,7 +2000,14 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
         case COMMONJS_TARGET_MODULE_EXPORTS:
             // (`module.exports = exports` declares nothing)
             if (expr_is_plain_identifier(&op->right, "exports")) break;
-            declare_commonjs_export(me, c_sv("export="), expr_outer_span(&op->left), &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
+        {
+            // (`module.exports = exports = {}` exports what is assigned last, tsc's getRightMostAssignedExpression)
+            Expr* value = &op->right;
+            while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+                value = &value->binary_op->right;
+            }
+            declare_commonjs_export(me, c_sv("export="), expr_outer_span(&op->left), value, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
+        }
             break;
     }
 }
@@ -3050,7 +3058,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 return resolve_default_target(item, module, assigned, errs);
             }
             // (tsc's getExternalModuleMember: `{ default as x }` with allowSyntheticDefaultImports is fine)
-            if (!item->value_only && !csview_equals(port_item_name(item->source_name), "default")) {
+            if (!csview_equals(port_item_name(item->source_name), "default")) {
                 check_es_module_symbol(item, module, assigned);
             }
             // (An `export =` of nothing is tsc's unknownSymbol, whose exports are all there is: not the module's
@@ -3065,7 +3073,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             if (assigned && (!found || (commonjs && !(symbol_resolved_flags(found) & SYMBOL_VALUE)))) {
                 if (assigned->is_placeholder) {
                     // (tsc's unknownSymbol has no members)
-                    if (assigned->is_unresolved && !item->value_only) scope_report_non_exported_member(item, module, errs);
+                    if (assigned->is_unresolved) scope_report_non_exported_member(item, module, errs);
                     return nullptr;
                 }
                 Symbol const* container = found ? nullptr : symbol_for_meaning(assigned, SYMBOL_NAMESPACE);
@@ -3088,14 +3096,12 @@ static Symbol* resolve_alias_target(Symbol* me) {
                         .name = item->source_name,
                         .full = item->full_span,
                     });
-                    if (!found || item->value_only) return property;
+                    if (!found) return property;
                     my alias->value_target = property;
                 }
                 // (Neither the namespace nor the value has it: TS2305 below)
             }
-            if (item->value_only && found && !(symbol_resolved_flags(found) & SYMBOL_VALUE)) return nullptr;
             if (!found) {
-                if (item->value_only) return nullptr;
                 scope_report_non_exported_member(item, module, errs);
                 return nullptr;
             }

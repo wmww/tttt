@@ -12070,24 +12070,18 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
     return ret;
 }
 
-// tsc's isVariableDeclarationInitializedToBareOrAccessedRequire: in a JavaScript file `const x = require("m")`,
-// `const { a, b: c } = require("m")` and `const a = require("m").a` (`.x.a`) declare aliases, like imports
-// (a TypeScript annotation, TS8010, is ignored: only a JSDoc type tag makes it a variable)
+// tsgo's isVariableDeclarationInitializedToRequire: in a JavaScript file `const x = require("m")` and
+// `const { a, b: c } = require("m")` declare aliases, like imports (a TypeScript annotation, TS8010, is ignored: only a
+// JSDoc type tag makes it a variable). `const a = require("m").a` is a variable (TS 7 removed the alias)
 static void note_require_declaration(InitializedBinding* initializer) {
     if (initializer->binding.has_explicit_type && initializer->binding.explicit_type.from_jsdoc) return;
     Expr* value = initialized_binding_value(initializer);
-    Span accessed = span_null;
-    // (`require("m").a.b` too: the alias is of b, looked up in the module, tsc's getCommonJSPropertyAccess)
-    // (`require("m")?.a` too: tsc's getLeftmostAccessExpression goes through optional chains)
-    while (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT) {
-        if (!span_valid(accessed)) accessed = value->property->prop.inner_span;
-        value = &value->property->expr;
-    }
     if (!expr_is_require_call(value) || expr_is_perenthisized(value)) return;
+    // (One that declares no aliases still names its module in the symbols baseline)
+    value->call->callable.identifier.require_call = 3;
     ModuleRef* ref = identifier_module_ref(&value->call->callable.identifier);
     if (!ref) return;
     Binding const* binding = &initializer->binding;
-    if (binding->tag == BINDING_OBJECT && span_valid(accessed)) return;
     for_each (i, vec_object_binding_item, binding->tag == BINDING_OBJECT ? &binding->object : &(VecObjectBindingItem){0}) {
         if (i->computed_key || i->target.tag != BINDING_IDENTIFIER || i->target.rest || i->target.default_value ||
             !span_valid(i->source_span)
@@ -12099,12 +12093,10 @@ static void note_require_declaration(InitializedBinding* initializer) {
     ((Expr*)value)->call->callable.identifier.require_call = 2;
     if (binding->tag == BINDING_IDENTIFIER) {
         initialized_binding_rare_mut(initializer)->require_ports = c_new(PortItem, {
-            .tag = span_valid(accessed) ? PORT_IMPORT_SPECIFIC : PORT_IMPORT_GATHER,
+            .tag = PORT_IMPORT_GATHER,
             .decl_name = binding->content_span,
             .full_span = binding->content_span,
-            .source_name = accessed,
-            .is_require = !span_valid(accessed),
-            .value_only = span_valid(accessed),
+            .is_require = true,
             .module_ref = ref,
         });
         initializer->rare->require_port_count = 1;
@@ -13792,11 +13784,12 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 free(initializer->rare->require_ports);
                 initializer->rare->require_ports = nullptr;
                 initializer->rare->require_port_count = 0;
-                Expr* call = initialized_binding_value(initializer);
-                while (call->tag == EXPR_PROPERTY) call = &call->property->expr;
-                if (call->tag == EXPR_CALL && call->call->callable.tag == EXPR_IDENTIFIER) {
-                    call->call->callable.identifier.require_call = true;
-                }
+            }
+            Expr* call = initialized_binding_value(initializer);
+            if (type_tag && call->tag == EXPR_CALL && call->call->callable.tag == EXPR_IDENTIFIER &&
+                call->call->callable.identifier.require_call
+            ) {
+                call->call->callable.identifier.require_call = 1;
             }
             jsdoc_apply_satisfies_initializer(&tags, initializer);
             FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));

@@ -3133,7 +3133,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             ModuleRef* ref = callee->tag == EXPR_IDENTIFIER ? identifier_module_ref(&callee->identifier) : nullptr;
             SourceFile const* in_file = my inner_span.source;
             Symbol const* module = ref && in_file && in_file->scope ? binder_module_of_ref(in_file->scope->binder, ref) : ref ? ref->module : nullptr;
-            if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {
+            // (A `require("./a")` only where a declaration's alias imports it: tsgo's
+            // isVariableDeclarationInitializedToRequire of the grandparent)
+            bool require = callee->tag == EXPR_IDENTIFIER && callee->identifier.require_call;
+            if (module && (!require || callee->identifier.require_call >= 2) && vec_expr_size(&my call->args) &&
+                vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL
+            ) {
                 // (a file's module is declared by the file, and named by its path without the extension)
                 SourceFile const* file = module->module ? module->module->file : nullptr;
                 Span file_start = file ? (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) } : span_null;

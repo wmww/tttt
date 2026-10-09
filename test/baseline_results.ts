@@ -16998,7 +16998,7 @@ const baselines = {
     'importNonExportedMember12': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importNonExportedMember2': {
         errors: true,
@@ -19822,7 +19822,7 @@ const baselines = {
     },
     'jsExportMemberMergedWithModuleAugmentation3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsExportsImportedIntoTsxLosesTypeInfo': {
@@ -22947,7 +22947,7 @@ const baselines = {
     },
     'modulePreserve4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'modulePreserve5': {
@@ -28297,7 +28297,7 @@ const baselines = {
     },
     'requireOfJsonFileInJsFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'requireOfJsonFileNonRelative': {
@@ -51757,7 +51757,7 @@ const baselines = {
     },
     'jsDeclarationsCommonjsRelativePath': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsComputedNames(target=es2015)': {
@@ -51868,7 +51868,7 @@ const baselines = {
     'jsDeclarationsExportDoubleAssignmentInClosure': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportForms(target=es2015)': {
         errors: true,
@@ -52102,28 +52102,28 @@ const baselines = {
     },
     'jsDeclarationsTypeReassignmentFromDeclaration2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsTypeReferences(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsTypeReferences2(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsTypeReferences3(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsTypeReferences4(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsTypedefAndImportTypes': {
         errors: true,
@@ -52826,9 +52826,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeReferenceToImport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocTypeReferenceToImportOfClassExpression': {
         errors: true,
@@ -60892,7 +60892,7 @@ const baselines = {
     },
     'commonJSReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictingCommonJSES2015Exports': {
@@ -60992,7 +60992,7 @@ const baselines = {
     },
     'exportNestedNamespaces2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportPropertyAssignmentNameResolution': {
@@ -61003,7 +61003,7 @@ const baselines = {
     'globalMergeWithCommonJSAssignmentDeclaration': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importAliasModuleExports': {
         errors: true,
@@ -61166,7 +61166,7 @@ const baselines = {
         types: true,
     },
     'moduleExportAlias': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61276,9 +61276,9 @@ const baselines = {
         types: true,
     },
     'moduleExportWithExportPropertyAssignment2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportWithExportPropertyAssignment3': {
         errors: true,
@@ -61447,13 +61447,13 @@ const baselines = {
     },
     'requireOfESWithPropertyAccess': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'requireTwoPropertyAccesses': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'sourceFileMergeWithFunction': {
         errors: true,

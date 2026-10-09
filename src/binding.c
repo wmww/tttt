@@ -1001,7 +1001,7 @@ static void check_quick_callee(Expr const* quick, ErrorCtx* errs) {
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
-    // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
+    // `const x = require("m")`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
     if (initialized_binding_rare(me)->require_port_count) {
         // (`const { a } = require()`: tsc's getExternalModuleMember of each name. Not `require().a.b`)

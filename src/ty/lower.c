@@ -1358,9 +1358,8 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
-    // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't, nor an
-    // export through another name of `module.exports`)
-    bool direct = symbol->parent && symbol->parent->is_module && decl->assignment != ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY;
+    // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
+    bool direct = symbol->parent && symbol->parent->is_module;
     return direct ? ty_regular(me, type) : ty_widened_literal(me, type);
 }
 
@@ -1462,9 +1461,13 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             }
             return export_expression_type(me, symbol, decl);
         case SYMBOL_DECL_ASSIGNMENT:
+            // tsgo's getAssignmentDeclarationInitializerType: `module.exports = 1` exports `1` (getWidenedType only widens
+            // object literals and, without strictNullChecks, null and undefined)
+            if (csview_equals(symbol->name, "export=")) {
+                if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
+                return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, decl->node))));
+            }
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
-            // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
-            if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             if (annotated_expando_type(me, symbol)) return annotated_expando_type(me, symbol);
             {
                 Ty const* type = ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));

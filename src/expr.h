@@ -44,7 +44,8 @@ typedef struct IdentifierExpr {
     uint8_t this_kind; // ThisKind
     uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
     // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal): 1, or 2 when
-    // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
+    // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module), 3 when
+    // it initializes a declaration that declares none (`const { a: { b } } = require("m")`)
     uint8_t require_call;
     // (Bit fields: the struct is as big as an Expr may be, see expr.c)
     // The target of `x = <a shift, additive or multiplicative expression>` (tsc's isInCompoundLikeAssignment): it
