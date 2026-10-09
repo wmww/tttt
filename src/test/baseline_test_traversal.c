@@ -2769,8 +2769,15 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
     Checker* checker = current_checker;
     Ty const* apparent = ty_apparent_type(checker, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
-    // (tsgo's index symbol's parent is the type's own symbol: a type alias of a type literal names nothing, `__type`)
-    Symbol const* container = apparent->kind == TY_DECLARED ? apparent->declared.symbol :
+    // (tsgo's index symbol's parent is the symbol of the object's type, not the apparent one: a type parameter's
+    // (`T.__index`, `this` the class's). A type alias of a type literal names nothing, `__type`)
+    Symbol const* param_symbol = nullptr;
+    if (object->kind == TY_TYPE_PARAM) {
+        param_symbol = object->param.symbol;
+        if (!param_symbol && object->param.state->is_this && apparent->kind == TY_DECLARED) param_symbol = apparent->declared.symbol;
+        if (!param_symbol && object->param.state->is_this && apparent->kind == TY_REFERENCE) param_symbol = apparent->reference.target->declared.symbol;
+    }
+    Symbol const* container = object->kind == TY_TYPE_PARAM ? param_symbol : apparent->kind == TY_DECLARED ? apparent->declared.symbol :
         apparent->kind == TY_REFERENCE ? apparent->reference.target->declared.symbol : nullptr;
     Members const* members = ty_members(checker, apparent);
     VecSpan declarations = {0};
@@ -2956,13 +2963,13 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
         !csview_starts_with(expr_outer_span(&my property->prop).sv, "#")
     ) {
-        // Through a declared index signature: `__index`, on the access and on the name (not of a type
-        // parameter's constraint, not in element accesses: tsc has no symbol there)
+        // Through a declared index signature: `__index`, on the access and on the name (a type parameter's
+        // constraint's too, tsgo; not in element accesses: tsc has no symbol there)
         // Only types whose members have an `__index` symbol: declared ones and written type literals, not
         // what spreads and the like synthesize (tsc's getIndexSymbolFromSymbolTable)
         Ty const* root = object->kind == TY_ANONYMOUS ? object : nullptr;
         while (root && root->anonymous.target) root = root->anonymous.target;
-        bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE ||
+        bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE || object->kind == TY_TYPE_PARAM ||
             (root && root->anonymous.node && !root->anonymous.object_literal);
         if (my property->form == PROPERTY_EXPR_DOT && declared &&
             index_symbol_compile_test_info(ctx, object, key, my inner_span, false)

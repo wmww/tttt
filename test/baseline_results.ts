@@ -63997,7 +63997,7 @@ const baselines = {
     },
     'keyofAndIndexedAccess2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'keyofAndIndexedAccessErrors': {
