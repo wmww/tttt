@@ -4042,7 +4042,7 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     }
     if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !op->left.property->declares) return;
     SourceFile const* file = my inner_span.source;
-    if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;
+    if (!file || !compiler_options()->no_implicit_any) return;
     Symbol const* member = op->left.property->declares;
     SymbolDecl const* first = nullptr;
     SymbolDecl const* own = nullptr;
@@ -4054,6 +4054,7 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     }
     if (!own || !own->node) return;
     int kind = ty_js_assignment_implicit_any(current_checker, member, own->node);
+    if (!file->is_js && kind != 1) return; // (getWidenedTypeForAssignmentDeclaration's report is JavaScript's)
     if (kind == 1) {
         error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any[]' type.");
     } else if ((kind == 2 || kind == 3) && own == first) {

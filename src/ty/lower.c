@@ -1310,8 +1310,6 @@ bool ty_is_empty_array_literal_type(Checker* me, Ty const* type) {
 
 static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     if (decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY) return define_property_type(me, decl->node);
-    Ty const* annotated = annotated_expando_type(me, symbol);
-    if (annotated) return annotated;
     // A declaration that assigns nothing (`/** @type {T} */ this["x"];` whose tag isn't its): never, so any in the end
     // (tsc's getWidenedTypeForAssignmentDeclaration pushes neverType for it)
     Expr const* node = decl->node;
@@ -1321,7 +1319,9 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // member's type again: circular, any (TS7022 under noImplicitAny). A value that asks for no contextual type (a
     // literal) types it. tsgo gives none to `F[k] = v` that the binder declared (a TS expando): typed like any other
     // (PROTOTYPE: JavaScript keeps 6.0's until todo entry 8)
-    if (symbol_rare(symbol)->late_bound_key && node && decl->full.source && decl->full.source->is_js && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
+    // (An annotated variable's expando is contextually typed by what the annotation says the member is, its left side)
+    Ty const* contextual = annotated_expando_type(me, symbol);
+    if (!contextual && symbol_rare(symbol)->late_bound_key && node && decl->full.source && decl->full.source->is_js && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
         decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD
     ) {
         Expr const* value = node;
@@ -1336,17 +1336,24 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
             return ty_intrinsic(me, TY_ANY);
         }
     }
-    Ty const* type = ty_expr_type(me, decl->node);
+    Ty const* type = contextual ? ty_check_expr(me, decl->node, contextual) : ty_expr_type(me, decl->node);
     // `[]` is any[] in JavaScript, which noImplicitAny reports (tsc's getInitializerTypeFromAssignmentDeclaration:
     // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
+    // (In TypeScript too, an expando of a function: unless the function's variable is annotated, tsc's
+    // hasParentWithTypeAnnotation)
     SourceFile const* file = decl->full.source;
-    if (file && file->is_js && ty_is_empty_array_literal_type(me, type)) {
+    Binding const* parent_binding = symbol->parent ? symbol_find_node(symbol->parent, SYMBOL_DECL_VARIABLE) : nullptr;
+    if (file && (file->is_js || !parent_binding || !parent_binding->has_explicit_type) && ty_is_empty_array_literal_type(me, type)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
     // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
     // (Otherwise as a mutable location: unique symbols widen too, tsgo's checkExpressionForMutableLocation)
     bool direct = symbol->parent && symbol->parent->is_module;
+    // (An expando of an annotated variable: its value is contextually typed by what the annotation says the member is,
+    // whose literals it keeps, tsc's checkExpressionForMutableLocation; its type is still the value's)
+    Ty const* annotated = direct ? nullptr : annotated_expando_type(me, symbol);
+    if (annotated && ty_is_literal_of_contextual_type(me, type, annotated)) return ty_regular(me, type);
     return direct ? ty_regular(me, type) : ty_widened_unique_symbol(me, ty_widened_literal(me, type));
 }
 
@@ -1455,7 +1462,8 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, decl->node))));
             }
             if (is_js_container(symbol, decl->node)) return ty_namespace_type(me, symbol);
-            if (annotated_expando_type(me, symbol)) return annotated_expando_type(me, symbol);
+            // (An annotated variable's expando: the value as contextually typed by the annotation, its literals kept)
+            if (annotated_expando_type(me, symbol)) return ty_regular(me, assignment_declaration_type(me, symbol, decl));
             {
                 Ty const* type = ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
                 // Nothing but null and undefined is any in JavaScript (tsc's getWidenedTypeForAssignmentDeclaration),

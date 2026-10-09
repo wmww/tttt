@@ -8248,7 +8248,7 @@ const baselines = {
     'declarationEmitExpandoArrowFunctionParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoFunction': {
         errors: true,
@@ -12973,7 +12973,7 @@ const baselines = {
     'expandoContextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionAsAssertion': {
         errors: true,
@@ -12988,7 +12988,7 @@ const baselines = {
     'expandoFunctionContextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypesJSDocInTs': {
         errors: true,
@@ -12998,7 +12998,7 @@ const baselines = {
     'expandoFunctionContextualTypesJs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypesNoValue': {
         errors: true,
@@ -13051,9 +13051,9 @@ const baselines = {
         types: false,
     },
     'expandoPropertyEmptyArrayWidening': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
         errors: true,
@@ -52043,7 +52043,7 @@ const baselines = {
     'jsDeclarationsReactComponents(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReexportAliases(target=es2015)': {
         errors: true,
@@ -61653,7 +61653,7 @@ const baselines = {
     'typeFromPropertyAssignment30': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment31': {
         errors: true,
