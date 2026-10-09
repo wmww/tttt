@@ -5542,6 +5542,7 @@ static Ternary structured_related_members(
         // Two mapped types whose keys aren't known yet: by constraint and template (tsc's mappedTypeRelatedTo)
         return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
     }
+    bool quiet_members = false;
     if (target_mapped) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
@@ -5562,8 +5563,9 @@ static Ternary structured_related_members(
         ) {
             return related;
         }
-        // (The fallback below says nothing when it fails either: tsc's False for a generic mapped target has no chain)
-        report = false;
+        // (The member fallback below says nothing when it fails either: tsc's False for a generic mapped target has no
+        // chain. The generic source's constraints before it do report, tsgo's structuredTypeRelatedToWorker)
+        quiet_members = true;
     }
 
     // Generic sources
@@ -5670,6 +5672,7 @@ static Ternary structured_related_members(
         default: break;
     }
     if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED) || target->kind == TY_UNION) return TERNARY_FALSE;
+    if (quiet_members) report = false;
 
     // Object types from here on
     if (!(target->flags & TYF_OBJECT)) return TERNARY_FALSE;
