@@ -945,6 +945,15 @@ static bool relation_line_said(Checker* me, RelationState* st, Ty const* source,
             return true;
         case 2741: case 2739: case 2740:
             if (top && (st->head_code == 2352 || st->head_code == 2420 || st->head_code == 2720)) return false;
+            // HACK: a mapped type whose keys aren't known yet is compared through its apparent type in tsgo
+            // (getResolvedApparentTypeOfMappedType), which its missing properties would name: not this pair's line.
+            // tttt lists them as the mapped type's own (vitest's `BrowserCommand<ConvertUserEventParameters<...>>`
+            // is TS2344 in tsgo, without a chain)
+            if (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped &&
+                (ty_members(me, source)->mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+            ) {
+                return false;
+            }
             if (!missing_props_line_matches(me, below, source, target)) return false;
             if (top) below->missing_head = true;
             return true;
