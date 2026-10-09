@@ -3775,6 +3775,9 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
             type_drop(&type);
             parse_error(&p, span_make(p.shared->source, end, end), 1005, "'}' expected.");
         }
+    } else if (!p.error_count) {
+        // (No type starts there: tsc's parseJSDocType reports it at the token, `{@import(...)}`)
+        parse_error(&p, span_from_token(&p), 1110, "Type expected.");
     }
     // Past the braces even when the type didn't parse (tsc: `{` starts a type expression that ends at `}`)
     if (!tag->has_type) {
@@ -4572,6 +4575,21 @@ static Span jsdoc_tag_decl_span(JsDocTag const* tag) {
     return span_make(tag->tag_name.source, tag->tag_name.sv.buf - 1, end);
 }
 
+// A tag's node (tsgo's JSDoc tag Loc): from its `@` to the next tag's `@` (the line breaks and `*`s before it included)
+// or the comment's `*/`
+static Span jsdoc_tag_node_span(JsDocTag const* tag) {
+    const char* at = tag->tag_name.sv.buf - 1;
+    const char* c = tag->tag_name.sv.buf + tag->tag_name.sv.size;
+    if (span_valid(tag->name) && tag->name.sv.buf + tag->name.sv.size > c) c = tag->name.sv.buf + tag->name.sv.size;
+    bool line_start = false;
+    for (; *c && !(c[0] == '*' && c[1] == '/'); c++) {
+        if (*c == '\n') line_start = true;
+        else if (line_start && *c == '@') break;
+        else if (*c != ' ' && *c != '\t' && *c != '\r' && *c != '*') line_start = false;
+    }
+    return span_make(tag->tag_name.source, at, c);
+}
+
 // `{Object}`, `{object}`, `{Object[]}`: a type a tag's nested `@property`/`@param` tags replace with a literal (tsc's
 // isObjectOrObjectArrayTypeReference). array: whether it's the array form
 static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array) {
@@ -4949,6 +4967,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
             else i->jsdoc_optional_initialized = true;
+            if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag));
         }
         i->jsdoc_variadic = variadic && !i->rest;
         if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {

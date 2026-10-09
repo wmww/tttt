@@ -18,6 +18,7 @@ void function_arg_drop(FunctionArg* me) {
         free(my decorators);
     }
     free(my jsdoc_span);
+    free(my jsdoc_question);
     initialized_binding_drop(&my initializer);
 }
 
@@ -591,8 +592,9 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
         error_ctx_grammar_error_d(errs, function_arg_rest_span(value), 1053, "A 'set' accessor cannot have rest parameter.");
         return true;
     }
-    if (span_valid(function_arg_question_span(value))) {
-        error_ctx_grammar_error_d(errs, function_arg_question_span(value), 1051, "A 'set' accessor cannot have an optional parameter.");
+    if (span_valid(function_arg_question_span(value)) || value->jsdoc_question) {
+        Span at = span_valid(function_arg_question_span(value)) ? function_arg_question_span(value) : *value->jsdoc_question;
+        error_ctx_grammar_error_d(errs, at, 1051, "A 'set' accessor cannot have an optional parameter.");
         return true;
     }
     if (initialized_binding_value(&value->initializer)->tag != EXPR_IMPLICIT_ANY) {

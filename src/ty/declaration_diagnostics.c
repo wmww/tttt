@@ -2274,7 +2274,10 @@ static void collect_exported_locals(Walk* me, VecStatement const* statements) {
 bool declaration_diagnostics_wanted(SourceFile const* file) {
     CompilerOptions const* options = compiler_options();
     if (!options->declaration && !options->composite) return false;
-    if (file->is_declaration || file->is_json || file->is_js || file->is_stdlib || file->is_config) return false;
+    if (file->is_declaration || file->is_json || file->is_stdlib || file->is_config) return false;
+    // (A JavaScript file's declaration emit has its diagnostics too, but the walk only knows TypeScript's declarations:
+    // only isolatedDeclarations' are reported there, see agents/hacks.md)
+    if (file->is_js && !options->isolated_declarations) return false;
     // (A package's file that an import found: tsc's isSourceFileFromExternalLibrary)
     return !(file->loaded_by_import && strstr(cstr_str(&file->canonical_path), "node_modules/"));
 }

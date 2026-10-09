@@ -27,6 +27,8 @@ typedef struct FunctionArg {
     // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's). Owned,
     // null otherwise
     Span* jsdoc_span;
+    // Made optional by its JSDoc `@param` (`{T=}`, `[name]`): the tag, where tsgo's reparsed `?` is. Owned, else null
+    Span* jsdoc_question;
     // Of a class member's parameter: checked as calls by class_decl_typecheck(). Owned, null if there are none: read
     // through function_arg_decorators()
     VecExpr* decorators;

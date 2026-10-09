@@ -19086,7 +19086,7 @@ const baselines = {
         types: true,
     },
     'invalidJsdocType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19296,7 +19296,7 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationsAllowJs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52076,7 +52076,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsReusesExistingTypeAnnotations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
