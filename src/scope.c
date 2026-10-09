@@ -2859,7 +2859,8 @@ static void resolve_module_type_members(Symbol* module) {
 // tsc's resolveESModuleSymbol for `import * as ns` (esModuleInterop is always on): it looks for call and construct
 // signatures on the module's type, resolving its members
 static bool namespace_import_resolves_type_members(PortItem const* item) {
-    return item->tag == PORT_IMPORT_GATHER;
+    // (Not `import x = require("m")`: tsc's getTargetOfImportEqualsDeclaration only resolveExternalModuleSymbol's it)
+    return item->tag == PORT_IMPORT_GATHER && !item->is_require;
 }
 
 // tsc's resolveESModuleSymbol: an ES import of a module with an `export =` resolves it (6.0's TS2497, an `export =`
