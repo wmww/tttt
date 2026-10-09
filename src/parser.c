@@ -618,8 +618,6 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
     int invalid = span.source && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
-        // (tsc's scanner reports a `\\` that starts no identifier without a length)
-        if (*span_start_ptr(span) == '\\') invalid = 0;
         return parse_error_inner(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
             1127, cstr_lit("Invalid character."), false);
     }
@@ -13082,7 +13080,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
         } else if (*p.pos == '\\') {
-            parse_error(&p, span_from_pos(&p), 1127, "Invalid character.");
+            parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1127, "Invalid character.");
             p.pos++;
         } else if (list_abort_or_skip(&p, ctx)) {
             break;
