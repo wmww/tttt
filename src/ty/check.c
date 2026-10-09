@@ -1015,8 +1015,16 @@ bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base
     u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, static_type, target, TY_RELATION_ASSIGNABLE)) return true;
     if (my instantiation_limit_hits != limit_hits) return false;
-    // tsc relates to each member of an intersection on its own (typeRelatedToEachType): the one that fails is named
+    // tsc relates to each member of an intersection on its own (typeRelatedToEachType): the one that fails is named.
+    // When none does on its own, the whole intersection, each member named like it (`typeof A & typeof B`)
     Ty const* shown = static_side_for_display(base_static, target);
+    if (parts.len > 1) {
+        Ty const** named = malloc(sizeof(Ty const*) * parts.len);
+        panic_if(!named, "out of memory");
+        for (u32 i = 0; i < parts.len; i++) named[i] = static_side_for_display(parts.data[i], type_without_signatures(me, parts.data[i]));
+        shown = ty_intersection(me, named, parts.len, nullptr, (TyList){0});
+        free(named);
+    }
     for (u32 i = 0; i < parts.len && parts.len > 1; i++) {
         Ty const* part_target = type_without_signatures(me, parts.data[i]);
         if (ty_is_related(me, static_type, part_target, TY_RELATION_ASSIGNABLE)) continue;

@@ -8381,7 +8381,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitForMixinsWithStaticAccessors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
