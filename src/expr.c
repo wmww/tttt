@@ -4167,7 +4167,7 @@ static Expr const* checked_callee;
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     Span name = my property->prop.inner_span;
-    if (csview_equals(name.sv, "defer")) {
+    if (csview_equals(name.sv, "defer") || csview_equals(name.sv, "source")) { // (tsgo's IsImportPhaseMetaProperty)
         // (Not called: `import.defer(...)` is a deferred import call, see parse_import_keyword_expr())
         Span end = span_make(my inner_span.source, span_end_ptr(my inner_span), span_end_ptr(my inner_span));
         error_ctx_grammar_error_d(errs, end, 1005, "'(' expected.");
@@ -4176,7 +4176,7 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     if (!csview_equals(name.sv, "meta")) { // (tsc's checkGrammarMetaProperty)
         if (me == checked_callee) {
             error_ctx_grammar_error_d(errs, name, 18061, "'", name,
-                "' is not a valid meta-property for keyword 'import'. Did you mean 'meta' or 'defer'?");
+                "' is not a valid meta-property for keyword 'import'. Did you mean 'meta', 'defer', or 'source'?");
         } else {
             error_ctx_grammar_error_d(errs, name, 17012, "'", name, "' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?");
         }

@@ -4546,7 +4546,9 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
             "' that you probably intended to use is defined here");
         return true;
     }
-    csview class_name = other_class && span_valid(other_class->name) ? other_class->name.sv : c_sv("(anonymous)");
+    // (tsgo's SymbolToString of the class: a class expression's symbol is called by its assigned name)
+    csview class_name = other_class && span_valid(other_class->name) ? other_class->name.sv :
+        other_class && span_valid(other_class->assigned_name) ? other_class->assigned_name.sv : c_sv("(anonymous)");
     error_ctx_error_d(errs, name, 18013, "Property '", name, "' is not accessible outside class '", class_name,
         "' because it has a private identifier.");
     return true;

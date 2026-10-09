@@ -328,9 +328,16 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
 static void report_statement(Reporter const* r, Statement const* me) {
     if (statement_declares_name(my tag) && my decl.props.declared) return; // Ambient
     switch (my tag) {
-        case STATEMENT_DECL_VARIABLE:
-            report_variables(r, &my decl.variable, span_valid(my span) ? my span : my decl.variable.span, false);
+        case STATEMENT_DECL_VARIABLE: {
+            // (At the declaration list, tsgo's reportUnusedVariables: the statement without its semicolon)
+            Span list = span_valid(my span) ? my span : my decl.variable.span;
+            if (span_valid(list) && list.sv.size && list.sv.buf[list.sv.size - 1] == ';') {
+                list.sv.size--;
+                while (list.sv.size && (list.sv.buf[list.sv.size - 1] == ' ' || list.sv.buf[list.sv.size - 1] == '\t')) list.sv.size--;
+            }
+            report_variables(r, &my decl.variable, list, false);
             break;
+        }
         case STATEMENT_DECL_FUNCTION:
             report_declaration(r, my decl.function.impl->symbol, my decl.function.impl->name, false);
             break;

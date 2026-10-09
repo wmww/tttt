@@ -33666,12 +33666,12 @@ const baselines = {
         types: true,
     },
     'unusedLocalsInMethod2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unusedLocalsInMethod3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37631,7 +37631,7 @@ const baselines = {
         types: true,
     },
     'privateNameMethodClassExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50531,7 +50531,7 @@ const baselines = {
         types: true,
     },
     'importMetaPropertyInvalidInCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
