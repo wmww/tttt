@@ -2386,6 +2386,9 @@ static void assignment_target_typecheck_of(
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
+                // A compound assignment (`x += 1`) assigns to what the reference reads: its narrowed type, widened
+                // (tsc's checkIdentifier with a compound assignmentKind, getBaseTypeOfLiteralType(flowType))
+                if (target->identifier.assignment_target == FLOW_TARGET_COMPOUND) declared = ty_expr_type(checker, target);
                 ty_check_assignable_expr(checker, source, declared, report_at, source_expr, errs);
             } else if (source && target->identifier.is_arguments) {
                 // `arguments = x` in a function: the arguments object (IArguments)
