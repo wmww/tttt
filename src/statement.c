@@ -2080,6 +2080,12 @@ static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, Err
 
 // tsc's checkReturnExpression: the branches of a conditional expression are checked one by one. An error that isn't
 // elaborated goes on the `return` keyword (of a real return statement)
+// Whether a returned expression (each branch of a conditional one) awaits a thenable that's no valid promise
+static bool returns_thenable(Expr const* expr) {
+    if (expr->tag == EXPR_TERNARY) return returns_thenable(&expr->ternary->yes) || returns_thenable(&expr->ternary->no);
+    return ty_awaits_thenable(current_checker, ty_expr_type(current_checker, expr));
+}
+
 static bool return_typecheck(
     Statement const* statement, Expr const* expr, Ty const* target, bool in_conditional, bool awaited, ErrorCtx* errs
 ) {
@@ -2815,6 +2821,16 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             ) {
                 error_ctx_error_d(errs, ctx.function->name, 1058, "The return type of an async function must either be a "
                     "valid promise or must not contain a callable 'then' member.");
+            }
+            // tsc's checkReturnExpression: with an annotation, what an async function returns is awaited, at the statement
+            if (ctx.function && ctx.function->is_async && ctx.function->ret_explicit && !statement_is_bare_return(me) &&
+                !ctx.constructed_class && !ctx.in_setter && returns_thenable(&my expr)
+            ) {
+                // (An arrow's expression body: at the expression)
+                Span at = span_valid(my span) ? span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6) :
+                    expr_outer_span(&my expr);
+                error_ctx_error_d(errs, at, 1058,
+                    "The return type of an async function must either be a valid promise or must not contain a callable 'then' member.");
             }
             if (ctx.in_setter) {
                 if (!statement_is_bare_return(me)) {
