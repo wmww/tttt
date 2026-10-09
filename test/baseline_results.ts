@@ -52833,7 +52833,7 @@ const baselines = {
     'jsdocTypeReferenceToImportOfClassExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeReferenceToImportOfFunctionExpression': {
         errors: true,
