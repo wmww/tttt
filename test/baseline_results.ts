@@ -5228,7 +5228,7 @@ const baselines = {
     'comparisonSameNamedAliases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compilerOptionsDeclarationAndNoEmit': {
         errors: true,
@@ -13861,9 +13861,9 @@ const baselines = {
         types: true,
     },
     'extendPrivateConstructorClass2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'extendedInterfaceGenericType': {
         errors: true,
@@ -14366,9 +14366,9 @@ const baselines = {
         types: true,
     },
     'freshObjectLiteralSubtype': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'fromAsIdentifier1': {
         errors: true,
@@ -23971,7 +23971,7 @@ const baselines = {
         types: true,
     },
     'nestedGenericTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
