@@ -13690,6 +13690,19 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 // declared type, which a function value is only contextually typed by; another assignment's function
                 // takes it as its signature (getFunctionLikeHost: FullSignature)
                 bool declares = jsdoc_assignment_declares(&assignment->left);
+                JsDocTag* satisfies = declares ? jsdoc_find_typed(&tags, JSDOC_TAG_SATISFIES) : nullptr;
+                if (satisfies && assignment->right.tag != EXPR_IMPLICIT_ANY) {
+                    // An assignment declaration's `@satisfies` casts what it assigns (tsgo's reparser)
+                    Expr inner = assignment->right;
+                    assignment->right = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
+                        .expr = inner,
+                        .keyword_span = satisfies->tag_name,
+                        .type = jsdoc_take_type(satisfies, nullptr),
+                        .is_satisfies = true,
+                        .is_jsdoc = true,
+                    }));
+                    if (assigned == &assignment->right) assigned = &assignment->right;
+                }
                 FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function && declares) {
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);

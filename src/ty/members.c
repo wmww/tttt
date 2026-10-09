@@ -840,9 +840,10 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
         for (u32 j = 0; j < params.len; j++) {
             if (!ty_param_default(me, params.data[j])) min = j + 1;
         }
-        // (In JavaScript a class reference's wrong arity is reported and the reference made anyway: tsgo's
-        // getTypeFromClassOrInterfaceReference only returns errorType for TypeScript)
-        if (is_js || (count >= min && count <= params.len)) return true;
+        // (tsgo's getConstructorsForTypeArguments has no JavaScript leniency: a class reference has its own, see
+        // ty_class_base_constructor_unfit())
+        (void)is_js;
+        if (count >= min && count <= params.len) return true;
     }
     return false;
 }
@@ -2190,6 +2191,11 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
     // constructors no base either, tsc's resolveBaseTypesOfClass)
     if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return !(constructor->flags & TYF_ANY) || (constructor->flags & TYF_ERROR);
     SourceFile const* file = extends->inner_span.source;
+    // (In JavaScript a class reference's wrong arity is reported and the reference made anyway: tsgo's
+    // getTypeFromClassOrInterfaceReference only returns errorType for TypeScript)
+    if (file && file->is_js && constructor->kind == TY_DECLARED && constructor->declared.kind == TY_DECLARED_CLASS_STATIC) {
+        return !ty_members(me, constructor)->construct_count;
+    }
     return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);
 }
 

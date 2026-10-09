@@ -1796,7 +1796,7 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     bool missing_extends;
     Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
     Expr const* base = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
-    if (!target && base->tag != EXPR_IMPLICIT_ANY && !span_valid(my jsdoc_extends)) {
+    if (!target && base->tag != EXPR_IMPLICIT_ANY) {
         // Any other expression (tsc's resolveBaseTypesOfClass): a constructor type that is a class's static side, when
         // the class has no outer type parameters, is a reference to that class, type arguments and all
         // (getTypeFromClassOrInterfaceReference); else a construct signature has to take that many (TS2508)
@@ -2328,7 +2328,7 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
         // (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type is the base type, else TS8023)
         bool identical = false;
         if (my jsdoc_augments) {
-            type_typecheck(my jsdoc_augments, errs);
+            // (Its constraints aren't checked: getTypeFromTypeNode, not checkSourceElement)
             Ty const* tag = ty_of_node(my jsdoc_augments);
             Ty const* base = ty_class_base_instance(current_checker, me);
             if (!base) base = ty_intrinsic(current_checker, TY_ERROR);
