@@ -101,8 +101,6 @@ typedef struct ParserShared {
     // an optional element (tsc's parseTupleElementType)
     const char* jsdoc_postfix_nullable_start;
     const char* jsdoc_postfix_nullable_end;
-    // The scope-level `@template`s of the variable statement just parsed, for the statement list to append after it
-    Statement* jsdoc_after;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
@@ -167,10 +165,6 @@ typedef struct FunctionCtx {
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
     vec_jsdoc_range_drop(&my jsdoc_comments);
-    if (my jsdoc_after) {
-        statement_drop(my jsdoc_after);
-        free(my jsdoc_after);
-    }
     vec_error_drop(&my errors);
     vec_error_drop(&my jsdoc_errors);
     free(my await_statements);
@@ -12662,13 +12656,6 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
 }
 
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
-// What a statement parsed outside of a statement list (an `if` arm) left behind
-static void jsdoc_drop_after(Parser* p) {
-    if (!p->shared->jsdoc_after) return;
-    statement_drop(p->shared->jsdoc_after);
-    free(p->shared->jsdoc_after);
-    p->shared->jsdoc_after = nullptr;
-}
 
 // Whether the statement at p could be one tsc's isStartOfStatement rejects but parse_statement() accepts (as an
 // expression statement with a missing semicolon: `private x = 1;`, `export extension class C`, `import x`); anything
@@ -12762,16 +12749,11 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             p.pos++;
         } else if (
             (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
-            (jsdoc_drop_after(&p), parse_statement(&p, toplevel, &statement))
+            parse_statement(&p, toplevel, &statement)
         ) {
             // (Its index: the JSDoc declarations that follow it are pushed after it)
             isize statement_index = vec_statement_size(ret);
             list_push(vec_statement, ret, statement);
-            if (p.shared->jsdoc_after) {
-                list_push(vec_statement, ret, *p.shared->jsdoc_after);
-                free(p.shared->jsdoc_after);
-                p.shared->jsdoc_after = nullptr;
-            }
             if (p.shared->source->is_js) {
                 jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span), true, toplevel,
                     false, ret);
@@ -13663,27 +13645,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             }
             jsdoc_apply_satisfies_initializer(&tags, initializer);
             FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));
-            if (!function && initialized_binding_value(initializer)->tag != EXPR_CLASS_DECL && !p->shared->jsdoc_after) {
-                // `@template T` here declares T in the enclosing scope: tsc's host for it is a signature, and there is
-                // none (getHostSignatureFromJSDoc), so bindTypeParameter declares it in the container
-                bool alias = false, templates = false;
-                for_each (i, vec_jsdoc_tag, &tags) {
-                    alias |= i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK;
-                    templates |= i->kind == JSDOC_TAG_TEMPLATE && !i->earlier && span_valid(i->name);
-                }
-                if (templates && !alias) {
-                    Generic generic = jsdoc_template_generic(&tags);
-                    Span span = statement->span;
-                    p->shared->jsdoc_after = c_new(Statement, (Statement){
-                        .tag = STATEMENT_DECL_TYPE,
-                        .decl.type = c_new(TypeDecl, {
-                            .full_span = span, .generic = generic, .type = type_any, .jsdoc = true,
-                            .jsdoc_check_only = true, .jsdoc_free_templates = true,
-                        }),
-                        .span = span,
-                    });
-                }
-            }
+            // (A `@template` here has no host, tsgo's reparser drops it: its names are unresolved, TS2304)
             // (The variable's `@type` is its declared type only, the function's contextual type: tsgo has no
             // getReturnTypeOfTypeTag, the function's return type is inferred)
             if (function) jsdoc_apply_function(p, &tags, function);

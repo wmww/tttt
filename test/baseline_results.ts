@@ -52601,7 +52601,7 @@ const baselines = {
         types: true,
     },
     'jsdocOuterTypeParameters2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

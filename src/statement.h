@@ -77,10 +77,6 @@ typedef struct TypeDecl {
     // Not a declaration: a JSDoc type that only gets resolved and checked (tsc checks every tag of a comment), like the
     // constraint of a `@template {C}` without a type parameter. No name, no symbol
     bool jsdoc_check_only;
-    // With jsdoc_check_only: `generic` is the `@template`s of a host that has no type parameters of its own (a variable
-    // statement), which tsc declares in the enclosing container (bindTypeParameter: no
-    // getEffectiveContainerForJSDocTemplateTag)
-    bool jsdoc_free_templates;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);

@@ -245,7 +245,6 @@ void type_decl_drop(TypeDecl* me) {
 }
 
 void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
-    if (my jsdoc_free_templates) generic_add_names(&my generic, scope);
     if (my jsdoc_check_only) return;
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
@@ -1762,7 +1761,6 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_DECL_TYPE: {
             if (my decl.type->jsdoc_check_only) {
-                if (my decl.type->jsdoc_free_templates) generic_lookup_names(&my decl.type->generic, names, errs);
                 type_lookup_names(&my decl.type->type, names, errs);
                 break;
             }

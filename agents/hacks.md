@@ -577,8 +577,7 @@ src` finds the code-side markers; every significant one has an entry here.
   transient `JsDocTag`s (parse errors kept for JS files through `ParserShared.jsdoc_errors`).
   `jsdoc_bind_comments()` parses every `@typedef`/`@callback`/`@import` comment again and claims it by innermost
   statement list (claims from failed attempts stay); `@import` only at list top level; dotted typedefs
-  skipped; typedefs sharing a comment share its templates. `ParserShared.jsdoc_after` is a one-slot handoff that
-  statements outside a list drop.
+  skipped; typedefs sharing a comment share its templates.
 - `@type` on assignments reaches the symbol via `SymbolDecl.jsdoc_type`, threaded through every assignment-declaration
   site in scope.c (new sites must pass it; chains: outermost only). `jsdoc_apply_type_signature()` *moves* the
   TypeNodes of a written function type. `Statement.expr_jsdoc_type` shares a union with `expr`: every site building an expression
