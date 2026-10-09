@@ -656,7 +656,7 @@ static bool resolves_json(CompilerOptions const* options) {
 }
 
 // The files of dir (and below) the include patterns match, each into the bucket of the first pattern that matches it
-// (tsc's matchFiles keeps them in the order of the include patterns)
+// (tsgo's matchFileNames: one result list per include pattern, flattened in include order)
 static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* buckets, int depth) {
     if (depth > 64) return;
     StrList subdirs = {0};
@@ -675,9 +675,7 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
-                    // HACK: one bucket, walk order (agents/bugs/include_order.md: with tsc's include order vue's
-                    // checker-local variance measurements diverge from one checker's at --checkers 2..4)
-                    str_list_push(&buckets[0], cstr_sv(&path));
+                    str_list_push(&buckets[i], cstr_sv(&path));
                     break;
                 }
             }
@@ -788,9 +786,8 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (cstr_size(&my options->declaration_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->declaration_dir));
     }
 
-    // One walk per distinct base directory, skipping bases inside another (tsc's getBasePaths). tsc sorts them first,
-    // which with its include-ordered buckets doesn't change the files' order; with one bucket (HACK, see
-    // collect_files()) walking them in include order keeps the include order of disjoint bases
+    // One walk per distinct base directory, skipping bases inside another (tsgo's getBasePaths). tsgo sorts them first,
+    // which with its include-ordered buckets doesn't change the files' order
     StrList found = {0};
     StrList bases = {0};
     StrList all = {0};

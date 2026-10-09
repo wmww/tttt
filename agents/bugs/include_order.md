@@ -1,41 +1,34 @@
-# Root files in include-pattern order expose a per-checker variance order dependence (vue)
+# vue's vModel.ts:446 TS2345 depends on the checker count (variance measurement order)
 
-tsc's matchFiles puts each file into the bucket of the first include pattern that matches it and returns the buckets
-in include order (utilities.ts matchFiles, `results[includeIndex]`); tttt's collect_files() keeps walk order. The port
-is one line (`collect_files()` pushes to `buckets[0]`, the HACK marker there: push to `buckets[i]` instead; verified
-identical to tsc's `fileNames` for vue's tsconfig.corpus.json, 464 roots). With it vue is clean at `--checkers 1` but
-reports one TS2345 at 2..4 checkers (the default):
+Root files come in tsgo's include-pattern order since 2026-10-09: tsgo's matchFileNames (vfs/vfsmatch) puts each file
+into the result list of the first include pattern that matches it and flattens the lists in include order;
+`collect_files()` does the same (the walk-order HACK that used to be there is gone). Walk order inside a pattern's list
+is the sorted DFS, files before subdirectories, like tsgo's globVisitor.
+
+tsgo 7.1 reports, at every `--checkers` value including 1 and `--singleThreaded`:
 
     packages/runtime-dom/src/directives/vModel.ts:446 TS2345 Argument of type 'DirectiveBinding<any, string, any>'
     is not assignable to parameter of type 'DirectiveBinding<any, "number", any>'.
 
-Mechanism (2026-10-08, agent ta): tsc itself is order dependent here. `resolveDynamicModel`'s inferred return type is
-subtype-reduced; whether `ModelDirective<HTMLSelectElement, 'number'>` is a strict subtype of
+and the vue corpus cache (`test/corpora.tsc.jsonl`) expects it. tttt reports it at `--checkers` 2 and 4 (the default,
+so the corpus counts it) but not at 1 or 3.
+
+Mechanism (2026-10-08, agent ta, against tsc 6, which was clean in its full check): `resolveDynamicModel`'s inferred
+return type is subtype-reduced; whether `ModelDirective<HTMLSelectElement, 'number'>` is a strict subtype of
 `ModelDirective<HTMLInputElement, string>` depends on ObjectDirective's HostElement variance, which is circular with
-DirectiveHook/DirectiveBinding/SSRDirectiveHook. In tsc's full check the first measurement is DirectiveHook's
-(runtime-core directives.ts:184, `binding.dir[name] as DirectiveHook | ...` related to the imported bare
-`DirectiveHook`): ObjectDirective is measured while DirectiveHook's variances are in flight (Ternary.Unknown), so its
-HostElement comes out independent (4), Select is reduced away, the union call takes the `string` signature, no error.
-Measured from elsewhere first (tsc's language service on vModel.ts alone: `scripts/tsctypeat.sh` shows two members)
-HostElement is contravariant (2) and the error appears in tsc too.
+DirectiveHook/DirectiveBinding/SSRDirectiveHook. Measured while DirectiveHook's variances are in flight
+(runtime-core directives.ts:184 first, Ternary.Unknown), HostElement comes out independent (4), Select is reduced
+away, no error; measured from vModel.ts first, HostElement is contravariant (2) and the error appears. tttt's
+`--checkers 1` order still measures from directives.ts first; tsgo's single checker doesn't, though its program file
+order (filesparser.go collectFiles: imports before importers, as tsc 6) should be the same. What tsgo does differently
+at one checker is not known: an instrumented tsgo (test/oracle overlay logging getVariancesWorker's start with the
+current node) on vue at `--checkers 1` against `TTTT_DUMP_VARIANCES=1 ./release/tttt --checkers 1 -p
+thirdparty/corpora/vue/tsconfig.corpus.json` would show which measurement starts first.
 
-tttt now measures in tsc's order at one checker (the bare-alias fix, alias_variance_applies() /
-ty_alias_args_filled()). With K checkers the checker that gets vModel.ts never checked directives.ts, so it measures
-from vModel.ts and gets tsc's language-service answer. Each checker measures variances on its own (hacks.md, "Each
-checker measures variances"), so no file order fixes this at K > 1. Options: keep the HACK (walk order happens to put
-directives.ts in vModel.ts's checker), or make variances a program-level, checker-independent result (a sequential
-pre-pass in program order, or sharing measured variances between checkers deterministically): a plan of its own, worth
-it only if more such cases show up (`scripts/checkerdiff.py` finds them).
+At K > 1 tsgo assigns files to checkers by weight and import adjacency (compiler/checkerpool.go
+getCheckerAssociationsInOrder), tttt by contiguous runs of program order (`deal_files()`), so which checker sees
+directives.ts before vModel.ts differs anyway; each checker measures variances on its own (hacks.md "Each checker
+measures variances"). Porting tsgo's association policy would make per-checker results comparable at K > 1.
 
-Reduction: `/tmp`-style tsconfig extending vue's tsconfig.corpus.json with `"types": []`, `files`: packages/global.d.ts
-and runtime-dom/src/directives/vModel.ts: tsc clean, tttt clean at `--checkers 1`, TS2345 at 2..4.
-
-tsgo 7.0.2 (2026-10-08, `tsc` on PATH, vue's tsconfig.corpus.json, `--noEmit`): reports this TS2345 at vModel.ts:446
-at `--checkers 1`, 2, 4 and `--singleThreaded` alike (10 errors in all, the other 9 in dts-test's
-defineComponent.test-d.tsx), so tsgo's single-checker order already differs from tsc 6's full check here. On the
-reduction above tsgo reports it at `--checkers 1` and 2 but not at 4: tsgo's per-checker caches are order dependent
-too. For a TS7 retarget vue's corpus would expect the TS2345 (and tttt's walk-order HACK would then be the wrong way
-round); which order tsgo's checkers measure in would need a look at its checker-assignment (likely file index modulo
-the checker count, unlike tttt's contiguous runs).
-Since the TS 7.1 switch `test/corpora.tsc.jsonl`'s vue entry (tsgo 7.1) does expect the TS2345 at vModel.ts:446:
-re-run `scripts/realworld.py --corpus vue` at 1 and 4 checkers before deciding which way the walk-order HACK should go.
+Reduction: a tsconfig extending vue's tsconfig.corpus.json with `"types": []` and `files` packages/global.d.ts and
+runtime-dom/src/directives/vModel.ts.
