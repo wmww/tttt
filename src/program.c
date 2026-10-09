@@ -512,16 +512,6 @@ static cstr program_path_for_message(Program const* me, csview absolute) {
     return below ? cstr_from_sv(csview_slice(absolute, cwd.size + 1, absolute.size)) : cstr_from_sv(absolute);
 }
 
-// Whether a script declares `declare module "<name>"` (tsc's SourceFile.ambientModuleNames)
-static bool source_declares_ambient_module(SourceFile const* source, csview name) {
-    for (u32 i = 0; i < source->module_ref_count; i++) {
-        ModuleRef const* ref = source->module_refs[i];
-        // (Not an augmentation inside an ambient module: that names a file)
-        if (ref->is_declaration && !ref->nested_in_ambient_module && csview_equals_sv(cstr_sv(&ref->path), name)) return true;
-    }
-    return false;
-}
-
 static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr);
 static bool program_rewrite_crosses_projects(Program* me, SourceFile const* target);
 
@@ -1470,9 +1460,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         if (ref->is_declaration && !source_file->is_module && !ref->nested_in_ambient_module) continue;
         if (ref->ambient_only) continue;
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
-        // A name the file declares an ambient module for is that module, not a file (tsc's resolveToOwnAmbientModule):
-        // `import * as React from "react"` inside react16.d.ts's `declare module "react/jsx-runtime"`
-        if (!source_file->is_module && !ref->nested_in_ambient_module && source_declares_ambient_module(source_file, cstr_sv(&ref->path))) continue;
+        // (tsgo resolves a name the file declares an ambient module for too, tsc 6's resolveToOwnAmbientModule is gone: the
+        // file it finds is part of the program, and checked)
         if (redirect_target && program_share_redirect_ref(redirect_target, ref)) continue;
         program_load_module_ref(me, source_file, ref);
     }
