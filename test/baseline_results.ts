@@ -7693,7 +7693,7 @@ const baselines = {
     'declFileTypeofFunction': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileTypeofInAnonymousType': {
         errors: true,
@@ -14563,7 +14563,7 @@ const baselines = {
     'functionExpressionReturningItself': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionExpressionShadowedByParams': {
         errors: true,
@@ -27873,7 +27873,7 @@ const baselines = {
     'recursiveLetConst': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveMods': {
         errors: true,
@@ -50088,7 +50088,7 @@ const baselines = {
     'functionImplementations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionNameConflicts': {
         errors: true,

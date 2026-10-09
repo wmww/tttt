@@ -3592,6 +3592,18 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_symbol_name(me, d, function, SYMBOL_VALUE);
                     return;
                 }
+                // (A function expression initializing a variable of a file or namespace too, by the variable, except
+                // where printed for that very declaration, by its own name if it has one)
+                FunctionImpl const* expression = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
+                Symbol const* variable = expression ? function_impl_rare(expression)->top_level_variable : nullptr;
+                if (variable) {
+                    out_lit(d, "typeof ");
+                    Span own = function_impl_variable_name(expression);
+                    bool here = span_valid(d.at) && (span_eq(d.at, own) || span_contains_span(d.at, expression->full_span));
+                    if (here && span_valid(expression->name) && expression->symbol) out(d, expression->name.sv);
+                    else out_symbol_name(me, d, variable, SYMBOL_VALUE);
+                    return;
+                }
                 // (and a static method as `typeof C.m`)
                 FunctionImpl const* method = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
                 Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;

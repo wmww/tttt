@@ -157,6 +157,9 @@ typedef struct FunctionImplRare {
     // A function expression or arrow function that initializes a variable with expandos (`const f = () => {}; f.x = 1`,
     // scope_add_expandos()): the variable, whose exports are members of this function's type (tsc's getSymbolOfExpando)
     Symbol const* expando_host;
+    // A function expression or arrow function that initializes a variable of a file or namespace (`var f = () => f`):
+    // the variable, by which its type prints `typeof f` within itself (tsgo's shouldWriteTypeOfFunctionSymbol)
+    Symbol const* top_level_variable;
     // JavaScript: the variable a function expression initializes (`var F = function () {}`), whose symbol is the class
     // a constructor function makes (a function declaration's is its own symbol). Set by the resolve walk
     Symbol* class_symbol;

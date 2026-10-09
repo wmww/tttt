@@ -745,6 +745,13 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     }
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
     if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION) function_impl_set_variable_name(initialized_binding_value(me)->function, my binding.content_span);
+    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_FUNCTION &&
+        !expr_is_perenthisized(initialized_binding_value(me)) && !binding_is_parameter(&my binding) &&
+        (names->kind == SCOPE_SCRIPT || names->kind == SCOPE_MODULE || names->kind == SCOPE_NAMESPACE ||
+            names->kind == SCOPE_GLOBAL_AUGMENTATION)
+    ) {
+        function_impl_rare_mut(initialized_binding_value(me)->function)->top_level_variable = my binding.symbol;
+    }
     if (my value) expr_lookup_names(my value, names, errs);
     if (my binding.has_explicit_type && my value && my value->tag == EXPR_UNARY_OP && my value->unary_op->op == UNARY_OP_YIELD) {
         my value->unary_op->declared_context = &my binding.explicit_type;
