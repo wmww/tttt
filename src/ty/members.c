@@ -4125,14 +4125,12 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
     return true;
 }
 
-// A JavaScript function declaration's or class method's `@type {F}` naming a function type: F's one call signature, which
-// is the function's (tsc's getSignaturesOfSymbol with getSignatureOfTypeTag). Function expressions, arrow functions and
-// object literal methods are contextually typed by it instead. Null if F isn't a single signature (getSingleCallSignature)
+// A JavaScript function's own `@type {F}` naming a function type (tsgo's FullSignature: a declaration's, a method's, a
+// function expression's whose comment is its own): F's one call signature, which is the function's (getSignaturesOfSymbol,
+// getSignatureOfFullSignatureType). Null if F isn't a single signature (getSingleCallSignature)
 static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function, bool* self);
 
 static Signature const* jsdoc_tag_signature(Checker* me, FunctionImpl const* function) {
-    // (An object literal method's too: tsgo's FullSignature, getSignaturesOfSymbol)
-    if (function->is_expression && !function->jsdoc_method_signature) return nullptr;
     bool self = false;
     return jsdoc_tag_single_signature(me, function, &self);
 }

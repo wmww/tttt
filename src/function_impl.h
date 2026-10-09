@@ -240,8 +240,6 @@ typedef struct FunctionImpl {
     bool jsdoc_params_checked : 1;
     // Its JSDoc is its return statement's: tsc's getHostSignatureFromJSDoc doesn't find it (a `{...T}` tag isn't an array)
     bool jsdoc_indirect_host : 1;
-    // An object literal method whose JSDoc `@type` is its own signature (tsgo's FullSignature, getSignaturesOfSymbol)
-    bool jsdoc_method_signature : 1;
     bool is_expression : 1; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
     // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
     // parameters past the call's argument count are optional
