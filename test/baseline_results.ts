@@ -9686,7 +9686,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedArrayTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9726,7 +9726,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedTupleTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17946,7 +17946,7 @@ const baselines = {
         types: true,
     },
     'infiniteConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
