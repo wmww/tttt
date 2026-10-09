@@ -14096,9 +14096,9 @@ const baselines = {
         types: true,
     },
     'fileNamesWithEmptyAndDotStems': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fileReferencesWithNoExtensions': {
         errors: true,
@@ -17291,7 +17291,7 @@ const baselines = {
         types: true,
     },
     'incrementalConcurrentSafeAliasFollowing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19426,7 +19426,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesMergedImportAlias(isolatedmodules=false,verbatimmodulesyntax=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19436,7 +19436,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesMergedImportAlias(isolatedmodules=true,verbatimmodulesyntax=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20521,9 +20521,9 @@ const baselines = {
         types: true,
     },
     'jsonImportMultipleTopLevelObjects': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsxAttributeInitializerMultipleElementsNoCrash(jsx=react)': {
         errors: true,

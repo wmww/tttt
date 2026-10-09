@@ -487,7 +487,11 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         u32 target_flags = target ? symbol_resolved_flags(target) : 0;
         bool unknown = !target || target->is_placeholder || target->is_unresolved;
         bool value = target_flags & SYMBOL_VALUE && (target_flags & SYMBOL_VALUE & ~SYMBOL_CONST_ENUM);
-        if (alias->export_import && !ambient && !alias->declared && (unknown || value)) {
+        // (Not under verbatimModuleSyntax: tsc's canCollectSymbolAliasAccessibilityData. Nothing found is TS2304, like
+        // any value use of the name)
+        if (alias->export_import && !ambient && !alias->declared && (unknown || value) &&
+            !compiler_options()->verbatim_module_syntax
+        ) {
             Span first = *vec_span_at(&alias->alias_path, 0);
             Scope const* scope = alias->symbol->alias->scope;
             // (A namespace that is a value only by a module's other exports, merge_commonjs_export_equals(), isn't one yet:
@@ -496,6 +500,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             if (value_found && symbol_is_commonjs_merged_value_only(value_found)) value_found = nullptr;
             if (!value_found && scope_resolve(scope, first.sv, SYMBOL_NAMESPACE)) {
                 error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
+            } else if (!value_found) {
+                scope_report_value_not_found(scope, first, false, errs);
             }
         }
     }
