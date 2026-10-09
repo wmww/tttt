@@ -3679,8 +3679,9 @@ static bool jsdoc_name_is(csview jsdoc_name, csview name) {
 
 static const char* jsdoc_parse_name(const char* c, const char* end, Span* ret, SourceFile const* source) {
     const char* start = c;
+    // (A `-` inside a name is part of it: tsc's scanJSDocToken, `@param {T} data-test-name`)
     while (c < end && (is_identifier_char(*c) || *c == '.' || (uint8_t)*c >= 0x80 ||
-        (*c == '[' && c[1] == ']') || identifier_escape_size(c))
+        (*c == '[' && c[1] == ']') || identifier_escape_size(c) || (*c == '-' && c > start && is_identifier_char(c[-1])))
     ) {
         int escape = identifier_escape_size(c);
         c += escape ? escape : *c == '[' ? 2 : 1;
@@ -4536,9 +4537,8 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         } else {
             type = type_any;
         }
-        // (A bracketed property is optional like `foo?: T`, which adds optionality to its type)
+        // (A bracketed property is `foo?: T`: tsgo's reparser gives the property signature a question token)
         bool optional = tag->bracketed || type.jsdoc_optional;
-        if (tag->bracketed && !type.jsdoc_optional) type.jsdoc_bracketed = true;
         Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
         list_push(vec_interface_member, &members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type

@@ -2307,7 +2307,6 @@ typedef struct TyDisplay {
     // The same for a member of a union or intersection annotation (parenthesizeConstituentTypeOfUnionType: unions,
     // intersections, function and conditional types)
     bool constituent_node;
-    uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
     DeclTracker* tracker; // Declaration emit: null everywhere else
     bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
     // The parameters of the signatures being printed (innermost first): the fake scope tsc's enterNewScope makes for a

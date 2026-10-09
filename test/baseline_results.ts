@@ -19678,7 +19678,7 @@ const baselines = {
     'jsDeclarationsExpandoInternal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsGlobalFileConstFunction': {
         errors: true,
@@ -20308,7 +20308,7 @@ const baselines = {
     'jsdocCallbackParamQualifiedName': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsdocCastCommentEmit': {
         errors: true,
@@ -20393,7 +20393,7 @@ const baselines = {
     'jsdocNonIdentifierPropertiesAndParams': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParamTagInvalid': {
         errors: true,
@@ -42598,12 +42598,12 @@ const baselines = {
     'destructuringParameterDeclaration9(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration9(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterProperties1': {
         errors: true,
@@ -52003,7 +52003,7 @@ const baselines = {
     'jsDeclarationsNestedParams': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsNonIdentifierInferredNames': {
         errors: true,
@@ -52013,12 +52013,12 @@ const baselines = {
     'jsDeclarationsOptionalTypeLiteralProps1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsOptionalTypeLiteralProps2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsPackageJson(target=es2015)': {
         errors: true,
@@ -52633,7 +52633,7 @@ const baselines = {
     'jsdocParamTagTypeLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParseAwait': {
         errors: true,
@@ -52733,7 +52733,7 @@ const baselines = {
     'jsdocTemplateConstructorFunction2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTag': {
         errors: true,

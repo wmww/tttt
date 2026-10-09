@@ -1417,54 +1417,11 @@ static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* memb
         ((d.types_baseline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
 }
 
-// A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
-// `{    a: number;    b?: number;}` (the indentation, names, types and braces reused, the rest not). An optional
-// member's type has undefined under strictNullChecks, which isn't the node's. The literal of an `{Object[]}` tag
-// (`in_array`) prints without its `[]` and with the members' nodes as they are: tsc's tryReuseExistingTypeNode makes a
-// TypeLiteral of the JSDocTypeLiteral whatever its isArrayType, and the array type has no properties to override them
-static void display_node_jsdoc_literal(Checker* me, TyDisplay d, Interface const* interface, bool in_array) {
-    uint8_t depth = (uint8_t)(d.jsdoc_literal_depth + 1);
-    TyDisplay inner = d;
-    inner.jsdoc_literal_depth = depth;
-    out_lit(d, "{");
-    for_each (i, vec_interface_member, &interface->members) {
-        if (!member_printed(me, d, i)) continue;
-        for (uint8_t k = 0; k < depth; k++) out_lit(d, "    ");
-        out(d, i->key.span.sv);
-        out(reused_if(d, false), i->optional ? c_sv("?: ") : c_sv(": "));
-        // (A `T=` member's node says it already, and is reused: tsc's typeViaParent is the node's own type)
-        if (i->optional && compiler_options()->strict_null_checks && !in_array && !i->type.jsdoc_optional) {
-            Ty const* type = ty_of_node(&i->type);
-            ty_display(me, reused_if(inner, false), ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2,
-                nullptr, (TyList){0}));
-        } else if (i->type.parsed) {
-            display_node(me, inner, &i->type);
-        } else {
-            out(reused_if(d, false), c_sv("any"));
-        }
-        out(reused_if(d, false), c_sv(";"));
-    }
-    for (uint8_t k = 0; k + 1 < depth; k++) out_lit(d, "    ");
-    out_lit(d, "}");
-}
-
-static bool is_jsdoc_names_literal(Interface const* interface) {
-    if (!interface->jsdoc_literal) return false;
-    for_each (i, vec_interface_member, &interface->members) {
-        if (i->key.tag != INTERFACE_KEY_NAME) return false;
-    }
-    return true;
-}
-
 static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
     bool empty = true;
     for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, d, i);
     if (empty) {
         out_lit(d, "{}");
-        return;
-    }
-    if (is_jsdoc_names_literal(interface)) {
-        display_node_jsdoc_literal(me, d, interface, false);
         return;
     }
     out_lit(d, "{ ");
@@ -1579,12 +1536,6 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             display_node_interface(me, d, &node->interface);
             break;
         case TYPE_ARRAY: {
-            if (!node->array.readonly && node->array.element->tag == TYPE_INTERFACE && !node->array.element->parenthesized &&
-                is_jsdoc_names_literal(&node->array.element->interface)
-            ) {
-                display_node_jsdoc_literal(me, d, &node->array.element->interface, true);
-                break;
-            }
             if (node->array.readonly) out_lit(d, "readonly ");
             TyDisplay element_d = d;
             element_d.array_element_node = true;
@@ -3059,8 +3010,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             shown = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
-        // (Not a bracketed JSDoc property's: no `?` token says its type has undefined)
-        bool optional = (prop->flags & PROP_OPTIONAL) != 0 && !(annotation && annotation->jsdoc_bracketed);
+        bool optional = (prop->flags & PROP_OPTIONAL) != 0;
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
