@@ -903,37 +903,37 @@ const baselines = {
     'argumentsReferenceInMethod1_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod2_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod3_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod4_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod5_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod6_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod7_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInObjectLiteral_Js(alwaysstrict=true)': {
         errors: true,
@@ -20278,12 +20278,12 @@ const baselines = {
     'jsdocArrayObjectPromiseImplicitAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocArrayObjectPromiseNoImplicitAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAugmentsAliasExtends': {
         errors: true,
@@ -20453,7 +20453,7 @@ const baselines = {
     'jsdocTypeCast': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeGenericInstantiationAttempt': {
         errors: true,
@@ -31381,9 +31381,9 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignmentUsedBeforeAssignedJs1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'thisReferencedInFunctionInsideArrowFunction1': {
         errors: true,
@@ -51953,12 +51953,12 @@ const baselines = {
     'jsDeclarationsImportAliasExposedWithinNamespace': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsImportAliasExposedWithinNamespaceCjs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsImportNamespacedType': {
         errors: true,
@@ -51973,7 +51973,7 @@ const baselines = {
     'jsDeclarationsJSDocRedirectedLookups': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsJson(target=es2015)': {
         errors: true,
@@ -52071,9 +52071,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsReusesExistingNodesMappingJSDocTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReusesExistingTypeAnnotations': {
         errors: true,
@@ -52148,7 +52148,7 @@ const baselines = {
     'jsDeclarationsTypedefPropertyAndExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsUniqueSymbolUsage': {
         errors: true,
@@ -52538,7 +52538,7 @@ const baselines = {
     'jsdocIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocLinkTag1': {
         errors: true,
@@ -53163,7 +53163,7 @@ const baselines = {
     'typedefTagExtraneousProperty': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typedefTagNested': {
         errors: true,

@@ -106,7 +106,7 @@ typedef enum JsDocIntrinsic {
     JSDOC_INTRINSIC_UNDEFINED,
     JSDOC_INTRINSIC_NULL,
     JSDOC_INTRINSIC_ANY, // `Object` without noImplicitAny
-    JSDOC_INTRINSIC_INDEX_SIGNATURE, // `Object<string, V>`, `Object.<number, V>`: `{ [x: string]: V }`
+    JSDOC_INTRINSIC_INDEX_SIGNATURE, // `Object<K, V>`, `Object.<K, V>`: `Record<K, V>` of a valid key K, else any
 } JsDocIntrinsic;
 
 void identifier_type_drop(IdentifierType* me);

@@ -469,13 +469,12 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         case JSDOC_INTRINSIC_NULL: return ty_intrinsic(me, TY_NULL);
         case JSDOC_INTRINSIC_ANY: return ty_intrinsic(me, TY_ANY);
         case JSDOC_INTRINSIC_INDEX_SIGNATURE: {
-            TypeNode const* key = &vec_spanned_type_at(&identifier->generic_params, 0)->type;
-            IndexInfo info = {
-                .key = ty_intrinsic(me, key->tag == TYPE_STRING ? TY_STRING : TY_NUMBER),
-                .value = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 1)->type, ctx),
-                .param_name = checker_atom(me, c_sv("x")),
-            };
-            return ty_object_literal(me, nullptr, 0, &info, 1, OBJECT_SYNTHETIC);
+            // (tsgo's getIntendedTypeFromJSDocTypeReference: the global Record alias of a valid key, else any)
+            Symbol const* record = program_get_global(me->program, c_sv("Record"), SYMBOL_TYPE);
+            Ty const* key = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 0)->type, ctx);
+            if (!record || !(record->flags & SYMBOL_TYPE_ALIAS) || !ty_is_valid_index_key(key)) return ty_intrinsic(me, TY_ANY);
+            Ty const* args[2] = { key, ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 1)->type, ctx) };
+            return ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 });
         }
     }
     // (A JavaScript constructor function's `this` type)
@@ -1785,20 +1784,10 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
             return ty_widened_literal(me, ty_expr_type(me, init));
         }
     }
-    // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration), possibly
-    // undefined when only methods assign it (definedInMethod)
+    // The first JSDoc `@type` of an assignment is the type, as declared (tsgo has no definedInMethod `| undefined`)
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&symbol->decls[i])) {
-            Ty const* annotated = ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
-            if (!compiler_options()->strict_null_checks) return annotated;
-            bool in_constructor = false, in_method = false;
-            for (u32 j = 0; j < symbol->decl_count; j++) {
-                in_constructor |= symbol->decls[j].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-                in_method |= symbol->decls[j].assignment == ASSIGNMENT_DECL_THIS_IN_METHOD;
-            }
-            if (!in_method || in_constructor) return annotated;
-            Ty const* parts[2] = { annotated, ty_intrinsic(me, TY_UNDEFINED) };
-            return ty_union(me, parts, 2, nullptr, (TyList){0});
+            return ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
         }
     }
     Ty const* stack[16];

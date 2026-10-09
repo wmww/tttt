@@ -1635,9 +1635,10 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     for_each (i, vec_initialized_binding, &my initializers) {
         Expr const* value = initialized_binding_value(i);
-        if (i->binding.has_explicit_type && i->binding.explicit_type.from_jsdoc && value->tag != EXPR_IMPLICIT_ANY &&
-            (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc ? value->as_type->is_satisfies &&
-                !span_eq(expr_outer_span(value), expr_outer_span(&value->as_type->expr)) : !span_eq(expr_outer_span(value), value->inner_span))
+        // (tsgo's reparser casts the initializer of a `@satisfies` declaration, whose outer parentheses have the cast's type)
+        if (i->binding.has_explicit_type && i->binding.explicit_type.from_jsdoc && value->tag == EXPR_AS_TYPE &&
+            value->as_type->is_jsdoc && value->as_type->is_satisfies &&
+            !span_eq(expr_outer_span(value), expr_outer_span(&value->as_type->expr))
         ) {
             ctx->jsdoc_paren_span = expr_outer_span(value);
             ctx->jsdoc_paren_type = ty_of_node(&i->binding.explicit_type);
