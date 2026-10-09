@@ -19921,7 +19921,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationConstructorOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19991,7 +19991,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationFunctionOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20026,7 +20026,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationMethodOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51751,7 +51751,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsClassesErr(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52121,7 +52121,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsTypeReferences4(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61326,7 +61326,7 @@ const baselines = {
         types: true,
     },
     'plainJSGrammarErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

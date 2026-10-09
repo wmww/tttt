@@ -750,7 +750,8 @@ static void js_syntax_function(Parser* me, FunctionImpl const* function, bool ty
         Span span = span_between(vec_generic_item_front(items)->full_span, vec_generic_item_back(items)->full_span);
         js_syntax_error(me, span, 8004, "Type parameter declarations can only be used in TypeScript files.");
     }
-    if (function->ret_explicit && span_valid(function_impl_ret_span(function))) {
+    // (A signature declaration is reported as a whole instead: tsgo's checkJSSyntax)
+    if (function->ret_explicit && function->has_body && span_valid(function_impl_ret_span(function))) {
         js_syntax_error(me, function_impl_ret_span(function), 8010, "Type annotations can only be used in TypeScript files.");
     }
 }
@@ -2241,8 +2242,8 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
     return parse_success(&p);
 }
 
-// TypeScript-only modifiers in JavaScript (tsc's getJSSyntacticDiagnosticsForFile: checkModifiers, and every modifier
-// of a class property but `static` and `accessor`, TS8012 for a parameter's)
+// TypeScript-only modifiers in JavaScript (tsgo's checkJSSyntax: those of a class, class member, function or variable
+// statement that aren't JavaScript's, TS8012 for a parameter's)
 static void check_js_modifiers(Parser* parent, ModifierList const* me, ModifiedNode node) {
     if (!reports_js_syntax(parent) || node.parent == MODIFIED_IN_TYPE) return;
     switch (node.kind) {
@@ -2265,23 +2266,18 @@ static void check_js_modifiers(Parser* parent, ModifierList const* me, ModifiedN
             return;
     }
     for_each (i, vec_spanned_modifier, &me->spanned) {
+        // (Every modifier but JavaScript's, ModifierFlagsJavaScript: a variable statement's `const` is its keyword)
         bool reported;
-        if (node.kind == MODIFIED_PROPERTY) {
-            reported = i->tag != MODIFIER_STATIC && i->tag != MODIFIER_ACCESSOR;
-        } else {
-            switch (i->tag) {
-                case MODIFIER_CONST: reported = node.kind != MODIFIED_VARIABLE_STATEMENT; break;
-                case MODIFIER_PUBLIC:
-                case MODIFIER_PRIVATE:
-                case MODIFIER_PROTECTED:
-                case MODIFIER_READONLY:
-                case MODIFIER_DECLARE:
-                case MODIFIER_ABSTRACT:
-                case MODIFIER_OVERRIDE:
-                    reported = true;
-                    break;
-                default: reported = false; break;
-            }
+        switch (i->tag) {
+            case MODIFIER_EXPORT:
+            case MODIFIER_EXPORT_DEFAULT:
+            case MODIFIER_STATIC:
+            case MODIFIER_ACCESSOR:
+            case MODIFIER_ASYNC:
+                reported = false;
+                break;
+            case MODIFIER_CONST: reported = node.kind != MODIFIED_VARIABLE_STATEMENT; break;
+            default: reported = true; break;
         }
         if (reported) {
             js_syntax_error(parent, i->span, 8009, "The '", i->span, "' modifier can only be used in TypeScript files.");
@@ -7657,11 +7653,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         bool has_type = false;
         if (hop_char(&p, ':')) {
             hop_whitespace(&p);
-            Anchor type_start = anchor(&p);
-            intptr_t mark = error_mark(&p);
             expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
-            js_syntax_skip_since(&p, mark);
-            js_syntax_error(&p, span_from(type_start), 8010, "Type annotations can only be used in TypeScript files.");
             has_type = true;
             hop_whitespace(&p);
         } else if (span_valid(rest)) {
@@ -7928,7 +7920,6 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
 static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    intptr_t mark = error_mark(&p);
 
     ModifierList modifiers;
     // (A type member's `const` isn't one: tsc's parseTypeMember has no permitConstAsModifier)
@@ -8067,9 +8058,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (!parse_function_fn(&p, (FunctionFlags){ .committed = true }, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
                 func = (FunctionImpl){0};
-            } else if (!func.has_body && reports_js_syntax(&p)) {
-                js_syntax_skip_since(&p, mark);
-                js_syntax_error(&p, keyword, 8017, "Signature declarations can only be used in TypeScript files.");
+            } else if (!func.has_body) {
+                // (The whole of it: tsgo's checkJSSyntax, which checks what's inside too)
+                js_syntax_error(&p, span_with_semicolon(span_from(a)), 8017, "Signature declarations can only be used in TypeScript files.");
             }
             func.full_span = span_from(a);
             func.is_constructor = true;
@@ -8095,9 +8086,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             }
             if (is_type && modified.kind == MODIFIED_METHOD_SIGNATURE) {
                 js_syntax_function(&p, &func, false);
-            } else if (!is_type && !is_getter && !is_setter && !func.has_body && reports_js_syntax(&p)) {
-                js_syntax_skip_since(&p, mark);
-                js_syntax_error(&p, name_span, 8017, "Signature declarations can only be used in TypeScript files.");
+            } else if (!is_type && !func.has_body) {
+                js_syntax_error(&p, span_with_semicolon(span_from(a)), 8017, "Signature declarations can only be used in TypeScript files.");
             }
             func.is_abstract_member = modifiers.includes[MODIFIER_ABSTRACT];
             *ret = (ClassItem){
@@ -8257,6 +8247,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                         MODIFIED_PROPERTY_SIGNATURE,
                     .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
                 });
+            }
+            if (!is_type && ret->interface_memeber.key.tag == INTERFACE_KEY_INDEX) {
+                // (A class's index signature is a signature declaration, the whole of it: tsgo's checkJSSyntax.
+                // Its parameter isn't checked, tsc parses it like a type's)
+                Span node = ret->interface_memeber.key.index->node;
+                js_syntax_error(&p, span_make(p.shared->source, a.start, span_end_ptr(node)), 8017,
+                    "Signature declarations can only be used in TypeScript files.");
             }
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declaration = span_from(a);
@@ -13405,42 +13402,46 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     return parse_success(&p);
 }
 
-// Declarations that only exist in TypeScript, reported at their name with nothing inside them (tsc's
-// getJSSyntacticDiagnosticsForFile). `keyword`: where the declaration starts after its modifiers
-static void js_syntax_declaration(Parser* p, intptr_t mark, const char* keyword, Statement const* s) {
+// Declarations that only exist in TypeScript, reported at their name (tsgo's checkJSSyntax, which every node the
+// parser finishes goes through: what's inside is reported too, but for the members of an interface or a type alias,
+// which are types). A function without a body is a signature declaration, the whole of it from `start` (its
+// modifiers). `keyword`: where the declaration starts after its modifiers
+static void js_syntax_declaration(Parser* p, intptr_t mark, const char* start, const char* keyword, Statement const* s) {
     if (!reports_js_syntax(p)) return;
     Span name;
-    unsigned code = 8006;
-    char const* what;
     switch (s->tag) {
-        case STATEMENT_DECL_INTERFACE: name = s->decl.interface->name; what = "interface"; break;
-        case STATEMENT_DECL_ENUM: name = s->decl.enum_->name; what = "enum"; break;
-        case STATEMENT_DECL_TYPE: name = s->decl.type->name; code = 8008; what = nullptr; break;
-        case STATEMENT_DECL_NAMESPACE:
-            name = s->decl.namespace->name;
-            what = strncmp(keyword, "namespace", 9) == 0 ? "namespace" : "module";
-            break;
+        case STATEMENT_DECL_INTERFACE:
+            js_syntax_skip_since(p, mark);
+            name = s->decl.interface->name;
+            if (span_valid(name)) js_syntax_error(p, name, 8006, "'interface' declarations can only be used in TypeScript files.");
+            return;
+        case STATEMENT_DECL_TYPE:
+            js_syntax_skip_since(p, mark);
+            name = s->decl.type->name;
+            if (span_valid(name)) js_syntax_error(p, name, 8008, "Type aliases can only be used in TypeScript files.");
+            return;
+        case STATEMENT_DECL_ENUM:
+            name = s->decl.enum_->name;
+            if (span_valid(name)) js_syntax_error(p, name, 8006, "'enum' declarations can only be used in TypeScript files.");
+            return;
+        case STATEMENT_DECL_NAMESPACE: {
+            NamespaceDecl const* ns = s->decl.namespace;
+            // (Not `declare module "m"` nor `declare global`: tsgo's parseAmbientExternalModuleDeclaration doesn't check)
+            if (ns->is_ambient_module || ns->is_global || ns->is_invalid_global || !span_valid(ns->name)) return;
+            name = ns->name;
+            // (The first name of `namespace A.B`)
+            const char* dot = memchr(name.sv.buf, '.', (size_t)name.sv.size);
+            if (dot) name = span_make(name.source, name.sv.buf, dot);
+            js_syntax_error(p, name, 8006, "'", strncmp(keyword, "namespace", 9) == 0 ? "namespace" : "module",
+                "' declarations can only be used in TypeScript files.");
+            return;
+        }
         case STATEMENT_DECL_FUNCTION:
             if (s->decl.function.impl->has_body) return;
-            name = s->decl.function.impl->name;
-            code = 8017;
-            what = nullptr;
-            break;
+            js_syntax_error(p, span_with_semicolon(span_make(p->shared->source, start, span_end_ptr(s->decl.function.impl->full_span))), 8017,
+                "Signature declarations can only be used in TypeScript files.");
+            return;
         default: return;
-    }
-    js_syntax_skip_since(p, mark);
-    if (!span_valid(name)) return;
-    // (The first name of `namespace A.B`)
-    if (s->tag == STATEMENT_DECL_NAMESPACE) {
-        const char* dot = memchr(name.sv.buf, '.', (size_t)name.sv.size);
-        if (dot) name = span_make(name.source, name.sv.buf, dot);
-    }
-    if (code == 8008) {
-        js_syntax_error(p, name, 8008, "Type aliases can only be used in TypeScript files.");
-    } else if (code == 8017) {
-        js_syntax_error(p, name, 8017, "Signature declarations can only be used in TypeScript files.");
-    } else {
-        js_syntax_error(p, name, 8006, "'", what, "' declarations can only be used in TypeScript files.");
     }
 }
 
@@ -13716,7 +13717,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     }
     p.shared->in_ambient = outer_ambient;
     check_modifiers(&p, &modifiers, modified);
-    js_syntax_declaration(&p, mark, keyword, ret);
+    js_syntax_declaration(&p, mark, a.start, keyword, ret);
 
     if (!vec_expr_is_empty(&decorators)) {
         if (ret->tag == STATEMENT_DECL_CLASS) {

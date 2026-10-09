@@ -627,8 +627,8 @@ src` finds the code-side markers; every significant one has an entry here.
   and with `@this` nothing does (`this.x` reads the declared this type); tttt reports eagerly, so not binding it stands
   in for the laziness (webpack's `@this {Module} function errors() { this._errors = [] }`).
 - TS2738 (`IdentifierExpr.this_shadows_outer`) is decided in the resolve walk.
-- JS syntax errors (TS8xxx, `js_syntax_error()`) come from the parser; what tsc skips inside is erased after
-  (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
+- JS syntax errors (TS8xxx, `js_syntax_error()`) come from the parser; what's inside types (which tsgo's
+  parser doesn't check) is erased after (`js_syntax_skip_since()`): every type context needs its call. Node array spans run first to last element.
 
 ## Declaration diagnostics (`ty/declaration_diagnostics.c`, plan 40)
 - `fallback_begin`/`fallback_end`: where the syntactic builder falls back anywhere in a declaration, the *whole*
