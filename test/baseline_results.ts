@@ -10806,7 +10806,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10816,12 +10816,12 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateIdentifierRelatedSpans6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53126,7 +53126,7 @@ const baselines = {
         types: true,
     },
     'typedefCrossModule5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

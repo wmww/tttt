@@ -308,19 +308,35 @@ void error_summary_format(cstr* out, ErrorSummary const* me, char const* newline
     cstr_append(out, newline);
     cstr_append(out, newline);
     if (file_count > 1) {
-        // tsc's createTabularErrorsDisplay, its lengths being log10(n) + 1 as floating point numbers
+        // tsgo's writeTabularErrorsDisplay: the files by name, the counts right-aligned to the longest of them or
+        // `Errors`, a newline after the table
         isize max = 0;
         for (isize j = 0; j < file_count; j++) if (my files[j].errors > max) max = my files[j].errors;
-        double max_length = log10((double)max) + 1;
-        double goal = max_length > 6 ? max_length : 6;
-        int header_padding = max_length - 6 > 0 ? (int)(max_length - 6) : 0;
-        cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", header_padding), "Errors  Files\n");
+        int max_digits = 1;
+        for (isize n = max; n >= 10; n /= 10) max_digits++;
+        int goal = max_digits > 6 ? max_digits : 6;
+        int header_padding = max_digits - 6 > 0 ? max_digits - 6 : 0;
+        cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", header_padding), "Errors  Files", newline);
+        isize* order = malloc(sizeof(isize) * (size_t)file_count);
+        panic_if(!order, "out of memory");
         for (isize j = 0; j < file_count; j++) {
-            int digits = (int)(log10((double)my files[j].errors) + 1);
-            int padding = digits < goal ? (int)(goal - digits) : 0;
-            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", padding), my files[j].errors, "  ",
-                my files[j].name, PRETTY_GREY ":", my files[j].line, PRETTY_RESET "\n");
+            isize k = j;
+            while (k > 0 && strcmp(cstr_str(&my files[order[k - 1]].name), cstr_str(&my files[j].name)) > 0) {
+                order[k] = order[k - 1];
+                k--;
+            }
+            order[k] = j;
         }
+        for (isize o = 0; o < file_count; o++) {
+            isize j = order[o];
+            int digits = 1;
+            for (isize n = my files[j].errors; n >= 10; n /= 10) digits++;
+            int padding = digits < goal ? goal - digits : 0;
+            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", padding), my files[j].errors, "  ",
+                my files[j].name, PRETTY_GREY ":", my files[j].line, PRETTY_RESET, newline);
+        }
+        free(order);
+        cstr_append(out, newline);
     }
     cstr_drop(&first);
 }
