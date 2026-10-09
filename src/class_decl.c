@@ -206,10 +206,14 @@ void class_decl_drop(ClassDecl* me) {
 // A computed member name or a decorator. `own_container`: the name of a method, an accessor or a field with an
 // initializer, which tsc's binder binds inside the member's own flow container (bindContainer saves and restores
 // currentFlow): what it assigns isn't seen after the member
-static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, bool own_container, ErrorCtx* errs) {
+// `member`: the method or accessor whose computed name it is, its containing function to tsc's getContainingFunction
+static void lookup_names_without_super(
+    Expr* expr, Scope* names, NoSuper why, bool own_container, FunctionImpl const* member, ErrorCtx* errs
+) {
     ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     scope->no_super = why;
+    if (member) scope_rare_mut(scope)->decorated_function = member;
     if (why == NO_SUPER_COMPUTED_NAME) {
         ClassDecl const* class_decl = scope_enclosing_class(names);
         if (class_decl) scope_rare_mut(scope)->computed_name_of = &class_decl->generic;
@@ -253,7 +257,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
     for_each (i, vec_expr, &my decorators) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope->member_decorator = true;
-        lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, decorator_errs);
+        lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, nullptr, decorator_errs);
     }
     names->flow->member_name = member_name;
     switch (my tag) {
@@ -262,18 +266,19 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
             break;
 
         case CLASS_ITEM_METHOD:
+            // (Named first: errors in the computed name may point at the method, TS1308's related information)
+            function_impl_set_member_name(&me->method.func, my method.name_span);
             if (my method.computed_key) {
                 names->flow->type_only_alias_ok = my method.is_abstract;
                 bool method_name = names->flow->method_name;
                 names->flow->method_name = true;
-                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, errs);
+                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, &my method.func, errs);
                 names->flow->method_name = method_name;
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
-            function_impl_set_member_name(&me->method.func, my method.name_span);
             if (my method.is_declare && !my method.accessor && !names->ambient) {
                 // (`declare m() {}`, TS1031: tsc's parseClassElement parses the member in an ambient context, unlike an
                 // accessor, parsed before it looks for `declare`)
@@ -286,7 +291,8 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         case CLASS_ITEM_FIELD:
             if (my field.computed_key) {
                 names->flow->type_only_alias_ok = my field.is_abstract || my field.is_declare;
-                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY, errs);
+                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY,
+                    nullptr, errs);
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);

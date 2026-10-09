@@ -2139,6 +2139,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->computed_key) {
                     // (A scope of its own only for resolve_super())
                     Scope* key_scope = scope_new(names, SCOPE_BLOCK);
+                    // (A method's or accessor's name is in it to tsc's getContainingFunction: TS1308's related information)
+                    if (i->tag != OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_FUNCTION) {
+                        scope_rare_mut(key_scope)->decorated_function = i->value.function;
+                    }
                     key_scope->no_super = i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag == EXPR_FUNCTION && i->value.function->is_method) ?
                         NO_SUPER_LITERAL_METHOD_COMPUTED_NAME : NO_SUPER_LITERAL_COMPUTED_NAME;
                     // The name of a method or accessor is deferred like it, as far as a class initializer is concerned
