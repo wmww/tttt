@@ -59,9 +59,9 @@ src` finds the code-side markers; every significant one has an entry here.
 - `unique symbol` placement (TS1335, `parse_type_inner` and `expect_annotation_type`): checked by the parser through
   `unique_allowed_at`, not on the tree like tsc's checkGrammarTypeOperatorNode, and never in JSDoc, where tsc goes to
   the tag's host (a variable or property declaration allows it).
-- Strings are UTF-8 (permanent: tttt's strings are UTF-8): a lone surrogate escape becomes U+FFFD
-  (`append_code_point()`), so all lone surrogates are one string and `"\u{D83D}\u{DE00}"` isn't the emoji.
-  `regex_check_literal()` works in UTF-16 to port tsc's scanner; a position between surrogates is the 3rd UTF-8 byte
+- Strings are UTF-8 (permanent: tttt's strings are UTF-8), a lone surrogate escape kept as its WTF-8 bytes
+  (`append_code_point()`, which joins an escaped pair; the printer escapes it). Code that decodes UTF-8 strictly may
+  still drop those bytes (`cutf8_encode` refuses surrogates). `regex_check_literal()` works in UTF-16 to port tsc's scanner; a position between surrogates is the 3rd UTF-8 byte
   (`utf8_byte_utf16_units()`). A NUL byte ends the file (scannerUnexpectedNullCharacter1,
   scannerStringLiteralWithContainingNullCharacter1).
 - Escaped identifiers (`a`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names

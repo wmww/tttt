@@ -231,6 +231,11 @@ static void append_mapped_code_point(cstr* out, u32 c, bool upper) {
         else if (c >= 0x410 && c <= 0x42F) c += 32;
         else if (c >= 0x400 && c <= 0x40F) c += 80;
     }
+    if (c >= 0xD800 && c <= 0xDFFF) { // (A lone surrogate, kept as its WTF-8 like the parser does)
+        char wtf8[3] = { (char)0xED, (char)(0x80 | ((c >> 6) & 0x3F)), (char)(0x80 | (c & 0x3F)) };
+        cstr_append_n(out, wtf8, 3);
+        return;
+    }
     char buf[8];
     int n = cutf8_encode(buf, c);
     cstr_append_n(out, buf, n);

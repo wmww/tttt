@@ -558,6 +558,13 @@ static void display_quoted_string(TyDisplay d, csview sv, bool single, bool asci
                 } else if (c == 0xC2 && i + 1 < sv.size && (unsigned char)sv.buf[i + 1] == 0x85) {
                     code = 0x85;
                     i += 1;
+                } else if (c == 0xED && i + 2 < sv.size && (unsigned char)sv.buf[i + 1] >= 0xA0 &&
+                    (unsigned char)sv.buf[i + 1] <= 0xBF
+                ) {
+                    // A lone surrogate (WTF-8): always escaped, it isn't valid text (tsgo's escapeStringWorker)
+                    code = ((u32)(c & 0x0F) << 12) | ((u32)((unsigned char)sv.buf[i + 1] & 0x3F) << 6) |
+                        ((unsigned char)sv.buf[i + 2] & 0x3F);
+                    i += 2;
                 } else if (c == 0xE2 && i + 2 < sv.size && (unsigned char)sv.buf[i + 1] == 0x80 &&
                     ((unsigned char)sv.buf[i + 2] == 0xA8 || (unsigned char)sv.buf[i + 2] == 0xA9)
                 ) {

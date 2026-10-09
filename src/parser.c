@@ -257,9 +257,23 @@ static int hex_digit_value(char c) {
 }
 
 static void append_code_point(cstr* str, u32 code) {
-    // A lone surrogate has no UTF-8 encoding: U+FFFD, what node writes for it in the baselines. HACK: "\uD800" and
-    // "\uDC00" are the same string then (see hacks.md)
-    if (code >= 0xD800 && code <= 0xDFFF) code = 0xFFFD;
+    // A surrogate is kept as its WTF-8 encoding (three bytes, ED A0-BF xx), which the printer escapes (`"\uD800"`); a
+    // low one right after a high one is the pair's character (`"\uD83D\uDE00"` is the emoji)
+    if (code >= 0xD800 && code <= 0xDFFF) {
+        isize size = cstr_size(str);
+        const char* data = cstr_str(str);
+        if (code >= 0xDC00 && size >= 3 && (unsigned char)data[size - 3] == 0xED &&
+            (unsigned char)data[size - 2] >= 0xA0 && (unsigned char)data[size - 2] <= 0xAF
+        ) {
+            u32 high = 0xD000 | ((u32)((unsigned char)data[size - 2] & 0x3F) << 6) | ((unsigned char)data[size - 1] & 0x3F);
+            cstr_resize(str, size - 3, '\0');
+            code = 0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00);
+        } else {
+            char wtf8[3] = { (char)0xED, (char)(0x80 | ((code >> 6) & 0x3F)), (char)(0x80 | (code & 0x3F)) };
+            cstr_append_n(str, wtf8, 3);
+            return;
+        }
+    }
     char buf[8];
     int n = cutf8_encode(buf, code);
     cstr_append_n(str, buf, n);

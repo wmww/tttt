@@ -2586,9 +2586,9 @@ const baselines = {
         types: true,
     },
     'braceEscapedSurrogatePairLiteralType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'breakInIterationOrSwitchStatement1': {
         errors: true,
@@ -19063,7 +19063,7 @@ const baselines = {
     'intrinsicStringMappingLoneSurrogate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intrinsics': {
         errors: true,
@@ -21616,9 +21616,9 @@ const baselines = {
         types: true,
     },
     'loneSurrogateStringLiteralTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'longObjectInstantiationChain1': {
         errors: true,
@@ -31108,7 +31108,7 @@ const baselines = {
     'templateLiteralInferenceLoneSurrogate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralInferenceSupplementarySplit': {
         errors: true,
@@ -33058,7 +33058,7 @@ const baselines = {
     'unicodeSurrogatesInStringLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionCallMixedTypeParameterPresence': {
         errors: true,
@@ -45063,12 +45063,12 @@ const baselines = {
     'unicodeExtendedEscapesInStrings10(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings11(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings12(target=es6)': {
         errors: true,
@@ -45188,12 +45188,12 @@ const baselines = {
     'unicodeExtendedEscapesInTemplates10(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates11(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates12(target=es6)': {
         errors: true,
