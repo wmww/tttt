@@ -5000,6 +5000,19 @@ static void walk_base_constraint_parts(Checker* me, Ty const* ty) {
         case TY_STRING_MAPPING:
             walk_base_constraint(me, ty->string_mapping.type);
             return;
+        case TY_CONDITIONAL:
+            // tsc's getConstraintFromConditionalType: a distributive one's goes through its check type's constraint
+            // (getConstraintOfDistributiveConditionalType), the default one is the union of the branches
+            // (`[K in keyof O extends true ? K : never]` is TS2313)
+            // (A branch only when it is lowered already or a plain name to lower: lowering them all costs type-fest 0.4%)
+            if (ty->conditional.distributive) walk_base_constraint(me, ty->conditional.check);
+            for (int which = 1; which >= 0; which--) {
+                TyCondBranch* branch = &ty->conditional.branches[which];
+                if (branch->type || (branch->node && branch->node->tag == TYPE_IDENTIFIER && !branch->mapper)) {
+                    walk_base_constraint(me, ty_cond_branch_type(me, branch));
+                }
+            }
+            return;
         default:
             return;
     }
