@@ -1169,14 +1169,6 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
                     prop->flags |= PROP_FIELD;
                 }
             }
-            // `F.prototype.m = function () {}` (or an arrow function) is a method (tsc's
-            // bindPotentiallyNewExpandoMemberToNamespace: SymbolFlags.Method for a function-like initializer)
-            Expr const* value = member->decl_count ? member->decls[0].node : nullptr;
-            if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-                member->decls[0].assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY && value && value->tag == EXPR_FUNCTION
-            ) {
-                prop->flags |= PROP_METHOD;
-            }
             if (member->decl_count && member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
                 define_property_readonly(me, member->decls[0].node)
             ) {
@@ -1204,75 +1196,10 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             }
             existing->decl->decl_spans = all;
             existing->decl->decl_span_count = total;
-        } else if (existing && existing->decl->decl_span_count) {
-            // `C.prototype.x = v` with a member x of the class body: more declarations of it (tsc's
-            // bindPrototypePropertyAssignment into the class's members), unless a function value (a method) meets a
-            // property, a duplicate that is a symbol of its own. (`this.x = v` never adds one: replaced by the method
-            // declared after it, or not added to the symbol declared before it)
-            u32 extra = 0;
-            for (u32 d = 0; d < member->decl_count; d++) {
-                SymbolDecl const* decl = &member->decls[d];
-                if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
-                Expr const* value = decl->node;
-                if (value && value->tag == EXPR_FUNCTION && !(existing->flags & PROP_METHOD)) continue;
-                extra++;
-            }
-            if (extra) {
-                u32 total = existing->decl->decl_span_count + extra;
-                Span* all = arena_new_n(&my arena, Span, total);
-                memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
-                u32 at = existing->decl->decl_span_count;
-                for (u32 d = 0; d < member->decl_count; d++) {
-                    SymbolDecl const* decl = &member->decls[d];
-                    if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
-                    Expr const* value = decl->node;
-                    if (value && value->tag == EXPR_FUNCTION && !(existing->flags & PROP_METHOD)) continue;
-                    all[at++] = decl->full;
-                }
-                existing->decl->decl_spans = all;
-                existing->decl->decl_span_count = total;
-            }
         }
         vec_span_drop(&spans);
     }
     free(entries);
-    // `F.prototype = { ... }`: the object literal's members too (tsc's getAssignedClassSymbol, merged into the class by
-    // getDeclaredTypeOfClassOrInterface)
-    Symbol const* prototype = symbol->exports && !symbol_find_decl(symbol, SYMBOL_DECL_CLASS) ?
-        symbol_table_get(symbol->exports, c_sv("prototype")) : nullptr;
-    for (u32 i = 0; prototype && i < prototype->decl_count; i++) {
-        Expr const* literal = prototype->decls[i].node;
-        if (prototype->decls[i].kind != SYMBOL_DECL_ASSIGNMENT || literal->tag != EXPR_OBJECT) continue;
-        Members const* members = ty_members(me, ty_widened_objects(me, ty_expr_type(me, literal)));
-        for (u32 j = 0; j < members->prop_count; j++) {
-            Prop* existing = builder_find_prop(builder, members->props[j]->name);
-            if (existing) {
-                // (One symbol in tsc, merged: the literal's declarations follow the assignments' ones)
-                Prop const* other = members->props[j];
-                while (other->target && !other->decl->decl_span_count) other = other->target;
-                u32 extra = other->decl->decl_span_count;
-                if (extra && existing->decl->decl_span_count) {
-                    u32 total = existing->decl->decl_span_count + extra;
-                    Span* all = arena_new_n(&my arena, Span, total);
-                    memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
-                    memcpy(all + existing->decl->decl_span_count, other->decl->decl_spans, sizeof(Span) * extra);
-                    existing->decl->decl_spans = all;
-                    existing->decl->decl_span_count = total;
-                }
-                continue;
-            }
-            // (Not one a computed name that isn't a literal makes: tsc takes the binder's members, which don't have
-            // those late-bound names, `[_sym]: v`)
-            bool late_bound = false;
-            for_each (item, vec_object_expr_item, &literal->object) {
-                Expr const* key = item->computed_key;
-                if (!key || (key->tag == EXPR_LITERAL && !expr_is_perenthisized(key))) continue;
-                late_bound |= ty_literal_name(me, ty_regular(me, ty_expr_type(me, key))) == members->props[j]->name;
-            }
-            if (!late_bound) builder_push(builder, props, members->props[j]);
-        }
-        break;
-    }
 }
 
 // A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name
@@ -1802,14 +1729,6 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
         member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && define_property_readonly(me, member->decls[0].node)
     ) {
         prop->flags |= PROP_READONLY;
-    }
-    // An expando assigned a function is a method in JavaScript (bindPotentiallyNewExpandoMemberToNamespace). tsgo's
-    // bindDeferredExpandoAssignment declares a property (PROTOTYPE: JavaScript keeps 6.0's until todo entry 8)
-    if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
-        member->decls[0].full.source && member->decls[0].full.source->is_js &&
-        !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION
-    ) {
-        prop->flags |= PROP_METHOD;
     }
     prop->decl->ctx = (LowerCtx){ .generic = true };
     prop->decl->name_span = symbol->name_span;

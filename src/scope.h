@@ -146,7 +146,6 @@ typedef enum AssignmentDeclKind : uint8_t {
     ASSIGNMENT_DECL_PROPERTY = 0, // `exports.x = v`, `f.x = v`
     ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR, // `this.x = v` in a constructor or constructor function (isDeclarationInConstructor)
     ASSIGNMENT_DECL_THIS_IN_METHOD, // `this.x = v` anywhere else
-    ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, // `F.prototype.x = v`
     // `Object.defineProperty(o, "x", descriptor)` (of `exports`, `F.prototype` or a container o): the declaration's node
     // is the call, the type is the descriptor's value, getter or setter (tsc's getInitializerTypeFromAssignmentDeclaration)
     ASSIGNMENT_DECL_DEFINE_PROPERTY,

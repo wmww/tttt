@@ -150,74 +150,6 @@ static void commonjs_undefined_override(BinaryOpExpr const* assignment, Baseline
     };
 }
 
-// JavaScript `F.prototype.x = v` (tsc's getSpecialPropertyAssignmentSymbol): `F.prototype` and `x` are the member x
-// of F, the access as a whole has no symbol
-static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
-    Span name = expr_static_property_name(left);
-    Expr* constructor = span_valid(name) ? expr_prototype_object(&left->property->expr) : nullptr;
-    Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
-    Symbol const* member = symbol && symbol_rare(symbol)->members ? symbol_table_get(symbol_rare(symbol)->members, name.sv) : nullptr;
-    // (One that conflicted with the constructor's `this.m` has a symbol of its own: declare_assignment_member())
-    if (member && left->property->declares && left->property->declares != member && left->property->declares->parent == symbol) {
-        member = left->property->declares;
-    }
-    if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
-    // A member the class body (or an interface merged with the JavaScript class) declares is the symbol the assignment
-    // adds a declaration to (tsc's bindPrototypePropertyAssignment): the checker's member has them all
-    // (builder_add_assignment_members)
-    if (symbol->flags & SYMBOL_CLASS) {
-        Checker* checker = current_checker;
-        Ty const* instance = ty_declared_type_of(checker, symbol);
-        Prop const* prop = instance && (instance->flags & TYF_OBJECT) ? ty_get_prop(checker, instance, checker_atom(checker, name.sv)) : nullptr;
-        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
-        bool merged = false;
-        for (u32 i = 0; prop && prop->decl->symbol != member && i < prop->decl->decl_span_count; i++) {
-            merged |= span_eq(prop->decl->decl_spans[i], expr_outer_span(left));
-        }
-        if (merged) {
-            for (int k = 0; k < 3; k++) {
-                Span at = k == 0 ? left->inner_span : k == 1 ? left->property->expr.inner_span : expr_outer_span(&left->property->prop);
-                if (k == 2 && left->property->form == PROPERTY_EXPR_BRACKET) break;
-                // (Only a class's `prototype` is its instance type, where the access finds the member)
-                if (k == 0 && !symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
-                    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                        .span = at, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-                    };
-                    continue;
-                }
-                VecSpan spans = vec_span_init();
-                for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&spans, prop->decl->decl_spans[i]);
-                ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                    .span = at, .text = symbol_text(ctx, member), .declarations = spans,
-                };
-            }
-            return;
-        }
-    }
-    // (A class's `prototype` is its instance type, where the access finds the member)
-    if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
-        add_symbol_override(ctx, left->inner_span, member);
-    } else {
-        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-            .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-        };
-    }
-    add_symbol_override(ctx, left->property->expr.inner_span, member);
-    if (left->property->form == PROPERTY_EXPR_BRACKET) {
-        // (`F.prototype["x"] = v`: the literal has no symbol)
-        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-            .span = expr_outer_span(&left->property->prop), .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-        };
-    } else if (name.sv.size && name.sv.buf[0] == '#') {
-        // (A private name outside its class has no symbol)
-        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-            .span = expr_outer_span(&left->property->prop), .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-        };
-    } else {
-        add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
-    }
-}
-
 // JavaScript `this.x = v` that declares x: the name `x` is the member it declares, whatever the access finds (a
 // base class's member: tsc's getSymbolOfDeclaration for the name of a declaration)
 static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
@@ -225,33 +157,6 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Expr const* object = span_valid(name) ? &left->property->expr : nullptr;
     if (!object || object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
     IdentifierExpr const* this = &object->identifier;
-    // (A global `this.x = v` in an arrow function declares x in the arrow function, not on globalThis)
-    if (this->this_kind == THIS_GLOBAL && this->this_through_arrow && left->property->declares) {
-        add_symbol_override(ctx, expr_outer_span(&left->property->prop), left->property->declares);
-        if (ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
-            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-            };
-        }
-        return;
-    }
-    // A method of an object literal: the literal's member the assignment declared (see add_this_literal_member())
-    FunctionImpl const* this_function = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) ?
-        identifier_this_function(this) : nullptr;
-    SymbolTable const* literal_members = this_function ? function_impl_rare(this_function)->this_literal_members : nullptr;
-    Symbol const* literal_member = literal_members ? symbol_table_get(literal_members, name.sv) : nullptr;
-    if (literal_member && ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
-        bool declares = false;
-        for (u32 i = 0; i < literal_member->decl_count; i++) declares |= span_eq(literal_member->decls[i].full, expr_outer_span(left));
-        if (declares) {
-            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                .span = expr_outer_span(&left->property->prop), .text = cstr_from_sv(literal_member->name),
-                .declarations = symbol_declaration_spans(literal_member),
-            };
-            // (The access itself is what the literal's type has, nothing if it hasn't x)
-        }
-        return;
-    }
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
@@ -277,25 +182,6 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
     if (!declares) return;
     add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
-}
-
-// JavaScript `module.exports.a.x = v` / `exports.a.x = v` declaring x (tsc's AssignmentDeclarationKind.ExportsProperty
-// for an entity name rooted at exports): the access `module.exports.a` is x too, not what it names (tsc's
-// getSpecialPropertyAssignmentSymbolFromEntityName)
-static void nested_expando_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
-    if (left->tag != EXPR_PROPERTY || !left->property->declares || left->property->form != PROPERTY_EXPR_DOT) return;
-    Expr const* entity = &left->property->expr;
-    if (entity->tag != EXPR_PROPERTY || expr_is_perenthisized(entity) || !expr_is_entity_name(entity)) return;
-    if (expr_prototype_object((Expr*)entity) || expr_commonjs_target(left, nullptr) != COMMONJS_TARGET_NONE) return;
-    if (span_equals(expr_static_property_name(left), "prototype")) return; // (AssignmentDeclarationKind.Prototype)
-    Expr const* next_to_last = entity;
-    while (next_to_last->property->expr.tag == EXPR_PROPERTY) next_to_last = &next_to_last->property->expr;
-    Expr const* root = &next_to_last->property->expr;
-    bool exports_rooted = root->tag == EXPR_IDENTIFIER && (span_equals(root->inner_span, "exports") ||
-        (span_equals(root->inner_span, "module") && span_equals(expr_static_property_name(next_to_last), "exports")));
-    if (!exports_rooted) return;
-    if (has_symbol_override(ctx, entity->inner_span)) return;
-    add_symbol_override(ctx, entity->inner_span, left->property->declares);
 }
 
 // Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
@@ -2856,14 +2742,6 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = expr_outer_span(&my property->prop), .allow_declaration_empty = true });
         info.found = true;
     }
-    if (!info.found && my property->form == PROPERTY_EXPR_DOT && has_symbol_override(ctx, my inner_span)) {
-        // `F.prototype` of `F.prototype.x = v` shows the member it declares even where F has no `prototype` (a
-        // variable initialized with an object: prototype_symbol_overrides())
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
-        expr_compile_test_info(&my property->expr, ctx);
-        has_compiled_expr_info = true;
-        info.found = true;
-    }
     if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
         !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
         !csview_starts_with(expr_outer_span(&my property->prop).sv, "#")
@@ -2926,9 +2804,7 @@ static void binary_op_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         }
         spine[count++] = (SpineEntry){ node, ctx->symbol_override_count };
         if (binary->op == BINARY_OP_EQUAL && binary->left.inner_span.source && binary->left.inner_span.source->is_js) {
-            prototype_symbol_overrides(&binary->left, ctx);
             this_property_symbol_overrides(&binary->left, ctx);
-            nested_expando_symbol_overrides(&binary->left, ctx);
         }
         ctx->private_name_in_left = binary->op == BINARY_OP_IN && binary->left.tag == EXPR_PRIVATE_NAME &&
             !expr_is_perenthisized(&binary->left); // (`(#x) in v` is an error, no PrivateIdentifier to tsc)

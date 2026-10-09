@@ -1815,9 +1815,6 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
         if (constructor_only && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
-        // (A constructor function's `F.prototype.x = v` is another symbol than its `this.x = v` to tsc: the
-        // prototype's member, not the instance's)
-        if ((in_constructor || in_method) && decl->assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
         Ty const* type = commonjs_export && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY ?
             ty_regular(me, ty_expr_type(me, decl->node)) : assignment_declaration_type(me, symbol, decl);
         // (A CommonJS export's first assignment of undefined is ignored when there are others: tsgo's

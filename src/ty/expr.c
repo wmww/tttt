@@ -2252,6 +2252,11 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         if (issue_only) return nullptr;
+        // A function's `this` that nothing types is any, not narrowed (tsgo's tryGetThisTypeAt: no type to narrow)
+        if (identifier->this_kind == THIS_ANY) {
+            FunctionImpl const* function = identifier_this_function(identifier);
+            if (!function || (!function_impl_rare(function)->paired_this && !ty_contextual_this_type(me, function))) return type;
+        }
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
     if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;
