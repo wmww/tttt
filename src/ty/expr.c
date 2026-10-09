@@ -2241,6 +2241,18 @@ static Ty const* non_null_flow_type(Checker* me, Expr const* expr, Ty const* dec
     return flow_type;
 }
 
+// A reference to a destructured element inside the initializer of the declaration it's from, in the same flow container:
+// no narrowing by the pattern's other elements (tsgo 7.1's getNarrowedTypeOfSymbol, "avoid declaration circularity")
+static bool in_own_root_initializer(Binding const* binding, Expr const* reference) {
+    Binding const* root = binding;
+    while (root->parent) root = root->parent;
+    if (!root->source || root->source->tag != LAZY_TYPE_INITIALIZED_BINDING || reference->identifier.outer_reference) return false;
+    Expr const* value = initialized_binding_value(c_container_of(root->source, InitializedBinding, lazy_type));
+    if (value->tag == EXPR_IMPLICIT_ANY) return false;
+    Span span = expr_outer_span(value), at = reference->inner_span;
+    return at.source == span.source && span_start_ptr(at) >= span_start_ptr(span) && span_end_ptr(at) <= span_end_ptr(span);
+}
+
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue, bool issue_only) {
     IdentifierExpr const* identifier = &expr->identifier;
     if (my contextual_pattern_count && identifier->target && (identifier->target->flags & SYMBOL_VARIABLE)) {
@@ -2335,7 +2347,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
     // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
-    if (binding && binding->parent) {
+    if (binding && binding->parent && !in_own_root_initializer(binding, expr)) {
         Ty const* narrowed = ty_destructured_narrowed_type(me, binding, identifier->flow);
         if (narrowed) type = narrowed;
     } else if (binding && symbol->is_parameter) {
