@@ -823,14 +823,11 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     return ty_check_expr(checker, initialized_binding_value(me), contextual);
 }
 
-// `let x;`, `let x = null` and `let x = []` under noImplicitAny (or in a JavaScript file): the type comes from what is
-// assigned (and pushed), as control flow sees it. tsc's autoType and autoArrayType in getWidenedTypeForVariableLike
-// Declaration: TY_AUTO, ty_auto_array(), else null
+// `let x;`, `let x = null` and `let x = []` under noImplicitAny (JavaScript too, nothing more: tsgo): the type comes
+// from what is assigned (and pushed), as control flow sees it. tsc's autoType and autoArrayType in
+// getWidenedTypeForVariableLikeDeclaration: TY_AUTO, ty_auto_array(), else null
 static Ty const* auto_type(InitializedBinding const* me) {
-    SourceFile const* file = my binding.content_span.source;
-    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER ||
-        !(compiler_options()->no_implicit_any || (file && file->is_js))
-    ) {
+    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER || !compiler_options()->no_implicit_any) {
         return nullptr;
     }
     Symbol const* symbol = my binding.symbol;

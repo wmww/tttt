@@ -14558,7 +14558,7 @@ const baselines = {
     'functionExpressionNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionExpressionReturningItself': {
         errors: true,
@@ -60913,7 +60913,7 @@ const baselines = {
     'constructorFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructorFunctions2': {
         errors: true,
