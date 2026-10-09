@@ -60966,7 +60966,7 @@ const baselines = {
         types: true,
     },
     'enumMergeWithExpando': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

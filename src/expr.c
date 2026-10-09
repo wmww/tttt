@@ -2300,9 +2300,11 @@ static bool is_container_declaration(BinaryOpExpr const* op) {
     if (op->op != BINARY_OP_EQUAL || !file || !file->is_js || op->left.tag != EXPR_PROPERTY) return false;
     Expr const* init = expando_initializer((Expr*)&op->right, true, false);
     if (!init || init->tag != EXPR_OBJECT) return false;
-    // (Only if it does declare members: `symbol.exports.size`. Unknown for CommonJS exports, taken as yes)
+    // (Only if it does declare members: `symbol.exports.size`. Unknown for CommonJS exports, taken as yes; an
+    // assignment that declares nothing is none: `foo["baz"] = {}` of an annotated `foo`)
     Symbol const* declared = op->left.property->declares;
-    return !declared || (declared->exports && declared->exports->count);
+    if (!declared) return binary_commonjs_declaration(op, nullptr) != COMMONJS_TARGET_NONE;
+    return declared->exports && declared->exports->count;
 }
 
 // The optional chain part of tsc's checkReferenceExpression: `a?.b = 1` (through assertions). Reports it with the

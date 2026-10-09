@@ -238,8 +238,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
     (expandoFunctionSymbolPropertyJs mutants).
   - Suggestions: tttt never reports unused declarations as suggestions (captureSuggestions with noUnused* off):
     unused_enabled() is false then; tsgo reports TS6133 suggestions, in plain JS too (noFlakyDiagnosticsUntypedModule*).
-  - A (expandos): `const foo: never = {}; foo["baz"] = {}` is no expando in tsgo (annotated), TS2322 at the element
-    access; tttt declares it (the element-access path doesn't ask expando_initializer's `annotated`).
   - C: `/** @type {Foo} */ export default { ... }` elaboration position (checkJsdocTypeTagOnExportAssignment5/6);
     an earlier comment's `@extends` still counts for TS8023 (checkJSDocAugmentsTagMatchesExtends reads every
     comment); jsdocParamTagTypeLiteral nested `@param` TS8032 cases.
