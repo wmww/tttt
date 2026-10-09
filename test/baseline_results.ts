@@ -59716,7 +59716,7 @@ const baselines = {
         types: true,
     },
     'parserWithStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

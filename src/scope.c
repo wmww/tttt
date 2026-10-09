@@ -640,8 +640,9 @@ Scope* scope_new_file(Binder* binder, SourceFile* file) {
     Scope* ret = scope_new(binder->global_scope, file->is_module ? SCOPE_MODULE : SCOPE_SCRIPT);
     ret->file = file;
     ret->ambient = file->is_declaration;
-    // (tsc's bindInStrictMode)
-    ret->strict = !file->is_declaration || file->is_module || block_has_use_strict(&file->ast);
+    // (tsgo 7's binder has no non-strict mode: its strict mode checks apply everywhere, a script declaration file's
+    // `declare var arguments` too, TS1100)
+    ret->strict = true;
     if (file->is_module) {
         ret->container = binder_new_module_symbol(binder, file);
         ret->export_context = ret->ambient && !block_has_export_declarations(&file->ast);
