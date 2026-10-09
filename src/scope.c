@@ -4321,6 +4321,20 @@ static bool equals_ignoring_case(csview a, csview b) {
 }
 
 isize spelling_suggestion(csview name, csview const* names, isize count) {
+    return spelling_suggestion_ex(name, names, count, nullptr, nullptr);
+}
+
+int spelling_compare_strings(void* ctx, isize a, isize b) {
+    csview const* names = ctx;
+    isize n = names[a].size < names[b].size ? names[a].size : names[b].size;
+    int c = memcmp(names[a].buf, names[b].buf, (size_t)n);
+    if (c) return c;
+    return names[a].size < names[b].size ? -1 : names[a].size > names[b].size;
+}
+
+// tsgo's getSpellingSuggestion: of the candidates at the best distance, the least by `compare` (null: the first one,
+// tsc 6's rule, for callers whose tsgo order isn't ported)
+isize spelling_suggestion_ex(csview name, csview const* names, isize count, int (*compare)(void* ctx, isize a, isize b), void* ctx) {
     // (tsgo counts the name in runes, but compares that with the candidate's length in bytes)
     u32 name_stack[64], candidate_stack[64];
     isize name_len;
@@ -4337,9 +4351,15 @@ isize spelling_suggestion(csview name, csview const* names, isize count) {
         if (candidate.size < 3 && !equals_ignoring_case(candidate, name)) continue;
         isize candidate_len;
         u32 const* candidate_runes = spelling_runes(candidate, candidate_stack, 64, &candidate_len);
-        double distance = levenshtein_with_max(name_runes, name_len, candidate_runes, candidate_len, best_distance - 0.1);
+        // (With a comparison, a tie is a candidate too: levenshteinWithMax at the best distance itself)
+        double distance = levenshtein_with_max(name_runes, name_len, candidate_runes, candidate_len,
+            compare && best >= 0 ? best_distance : best_distance - 0.1);
         if (candidate_runes != candidate_stack) free((void*)candidate_runes);
         if (distance < 0) continue;
+        if (compare && best >= 0 && distance >= best_distance - 0.05) {
+            if (compare(ctx, i, best) < 0) best = i;
+            continue;
+        }
         best_distance = distance;
         best = i;
     }
@@ -4347,6 +4367,30 @@ isize spelling_suggestion(csview name, csview const* names, isize count) {
     return best;
 }
 
+
+// tsgo's compareSymbols for the spelling suggestion's tie-break: by the first declaration (the file's place in the
+// program, then the position), declared ones first, then by name
+typedef struct SuggestCompare {
+    csview const* names;
+    SymbolEntry const* entries;
+    u32 extra; // The leading candidates without a symbol (the primitives)
+} SuggestCompare;
+
+static int suggest_compare_symbols(void* ctx, isize a, isize b) {
+    SuggestCompare const* me = ctx;
+    Symbol const* sa = a >= my extra ? my entries[a - my extra].symbol : nullptr;
+    Symbol const* sb = b >= my extra ? my entries[b - my extra].symbol : nullptr;
+    Span da = sa && sa->decl_count ? sa->decls[0].name : span_null;
+    Span db = sb && sb->decl_count ? sb->decls[0].name : span_null;
+    bool ha = span_valid(da) && da.source, hb = span_valid(db) && db.source;
+    if (ha && hb) {
+        if (da.source != db.source) return da.source->program_order < db.source->program_order ? -1 : 1;
+        if (da.sv.buf != db.sv.buf) return da.sv.buf < db.sv.buf ? -1 : 1;
+    } else if (ha != hb) {
+        return ha ? -1 : 1;
+    }
+    return spelling_compare_strings((void*)my names, a, b);
+}
 
 // tsc's getSuggestionForSymbolNameLookup on one table
 // `exports`: a module's or namespace's exports, where `export default <expr>` is tsc's SymbolFlags.Property (no module
@@ -4394,7 +4438,8 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
         }
         names[extra + i] = fits ? candidate : (csview){0};
     }
-    isize best = spelling_suggestion(name, names, count + extra);
+    SuggestCompare cmp = { .names = names, .entries = entries, .extra = extra };
+    isize best = spelling_suggestion_ex(name, names, count + extra, suggest_compare_symbols, &cmp);
     if (best >= 0) *out = (Suggestion){ .name = names[best], .symbol = best >= extra ? entries[best - extra].symbol : nullptr };
     free(names);
     free(entries);

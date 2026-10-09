@@ -996,7 +996,7 @@ static bool table_has(csview const* table, isize count, csview name) {
 }
 
 static void suggest(Rx* me, i32 start, i32 len, csview name, csview const* candidates, isize count) {
-    isize best = spelling_suggestion(name, candidates, count);
+    isize best = spelling_suggestion_ex(name, candidates, count, spelling_compare_strings, (void*)candidates);
     if (best >= 0) rx_error(me, start, len, 1369, "Did you mean '", candidates[best], "'?");
 }
 

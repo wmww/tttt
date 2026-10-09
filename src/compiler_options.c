@@ -4,6 +4,8 @@
 
 // (scope.h's, which this can't include: it has another name_equals)
 isize spelling_suggestion(csview name, csview const* names, isize count);
+isize spelling_suggestion_ex(csview name, csview const* names, isize count, int (*compare)(void* ctx, isize a, isize b), void* ctx);
+int spelling_compare_strings(void* ctx, isize a, isize b);
 
 typedef struct EnumValue {
     const char* name;
@@ -419,7 +421,7 @@ unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csvie
     csview candidates[256];
     check(tsc_option_names_count <= c_arraylen(candidates));
     for (isize i = 0; i < (isize)tsc_option_names_count; i++) candidates[i] = csview_from(tsc_option_names[i]);
-    isize suggestion = spelling_suggestion(name, candidates, (isize)tsc_option_names_count);
+    isize suggestion = spelling_suggestion_ex(name, candidates, (isize)tsc_option_names_count, spelling_compare_strings, candidates);
     if (suggestion >= 0) {
         *message = cstr_d("Unknown compiler option '", shown, "'. Did you mean '", tsc_option_names[suggestion], "'?");
         return 5025;

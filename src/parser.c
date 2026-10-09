@@ -12737,7 +12737,7 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
         for (const char* const* k = all_keywords; *k; k++) {
             if (strlen(*k) > 2) keywords[count++] = c_sv(*k, strlen(*k));
         }
-        isize best = spelling_suggestion(name.sv, keywords, count);
+        isize best = spelling_suggestion_ex(name.sv, keywords, count, spelling_compare_strings, keywords);
         if (best >= 0) {
             parse_error(p, name, 1435, "Unknown keyword or identifier. Did you mean '", keywords[best], "'?");
             return;

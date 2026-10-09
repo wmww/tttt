@@ -828,6 +828,10 @@ bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* s
 // tsc's getSpellingSuggestion: the candidate name closest to `name`, if any is close enough. `names` are `count`
 // strings, returns the index of the best, or -1
 isize spelling_suggestion(csview name, csview const* names, isize count);
+// With tsgo's tie-break: of the candidates at the best distance, the least by `compare(ctx, a, b)`
+isize spelling_suggestion_ex(csview name, csview const* names, isize count, int (*compare)(void* ctx, isize a, isize b), void* ctx);
+// A `compare` for spelling_suggestion_ex(): `ctx` is the csview array, by text (tsgo's strings.Compare)
+int spelling_compare_strings(void* ctx, isize a, isize b);
 // tsc's getSuggestedSymbolForNonexistentModule: an export of container with a name close to name's, reported as
 // TS2724 (tsc's errorNoModuleMemberSymbol and resolveEntityName). False if there is none
 bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, bool declared_here, ErrorCtx* errs);
