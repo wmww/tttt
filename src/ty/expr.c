@@ -1440,16 +1440,6 @@ Signature const* ty_function_assigned_contextual_signature(Checker* me, Function
     return sig == &context_checked_none ? nullptr : sig;
 }
 
-// What a JavaScript function's synthetic `args` rest parameter (it uses `arguments`) is contextually typed as: the rest
-// of its contextual signature from position `index` on (tsc's assignContextualParameterTypes for a DeferredType rest
-// parameter). Null without a contextual signature
-Ty const* ty_contextual_synthetic_rest_type(Checker* me, FunctionImpl const* function, u32 index) {
-    Signature const* sig = ty_function_assigned_contextual_signature(me, function);
-    if (!sig) return nullptr;
-    Ty const* type = signature_type_at(me, sig, index, true);
-    return type;
-}
-
 // The contextual type of a function's return expressions: its contextual signature's return type, as the last check of
 // the function saw it (tsc goes through the resolved signature of the call it is an argument of), instantiated where it
 // is looked at while the call infers (ty_instantiate_contextual_type())

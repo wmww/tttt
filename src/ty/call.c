@@ -237,16 +237,6 @@ static bool accepts_void(Ty const* ty) {
     return false;
 }
 
-static bool accepts_void_undefined_unknown_any(Ty const* ty) {
-    u32 const flags = TYF_VOID | TYF_UNDEFINED | TYF_UNKNOWN | TYF_ANY;
-    if (ty->flags & flags) return true;
-    if (ty->kind != TY_UNION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (ty->composite.types.data[i]->flags & flags) return true;
-    }
-    return false;
-}
-
 static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
     signature_resolve(me, sig);
     ParamShape shape = { .min = sig->min_args };
@@ -1670,8 +1660,6 @@ static i32 first_unfit_skipped_literal(Checker* me, ParamShape const* shape, Arg
     return -1;
 }
 
-// The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
-// signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
 static i32 first_unfit_argument(
     Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, bool skip_sensitive,
     Ty const** arg_type, Ty const** param_type
@@ -1679,34 +1667,16 @@ static i32 first_unfit_argument(
     return first_unfit_argument_skipping(me, shape, args, relation, skip_sensitive, false, arg_type, param_type);
 }
 
-// `arity_check`: for whether the call has the right number of arguments, which in JavaScript is looser than the
-// counts the arity error message says
-static ParamShape call_param_shape_for(
-    Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper, bool arity_check
-) {
-    if (!info->jsx) {
-        ParamShape shape = param_shape(me, sig, mapper);
-        // A call in a JavaScript file without strictNullChecks can also leave out trailing parameters of type undefined,
-        // unknown or any (tsc's hasCorrectArity: acceptsVoidUndefinedUnknownOrAny, which getArgumentArityError's
-        // getMinArgumentCount doesn't do)
-        SourceFile const* file = info->call_span.source;
-        if (arity_check && file && file->is_js && !compiler_options()->strict_null_checks) {
-            while (shape.min > 0 && shape.min <= shape.count && accepts_void_undefined_unknown_any(shape.types[shape.min - 1])) {
-                shape.min--;
-            }
-        }
-        return shape;
-    }
+// The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
+// signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
+static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
+    if (!info->jsx) return param_shape(me, sig, mapper);
     signature_resolve(me, sig);
     ParamShape shape = { .count = 1, .min = sig->min_args ? 1 : 0 };
     shape.types = malloc(sizeof(Ty const*));
     panic_if(!shape.types, "out of memory");
     shape.types[0] = ty_jsx_signature_props(me, info->jsx, sig, mapper, info->jsx_class);
     return shape;
-}
-
-static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
-    return call_param_shape_for(me, info, sig, mapper, true);
 }
 
 // What the errors about a call are reported at (tsc's getDiagnosticForCallNode): the name of a method, else the callee;
@@ -1863,7 +1833,7 @@ static void report_arity(
     bool any_below = false;
     Signature const* closest = nullptr;
     for (u32 i = 0; i < count; i++) {
-        ParamShape shape = call_param_shape_for(me, info, signatures[i], mapper, false);
+        ParamShape shape = call_param_shape(me, info, signatures[i], mapper);
         if (shape.min < min) {
             min = shape.min;
             closest = signatures[i];

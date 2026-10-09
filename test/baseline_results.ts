@@ -816,9 +816,9 @@ const baselines = {
         types: true,
     },
     'argumentsObjectCreatesRestForJs': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsObjectIterator01_ES5(target=es2015)': {
         errors: true,
@@ -856,9 +856,9 @@ const baselines = {
         types: true,
     },
     'argumentsPropertyNameInJsMode2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor1_Js': {
         errors: true,
@@ -896,9 +896,9 @@ const baselines = {
         types: true,
     },
     'argumentsReferenceInFunction1_Js': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod1_Js': {
         errors: true,
@@ -6748,7 +6748,7 @@ const baselines = {
     'contextuallyTypeArgumentsKeyword': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeAsyncFunctionReturnTypeFromUnion': {
         errors: true,
@@ -20258,7 +20258,7 @@ const baselines = {
     'jsSelfReferencingArgumentsFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsSpeculativeParsingError': {
         errors: true,
@@ -24628,12 +24628,12 @@ const baselines = {
     'noParameterReassignmentIIFEAnnotated': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'noParameterReassignmentJSIIFE': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'noReachabilityErrorsOnEmptyStatement': {
         errors: true,
@@ -30708,7 +30708,7 @@ const baselines = {
     'superNoModifiersCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superPropertyAccess(target=es2015)': {
         errors: true,
@@ -47506,7 +47506,7 @@ const baselines = {
         types: true,
     },
     'callWithMissingVoidUndefinedUnknownAnyInJs(strict=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52966,9 +52966,9 @@ const baselines = {
         types: true,
     },
     'paramTagOnFunctionUsingArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'paramTagTypeResolution': {
         errors: true,
