@@ -5513,7 +5513,7 @@ const baselines = {
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable': {
         errors: true,
@@ -8623,12 +8623,12 @@ const baselines = {
     'declarationEmitMappedTypeDistributivityPreservesConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedTypePreservesTypeParameterConstraint': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedTypePropertyFromNumericStringKey': {
         errors: true,
@@ -24203,12 +24203,12 @@ const baselines = {
     'noCircularitySelfReferentialGetter1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCircularitySelfReferentialGetter2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCircularitySelfReferentialGetter3': {
         errors: true,
@@ -27963,7 +27963,7 @@ const baselines = {
     'recursiveTypeInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTypeInference2': {
         errors: true,
@@ -28753,7 +28753,7 @@ const baselines = {
     'reverseMappedTypeConditionalTemplateInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeContextualTypeNotCircular': {
         errors: true,

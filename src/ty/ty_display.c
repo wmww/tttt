@@ -990,13 +990,14 @@ static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
 
 // A part of an annotation that can't be reused prints its type
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty);
+static bool mapped_as_conditional(Checker* me, TyDisplay d, Ty const* ty);
 static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens);
 static bool is_whole_enum(Checker* me, Ty const* ty);
 static bool conditional_elided(TyDisplay d, Ty const* ty);
 
 static bool needs_parens_as_constituent(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty) || (ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
-    bool conditional = ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty);
+    bool conditional = (ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || is_function_like(me, d, ty);
 }
 
@@ -2557,6 +2558,28 @@ static TyMapper const* mapped_mapper_from_root(Checker* me, MappedInfo const* ma
     return inner ? ty_compose_mappers(me, inner, mapped->template_mapper) : mapped->template_mapper;
 }
 
+// Whether display_mapped() writes the mapped type inside a conditional type (see there)
+static bool mapped_needs_wrapper(Checker* me, TyDisplay d, MappedInfo const* mapped, bool* homomorphic_lost) {
+    *homomorphic_lost = false;
+    if (!d.param_names || !mapped->modifiers_type || mapped->modifiers_type == ty_intrinsic(me, TY_UNKNOWN_)) return false;
+    MappedInfo const* root = mapped_root(mapped);
+    if (mapped->keyof_constraint) {
+        *homomorphic_lost = root != mapped && root->modifiers_type && root->modifiers_type->kind == TY_TYPE_PARAM &&
+            mapped->modifiers_type->kind != TY_TYPE_PARAM;
+    }
+    bool preserving = !mapped->keyof_constraint && !(mapped->constraint->kind == TY_TYPE_PARAM &&
+        ty_param_constraint(me, mapped->constraint) && ty_param_constraint(me, mapped->constraint)->kind == TY_KEYOF);
+    return *homomorphic_lost || preserving;
+}
+
+// A mapped type written inside a conditional type: parenthesized like one
+static bool mapped_as_conditional(Checker* me, TyDisplay d, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || shows_alias(d, ty)) return false;
+    Members const* members = ty_members(me, ty);
+    bool homomorphic_lost;
+    return members->mapped && mapped_needs_wrapper(me, d, members->mapped, &homomorphic_lost);
+}
+
 static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     // With GenerateNamesForShadowedTypeParams (the types baseline), tsc's createMappedTypeNodeFromType keeps what makes
     // the mapped type homomorphic or modifier preserving when inlining wouldn't: a homomorphic `[K in keyof T]` whose T
@@ -2565,18 +2588,9 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     // inferred from it and constrained to `keyof T`
     Ty const* wrapper = nullptr;
     bool homomorphic_lost = false;
-    if (d.param_names && mapped->modifiers_type && mapped->modifiers_type != ty_intrinsic(me, TY_UNKNOWN_)) {
-        MappedInfo const* root = mapped_root(mapped);
-        if (mapped->keyof_constraint) {
-            homomorphic_lost = root != mapped && root->modifiers_type && root->modifiers_type->kind == TY_TYPE_PARAM &&
-                mapped->modifiers_type->kind != TY_TYPE_PARAM;
-        }
-        bool preserving = !mapped->keyof_constraint && !(mapped->constraint->kind == TY_TYPE_PARAM &&
-            ty_param_constraint(me, mapped->constraint) && ty_param_constraint(me, mapped->constraint)->kind == TY_KEYOF);
-        if (homomorphic_lost || preserving) {
-            wrapper = ty_synthetic_type_param(me, c_sv("T"));
-            type_param_name(me, d, wrapper);
-        }
+    if (mapped_needs_wrapper(me, d, mapped, &homomorphic_lost)) {
+        wrapper = ty_synthetic_type_param(me, c_sv("T"));
+        type_param_name(me, d, wrapper);
     }
     TyDisplay fresh = reused_if(d, false);
     if (wrapper) {
@@ -2611,22 +2625,31 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
 }
 
 static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapped, Ty const* wrapper, bool keyof_wrapper) {
+    // The constraint is printed before the mapped type's scope is entered, its type parameter and the rest inside it
+    // (tsgo's createMappedTypeNodeFromType: enterNewScope, so names given inside are given again after it, `{ [K in
+    // keyof P]: ... }` twice in a conditional's branches)
+    cstr constraint_text = cstr_null;
+    TyDisplay cd = d;
+    cd.target = &constraint_text;
+    if (wrapper) {
+        TyDisplay fresh = reused_if(cd, false);
+        if (keyof_wrapper) out(fresh, c_sv("keyof "));
+        out_type_param_name(me, fresh, wrapper, false);
+    } else if (mapped->keyof_constraint && mapped->modifiers_type) {
+        // (`keyof` and the modifiers type: the constraint itself may have distributed `keyof` over an intersection)
+        out_lit(cd, "keyof ");
+        display_parenthesized_if(me, cd, mapped->modifiers_type, needs_parens_in_array(me, cd, mapped->modifiers_type));
+    } else {
+        ty_display(me, cd, mapped->constraint);
+    }
+    u32 saved = param_names_enter(d);
     out_lit(d, "{ ");
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
     ty_display(me, reused_if(d, true), mapped->type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
-    if (wrapper) {
-        TyDisplay fresh = reused_if(d, false);
-        if (keyof_wrapper) out(fresh, c_sv("keyof "));
-        out_type_param_name(me, fresh, wrapper, false);
-    } else if (mapped->keyof_constraint && mapped->modifiers_type) {
-        // (`keyof` and the modifiers type: the constraint itself may have distributed `keyof` over an intersection)
-        out_lit(d, "keyof ");
-        display_parenthesized_if(me, d, mapped->modifiers_type, needs_parens_in_array(me, d, mapped->modifiers_type));
-    } else {
-        ty_display(me, d, mapped->constraint);
-    }
+    cstr_append_sv(d.target, cstr_sv(&constraint_text));
+    cstr_drop(&constraint_text);
     if (mapped->name_type) {
         out_lit(d, " as ");
         ty_display(me, d, mapped->name_type);
@@ -2652,6 +2675,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     }
     ty_display(me, d, template);
     out_lit(d, "; }");
+    param_names_leave(d, saved);
 }
 
 // An index signature an object literal's computed names made prints as those members when each is an entity name
@@ -3218,7 +3242,7 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     // (`(unique symbol)[]`, `(typeof sym)[]`: a type operator or query)
     bool unique_symbol = ty->kind == TY_LITERAL && (ty->flags & TYF_UNIQUE_ES_SYMBOL);
     // (A conditional type printed as the elided information placeholder is `any`)
-    bool conditional = ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty);
+    bool conditional = (ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || ty->kind == TY_KEYOF ||
         type_query || readonly || unique_symbol || is_function_like(me, d, ty);
 }
