@@ -3324,6 +3324,16 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         return lazy_type_get(binding->source);
     }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    // Under a written type, an initializer that can't be undefined takes undefined out of what's destructured (tsc's
+    // getBindingElementTypeFromParentType, which looks at the initializer for that: `[a = a]: T = a` is circular)
+    if (!parent->parent && parent->has_explicit_type && compiler_options()->strict_null_checks && parent->source &&
+        parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING && !(object->flags & TYF_ANY)
+    ) {
+        Expr const* value = initialized_binding_value(c_container_of(parent->source, InitializedBinding, lazy_type));
+        if (value->tag != EXPR_IMPLICIT_ANY && !ty_can_equal_undefined(me, ty_expr_type(me, value))) {
+            object = ty_without_undefined(me, object);
+        }
+    }
     // A rest element takes what the initializer is without the pattern as its contextual type (tsc's
     // CheckMode.RestBindingElement)
     if (binding->rest && !parent->parent && !parent->has_explicit_type && parent->source &&

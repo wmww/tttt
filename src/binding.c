@@ -583,6 +583,13 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 Ty const* assigned = ty_expr_type(current_checker, source);
                 if (assigned->flags & TYF_NULLABLE) type = assigned;
             }
+            // (Under a written type, without undefined if the initializer can't be undefined: tsc's
+            // getBindingElementTypeFromParentType, like ty_binding_element's)
+            if (!my parent && my has_explicit_type && source && compiler_options()->strict_null_checks &&
+                !(type->flags & TYF_ANY) && !ty_can_equal_undefined(current_checker, ty_expr_type(current_checker, source))
+            ) {
+                type = ty_without_undefined(current_checker, type);
+            }
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
             Ty const* parent = binding_element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {

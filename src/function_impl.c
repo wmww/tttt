@@ -355,7 +355,12 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     bool js = names->file && names->file->is_js && !my is_type;
     Scope const* saved_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
     for_each (i, vec_function_arg, &my args) {
-        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body, errs);
+        // (Without a body the initializer is only TS2371, but a pattern's elements under a written type look at its type
+        // with strictNullChecks, which resolves its names: tsc's getBindingElementTypeFromParentType)
+        Binding const* binding = &i->initializer.binding;
+        bool looked_at = (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) && binding->has_explicit_type &&
+            compiler_options()->strict_null_checks && !my ambient && !my is_type;
+        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body && !looked_at, errs);
     }
     // (The `@param` tags that name no parameter: their types are where the parameters' are)
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) {
@@ -1160,6 +1165,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // returns there, after the annotation)
         if (!my has_body && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
             if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
+            // (A pattern's elements are checked before that: checkSourceElements of the elements, whose types look at
+            // the initializer under a written type, getBindingElementTypeFromParentType)
+            Binding* binding = (Binding*)&i->initializer.binding;
+            if ((binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) && !my ambient) {
+                binding_typecheck_bodiless(binding, errs);
+            }
             continue;
         }
         initialized_binding_typecheck_parameter(&i->initializer, i->span, !my has_body, errs);
