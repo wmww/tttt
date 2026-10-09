@@ -143,8 +143,7 @@ src` finds the code-side markers; every significant one has an entry here.
   of popping.
 - Scope chains are shorter than the AST's nesting: `if` branches that are blocks, loops, `switch`, `try`, `return`...
   get no block scope of their own (`branch_names_scope()`); a `declare` declaration in an ambient context gets no
-  `scope_new_self()` scope unless unused checks are on; a JSDoc `@param` type flags the parameter list's scope
-  (`jsdoc_parameter_type`) while it is walked instead of a scope of its own.
+  `scope_new_self()` scope unless unused checks are on.
 - `binder_redirect` / `Binder.overlays`: a program adding to a shared-lib symbol gets a clone (`clone_parent_symbol`);
   the checker maps through `canonical()` (`ty/lower.c`): anything new keyed by `Symbol*` must too. Fallout: an
   augmented `Console` shows both `log` signatures (wants getIntersectedSignatures); `maps_merged_type_param()`
@@ -588,8 +587,7 @@ src` finds the code-side markers; every significant one has an entry here.
   statements outside a list drop.
 - `@type` on assignments reaches the symbol via `SymbolDecl.jsdoc_type`, threaded through every assignment-declaration
   site in scope.c (new sites must pass it; chains: outermost only). `jsdoc_apply_type_signature()` *moves* the
-  TypeNodes of a written function type. `jsdoc_prototype_type_param()` sees F's type parameters anywhere in a
-  prototype method. `Statement.expr_jsdoc_type` shares a union with `expr`: every site building an expression
+  TypeNodes of a written function type. `Statement.expr_jsdoc_type` shares a union with `expr`: every site building an expression
   statement must clear it.
 - No `SymbolFlags.Assignment`: `global_merges_by_assignment()` rescans top-level statements
   (`js_file_assigns_namespace()`) on global conflicts; TS2403 looks for `SYMBOL_DECL_EXPANDO`. Global expando

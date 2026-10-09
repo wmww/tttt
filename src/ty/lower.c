@@ -377,17 +377,6 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl) {
     return ty_type_params_of(me, symbol_type_generic(decl));
 }
 
-// A JSDoc reference to a value that is a class (tsc's getTypeFromJSDocValueReference): the class's reference with
-// the reference's type arguments (tsc's getTypeReferenceType of the class symbol, getTypeFromClassOrInterfaceReference;
-// in JavaScript the missing ones are any or their defaults)
-static Ty const* jsdoc_value_class_reference(Checker* me, Symbol const* class_symbol, IdentifierType const* identifier, LowerCtx ctx) {
-    Ty const* declared = ty_declared_type_of(me, class_symbol);
-    if (declared->kind != TY_DECLARED || !declared->declared.type_params.len) return declared;
-    Ty const* args_buf[MAX_TYPE_ARGS];
-    TyList args = lower_type_args(me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf);
-    return ty_reference(me, declared, args);
-}
-
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
 // `{ [P in keyof T]: X }` with T a type parameter: instantiating it keeps the name it was written with (tsc's
@@ -498,7 +487,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (js_this) return js_this;
     }
     Symbol const* decl = canonical(me, identifier->target);
-    if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY && !identifier->jsdoc &&
+    if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
         !identifier_type_namespace_count(identifier) && !span_valid(identifier_type_import_span(identifier))
     ) {
         decl = export_equals_property_type(me, decl, identifier);
@@ -550,19 +539,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 ret = ty_apply_type_arguments(me, ret, (TyList){ .data = args, .len = arg_count });
                 free(args);
             }
-            // (A JSDoc `import("./m").C` of a class value means its instance, tsc's getTypeFromJSDocValueReference)
-            if (!identifier_type_import_typeof(identifier) && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
-                ret->declared.symbol
-            ) {
-                return jsdoc_value_class_reference(me, ret->declared.symbol, identifier, ctx);
-            }
             return ret;
         }
     }
-    // A name that doesn't resolve to a type: an alias that doesn't resolve, a value outside JSDoc (TS2749) (tsc's
+    // A name that doesn't resolve to a type: an alias that doesn't resolve, a value (TS2749) (tsc's
     // resolveTypeReferenceName makes those unresolved symbols too)
     if (!decl || (decl->is_placeholder && decl->is_unresolved) ||
-        (!identifier->jsdoc && !identifier->keyword && !(decl->flags & SYMBOL_TYPE) && !decl->is_placeholder)
+        (!identifier->keyword && !(decl->flags & SYMBOL_TYPE) && !decl->is_placeholder)
     ) {
         return unresolved_reference(me, identifier, ctx);
     }
@@ -574,56 +557,6 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     ) {
         return ty_intrinsic(me, TY_ANY);
     }
-    // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
-    if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) {
-        // A JavaScript variable or assignment declaration whose value is a class expression or a constructor function
-        // is the class (tsc's getExpandoSymbol: the initializer's symbol merged in, which is a class). A bare
-        // `import("./m")` whose `module.exports =` is one, `exports.C = class {}` too
-        Expr* init = nullptr;
-        SymbolDecl const* first = nullptr;
-        for (u32 i = 0; i < decl->decl_count && !first; i++) {
-            if (decl->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &decl->decls[i];
-        }
-        // `exports.K = NS.K`: the assignment of an entity name is the symbol it names (tsc's exportAssignmentIsAlias)
-        for (u32 depth = 0; depth < 8 && first && first->kind == SYMBOL_DECL_ASSIGNMENT && first->full.source &&
-            first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS); depth++
-        ) {
-            Expr const* value = first->node;
-            if (value->tag != EXPR_PROPERTY || !expr_is_entity_name(value)) break;
-            Symbol const* named = expr_entity_name_symbol(value);
-            if (!named || named == decl) break;
-            decl = named;
-            first = nullptr;
-            for (u32 i = 0; i < decl->decl_count && !first; i++) {
-                if (decl->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &decl->decls[i];
-            }
-        }
-        if (first && first->full.source && first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS)) {
-            if (first->kind == SYMBOL_DECL_ASSIGNMENT) {
-                init = expando_initializer((Expr*)first->node, span_null, true);
-            } else if (first->kind == SYMBOL_DECL_VARIABLE) {
-                Binding const* binding = first->node;
-                if (!binding->parent && binding->tag == BINDING_IDENTIFIER) {
-                    init = expando_initializer(initialized_binding_value(((InitializedBinding*)binding)), binding->content_span, true);
-                }
-            }
-        }
-        if (init) {
-            Symbol const* class_symbol = init->tag == EXPR_CLASS_DECL ? init->class_decl->symbol :
-                init->tag == EXPR_FUNCTION ? ty_js_constructor_class(init->function) : nullptr;
-            if (class_symbol) return jsdoc_value_class_reference(me, class_symbol, identifier, ctx);
-        }
-        Ty const* type = ty_type_of_symbol(me, decl);
-        // `import("./m").C` of a value whose type is a class is the class (tsc's getTypeFromJSDocValueReference: the
-        // type reference of the value type's symbol)
-        if (span_valid(identifier_type_import_span(identifier)) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
-            type->declared.kind == TY_DECLARED_CLASS_STATIC && canonical(me, type->declared.symbol) != decl
-        ) {
-            return jsdoc_value_class_reference(me, type->declared.symbol, identifier, ctx);
-        }
-        return type;
-    }
-
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
     // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
     // getTypeFromClassOrInterfaceReference), for a type alias or a type without type parameters in JavaScript too
@@ -636,16 +569,6 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         return ty_intrinsic(me, TY_ERROR);
     }
 
-    // A bare JSDoc `import("./m")` of a constructor function `module.exports =` assigns is its value, `typeof F`: tsc's
-    // export= symbol isn't the class (the function expression's own symbol is), and getExpandoSymbol doesn't see
-    // through its value declaration, the assignment. tttt makes export= the function's class symbol
-    if (identifier->jsdoc && span_valid(identifier_type_import_span(identifier)) && !identifier_type_namespace_count(identifier) &&
-        csview_equals(decl->name, "export=") && (decl->flags & SYMBOL_CLASS) && decl->decl_count &&
-        decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && decl->decls[0].node &&
-        ((Expr const*)decl->decls[0].node)->tag == EXPR_FUNCTION
-    ) {
-        return ty_type_of_symbol(me, decl);
-    }
     Ty const* declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
             // `this` is the class's or interface's own `this` type parameter

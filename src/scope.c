@@ -4218,28 +4218,11 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
 }
 
 // tsc's resolveNameForSymbolSuggestion: the innermost table with a close enough name decides
-// Or'ed into the meaning of a name looked up from a JSDoc `@param` or `@return` type, whose function's parameters
-// (and `var`s) aren't candidates (scope_resolve()): the flag on the scope is gone by the time a deferred report asks
-#define MEANING_FROM_JSDOC_PARAMETER (1u << 30)
-
-static u32 jsdoc_parameter_meaning(Scope const* me) {
-    for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (scope->jsdoc_parameter_type) return MEANING_FROM_JSDOC_PARAMETER;
-        if (scope->kind == SCOPE_FUNCTION) break;
-    }
-    return 0;
-}
-
 static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
-    bool jsdoc_parameter_type = (meaning & MEANING_FROM_JSDOC_PARAMETER) != 0;
-    meaning &= ~MEANING_FROM_JSDOC_PARAMETER;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
         SymbolTable const* table = globals ? &scope->binder->globals : &scope->locals;
-        // (A JSDoc `@param` or `@return` type doesn't see the function's parameters: see scope_resolve())
-        u32 local_meaning = jsdoc_parameter_type && scope->kind == SCOPE_FUNCTION ? meaning & ~(u32)SYMBOL_FUNCTION_SCOPED_VARIABLE : meaning;
-        if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
-        if ((table->count || table->parent || globals) && local_meaning && suggest_in_table(table, globals, false, name, local_meaning, out)) return true;
+        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) return true;
         // (A module's or namespace's exports by tsc's `meaning & SymbolFlags.ModuleMember`: not `export default <expr>`,
         // a property; an enum's by `meaning & SymbolFlags.EnumMember`)
         u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
@@ -4404,7 +4387,6 @@ static bool walk_unvisited(Expr const* left) {
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
-    meaning |= jsdoc_parameter_meaning(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
@@ -4432,7 +4414,6 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
-    meaning |= jsdoc_parameter_meaning(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);
@@ -4623,18 +4604,11 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
-    bool jsdoc_parameter_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        jsdoc_parameter_type |= scope->jsdoc_parameter_type;
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
             bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter;
-            if (jsdoc_parameter_type && scope->kind == SCOPE_FUNCTION && found && (found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) &&
-                !(meaning & ~SYMBOL_VALUE & found->flags)
-            ) {
-                found = nullptr;
-            }
             // From the return type the function's own locals are visible but for its local types and its body's `var`s
             // (tsc's resolveNameHelper with lastLocation the return type node): `(): typeof groups` names the body's
             // `const groups`
@@ -4662,7 +4636,6 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             for (u32 i = 0; found && i < found->decl_count && !declared_here; i++) declared_here = found->decls[i].block == scope;
             if (declared_here && symbol_has_meaning(found, meaning)) return found;
         }
-        if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
         if (arguments && scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
             !function_impl_is_arrow(scope->function)
         ) {

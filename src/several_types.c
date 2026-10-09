@@ -101,10 +101,6 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             // `export = C`
             my target = symbol_for_meaning(container, SYMBOL_TYPE);
             my symbol = container;
-        } else if (my jsdoc && (container->flags & SYMBOL_VALUE || container == module)) {
-            // In JSDoc a module is a value or a type (tsc's getTypeFromImportTypeNode): a value means its type
-            my target = container;
-            my symbol = container;
         } else {
             error_ctx_error_d(errs, rare->import_span, 1340,
                 "Module '", rare->import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
@@ -150,20 +146,7 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         // getCommonJsExportEquals)
         bool qualified = vec_span_size(&rare->namespaces);
         Symbol const* own = symbol_get_export(module, (qualified ? *rare->namespaces.data : my name).sv);
-        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
-            container = module;
-        } else if (my jsdoc && !qualified && !own && (container->flags & SYMBOL_VALUE)) {
-            // In JavaScript a name that isn't an export is a property of the value (tsc's getTypeFromImportTypeNode:
-            // symbolFromVariable), whose type the name means; the checker reports a missing one
-            Symbol const* members = symbol_for_meaning(container, SYMBOL_NAMESPACE);
-            Symbol const* member = members ? symbol_get_export(members, my name.sv) : nullptr;
-            if (!symbol_for_meaning(member, SYMBOL_TYPE)) {
-                rare->import_prop_start = 0;
-                my target = (Symbol*)container;
-                my symbol = container;
-                return true;
-            }
-        }
+        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
     }
     Symbol const* shown = nullptr;
     for_each (i, vec_span, &rare->namespaces) {
@@ -250,27 +233,20 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
     return false;
 }
 
-// A JSDoc name in `X.prototype.m = function` that isn't in scope is looked up in X's declaration: its `@template`s
-// (tsc's getAssignmentDeclarationLocation). TODO: tsc only does this for the comments of the method and its statement
-static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
-    Scope const* scope = names;
-    while (scope && scope->kind != SCOPE_FUNCTION) scope = scope->parent;
-    FunctionImpl const* function = scope ? scope->function : nullptr;
-    Expr const* constructor = function ? function_impl_rare(function)->prototype_of : nullptr;
-    if (!constructor) return nullptr;
-    Symbol const* symbol = expr_entity_name_symbol(constructor);
-    Generic const* generic = nullptr;
-    for (u32 i = 0; symbol && i < symbol->decl_count && !generic; i++) {
-        SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_CLASS) generic = &((ClassDecl const*)decl->node)->generic;
-        FunctionImpl const* constructor_function = symbol_decl_js_function(decl);
-        if (constructor_function) generic = &constructor_function->generic;
+// A symbol that is a namespace only through its expandos (`f.x = v`): tsc's binder adds the expando to the exports
+// of the function's or initializer's symbol without the Namespace meaning, so the name isn't a namespace in types
+static bool namespace_from_expandos_only(Symbol const* symbol) {
+    // (What a CommonJS module's `module.exports =` assigns has the module's types: tsc's bindCommonJSTypeExports)
+    if (!symbol || symbol_rare(symbol)->export_equals_module) return false;
+    bool expando = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (!(symbol->decls[i].flags & SYMBOL_NAMESPACE)) continue;
+        // (One without a node is the namespace a CommonJS `export =` gets for the module's types: a real one, tsc's
+        // bindCommonJSTypeExports)
+        if (symbol->decls[i].kind != SYMBOL_DECL_EXPANDO || !symbol->decls[i].node) return false;
+        expando = true;
     }
-    if (!generic) return nullptr;
-    for_each (i, vec_generic_item, &generic->items) {
-        if (name_equals(i->name.sv, name.sv)) return i->owned_symbol ? i->owned_symbol : i->symbol_ref;
-    }
-    return nullptr;
+    return expando;
 }
 
 _Thread_local TypeParamDefaultScope identifier_type_default_scope;
@@ -309,21 +285,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             Symbol const* found;
             if (i == rare->namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
+                if (namespace_from_expandos_only(decl)) decl = nullptr;
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
                 if (decl && decl->is_placeholder) port_item_check_namespace_import_use(found, names);
-                if (!decl && my jsdoc) {
-                    // (In JSDoc the left of a qualified name may be a value, whose members are looked in: tsc's
-                    // resolveEntityName of a JSDoc type reference falls back to the value meaning)
-                    Symbol const* value_found = nullptr;
-                    Symbol const* value = scope_get_value(names, i->sv, &value_found);
-                    if (value && !value->is_placeholder) {
-                        decl = value;
-                        found = value_found;
-                    }
-                }
                 if (!decl) {
                     Symbol const* type_symbol = nullptr;
-                    Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
+                    Symbol const* type = scope_get_type(names, i->sv, &type_symbol);
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
                         rare->type_as_namespace = type;
                     } else {
@@ -335,7 +302,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 // (A member that is a value too is TS2749 for the whole name, tsc's canSuggestTypeof)
                 Symbol const* type = member && !symbol_for_meaning(member, SYMBOL_NAMESPACE | SYMBOL_VALUE) ?
                     symbol_for_meaning(member, SYMBOL_TYPE) : nullptr;
-                if (member && !type && !my jsdoc && !symbol_for_meaning(member, SYMBOL_NAMESPACE) && symbol_for_meaning(member, SYMBOL_VALUE)) {
+                if (member && !type && !symbol_for_meaning(member, SYMBOL_NAMESPACE) && symbol_for_meaning(member, SYMBOL_VALUE)) {
                     rare->value_member = member;
                     rare->value_member_of = namespace;
                     rare->value_member_at = (u32)(i - rare->namespaces.data);
@@ -404,8 +371,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                             in_signature = false;
                             continue;
                         }
-                        // (A JSDoc `@return` is looked up in the function's scope itself, see function_impl.c)
-                        identifier_type_rare(me)->this_in_signature = in_signature || s->jsdoc_parameter_type;
+                        identifier_type_rare(me)->this_in_signature = in_signature;
                         break;
                     }
                 }
@@ -414,31 +380,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
         // A namespace isn't a type (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue, before TS2749)
-        if (!my target && !my jsdoc && scope_resolve(names, my name.sv, SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) {
+        Symbol const* namespace = my target ? nullptr : scope_resolve(names, my name.sv, SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE);
+        if (namespace && !namespace_from_expandos_only(namespace)) {
             error_ctx_error_d(errs, my name, 2709, "Cannot use namespace '", my name, "' as a type.");
             return;
         }
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
-        if (!my target && my jsdoc) {
-            // A value only the function its `@param` or `@return` is on declares (a parameter, a `var`) is still found:
-            // tsc's resolveEntityNameFromAssignmentDeclaration looks again from the function itself
-            Scope* flagged = nullptr;
-            for (Scope* s = names; s && !flagged; s = s->kind == SCOPE_FUNCTION ? nullptr : s->parent) {
-                if (s->jsdoc_parameter_type) flagged = s;
-            }
-            if (flagged) {
-                flagged->jsdoc_parameter_type = false;
-                my target = scope_get_value(names, my name.sv, &my symbol);
-                flagged->jsdoc_parameter_type = true;
-            }
-        }
-        if (!my target && my jsdoc) my target = my symbol = jsdoc_prototype_type_param(names, my name);
-        // `exports` of a CommonJS file is the file's symbol, a value (tsc's resolveNameHelper)
-        if (!my target && my jsdoc && names->file && names->file->is_commonjs && names->file->scope &&
-            span_equals(my name, "exports")
-        ) {
-            my target = my symbol = names->file->scope->container;
-        }
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         // In a function's JSDoc a name is looked up from the function too, which makes what it finds there referenced
         // (tsc's resolveEntityNameFromAssignmentDeclaration through getAssignmentDeclarationLocation: the signature's
@@ -448,19 +395,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             scope_get_type(jsdoc_host_scope, my name.sv, &host_found);
             if (host_found && host_found != my symbol) unused_mark_referenced(jsdoc_host_scope, (Symbol*)host_found, SYMBOL_TYPE);
         }
-        // (In JSDoc a value is looked up too, and suggested: tsc resolves again with meaning Type | Value. But not the
-        // function's parameters and variables from its own `@param` types: resolveNameHelper's lastLocation is the
-        // JSDoc, not the body)
-        if (!my target) {
-            Scope const* from = names;
-            for (Scope const* s = names; my jsdoc && s && s->kind != SCOPE_FUNCTION; s = s->parent) {
-                if (s->parameters && s->parent && s->parent->parent) {
-                    from = s->parent->parent;
-                    break;
-                }
-            }
-            scope_report_not_found(from, my name, my jsdoc ? SYMBOL_TYPE | SYMBOL_VALUE : SYMBOL_TYPE, false, errs);
-        }
+        if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
         if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) {
             check_static_type_parameter_reference(me, names, errs);
             TypeParamDefaultScope in_default = identifier_type_default_scope;
@@ -472,11 +407,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         }
     }
 
-    // (A value in JSDoc is its type: tsc's getTypeFromJSDocValueReference)
     // (A property of what `export =` names may be a type: the checker decides, lower_identifier())
     bool export_equals_property = my target && my target->decl_count &&
         my target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY && !identifier_type_namespace_count(me);
-    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) && !my jsdoc &&
+    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) &&
         !export_equals_property
     ) {
         cstr name_str = identifier_type_make_name_str(me);

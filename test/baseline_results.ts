@@ -20461,9 +20461,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeNongenericInstantiationAttempt': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeTagFunctionTypePredicate': {
         errors: false,
@@ -33201,7 +33201,7 @@ const baselines = {
         types: true,
     },
     'uniqueSymbolJs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51936,7 +51936,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51971,7 +51971,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsJSDocRedirectedLookups': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52028,7 +52028,7 @@ const baselines = {
     'jsDeclarationsParameterTagReusesInputNodeInEmit1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsParameterTagReusesInputNodeInEmit2': {
         errors: true,
@@ -52291,9 +52291,9 @@ const baselines = {
         types: true,
     },
     'importTag17': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag18': {
         errors: true,
@@ -52521,14 +52521,14 @@ const baselines = {
         types: true,
     },
     'jsdocImportTypeReferenceToCommonjsModule': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocImportTypeReferenceToESModule': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocImportTypeReferenceToStringLiteral': {
         errors: false,
@@ -52841,14 +52841,14 @@ const baselines = {
         types: false,
     },
     'jsdocTypeReferenceToMergedClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'jsdocTypeReferenceToValue': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeReferenceUseBeforeDef': {
         errors: true,
@@ -61241,9 +61241,9 @@ const baselines = {
         types: true,
     },
     'moduleExportAssignment7': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias': {
         errors: false,
@@ -61421,7 +61421,7 @@ const baselines = {
         types: false,
     },
     'prototypePropertyAssignmentMergeAcrossFiles2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61531,17 +61531,17 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment10_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61561,17 +61561,17 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment14': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment15': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment16': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61591,7 +61591,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61646,7 +61646,7 @@ const baselines = {
         types: true,
     },
     'typeFromPropertyAssignment3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61676,7 +61676,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment35': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61701,17 +61701,17 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment40': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61746,7 +61746,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignmentOutOfOrder(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61776,7 +61776,7 @@ const baselines = {
         types: false,
     },
     'typeLookupInIIFE': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -365,8 +365,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     scope_release(parameter_scope, pending_mark);
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
-    // (Not a JSDoc `@returns`, which sees the body's types: tsc's resolveNameHelper exempts a JSDoc lastLocation)
-    if (my has_body && !(names->file && names->file->is_js)) {
+    if (my has_body) {
         ScopePendingMark return_mark = scope_pending_mark(function_scope->binder);
         Scope* return_scope = scope_new(function_scope, SCOPE_BLOCK);
         return_scope->return_type = true;
@@ -374,12 +373,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         scope_release(return_scope, return_mark);
     } else {
         Scope const* saved_ret_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
-        // (A JSDoc `@return` type doesn't see the function's parameters and `var`s as values either: tsc's
-        // resolveNameHelper with a JSDocReturnTag lastLocation, like `@param`'s, see binding_lookup_names())
-        bool jsdoc_return = my ret.from_jsdoc && function_scope->kind == SCOPE_FUNCTION && !function_scope->jsdoc_parameter_type;
-        if (jsdoc_return) function_scope->jsdoc_parameter_type = true;
         type_lookup_names(&my ret, function_scope, errs);
-        if (jsdoc_return) function_scope->jsdoc_parameter_type = false;
         if (js) identifier_type_set_jsdoc_host(saved_ret_host);
     }
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count; i++) {

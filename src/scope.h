@@ -521,9 +521,6 @@ typedef struct Scope {
     // The return type annotation of a function: of the function's scope it sees only the parameters, not what the body
     // declares (tsc's resolveNameHelper: a FunctionScopedVariable only if it is a parameter, no types)
     bool return_type;
-    // The type of a parameter written in the function's JSDoc (`@param {typeof x} x`): the function's parameters and
-    // `var`s aren't values there (tsc's resolveNameHelper: lastLocation is the JSDoc, not a parameter)
-    bool jsdoc_parameter_type;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
     bool strict;
     // In a class (its type parameters, heritage clauses and body): strict because of it (tsc's getContainingClass in
