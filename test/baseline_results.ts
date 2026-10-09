@@ -20912,7 +20912,7 @@ const baselines = {
     },
     'jsxLocalNamespaceIndexSignatureNoCrash': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxMultilineAttributeStringValues': {
@@ -38997,7 +38997,7 @@ const baselines = {
     },
     'controlFlowStringIndex': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowSuperPropertyAccess': {

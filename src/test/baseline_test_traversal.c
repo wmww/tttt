@@ -2761,8 +2761,8 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
     Checker* checker = current_checker;
     Ty const* apparent = ty_apparent_type(checker, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
-    Symbol const* container = object->alias ? object->alias :
-        apparent->kind == TY_DECLARED ? apparent->declared.symbol :
+    // (tsgo's index symbol's parent is the type's own symbol: a type alias of a type literal names nothing, `__type`)
+    Symbol const* container = apparent->kind == TY_DECLARED ? apparent->declared.symbol :
         apparent->kind == TY_REFERENCE ? apparent->reference.target->declared.symbol : nullptr;
     Members const* members = ty_members(checker, apparent);
     VecSpan declarations = {0};
