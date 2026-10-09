@@ -404,6 +404,24 @@ static_failable load_config(ConfigLoad* me, csview path) {
     // (Syntax errors are recovered from: the program reports them, see program_set_config_file())
     ignore json_parse(cstr_sv(&contents), document);
     cstr_drop(&contents);
+    if (document->tag != JSON_OBJECT && document->end > document->start) {
+        // tsc's convertConfigFileToObject: the root must be an object (TS5092), but of an array the first object
+        // element is the config, silently (the JSON parser's recovery from stray characters makes such arrays)
+        JsonValue* first = nullptr;
+        for (isize i = 0; document->tag == JSON_ARRAY && i < document->count && !first; i++) {
+            if (document->items[i].tag == JSON_OBJECT) first = &document->items[i];
+        }
+        if (first) {
+            JsonValue taken = *first;
+            *first = (JsonValue){0};
+            json_drop(document);
+            *document = taken;
+        } else {
+            csview base = csview_ends_with(path, "jsconfig.json") ? c_sv("jsconfig.json") : c_sv("tsconfig.json");
+            config_diagnostic(me, 5092, cstr_d("The root value of a '", base, "' file must be an object."), path,
+                document->start, document->end);
+        }
+    }
 
     cstr dir = cstr_from_sv(parent_of(path));
     // What is extended first, so that this config overrides it
