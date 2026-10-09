@@ -239,3 +239,24 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   Generic inference from a contextual intersection-heavy type, not JSDoc-specific. (Agent C)
 - webpack node_modules/zod/v4/classic/schemas.d.cts:806 TS5115 (instantiations appear infinitely circular) missing:
   reached through webpack's use of zod's types, not zod's own corpus. (Agent C)
+
+## 7.1 new tests fan-out (agent B, 2026-10-09)
+- `contentMapper*` (10 on B's list, 15 in the tree): the 7.1 `contentMappers` feature, written up as plan 56, not implemented.
+- `importAttributesDeclarationEmit` (TYP): tsgo prints an import type's attribute keys `any` or `error` depending on
+  what was checked before (probe: deleting unrelated lines flips it): order-dependent in tsgo, not chased.
+- `globalArrayAugmentationWithAmbientModuleReexportMerge1` (SYM/TYP): errors pass; tsgo's failed cross-file merge of an
+  export alias with a const keeps two symbols (mergeSymbol returns source), tttt's binder merged them into one.
+- `declarationEmitAugmentationUsesCorrectSourceFile` (SYM/TYP): an augmentation merging into an `export { Knex }` alias's
+  target merges into a clone in tsgo 7.1 (mergeSymbol's resolveSymbol + cloneSymbol), leaving the original namespace
+  uninstantiated (`any`) and naming it `knex.Knex`; tttt's merge_into_exports merges into the target itself.
+- `duplicateIdentifierChecks` (SYM/TYP): errors pass; the parser merges a name's accessor declarations of a type
+  literal/interface into one member, tsgo keeps a symbol per conflicting declaration.
+- `expandoNoInferredIndex`, `expandoObjectIndexSignatures`: `obj.y = Object.values(obj)` of a JS `{}` container is
+  circular in tsgo (TS7022, y any; inference from the namespace type reads y's type), tttt's property read of y while
+  y is in flight gives a silent value: find where the container's member type skips ty_resolving (agent D's
+  circularity area).
+- `jsTypedefMergedWithModuleExportProperty` (SYM): a `@typedef T` merged with `const T` exported through
+  `module.exports.T = T` lists the typedef's declaration first; tsgo's delayed typedef bind puts the const first
+  (symbol_add_decl's reordering doesn't reach this merge).
+- `isolatedDeclarationsJsThisPropertyAssignmentInference`: TS9013 for `this.x = foo()` in a JS constructor under
+  isolatedDeclarations (declaration diagnostics: agent C's area).
