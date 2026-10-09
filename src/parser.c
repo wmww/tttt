@@ -2726,14 +2726,25 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
     if (hop_char(&p, '?')) {
         hop_whitespace(&p);
         TypeNode inner;
-        expect_type(&p, TYPE_PRECEDENCE_NULL, &inner);
+        // (tsgo's parseJSDocNullableType: a type operator or higher, `?A | B` is `(A | null) | B`, no leading `|`)
+        if (*p.pos == '|' || *p.pos == '&') {
+            parse_error(&p, span_from_token(&p), 1110, "Type expected.");
+            inner = (TypeNode){ .tag = TYPE_ANY, .any.unkown_symbol_span = span_from_pos(&p) };
+        } else {
+            expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &inner);
+        }
         *ret = jsdoc_union(inner, jsdoc_synthesized(type_null));
         if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, true, false, false);
         return parse_success(&p);
     }
     if (hop_char(&p, '!')) {
         hop_whitespace(&p);
-        expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
+        if (*p.pos == '|' || *p.pos == '&') {
+            parse_error(&p, span_from_token(&p), 1110, "Type expected.");
+            *ret = (TypeNode){ .tag = TYPE_ANY, .any.unkown_symbol_span = span_from_pos(&p) };
+        } else {
+            expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
+        }
         if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, true, false);
         return parse_success(&p);
     }
