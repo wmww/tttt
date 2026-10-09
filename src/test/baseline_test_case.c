@@ -613,15 +613,21 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         if (loaded) {
             my has_tsconfig = true;
             i->config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
-            // Its parsing diagnostics (those of a config it extends have no location here)
+            // Its parsing diagnostics (those of a config it extends have no location here). The loader names the
+            // config absolute, the test by its own spelling (`/tsconfig.json`, `tsconfig.json`)
+            cstr harness_cwd = cstr_null;
+            try (fs_get_cwd(mock_fs_get_fs(my fs), &harness_cwd)) or_panic;
+            cstr own = absolute_path_of(cstr_sv(&harness_cwd), cstr_sv(&i->path));
+            if (fs_is_directory(mock_fs_get_fs(my fs), cstr_sv(&own))) cstr_append_lit(&own, "/tsconfig.json");
             for (u32 j = 0; j < diagnostics.count; j++) {
                 TsconfigDiagnostic* d = &diagnostics.items[j];
-                Error* error = cstr_eq(&d->config, &i->path) ?
+                Error* error = cstr_eq(&d->config, &own) ?
                     program_config_error(my program, d->start, d->end, d->code, d->message) :
                     error_ctx_global_error_s(program_errors(my program), d->code, d->message);
                 error->phase = ERROR_PHASE_PARSE;
                 d->message = cstr_null;
             }
+            c_drop(cstr, &harness_cwd, &own);
         }
         tsconfig_diagnostics_drop(&diagnostics);
         VecCStr directives = my directives;
