@@ -341,9 +341,8 @@ Expr* expr_prototype_object(Expr* me);
 // The symbol an entity name `a` or `a.b.c` names through the exports of what's before each dot, once names are
 // resolved. Null if some name isn't there
 Symbol const* expr_entity_name_symbol(Expr const* me);
-// `this`, or a variable initialized with it (`var self = this`, tsc's isThisInitializedDeclaration): that `this`.
-// Null otherwise (names must be resolved)
-IdentifierExpr const* expr_this_or_alias(Expr const* me);
+// An unparenthesized `this`: its identifier. Null otherwise (tsgo has no `this` aliases)
+IdentifierExpr const* expr_this_keyword(Expr const* me);
 // `name_ret` (may be null): the name of the property an EXPORTS_PROPERTY target exports (in the source, no quotes)
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
 // What an assignment declares, in a CommonJS file (`file` of the assignment): tsc's getAssignmentDeclarationKind, which
@@ -512,9 +511,6 @@ typedef struct BinaryOpExpr {
     // The declare step's scope_add_expandos() looked at it as a possible `f.x = v` expando; the resolve walk binds the
     // other ones (nested in expressions) with scope_add_nested_expando()
     bool expando_bound : 1;
-    // JavaScript: the `a.b || {}` of `a.b = a.b || {}` (a function, class...: tsc's getDefaultedExpandoInitializer), whose
-    // left side tsc doesn't check (checkBinaryExpression). Its type is its right side's. Set by the resolve walk
-    bool defaulted_expando : 1;
     // `/** @enum {T} */ exports.C = {}` (or `A.B.C = {}`, or an unnamed `@typedef`) at the top level: the parser declared
     // C as a type alias too,
     // the binder adds the namespace declaration of C's name (tsc's delayedBindJSDocTypedefTag:

@@ -4732,7 +4732,6 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     jsdoc_apply_template(p, tags, &function->generic, false);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
-        function->jsdoc_class |= i->kind == JSDOC_TAG_CLASS && !i->nested && !i->earlier && !function_impl_is_arrow(function);
     }
     // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
     // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own
@@ -13681,10 +13680,6 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             class_host = true;
             break;
         case STATEMENT_EXPR:
-            if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
-                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
-            }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
                 // (Through a chain `a = b = function () {}`: tsc's getNextJSDocCommentLocation goes up through

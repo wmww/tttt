@@ -732,12 +732,6 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);
     names->flow->contextual_depth += my binding.has_explicit_type;
-    if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION && !function_impl_is_arrow(initialized_binding_value(me)->function) &&
-        names->file && names->file->is_js
-    ) {
-        function_impl_rare_mut(initialized_binding_value(me)->function)->class_symbol = my binding.symbol;
-        scope_mark_jsdoc_class(names->binder, my binding.symbol, initialized_binding_value(me)->function);
-    }
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
     if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION) function_impl_set_variable_name(initialized_binding_value(me)->function, my binding.content_span);
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_FUNCTION &&

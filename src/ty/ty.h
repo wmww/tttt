@@ -1550,13 +1550,6 @@ bool ty_export_equals_property_missing(Checker* me, Symbol const* property);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
 // What `import("m")` promises: the module's value, with a synthetic `default` for an `export =` module
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct SourceFile const* importer);
-// The class a JavaScript function is the constructor of (tsc's isJSConstructor: `this.x = v` or `F.prototype.x = v`
-// declared members of it), else null
-Symbol const* ty_js_constructor_class(FunctionImpl const* function);
-// The JavaScript class whose `this` a function has: a constructor function's, or that of the constructor function
-// whose prototype it is a method of (`F.prototype.m = function () {}`). Null if none
-Symbol const* ty_js_this_class(FunctionImpl const* function);
-Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function);
 // A JavaScript member that only `this.x = v` assignments declare, one of them in a constructor (tsc's
 // isConstructorDeclaredProperty): its type is what the constructor assigns
 bool ty_is_constructor_declared(Symbol const* symbol);
@@ -1768,9 +1761,6 @@ void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
 bool ty_is_js_literal_type(Checker* me, Ty const* type);
 int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value);
 bool ty_is_empty_array_literal_type(Checker* me, Ty const* type); // lower.c
-// A JavaScript constructor function assigned to a variable or property: the name tsc's class symbol (the function
-// expression's) has. False for other symbols
-bool ty_js_assigned_class_name(Symbol const* symbol, csview* name);
 bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target);
 bool ty_jsx_tag_arity_fits(Checker* me, struct JsxElement const* element, Ty const* tag_type, ErrorCtx* errs);
 Ty const* ty_jsx_signature_props(Checker* me, struct JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component);

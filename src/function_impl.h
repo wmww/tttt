@@ -150,31 +150,18 @@ typedef struct FunctionImplRare {
     // them in the literal's members), one table shared by those functions. Symbols baseline only: the checker's
     // object literal type has the literal's own properties
     struct SymbolTable* this_literal_members;
-    // JavaScript: F of `F.prototype.m = function` or `F.prototype = { m() {} }`, whose type parameters the JSDoc names
-    // of the method may be (tsc's getAssignmentDeclarationLocation) and whose instance `this` is in it (tsc's
-    // getClassNameFromPrototypeMethod). Set when resolving
-    struct Expr const* prototype_of;
     // A function expression or arrow function that initializes a variable with expandos (`const f = () => {}; f.x = 1`,
     // scope_add_expandos()): the variable, whose exports are members of this function's type (tsc's getSymbolOfExpando)
     Symbol const* expando_host;
     // A function expression or arrow function that initializes a variable of a file or namespace (`var f = () => f`):
     // the variable, by which its type prints `typeof f` within itself (tsgo's shouldWriteTypeOfFunctionSymbol)
     Symbol const* top_level_variable;
-    // JavaScript: the variable a function expression initializes (`var F = function () {}`), whose symbol is the class
-    // a constructor function makes (a function declaration's is its own symbol). Set by the resolve walk
-    Symbol* class_symbol;
-    // JavaScript: class_symbol is the function expression's own (made by its `this.x = v`, tsc's symbol of the function
-    // expression, named by getAssignedName): a class whose `this` is still what the context says
-    bool own_class_symbol;
     // A parenthesized property value `a: (function () {})`: this_literal says whose property it is, but tsc's
     // getContainingObjectLiteral doesn't see through the parentheses (no contextual `this`)
     bool this_literal_parenthesized;
-    // prototype_of comes from an `Object.defineProperty(F.prototype, "x", {...})` descriptor this is a function of:
-    // `this.y = v` in it still declares y in the descriptor (tsc's bindThisPropertyAssignment: the literal's members)
-    bool prototype_descriptor;
     // The name an anonymous function expression is called by where it is written (tsc's getAssignedName: the variable,
     // property or binding element it is directly the value of, the left of `=`), see mark_assigned_name(). Where its
-    // errors go (tsgo's GetErrorRangeForNode), and in JavaScript the name of the class it may be
+    // errors go (tsgo's GetErrorRangeForNode)
     Span assigned_name;
     // Owned, JavaScript: a JSDoc `@type {F}` on the function that isn't a written signature (`{Processor<A, B>}`): its
     // signature types the parameters like a contextual one (tsc's getSignatureOfTypeTag, ty_function_apply_jsdoc_type())
@@ -232,9 +219,6 @@ typedef struct FunctionImpl {
     // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
     // untyped signature whose arguments are all optional
     bool jsdoc_typed : 1;
-    // JavaScript: its JSDoc has `@class`/`@constructor`: a constructor function even without `this.x = v` (tsc's
-    // isJSConstructor: getJSDocClassTag)
-    bool jsdoc_class : 1;
     // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
     bool uses_arguments : 1;
     // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included

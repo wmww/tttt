@@ -1691,30 +1691,6 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
                 sig->drops_mapped_type_params = mapper != nullptr;
                 builder_push(builder, construct, sig);
             }
-        } else if (base_members && !base_members->construct_count && base_decl && base_instance &&
-            (base_decl->flags & SYMBOL_FUNCTION) && base_decl->decl_count && base_decl->decls[0].full.source &&
-            base_decl->decls[0].full.source->is_js
-        ) {
-            // A JavaScript constructor function: the construct signatures its function type has (tsc's
-            // resolveAnonymousTypeMembers of a function with SymbolFlags.Class), instantiated by the base's type arguments
-            // (an `@extends` tag's)
-            Ty const* function_type = ty_type_of_symbol(me, base_decl);
-            Members const* function_members = function_type->flags & TYF_OBJECT ? ty_members(me, function_type) : nullptr;
-            TyMapper const* mapper = base_instance->kind == TY_REFERENCE ?
-                ty_mapper_new(me, base_instance->reference.target->declared.type_params, ty_reference_args(me, base_instance)) :
-                nullptr;
-            u32 pushed = 0;
-            for (u32 i = 0; function_members && i < function_members->construct_count; i++) {
-                Signature const* base_sig = function_members->construct[i];
-                if (!base_sig->function || ty_js_constructor_class(base_sig->function) != base_decl) continue;
-                Signature* sig = class_construct_signature(me, class_decl, instance);
-                sig->target = base_sig;
-                sig->mapper = mapper;
-                sig->drops_mapped_type_params = mapper != nullptr;
-                builder_push(builder, construct, sig);
-                pushed++;
-            }
-            if (!pushed) builder_push(builder, construct, class_construct_signature(me, class_decl, instance));
         } else if (base_members && base_members->construct_count) {
             TyMapper const* mapper = base_instance->kind == TY_REFERENCE ?
                 ty_mapper_new(me, base_instance->reference.target->declared.type_params, ty_reference_args(me, base_instance)) :
@@ -3697,16 +3673,6 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 } else {
                     builder_push(&builder, call, sig);
                 }
-                // A JavaScript constructor function is also a class: `new` makes its instances (tsc's
-                // resolveAnonymousTypeMembers, the construct signatures of a function with SymbolFlags.Class)
-                Symbol const* js_class = ty_js_constructor_class(ty->anonymous.function);
-                if (js_class && !(sig->flags & SIGNATURE_CONSTRUCT)) {
-                    Signature* construct = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
-                    construct->flags |= SIGNATURE_CONSTRUCT;
-                    construct->class_instance = ty_class_instance_type(me, js_class);
-                    construct->class_type_params = ty_local_type_params(ty_declared_type_of(me, js_class));
-                    builder_push(&builder, construct, construct);
-                }
                 // `const f = () => {}; f.x = 1` (tsc merges the variable's exports into the function's symbol)
                 Symbol const* host = function_impl_rare(ty->anonymous.function)->expando_host;
                 if (host) {
@@ -4156,49 +4122,6 @@ static void clone_type_params(Checker* me, Signature* sig) {
     }
     sig->mapper = mapper;
     sig->type_params = (TyList){ .data = fresh, .len = params.len };
-}
-
-// A JavaScript constructor function assigned to a variable or property is a class of the function expression's own
-// symbol in tsc: named by the function expression (its name, else the name it's assigned to: getNameOfDeclaration's
-// getAssignedName), never qualified. False for any other symbol
-bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
-    if (!(symbol->flags & SYMBOL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_FUNCTION)) {
-        return false;
-    }
-    Expr const* value = nullptr;
-    SymbolDecl const* variable = symbol_find_decl(symbol, SYMBOL_DECL_VARIABLE);
-    SymbolDecl const* assignment = symbol_find_decl(symbol, SYMBOL_DECL_ASSIGNMENT);
-    if (variable) {
-        Binding const* binding = variable->node;
-        if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
-        value = initialized_binding_value(((InitializedBinding const*)binding));
-    } else if (assignment) {
-        value = assignment->node;
-        // (`ns.F = ns.F || function () {}`)
-        if (value && value->tag == EXPR_BINARY_OP && !expr_is_perenthisized(value) &&
-            (value->binary_op->op == BINARY_OP_OR_OR || value->binary_op->op == BINARY_OP_EH_EH)
-        ) {
-            value = &value->binary_op->right;
-        }
-    }
-    if (!value || value->tag != EXPR_FUNCTION || function_impl_is_arrow(value->function)) return false;
-    SourceFile const* file = value->inner_span.source;
-    if (!file || !file->is_js) return false;
-    *name = span_valid(value->function->name) ? value->function->name.sv : ty_symbol_display_name(symbol).sv;
-    return true;
-}
-
-Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
-    if (function->is_type || function_impl_is_arrow(function) ||
-        (function_impl_rare(function)->this_literal && !function_impl_rare(function)->own_class_symbol)) {
-        return nullptr;
-    }
-    // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
-    Symbol const* symbol = function_impl_rare(function)->class_symbol ? function_impl_rare(function)->class_symbol :
-        function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
-    if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
-    SourceFile const* file = function->full_span.source;
-    return file && file->is_js ? symbol : nullptr;
 }
 
 // tsc's IsUntypedSignatureInJSFile: a function of a JavaScript file without JSDoc parameter types (or `@type`), not

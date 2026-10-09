@@ -307,9 +307,6 @@ typedef struct Symbol {
     // into the module: declares like a module (`export default`)
     bool is_augmentation;
     bool is_global_this;
-    // JavaScript `F.prototype = { m() { this.x = v } }`: x belongs to the literal in tsc (its symbol has no namable
-    // parent), and is F's instance member through it. Set while only such assignments declare it
-    bool prototype_literal_member;
     bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
     // A placeholder for what an alias couldn't resolve to (tsc's unknownSymbol, of the error type), not for an import
@@ -363,9 +360,6 @@ static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind
     return decl ? decl->node : nullptr;
 }
 // The type parameters of the (first) class, interface or type alias declaration, null if it has none
-// The function a JavaScript declaration declares: a function declaration, or a variable or assignment whose value is a
-// function expression. Null otherwise
-FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl);
 Generic const* symbol_type_generic(Symbol const* me);
 OuterGenerics const* symbol_outer_generics(Symbol const* me);
 // tsc's getLocalSymbolForExportDefault: the local name of a module's `default` export (that of its first named
@@ -600,11 +594,6 @@ typedef struct Binder {
     u32 pending_type_as_value_count;
     // Where the errors of what is resolved but never checked go (binder_discarded_errs()), owned
     ErrorCtx* discarded_errs;
-    // Globals JavaScript expandos of another file declared or added to (`Outer.Inner = v` where the file doesn't
-    // declare Outer), for binder_link_global_expandos()
-    Symbol** global_expandos; // malloc'd
-    u32 global_expando_count;
-    u32 global_expando_cap;
     // Some SymbolDecl.flow_container is set (a dot assignment declaration): only then can a read be one in the container
     // that declares it (TS2565, is_read_in_declaring_container())
     bool has_assignment_flow_containers;
@@ -671,9 +660,6 @@ void binder_link(Binder* me);
 // The aliases the resolve walk declared after binder_link() (`import I = M` in a block): resolved at the end of name
 // resolution, so the checkers (which share them) never write to them
 void binder_resolve_remaining_aliases(Binder* me);
-// Once every file's names are declared: the initializers of the variables global expandos went to get their members
-// (the variable may be declared by a file bound after the expando's)
-void binder_link_global_expandos(Binder* me);
 // A `declare module "m" {}` in a module, whose declarations binder_link() merges into "m"
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl);
 // A `declare global {}` in a module, declared by binder_declare_global_augmentations() once every file is
@@ -766,8 +752,6 @@ static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symb
 // Declares props in the scope (or the exports of its container, or the nearest function scope), merging with an
 // existing symbol when tsc's rules allow it. Checks that ret was previously null
 void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
-// A JavaScript function tagged `@class`/`@constructor` makes `symbol` a class (with a members table), like `this.x = v`
-void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, struct FunctionImpl const* function);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
 // False if it isn't at the top level of a file or namespace (reported)
@@ -783,19 +767,17 @@ void scope_add_expandos(Scope* me, struct Block const* block);
 // An assignment `f.x = v` nested in an expression (`(f.x = 1)`, `if (f.x = 1)`), which tsc's binder binds like any
 // other: called by the resolve walk for the ones scope_add_expandos() didn't see
 void scope_add_nested_expando(Scope* me, struct BinaryOpExpr* op);
-// The expression a declaration initialized (or a member assigned) with `init` is an expando container of (tsc's
-// getExpandoInitializer/getDefaultedExpandoInitializer): a function or arrow function, in JavaScript also a class
-// expression or `{}`, possibly defaulted (`var ns = ns || {}`: `name` is the declared name, invalid for a member)
-Expr* expando_initializer(Expr* init, Span name, bool js);
-// JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
-// `this` is of (a static member in a static method), or of the constructor function it is in (tsc's
-// bindThisPropertyAssignment)
+// Whether a declaration initialized (or a member assigned) with `init` is an expando container (tsgo's
+// IsExpandoInitializer): a function or arrow function, in JavaScript also a class expression or `{}` (unless
+// `annotated`): that expression, null otherwise
+Expr* expando_initializer(Expr* init, bool js, bool annotated);
 // TypeScript `this.x = v` in a constructor or static block (`left` is `this.x`, also a target of a destructuring
 // assignment): marks the field it types (ClassItem.field.ts_assigned)
 void scope_note_ts_this_assignment(Scope const* me, struct Expr const* left);
+// JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
+// `this` is of (a static member in a static method), or of the object literal whose method it is in (tsgo's
+// bindThisPropertyAssignment)
 void scope_add_this_property(Scope* me, struct BinaryOpExpr* op);
-// JavaScript `/** @type {T} */ this.x;` (tsc's isSpecialPropertyDeclaration), after `this` is resolved
-void scope_add_this_declaration(Scope* me, struct Expr* access, struct TypeNode const* jsdoc_type);
 // `require` in a `require("m")` of a JavaScript file that doesn't declare the name
 Symbol* binder_require_symbol(Binder* me);
 

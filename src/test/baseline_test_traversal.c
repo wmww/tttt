@@ -255,16 +255,6 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
-    Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && identifier_this_function(this) ?
-        ty_js_this_class(identifier_this_function(this)) : nullptr;
-    // (A function expression that is a class of its own whose `this` is something else: an object literal's property,
-    // a callback with a contextual `this`. The name is still the member it declares)
-    if (!js_class && (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && identifier_this_function(this) &&
-        function_impl_rare(identifier_this_function(this))->own_class_symbol
-    ) {
-        js_class = function_impl_rare(identifier_this_function(this))->class_symbol;
-    }
-    if (js_class) table = symbol_rare(js_class)->members;
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)
     ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;
@@ -286,22 +276,6 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
     if (!declares) return;
-    // (A JavaScript class's member merged with what `F.prototype = {...}` declares: the checker's member has them all,
-    // builder_add_assignment_members())
-    Checker* checker = current_checker;
-    Ty const* instance = js_class ? ty_declared_type_of(checker, js_class) : nullptr;
-    Prop const* prop = instance && (instance->flags & TYF_OBJECT) ? ty_get_prop(checker, instance, checker_atom(checker, name.sv)) : nullptr;
-    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
-    bool own = false;
-    for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) own |= span_eq(prop->decl->decl_spans[i], expr_outer_span(left));
-    if (own && prop->decl->decl_span_count > member->decl_count && ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
-        VecSpan spans = vec_span_init();
-        for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&spans, prop->decl->decl_spans[i]);
-        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-            .span = expr_outer_span(&left->property->prop), .text = symbol_text(ctx, member), .declarations = spans,
-        };
-        return;
-    }
     add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
 }
 
@@ -2372,30 +2346,6 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         return;
     }
     Symbol const* symbol = my target;
-    Symbol const* js_class = my this_kind == THIS_ANY && identifier_this_function(me) ? ty_js_this_class(identifier_this_function(me)) : nullptr;
-    if (js_class) {
-        // A JavaScript constructor function's class: declared by the function (a function expression's own symbol
-        // to tsc, named like the variable)
-        SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
-        Expr const* init = variable ? initialized_binding_value(((InitializedBinding const*)variable->node)) : nullptr;
-        // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
-        bool own = function_impl_rare(identifier_this_function(me))->class_symbol == js_class && identifier_this_function(me)->is_expression;
-        // (Assigned to a property, `ns.F = function () {}`, the class is the function expression, named by itself or
-        // the property: from its prototype's methods too)
-        SymbolDecl const* assignment = variable ? nullptr : symbol_find_decl(js_class, SYMBOL_DECL_ASSIGNMENT);
-        Expr const* assigned = assignment ? assignment->node : nullptr;
-        csview class_name;
-        bool named = ty_js_assigned_class_name(js_class, &class_name);
-        bool assigned_class = named && assigned && assigned->tag == EXPR_FUNCTION;
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = init ? vec_span_single(expr_outer_span(init)) :
-                assigned_class ? vec_span_single(assigned->function->full_span) :
-                own ? vec_span_single(identifier_this_function(me)->full_span) : declaration_get_spans(js_class),
-            .span = identifier_expr_name(me),
-            .text = named ? cstr_from_sv(class_name) : symbol_text(ctx, js_class),
-        });
-        return;
-    }
     if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me) && function_impl_rare(identifier_this_function(me))->paired_this) {
         symbol = function_impl_rare(identifier_this_function(me))->paired_this->initializer.binding.symbol;
     }
@@ -3220,32 +3170,11 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     } else {
                         vec_span_push(&declarations, i->span);
                     }
-                    // A method or accessor of `F.prototype = {...}` merged with F's members of its name (`this.x = v`):
-                    // one symbol, the checker's member has its declarations (builder_add_assignment_members())
-                    cstr prototype_text = cstr_null;
-                    Expr const* prototype_of = i->value.tag == EXPR_FUNCTION && !i->computed_key ?
-                        function_impl_rare(i->value.function)->prototype_of : nullptr;
-                    Symbol const* js_class = prototype_of ? expr_entity_name_symbol(prototype_of) : nullptr;
-                    if (js_class && (js_class->flags & SYMBOL_CLASS)) {
-                        Checker* checker = current_checker;
-                        Ty const* instance = ty_declared_type_of(checker, js_class);
-                        Prop const* prop = instance && (instance->flags & TYF_OBJECT) ?
-                            ty_get_prop(checker, instance, checker_atom(checker, cstr_sv(&i->name_string))) : nullptr;
-                        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
-                        bool own = false;
-                        for (u32 k = 0; prop && k < prop->decl->decl_span_count; k++) own |= span_eq(prop->decl->decl_spans[k], i->span);
-                        if (own && prop->decl->decl_span_count > (u32)vec_span_size(&declarations)) {
-                            vec_span_clear(&declarations);
-                            for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&declarations, prop->decl->decl_spans[k]);
-                            prototype_text = member_text(ctx, js_class, js_class->name_span, cstr_sv(&i->name_string), false);
-                        }
-                    }
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declarations,
                         .span = i->name_span,
                         .name = named != i ? named->name_span : span_null,
                         .name_is_value = named->name_is_value,
-                        .text = prototype_text,
                     });
                     if (i->computed_key && i->computed_key->tag == EXPR_LITERAL &&
                         (i->computed_key->literal.tag == VALUE_STRING || i->computed_key->literal.tag == VALUE_NUMBER)

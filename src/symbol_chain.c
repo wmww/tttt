@@ -957,45 +957,16 @@ void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* c
     symbol_chain_append_entity(out, enclosing, chain, false, false);
 }
 
-// A member only `this.x = v` declares, of a JavaScript constructor function assigned to a variable or property (`ns.F =
-// function G() { this.x = v }`): tsc declares it on the function expression's own symbol (G), which has no parent
-static bool is_js_this_member_of_assigned_class(Symbol const* container, Symbol const* member, csview* name) {
-    if (!member->decl_count || !ty_js_assigned_class_name(container, name)) return false;
-    for (u32 i = 0; i < member->decl_count; i++) {
-        if (member->decls[i].kind != SYMBOL_DECL_ASSIGNMENT) return false;
-        if (member->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
-            member->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_METHOD
-        ) {
-            return false;
-        }
-    }
-    return true;
-}
-
 void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity, bool after_module) {
-    isize start = cstr_size(out);
-    bool restart = false; // The next name starts the text
     for (u32 i = 0; i < chain->len; i++) {
         Symbol const* symbol = chain->items[i];
-        csview class_name;
-        if (!entity && i + 1 == chain->len - 1 && chain->items[i + 1]->prototype_literal_member) {
-            // (Of an object literal: no name)
-            cstr_resize(out, start, 0);
-            restart = true;
-            continue;
-        }
-        if (!entity && i + 1 < chain->len && is_js_this_member_of_assigned_class(symbol, chain->items[i + 1], &class_name)) {
-            cstr_resize(out, start, 0);
-            cstr_append_sv(out, class_name);
-            continue;
-        }
         csview name = written_name(enclosing, symbol, i == 0 && !after_module);
         // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
         // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
         // (Not a module's export, `exports["d"] = v`: the binder declares it by the literal, which getNameOfSymbolAsWritten
         // writes as it is, an identifier `"d"`, where an expando of an object is late bound by its name type)
         bool quoted = entity && i && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0];
-        if (quoted && symbol->parent && symbol->parent->is_module && !restart) {
+        if (quoted && symbol->parent && symbol->parent->is_module) {
             cstr_append_lit(out, ".");
             cstr_append_sv(out, name);
             continue;
@@ -1006,9 +977,8 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
             for (isize k = 0; plain && k < inner.size; k++) plain = inner.buf[k] != '\\' && inner.buf[k] != '-' && inner.buf[k] != ' ';
             if (plain) name = inner;
         }
-        if (i == 0 || restart) {
+        if (i == 0) {
             cstr_append_sv(out, name);
-            restart = false;
         } else {
             symbol_chain_append_member(out, name, symbol->flags & SYMBOL_ENUM_MEMBER);
         }

@@ -450,11 +450,7 @@ static Generic const* decl_generic(Symbol const* symbol, u32 d) {
         case SYMBOL_DECL_CLASS: return &((ClassDecl const*)symbol->decls[d].node)->generic;
         case SYMBOL_DECL_INTERFACE: return &((InterfaceDecl const*)symbol->decls[d].node)->generic;
         case SYMBOL_DECL_TYPE_ALIAS: return &((TypeDecl const*)symbol->decls[d].node)->generic;
-        default: {
-            // A JavaScript constructor function's (symbol_type_generic())
-            FunctionImpl const* function = symbol->flags & SYMBOL_CLASS ? symbol_decl_js_function(&symbol->decls[d]) : nullptr;
-            return function ? &function->generic : nullptr;
-        }
+        default: return nullptr;
     }
 }
 
@@ -684,10 +680,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     if (!identifier_type_import_ref(me)) {
         for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
     }
-    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE &&
-        !(identifier_type_this_function(me) && ty_js_this_class(identifier_type_this_function(me)) &&
-            (!my rare->this_in_signature || function_impl_rare(identifier_type_this_function(me))->prototype_of))
-    ) {
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);

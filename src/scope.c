@@ -168,7 +168,6 @@ void binder_destroy(Binder* me) {
         error_ctx_drop(my discarded_errs);
         free(my discarded_errs);
     }
-    free(my global_expandos);
     free(my overlays.keys);
     free(my overlays.values);
     for (u32 i = 0; i < my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
@@ -940,44 +939,6 @@ static void check_require_exports_collision(Scope* me, Span name) {
 
 // tsc's declareSymbol(). *merged is whether the symbol existed already. default_export: a declaration of the `default`
 // export of a module, which conflicts with the others as TS2528
-// Whether a top-level assignment of a JavaScript file makes `name` a namespace: `name.a = v`, `name.a.b = v`,
-// `name.prototype = v` (tsc's bindPotentiallyMissingNamespaces gives it SymbolFlags.Assignment), not `name.prototype.a = v`
-static bool js_file_assigns_namespace(SourceFile const* file, csview name) {
-    if (!file || !file->is_js) return false;
-    for_each (i, vec_statement, &file->ast.statements) {
-        if (i->tag != STATEMENT_EXPR) continue;
-        for (Expr const* e = &i->expr; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
-            e = &e->binary_op->right
-        ) {
-            Expr const* left = &e->binary_op->left;
-            if (!span_valid(expr_static_property_name(left))) continue;
-            Expr const* object = &left->property->expr;
-            if (expr_prototype_object((Expr*)object)) continue;
-            Expr const* root = object;
-            while (span_valid(expr_static_property_name(root))) root = &root->property->expr;
-            if (root->tag == EXPR_IDENTIFIER && !root->identifier.keyword && !expr_is_perenthisized(root) &&
-                csview_equals_sv(root->inner_span.sv, name) && expr_is_entity_name(object)
-            ) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// A global declared in other files that a JavaScript file's top-level assignment makes a namespace, or the other way
-// around, merges with anything (tsc's mergeSymbol: the Assignment flag of either side). Conflicts inside a file stay
-static bool global_merges_by_assignment(Scope const* scope, Symbol const* existing, csview name) {
-    SourceFile const* file = scope->file;
-    bool assigned = js_file_assigns_namespace(file, name);
-    for (u32 i = 0; i < existing->decl_count; i++) {
-        SourceFile const* other = existing->decls[i].full.source;
-        if (!other || other == file) return false;
-        if (!assigned) assigned = js_file_assigns_namespace(other, name);
-    }
-    return assigned;
-}
-
 static bool is_umd_global(Symbol const* symbol) {
     return symbol->flags & SYMBOL_ALIAS && symbol->alias && symbol->alias->item && symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE;
 }
@@ -1057,7 +1018,6 @@ static Symbol* declare_symbol(
         // (A variable merges with what assignments declared: tsc's declareSymbol, `includes & Variable && flags &
         // Assignment`, `f.x = 1` in one file and `namespace f { export var x }` in another)
         if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
-            !(table == &binder->globals && global_merges_by_assignment(scope, existing, name)) &&
             !((includes & SYMBOL_VARIABLE) && symbol_has_assignment_decl(existing))
         ) {
             if (default_export && existing->decl_count) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
@@ -1884,30 +1844,6 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
 // assigned (several assignments merge)
 // A function expression assigned to a declared property (`exports.F = function () {}`, `ns.F = function () {}`) is a
 // class of that symbol if it assigns `this.x` (tsc's bindThisPropertyAssignment: the function's own symbol)
-static Expr const* defaulted_initializer(Expr const* value);
-
-static void set_function_class_symbol(Expr* value, Symbol* symbol) {
-    value = (Expr*)defaulted_initializer(value);
-    if (value->tag != EXPR_FUNCTION || function_impl_is_arrow(value->function) || function_impl_rare(value->function)->class_symbol) return;
-    SourceFile const* file = value->inner_span.source;
-    if (file && file->is_js) function_impl_rare_mut(value->function)->class_symbol = symbol;
-    if (file && file->is_js && symbol) scope_mark_jsdoc_class(symbol->binder, symbol, value->function);
-}
-
-static void defer_jsdoc_class(ResolveShard* shard, Symbol* symbol, FunctionImpl const* function);
-
-void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* function) {
-    if (!symbol || !function->jsdoc_class) return;
-    // (A local of a function is made by the walk of its file, which no other file sees)
-    ResolveShard* shard = binder_shard(binder);
-    if (shard && !(symbol->is_local && symbol->function)) {
-        defer_jsdoc_class(shard, symbol, function);
-        return;
-    }
-    symbol->flags |= SYMBOL_CLASS;
-    if (!symbol_rare(symbol)->members) symbol_rare_mut(symbol)->members = arena_new(binder_arena(binder), SymbolTable);
-}
-
 static void declare_commonjs_export(
     Scope* me, csview name, Span name_span, Expr* value, TypeNode const* jsdoc_type, Span left, Span statement,
     AssignmentDeclKind kind, bool top_level, bool entity_ok
@@ -1957,7 +1893,6 @@ static void declare_commonjs_export(
             .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value, .name = left,
             .full = statement, .js = symbol_decl_js(my binder, jsdoc_type, true),
         });
-        set_function_class_symbol(value, symbol);
     }
 }
 
@@ -4325,9 +4260,7 @@ typedef enum DeferredKind {
     // A JavaScript file's assignment declarations, all of them: the file's walk then writes no symbol other files see
     DEFERRED_JS_EXPANDO, // add_expando()
     DEFERRED_JS_DEFINE_PROPERTY, // add_define_property()
-    DEFERRED_JS_GLOBAL_THIS, // add_global_this_chain()
     DEFERRED_JS_THIS_PROPERTY, // add_this_property()
-    DEFERRED_JS_CLASS, // scope_mark_jsdoc_class()
 } DeferredKind;
 
 typedef struct DeferredEvent {
@@ -4348,16 +4281,12 @@ typedef struct DeferredEvent {
     TypeNode const* jsdoc_type;
     Expr const* late_bound_key;
     AssignmentDeclKind assignment;
-    bool top_level;
     // The walk hadn't reached `left` yet (scope_add_expandos() at a block's start): it would have linked the
     // declaration then, expr_link_assignment_declaration(), which the replay does instead
     bool link;
     // DEFERRED_JS_*
     BinaryOpExpr* op;
-    Scope* arrow;
     uint8_t jsdoc_modifiers;
-    Symbol* symbol;
-    FunctionImpl const* function;
 } DeferredEvent;
 
 // Where a shard's report that outlives the walk goes: the walk's contexts other than the file's are scratch ones it
@@ -4378,12 +4307,6 @@ static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope 
 static ResolveShard* js_shard(Scope const* me) {
     ResolveShard* shard = binder_shard(my binder);
     return shard && my file && my file->is_js ? shard : nullptr;
-}
-
-static void defer_jsdoc_class(ResolveShard* shard, Symbol* symbol, FunctionImpl const* function) {
-    DeferredEvent* event = defer_event(shard, DEFERRED_JS_CLASS, nullptr, nullptr);
-    event->symbol = symbol;
-    event->function = function;
 }
 
 // Whether the walk has yet to reach the assignment target `left` (see DeferredEvent.link)
@@ -4775,23 +4698,6 @@ struct ClassDecl const* scope_enclosing_class(Scope const* me) {
     return nullptr;
 }
 
-FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl) {
-    if (!decl->full.source || !decl->full.source->is_js) return nullptr;
-    Expr const* value = nullptr;
-    switch (decl->kind) {
-        case SYMBOL_DECL_FUNCTION: return decl->node;
-        case SYMBOL_DECL_VARIABLE: {
-            Binding const* binding = decl->node;
-            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-            value = initialized_binding_value(((InitializedBinding const*)binding));
-        }   break;
-        case SYMBOL_DECL_ASSIGNMENT: value = decl->node; break;
-        default: return nullptr;
-    }
-    value = defaulted_initializer(value);
-    return value->tag == EXPR_FUNCTION && !function_impl_is_arrow(value->function) ? value->function : nullptr;
-}
-
 Generic const* symbol_type_generic(Symbol const* me) {
     if (!me) return nullptr;
     for (u32 i = 0; i < my decl_count; i++) {
@@ -4800,16 +4706,6 @@ Generic const* symbol_type_generic(Symbol const* me) {
             case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)my decls[i].node)->generic; break;
             case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)my decls[i].node)->generic; break;
             case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)my decls[i].node)->generic; break;
-            // A JavaScript constructor function's `@template`s are its class's (tsc's
-            // getLocalTypeParametersOfClassOrInterfaceOrTypeAlias: isJSConstructor)
-            case SYMBOL_DECL_FUNCTION:
-            case SYMBOL_DECL_VARIABLE:
-            case SYMBOL_DECL_ASSIGNMENT: {
-                if (!(my flags & SYMBOL_CLASS)) continue;
-                FunctionImpl const* function = symbol_decl_js_function(&my decls[i]);
-                if (!function) continue;
-                generic = &function->generic;
-            }   break;
             default: continue;
         }
         // (A declaration without type parameters doesn't hide a later one's: `interface EventEmitter {}` and
@@ -4836,80 +4732,21 @@ OuterGenerics const* symbol_outer_generics(Symbol const* me) {
 
 // Expandos
 
-// `a || v` / `a ?? v` (a defaulted initializer, tsc's getDefaultedExpandoInitializer): v, else the expression itself
-static Expr const* defaulted_initializer(Expr const* value) {
-    if (value->tag == EXPR_BINARY_OP && !expr_is_perenthisized(value) &&
-        (value->binary_op->op == BINARY_OP_OR_OR || value->binary_op->op == BINARY_OP_EH_EH)
-    ) {
-        return &value->binary_op->right;
-    }
-    return value;
-}
-
-// `window.x`, `self.x`, `global.x`, `this.x` for a name x (tsc's isSameEntityName)
-static bool is_global_like_access(Expr const* access, Span name) {
-    Span access_name = expr_static_property_name(access);
-    if (!span_valid(access_name) || !name_equals(access_name.sv, name.sv)) return false;
-    Expr const* object = &access->property->expr;
-    if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object)) return false;
-    if (object->identifier.keyword) return object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
-    return span_equals(object->inner_span, "window") || span_equals(object->inner_span, "self") ||
-        span_equals(object->inner_span, "global");
-}
-
-// The expression a variable of this initializer is an expando container of (tsc's getDeclaredExpandoInitializer):
-// a function or arrow function, in JavaScript also a class expression or `{}`, possibly defaulted (`var ns = ns || {}`)
-Expr* expando_initializer(Expr* init, Span name, bool js) {
-    // `Object.defineProperty(o, "x", { value: {} })`: the value (tsc's getAssignedExpandoInitializer, hasExpandoValueProperty)
-    if (js && init->tag == EXPR_CALL && expr_is_define_property_call(init, nullptr)) {
-        Expr const* descriptor = vec_expr_at(&init->call->args, 2);
-        if (descriptor->tag != EXPR_OBJECT) return nullptr;
-        for_each (i, vec_object_expr_item, &descriptor->object) {
-            if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || !span_equals(i->name_span, "value")) continue;
-            Expr* ret = expando_initializer((Expr*)&i->value, span_null, js);
-            if (ret) return ret;
-        }
-        return nullptr;
-    }
-    if (init->tag == EXPR_BINARY_OP && !expr_is_perenthisized(init) &&
-        (init->binary_op->op == BINARY_OP_OR_OR || init->binary_op->op == BINARY_OP_EH_EH)
-    ) {
-        // `var ns = ns || {}`, `ns.a = ns.a || {}` (tsc's getDefaultedExpandoInitializer: the same name on the left)
-        Expr const* left = &init->binary_op->left;
-        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && name_equals(left->inner_span.sv, name.sv)) ||
-            is_global_like_access(left, name) : left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
-        if (!js || !same) return nullptr;
-        init = &init->binary_op->right;
-    }
-    while (init->tag == EXPR_BINARY_OP && init->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(init)) {
-        init = &init->binary_op->right;
-    }
+// Whether a declaration initialized with `init` is an expando container (tsgo's IsExpandoInitializer): a function or
+// arrow function, in JavaScript also a class expression or `{}` (whose declaration has no type annotation): that
+// expression, null otherwise
+Expr* expando_initializer(Expr* init, bool js, bool annotated) {
+    if (expr_is_perenthisized(init)) return nullptr;
     switch (init->tag) {
         case EXPR_FUNCTION: return init;
         case EXPR_CLASS_DECL: return js ? init : nullptr;
-        case EXPR_OBJECT: return js && !vec_object_expr_item_size(&init->object) ? init : nullptr;
+        case EXPR_OBJECT: return js && !annotated && !vec_object_expr_item_size(&init->object) ? init : nullptr;
         default: return nullptr;
     }
 }
 
-static Symbol* lookup_name_for_property_access(Scope* me, csview name);
-
-// What an entity name `a` or `a.b.c` names where an assignment to one of its properties is (tsc's
-// lookupSymbolForPropertyAccess): a name in the block, then in its function (or file); a property of a namespace-like
-// symbol's exports. Null for anything else
-static Symbol* lookup_for_property_access(Scope* me, Expr const* entity) {
-    if (expr_is_perenthisized(entity)) return nullptr;
-    if (entity->tag == EXPR_PROPERTY) {
-        Span name = expr_static_property_name(entity);
-        Symbol* object = span_valid(name) ? lookup_for_property_access(me, &entity->property->expr) : nullptr;
-        return object && object->exports && !object->is_module ? symbol_table_get(object->exports, name.sv) : nullptr;
-    }
-    if (entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return nullptr;
-    Symbol* found = lookup_name_for_property_access(me, entity->inner_span.sv);
-    // The local `f` of `export default function f` is the default export
-    return found && symbol_rare(found)->export_symbol ? symbol_rare(found)->export_symbol : found;
-}
-
+// What a name is where an assignment to one of its properties is (tsgo's lookupName): a name in the block, then in its
+// function (or file, or namespace), nowhere else
 static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
     u64 hash = symbol_name_hash(name);
     for (Scope* scope = me; scope; scope = scope->parent) {
@@ -4932,11 +4769,13 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
     return nullptr;
 }
 
-// Whether a symbol can have expandos (tsc's isExpandoSymbol, and in TypeScript isFunctionSymbol). `init_ret`: a
-// variable's (or JavaScript member's) expando initializer. tsc binds a file before globals merge: what counts is the
-// first value declaration in `file` (the valueDeclaration of the file's own symbol)
+// Whether a symbol can have expandos (tsgo's getInitializerSymbol): its first value declaration in `file` (tsgo binds a
+// file before globals merge) is a function declaration, a JavaScript class, a variable (a const outside JavaScript)
+// initialized with an expando initializer, or a JavaScript assignment declaration of one (`ns.a = {}`). `init_ret`:
+// that initializer
 static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, bool js, Expr** init_ret) {
     *init_ret = nullptr;
+    if (found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return false;
     SymbolDecl const* value = nullptr;
     for (u32 i = 0; i < found->decl_count && !value; i++) {
         if ((found->decls[i].flags & SYMBOL_VALUE) && found->decls[i].full.source == file) value = &found->decls[i];
@@ -4944,65 +4783,21 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
     if (!value) return false;
     switch (value->kind) {
         case SYMBOL_DECL_FUNCTION: return true;
-        case SYMBOL_DECL_CLASS:
-        case SYMBOL_DECL_NAMESPACE:
-        case SYMBOL_DECL_ENUM:
-        case SYMBOL_DECL_EXPANDO: // A global namespace a JavaScript expando declared
-            return js;
+        case SYMBOL_DECL_CLASS: return js;
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = value->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
-            // (In TypeScript only a const is: tsc's isVarConstLike in getExpandoSymbol)
             if (!js && !found->is_const) return false;
             InitializedBinding* initialized = (InitializedBinding*)binding;
-            Expr* init = expando_initializer(initialized_binding_value(initialized), binding->content_span, js);
-            if (!init) return false;
-            // (An annotated variable has the type it says, but its initializer gets the members all the same)
-            *init_ret = init;
-            return true;
+            *init_ret = expando_initializer(initialized_binding_value(initialized), js, binding->has_explicit_type);
+            return *init_ret != nullptr;
         }
-        case SYMBOL_DECL_ASSIGNMENT: {
-            // JavaScript `ns.a = {}` (or a function, a class): `ns.a.b = v` declares b in it
+        case SYMBOL_DECL_ASSIGNMENT:
             if (!js) return false;
-            Expr* init = expando_initializer((Expr*)value->node, span_null, js);
-            if (!init) return false;
-            *init_ret = init;
-            return true;
-        }
+            *init_ret = expando_initializer((Expr*)value->node, js, false);
+            return *init_ret != nullptr;
         default: return false;
     }
-}
-
-static void set_expando_initializer_host(Expr* init, Symbol* host) {
-    if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->expando_host = host;
-    if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
-}
-
-// What `f` of `f.x = v` names, if it can have expandos. `init_ret`: a variable's expando initializer
-static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
-    *init_ret = nullptr;
-    SourceFile const* file = my file;
-    bool js = file && file->is_js;
-    Symbol* found = lookup_for_property_access(me, entity);
-    if (!found || found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return nullptr;
-    // A global declared in another file isn't this file's to extend (tsc looks in the file's locals): see
-    // global_expando_namespace()
-    bool here = false;
-    for (u32 i = 0; i < found->decl_count && !here; i++) here = found->decls[i].full.source == file;
-    if (!here) return nullptr;
-    // (Declared further down, `f.x = 1; const f = ...`: tsc's binder hasn't met the declaration yet when it binds the
-    // assignment, only function declarations are bound first)
-    for (u32 i = 0; i < found->decl_count; i++) {
-        SymbolDecl const* decl = &found->decls[i];
-        if (!(decl->flags & SYMBOL_VALUE) || decl->full.source != file) continue;
-        if (decl->kind != SYMBOL_DECL_FUNCTION && span_valid(decl->full) && span_valid(expr_outer_span(entity)) &&
-            span_start_ptr(decl->full) > span_start_ptr(expr_outer_span(entity))
-        ) {
-            return nullptr;
-        }
-        break;
-    }
-    return symbol_is_expando_host(found, file, js, init_ret) ? found : nullptr;
 }
 
 // A local all of whose declarations are in `file`: no other file's resolve walk can see it
@@ -5014,152 +4809,43 @@ static bool expando_host_is_private(Symbol const* host, SourceFile const* file) 
     return true;
 }
 
-// Whether the entity name of a top-level JavaScript `a.b.x = v` starts with a name the file doesn't declare, which
-// makes it a global namespace (tsc's bindPotentiallyMissingNamespaces: file.jsGlobalAugmentations)
-static bool is_global_expando_entity(Scope* me, Expr const* target) {
-    Expr const* entity = target;
-    Expr const* second = nullptr;
-    while (entity->tag == EXPR_PROPERTY && !expr_is_perenthisized(entity)) {
-        Span name = expr_static_property_name(entity);
-        if (!span_valid(name) || name.sv.buf[0] == '#') return false;
-        second = entity;
-        entity = &entity->property->expr;
+// A function's or class's expandos are members of its value, like a namespace's: a declaration of no name says so
+static void mark_expando_host(Symbol* host, void const* node) {
+    for (u32 i = 0; i < host->decl_count; i++) {
+        if (host->decls[i].kind == SYMBOL_DECL_EXPANDO) return;
     }
-    if (expr_is_perenthisized(entity) || entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return false;
-    csview name = entity->inner_span.sv;
-    // `exports.x =`, `module.exports =`, `module.exports.x =` are CommonJS exports (or nothing outside a CommonJS
-    // module: tsc's getAssignmentDeclarationKind)
-    if (csview_equals(name, "exports")) return false;
-    if (csview_equals(name, "module") && second && span_equals(expr_static_property_name(second), "exports")) return false;
-    Symbol const* found = lookup_name_for_property_access(me, name);
-    if (!found) return true;
-    if (found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return false;
-    for (u32 i = 0; i < found->decl_count; i++) {
-        if (found->decls[i].full.source == my file) return false;
-    }
-    return true;
+    host->flags |= SYMBOL_VALUE_MODULE;
+    // (A node: no namespace of a CommonJS `export =`, namespace_from_expandos_only())
+    symbol_add_decl(host, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = node });
 }
 
-// `exports` or `module` at the root of an entity name
-static bool is_commonjs_root(Expr const* entity) {
-    while (entity->tag == EXPR_PROPERTY) entity = &entity->property->expr;
-    return entity->tag == EXPR_IDENTIFIER && !entity->identifier.keyword &&
-        (span_equals(entity->inner_span, "exports") || span_equals(entity->inner_span, "module"));
+static void set_expando_initializer_host(Expr* init, Symbol* host) {
+    if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->expando_host = host;
+    if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
 }
 
-// A global with expandos, whose variable initializers (in whichever file) get the members once every file is bound
-static void push_global_expando(Binder* binder, Symbol* symbol) {
-    if (binder->global_expando_count == binder->global_expando_cap) {
-        binder->global_expando_cap = binder->global_expando_cap ? binder->global_expando_cap * 2 : 8;
-        binder->global_expandos = realloc(binder->global_expandos, sizeof(Symbol*) * binder->global_expando_cap);
-        panic_if(!binder->global_expandos, "out of memory");
-    }
-    binder->global_expandos[binder->global_expando_count++] = symbol;
-}
-
-// Each name of `a.b` of a top-level JavaScript `a.b.x = v` is a global namespace declared here, merged with the
-// globals of that name (tsc's jsGlobalAugmentations, merged into the globals by initializeTypeChecker). With `root`,
-// `a` is that symbol instead (the `module` of a CommonJS file, commonjs_module_namespace())
-static Symbol* expando_namespace_in(Scope* me, Expr const* entity, Symbol* root) {
-    Symbol* parent = nullptr;
-    SymbolTable* table = &my binder->globals;
-    Span name;
-    Symbol* symbol;
+// What the entity name `f` or `a.b` of `f.x = v` names, if it can have expandos (tsgo's lookupEntity, then
+// getInitializerSymbol): `a.b` is an expando b of the host a. `init_ret`: the host's expando initializer
+static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
+    *init_ret = nullptr;
+    if (expr_is_perenthisized(entity)) return nullptr;
+    SourceFile const* file = my file;
+    bool js = file && file->is_js;
+    Symbol* found = nullptr;
     if (entity->tag == EXPR_PROPERTY) {
-        parent = expando_namespace_in(me, &entity->property->expr, root);
-        if (!parent) return nullptr;
-        symbol_ensure_exports(parent);
-        table = parent->exports;
-        name = expr_static_property_name(entity);
-    } else {
-        name = entity->inner_span;
-    }
-    if (root && entity->tag != EXPR_PROPERTY) {
-        symbol = root;
-    } else {
-        bool merged;
-        symbol = declare_symbol(me, table, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
-        if (!merged) {
-            symbol->name = name.sv;
-            symbol->name_span = name;
-            symbol->parent = parent;
-            symbol->exported = parent != nullptr;
-        }
-    }
-    if (symbol->flags & SYMBOL_ALIAS) return nullptr;
-    symbol_ensure_exports(symbol);
-    Span decl_name = entity->tag == EXPR_PROPERTY ? expr_outer_span(&entity->property->prop) : expr_outer_span(entity);
-    symbol_add_decl(symbol, (SymbolDecl){
-        .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = decl_name, .full = decl_name,
-    });
-    if (!root) push_global_expando(my binder, symbol);
-    return symbol;
-}
-
-static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
-    return expando_namespace_in(me, entity, nullptr);
-}
-
-void binder_link_global_expandos(Binder* me) {
-    for (u32 i = 0; i < my global_expando_count; i++) {
-        Symbol* symbol = my global_expandos[i];
-        for (u32 j = 0; j < symbol->decl_count; j++) {
-            SymbolDecl const* decl = &symbol->decls[j];
-            if (!decl->full.source || !decl->full.source->is_js) continue;
-            Expr* init = nullptr;
-            if (decl->kind == SYMBOL_DECL_VARIABLE) {
-                Binding const* binding = decl->node;
-                if (binding->parent || binding->tag != BINDING_IDENTIFIER) break;
-                init = expando_initializer(initialized_binding_value(((InitializedBinding*)binding)), binding->content_span, true);
-            } else if (decl->kind == SYMBOL_DECL_ASSIGNMENT) {
-                init = expando_initializer((Expr*)decl->node, span_null, true);
-            } else if (decl->kind == SYMBOL_DECL_EXPANDO) {
-                continue;
-            }
-            set_expando_initializer_host(init, symbol);
-            break;
-        }
-    }
-}
-
-// An assignment at the top level of a file to a property of `a.b` makes each of a and a.b a namespace: a declaration
-// of it (tsc's bindPotentiallyMissingNamespaces), `full` null for one elsewhere, which is only a way into its members
-static void add_expando_namespace_decls(Scope* me, Expr const* entity, bool top_level) {
-    if (entity->tag == EXPR_PROPERTY) add_expando_namespace_decls(me, &entity->property->expr, top_level);
-    Symbol* symbol = lookup_for_property_access(me, entity);
-    if (!symbol && top_level && entity->tag == EXPR_PROPERTY) {
-        // A name the namespace doesn't have yet is declared in it (tsc's forEachIdentifierInEntityName action)
-        Symbol* parent = lookup_for_property_access(me, &entity->property->expr);
+        // (Outside JavaScript only a name: tsgo's IsEntityNameExpressionEx without allowJS)
         Span name = expr_static_property_name(entity);
-        if (parent && parent->exports && !parent->is_module && !(parent->flags & SYMBOL_ALIAS) && span_valid(name)) {
-            bool merged;
-            symbol = declare_symbol(me, parent->exports, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
-            if (!merged) {
-                symbol->name = name.sv;
-                symbol->name_span = name;
-                symbol->parent = parent;
-                symbol->exported = true;
-            }
-        }
+        if (!js || !span_valid(name)) return nullptr;
+        Expr* ignored;
+        Symbol* object = expando_host(me, &entity->property->expr, &ignored);
+        found = object && object->exports ? symbol_table_get(object->exports, name.sv) : nullptr;
+    } else if (entity->tag == EXPR_IDENTIFIER && !entity->identifier.keyword) {
+        found = lookup_name_for_property_access(me, entity->inner_span.sv);
+        // The local `f` of `export default function f` is the default export
+        if (found && symbol_rare(found)->export_symbol) found = symbol_rare(found)->export_symbol;
     }
-    if (!symbol) return;
-    Span name = entity->tag == EXPR_PROPERTY ? expr_outer_span(&entity->property->prop) : expr_outer_span(entity);
-    symbol_ensure_exports(symbol);
-    symbol->flags |= SYMBOL_VALUE_MODULE;
-    bool has_expando = false;
-    for (u32 i = 0; i < symbol->decl_count && !has_expando; i++) has_expando = symbol->decls[i].kind == SYMBOL_DECL_EXPANDO;
-    if (top_level || !has_expando) {
-        symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity,
-            .name = top_level ? name : span_null, .full = top_level ? name : span_null,
-        });
-    }
+    return found && symbol_is_expando_host(found, file, js, init_ret) ? found : nullptr;
 }
-
-static void declare_assignment_member(
-    Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
-    AssignmentDeclKind kind, uint8_t jsdoc_modifiers
-);
 
 // The name an assignment declaration `o.x = v` / `o["x"] = v` is written with: a string element access is named with
 // its quotes (tsc's getNameOfSymbolAsWritten takes the declaration's name), which the symbols baseline prints as `o["x"]`
@@ -5172,86 +4858,32 @@ static Span written_member_name(Expr const* left, Span name) {
     return name;
 }
 
-// JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
-// bindPrototypePropertyAssignment). Without a name (`F.prototype[k] = v`, a late-bound member the checker doesn't
-// see) only the latter
-static void add_prototype_property(
-    Scope* me, Expr* constructor, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type, AssignmentDeclKind kind
-) {
-    SourceFile const* file = my file;
-    if (!file || !file->is_js) return;
-    Expr* init;
-    Symbol* host = expando_host(me, constructor, &init);
-    if (!host) {
-        if (!span_valid(name)) return;
-        // Any variable of this file gets the member (tsc's bindPotentiallyMissingNamespaces makes whatever has a value
-        // declaration a class: \`var g = f; g.prototype.m = v\`). Its type stays its initializer's, so it isn't made a
-        // class here
-        Symbol* found = lookup_for_property_access(me, constructor);
-        if (!found || found->is_placeholder || !(found->flags & SYMBOL_VARIABLE) || (found->flags & (SYMBOL_ALIAS | SYMBOL_CLASS))) return;
-        SymbolDecl const* variable = symbol_find_decl(found, SYMBOL_DECL_VARIABLE);
-        if (!variable || variable->full.source != file) return;
-        declare_assignment_member(me, &symbol_rare_mut(found)->members, found, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
-        return;
-    }
-    if (init && (init->tag != EXPR_FUNCTION || function_impl_is_arrow(init->function))) return;
-    if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
-    if (init) function_impl_rare_mut(init->function)->class_symbol = host;
-    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
-        value = &value->binary_op->right;
-    }
-    host->flags |= SYMBOL_CLASS;
-    if (span_valid(name)) {
-        declare_assignment_member(me, &symbol_rare_mut(host)->members, host, name, left, value, jsdoc_type, kind, 0);
-    } else if (!symbol_rare(host)->members) {
-        // (tsc's members get the late-bound symbol, which nothing looks up by name: a table, empty)
-        symbol_rare_mut(host)->members = arena_new(binder_arena(my binder), SymbolTable);
-    }
-}
-
-static Symbol* js_constructor_symbol(Symbol* symbol);
-
-// Whether a symbol's value declaration is a function declaration or a variable initialized with a function or arrow
-// function (tsc's isFunctionSymbol)
-static bool is_function_symbol(Symbol const* symbol) {
-    if (!symbol || symbol->is_placeholder) return false;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_FUNCTION) return true;
-        if (decl->kind == SYMBOL_DECL_VARIABLE) {
-            Binding const* binding = decl->node;
-            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
-            return initialized_binding_value((InitializedBinding const*)binding)->tag == EXPR_FUNCTION;
-        }
-        if (decl->flags & SYMBOL_VALUE) return false;
-    }
-    return false;
-}
-
-// `f.x = v` (tsc's bindStaticPropertyAssignment -> bindPropertyAssignment for AssignmentDeclarationKind.Property)
-static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level);
-static void add_expando_member(
-    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level,
-    Expr const* late_bound_key, AssignmentDeclKind kind
+static void declare_assignment_member(
+    Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
+    AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 );
 
-static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
+// `f.x = v` (tsgo's bindExpandoPropertyAssignment, bound by bindDeferredExpandoAssignment)
+static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type);
+static void add_expando_member(
+    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, Expr const* late_bound_key,
+    AssignmentDeclKind kind
+);
+
+static void add_expando(Scope* me, BinaryOpExpr* op) {
     if (op->op != BINARY_OP_EQUAL) return;
     op->expando_bound = true;
-    if (expr_assigns_void_zero(&op->right)) return;
     ResolveShard* shard = js_shard(me);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_JS_EXPANDO, me, nullptr);
         event->op = op;
-        event->top_level = top_level;
         event->link = walk_unvisited(&op->left);
         return;
     }
-    add_expando_decl(me, &op->left, &op->right, op->jsdoc_type, top_level);
+    add_expando_decl(me, &op->left, &op->right, op->jsdoc_type);
 }
 
-// `left = right`, or a JavaScript `/** @type {T} */ left;` (right is left then)
-static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level) {
+static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type) {
     if (left->tag != EXPR_PROPERTY) return;
     // `module.exports = v` in JavaScript is the module's `export =` whatever `module` is here, never a member of a local
     // `module` (tsc's getAssignmentDeclarationKind: ModuleExports)
@@ -5268,158 +4900,62 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
         if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
     }
-    if (!span_valid(name)) {
-        // Any other computed name (`f[o["a"]] = v`) is a dynamic name too, which declares nothing the checker sees but
-        // the namespaces of the entity name it's assigned to (tsc's bindSpecialPropertyAssignment: hasDynamicName)
-        if (top_level && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
-            !expr_is_perenthisized(left) && expr_is_entity_name(object) && !expr_prototype_object(object) &&
-            expr_is_non_bindable_dynamic_name(&left->property->prop) &&
-            // (tsc's isDynamicName skips parentheses: `x[(0)]` isn't one)
-            !(left->property->prop.tag == EXPR_LITERAL &&
-                (left->property->prop.literal.tag == VALUE_STRING || left->property->prop.literal.tag == VALUE_NUMBER))
-        ) {
-            Expr const* root = object;
-            while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
-            Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
-            bool bound = root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder && (my file->is_js ?
-                !(my file->is_commonjs && is_commonjs_root(object)) : is_function_symbol(lookup_for_property_access(me, object)));
-            if (bound) add_expando_namespace_decls(me, object, true);
-        }
-        return;
-    }
-    if (late_bound_key && expr_prototype_object(object)) {
-        // `F.prototype[k] = v`: tsc binds a late-bound prototype member (PrototypeProperty), which makes F a constructor
-        // (isJSConstructor: it has members), though the checker never sees the member itself
-        add_prototype_property(me, expr_prototype_object(object), span_null, left, right, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY);
-        return;
-    }
+    if (!span_valid(name)) return;
     if (late_bound_key && !expr_is_entity_name(object)) return;
-    add_expando_member(me, object, name, left, right, jsdoc_type, top_level, late_bound_key, ASSIGNMENT_DECL_PROPERTY);
+    add_expando_member(me, object, name, left, right, jsdoc_type, late_bound_key, ASSIGNMENT_DECL_PROPERTY);
 }
 
-// `Object.defineProperty(o, "x", {...})` of a container o (tsc's bindObjectDefinePropertyAssignment) or of
-// `F.prototype` (bindObjectDefinePrototypeProperty): declared by the call
-static void add_define_property(Scope* me, Expr* call, bool top_level) {
+// `Object.defineProperty(o, "x", {...})` of a container o (tsgo's JSDeclarationKindObjectDefinePropertyValue): declared
+// by the call
+static void add_define_property(Scope* me, Expr* call) {
     Span name;
     if (!expr_is_define_property_call(call, &name)) return;
     ResolveShard* shard = js_shard(me);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_JS_DEFINE_PROPERTY, me, nullptr);
         event->left = call;
-        event->top_level = top_level;
         return;
     }
     Expr* object = (Expr*)vec_expr_at(&call->call->args, 0);
     if (expr_is_exports_object(object)) return; // (add_define_property_export())
-    add_expando_member(me, object, name, call, call, nullptr, top_level, nullptr, ASSIGNMENT_DECL_DEFINE_PROPERTY);
+    add_expando_member(me, object, name, call, call, nullptr, nullptr, ASSIGNMENT_DECL_DEFINE_PROPERTY);
 }
 
 // Member `name` of what `object` names, declared by `left` (`object.name`, or a call) = `right`
 static void add_expando_member(
-    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level,
-    Expr const* late_bound_key, AssignmentDeclKind kind
+    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, Expr const* late_bound_key,
+    AssignmentDeclKind kind
 ) {
-    Expr* prototype = expr_prototype_object(object);
-    if (prototype) {
-        add_prototype_property(me, prototype, name, left, right, jsdoc_type,
-            kind == ASSIGNMENT_DECL_PROPERTY ? ASSIGNMENT_DECL_PROTOTYPE_PROPERTY : kind);
-        return;
-    }
-    // A private name is no expando (tsc's getAssignmentDeclarationPropertyAccessKind: isBindableStaticNameExpression
-    // of the target, only a prototype property doesn't ask)
+    // A private name is no expando (tsc's isBindableStaticNameExpression)
     if (name.sv.size && name.sv.buf[0] == '#') return;
-    // Outside JavaScript only a name's member: tsgo's lookupEntity looks into the exports of an expando host only
-    // (getInitializerSymbol), a namespace's function `ns.f.x = v` is none
-    if (!my file->is_js && object->tag != EXPR_IDENTIFIER) return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
+    if (!host) return;
     ResolveShard* shard = binder_shard(my binder);
-    if (shard && host && !expando_host_is_private(host, my file)) {
-        // Other files may declare into it or read it meanwhile: in program order instead (plan 45)
+    if (shard && !expando_host_is_private(host, my file)) {
+        // Other files may read it meanwhile: in program order instead (plan 45)
         DeferredEvent* event = defer_event(shard, DEFERRED_EXPANDO, me, nullptr);
         event->object = object;
         event->member = name;
         event->left = left;
         event->right = right;
         event->jsdoc_type = jsdoc_type;
-        event->top_level = top_level;
         event->late_bound_key = late_bound_key;
         event->assignment = kind;
         event->link = walk_unvisited(left);
         return;
     }
-    if (host) {
-        set_expando_initializer_host(init, host);
-        // A global merged across files (tsc's mergeSymbol with the Assignment flag): the variable of another file that
-        // it may take its value from gets the members too
-        if (!init && object->tag == EXPR_IDENTIFIER && my file->is_js && symbol_table_get(&my binder->globals, host->name) == host) {
-            push_global_expando(my binder, host);
-        }
-        add_expando_namespace_decls(me, object, top_level);
-    } else if (late_bound_key) {
-        // Only the namespace declarations (tsc's bindSpecialPropertyAssignment for a dynamic name: the member is
-        // late bound into what isn't an expando, which the checker never looks at)
-        Expr const* root = object;
-        while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
-        Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
-        if (top_level && my file->is_js && root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
-            !(my file->is_commonjs && is_commonjs_root(object))
-        ) {
-            add_expando_namespace_decls(me, object, true);
-        }
-        return;
-    } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
-        host = global_expando_namespace(me, object);
-        if (!host) return;
-    } else {
-        // What the file declares that can't have expandos still gets the namespace declarations (tsc's
-        // bindPotentiallyMissingNamespaces), which only the symbols baseline shows
-        Expr const* root = object;
-        bool private_name = false;
-        while (root->tag == EXPR_PROPERTY) {
-            private_name |= root->property->prop.inner_span.sv.size && root->property->prop.inner_span.sv.buf[0] == '#';
-            root = &root->property->expr;
-        }
-        Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
-        // Outside JavaScript only an assignment to a property of a function (or a variable initialized with one) is
-        // bound (tsc's bindSpecialPropertyAssignment: isFunctionSymbol), which makes no member when the checker's
-        // expando rules (a const) don't hold: only the namespace declarations
-        if (top_level && !my file->is_js && expr_is_entity_name(object) && name.sv.buf[0] != '#' && !private_name &&
-            root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
-            is_function_symbol(lookup_for_property_access(me, object))
-        ) {
-            add_expando_namespace_decls(me, object, true);
-            return;
-        }
-        if (top_level && my file->is_js && expr_is_entity_name(object) && name.sv.buf[0] != '#' && !private_name &&
-            root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
-            !(my file->is_commonjs && is_commonjs_root(object))
-        ) {
-            add_expando_namespace_decls(me, object, true);
-            // Which makes each name of it a namespace, an expando host (tsc's bindPotentiallyMissingNamespaces, then
-            // isExpandoSymbol: SymbolFlags.NamespaceModule), whatever the other files that declare it say
-            host = lookup_for_property_access(me, object);
-            // (Declared in another file: its class expression or function initializer there gets the members)
-            for (u32 i = 0; host && i < host->decl_count; i++) {
-                SourceFile const* other = host->decls[i].full.source;
-                Expr* other_init;
-                if (other && other != my file && symbol_is_expando_host(host, other, other->is_js, &other_init)) {
-                    set_expando_initializer_host(other_init, host);
-                }
-            }
-        }
-        if (!host) return;
-    }
-    // The member (bindPotentiallyNewExpandoMemberToNamespace). Outside JavaScript only when nothing but expando
-    // assignments declares it (tsgo's bindDeferredExpandoAssignment: a namespace's or class's member of that name is
-    // what the assignment assigns. Its binder sees the file's own declarations: another file's merge later)
-    if (!my file->is_js) {
-        // (A class's exports have its `prototype` in tsgo)
-        if (span_equals(name, "prototype") && (host->flags & SYMBOL_CLASS)) return;
-        Symbol const* existing = symbol_table_get(host->exports, name.sv);
-        for (u32 i = 0; existing && i < existing->decl_count; i++) {
-            if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && existing->decls[i].full.source == my file) return;
-        }
+    set_expando_initializer_host(init, host);
+    symbol_ensure_exports(host);
+    if (!init) mark_expando_host(host, object);
+    // Only when nothing but expando assignments declares the name (tsgo's bindDeferredExpandoAssignment: a namespace's or
+    // class's member of that name is what the assignment assigns; its binder sees the file's own declarations, another
+    // file's merge later)
+    // (A class's exports have its `prototype` in tsgo)
+    if (span_equals(name, "prototype") && (host->flags & SYMBOL_CLASS)) return;
+    Symbol const* existing = symbol_table_get(host->exports, name.sv);
+    for (u32 i = 0; existing && i < existing->decl_count; i++) {
+        if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && existing->decls[i].full.source == my file) return;
     }
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
@@ -5440,22 +4976,13 @@ static void add_expando_member(
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true),
     });
-    set_function_class_symbol(value, member);
-    // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
-    if (span_equals(name, "prototype") && value->tag == EXPR_OBJECT && my file->is_js && js_constructor_symbol(host) &&
-        !symbol_find_decl(host, SYMBOL_DECL_CLASS)
-    ) {
-        host->flags |= SYMBOL_CLASS;
-        if (!symbol_rare(host)->members) symbol_rare_mut(host)->members = arena_new(binder_arena(my binder), SymbolTable);
-        if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->class_symbol = host;
-    }
 }
 
 // Every assignment of a chain (`f.a = f.b = 1`)
-static void add_expando_chain(Scope* me, Expr* e, bool top_level) {
+static void add_expando_chain(Scope* me, Expr* e) {
     for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL; e = &e->binary_op->right) {
         if (expr_is_perenthisized(e)) break;
-        add_expando(me, e->binary_op, top_level);
+        add_expando(me, e->binary_op);
     }
 }
 
@@ -5469,195 +4996,32 @@ void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
     ) {
         return;
     }
-    add_expando(me, op, false);
+    add_expando(me, op);
 }
 
-// Whether a JavaScript scope's `this` is the global one: the top level of a script, blocks included (tsc's
-// getThisContainer is the source file, through arrow functions)
-// `arrow` is the innermost arrow function on the way, if any
-static bool this_is_global_script(Scope* me, Scope** arrow) {
-    *arrow = nullptr;
-    if (!my file || !my file->is_js) return false;
-    Scope* scope = me;
-    while (scope && ((scope->kind == SCOPE_BLOCK && !scope->function) || (scope->function && function_impl_is_arrow(scope->function)))) {
-        if (scope->kind == SCOPE_FUNCTION && !*arrow) *arrow = scope;
-        scope = scope->parent;
-    }
-    return scope && scope->kind == SCOPE_SCRIPT;
-}
-
-// `this.x = v` at the top level of a JavaScript script declares a global variable x (tsc's bindThisPropertyAssignment
-// for a SourceFile container: declareSymbolAndAddToSymbolTable as a FunctionScopedVariable). In an arrow function that
-// adds it to the arrow function's locals (tsc's container), where `this.x` doesn't find it
-static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
-    ResolveShard* shard = js_shard(me);
-    if (shard && e->tag == EXPR_BINARY_OP) {
-        DeferredEvent* event = defer_event(shard, DEFERRED_JS_GLOBAL_THIS, me, nullptr);
-        event->left = e;
-        event->arrow = arrow;
-        return;
-    }
-    for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e); e = &e->binary_op->right) {
-        Expr* left = &e->binary_op->left;
-        Span name = expr_static_property_name(left);
-        if (!span_valid(name) || name.sv.buf[0] == '#') continue;
-        Expr const* object = &left->property->expr;
-        if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object) || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) {
-            continue;
-        }
-        Expr* value = &e->binary_op->right;
-        while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
-            value = &value->binary_op->right;
-        }
-        bool merged;
-        Symbol* symbol = declare_symbol(
-            me, arrow ? &arrow->locals : &my binder->globals, name.sv, name, SYMBOL_FUNCTION_SCOPED_VARIABLE,
-            SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES,
-            false, &merged
-        );
-        if (!merged) {
-            symbol->name = name.sv;
-            symbol->name_span = written_member_name(left, name);
-        }
-        left->property->declares = symbol;
-        symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = expr_outer_span(left),
-            .full = expr_outer_span(left), .js = symbol_decl_js(my binder, e->binary_op->jsdoc_type, true),
-            // (Not in a constructor: possibly undefined, tsc's getWidenedTypeForAssignmentDeclaration definedInMethod)
-            .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD,
-        });
-    }
-}
-
-// Every assignment among the unparenthesized binary operators of an expression that is a direct child of a statement at
-// the top level of a file (`if (f.x = 1)`, `f.a = 1, f.b = 2`): top-level namespace assignments (tsc's
-// isTopLevelNamespaceAssignment: the outermost binary expression's parent's parent is the source file), preorder
-static void add_top_level_expandos(Scope* me, Expr* e) {
-    if (e->tag != EXPR_BINARY_OP || expr_is_perenthisized(e)) return;
-    if (e->binary_op->op == BINARY_OP_EQUAL) add_expando(me, e->binary_op, true);
-    add_top_level_expandos(me, &e->binary_op->left);
-    add_top_level_expandos(me, &e->binary_op->right);
-}
-
+// The assignments of a block's expression statements and variable initializers are declared with the block's names
+// (tsgo binds them all once the file is bound); other ones when the resolve walk meets them (scope_add_nested_expando())
 void scope_add_expandos(Scope* me, Block const* block) {
-    bool top_level = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT;
-    Scope* arrow;
-    bool global_this = this_is_global_script(me, &arrow);
     for_each (i, vec_statement, &block->statements) {
-        if (i->tag == STATEMENT_EXPR && top_level) add_top_level_expandos(me, &i->expr);
-        else if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, false);
-        if (top_level) {
-            switch (i->tag) {
-                case STATEMENT_IF_ELSE:
-                    if (i->if_else.conditions.size) add_top_level_expandos(me, (Expr*)vec_expr_at(&i->if_else.conditions, 0));
-                    break;
-                case STATEMENT_FOR_LOOP:
-                    if (i->for_loop->initialization.tag == STATEMENT_EXPR) add_top_level_expandos(me, &i->for_loop->initialization.expr);
-                    add_top_level_expandos(me, &i->for_loop->condition);
-                    add_top_level_expandos(me, &i->for_loop->afterthought);
-                    break;
-                case STATEMENT_FOR_EACH_LOOP:
-                    if (i->for_each_loop->variable.tag == FOR_EACH_LOOP_EXPR) add_top_level_expandos(me, &i->for_each_loop->variable.expr);
-                    add_top_level_expandos(me, &i->for_each_loop->iterable);
-                    break;
-                case STATEMENT_SWITCH: add_top_level_expandos(me, &i->switch_->needle); break;
-                case STATEMENT_WITH: add_top_level_expandos(me, &i->with->object); break;
-                case STATEMENT_EXPORT_DEFAULT_EXPR: case STATEMENT_THROW_EXPR: add_top_level_expandos(me, &i->expr); break;
-                default: break;
-            }
+        if (i->tag == STATEMENT_EXPR) {
+            add_expando_chain(me, &i->expr);
+            if (my file && my file->is_js) add_define_property(me, &i->expr);
         }
-        if (i->tag == STATEMENT_EXPR && my file && my file->is_js) add_define_property(me, &i->expr, top_level);
-        if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr, arrow);
-        // `/** @type {T} */ a.b;` at the top level (tsc's bindSpecialPropertyDeclaration)
-        if (i->tag == STATEMENT_EXPR && i->expr_jsdoc_type && top_level) {
-            add_expando_decl(me, &i->expr, &i->expr, i->expr_jsdoc_type, top_level);
-        }
-        // `var a = f.x = {}` (not at the top level: the assignment's parent is the declaration)
+        // `var a = f.x = {}`
         if (i->tag == STATEMENT_DECL_VARIABLE) {
-            for_each (j, vec_initialized_binding, &i->decl.variable.initializers) add_expando_chain(me, initialized_binding_value(j), false);
+            for_each (j, vec_initialized_binding, &i->decl.variable.initializers) add_expando_chain(me, initialized_binding_value(j));
         }
     }
 }
 
 // JavaScript classes
 
-// The symbol of the class a constructor function (or the constructor of `X.prototype.m = function`) makes: a function
-// declaration, or a variable initialized with a function expression. Null if `symbol` is neither
-static Symbol* js_constructor_symbol(Symbol* symbol) {
-    if (!symbol || symbol->is_placeholder || (symbol->flags & SYMBOL_ALIAS)) return nullptr;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_FUNCTION) return symbol;
-        if (decl->kind == SYMBOL_DECL_CLASS) return symbol;
-        if (decl->kind == SYMBOL_DECL_VARIABLE) {
-            Binding const* binding = decl->node;
-            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-            Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
-            return init->tag == EXPR_FUNCTION && !function_impl_is_arrow(init->function) ? symbol : nullptr;
-        }
-        // `ns.F = function () {}`
-        if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return symbol_decl_js_function(decl) ? symbol : nullptr;
-    }
-    return nullptr;
-}
-
-// Declares an assignment member `name` (`left` = v) in a class's or constructor function's table
-// A prototype method (`F.prototype.m = function () {}`): a Method to tsc's binder (bindPotentiallyNewExpandoMemberToNamespace)
-static bool is_prototype_method_decl(AssignmentDeclKind kind, Expr const* value) {
-    return kind == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY && value && value->tag == EXPR_FUNCTION && !expr_is_perenthisized(value);
-}
-
-// The property name of an assignment declaration's target (`m` of `C.prototype.m`)
-static Span assignment_decl_member_name(SymbolDecl const* decl) {
-    Span full = decl->name;
-    char const* start = span_end_ptr(full);
-    while (start > span_start_ptr(full) && start[-1] != '.') start--;
-    return start > span_start_ptr(full) ? span_make(full.source, start, span_end_ptr(full)) : full;
-}
-
-// A constructor function's `this.m = v` (a Property) and a prototype method m (MethodExcludes has Property) conflict:
-// TS2300 at both, and the method gets a symbol of its own that the members table doesn't hold (tsc's declareSymbol,
-// whose binder sees the hoisted constructor function's body first). Whichever tttt declares first
-static bool prototype_method_conflict(Symbol const* existing, AssignmentDeclKind kind, Expr const* value) {
-    bool method = is_prototype_method_decl(kind, value);
-    if (!method && kind != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) return false;
-    for (u32 i = 0; i < existing->decl_count; i++) {
-        SymbolDecl const* decl = &existing->decls[i];
-        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) return false;
-        bool other = method ? decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : is_prototype_method_decl(decl->assignment, decl->node);
-        if (!other) return false;
-    }
-    return existing->decl_count > 0;
-}
-
+// Declares an assignment member `name` (`left` = v) in a class's or object literal's table
 static void declare_assignment_member(
     Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
     AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 ) {
     if (!*table) *table = arena_new(binder_arena(my binder), SymbolTable);
-    Symbol* existing = my file && my file->is_js ? (Symbol*)symbol_table_get_own(*table, name.sv, symbol_name_hash(name.sv)) : nullptr;
-    if (existing && prototype_method_conflict(existing, kind, value)) {
-        for (u32 i = 0; i < existing->decl_count; i++) {
-            report_conflict(binder_errs(my binder), assignment_decl_member_name(&existing->decls[i]), 2300);
-        }
-        report_conflict(binder_errs(my binder), name, 2300);
-        Symbol* own = binder_new_symbol(my binder, name.sv, SYMBOL_PROPERTY);
-        own->name_span = written_member_name(left, name);
-        own->parent = parent;
-        own->exported = true;
-        // (The constructor's own `this.m` is the one the members table keeps)
-        if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) {
-            for (u32 i = 0; i < (*table)->count; i++) {
-                if ((*table)->entries[i].symbol == existing) (*table)->entries[i].symbol = own;
-            }
-        }
-        if (left->tag == EXPR_PROPERTY) left->property->declares = own;
-        symbol_add_decl(own, (SymbolDecl){
-            .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-            .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true), .jsdoc_modifiers = jsdoc_modifiers,
-        });
-        return;
-    }
     bool merged;
     Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
@@ -5672,16 +5036,6 @@ static void declare_assignment_member(
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true), .jsdoc_modifiers = jsdoc_modifiers,
     });
-    // In source order, like tsc's one binder walk (`F.prototype.x = v` is declared before the walk reaches a
-    // `this.x = v` above it)
-    for (u32 i = member->decl_count - 1; i > 0; i--) {
-        SymbolDecl* a = &member->decls[i - 1];
-        SymbolDecl* b = &member->decls[i];
-        if (a->full.source != b->full.source || span_start_ptr(a->full) <= span_start_ptr(b->full)) break;
-        SymbolDecl swap = *a;
-        *a = *b;
-        *b = swap;
-    }
 }
 
 void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
@@ -5728,7 +5082,6 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers);
 
 void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
-    if (expr_assigns_void_zero(&op->right)) return;
     Expr* value = &op->right;
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
@@ -5736,25 +5089,12 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
     add_this_property(me, &op->left, value, op->jsdoc_type, op->jsdoc_modifiers);
 }
 
-void scope_add_this_declaration(Scope* me, Expr* access, TypeNode const* jsdoc_type) {
-    if (!my file || !my file->is_js) return;
-    // (An element access `/** @type {T} */ this["x"];` declares x, but the tag isn't its: tsc's
-    // getNextJSDocCommentLocation only goes from a property access to its statement)
-    if (access->tag == EXPR_PROPERTY && access->property->form == PROPERTY_EXPR_BRACKET) jsdoc_type = nullptr;
-    // (The access is the declaration's node: its type is the JSDoc type)
-    add_this_property(me, access, access, jsdoc_type, 0);
-}
-
-// `this.x = v` in a method or accessor of an object literal (not `F.prototype = {...}`'s): tsc's
-// bindThisPropertyAssignment declares x in the literal's members, unless a member of the literal declared x before
-// (declareSymbol's isReplaceableByMethod returns that one). False if `function` isn't such a method
-static bool add_this_literal_member(Scope* me, FunctionImpl* function, Span name, Expr* left) {
+// `this.x = v` in a method or accessor of an object literal: tsc's bindThisPropertyAssignment declares x in the
+// literal's members, unless a member of the literal declared x before (declareSymbol's isReplaceableByMethod returns
+// that one)
+static void add_this_literal_member(Scope* me, FunctionImpl* function, Span name, Expr* left) {
     Expr const* literal = function_impl_rare(function)->this_literal;
-    if (!literal || literal->tag != EXPR_OBJECT ||
-        (function_impl_rare(function)->prototype_of && !function_impl_rare(function)->prototype_descriptor)
-    ) {
-        return false;
-    }
+    if (!literal || literal->tag != EXPR_OBJECT) return;
     ObjectExprItem const* own = nullptr;
     SymbolTable* table = nullptr;
     for_each (i, vec_object_expr_item, &literal->object) {
@@ -5762,10 +5102,10 @@ static bool add_this_literal_member(Scope* me, FunctionImpl* function, Span name
         if (i->value.function == function) own = i;
         if (!table) table = function_impl_rare(i->value.function)->this_literal_members;
     }
-    if (!own || own->tag == OBJECT_ITEM_PROPERTY) return false; // (`a: function () {}`: the function's own members)
+    if (!own || own->tag == OBJECT_ITEM_PROPERTY) return; // (`a: function () {}`: the function's own members)
     for_each (i, vec_object_expr_item, &literal->object) {
         if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key || !cstr_equals_sv(&i->name_string, name.sv)) continue;
-        if (span_start_ptr(i->span) < span_start_ptr(expr_outer_span(left))) return true;
+        if (span_start_ptr(i->span) < span_start_ptr(expr_outer_span(left))) return;
     }
     if (!table) table = arena_new(binder_arena(my binder), SymbolTable);
     function_impl_rare_mut(function)->this_literal_members = table;
@@ -5779,7 +5119,7 @@ static bool add_this_literal_member(Scope* me, FunctionImpl* function, Span name
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD, .flags = SYMBOL_PROPERTY,
         .name = expr_outer_span(left), .full = expr_outer_span(left),
     });
-    return true;
+    return;
 }
 
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers) {
@@ -5790,8 +5130,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     // bound name to the class's exports, which getMembersOfSymbol only reads for its static side)
     // (Private names must be declared, even in JavaScript)
     if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
-    // `this.x`, `var self = this; self.x` (tsc's isThisInitializedDeclaration)
-    IdentifierExpr const* this = expr_this_or_alias(object);
+    IdentifierExpr const* this = expr_this_keyword(object);
     if (!this) return;
     ResolveShard* shard = js_shard(me);
     if (shard) {
@@ -5834,72 +5173,18 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             Symbol* class_symbol = (Symbol*)this->target;
             if (!class_symbol) return;
             symbol_ensure_exports(class_symbol);
-            bool has_expando = false;
-            for (u32 i = 0; i < class_symbol->decl_count; i++) has_expando |= class_symbol->decls[i].kind == SYMBOL_DECL_EXPANDO;
-            if (!has_expando) {
-                class_symbol->flags |= SYMBOL_VALUE_MODULE;
-                symbol_add_decl(class_symbol, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
-            }
+            mark_expando_host(class_symbol, left);
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);
         }   break;
         case THIS_PARAMETER: // (Of a JSDoc `@this {T}`: tsc's binder doesn't look at it)
             if (!identifier_this_function(this)) break;
             // fallthrough
         case THIS_ANY: {
+            // Only an object literal's method or accessor: constructor functions are gone (tsgo's
+            // getThisClassAndSymbolTable knows class members and object literal methods only)
             FunctionImpl* this_function = (FunctionImpl*)identifier_this_function(this);
             if (!this_function || this_function != function) return;
-            if (add_this_literal_member(me, this_function, name, left)) return;
-            // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
-            Symbol* class_symbol = nullptr;
-            AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-            Expr* assigned_to = (Expr*)function_impl_rare(this_function)->this_assigned_object;
-            Expr const* constructor = assigned_to ? expr_prototype_object(assigned_to) : nullptr;
-            // (Not through an import: tsc's lookupSymbolForPropertyAccess finds the alias, which has no valueDeclaration)
-            Expr const* root = constructor;
-            while (root && root->tag == EXPR_PROPERTY) root = &root->property->expr;
-            if (root && root->tag == EXPR_IDENTIFIER && root->identifier.symbol && (root->identifier.symbol->flags & SYMBOL_ALIAS)) {
-                return;
-            }
-            if (constructor) {
-                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(constructor));
-                kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
-            } else if (function_impl_rare(this_function)->prototype_of && function_impl_rare(this_function)->this_literal) {
-                // A method of `F.prototype = { m() { this.x = v } }`: tsc declares x in the literal's members, which
-                // are F's instance members
-                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(function_impl_rare(this_function)->prototype_of));
-                kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
-            } else if (function_impl_rare(this_function)->class_symbol) {
-                class_symbol = function_impl_rare(this_function)->class_symbol; // `ns.C = function () {}` with `ns.C.prototype.m = v`
-            } else if (!assigned_to) {
-                class_symbol = function_impl_rare(this_function)->class_symbol ? function_impl_rare(this_function)->class_symbol :
-                    this_function->is_expression ? nullptr : this_function->symbol;
-                // (Not with a JSDoc `@this`: tsc binds the member too, but then reports nothing of it (webpack's
-                // `@this {Module} function errors() { this._errors = [] }`); unverified why, so not made at all)
-                if (!class_symbol && this_function->is_expression && !function_impl_is_arrow(this_function) && my file && my file->is_js &&
-                    this->this_kind != THIS_PARAMETER
-                ) {
-                    // A function expression of its own (an object literal's property, a callback): its own symbol is
-                    // the class (tsc's bindThisPropertyAssignment on the function's symbol), named where it is written
-                    Span own_name = this_function->name;
-                    if (!span_valid(own_name)) own_name = function_impl_rare(this_function)->assigned_name;
-                    class_symbol = binder_new_symbol(my binder, span_valid(own_name) ? own_name.sv : c_sv("(Anonymous function)"), SYMBOL_FUNCTION);
-                    class_symbol->name_span = own_name;
-                    function_impl_rare_mut(this_function)->class_symbol = class_symbol;
-                    function_impl_rare_mut(this_function)->own_class_symbol = true;
-                }
-            }
-            if (!class_symbol) return;
-            class_symbol->flags |= SYMBOL_CLASS;
-            Symbol* existing = symbol_rare(class_symbol)->members ? (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv) : nullptr;
-            declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
-            // (Its type is what `this.x` is at the end of the constructor function: tsc's getFlowTypeInConstructor)
-            Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
-            bool literal_method = !constructor && function_impl_rare(this_function)->prototype_of && function_impl_rare(this_function)->this_literal;
-            if (member) member->prototype_literal_member = literal_method && (!existing || existing->prototype_literal_member);
-            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned && function == this_function) {
-                symbol_rare_mut(member)->constructor_assigned = left;
-                symbol_rare_mut(member)->declaring_constructor = function;
-            }
+            add_this_literal_member(me, this_function, name, left);
         }   break;
         default: break;
     }
@@ -5931,31 +5216,19 @@ void resolve_shard_merge(ResolveShard* me) {
                 break;
             case DEFERRED_EXPANDO:
                 add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
-                    event->top_level, event->late_bound_key, event->assignment);
+                    event->late_bound_key, event->assignment);
                 if (event->link) expr_link_assignment_declaration(event->left, binder);
                 break;
             case DEFERRED_JS_EXPANDO:
-                add_expando(event->scope, event->op, event->top_level);
+                add_expando(event->scope, event->op);
                 if (event->link) expr_link_assignment_declaration(&event->op->left, binder);
                 break;
             case DEFERRED_JS_DEFINE_PROPERTY:
-                add_define_property(event->scope, event->left, event->top_level);
-                break;
-            case DEFERRED_JS_GLOBAL_THIS:
-                add_global_this_chain(event->scope, event->left, event->arrow);
-                // (At a block's start, before the walk reached any of them)
-                for (Expr* e = event->left; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
-                    e = &e->binary_op->right
-                ) {
-                    expr_link_assignment_declaration(&e->binary_op->left, binder);
-                }
+                add_define_property(event->scope, event->left);
                 break;
             case DEFERRED_JS_THIS_PROPERTY:
                 add_this_property(event->scope, event->left, event->right, event->jsdoc_type, event->jsdoc_modifiers);
                 if (event->link) expr_link_assignment_declaration(event->left, binder);
-                break;
-            case DEFERRED_JS_CLASS:
-                scope_mark_jsdoc_class(binder, event->symbol, event->function);
                 break;
         }
     }

@@ -852,12 +852,12 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
-        !(identifier_this_function(me) && (ty_js_this_class(identifier_this_function(me)) || ty_contextual_this_type(current_checker, identifier_this_function(me))))
+        !(identifier_this_function(me) && ty_contextual_this_type(current_checker, identifier_this_function(me)))
     ) {
         Error* e = error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
         FunctionImpl const* outer = identifier_this_function(me) ? function_impl_rare(identifier_this_function(me))->outer_this_function : nullptr;
         if (identifier_this_function(me) && (my this_shadows_outer ||
-            (outer && (ty_js_this_class(outer) || ty_contextual_this_type(current_checker, outer))))
+            (outer && ty_contextual_this_type(current_checker, outer)))
         ) {
             error_add_related_d(e, function_error_span(identifier_this_function(me)), 2738, "An outer value of 'this' is shadowed by this container.");
         }
@@ -1361,47 +1361,6 @@ static bool is_compound_like(Expr const* right) {
     return op >= BINARY_OP_STAR_STAR && op <= BINARY_OP_GREATER_GREATER_GREATER;
 }
 
-// tsc's isSameEntityName: `a.b` and `a.b`, also `this.a.b`/`window.a.b`/`self.a.b`/`global.a.b` for `a.b`
-static bool is_same_entity_name(Expr const* name, Expr const* init) {
-    if (expr_is_perenthisized(name) || expr_is_perenthisized(init)) return false;
-    if (name->tag == EXPR_IDENTIFIER && init->tag == EXPR_IDENTIFIER) {
-        return !name->identifier.keyword && !init->identifier.keyword && name_equals(name->inner_span.sv, init->inner_span.sv);
-    }
-    Span init_name = expr_static_property_name(init);
-    if (name->tag == EXPR_IDENTIFIER && span_valid(init_name)) {
-        Expr const* object = &init->property->expr;
-        bool global_like = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) &&
-            (object->identifier.keyword == KEYWORD_IDENTIFIER_THIS || (!object->identifier.keyword &&
-                (span_equals(object->inner_span, "window") || span_equals(object->inner_span, "self") ||
-                    span_equals(object->inner_span, "global"))));
-        return global_like && !name->identifier.keyword && name_equals(name->inner_span.sv, init_name.sv);
-    }
-    Span name_name = expr_static_property_name(name);
-    return span_valid(name_name) && span_valid(init_name) && name_equals(name_name.sv, init_name.sv) &&
-        is_same_entity_name(&name->property->expr, &init->property->expr);
-}
-
-// JavaScript `a.b = a.b || {}` (or a function, a class): tsc checks only the initializer of such a defaulted expando
-// (checkBinaryExpression skips a node getAssignedExpandoInitializer finds, getDefaultedExpandoInitializer)
-static void mark_defaulted_expando(BinaryOpExpr* assignment) {
-    Expr* right = &assignment->right;
-    if (right->tag != EXPR_BINARY_OP || expr_is_perenthisized(right)) return;
-    BinaryOpExpr* logical = right->binary_op;
-    if (logical->op != BINARY_OP_OR_OR && logical->op != BINARY_OP_EH_EH) return;
-    Expr const* init = &logical->right;
-    bool prototype = expr_prototype_object(&assignment->left) != nullptr;
-    bool expando;
-    switch (init->tag) {
-        case EXPR_FUNCTION: case EXPR_CLASS_DECL: expando = true; break;
-        case EXPR_OBJECT: expando = prototype || !vec_object_expr_item_size(&init->object); break;
-        case EXPR_CALL: {
-            expando = init->call->callable.tag == EXPR_FUNCTION && !init->call->uses_new;
-        }   break;
-        default: expando = false; break;
-    }
-    if (expando && is_same_entity_name(&assignment->left, &logical->left)) logical->defaulted_expando = true;
-}
-
 static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
     BinaryOp op = my binary_op->op;
@@ -1418,8 +1377,7 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
         flow_add_nullish_conditions(flow, &my binary_op->left, true_target, pre_right);
     } else {
         flow->nullish_condition = op == BINARY_OP_EH_EH || op == BINARY_OP_EH_EH_EQUAL;
-        // The left side of a defaulted expando initializer isn't checked (see BinaryOpExpr.defaulted_expando)
-        expr_lookup_names_condition(&my binary_op->left, names, my binary_op->defaulted_expando ? nullptr : errs, true_target, pre_right);
+        expr_lookup_names_condition(&my binary_op->left, names, errs, true_target, pre_right);
     }
     flow_set_current(flow, flow_finish_label(pre_right));
     if (is_assignment) {
@@ -1836,16 +1794,6 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             ) {
                 function_impl_rare_mut(right->function)->this_assigned_object = &left->property->expr;
             }
-            if (op == BINARY_OP_EQUAL && left->tag == EXPR_PROPERTY && left->inner_span.source && left->inner_span.source->is_js) {
-                Expr const* constructor = expr_prototype_object(&left->property->expr);
-                if (constructor && right->tag == EXPR_FUNCTION) function_impl_rare_mut(right->function)->prototype_of = constructor;
-                constructor = expr_prototype_object(left);
-                if (constructor && right->tag == EXPR_OBJECT) {
-                    for_each (i, vec_object_expr_item, &right->object) {
-                        if (i->value.tag == EXPR_FUNCTION) function_impl_rare_mut(i->value.function)->prototype_of = constructor;
-                    }
-                }
-            }
             if (binary_op_is_logical(op) || binary_op_is_logical_assignment(op)) {
                 if (true_target) {
                     expr_lookup_names_logical(me, names, errs, true_target, false_target);
@@ -1875,7 +1823,6 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->compound_like_target = op == BINARY_OP_EQUAL && is_compound_like(right);
                 expr_lookup_names(left, names, errs);
                 if (op == BINARY_OP_EQUAL) scope_add_nested_expando(names, my binary_op);
-                if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) mark_defaulted_expando(my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file) scope_note_ts_this_assignment(names, left);
                 expr_lookup_names(right, names, errs);
@@ -2103,22 +2050,6 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my call->uses_new && constructor->tag == EXPR_IDENTIFIER) {
                 for_each (arg, vec_expr, &my call->args) {
                     if (arg->tag == EXPR_FUNCTION && !expr_is_perenthisized(arg)) function_impl_rare_mut(arg->function)->new_callee = constructor;
-                }
-            }
-            // JavaScript `Object.defineProperty(F.prototype, "x", { value/get/set: function () {} })` (or `get() {}`): `this` in the
-            // functions is F's (tsc's getClassNameFromPrototypeMethod)
-            if (names->file && names->file->is_js && expr_is_define_property_call(me, nullptr)) {
-                Expr const* constructor = expr_prototype_object(vec_expr_at_mut(&my call->args, 0));
-                Expr* descriptor = vec_expr_at_mut(&my call->args, 2);
-                if (constructor && descriptor->tag == EXPR_OBJECT && !expr_is_perenthisized(descriptor)) {
-                    for_each (i, vec_object_expr_item, &descriptor->object) {
-                        // (`get: function () {}` or the method `get() {}`)
-                        if ((i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_METHOD) || i->computed_key || i->value.tag != EXPR_FUNCTION) continue;
-                        if (!span_equals(i->name_span, "value") && !span_equals(i->name_span, "get") && !span_equals(i->name_span, "set")) continue;
-                        if (function_impl_is_arrow(i->value.function)) continue;
-                        function_impl_rare_mut(i->value.function)->prototype_of = constructor;
-                        function_impl_rare_mut(i->value.function)->prototype_descriptor = true;
-                    }
                 }
             }
             Expr* callee = &my call->callable;
@@ -2367,7 +2298,7 @@ void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx
 static bool is_container_declaration(BinaryOpExpr const* op) {
     SourceFile const* file = op->left.inner_span.source;
     if (op->op != BINARY_OP_EQUAL || !file || !file->is_js || op->left.tag != EXPR_PROPERTY) return false;
-    Expr const* init = expando_initializer((Expr*)&op->right, span_null, true);
+    Expr const* init = expando_initializer((Expr*)&op->right, true, false);
     if (!init || init->tag != EXPR_OBJECT) return false;
     // (Only if it does declare members: `symbol.exports.size`. Unknown for CommonJS exports, taken as yes)
     Symbol const* declared = op->left.property->declares;
@@ -4110,10 +4041,6 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     logical_operand = nullptr;
     if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_typecheck(my binary_op->jsdoc_type, errs);
     js_assignment_implicit_any_check(me, errs);
-    if (my binary_op->defaulted_expando) {
-        expr_typecheck(&my binary_op->right, errs);
-        return;
-    }
     if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
         !expr_is_perenthisized(&my binary_op->left)
     ) {
@@ -4898,15 +4825,9 @@ Expr* expr_prototype_object(Expr* me) {
     return expr_is_entity_name(object) ? object : nullptr;
 }
 
-IdentifierExpr const* expr_this_or_alias(Expr const* me) {
+IdentifierExpr const* expr_this_keyword(Expr const* me) {
     if (my tag != EXPR_IDENTIFIER || expr_is_perenthisized(me)) return nullptr;
-    if (my identifier.keyword == KEYWORD_IDENTIFIER_THIS) return &my identifier;
-    if (my identifier.keyword || !my identifier.target) return nullptr;
-    Binding const* binding = symbol_find_node(my identifier.target, SYMBOL_DECL_VARIABLE);
-    if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-    Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
-    bool is_this = init->tag == EXPR_IDENTIFIER && init->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(init);
-    return is_this ? &init->identifier : nullptr;
+    return my identifier.keyword == KEYWORD_IDENTIFIER_THIS ? &my identifier : nullptr;
 }
 
 // tsc's isValidConstAssertionArgument (parentheses are transparent)

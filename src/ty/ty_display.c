@@ -212,28 +212,22 @@ static bool is_non_local_function(Symbol const* symbol) {
     return false;
 }
 
-// A function with expando properties (in JavaScript: none of which is assigned at the top level of a file): tsc's binder makes a
-// function a ValueModule (bindPotentiallyMissingNamespaces) only for a top-level `f.x = v` (isTopLevelNamespaceAssignment),
-// which is what prints it as `typeof f`; otherwise it is a function like any other, whose type prints structurally
-// (shouldWriteTypeOfFunctionSymbol wants UseTypeOfFunction or recursion): `{ (): void; p6: number; }` in a namespace
+// A function with expando properties: tsgo has no bindPotentiallyMissingNamespaces, so it is a function like any other,
+// whose type prints structurally (shouldWriteTypeOfFunctionSymbol wants UseTypeOfFunction or recursion):
+// `{ (): void; p6: number; }`
 static bool is_nested_expando_function(Ty const* ty) {
     Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
     if (!symbol) symbol = ty->declared.symbol;
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION)) return false;
     // (Nor one a module's `export =` assigns while it has other exports: getCommonJsExportEquals' ValueModule)
     if (symbol_rare(symbol)->export_equals_module) return false;
-    bool expando = false, top_level = false;
+    bool expando = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind == SYMBOL_DECL_NAMESPACE || decl->kind == SYMBOL_DECL_CLASS) return false;
-        if (decl->kind != SYMBOL_DECL_EXPANDO) continue;
-        expando = true;
-        // (add_expando_namespace_decls(): a top-level assignment's declaration is named. tsgo has no
-        // bindPotentiallyMissingNamespaces: outside JavaScript every expando function prints structurally.
-        // PROTOTYPE: JavaScript keeps 6.0's rule until its rework, todo entry 8)
-        top_level |= span_valid(decl->name) && decl->name.source->is_js;
+        expando |= decl->kind == SYMBOL_DECL_EXPANDO;
     }
-    return expando && !top_level;
+    return expando;
 }
 
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
@@ -300,11 +294,6 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
 
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
-    csview js_name;
-    if (ty_js_assigned_class_name(symbol, &js_name)) {
-        out(d, js_name);
-        return;
-    }
     if (!d.enclosing && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
         // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
         SourceFile const* file = symbol->decls[0].full.source;
@@ -3526,9 +3515,20 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 case TY_DECLARED_CLASS_STATIC:
                 case TY_DECLARED_ENUM_OBJECT:
                 case TY_DECLARED_NAMESPACE:
-                    if (!ty->declared.name->len || is_mixin_static_side(me, ty) || is_nested_expando_function(ty)) {
+                    if (!ty->declared.name->len || is_mixin_static_side(me, ty)) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
+                    }
+                    if (is_nested_expando_function(ty)) {
+                        // (Within itself `typeof f`: tsc's shouldWriteTypeOfFunctionSymbol, visitedTypes)
+                        bool recursive = false;
+                        for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;
+                        if (!recursive) {
+                            TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+                            d.visiting = &visit;
+                            display_structure(me, d, ty);
+                            break;
+                        }
                     }
                     if (class_as_literal(d, ty)) {
                         display_class_literal(me, d, ty);
@@ -3673,28 +3673,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
                 out_lit(d, "any");
                 return;
-            }
-            // A JavaScript constructor function is a class
-            Symbol const* js_class = ty->anonymous.function && !ty->anonymous.target ?
-                ty_js_constructor_class(ty->anonymous.function) : nullptr;
-            // (One merged with other declarations, a lib's `declare function toString(): string`: the symbol is still
-            // a class)
-            if (!js_class && !ty->anonymous.function && !ty->anonymous.target && !ty->anonymous.is_reverse &&
-                ty->anonymous.merged_value && (ty->anonymous.merged_value->flags & SYMBOL_CLASS)
-            ) {
-                Symbol const* merged = ty->anonymous.merged_value;
-                for (u32 i = 0; i < merged->decl_count && !js_class; i++) {
-                    if (merged->decls[i].kind == SYMBOL_DECL_FUNCTION) js_class = ty_js_constructor_class(merged->decls[i].node);
-                }
-            }
-            if (js_class) {
-                out_lit(d, "typeof ");
-                csview js_name;
-                // (A declared function by its symbol chain from here: `typeof x.F` through `const x = require()`)
-                if (ty_js_assigned_class_name(js_class, &js_name)) out(d, js_name);
-                else if (js_class->flags & SYMBOL_FUNCTION) out_symbol_name(me, d, js_class, SYMBOL_VALUE);
-                else out(d, js_class->name);
-                break;
             }
             // An instantiation expression made by `typeof f<T>` reprints that node (tsc's createAnonymousTypeNode with an
             // InstantiationExpressionType whose node is a type query)

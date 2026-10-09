@@ -1279,35 +1279,6 @@ static Ty const* this_type_marker(Checker* me, Ty const* contextual) {
     return args.len == 1 ? args.data[0] : nullptr;
 }
 
-// The class a constructor function's `this` is the instance of: not that of an object literal's property, which is no
-// constructor to tsc's isJSConstructor unless tagged `@class` (its symbol's members still make its type a class)
-static Symbol const* js_constructor_for_this(FunctionImpl const* function) {
-    if (function_impl_rare(function)->own_class_symbol && function_impl_rare(function)->this_literal && !function->jsdoc_class) return nullptr;
-    return ty_js_constructor_class(function);
-}
-
-// tsc's getContextualThisParameterType: what `this` is in a function expression or object literal method that doesn't
-// declare it. Null: nothing says (it's any)
-Symbol const* ty_js_this_class(FunctionImpl const* function) {
-    // (A literal's function-valued property that is a class of its own still sees the literal)
-    Symbol const* js_class = js_constructor_for_this(function);
-    if (js_class) return js_class;
-    // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod: not an accessor of
-    // `F.prototype = { get x() {} }`, whose `this` is the literal's)
-    Expr const* constructor = function->accessor ? nullptr : function_impl_rare(function)->prototype_of;
-    Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
-    SourceFile const* file = function->full_span.source;
-    if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
-    return symbol;
-}
-
-Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function) {
-    Symbol const* js_class = ty_js_this_class(function);
-    if (!js_class) return nullptr;
-    Ty const* declared = ty_declared_type_of(me, js_class);
-    return declared->kind == TY_DECLARED && declared->declared.this_param ? declared->declared.this_param : declared;
-}
-
 // A type variable among a contextual type (or its union members) as its apparent type (tsc's
 // getApparentTypeOfContextualType, which leaves mapped types alone). The apparent type of an intersection is the
 // intersection of its members' (getApparentTypeOfIntersectionType)
@@ -1368,6 +1339,15 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
         return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
     }
     if (function_impl_rare(function)->this_assigned_object) {
+        // Not `exports` in `exports.F = function () { this.x = 1 }` (tsgo's getContextualThisParameterType)
+        Expr const* object = function_impl_rare(function)->this_assigned_object;
+        SourceFile const* file = object->inner_span.source;
+        Symbol const* target = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
+        if (in_js && file && file->is_commonjs && expr_is_plain_identifier(object, "exports") &&
+            (!target || symbol_find_decl(target, SYMBOL_DECL_COMMONJS_EXPORTS))
+        ) {
+            return nullptr;
+        }
         return ty_widened_for_declaration(me, ty_expr_type(me, function_impl_rare(function)->this_assigned_object), true);
     }
     return nullptr;
@@ -1965,8 +1945,6 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         case THIS_ANY: {
             FunctionArg const* paired_this = identifier_this_function(identifier) ? function_impl_rare(identifier_this_function(identifier))->paired_this : nullptr;
             if (paired_this) return ty_type_of_symbol(me, paired_this->initializer.binding.symbol);
-            Ty const* js_this = identifier_this_function(identifier) ? ty_js_this_type(me, identifier_this_function(identifier)) : nullptr;
-            if (js_this) return js_this;
             Ty const* contextual = identifier_this_function(identifier) ? ty_contextual_this_type(me, identifier_this_function(identifier)) : nullptr;
             return contextual ? contextual : any_type(me);
         }
@@ -2784,8 +2762,6 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
-    // (`a.b = a.b || {}`: tsc's getDefaultedExpandoInitializer)
-    if (value->tag == EXPR_BINARY_OP && value->binary_op->defaulted_expando) value = &value->binary_op->right;
     if (value->tag != EXPR_OBJECT) return false;
     return !vec_object_expr_item_size(&value->object) || span_equals(expr_static_property_name(left), "prototype");
 }
@@ -2952,7 +2928,6 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_EH_EH: {
             // (The operands' contextual type is the expression's as written, see passed_on_context())
             Ty const* passed = passed_on_context(ctx).contextual;
-            if (binary->defaulted_expando) return ty_check_expr(me, &binary->right, passed);
             left = ty_check_expr(me, &binary->left, passed);
             right = ty_check_expr(me, &binary->right, ctx.contextual ? passed : left);
             break;
@@ -5054,23 +5029,16 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
         name = csview_slice(name, 1, name.size - 1);
     }
     Expr const* object = &access->expr;
-    IdentifierExpr const* this = expr_this_or_alias(object);
+    IdentifierExpr const* this = expr_this_keyword(object);
     if (!this) return nullptr;
     SourceFile const* file = object->inner_span.source;
     if (!file || !file->is_js) return nullptr;
-    Symbol const* class_symbol = nullptr;
-    if (this->this_kind == THIS_CLASS_INSTANCE) {
-        if (!property_context(access)->in_constructor_of) return nullptr;
-        class_symbol = this->target;
-    } else if (this->this_kind == THIS_ANY && identifier_this_function(this)) {
-        class_symbol = js_constructor_for_this(identifier_this_function(this));
-    }
+    if (this->this_kind != THIS_CLASS_INSTANCE || !property_context(access)->in_constructor_of) return nullptr;
+    Symbol const* class_symbol = this->target;
     if (!class_symbol || !symbol_rare(class_symbol)->members) return nullptr;
     Symbol const* member = symbol_table_get(symbol_rare(class_symbol)->members, name);
     if (!member) return nullptr;
     if (!ty_is_constructor_declared(member)) return nullptr;
-    // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
-    if (this->this_kind == THIS_ANY && js_constructor_for_this(identifier_this_function(this)) != class_symbol) return nullptr;
     // Not when the class body declares it
     ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
     return !class_decl || !class_decl_find_member(class_decl, name, false) ? member : nullptr;
@@ -5110,7 +5078,7 @@ static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
     if (access->assignment_target || !access->flow) return nullptr;
     Symbol const* member = constructor_declared_member(access);
     if (!member || !symbol_rare(member)->declaring_constructor || !function_impl_rare(symbol_rare(member)->declaring_constructor)->return_flow) return nullptr;
-    if (expr_this_or_alias(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
+    if (expr_this_keyword(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
     return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }
 

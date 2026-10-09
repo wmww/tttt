@@ -157,16 +157,6 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
     ret->declared.kind = kind;
     ret->declared.symbol = symbol;
     ret->declared.name = ty_qualified_name(me, symbol);
-    // A constructor function assigned to a property (`ns.C = function () {}`) is a class of the function expression's
-    // own symbol in tsc (getExpandoSymbol), which has no parent
-    if (kind == TY_DECLARED_CLASS_INSTANCE && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-        symbol_decl_js_function(&symbol->decls[0])
-    ) {
-        // (`module.exports = function MC() {}`: the `export=` symbol has no name of its own, the function's is it)
-        csview js_name = ty_symbol_display_name(symbol).sv;
-        if (!js_name.size) ty_js_assigned_class_name(symbol, &js_name);
-        ret->declared.name = checker_atom(me, js_name);
-    }
     ret->declared.state = arena_new(&my arena, TyObjectState);
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_CLASS_STATIC) {
         ret->declared.outer = symbol_outer_generics(symbol);
@@ -476,11 +466,6 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             Ty const* args[2] = { key, ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 1)->type, ctx) };
             return ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 });
         }
-    }
-    // (A JavaScript constructor function's `this` type)
-    if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier_type_this_function(identifier)) {
-        Ty const* js_this = ty_js_this_type(me, identifier_type_this_function(identifier));
-        if (js_this) return js_this;
     }
     Symbol const* decl = canonical(me, identifier->target);
     if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
@@ -1170,17 +1155,17 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
-static bool is_js_container(Symbol const* symbol, Expr const* value, Span name);
+static bool is_js_container(Symbol const* symbol, Expr const* value);
 
 // Whether symbol's value declaration makes it a JavaScript container (see value_entry_type())
 static bool symbol_is_js_container(Symbol const* symbol) {
     if (!symbol->exports || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
-    if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return is_js_container(symbol, decl->node, span_null);
+    if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return is_js_container(symbol, decl->node);
     if (decl->kind != SYMBOL_DECL_VARIABLE) return false;
     Binding const* binding = decl->node;
     return !binding->parent && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
-        is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)), binding->content_span);
+        is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)));
 }
 
 Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
@@ -1372,11 +1357,11 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
 // getJSContainerObjectType). `value` is the initializer or assigned value
-static bool is_js_container(Symbol const* symbol, Expr const* value, Span name) {
+static bool is_js_container(Symbol const* symbol, Expr const* value) {
     if (!symbol->exports || !value) return false;
     SourceFile const* file = value->inner_span.source;
     if (!file || !file->is_js) return false;
-    Expr const* init = expando_initializer((Expr*)value, name, true);
+    Expr const* init = expando_initializer((Expr*)value, true, false);
     return init && init->tag == EXPR_OBJECT;
 }
 
@@ -1437,7 +1422,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = decl->node;
             if (!binding->parent && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
-                is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)), binding->content_span)
+                is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)))
             ) {
                 return ty_namespace_type(me, symbol);
             }
@@ -1474,7 +1459,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
                 return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, decl->node))));
             }
-            if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
+            if (is_js_container(symbol, decl->node)) return ty_namespace_type(me, symbol);
             if (annotated_expando_type(me, symbol)) return annotated_expando_type(me, symbol);
             {
                 Ty const* type = ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
@@ -1768,7 +1753,7 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
 // declares in a class constructor has the type the constructor gives it (flow_type_in_constructor()), else (a
 // constructor function's) the union of the constructor's assignments. TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
-    if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
+    if (is_js_container(symbol, symbol->decls[0].node)) return ty_namespace_type(me, symbol);
     // An export every assignment of which is an alias (`exports.x = undefined; exports.x = f`) is what the last one
     // names (tsc's exportAssignmentIsAlias declares an Alias, which getDeclarationOfAliasSymbol resolves by its last
     // declaration)
@@ -1787,7 +1772,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (first_file && first_file->is_js && symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
         !symbol_decl_jsdoc_type(&symbol->decls[0]) && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
     ) {
-        Expr* init = expando_initializer((Expr*)symbol->decls[0].node, span_null, true);
+        Expr* init = expando_initializer((Expr*)symbol->decls[0].node, true, false);
         if (init && (init->tag == EXPR_FUNCTION || init->tag == EXPR_CLASS_DECL)) {
             return ty_widened_literal(me, ty_expr_type(me, init));
         }

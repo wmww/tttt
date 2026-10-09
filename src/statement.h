@@ -172,8 +172,7 @@ typedef struct Statement {
         Block block;
         struct {
             Expr expr; // also used for return and export default expressions
-            // Owned, JavaScript `/** @type {T} */ a.b;` or `this.x;`: a declaration of the property with that type
-            // (tsc's isSpecialPropertyDeclaration)
+            // Owned, JavaScript `/** @type {T} */ export default v`: the type it is checked against
             TypeNode* expr_jsdoc_type;
         };
         IfStatement if_else;
