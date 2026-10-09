@@ -277,9 +277,15 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         // Their names still resolve, silently, for whoever asks)
         bool found = import_type_lookup_names(me, names, errs);
         ErrorCtx silent = errs ? error_ctx_scratch(errs) : (ErrorCtx){0};
+        // (Type arguments of `import("./m")<T>` whose target takes none aren't resolved at all in tsc, TS2315: no uses)
+        // (Nor of one whose `export=` its typedefs made a namespace: TS2315 "Type 'export=' is not generic")
+        bool unresolved = !span_valid(my name) && !my rare->import_typeof && my target && !my target->is_placeholder &&
+            (my target->flags & SYMBOL_TYPE) && (!several_types_is_generic(my target) || my rare->import_export_equals_alias);
+        unused_marking_suppressed += unresolved;
         for_each (i, vec_spanned_type, &my generic_params) {
             type_lookup_names(&i->type, names, found ? errs : &silent);
         }
+        unused_marking_suppressed -= unresolved;
         error_ctx_drop(&silent);
         return;
     }
@@ -393,8 +399,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             error_ctx_error_d(errs, my name, 2709, "Cannot use namespace '", my name, "' as a type.");
             return;
         }
+        // (A value found instead, TS2749 below, isn't a use: tsc's resolveName for the type failed, the lookup for the
+        // message doesn't mark it referenced)
+        if (my target) unused_mark_referenced(names, (Symbol*)my symbol, SYMBOL_TYPE);
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
-        unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         // In a function's JSDoc a name is looked up from the function too, which makes what it finds there referenced
         // (tsc's resolveEntityNameFromAssignmentDeclaration through getAssignmentDeclarationLocation: the signature's
         // own location): a `@template T` shadowed by a signature's `<T>` in a `@returns` type counts as read
@@ -569,9 +577,22 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     // (A JSDoc `import("./m").C` of a property of the module's value: the target is the module's value, the type
     // arguments go to the class the property's type is, tsc's getTypeFromJSDocValueReference)
     if (my rare && my rare->import_prop_start >= 0 && !my rare->import_typeof) return;
-    if (my keyword || !span_valid(my name) || !my name.source) return;
+    // (`import("./m")<T>` names what the module's `export=` assigns, by that symbol's name)
+    bool import_itself = !span_valid(my name) && my rare && my rare->import_ref && !my rare->import_typeof;
+    if (my keyword || (!import_itself && (!span_valid(my name) || !my name.source))) return;
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     Span span = identifier_type_span(me);
+    if (import_itself) {
+        // (The whole `import("./m")<T>`: tsgo's error node is the import type)
+        Span import_span = identifier_type_import_span(me);
+        if (!span_valid(import_span) || !arg_count) return;
+        SourceFile const* file = import_span.source;
+        char const* limit = cstr_str(&file->contents) + cstr_size(&file->contents);
+        char const* end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
+        while (end < limit && *end != '>') end++;
+        if (end < limit) end++;
+        span = span_make(file, span_start_ptr(import_span), end);
+    }
     if (jsdoc_named) {
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
         return;

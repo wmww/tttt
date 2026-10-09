@@ -29,8 +29,10 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span
     file->unused[file->unused_count++] = (UnusedCandidate){ .kind = kind, .node = node, .span = span };
 }
 
+thread_local u32 unused_marking_suppressed;
+
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning) {
-    if (!found || found->binder != scope->binder || !unused_enabled()) return;
+    if (!found || found->binder != scope->binder || !unused_enabled() || unused_marking_suppressed) return;
     // (Marked already: the walk could only set what is set. Most uses of a name come after its first)
     if ((__atomic_load_n(&found->referenced, __ATOMIC_RELAXED) & meaning) == meaning) return;
     // tsc's lastSelfReferenceLocation: the outermost declaration the use is in, below the scope that has the symbol
