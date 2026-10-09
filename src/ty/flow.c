@@ -583,7 +583,7 @@ static bool is_unit_type(Ty const* ty) {
 static Expr const* skip_reference_wrappers(Expr const* expr) {
     while (true) {
         if (expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_RIGHT_BANG) expr = &expr->unary_op->expr;
-        else if (expr->tag == EXPR_AS_TYPE && (expr->as_type->is_satisfies || expr->as_type->is_jsdoc)) expr = &expr->as_type->expr;
+        else if (expr->tag == EXPR_AS_TYPE && expr->as_type->is_satisfies) expr = &expr->as_type->expr;
         else return expr;
     }
 }

@@ -244,10 +244,7 @@ bool expr_is_narrowable_reference(Expr const* me) {
                 if (my unary_op->op != UNARY_OP_RIGHT_BANG) return false;
                 me = &my unary_op->expr;
                 break;
-            case EXPR_AS_TYPE:
-                if (!my as_type->is_jsdoc) return false; // (A JSDoc cast is tsc's ParenthesizedExpression)
-                me = &my as_type->expr;
-                break;
+            // (A JSDoc cast is tsgo's AsExpression or SatisfiesExpression too: not a narrowable reference)
             case EXPR_BINARY_OP:
                 if (my binary_op->op == BINARY_OP_COMMA) {
                     me = &my binary_op->right;
@@ -282,8 +279,7 @@ static bool is_narrowable_operand(Expr const* me) {
 // tsc's getReferenceRoot, from the top: the name `(x = [], x)` and `(x = y)` stand for, if they stand for one
 static Expr* reference_root_name(Expr* me) {
     while (true) {
-        if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc) me = &my as_type->expr; // (tsc's parentheses)
-        else if (my tag == EXPR_BINARY_OP && my binary_op->op == BINARY_OP_EQUAL) me = &my binary_op->left;
+        if (my tag == EXPR_BINARY_OP && my binary_op->op == BINARY_OP_EQUAL) me = &my binary_op->left;
         else if (my tag == EXPR_BINARY_OP && my binary_op->op == BINARY_OP_COMMA) me = &my binary_op->right;
         else break;
     }
@@ -307,7 +303,7 @@ static bool may_evolve(Expr const* object) {
             object = &object->unary_op->expr;
             continue;
         }
-        if (object->tag == EXPR_AS_TYPE && (object->as_type->is_satisfies || object->as_type->is_jsdoc)) {
+        if (object->tag == EXPR_AS_TYPE && object->as_type->is_satisfies) {
             object = &object->as_type->expr;
             continue;
         }

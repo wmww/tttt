@@ -2384,10 +2384,7 @@ static bool is_narrowable_access(Expr const* expr) {
                 if (expr->unary_op->op != UNARY_OP_RIGHT_BANG) return false;
                 expr = &expr->unary_op->expr;
                 break;
-            case EXPR_AS_TYPE:
-                if (!expr->as_type->is_jsdoc) return false; // (A JSDoc cast is tsc's ParenthesizedExpression)
-                expr = &expr->as_type->expr;
-                break;
+            // (A JSDoc cast is tsgo's AsExpression: no reference, it prevents narrowing)
             case EXPR_BINARY_OP:
                 if (expr->binary_op->op != BINARY_OP_COMMA) return false; // `(a, x).y`
                 expr = &expr->binary_op->right;
