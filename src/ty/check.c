@@ -2047,8 +2047,9 @@ static void check_access(
     }
     if (ty_access(me, object, index)) return;
     // What `typeof globalThis` doesn't have is any, but a block scoped global isn't there (tsc's
-    // checkPropertyAccessExpressionOrQualifiedName)
-    if (is_global_this(object)) {
+    // checkPropertyAccessExpressionOrQualifiedName). Not destructured: tsc's getPropertyTypeForIndexType only makes an
+    // element access any, a binding element's missing property is TS2339
+    if (is_global_this(object) && span_valid(object_span)) {
         Atom const* name = ty_literal_name(me, index);
         Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
         if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
