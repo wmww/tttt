@@ -2187,7 +2187,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
                     i->value.identifier.shorthand_unchecked = true;
                 }
+                // (A property with a JSDoc type has a type annotation to tsgo's reparser: its value is contextually typed,
+                // isContextuallyTyped)
+                flow->contextual_depth += i->jsdoc_type != nullptr;
                 expr_lookup_names(&i->value, names, errs);
+                flow->contextual_depth -= i->jsdoc_type != nullptr;
                 if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
             }
             flow->object_literal_depth--;

@@ -53093,7 +53093,7 @@ const baselines = {
     'typeTagOnPropertyAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeTagPrototypeAssignment': {
         errors: true,

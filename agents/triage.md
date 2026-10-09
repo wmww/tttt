@@ -198,11 +198,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   naming it from outside the augmentation in the traversal lost two TS tests.
 - Valgrind reports the thread-local `alias_stack` (scope.c symbol_resolve_alias) as possibly lost in every test that
   resolves an alias (`scripts/test.sh -f importNonExportedMember11`): noise that stops `test.sh` at the first test.
-- JSDoc `@type {() => 'b'}` on an object literal property whose value is an arrow (`n: () => 'b'`): the property's
-  declared type is the arrow's context (tsgo's PropertyAssignment type), yet tttt prints the arrow as `() => string`
-  where tsgo keeps `() => "b"` (typeTagOnPropertyAssignment): the literal return is widened as if there were no
-  contextual return type. The same in a variable annotation works; suspect the object-member path of check_object
-  (member_ctx with i->jsdoc_type) doesn't give the function its contextual signature. (Agent C, plan 54 fan-out)
 - jsdocTypedefBeforeParenthesizedExpression: `@param a {NotADuplicateIdentifier}` with the typedef in a comment before
   a parenthesized expression statement prints `number` in tsgo, the alias name in tttt. (Agent C)
 - (agent D, JSDoc second pass) typedefTagWrapping: a `@typedef` whose type fails to parse (`{function(string): boolean}`)
@@ -252,3 +247,18 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   - An astral-plane JSDoc `@param` name underlines one `~` in tsgo (render of extendedUnicodePlaneIdentifiersJSDoc).
   - TS5024 maxNodeModuleJsDepth with a string value; TS8030 for `@type {Foo}` naming a deleted type alias
     (jsDeclarationEmitFunction).
+- webpack ChunkRenderError.js:33 / CodeGenerationError.js:30 (TS2322 missing): a subclass constructor's
+  `/** @type {string} */ this.details = error.stack` where the base class declares `this.details` as `string=`. tsgo's
+  subclass member has its own declared type (thisAssignmentDeclarationTyped) and the value is checked against it;
+  tttt's `this.details` resolves to the base class's property. JS class this-properties (agent A's area). (Agent C)
+- webpack LoaderRunner.js:278 (TS2322 missing): a JS class with a `request` getter (string) and setter
+  (LoaderItemInput) whose constructor assigns `this.request = loader`. tsgo's bindThisPropertyAssignment merges a
+  Property|Assignment declaration into the accessor's symbol, and getWriteTypeOfSymbol of a Property is its read type:
+  the assignment is checked against the getter's type. tttt keeps the assignment in Symbol.members and types
+  `this.request` there by its value. JS this-properties (agent A's area). (Agent C)
+- webpack NormalModuleFactory.js:658-666 (TS2322 missing): `/** @type {TypedHookMap<...>} */ createParser: new
+  HookMap(() => new SyncBailHook([...]))`: tsgo infers HookMap<SyncBailHook<ParserOptions | [EmptyParserOptions],
+  HtmlParser, ...>> under that context and it isn't assignable; tttt's inference produces something that is.
+  Generic inference from a contextual intersection-heavy type, not JSDoc-specific. (Agent C)
+- webpack node_modules/zod/v4/classic/schemas.d.cts:806 TS5115 (instantiations appear infinitely circular) missing:
+  reached through webpack's use of zod's types, not zod's own corpus. (Agent C)
