@@ -1469,21 +1469,9 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
     }
 }
 
-// tsc's harness hides the positions in files whose name matches /lib.*\.d\.ts/i (the libs, tslib.d.ts, a test's
-// own lib.d.ts)
+// The harness hides the positions in the libs and a test's own lib.d.ts: tsgo's isDefaultLibraryFile: `lib.*.d.ts` (6.0 matched `lib` anywhere in the name: `tslib.d.ts` too)
 static bool is_lib_file_name(csview name) {
-    for (isize i = 0; i + 3 <= name.size; i++) {
-        if (tolower((unsigned char)name.buf[i]) != 'l' || tolower((unsigned char)name.buf[i + 1]) != 'i' ||
-            tolower((unsigned char)name.buf[i + 2]) != 'b'
-        ) {
-            continue;
-        }
-        for (isize j = i + 3; j + 5 <= name.size; j++) {
-            if (strncasecmp(name.buf + j, ".d.ts", 5) == 0) return true;
-        }
-        return false;
-    }
-    return false;
+    return csview_starts_with(name, "lib.") && csview_ends_with(name, ".d.ts");
 }
 
 // A merge conflict marker at the start of a line (`<<<<<<<`, `|||||||`, `=======`, `>>>>>>>`): its character

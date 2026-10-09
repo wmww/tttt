@@ -9822,7 +9822,7 @@ const baselines = {
     },
     'defaultPropsEmptyCurlyBecomesAnyForJs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'defaultValueInConstructorOverload1': {
@@ -16837,12 +16837,12 @@ const baselines = {
     },
     'importHelpersES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersInAmbientContext(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersInIsolatedModules(target=es2015)': {
@@ -16862,37 +16862,37 @@ const baselines = {
     },
     'importHelpersVerbatimModuleSyntax': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=commonjs)': {
@@ -16942,17 +16942,17 @@ const baselines = {
     },
     'importHelpersWithImportStarAs(esmoduleinterop=true,module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportStarAs(esmoduleinterop=true,module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithImportStarAs(esmoduleinterop=true,module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithLocalCollisions(module=commonjs)': {
@@ -20237,7 +20237,7 @@ const baselines = {
     },
     'jsNoImplicitAnyNoCascadingReferenceErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsPromiseNeedsJSDocHint': {
@@ -22957,7 +22957,7 @@ const baselines = {
     },
     'modulePreserveImportHelpers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'modulePreserveRequireDestructuring': {
@@ -31672,17 +31672,17 @@ const baselines = {
     },
     'tslibMissingHelper': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'tslibMultipleMissingHelper': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'tslibNotFoundDifferentModules': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'tslibReExportHelpers': {
