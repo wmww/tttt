@@ -2557,7 +2557,8 @@ static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprIt
         }
         u32 kind = other->tag == OBJECT_ITEM_METHOD ? METHOD : other->tag == OBJECT_ITEM_GETTER ? GET :
             other->tag == OBJECT_ITEM_SETTER ? SET : PROP;
-        u32 excludes = kind == PROP ? 0 : kind == METHOD ? (PROP | GET | SET) : kind == GET ? (PROP | METHOD | GET) : (PROP | METHOD | SET);
+        // (TypeScript 7's excludes: an object literal method excludes every value, see object_bind_members())
+        u32 excludes = kind == PROP ? METHOD : kind == METHOD ? (PROP | METHOD | GET | SET) : kind == GET ? (METHOD | GET) : (METHOD | SET);
         if (flags && (flags & excludes)) {
             // A symbol of its own, outside the table
             if (other == item) {

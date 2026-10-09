@@ -3277,8 +3277,8 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     free(names);
 }
 
-// tsc's binder declares the members of an object literal like any symbols: properties and methods exclude nothing, an
-// accessor excludes every other value but its other half. A conflict is TS2300 on every declaration of the name so far
+// tsc's binder declares the members of an object literal like any symbols (TypeScript 7's excludes): a property
+// excludes methods, a method everything, an accessor everything but its other half and properties. A conflict is TS2300 on every declaration of the name so far
 // and on the new one, which then starts over (this is not a grammar check: also with parse errors)
 static void object_bind_members(Expr const* me, ErrorCtx* errs) {
     enum { PROPERTY = 1, METHOD = 2, GET = 4, SET = 8, VALUE = PROPERTY | METHOD | GET | SET };
@@ -3292,10 +3292,10 @@ static void object_bind_members(Expr const* me, ErrorCtx* errs) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t includes, excludes;
         switch (item->tag) {
-            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: includes = PROPERTY; excludes = 0; break;
-            case OBJECT_ITEM_METHOD: includes = METHOD; excludes = 0; break;
-            case OBJECT_ITEM_GETTER: includes = GET; excludes = VALUE & ~SET; break;
-            case OBJECT_ITEM_SETTER: includes = SET; excludes = VALUE & ~GET; break;
+            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: includes = PROPERTY; excludes = METHOD; break;
+            case OBJECT_ITEM_METHOD: includes = METHOD; excludes = VALUE; break;
+            case OBJECT_ITEM_GETTER: includes = GET; excludes = VALUE & ~(SET | PROPERTY); break;
+            case OBJECT_ITEM_SETTER: includes = SET; excludes = VALUE & ~(GET | PROPERTY); break;
             default: start[n] = -1; continue;
         }
         start[n] = n;

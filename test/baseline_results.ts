@@ -47811,8 +47811,8 @@ const baselines = {
         types: true,
     },
     'objectLiteralErrors(target=es2015)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'objectLiteralGettersAndSetters': {
@@ -64746,7 +64746,7 @@ const baselines = {
         types: true,
     },
     'callSignaturesWithParameterInitializers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -64821,8 +64821,8 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesInImplementationSignatures2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeParameterAsTypeArgument': {
