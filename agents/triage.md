@@ -348,3 +348,21 @@ Checker regressions list: 45 -> 13 failing. Leftovers:
   type in infer.c's inferFromIndexTypes reads the props).
 - Partial port to note: deep nesting identity uses ObjectFlags.FromTypeNode only for array/tuple nodes, not generic
   interface references (see commit "Arrays and tuples written as type nodes are their own recursion identity").
+
+## Drop-in CLI parity (agent A, 2026-10-09, second task)
+- clidiff --sample 4: 758 -> 779 / 839 match. The 4 `text` left are type printing in messages (checker/printer):
+  nodemailer (`typeof nmfetch` where tsc prints the function's structural type `{ (url...): ...; DEFAULT_TIMEOUT }`
+  for a function with expando properties), query-codemods (`import('jscodeshift')` quoting/union order in a long
+  TS2345), vitest/browser-preview (TS2339 type text), vitest/test/coverage-test (an extra elaboration line
+  "Type 'ConvertUserEventParameters<...>' is missing the following properties ..." under a TS2345). The 56
+  `diagnostics` are the source sweep's.
+- scenarios 203 -> 209 / 213. Left: tsbuild/dependencyUpdate/rebuilds-when-absolute-non-root-dependency-is-updated
+  (spurious TS2307 for an absolute import of a non-root dependency under -b),
+  tsbuild/inferredTypeFromMonorepoReference (spurious TS2883, declaration emit across references),
+  tsbuild/projectReferenceRedirect/uses-correct-project-reference-redirect-when-file-belongs-to-multiple-sub-projects
+  (spurious TS2322: a file in two sub-projects should take the redirect of the project that imports it),
+  tsbuild/contentMapperOptionDiagnostics (--runExternalCode content mappers: spurious TS18003).
+- File include explanations (program_error_explaining_file()): type reference directives, automatic type
+  directives and lib files aren't recorded as reasons; in the test harness tsgo shows the config-located reason as
+  related info (TS1408 "File is matched by include pattern specified here", FileIncludeReason.toRelatedInfo), which
+  tsconfigRootdirInclude needs (plus harness-relative paths in TS6059 there).
