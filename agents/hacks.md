@@ -677,3 +677,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `resolve_with_signatures()`'s `super(...)` TS2346: JavaScript never reports it (superCallInJSWithWrongBaseTypeArgumentCount*
   say so), though tsgo's resolveCallExpression filters the base constructors by the clause's type argument count
   without a JS exemption. Not understood why tsgo's resolveCall reports nothing there.
+- `SourceFile.expando_containers` (JS `{}` containers, read by `check_object()`): one entry per (literal, binder), the
+  checker takes its own binder's. A suite run never re-binds a literal under another binder (instrumented 2026-10-09:
+  only the same host again), so the per-binder key is belt and braces; it assumes no two programs bind the same
+  SourceFile concurrently (the array is realloc'd by the binding walk).

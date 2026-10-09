@@ -4872,10 +4872,10 @@ static void set_expando_initializer_host(Expr* init, Symbol* host) {
     if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
     SourceFile* file = init ? (SourceFile*)init->inner_span.source : nullptr;
     if (init && init->tag == EXPR_OBJECT && file) {
-        // (Once per literal: a file bound again, another program's, has a host of its own)
+        // (Once per literal and binder: a file bound again by another program has a host of its own there)
         init->expando_container = true;
         for (u32 i = 0; i < file->expando_container_count; i++) {
-            if (file->expando_containers[i].literal == init) {
+            if (file->expando_containers[i].literal == init && file->expando_containers[i].host->binder == host->binder) {
                 file->expando_containers[i].host = host;
                 return;
             }
