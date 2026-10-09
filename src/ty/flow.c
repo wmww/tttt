@@ -831,26 +831,28 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     }
     if (expr->tag != EXPR_CALL) return nullptr;
     CallExpr const* call = expr->call;
-    if (call->uses_new || call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) {
-        return nullptr;
-    }
+    if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) return nullptr;
     // (tsc's isSymbolOrSymbolForCall and isRequireCall: `Symbol()`, `Symbol.for()` and `require()`)
     Expr const* name_expr = &call->callable;
     if (name_expr->tag == EXPR_PROPERTY && span_equals(name_expr->property->prop.inner_span, "for")) {
         name_expr = &name_expr->property->expr;
     }
-    if (name_expr->tag == EXPR_IDENTIFIER) {
+    if (name_expr->tag == EXPR_IDENTIFIER && !call->uses_new) {
         csview name = name_expr->inner_span.sv;
         if (csview_equals(name, "Symbol") || (name_expr == &call->callable && csview_equals(name, "require"))) {
             return nullptr;
         }
     }
-    ty_assign_iife_parameter_types(me, call);
+    if (!call->uses_new) ty_assign_iife_parameter_types(me, call);
     Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
     if (!(callee->flags & TYF_OBJECT)) return nullptr;
+    // (tsgo's getSingleSignature with allowMembers: the callee may have properties and index signatures, a class its
+    // `prototype`. So `new A()` of an abstract class is A here, though checking it is an error)
     Members const* members = ty_members(me, callee);
-    if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
-    Signature const* sig = members->call[0];
+    u32 count = call->uses_new ? members->construct_count : members->call_count;
+    u32 other = call->uses_new ? members->call_count : members->construct_count;
+    if (count != 1 || other) return nullptr;
+    Signature const* sig = call->uses_new ? members->construct[0] : members->call[0];
     signature_resolve(me, sig);
     if (sig->type_params.len) return nullptr;
     return signature_return_type(me, sig);

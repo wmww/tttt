@@ -485,7 +485,11 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
         // (A parameter pattern's initializer as it is, not padded with the pattern's defaults: tsc's
         // checkVariableLikeDeclaration checks checkExpressionCached(initializer))
         bool padded = !my parent && initializer && my tag != BINDING_IDENTIFIER && binding_is_parameter(me);
-        Ty const* assigned_type = padded ? ty_expr_type(current_checker, initializer) : ty_binding_assigned_type(current_checker, me);
+        // (Nor its quick type, ty_quick_expr_type(): the only one that differs is a `new` the checker rejects, an
+        // abstract class or an inaccessible constructor, which is the instance type quickly but the error type checked)
+        bool rejected_new = !my parent && initializer && initializer->tag == EXPR_CALL && initializer->call->uses_new;
+        Ty const* assigned_type = padded || rejected_new ? ty_expr_type(current_checker, initializer) :
+            ty_binding_assigned_type(current_checker, me);
         // (`x?: T = v`, TS1015: against the parameter's type, which has undefined, tsc's addOptionality)
         Ty const* target = ty_of_node(&my explicit_type);
         if (my optional_parameter && compiler_options()->strict_null_checks && !(target->flags & TYF_ANY)) {

@@ -3469,8 +3469,11 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
                 // (Through the alias: `import * as ns` of an `export =` module can be a clone, getTypeOfAlias)
                 my identifier.symbol && (my identifier.symbol->flags & SYMBOL_ALIAS) ? my identifier.symbol : my identifier.target));
     } else {
-        // tsc prints an expression's regular type (getRegularTypeOfExpression)
-        baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, ty_regular(current_checker, expr_get_type(me)));
+        // tsc prints an expression's regular type (getRegularTypeOfExpression), a call's quick type if it has one
+        // (getTypeOfExpression: `new A()` of an abstract class is A, though checking it gives the error type)
+        Ty const* quick = my tag == EXPR_CALL ? ty_quick_expr_type(current_checker, me, false) : nullptr;
+        baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span,
+            ty_regular(current_checker, quick ? quick : expr_get_type(me)));
     }
     return true;
 }

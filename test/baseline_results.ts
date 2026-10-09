@@ -168,7 +168,7 @@ const baselines = {
     'abstractClassInLocalScopeIsAbstract': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'abstractClassUnionInstantiation': {
         errors: true,
@@ -19758,7 +19758,7 @@ const baselines = {
     'jsDocPrivateConstructor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDocTypedefTagNamespace': {
         errors: true,
@@ -24098,7 +24098,7 @@ const baselines = {
     'newAbstractInstance2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newArrays': {
         errors: true,
@@ -35803,7 +35803,7 @@ const baselines = {
     'classAbstractConstructorAssignability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractCrashedOnce': {
         errors: true,
@@ -35823,7 +35823,7 @@ const baselines = {
     'classAbstractFactoryFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractGeneric': {
         errors: true,
@@ -35833,12 +35833,12 @@ const baselines = {
     'classAbstractImportInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractInAModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractInheritance1': {
         errors: true,
@@ -35853,12 +35853,12 @@ const baselines = {
     'classAbstractInstantiations1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractInstantiations2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractManyKeywords': {
         errors: true,
@@ -35868,7 +35868,7 @@ const baselines = {
     'classAbstractMergedDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractMethodInNonAbstractClass': {
         errors: true,
@@ -35903,7 +35903,7 @@ const baselines = {
     'classAbstractSingleLineDecl': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractSuperCalls': {
         errors: true,
@@ -35913,7 +35913,7 @@ const baselines = {
     'classAbstractUsingAbstractMethod1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractUsingAbstractMethods2': {
         errors: true,
@@ -36558,12 +36558,12 @@ const baselines = {
     'classConstructorAccessibility': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classConstructorAccessibility2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classConstructorAccessibility3': {
         errors: true,
@@ -36578,7 +36578,7 @@ const baselines = {
     'classConstructorAccessibility5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classConstructorOverloadsAccessibility': {
         errors: true,
@@ -64531,14 +64531,14 @@ const baselines = {
         types: true,
     },
     'typesWithPrivateConstructor': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typesWithProtectedConstructor': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typesWithPublicConstructor': {
         errors: true,
