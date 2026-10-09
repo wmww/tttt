@@ -3234,9 +3234,10 @@ static MemberEntry* add_member_entry(MemberTables* me) {
 
 // TS2300 at `at` naming `name` (once: the binder's and the checker's reports of a declaration are one)
 static void report_duplicate_named(Span at, csview name, ErrorCtx* errs) {
-    if (!span_valid(at) || !at.source || at.source->is_stdlib) return;
+    // (A lib's declaration only when lib files are checked: the lib side of the conflict, tsc's check of the lib)
+    if (!span_valid(at) || !at.source || (at.source->is_stdlib && !lib_files_checked())) return;
     Error* existing = error_ctx_find(errs, at, 2300);
-    if (!existing) error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
+    if (!existing) (at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
 }
 
 static void report_duplicate(Span name, ErrorCtx* errs) {
@@ -3712,7 +3713,8 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
     isize count = vec_property_decl_entry_size(decls);
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
-        if (!span_valid(decl->span) || decl->span.source->is_stdlib || decl->method) continue;
+        // (A lib's declaration too when lib files are checked: tsc checks it there, the lib side of the conflict)
+        if (!span_valid(decl->span) || (decl->span.source->is_stdlib && !lib_files_checked()) || decl->method) continue;
         PropertyDeclEntry const* first = nullptr;
         bool differs = false;
         for (isize j = 0; j < count; j++) {
@@ -3728,7 +3730,8 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
             }
         }
         if (differs) {
-            error_ctx_error_d(errs, decl->span, 2687, "All declarations of '", decl->span, "' must have identical modifiers.");
+            (decl->span.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, decl->span, 2687,
+                cstr_d("All declarations of '", decl->span, "' must have identical modifiers."));
         }
     }
 }
