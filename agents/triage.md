@@ -314,3 +314,37 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   is exported as 'Y'" picks a different Y (nondeterministic: hash order of an export table?).
 - `function c(): () => number { ... }` assigned elsewhere: kw4 probe's TS2322 elaboration repeats "Type 'string' is
   not assignable to type 'number'." twice under a signature return mismatch.
+## 7.1 new tests fan-out (agent D, 2026-10-09)
+Checker regressions list: 45 -> 13 failing. Leftovers:
+- distributedTypeParameters, distributiveConditionalBaseConstraint: TS 7.1's distributed type parameters, plan 57.
+- syntheticProtectedProperties: tsgo 7.1 tracks read/write access of union/intersection synthetic properties
+  (createUnionOrIntersectionProperty's CheckFlagsContains{Public,Protected,Private} and ContainsWrite*: public wins for
+  reading if any constituent is public; a union with a non-public read part and a different declaration has no
+  property). tttt checks member by member (check_synthetic_protected only for intersections) and names the declaring
+  class where tsc names the containing type ('C1 | C2'). Medium refactor of check.c's accessibility for MemberRefs.
+- contextualTypingGenericFunction2 (TypeScript#61979): a context-sensitive arrow returned from a generic arrow argument
+  gets `unknown` for parameters typed by the outer call's still-inferring type parameter P; tttt leaves P.
+- circularControlFlowNarrowingWithCurrentElement01: spurious TS7022 on `const child = current.children[i]` in a loop that
+  assigns `current = firstChild || current.next` (firstChild an evolving `let = null`); tsgo 7.1 no longer cycles. Not
+  located in tsgo's flow.go yet.
+- circularVariance1: `Bar<U> = (x: Baz<U[]>) => void` with Baz/Foo mutually recursive: tsgo reports `bar1 = bar2`
+  (Bar<string> -> Bar<unknown>), tttt measures Bar's variance differently (TTTT_DUMP_VARIANCES).
+- recursiveIndexedAccessSimplification: missing TS4109 (Array type arguments circular) and two TS2589.
+- unionElementErrorTruncation (and the 3 other `@noErrorTruncation: false` tests): tsc's 160-char approximateLength
+  truncation (`... | ... | ...`, `... 4 more ...`); tttt only truncates by depth (MAX_DISPLAY_DEPTH hack in ty_display.c).
+- comparisonReverseMappedTypes: tttt infers a homomorphic `T[K]` template's source itself instead of a reverse mapped
+  type (infer.c "A plain homomorphic T[K] template" shortcut), so union order differs (tsgo: reverse mapped types by
+  source, then mapped type declaration).
+- nestedSpreadsAndWidening: the spread of a 11-member union of nested spreads prints a 6 MB type (tsc 1.4 MB): tttt's
+  spread of unions doesn't reduce/dedupe like tsc's getSpreadType.
+- varianceComputationNoCrash: a mapped type reprinted inside its own `as` clause prints an empty `as ]` (reprint_range of
+  a range still being printed?), and `CamelCase<T, {}>` where tsc elides a default type argument.
+- crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1: `props?.w` of a big union of intersections: tsc's
+  type has `(X["w"] & number) | ...` members (union property type intersected with the declared number), tttt plain X["w"].
+- recursiveTypeInference2: `children: any[]` vs tsc's `children: any` in a zod-like recursive schema inference.
+- expandoNoInferredIndex, expandoObjectIndexSignatures (from agent B): JS `obj.y = Object.values(obj)` should be TS7022;
+  guarded_assignment_symbol_type is entered for y but resolving Object.values(obj) never asks for y's type again
+  (overload 2 `values(o: {}): any[]` chosen? check whether the index-signature inference from the expando namespace
+  type in infer.c's inferFromIndexTypes reads the props).
+- Partial port to note: deep nesting identity uses ObjectFlags.FromTypeNode only for array/tuple nodes, not generic
+  interface references (see commit "Arrays and tuples written as type nodes are their own recursion identity").
