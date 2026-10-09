@@ -159,17 +159,9 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
     bool* collisions = name_collisions(me, d, list);
     for (u32 i = 0; i < list.len; i++) {
         if (i) out_lit(d, ", ");
-        Ty const* arg = list.data[i];
-        bool parens = false;
-        if (!i && is_function_like(me, d, arg)) {
-            Members const* members = ty_members(me, arg);
-            Signature const* sig = members->call_count ? members->call[0] : members->construct[0];
-            signature_resolve(me, sig);
-            parens = sig->type_params.len > 0;
-        }
-        if (parens) out_lit(d, "(");
-        ty_display(me, qualified_if(d, collisions, i), arg);
-        if (parens) out_lit(d, ")");
+        // (A generic function type first isn't parenthesized, `X<<T>() => T>`: tsgo's printer has no
+        // parenthesizeLeadingTypeArgument)
+        ty_display(me, qualified_if(d, collisions, i), list.data[i]);
     }
     free(collisions);
 }
@@ -1023,12 +1015,7 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
     out_lit(d, "<");
     for_each (i, vec_spanned_type, args) {
         if (i_index) out_lit(d, ", ");
-        // (tsc's factory parenthesizes a generic function type first, the parentheses are new)
-        bool parens = !i_index && i->type.tag == TYPE_CALLABLE && !i->type.parenthesized &&
-            !generic_empty(&i->type.callable->function->generic);
-        if (parens) out(reused_if(d, false), c_sv("("));
-        display_node(me, d, &i->type);
-        if (parens) out(reused_if(d, false), c_sv(")"));
+        display_node(me, d, &i->type); // (A generic function type first stays bare, see display_list())
     }
     out_lit(d, ">");
 }

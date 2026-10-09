@@ -8363,7 +8363,7 @@ const baselines = {
     'declarationEmitFirstTypeArgumentGenericFunctionType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitForDefaultExportClassExtendingExpression01': {
         errors: true,
@@ -8918,7 +8918,7 @@ const baselines = {
     'declarationEmitPromise': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPropertyNumericStringKey': {
         errors: true,
@@ -17063,7 +17063,7 @@ const baselines = {
     'importTypeGenericArrowTypeParenthesized': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTypeResolutionJSDocEOF': {
         errors: true,
@@ -29773,7 +29773,7 @@ const baselines = {
     'specializedLambdaTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'specializedOverloadWithRestParameters': {
         errors: true,
@@ -66103,7 +66103,7 @@ const baselines = {
     'constraintSatisfactionWithAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constraintSatisfactionWithAny2': {
         errors: true,
