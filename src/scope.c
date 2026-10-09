@@ -5521,9 +5521,6 @@ static void add_expando_member(
     // A private name is no expando (tsc's getAssignmentDeclarationPropertyAccessKind: isBindableStaticNameExpression
     // of the target, only a prototype property doesn't ask)
     if (name.sv.size && name.sv.buf[0] == '#') return;
-    // `F.prototype = { ... }` declares prototype members in JavaScript and nothing elsewhere (tsc's
-    // getAssignmentDeclarationKind: only the Property kind outside JavaScript)
-    if (span_equals(name, "prototype") && right->tag == EXPR_OBJECT && !(my file && my file->is_js)) return;
     // `a.x = v` where a is `module.exports` is an export (add_commonjs_export())
     Scope* module = my file && my file->is_commonjs ? commonjs_module_scope(me) : nullptr;
     if (module && is_exports_alias(module, object)) return;
@@ -5625,6 +5622,8 @@ static void add_expando_member(
     // assignments declares it (tsgo's bindDeferredExpandoAssignment: a namespace's or class's member of that name is
     // what the assignment assigns. Its binder sees the file's own declarations: another file's merge later)
     if (!my file->is_js) {
+        // (A class's exports have its `prototype` in tsgo)
+        if (span_equals(name, "prototype") && (host->flags & SYMBOL_CLASS)) return;
         Symbol const* existing = symbol_table_get(host->exports, name.sv);
         for (u32 i = 0; existing && i < existing->decl_count; i++) {
             if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && existing->decls[i].full.source == my file) return;

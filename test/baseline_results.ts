@@ -37317,8 +37317,8 @@ const baselines = {
     },
     'privateNameBadDeclaration(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameBadSuper': {
         errors: true,
@@ -50077,7 +50077,7 @@ const baselines = {
     },
     'fixSignatureCaching': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionImplementationErrors(target=es2015)': {
