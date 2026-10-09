@@ -333,7 +333,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out_lit(d, "import(\"");
         if (ambient.size) {
             out(d, ambient);
-        } else if (file && context && !cstr_size(&compiler_options()->out_file)) {
+        } else if (file && context) {
             cstr specifier = program_module_specifier(my program, context, file, SPECIFIER_MODE_NONE);
             out(d, cstr_sv(&specifier));
             cstr_drop(&specifier);

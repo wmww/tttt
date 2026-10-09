@@ -208,7 +208,6 @@ static bool expr_requires_scope_change(Expr const* me) {
 
 // From ES2015 on the parameters don't see the body's variables, unless the emit moves them into the body
 static bool parameters_see_body(FunctionImpl const* me) {
-    if (compiler_options()->target < SCRIPT_TARGET_ES2015) return false; // (They see them anyway)
     for_each (i, vec_function_arg, &my args) {
         if (binding_requires_scope_change(&i->initializer.binding, false)) return true;
         if (expr_requires_scope_change(initialized_binding_value(&i->initializer))) return true;
@@ -1040,21 +1039,6 @@ static void function_check_emit_helpers(FunctionImpl const* me, ErrorCtx* errs) 
     if (my is_async && !my is_generator && target < SCRIPT_TARGET_ES2017) {
         ty_check_emit_helpers(current_checker, at, EMIT_HELPER_AWAITER, errs);
     }
-    if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_GENERATOR, errs);
-}
-
-// tsc's checkCollisionWithArgumentsInGeneratedCode(): below ES2015 a rest parameter is made from `arguments`
-static void function_check_arguments_collision(FunctionImpl const* me, ErrorCtx* errs) {
-    CompilerOptions const* options = compiler_options();
-    if (options->target >= SCRIPT_TARGET_ES2015 || options->no_emit || my ambient || !my has_body) return;
-    if (vec_function_arg_is_empty(&my args) || !vec_function_arg_back(&my args)->rest) return;
-    for_each (i, vec_function_arg, &my args) {
-        Binding const* binding = &i->initializer.binding;
-        if (binding->tag == BINDING_IDENTIFIER && csview_equals(binding->content_span.sv, "arguments")) {
-            error_ctx_error_d(errs, i->span, 2396,
-                "Duplicate identifier 'arguments'. Compiler uses 'arguments' to initialize rest parameters.");
-        }
-    }
 }
 
 void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs) {
@@ -1204,7 +1188,6 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
-    function_check_arguments_collision(me, errs);
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[i].type, errs);
     // A declaration's `@type` needs a call signature that takes its parameters (not a function expression's, which is
     // checked as a value against it, nor an accessor's: tsc's checkFunctionOrMethodDeclaration, not checkAccessorDeclaration)

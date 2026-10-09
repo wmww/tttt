@@ -232,18 +232,12 @@ static cstr mangle_scoped_package_name(csview name) {
 static void module_ref_add_not_found_chain(ModuleRef const* me, Error* error, csview package_name) {
     cstr mangled = mangle_scoped_package_name(package_name);
     if (cstr_size(&my alternate_result)) {
-        if (compiler_options()->module_resolution == MODULE_RESOLUTION_NODE10) {
-            error_sub_error_d(error, span_null, 6278, "There are types at '", my alternate_result, "', but this result "
-                "could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', "
-                "'nodenext', or 'bundler'.");
-        } else {
-            bool types = csview_find_sv(cstr_sv(&my alternate_result), c_sv("node_modules/@types/")) != c_NPOS;
-            cstr library = types ? cstr_d("@types/", mangled) : cstr_from_sv(package_name);
-            error_sub_error_d(error, span_null, 6277, "There are types at '", my alternate_result, "', but this "
-                "result could not be resolved when respecting package.json \"exports\". The '", library,
-                "' library may need to update its package.json or typings.");
-            cstr_drop(&library);
-        }
+        bool types = csview_find_sv(cstr_sv(&my alternate_result), c_sv("node_modules/@types/")) != c_NPOS;
+        cstr library = types ? cstr_d("@types/", mangled) : cstr_from_sv(package_name);
+        error_sub_error_d(error, span_null, 6277, "There are types at '", my alternate_result, "', but this "
+            "result could not be resolved when respecting package.json \"exports\". The '", library,
+            "' library may need to update its package.json or typings.");
+        cstr_drop(&library);
         cstr_drop(&mangled);
         return;
     }
@@ -359,15 +353,10 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
             "definitions for node? Try `npm i --save-dev @types/node`",
             wildcard ? "." : " and then add 'node' to the types field in your tsconfig.");
     } else if (side_effect) {
-        // (A side-effect import's message is the caller's, which comes before classic resolution's: tsc's
-        // resolveExternalModuleName)
+        // (A side-effect import's message is the caller's: tsc's resolveExternalModuleName)
         Error* error = error_ctx_error_d(errs, my span, 2882,
             "Cannot find module or type declarations for side-effect import of '", my path, "'.");
         if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
-    } else if (options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
-        error_ctx_error_d(errs, my span, 2792,
-            "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
-            "or to add aliases to the 'paths' option?");
     } else {
         Error* error = error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");

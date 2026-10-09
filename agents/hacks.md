@@ -645,15 +645,15 @@ src` finds the code-side markers; every significant one has an entry here.
   so deep recursive types (declarationEmitPrivatePromiseLikeInterface) stay under the 1M characters.
 - `symbol_chain.c` accessibility: `decl_visible()` fails open (visible) where it doesn't know a declaration's
   statement list (no `block`, an ambient module, a namespace block it can't match).
-- `namespace_import_is_clone()` / `export_equals_namespace_import_is_clone()` (`symbol_chain.c`, HACK): under
-  esModuleInterop tsc resolves `import * as ns` of a module with a `default` (or signatures) to a clone symbol, so
+- `namespace_import_is_clone()` / `export_equals_namespace_import_is_clone()` (`symbol_chain.c`, HACK): (esModuleInterop
+  is always on in 7) tsc resolves `import * as ns` of a module with a `default` (or signatures) to a clone symbol, so
   `ns` names neither the module nor anything but itself. tttt has no clone symbol: make_gather_target()'s per-alias
   symbol stands in, and for `export =` modules `namespace_import_type()` (lower.c) makes a `TyAnonymous.module_clone`
   type (`display_module_clone()`). Both predicates are syntactic, approximating namespace_import_type()'s typed one;
   swapping in `ty_namespace_import_original() != null` breaks transformNestedGeneratorsWithTry (tsc's clone keeps the
   module's members reachable for naming). Real fix: a clone symbol.
 - `module_specifiers.c` leaves out getModuleSpecifierOverride (a reused `import("...")` node keeps its specifier in
-  tsc), redirectTargetsMap, output files named by package.json `imports`, AMD `moduleName`, auto-import preferences.
+  tsc), redirectTargetsMap, output files named by package.json `imports`, auto-import preferences.
   Alternative containers (`alternative_modules()`) are cached per walk and per (symbol, program) on each thread;
   outside walks (types baseline, messages) the file's imports are rescanned every time.
 - `is_optional_parameter` ignores getMinArgumentCount's trailing `void` parameters; `Place.contextual` is only set
@@ -676,8 +676,8 @@ src` finds the code-side markers; every significant one has an entry here.
   directory everywhere (mock fs, canonical paths, `join_rooted`/`option_path`), what POSIX does with it; tsc treats it
   as a root of its own. Enough for the harness's drive tests (TS5009 compares roots by name, `path_root_of`).
   (permanent: tttt is POSIX-only; a path type with roots if Windows ever matters)
-- `resolve_uncached()` (module_resolution.c HACK): node10 and export-map packages resolve in two passes (TypeScript
-  extensions first), reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other
+- `resolve_uncached()` (module_resolution.c HACK): export-map packages resolve in two passes (TypeScript extensions
+  first), reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other
   means. `try_load_input_file_for_path` lets the TypeScript pass take a JavaScript input anyway (with allowJs), since
   tsc's one pass maps an exports target to its input before the target's `.d.ts`: a patch on the patch.
 - `/// <reference lib>`: the CLI loads it after the program's files (`program_follow_lib_references()`; tsc: libs
@@ -708,9 +708,8 @@ src` finds the code-side markers; every significant one has an entry here.
 
 ## Display and baselines (`ty_display.c`, `symbol_chain.c`, `baseline_test_case.c`)
 - `program_module_display_name()`: import types and module symbols named from a place use
-  `program_module_specifier()`, uncached (tsc caches per symbol, file and mode); under `outFile` it falls back to the
-  file path without extension instead of tsc's non-relative specifier from the common source directory, and JSON
-  files are special-cased by observation. The baseline traversal skips omitted array elements by shape (an undefined
+  `program_module_specifier()`, uncached (tsc caches per symbol, file and mode), and JSON files are special-cased by
+  observation. The baseline traversal skips omitted array elements by shape (an undefined
   literal with an empty span in `EXPR_ARRAY`), not by a node kind of their own.
 - `TyDisplay.decl_literal` / `annotates_name_at()`: tsc reuses a `unique symbol` annotation only inside the enclosing
   declaration (the printed node's parent); the types baseline has no parent node, so "the literal is the annotation of

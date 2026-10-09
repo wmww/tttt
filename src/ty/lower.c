@@ -1765,7 +1765,6 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
     bool esm_syntax = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
     bool esm_cjs = esm_syntax && target && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
-    if (!options->es_module_interop && !esm_cjs) return nullptr;
     Ty const* apparent = ty_apparent_type(me, type);
     // (tsc's getSignaturesOfStructuredType: an intersection has the signatures of its members)
     Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, apparent) : nullptr;
@@ -2005,7 +2004,6 @@ static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile cons
         if (!target->is_esm && node) return true;
         if (target->is_esm) return false;
     }
-    if (!options->allow_synthetic_default_imports) return false;
     if (!target || source_file_reads_as_declaration(target)) {
         // (Not with a default export of its own, or an `__esModule` marker)
         return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
@@ -3015,7 +3013,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
 // Only where tsc makes that type: tttt makes pattern types in places tsc doesn't (an initializer's contextual type that
 // nothing asks for)
 void ty_report_pattern_iterable(Checker* me, Binding const* pattern) {
-    if (my iterable_reported || pattern->tag != BINDING_ARRAY || compiler_options()->target < SCRIPT_TARGET_ES2015) return;
+    if (my iterable_reported || pattern->tag != BINDING_ARRAY) return;
     u32 len = (u32)vec_binding_size(&pattern->array);
     if (len > 1 || (len == 1 && !vec_binding_at(&pattern->array, 0)->rest)) return;
     if (program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE)) return;
@@ -3086,8 +3084,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
     bool has_rest = last && last->rest;
     if (!len || (len == 1 && has_rest)) {
         // Anything iterable
-        Symbol const* iterable = compiler_options()->target >= SCRIPT_TARGET_ES2015 ?
-            program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) : nullptr;
+        Symbol const* iterable = program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE);
         Ty const* declared = iterable ? ty_declared_type_of(me, iterable) : nullptr;
         Ty const* any = ty_intrinsic(me, TY_ANY);
         if (declared && declared->kind == TY_DECLARED && declared->declared.type_params.len) {

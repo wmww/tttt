@@ -647,8 +647,7 @@ static Search load_using_paths_option(State* me, csview name, int extensions, Lo
         }
     }
     if (!best) return SEARCH_CONTINUE;
-    cstr base = cstr_size(&options->base_url) ? option_path(my resolver, cstr_sv(&options->base_url)) :
-        cstr_size(&options->paths_base) ? option_path(my resolver, cstr_sv(&options->paths_base)) :
+    cstr base = cstr_size(&options->paths_base) ? option_path(my resolver, cstr_sv(&options->paths_base)) :
         option_path(my resolver, c_sv("."));
     Search ret = SEARCH_STOP;
     for (isize i = 0; i < best->substitutions.count; i++) {
@@ -727,21 +726,12 @@ static Search load_using_options(State* me, csview name, int extensions, Loader 
     CompilerOptions const* options = my resolver->options;
     bool relative = module_name_is_relative(name);
     if (options->path_count && !(name.buf[0] == '.' && relative)) {
-        // A pattern that matched and led nowhere ends what the options have to say (no baseUrl lookup), the ordinary
-        // lookup still runs
+        // A pattern that matched and led nowhere ends what the options have to say, the ordinary lookup still runs
         Search result = load_using_paths_option(me, name, extensions, loader, out);
         if (result != SEARCH_CONTINUE) return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_CONTINUE;
     }
     if (relative) {
         return load_using_root_dirs(me, name, extensions, loader, out) ? SEARCH_FOUND : SEARCH_CONTINUE;
-    }
-    if (cstr_size(&options->base_url)) {
-        cstr base = option_path(my resolver, cstr_sv(&options->base_url));
-        cstr candidate = join(cstr_sv(&base), name);
-        bool found = loader(me, cstr_sv(&candidate), extensions, out);
-        cstr_drop(&candidate);
-        cstr_drop(&base);
-        if (found) return SEARCH_FOUND;
     }
     return SEARCH_CONTINUE;
 }
@@ -835,10 +825,6 @@ static bool load_as_file_or_directory(State* me, csview candidate, int extension
     if (my esm_mode && !my in_type_reference) return false;
     if (!directory_exists(me, candidate)) return false;
     return load_directory(me, candidate, package_json_of(me, candidate), extensions, out);
-}
-
-static bool load_as_file_or_directory_classic(State* me, csview candidate, int extensions, Found* out) {
-    return load_file(me, candidate, extensions, out);
 }
 
 // ---- `exports` and `imports` ----
@@ -1408,35 +1394,6 @@ static Search node_try_resolve(State* me, csview name, int extensions, Found* ou
     return found ? SEARCH_FOUND : SEARCH_CONTINUE;
 }
 
-static Search classic_try_resolve(State* me, csview name, int extensions, Found* out, bool* external) {
-    Search result = load_using_options(me, name, extensions, load_as_file_or_directory_classic, out);
-    if (result != SEARCH_CONTINUE) return result;
-    if (module_name_is_relative(name)) {
-        cstr candidate = join(my containing_dir, name);
-        bool found = load_file(me, cstr_sv(&candidate), extensions, out);
-        cstr_drop(&candidate);
-        return found ? SEARCH_FOUND : SEARCH_CONTINUE;
-    }
-    // Next to the importing file, then next to each of its ancestors
-    cstr dir = cstr_from_sv(my containing_dir);
-    bool found = false;
-    while (true) {
-        cstr candidate = join(cstr_sv(&dir), name);
-        found = load_file(me, cstr_sv(&candidate), extensions, out);
-        cstr_drop(&candidate);
-        if (found || !go_up(&dir)) break;
-    }
-    cstr_drop(&dir);
-    if (found) return SEARCH_FOUND;
-    if (extensions & EXT_DTS) {
-        // Typings from @types, the one thing classic resolution knows of node_modules
-        result = walk_up_node_modules(me, my containing_dir, name, EXT_DTS, true, out);
-        if (result == SEARCH_FOUND) *external = true;
-        return result;
-    }
-    return SEARCH_CONTINUE;
-}
-
 static void add_condition(State* me, const char* condition) {
     if (my condition_count < (isize)c_arraylen(my conditions)) my conditions[my condition_count++] = condition;
 }
@@ -1479,24 +1436,18 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
 
 static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csview containing_dir, ResolutionMode mode) {
     ResolvedModule ret = {0};
-    bool explicit_mode = mode & RESOLUTION_MODE_EXPLICIT;
-    State state = state_make(me, (ResolutionMode)(mode & ~RESOLUTION_MODE_EXPLICIT));
-    if (explicit_mode && state.kind == MODULE_RESOLUTION_NODE10) state.use_exports = state.use_imports = state.use_self_name = true;
+    State state = state_make(me, mode);
     state.containing_dir = containing_dir;
 
     Found found = {0};
     bool external = false;
     Search result;
     int secondary = EXT_JS | (my options->resolve_json_module ? EXT_JSON : 0);
-    if (state.kind == MODULE_RESOLUTION_CLASSIC) {
-        result = classic_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
-        if (result == SEARCH_CONTINUE) result = classic_try_resolve(&state, specifier, secondary, &found, &external);
-    } else if (state.kind == MODULE_RESOLUTION_NODE10 || (state.use_exports && !module_name_is_relative(specifier))) {
-        // node10 resolves with the TypeScript extensions first (tsc's nodeModuleNameResolverWorker:
-        // priorityExtensions), `./dir` is dir/index.ts before dir.js; the others take all extensions at once (dir.js).
-        // HACK: a package name with export maps in play is resolved in two passes too (a `types` condition anywhere
-        // beats any JavaScript), which is how tsc ends up in its selfNameModuleAugmentation behaviour (microsoft/
-        // TypeScript#50762) by other means
+    if (state.use_exports && !module_name_is_relative(specifier)) {
+        // All extensions at once (`./dir` is dir.js before dir/index.ts), except that
+        // HACK: a package name with export maps in play is resolved in two passes (the TypeScript extensions first: a
+        // `types` condition anywhere beats any JavaScript), which is how tsc ends up in its selfNameModuleAugmentation
+        // behaviour (microsoft/TypeScript#50762) by other means
         result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
         if (result != SEARCH_FOUND) {
             Search second = node_try_resolve(&state, specifier, secondary, &found, &external);
@@ -1508,25 +1459,15 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
 
     // tsc's alternateResult: a bare name that reached a package's directory but found no declarations
     bool wanted_types_got_js = result == SEARCH_FOUND && (found.kind == RESOLVED_JS || found.kind == RESOLVED_JSON);
-    if (state.resolved_package_directory && state.kind != MODULE_RESOLUTION_CLASSIC && !module_name_is_relative(specifier)) {
+    if (state.resolved_package_directory && !module_name_is_relative(specifier)) {
         bool import_condition = false;
         for (isize i = 0; i < state.condition_count; i++) import_condition |= !strcmp(state.conditions[i], "import");
         State retry = {0};
         bool again = false;
         if (result == SEARCH_FOUND && external && wanted_types_got_js && state.use_exports && import_condition) {
             // Without `exports` (NodeResolutionFeatures.Exports off)
-            retry = state_make(me, (ResolutionMode)(mode & ~RESOLUTION_MODE_EXPLICIT));
+            retry = state_make(me, mode);
             retry.use_exports = false;
-            again = true;
-        } else if ((result != SEARCH_FOUND || wanted_types_got_js) && state.kind == MODULE_RESOLUTION_NODE10) {
-            // As moduleResolution bundler would (its default features and conditions)
-            retry = (State){ .resolver = me, .kind = MODULE_RESOLUTION_BUNDLER };
-            retry.use_exports = retry.use_imports = retry.use_self_name = true;
-            add_condition(&retry, "import");
-            add_condition(&retry, "types");
-            for (isize i = 0; i < my options->custom_conditions.count; i++) {
-                add_condition(&retry, cstr_str(&my options->custom_conditions.items[i]));
-            }
             again = true;
         }
         if (again) {
@@ -1622,9 +1563,8 @@ ResolvedModule module_resolver_resolve_type_reference(
     State state = state_make(me, !mode ? RESOLUTION_MODE_COMMONJS :
         *mode == RESOLUTION_MODE_ESM ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_REQUIRE_SYNTAX);
     state.in_type_reference = true;
-    // Type reference lookup is node-style whatever the resolution kind, with exports for the modern ones, and for all
-    // of them when there is a mode (tsc's resolveTypeReferenceDirective: NodeResolutionFeatures.AllFeatures)
-    if (state.kind == MODULE_RESOLUTION_CLASSIC) state.kind = MODULE_RESOLUTION_NODE10;
+    // Type reference lookup reads exports whatever the options say when there is a mode (tsc's
+    // resolveTypeReferenceDirective: NodeResolutionFeatures.AllFeatures)
     if (mode) state.use_exports = state.use_imports = state.use_self_name = true;
     cstr containing_dir = containing_file.size ? absolute_containing_dir(me, containing_file) : option_path(me, c_sv("."));
     state.containing_dir = cstr_sv(&containing_dir);

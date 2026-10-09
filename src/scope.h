@@ -771,7 +771,6 @@ void scope_check_strict_class_name(Scope const* me, Span name);
 // tsc's checkStrictModeEvalOrArguments: `eval` and `arguments` can't be declared or assigned in strict mode code
 void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 // tsc's checkStrictModeFunctionDeclaration: below ES2015, no function declarations in the blocks of strict mode code
-void scope_check_strict_block_function(Scope const* me, Span name);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, ErrorCtx* errs);

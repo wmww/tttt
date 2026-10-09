@@ -536,7 +536,6 @@ static bool reaches_into_node_modules(cstr const* specifier) {
 // node16/nodenext, unless the other resolution mode's specifier can, with a `resolution-mode` attribute)
 static cstr unsafe_specifier(Walk* me, SourceFile const* target) {
     CompilerOptions const* o = compiler_options();
-    if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) return cstr_null;
     bool node_next = o->module_resolution == MODULE_RESOLUTION_NODE16 || o->module_resolution == MODULE_RESOLUTION_NODENEXT;
     Program* program = my checker->program;
     bool file_esm = my file->has_format && my file->is_esm;

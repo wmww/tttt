@@ -120,7 +120,7 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
                 StrList list = {0};
                 for (isize k = 0; k < substitutions->count; k++) {
                     if (substitutions->items[k].tag != JSON_STRING) continue;
-                    // Relative to the baseUrl or the config, which only module resolution knows; `${configDir}` is ours
+                    // Relative to the config (paths_base), which module resolution applies; `${configDir}` is ours
                     csview written = cstr_sv(&substitutions->items[k].string);
                     if (csview_starts_with(written, "${configDir}")) {
                         cstr absolute = config_path(me, dir, written);

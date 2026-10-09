@@ -786,10 +786,9 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
 }
 
 // The element of an array literal whose contextual type is any (tsc's getIteratedTypeOrElementType for
-// IterationUse.Element: any is iterable, but in ES5 it lacks the numeric index signature it wants)
+// IterationUse.Element: any is iterable)
 static Ty const* any_element_context(Checker* me) {
-    return compiler_options()->target >= SCRIPT_TARGET_ES2015 || compiler_options()->downlevel_iteration ?
-        ty_intrinsic(me, TY_ANY) : nullptr;
+    return ty_intrinsic(me, TY_ANY);
 }
 
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
@@ -833,7 +832,7 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     Value value = value_number(index);
     Ty const* ret = ty_access(me, object, ty_literal(me, &value));
     if (!ret) ret = ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
-    if (!ret && (compiler_options()->target >= SCRIPT_TARGET_ES2015 || compiler_options()->downlevel_iteration)) {
+    if (!ret) {
         // Anything iterable: what it yields (tsc's getIteratedTypeOrElementType for IterationUse.Element)
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, object, ITERATION_ALLOWS_SYNC);
         if (types) ret = types->yield_type;

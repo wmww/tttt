@@ -633,8 +633,8 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
         else if (source->has_format && source->package_has_type) cjs = !source->is_esm;
         if (cjs) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
     }
-    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
-    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
+    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
     return mode;
 }
 
@@ -1953,7 +1953,6 @@ static bool emit_source_may_be_emitted(Program const* me, SourceFile const* sour
     if (source->is_declaration || source->is_stdlib || source->from_reference) return false;
     if (source->found_searching_node_modules) return false;
     if (!source->is_json) return true;
-    if (cstr_size(&my options.out_file)) return true;
     if (!cstr_size(&my options.out_dir)) return false;
     // Not when it would be written over itself, if the common source directory is known up front
     CompilerOptions const* o = &my options;
@@ -2120,22 +2119,6 @@ static void program_verify_emit_paths(Program* me) {
     if (o->no_emit || o->suppress_output_path_check) return;
     bool declarations = o->declaration || o->composite;
     hmap_source_file_ptr seen = {0};
-    if (cstr_size(&o->out_file)) {
-        // One bundle: of the scripts, and of modules too with AMD/System (tsc's getSourceFilesToEmit)
-        bool modules = o->emit_declaration_only || o->module == MODULE_KIND_AMD || o->module == MODULE_KIND_SYSTEM;
-        bool any = false;
-        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-            any |= emit_source_may_be_emitted(me, *i) && (modules || !(*i)->is_module);
-        }
-        if (any) {
-            if (!o->emit_declaration_only) emit_verify_path(me, cstr_clone(o->out_file), &seen);
-            if (declarations) {
-                emit_verify_path(me, emit_change_extension(cstr_sv(&o->out_file), ".d.ts"), &seen);
-            }
-        }
-        hmap_source_file_ptr_drop(&seen);
-        return;
-    }
     // tsc's getCommonSourceDirectory, only needed with an outDir or declarationDir
     cstr common_dir = cstr_size(&o->out_dir) || cstr_size(&o->declaration_dir) ? program_common_source_dir(me) : cstr_null;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -3034,36 +3017,6 @@ cstr program_module_display_name(Program* me, Symbol const* module, SourceFile c
     // (A JSON file's module symbol has no SourceFile declaration in tsc: named like an ambient module, by its quoted
     // escapedName)
     if (!target || target->is_json || !from) {
-        return module_name_for_error(module, nullptr, false);
-    }
-    if (cstr_size(&compiler_options()->out_file)) {
-        // A bundle names a file non-relatively from the common source directory, without its extension or `/index`
-        // (getSpecifierForModuleSymbol: baseUrl the common source directory, "non-relative", ending "minimal")
-        cstr common = program_common_source_dir(me);
-        cstr cwd = cstr_null;
-        try (fs_get_cwd(my fs, &cwd)) or_panic;
-        cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&target->canonical_path));
-        csview path = cstr_sv(&absolute);
-        csview dir = cstr_sv(&common);
-        while (dir.size > 1 && dir.buf[dir.size - 1] == '/') dir.size--;
-        cstr ret = cstr_null;
-        bool under = dir.size && path.size > dir.size && !memcmp(path.buf, dir.buf, (size_t)dir.size) &&
-            (path.buf[dir.size] == '/' || dir.size == 1);
-        if (under) {
-            csview rest = csview_slice(path, dir.size == 1 ? 1 : dir.size + 1, path.size);
-            static const char* const extensions[] = { ".d.ts", ".d.mts", ".d.cts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs" };
-            for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
-                if (csview_ends_with(rest, extensions[i])) {
-                    rest.size -= (isize)strlen(extensions[i]);
-                    break;
-                }
-            }
-            if (csview_equals(rest, "index")) rest = c_sv(".");
-            else if (csview_ends_with(rest, "/index")) rest.size -= 6;
-            ret = cstr_d("\"", rest, "\"");
-        }
-        c_drop(cstr, &common, &cwd, &absolute);
-        if (under) return ret;
         return module_name_for_error(module, nullptr, false);
     }
     SpecifierMode ending = override ? override : usage ? program_usage_mode(me, from, usage) : SPECIFIER_MODE_NONE;

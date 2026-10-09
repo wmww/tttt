@@ -62,7 +62,10 @@ typedef enum ModuleDetectionKind {
 } ModuleDetectionKind;
 
 // The boolean options. X(field, "lowercasename", in_strict_family). Options in the strict family default to the value
-// of `strict`, the rest default to false unless compiler_options_resolve() says otherwise
+// of `strict`, the rest default to false unless compiler_options_resolve() says otherwise. TypeScript 7 removed
+// alwaysStrict, esModuleInterop and allowSyntheticDefaultImports `false` and downlevelIteration (TS5108/TS5102, which
+// stop checking): nothing but program_validate_options() reads those, the checker behaves as if they were true. Same
+// for target ES5 and module AMD/UMD/System, which parse to be reported
 #define COMPILER_BOOL_OPTIONS(X) \
     X(strict, "strict", false) \
     X(always_strict, "alwaysstrict", false) \
@@ -184,15 +187,15 @@ typedef struct CompilerOptions {
     // Emit paths, only for tsc's output path checks (TS5055/TS5056): tttt doesn't emit. Relative to config_dir like
     // the module resolution ones below
     cstr out_dir;
-    cstr out_file;
+    cstr out_file; // Removed in TypeScript 7 (TS5102): only reported, and by tsc's TS5011
     cstr root_dir;
     cstr declaration_dir;
 
     // Module resolution (src/module_resolution.h reads these). Paths are as written: relative ones are relative to
     // config_dir (the directory of the tsconfig they came from), or to the current directory when that is empty
     cstr config_dir;
-    cstr base_url;
-    cstr paths_base; // What `paths` substitutions are relative to without a baseUrl: the tsconfig that has the `paths`
+    cstr base_url; // Removed in TypeScript 7 (TS5102): only reported
+    cstr paths_base; // What `paths` substitutions are relative to: the tsconfig that has the `paths`
     PathMapping* paths;
     isize path_count;
     StrList root_dirs;

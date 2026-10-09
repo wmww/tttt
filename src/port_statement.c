@@ -201,13 +201,12 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
 // The tslib helpers of CommonJS-like emit (tsc's checkImportDeclaration/checkExportDeclaration/checkImportBinding)
 static void port_statement_check_emit_helpers(PortStatement const* me, Span span, ErrorCtx* errs) {
     if (!my module_ref || !ty_emits_commonjs_like(span.source)) return;
-    bool interop = compiler_options()->es_module_interop;
     switch (my main.tag) {
         case PORT_IMPORT_GATHER:
-            if (!my main.is_require && interop) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
+            if (!my main.is_require) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
             break;
         case PORT_REEXPORT_GATHER:
-            if (interop) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
+            ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
             break;
         case PORT_REEXPORT_SPLAT: {
             // (a module with `export =` is TS2498 instead)
@@ -219,7 +218,6 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
         default:
             break;
     }
-    if (!interop) return;
     // (tsc's checkImportDeclaration checks named imports' bindings only when the module resolves)
     bool resolved = my module_ref->file || binder_module_of_ref(current_checker->binder, my module_ref);
     for_each (i, vec_port_item, &my items) {

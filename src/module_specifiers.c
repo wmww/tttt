@@ -399,11 +399,6 @@ static Endings allowed_endings(Generator* me, SpecifierMode syntax_mode) {
         endings_push(&ret, ENDING_JS);
         return ret;
     }
-    if (my options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
-        endings_push(&ret, preferred == ENDING_JS ? ENDING_JS : ENDING_INDEX);
-        endings_push(&ret, preferred == ENDING_JS ? ENDING_INDEX : ENDING_JS);
-        return ret;
-    }
     switch (preferred) {
         case ENDING_JS:
             endings_push(&ret, ENDING_JS);
@@ -444,7 +439,6 @@ static Conditions conditions_for(CompilerOptions const* options, SpecifierMode m
     Conditions ret = {0};
     if (mode == SPECIFIER_MODE_NONE) {
         if (options->module_resolution == MODULE_RESOLUTION_BUNDLER) mode = SPECIFIER_MODE_ESM;
-        else if (options->module_resolution == MODULE_RESOLUTION_NODE10) return ret;
     }
     ret.items[ret.len++] = mode == SPECIFIER_MODE_ESM ? "import" : "require";
     ret.items[ret.len++] = "types";
@@ -769,7 +763,6 @@ static cstr from_root_dirs(Generator* me, csview target, Endings const* endings)
 // (empty otherwise)
 static cstr local_specifier(Generator* me, csview target, SpecifierMode mode, bool paths_only) {
     CompilerOptions const* o = my options;
-    bool has_base_url = cstr_size(&o->base_url) > 0;
     bool has_paths = o->path_count > 0;
     if (paths_only && !has_paths) return cstr_null;
     Endings endings = allowed_endings(me, mode);
@@ -780,15 +773,11 @@ static cstr local_specifier(Generator* me, csview target, SpecifierMode mode, bo
         relative = process_ending(cstr_sv(&path), &endings, o, nullptr);
         cstr_drop(&path);
     }
-    if (!has_base_url && !has_paths && !resolves_package_json_imports(o)) {
+    if (!has_paths && !resolves_package_json_imports(o)) {
         if (paths_only) cstr_drop(&relative);
         return relative;
     }
-    cstr base_dir = has_paths ?
-        (has_base_url ? module_resolver_option_path(my resolver, cstr_sv(&o->base_url)) :
-            cstr_size(&o->paths_base) ? module_resolver_option_path(my resolver, cstr_sv(&o->paths_base)) :
-            cstr_from_sv(module_resolver_cwd(my resolver))) :
-        has_base_url ? module_resolver_option_path(my resolver, cstr_sv(&o->base_url)) :
+    cstr base_dir = has_paths && cstr_size(&o->paths_base) ? module_resolver_option_path(my resolver, cstr_sv(&o->paths_base)) :
         cstr_from_sv(module_resolver_cwd(my resolver));
     cstr relative_to_base = relative_path_of(cstr_sv(&base_dir), target);
     cstr from_imports = paths_only ? cstr_null : from_package_json_imports(me, target, mode, ending_priority(&endings, ENDING_TS) > -1 &&
@@ -806,9 +795,7 @@ static cstr local_specifier(Generator* me, csview target, SpecifierMode mode, bo
         cstr_drop(&relative);
         goto done;
     }
-    cstr non_relative = cstr_size(&from_imports) ? cstr_clone(from_imports) :
-        !cstr_size(&from_mapping) && has_base_url ? process_ending(cstr_sv(&relative_to_base), &endings, o, nullptr) :
-        cstr_clone(from_mapping);
+    cstr non_relative = cstr_size(&from_imports) ? cstr_clone(from_imports) : cstr_clone(from_mapping);
     if (!cstr_size(&non_relative) || path_is_relative(cstr_sv(&non_relative))) {
         // (`project-relative` only prefers a non-relative name that isn't relative)
         cstr_drop(&non_relative);
@@ -1015,14 +1002,13 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
     cstr specifier = cstr_from_sv(path);
     isize root_index = parts.package_root;
     cstr module_file = cstr_null;
-    bool classic = my options->module_resolution == MODULE_RESOLUTION_CLASSIC;
     while (true) {
         DirectoryResult r = directory_with_package_json(me, path, &parts, root_index, &endings, mode);
-        if (!classic && r.blocked_by_exports) {
+        if (r.blocked_by_exports) {
             c_drop(cstr, &r.module_file, &specifier, &module_file);
             return cstr_null;
         }
-        if (!classic && r.verbatim_from_exports) {
+        if (r.verbatim_from_exports) {
             c_drop(cstr, &specifier, &module_file);
             return r.module_file;
         }
@@ -1050,7 +1036,6 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
     }
     csview directory_name = js_substring(s, parts.top_level_package_name + 1, s.size);
     cstr ret = package_name_from_types(directory_name);
-    if (classic && csview_equals_sv(cstr_sv(&ret), directory_name)) cstr_drop(&ret);
     cstr_drop(&specifier);
     return ret;
 }

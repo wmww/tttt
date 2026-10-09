@@ -436,11 +436,10 @@ static void mount_test_lib_folder(BaselineTestCase* me, csview from, csview to) 
 
 
 // tsgo's SkipUnsupportedCompilerOptions (and the Fatalf of failOnUnsupportedCompilerOptions): configurations that give
-// an option 7.0 removed, as written (before compiler_options_resolve()'s defaults). `module: none` too, a removed value
-// tsgo's harness has no baselines for
+// an option 7.0 removed, as written (before compiler_options_resolve()'s defaults)
 static bool tsgo_skips_configuration(CompilerOptions const* options) {
     return (options->module_set && (options->module == MODULE_KIND_UMD || options->module == MODULE_KIND_SYSTEM ||
-                                    options->module == MODULE_KIND_AMD || options->module == MODULE_KIND_NONE)) ||
+                                    options->module == MODULE_KIND_AMD)) ||
         (options->module_resolution_set && (options->module_resolution == MODULE_RESOLUTION_NODE10 ||
                                             options->module_resolution == MODULE_RESOLUTION_CLASSIC)) ||
         (options->is_set[COMPILER_OPTION_es_module_interop] && !options->es_module_interop) ||

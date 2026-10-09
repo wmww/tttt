@@ -147,7 +147,7 @@ static Symbol const* resolve_alias(Symbol const* symbol) {
 // named through (ChainCtx.container_lookup); the module's own type is printed through `ns` like tsc prints the
 // clone's. HACK
 bool namespace_import_is_clone(Symbol const* symbol) {
-    if (!symbol_rare(symbol)->gather_module || !compiler_options()->es_module_interop || !symbol->decl_count) return false;
+    if (!symbol_rare(symbol)->gather_module || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
     PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
     // (Not `import x = require()` nor a JavaScript `require`: tsc's resolveExternalModuleSymbol doesn't clone)
@@ -167,7 +167,6 @@ bool namespace_import_is_clone(Symbol const* symbol) {
 static bool has_port_tag(Symbol const* symbol, u32 tag);
 static bool export_equals_namespace_import_is_clone(Symbol const* alias) {
     if (!has_port_tag(alias, PORT_IMPORT_GATHER) || alias->alias->item->is_require || !alias->alias->item->module_ref) return false;
-    if (!compiler_options()->es_module_interop) return false;
     Symbol* module = binder_module_of_ref(alias->binder, alias->alias->item->module_ref);
     Symbol const* assigned = module ? module_export_equals(module) : nullptr;
     if (!assigned || assigned == module || assigned->is_placeholder) return false;
@@ -656,7 +655,7 @@ static cstr parent_specifier(Symbol const* parent, SourceFile const* from) {
     }
     if (module_specifier_fn) return module_specifier_fn(module_specifier_ctx, file);
     // (tsc 6 always has a host where there is an enclosing file: the specifier from there)
-    if (from && current_checker && !cstr_size(&compiler_options()->out_file)) {
+    if (from && current_checker) {
         return program_module_specifier(current_checker->program, from, file, SPECIFIER_MODE_NONE);
     }
     // (without one: the file's name, absolute; the files of a program are all below its directory, or have `..`s

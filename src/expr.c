@@ -74,7 +74,7 @@ static bool reflect_decl_is_runtime(Scope const* scope, SymbolDecl const* decl) 
 // reports again, the diagnostics dedupe
 static void check_reflect_collisions(Scope const* names) {
     CompilerOptions const* options = compiler_options();
-    if (options->target < SCRIPT_TARGET_ES2015 || options->target > SCRIPT_TARGET_ES2021 || options->no_emit) return;
+    if (options->target > SCRIPT_TARGET_ES2021 || options->no_emit) return;
     report_emit_name_collisions(names, "Reflect", false);
 }
 
@@ -151,12 +151,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             if (is_call) {
                 legal = function->is_constructor;
             } else if (member && function->is_expression) {
-                // An object literal's method: any
-                if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                    error_ctx_error_d(errs, identifier_expr_name(me), 2659, "'super' is only allowed in members of object literal "
-                        "expressions when option 'target' is 'ES2015' or higher.");
-                }
-                return;
+                return; // An object literal's method: any
             } else {
                 legal = function->is_constructor || member;
             }
@@ -244,15 +239,9 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
         }
     }
     if (!decl || !decl->full.source) return;
-    bool other_file = decl->full.source != identifier_expr_name(me).source;
-    if (other_file) {
-        // Only an outFile orders the files, and a module's declarations are only in scope once imported
-        CompilerOptions const* options = compiler_options();
-        if (cstr_is_empty(&options->out_file) || !identifier_expr_name(me).source) return;
-        if (decl->full.source->is_module || identifier_expr_name(me).source->is_module) return;
-        if (decl->full.source->program_order <= identifier_expr_name(me).source->program_order) return;
-    }
-    if (!other_file && span_start_ptr(decl->full) <= span_start_ptr(identifier_expr_name(me))) {
+    // (Files aren't ordered without an outFile, which TypeScript 7 removed)
+    if (decl->full.source != identifier_expr_name(me).source) return;
+    if (span_start_ptr(decl->full) <= span_start_ptr(identifier_expr_name(me))) {
         if (decl->kind == SYMBOL_DECL_CLASS) {
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
             bool in_computed_name = false;
@@ -323,15 +312,13 @@ static void check_parameter_reference(IdentifierExpr const* me, Scope const* nam
     }
 }
 
-// Whether a function is around that has `arguments`: from ES2015 on an arrow function sees the arguments of the
-// function it is in, before that its own (which is TS2496)
+// Whether a function is around that has `arguments` (an arrow function sees the arguments of the function it is in)
 static bool scope_has_arguments(Scope const* scope) {
-    bool arrows = compiler_options()->target < SCRIPT_TARGET_ES2015;
     for (; scope; scope = scope->parent) {
         // (Not a signature: tsc's resolveName gives `arguments` to function declarations and expressions, methods,
         // constructors and accessors only)
         if (scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
-            (arrows || !function_impl_is_arrow(scope->function))
+            !function_impl_is_arrow(scope->function)
         ) {
             return true;
         }
@@ -730,16 +717,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // No symbol: ty_identifier_reference_type() makes it IArguments
         my is_arguments = true;
         note_arguments_reference(names);
-        FunctionImpl const* container = names->function;
-        if (compiler_options()->target < SCRIPT_TARGET_ES2015 && container) {
-            if (function_impl_is_arrow(container)) {
-                error_ctx_error_d(errs, identifier_expr_name(me), 2496, "The 'arguments' object cannot be referenced in an arrow function in ES5. "
-                    "Consider using a standard function expression.");
-            } else if (container->is_async) {
-                error_ctx_error_d(errs, identifier_expr_name(me), 2522, "The 'arguments' object cannot be referenced in an async function or "
-                    "method in ES5. Consider using a standard function or method.");
-            }
-        }
     } else if (names->flow && names->flow->type_only_alias_ok &&
         (my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING)) &&
         // (`export = string`: a type keyword names nothing, TS2693 below)
@@ -1234,7 +1211,7 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
     bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 || options->module == MODULE_KIND_NODE20 ||
         options->module == MODULE_KIND_NODENEXT;
     bool es = options->module == MODULE_KIND_ES2022 || options->module == MODULE_KIND_ESNEXT ||
-        options->module == MODULE_KIND_PRESERVE || options->module == MODULE_KIND_SYSTEM;
+        options->module == MODULE_KIND_PRESERVE;
     if (node && source_file_implied_format_for_emit(file) == MODULE_KIND_COMMONJS) {
         error_ctx_grammar_error_d(errs, at, 1309, "The current file is a CommonJS module and cannot use 'await' at the top level.");
     } else if (!(node || es) || options->target < SCRIPT_TARGET_ES2017) {
@@ -1578,13 +1555,8 @@ void jsx_report_runtime_module(SourceFile const* file, Span at, ErrorCtx* errs) 
         return;
     }
     if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return;
-    if (compiler_options()->module_resolution == MODULE_RESOLUTION_CLASSIC) {
-        error_ctx_error_d(errs, at, 2792, "Cannot find module '", ref->path, "'. Did you mean to set the "
-            "'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?");
-    } else {
-        error_ctx_error_d(errs, at, 2875, "This JSX tag requires the module path '", ref->path, "' to exist, but none "
-            "could be found. Make sure you have types for the appropriate package installed.");
-    }
+    error_ctx_error_d(errs, at, 2875, "This JSX tag requires the module path '", ref->path, "' to exist, but none "
+        "could be found. Make sure you have types for the appropriate package installed.");
 }
 
 static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview name, Scope* names, ErrorCtx* errs) {
@@ -3448,9 +3420,6 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
             ty_check_emit_helpers(checker, keyword,
                 EMIT_HELPER_AWAIT | EMIT_HELPER_ASYNC_DELEGATOR | EMIT_HELPER_ASYNC_VALUES, errs);
         }
-        if (!async && target < SCRIPT_TARGET_ES2015 && compiler_options()->downlevel_iteration) {
-            ty_check_emit_helpers(checker, keyword, EMIT_HELPER_VALUES, errs);
-        }
     }
     Ty const* yielded;
     Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(me) : expr_outer_span(&yield->expr);
@@ -4222,7 +4191,7 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
             error_ctx_error_d(errs, my inner_span, 1470,
                 "The 'import.meta' meta-property is not allowed in files which will build into CommonJS output.");
         }
-    } else if (module < MODULE_KIND_ES2020 && module != MODULE_KIND_SYSTEM) {
+    } else if (module < MODULE_KIND_ES2020) {
         error_ctx_error_d(errs, my inner_span, 1343, "The 'import.meta' meta-property is only allowed when the "
             "'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', 'node20', or 'nodenext'.");
     }
@@ -4605,10 +4574,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     } else {
                         error_ctx_error_d(errs, i->name_span, 18016, message);
                     }
-                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                        error_ctx_grammar_error_d(errs, i->name_span, 18028,
-                            "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
-                    }
                 }
                 if ((i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
                     i->value.tag == EXPR_FUNCTION && !i->value.function->has_body
@@ -4656,7 +4621,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                         Ty const* type = expr_get_type(&i->value);
                         ty_check_spread_type(current_checker, type, i->span, errs);
                         ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
-                        if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_ASSIGN, errs);
                     }
                 }
             }
@@ -4686,10 +4650,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // assignment, where `x` is assigned to (`[...x] = e`)
             Checker* checker = current_checker;
             bool target = expr_is_destructuring_target(my spread);
-            if (!target && compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                ty_check_emit_helpers(checker, expr_outer_span(me),
-                    EMIT_HELPER_SPREAD_ARRAY | (compiler_options()->downlevel_iteration ? EMIT_HELPER_READ : 0), errs);
-            }
             Ty const* operand = expr_get_type(my spread);
             if (!target && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
                 ty_iterated_type(checker, ITERATION_SPREAD, operand, expr_outer_span(my spread), errs);
@@ -4719,9 +4679,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
-                if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                    ty_check_emit_helpers(current_checker, my inner_span, EMIT_HELPER_MAKE_TEMPLATE_OBJECT, errs);
-                }
                 // (Explicit type arguments are the call's, as for a call: not an instantiation expression)
                 Expr const* tag = my template_->tag;
                 if (tag->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(tag)) {

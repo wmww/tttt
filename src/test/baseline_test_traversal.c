@@ -95,8 +95,8 @@ static cstr file_module_text(BaselineTestCase* ctx, Symbol const* module) {
     // (A namespace import can be a clone of the module, tsc's resolveESModuleSymbol, which the chain doesn't know
     // about: with esModuleInterop when the module's type has a `default` or signatures. An ES module's import of a
     // CommonJS one is a symbol of its own here already)
-    bool plain_namespace = item && item->tag == PORT_IMPORT_GATHER && (!compiler_options()->es_module_interop ||
-        (!symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("export="))));
+    bool plain_namespace = item && item->tag == PORT_IMPORT_GATHER && !symbol_get_export(module, c_sv("default")) &&
+        !symbol_get_export(module, c_sv("export="));
     // (A default import, or `{ default as d }`, that is the module itself, a synthetic default, names it too)
     if (item && (item->is_require || plain_namespace || item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_SPECIFIC)) {
         cstr ret = cstr_init();

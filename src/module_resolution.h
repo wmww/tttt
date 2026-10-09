@@ -18,9 +18,6 @@ typedef enum ResolutionMode {
     // CommonJS because the syntax says so (`import x = require()`, `resolution-mode: "require"`): bundler resolution,
     // which otherwise always reads `exports` with `import`, uses `require` then too
     RESOLUTION_MODE_REQUIRE_SYNTAX,
-    // Or-ed into a mode that a `resolution-mode` attribute asks for: node10 resolution reads `exports` then too (tsc's
-    // nodeModuleNameResolver with conditions, NodeResolutionFeatures.AllFeatures)
-    RESOLUTION_MODE_EXPLICIT = 8,
 } ResolutionMode;
 
 typedef enum ResolvedKind {

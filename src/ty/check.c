@@ -608,64 +608,6 @@ static void add_originating_import(Checker* me, Error* error, Symbol const* alia
     }
 }
 
-// Below ES2015 the annotation of an async function names a Promise constructor value whose type is
-// PromiseConstructorLike (tsc's checkAsyncFunctionReturnType)
-static void check_es5_async_return_annotation(Checker* me, TypeNode const* node, Ty const* ret, Span location,
-    Span ret_span, Ty const* promise, ErrorCtx* errs
-) {
-    IdentifierType const* id = node->tag == TYPE_IDENTIFIER ? node->identifier : nullptr;
-    char const* message = "' is not a valid async function return type in ES5 because it does not refer to a Promise-compatible "
-        "constructor value.";
-    if (!id || id->keyword || (id->rare && id->rare->import_ref)) {
-        report_invalid_async_return(errs, location, ret_span, 1055, cstr_d("Type '", ret, message));
-        return;
-    }
-    // (Its value meaning: the symbol it names merged with a value)
-    Symbol const* target = id->target;
-    bool qualified = id->rare && vec_span_size(&id->rare->namespaces);
-    Span name = qualified ? span_between(*vec_span_at(&id->rare->namespaces, 0), id->name) : id->name;
-    if (target && target->flags & SYMBOL_VALUE) {
-        // (Through the alias the name found: a namespace import is the module object it makes, tsc's
-        // resolveEntityName resolving to resolveESModuleSymbol's clone)
-        Symbol const* alias = !qualified && id->symbol && (id->symbol->flags & SYMBOL_ALIAS) ? id->symbol : nullptr;
-        Ty const* constructor = ty_type_of_symbol(me, alias ? alias : target);
-        if (constructor->flags & TYF_ERROR) return;
-        Symbol const* like_symbol = program_get_global(my program, c_sv("PromiseConstructorLike"), SYMBOL_TYPE);
-        Ty const* like = like_symbol ? ty_declared_type_of(me, like_symbol) : nullptr;
-        if (!like || like->flags & TYF_ERROR) {
-            report_invalid_async_return(errs, location, ret_span, 1055, cstr_d("Type '", name, message));
-        } else if (!ty_is_related(me, constructor, like, TY_RELATION_ASSIGNABLE)) {
-            cstr head = cstr_d("Type '", constructor, message);
-            if (span_eq(location, ret_span)) {
-                Error* error = report_unassignable_with_head(me, constructor, like, 1055, head, false, location, errs);
-                if (error) add_originating_import(me, error, alias, like);
-            } else {
-                // (A JSDoc `@type` signature's: the explanation under tsc's containing message)
-                VecTyReportLine lines = {0};
-                ty_explain_unrelated_headed(me, constructor, like, TY_RELATION_ASSIGNABLE, 1055, &lines);
-                Error* error = error_ctx_error_d(errs, location, 1065, "The return type of an async function or method "
-                    "must be the global Promise<T> type.");
-                if (error) {
-                    error_sub_error_s(error, (Span){0}, TS_CODE_NONE, head);
-                    TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
-                    attach_explanation(vec_error_back_mut(&error->sub_errors), &lines,
-                        natural && !natural->related && natural->ts_code == 2322);
-                } else {
-                    cstr_drop(&head);
-                }
-                vec_ty_report_line_drop(&lines);
-            }
-        }
-        return;
-    }
-    if (!qualified && span_equals(id->name, "Promise") && promise && ret->kind == TY_REFERENCE && ret->reference.target == promise) {
-        error_ctx_error_d(errs, location, 2705, "An async function or method in ES5 requires the 'Promise' constructor.  Make "
-            "sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.");
-        return;
-    }
-    report_invalid_async_return(errs, location, ret_span, 1055, cstr_d("Type '", name, message));
-}
-
 // The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType)
 void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function, ErrorCtx* errs) {
     if (!function->is_async || function->is_generator) return;
@@ -689,10 +631,6 @@ void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function,
     if (ret->flags & TYF_ERROR) return;
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
-    if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
-        check_es5_async_return_annotation(me, tag ? &tag->ret : &function->ret, ret, location, ret_span, promise, errs);
-        return;
-    }
     if (!promise || promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return;
     if (ret == promise || (ret->kind == TY_REFERENCE && ret->reference.target == promise)) return;
     Ty const* awaited = ty_awaited_no_alias(me, ret);
@@ -2383,7 +2321,7 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
 
 // tsc's getFullyQualifiedName with a containing location: a file module by its specifier from `from` (`"./a".N.x`)
 static cstr qualified_name_from(Checker* me, Symbol const* symbol, SourceFile const* from) {
-    if (symbol->is_module && symbol->module && symbol->module->file && from && !cstr_size(&compiler_options()->out_file)) {
+    if (symbol->is_module && symbol->module && symbol->module->file && from) {
         cstr specifier = program_module_specifier(my program, from, symbol->module->file, SPECIFIER_MODE_NONE);
         cstr ret = cstr_d("\"", specifier, "\"");
         cstr_drop(&specifier);
@@ -2928,13 +2866,6 @@ static bool check_accessibility(
     Ty const* containing, bool is_super, ErrorCtx* errs
 ) {
     if (is_super) {
-        if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
-            if (!(prop->flags & PROP_METHOD)) {
-                error_ctx_error_d(errs, span, 2340,
-                    "Only public and protected methods of the base class are accessible via the 'super' keyword.");
-                return false;
-            }
-        }
         if (abstract_member_class(prop, true)) {
             cstr class_str = ty_to_cstr(me, ty_declared_type_of(me, prop->parent));
             error_ctx_error_d(errs, span, 2513, "Abstract method '", atom_sv(prop->name), "' in class '", class_str,

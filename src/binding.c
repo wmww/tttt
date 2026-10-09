@@ -559,9 +559,6 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             break;
 
         case BINDING_ARRAY:
-            if (compiler_options()->target < SCRIPT_TARGET_ES2015 && compiler_options()->downlevel_iteration && !my ambient) {
-                ty_check_emit_helpers(current_checker, my content_span, EMIT_HELPER_READ, errs);
-            }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             // (Not widened: `= null` is null, not any, without strictNullChecks. tsc's getTypeForBindingElementParent)
             Expr const* source = my parent ? my default_value : initializer;

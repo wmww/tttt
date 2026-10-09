@@ -1154,7 +1154,6 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            scope_check_strict_block_function(scope, my decl.function.impl->name);
             function_impl_add_names(my decl.function.impl, scope, my decl.props, scope->kind == SCOPE_BLOCK && !scope->strict);
             break;
 
@@ -1533,8 +1532,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             }
             // tsc's binder (checkStrictModeLabeledStatement): no label on a declaration in strict mode code from ES2015 on
             Statement const* body = my labeled.body;
-            if (names->strict && compiler_options()->target >= SCRIPT_TARGET_ES2015 &&
-                (statement_declares_name(body->tag) || body->tag == STATEMENT_IMPORT_EXPORT)
+            if (names->strict && (statement_declares_name(body->tag) || body->tag == STATEMENT_IMPORT_EXPORT)
             ) {
                 error_ctx_error_d(errs, my labeled.name, 1344, "A label is not allowed here.");
             }
@@ -2614,11 +2612,6 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 compiler_options()->target < SCRIPT_TARGET_ES2018
             ) {
                 ty_check_emit_helpers(checker, my span, EMIT_HELPER_ASYNC_VALUES, errs);
-            }
-            if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && !my for_each_loop->is_await &&
-                compiler_options()->downlevel_iteration && compiler_options()->target < SCRIPT_TARGET_ES2015
-            ) {
-                ty_check_emit_helpers(checker, my span, EMIT_HELPER_VALUES, errs);
             }
             if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {
                 variable_statement_check_using(&my for_each_loop->variable.statement,

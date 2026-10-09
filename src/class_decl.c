@@ -1656,9 +1656,6 @@ static void class_check_emit_helpers(ClassDecl* me, ErrorCtx* errs) {
             }
         }
     }
-    if (span_valid(my extends_clause) && options->target < SCRIPT_TARGET_ES2015) {
-        ty_check_emit_helpers(current_checker, my extends_clause, EMIT_HELPER_EXTENDS, errs);
-    }
     for_each (i, vec_class_item, &my items) {
         ClassItem const* item = i;
         if (vec_expr_size(&item->decorators)) {
@@ -2172,9 +2169,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
     int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {
-        // tsc's checkGrammarProperty/Method/Accessor (not for an ambient class's accessors)
-        Span private_name = class_item_private_name(i);
-        bool ambient_accessor = i->tag == CLASS_ITEM_METHOD && i->method.accessor && my symbol && my symbol->is_ambient;
         // (Not after the decorators' grammar error: checkGrammarModifiers comes first, one grammar error per member)
         Span first_char = i->span;
         first_char.sv = csview_from_n(span_start_ptr(i->span), span_valid(i->span) ? 1 : 0);
@@ -2196,21 +2190,6 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             } else if (i->tag == CLASS_ITEM_FIELD && i->field.has_explicit_type) {
                 check_decorator_metadata_type(&i->field.explicit_type, errs);
             }
-        }
-        if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor &&
-            !decorators_rejected
-        ) {
-            error_ctx_grammar_error_d(errs, private_name, 18028,
-                "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
-        } else if (i->tag == CLASS_ITEM_FIELD && i->field.is_auto_accessor && compiler_options()->target < SCRIPT_TARGET_ES2015 &&
-            // (Not in an ambient context: tsc 6.0's checkGrammarProperty)
-            !my is_ambient && !i->field.is_declare &&
-            // (after checkGrammarForInvalidDynamicName's TS1166)
-            !(i->field.computed_key && expr_is_non_bindable_dynamic_name(i->field.computed_key) &&
-                !expr_is_entity_name(i->field.computed_key))
-        ) {
-            error_ctx_grammar_error_d(errs, i->field.name_span, 18045,
-                "Properties with the 'accessor' modifier are only available when targeting ECMAScript 2015 and higher.");
         }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:

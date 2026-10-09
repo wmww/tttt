@@ -693,12 +693,9 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
         if (errs) report_not_iterable(me, use, input, span, errs);
         return ty_intrinsic(me, TY_ANY);
     }
-    ScriptTarget target = compiler_options()->target;
-    // (tsc 6.0: uplevel iteration needs the global Iterable too, without it arrays iterate the ES5 way)
-    bool uplevel = target >= SCRIPT_TARGET_ES2015 &&
-        program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) != nullptr;
-    bool downlevel = !uplevel && compiler_options()->downlevel_iteration;
-    if (uplevel || downlevel || async) {
+    // (Uplevel iteration needs the global Iterable, without it arrays iterate the ES5 way)
+    bool uplevel = program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) != nullptr;
+    if (uplevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
         // A union is reported once: tsc caches its noIterationTypes (getIterationTypesOfIterable) and
         // later lookups say nothing
@@ -729,7 +726,7 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
         if (uplevel) return ty_intrinsic(me, TY_ANY);
     }
 
-    // Below ES2015 only arrays (and strings, where they are allowed) iterate
+    // Without the global Iterable only arrays (and strings, where they are allowed) iterate
     Ty const* array = input;
     bool has_string = false;
     if (use & ITERATION_ALLOWS_STRING) {
@@ -752,11 +749,7 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
             // (tsc's getIterationDiagnosticDetails: whether `await` may be what's missing)
             bool maybe_missing_await = true;
             Error* e;
-            if (downlevel) {
-                e = error_ctx_error_d(errs, span, allows_strings ? 2549 : 2548, "Type '", array, allows_strings ?
-                    "' is not an array type or a string type or does not have a '[Symbol.iterator]()' method that returns an iterator." :
-                    "' is not an array type or does not have a '[Symbol.iterator]()' method that returns an iterator.");
-            } else if (ty_iteration_types_of_iterable(me, input, use) || is_es2015_iterable_name(input)) {
+            if (ty_iteration_types_of_iterable(me, input, use) || is_es2015_iterable_name(input)) {
                 maybe_missing_await = !ty_iteration_types_of_iterable(me, input, use);
                 e = error_ctx_error_d(errs, span, 2802, "Type '", array,
                     "' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.");

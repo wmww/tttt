@@ -587,24 +587,6 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
     }
 }
 
-void scope_check_strict_block_function(Scope const* me, Span name) {
-    if (!my strict || my ambient || my kind != SCOPE_BLOCK || !span_valid(name)) return;
-    if (compiler_options()->target >= SCRIPT_TARGET_ES2015) return;
-    switch (strict_reason(me)) {
-        case 2:
-            error_ctx_error_d(binder_errs(my binder), name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
-                "targeting 'ES5'. Class definitions are automatically in strict mode.");
-            break;
-        case 1:
-            error_ctx_error_d(binder_errs(my binder), name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
-                "targeting 'ES5'. Modules are automatically in strict mode.");
-            break;
-        default:
-            error_ctx_error_d(binder_errs(my binder), name, 1250,
-                "Function declarations are not allowed inside blocks in strict mode when targeting 'ES5'.");
-    }
-}
-
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
     // (Only unused.c reads self: in an ambient context already, a `declare` scope would change nothing)
     if ((!declared || parent->ambient) && (!unused_enabled() || !self)) return parent;
@@ -619,8 +601,7 @@ Scope* scope_new_file(Binder* binder, SourceFile* file) {
     ret->file = file;
     ret->ambient = file->is_declaration;
     // (tsc's bindInStrictMode)
-    ret->strict = (compiler_options()->always_strict && !file->is_declaration) || file->is_module ||
-        block_has_use_strict(&file->ast);
+    ret->strict = !file->is_declaration || file->is_module || block_has_use_strict(&file->ast);
     if (file->is_module) {
         ret->container = binder_new_module_symbol(binder, file);
         ret->export_context = ret->ambient && !block_has_export_declarations(&file->ast);
@@ -1818,9 +1799,6 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");
         }
-    } else if (export_equals && my file && !my file->is_json && module_kind == MODULE_KIND_SYSTEM && !my ambient) {
-        error_ctx_grammar_error_d(binder_errs(my binder), statement, 1218,
-            "Export assignment is not supported when '--module' flag is 'system'.");
     }
     // (Not an augmentation: tsc skips those)
     if (my kind == SCOPE_NAMESPACE && my file && !my file->is_module && my container->module) {
@@ -2789,13 +2767,10 @@ static void resolve_module_type_members(Symbol* module) {
     free(entries);
 }
 
-// tsc's resolveESModuleSymbol for `import * as ns`: with esModuleInterop, or when an ES module imports a CommonJS
-// one, it looks for call and construct signatures on the module's type, resolving its members
+// tsc's resolveESModuleSymbol for `import * as ns` (esModuleInterop is always on): it looks for call and construct
+// signatures on the module's type, resolving its members
 static bool namespace_import_resolves_type_members(PortItem const* item) {
-    if (item->tag != PORT_IMPORT_GATHER) return false;
-    if (compiler_options()->es_module_interop) return true;
-    SourceFile const* target = item->module_ref ? item->module_ref->file : nullptr;
-    return target && esm_imports_cjs(item, target);
+    return item->tag == PORT_IMPORT_GATHER;
 }
 
 // tsc's resolveESModuleSymbol: an ES import of a module whose `export =` names neither a namespace nor a variable
@@ -2878,19 +2853,13 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     } else if (export_equals) {
         // (tsc's reportInvalidImportEqualsExportMember)
         CompilerOptions const* options = compiler_options();
-        bool interop = options->es_module_interop;
         if (options->module >= MODULE_KIND_ES2015) {
-            if (interop) error_ctx_error_d(errs, name, 2595, "'", name, "' can only be imported by using a default import.");
-            else error_ctx_error_d(errs, name, 2596, "'", name, "' can only be imported by turning on the 'esModuleInterop' flag and using a default import.");
+            error_ctx_error_d(errs, name, 2595, "'", name, "' can only be imported by using a default import.");
         } else if (name.source && name.source->is_js) {
-            if (interop) error_ctx_error_d(errs, name, 2597, "'", name, "' can only be imported by using a 'require' call or by using a default import.");
-            else error_ctx_error_d(errs, name, 2598, "'", name, "' can only be imported by using a 'require' call or by turning on the 'esModuleInterop' flag and using a default import.");
-        } else if (interop) {
+            error_ctx_error_d(errs, name, 2597, "'", name, "' can only be imported by using a 'require' call or by using a default import.");
+        } else {
             error_ctx_error_d(errs, name, 2616, "'", name, "' can only be imported by using 'import ", name, " = require(",
                 module_name, ")' or a default import.");
-        } else {
-            error_ctx_error_d(errs, name, 2617, "'", name, "' can only be imported by using 'import ", name, " = require(",
-                module_name, ")' or by turning on the 'esModuleInterop' flag and using a default import.");
         }
     } else {
         // Declared but not exported, or exported under another name
@@ -2947,7 +2916,6 @@ static bool can_have_synthetic_default(PortItem const* item, Symbol* module, Sou
             return false;
         }
     }
-    if (!compiler_options()->allow_synthetic_default_imports) return false;
     if (!file || source_file_reads_as_declaration(file)) {
         // Declaration files and ambient modules: unless they say they have a default or are ES modules (`__esModule`).
         // (Every default export of a declaration file is tsc's isSyntacticDefault)
@@ -3020,13 +2988,6 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     // esModuleInterop, broken without
     Symbol* dot_exports = cjs_imports_esm(item, module) ? module_dot_exports(module) : nullptr;
     if (dot_exports) {
-        if (!compiler_options()->es_module_interop) {
-            cstr module_name = module_name_for_error(module, item->module_ref, false);
-            error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
-                "' can only be default-imported using the 'esModuleInterop' flag");
-            cstr_drop(&module_name);
-            return nullptr;
-        }
         item->source_symbol = dot_exports;
         return resolve_if_pure_alias(dot_exports);
     }
@@ -3043,31 +3004,13 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
         Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
         // (What it assigns exports a syntactic default itself, `namespace a { export { x as default } }`: tsc's
         // resolveExportByName finds it among the assigned type's properties, see can_have_synthetic_default())
-        Symbol* assigned_default = export_equals && compiler_options()->allow_synthetic_default_imports && assigned &&
+        Symbol* assigned_default = export_equals && assigned &&
             assigned != module && !assigned->is_placeholder ? symbol_get_export(assigned, c_sv("default")) : nullptr;
         if (assigned_default) {
             item->source_symbol = assigned_default;
             return resolve_if_pure_alias(assigned_default);
         }
-        if (export_equals && !compiler_options()->allow_synthetic_default_imports) {
-            // The `default` property of the value it assigns, if it has one (tsc's resolveExportByName:
-            // getPropertyOfType): the checker decides, TS1259 when it hasn't (port_item_check_export_equals_property())
-            if (assigned && !assigned->is_placeholder && symbol_resolved_flags(assigned) & SYMBOL_VALUE &&
-                item->tag == PORT_IMPORT_DEFAULT && !item->jsdoc
-            ) {
-                Symbol* property = binder_new_symbol(item->symbol ? item->symbol->binder : module->binder, c_sv("default"), SYMBOL_PROPERTY);
-                property->name_span = item->decl_name;
-                symbol_add_decl(property, (SymbolDecl){
-                    .kind = SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
-                    .flags = SYMBOL_PROPERTY,
-                    .node = assigned,
-                    .name = item->decl_name,
-                    .full = item->full_span,
-                });
-                return property;
-            }
-            scope_report_default_import_of_export_equals(item, module, errs);
-        } else if (item->tag == PORT_IMPORT_DEFAULT) {
+        if (item->tag == PORT_IMPORT_DEFAULT) {
             report_non_default_export(item, module, errs);
         } else {
             scope_report_non_exported_member(item, module, errs); // (tsc's errorNoModuleMemberSymbol)
@@ -3223,9 +3166,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 return resolve_default_target(item, module, assigned, errs);
             }
             // (tsc's getExternalModuleMember: `{ default as x }` with allowSyntheticDefaultImports is fine)
-            if (!item->value_only && !(csview_equals(port_item_name(item->source_name), "default") &&
-                compiler_options()->allow_synthetic_default_imports)
-            ) {
+            if (!item->value_only && !csview_equals(port_item_name(item->source_name), "default")) {
                 check_es_module_symbol(item, module, assigned, errs);
             }
             // (An `export =` of nothing is tsc's unknownSymbol, whose exports are all there is: not the module's
@@ -4878,15 +4819,13 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
-    bool arrows_have_arguments = compiler_options()->target < SCRIPT_TARGET_ES2015;
     bool jsdoc_parameter_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         jsdoc_parameter_type |= scope->jsdoc_parameter_type;
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
-            bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter &&
-                compiler_options()->target >= SCRIPT_TARGET_ES2015;
+            bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter;
             if (jsdoc_parameter_type && scope->kind == SCOPE_FUNCTION && found && (found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) &&
                 !(meaning & ~SYMBOL_VALUE & found->flags)
             ) {
@@ -4921,7 +4860,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         }
         if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
         if (arguments && scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
-            (arrows_have_arguments || !function_impl_is_arrow(scope->function))
+            !function_impl_is_arrow(scope->function)
         ) {
             // A function's own `arguments` hides outer declarations (tsc's resolveNameHelper returns argumentsSymbol):
             // no symbol, see IdentifierExpr.is_arguments
