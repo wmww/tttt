@@ -1986,8 +1986,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
         Ty const* namespace_import = namespace_import_type(me, symbol);
         if (namespace_import) return namespace_import;
-        // `/** @type {T} */ export default x` along the way: T is the value's type (tsc's getTypeOfAlias: the declared
-        // type of the export assignment)
+        // (`/** @type {T} */ export default x` is still x's type: tsgo's getTypeOfAlias has no declared type)
         Symbol const* step = symbol;
         for (int depth = 0; step && (step->flags & SYMBOL_ALIAS) && depth < 32; depth++) {
             // A namespace import along the way is the module type it makes (tsc's getTargetOfNamespaceImport resolves
@@ -1995,11 +1994,6 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
             if (depth) {
                 Ty const* namespace_step = namespace_import_type(me, step);
                 if (namespace_step) return namespace_step;
-            }
-            for (u32 i = 0; i < step->decl_count; i++) {
-                if (step->decls[i].kind == SYMBOL_DECL_ALIAS && symbol_decl_jsdoc_type(&step->decls[i])) {
-                    return ty_of_node(symbol_decl_jsdoc_type(&step->decls[i]));
-                }
             }
             Symbol const* target = symbol_resolve_alias((Symbol*)step);
             // (An import's own step is the export it names, which may be an alias itself)

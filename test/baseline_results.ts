@@ -3168,7 +3168,7 @@ const baselines = {
     'checkJsdocTypeTagOnExportAssignment3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnExportAssignment4': {
         errors: true,
@@ -3188,7 +3188,7 @@ const baselines = {
     'checkJsdocTypeTagOnExportAssignment7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnExportAssignment8': {
         errors: true,

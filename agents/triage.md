@@ -202,3 +202,13 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   exports would remove those rules.
 - Valgrind reports the thread-local `alias_stack` (scope.c symbol_resolve_alias) as possibly lost in every test that
   resolves an alias (`scripts/test.sh -f importNonExportedMember11`): noise that stops `test.sh` at the first test.
+- JSDoc `@type {() => 'b'}` on an object literal property whose value is an arrow (`n: () => 'b'`): the property's
+  declared type is the arrow's context (tsgo's PropertyAssignment type), yet tttt prints the arrow as `() => string`
+  where tsgo keeps `() => "b"` (typeTagOnPropertyAssignment): the literal return is widened as if there were no
+  contextual return type. The same in a variable annotation works; suspect the object-member path of check_object
+  (member_ctx with i->jsdoc_type) doesn't give the function its contextual signature. (Agent C, plan 54 fan-out)
+- Object literal methods with a JSDoc `@type`: tsgo's getSignaturesOfSymbol makes the tag's single call signature the
+  method's own (checkJsdocTypeTag6 prints `methodWithMoreParameters(): void`); jsdoc_tag_signature() doesn't reach the
+  object literal member type. (Agent C)
+- jsdocTypedefBeforeParenthesizedExpression: `@param a {NotADuplicateIdentifier}` with the typedef in a comment before
+  a parenthesized expression statement prints `number` in tsgo, the alias name in tttt. (Agent C)
