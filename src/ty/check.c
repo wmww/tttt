@@ -669,9 +669,8 @@ static bool elaborate_error(
     if (elaborate_did_you_mean_to_call(me, head, expr, source, target, errs)) return true;
     switch (expr->tag) {
         case EXPR_AS_TYPE:
-            // (JavaScript's `/** @satisfies {T} */ (x)` and `/** @type {T} */ (x)` are parenthesized expressions to tsc,
-            // which elaborateError looks into)
-            if (expr->as_type->is_jsdoc) return elaborate_error(me, head, &expr->as_type->expr, source, target, errs);
+            // (JavaScript's `/** @satisfies {T} */ (x)` and `/** @type {T} */ (x)` are parentheses around a satisfies or
+            // as expression to tsgo's reparser: elaborateError goes through the parentheses and stops at those)
             if (expr->as_type->angle_bracket_syntax || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) {
                 return false;
             }

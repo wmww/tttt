@@ -240,3 +240,19 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   their default-flag misses, plus xstate/sloppy and xstate/nosnc spurious TS2589/TS5114/TS5115 (State.ts:395,
   graph/utils.ts:91: instantiation depth on `Values` without strictNullChecks), xstate/eopt one spurious TS2322
   (input.test.ts:272, a spawn signature), vue/nuia 2 spurious + 2 other-code: TypeScript checker cases, not JS.
+- (agent D, JS mutants 2026-10-09, seeds 1-3 of `--tests js -n 3000`: 83/28/31 differing before, ~19/26/29 after)
+  What's left, by owner:
+  - TS (anyone): `const t: never = f4([[1, "x"], [2, "y"]])` with `<const T>(x: [T, T]) => T` prints `[1, "x"]` where
+    tsgo has `readonly [1, "x"]`: a contextual return type (never) seems to replace T as the array literals' contextual
+    type, so they lose the const context (jsdocTemplateTag6 mutants, also reproducible in TS).
+  - TS: `interface I { readonly [symb]: boolean }` with `symb: never` is a number index signature in tsgo
+    (expandoFunctionSymbolPropertyJs mutants).
+  - Suggestions: tttt never reports unused declarations as suggestions (captureSuggestions with noUnused* off):
+    unused_enabled() is false then; tsgo reports TS6133 suggestions, in plain JS too (noFlakyDiagnosticsUntypedModule*).
+  - A (expandos): `const foo: never = {}; foo["baz"] = {}` is no expando in tsgo (annotated), TS2322 at the element
+    access; tttt declares it (the element-access path doesn't ask expando_initializer's `annotated`).
+  - C: `/** @type {Foo} */ export default { ... }` elaboration position (checkJsdocTypeTagOnExportAssignment5/6);
+    an earlier comment's `@extends` still counts for TS8023 (checkJSDocAugmentsTagMatchesExtends reads every
+    comment); jsdocParamTagTypeLiteral nested `@param` TS8032 cases.
+  - B: TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge), moduleExportAlias5 TS2339,
+    jsDeclarationsFunctions TS2323 (`export { j }` twice).
