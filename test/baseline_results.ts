@@ -34543,7 +34543,7 @@ const baselines = {
     'wellKnownSymbolExpando': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'whileStatementInnerComments': {
         errors: true,

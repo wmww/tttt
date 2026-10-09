@@ -1431,8 +1431,9 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // `f[k] = function () {}`: a late-bound member's value is contextually typed by the access it is assigned to (tsc's
     // getContextualTypeForAssignmentDeclaration: the left has no symbol, getTypeOfExpression of it), which is this
     // member's type again: circular, any (TS7022 under noImplicitAny). A value that asks for no contextual type (a
-    // literal) types it
-    if (symbol_rare(symbol)->late_bound_key && node && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
+    // literal) types it. tsgo gives none to `F[k] = v` that the binder declared (a TS expando): typed like any other
+    // (PROTOTYPE: JavaScript keeps 6.0's until todo entry 8)
+    if (symbol_rare(symbol)->late_bound_key && node && decl->full.source && decl->full.source->is_js && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
         decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD
     ) {
         Expr const* value = node;
