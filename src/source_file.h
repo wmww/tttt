@@ -154,8 +154,8 @@ typedef struct SourceFile {
     bool resolve_serial;
     // A .json file an import resolved to (resolveJsonModule): one expression, which is what the module is (`export =`)
     bool is_json;
-    // The tsconfig.json/jsconfig.json the options come from: its diagnostics sort before every file's (tsc's config
-    // file has no `path`, which compareDiagnostics orders first)
+    // The tsconfig.json/jsconfig.json the options come from (its diagnostics sort by its path like any file's: tsgo's
+    // config file has a FileName)
     bool is_config;
     // tsc's LanguageVariant.JSX (.tsx and JavaScript files): `<` at the start of an expression is a JSX element, never
     // a type assertion

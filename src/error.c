@@ -548,7 +548,15 @@ static int chain_content_cmp(Error const* a, Error const* b) {
     return 0;
 }
 
+// Where a diagnostic without a file sorts among the others (tsgo's CompareDiagnostics by Loc, then code): the program's
+// (option and file processing diagnostics, NewCompilerDiagnostic: Loc -1) before the checker's (c.error(nil, ...),
+// a missing global type: Loc 0)
+static int global_rank(Error const* error) {
+    return error->phase == ERROR_PHASE_TYPECHECK;
+}
+
 static int error_full_cmp(Error const* a, Error const* b);
+static Error* global_insert(ErrorCtx* me, Error error);
 
 // tsc's compareRelatedInformation: more of it is less
 static int related_cmp(Error const* a, Error const* b) {
@@ -572,6 +580,7 @@ static int related_cmp(Error const* a, Error const* b) {
 // related information
 static int error_full_cmp(Error const* a, Error const* b) {
     if (span_valid(a->span) != span_valid(b->span)) return span_valid(a->span) ? 1 : -1;
+    if (!span_valid(a->span) && global_rank(a) != global_rank(b)) return global_rank(a) - global_rank(b);
     int ret = span_cmp(a->span, b->span);
     if (ret) return ret;
     unsigned a_code = a->canonical_code ? a->canonical_code : a->ts_code;
@@ -607,8 +616,8 @@ void error_ctx_merge(ErrorCtx* me, ErrorCtx* from) {
         if (seen) {
             error_drop(i);
         } else {
-            Error* global = error_ctx_global_error_s(me, i->ts_code, i->message);
-            global->sub_errors = i->sub_errors;
+            global_insert(me, (Error){ .message = i->message, .ts_code = i->ts_code, .phase = i->phase,
+                .sub_errors = i->sub_errors });
         }
     }
     from->errors.size = 0;
@@ -722,22 +731,27 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error) {
     }
 }
 
+static Error* global_insert(ErrorCtx* me, Error error) {
+    // (by rank, then code, then message)
+    intptr_t index = 0;
+    int rank = global_rank(&error);
+    while (index < vec_error_size(&my errors)) {
+        Error const* other = vec_error_at(&my errors, index);
+        int other_rank = global_rank(other);
+        if (span_valid(other->span) || other_rank > rank || (other_rank == rank && (other->ts_code > error.ts_code ||
+            (other->ts_code == error.ts_code && cstr_cmp(&other->message, &error.message) > 0)))) break;
+        index++;
+    }
+    return vec_error_insert_n(&my errors, index, &error, 1).ref;
+}
+
 Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message) {
     if (!me) {
         cstr_drop(&message);
         return nullptr;
     }
     if (my frozen) log_error("Reported into a frozen ErrorCtx (a checker's diagnostic that bypasses its own): TS", ts_code, ": ", message);
-    // tsc sorts diagnostics without a file by code, then by message
-    intptr_t index = 0;
-    while (index < vec_error_size(&my errors)) {
-        Error const* other = vec_error_at(&my errors, index);
-        if (span_valid(other->span) || other->ts_code > ts_code ||
-            (other->ts_code == ts_code && cstr_cmp(&other->message, &message) > 0)) break;
-        index++;
-    }
-    Error error = { .message = message, .ts_code = ts_code, .phase = my phase };
-    return vec_error_insert_n(&my errors, index, &error, 1).ref;
+    return global_insert(me, (Error){ .message = message, .ts_code = ts_code, .phase = my phase });
 }
 
 Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code) {

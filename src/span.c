@@ -116,7 +116,6 @@ int span_cmp(Span a, Span b) {
             break;
     }
     if (a.source != b.source) {
-        if (a.source->is_config != b.source->is_config) return a.source->is_config ? -1 : 1;
         int cmp = cstr_cmp(&a.source->canonical_path, &b.source->canonical_path);
         panic_if(!cmp, "Two different source files both have path ", a.source->canonical_path);
         return cmp;
