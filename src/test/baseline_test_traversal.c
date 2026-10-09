@@ -164,20 +164,7 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     // (Not when the class body declares it)
     ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;
     ClassItem const* item = class_decl ? class_decl_find_member(class_decl, name.sv, this->this_kind == THIS_CLASS_STATIC) : nullptr;
-    if (item) {
-        // A method declared after it replaces the symbol the assignment declared (tsc's isReplaceableByMethod), which
-        // the name keeps, alone
-        if (item->tag == CLASS_ITEM_METHOD && item->span.source == expr_outer_span(left).source &&
-            span_start_ptr(item->span) > span_start_ptr(expr_outer_span(left)) && member &&
-            ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)
-        ) {
-            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                .span = expr_outer_span(&left->property->prop), .text = symbol_text(ctx, member),
-                .declarations = vec_span_single(expr_outer_span(left)),
-            };
-        }
-        return;
-    }
+    if (item) return;
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
     if (!declares) return;
@@ -2250,6 +2237,12 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         }
         Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, identifier_this_function(me));
         Expr const* literal = function_impl_rare(identifier_this_function(me))->this_literal;
+        // (`o.m = function () { this }` of an object literal o: that literal's)
+        if (!literal && function_impl_rare(identifier_this_function(me))->this_assigned_object && type &&
+            type->kind == TY_ANONYMOUS && type->anonymous.object_literal
+        ) {
+            literal = type->anonymous.literal_expr;
+        }
         if (type && type->kind == TY_ANONYMOUS && type->anonymous.object_literal && literal) {
             // The object literal's own type (noImplicitThis): its symbol, `__object` or the variable's name
             bool named = literal == ctx->variable_literal;
@@ -2289,12 +2282,15 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         }
     }
     if (!symbol || !symbol->decl_count) return;
-    // The `this` parameter of a JSDoc `@this {T}` (its name is the tag's): no declaration to tsc
+    // The `this` parameter of a JSDoc `@this {T}` (its name is the tag's): tsgo's reparsed parameter, a missing name
+    // at the tag's
     Span first = symbol->decls[0].name;
     if (symbol->is_parameter && span_valid(first) && first.source && first.sv.buf > source_file_start(first.source) &&
         first.sv.buf[-1] == '@'
     ) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = identifier_expr_name(me), .allow_declaration_empty = true, .text = cstr_lit("this") });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_single(first), .span = identifier_expr_name(me), .text = cstr_lit("(Missing)"),
+        });
         return;
     }
     baseline_test_case_add_symbol(ctx, (BaselineSym){

@@ -4967,7 +4967,8 @@ static void add_expando_member(
     if (!merged) {
         member->name = name.sv;
         member->name_span = written_member_name(left, name);
-        member->parent = host;
+        // (A `{}` container's are the object literal's members in tsgo, whose symbol has no name to qualify them with)
+        member->parent = init && init->tag == EXPR_OBJECT ? nullptr : host;
         member->exported = true;
     }
     Expr* value = right;

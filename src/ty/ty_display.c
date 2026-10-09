@@ -3494,7 +3494,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
                     }
-                    if (is_nested_expando_function(ty)) {
+                    // (A JavaScript `{}` container is the object literal's type in tsgo: structural too)
+                    if (is_nested_expando_function(ty) || (ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.js_container)) {
                         // (Within itself `typeof f`: tsc's shouldWriteTypeOfFunctionSymbol, visitedTypes)
                         bool recursive = false;
                         for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;

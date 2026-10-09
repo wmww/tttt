@@ -4034,13 +4034,9 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     if (kind == 1) {
         error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any[]' type.");
     } else if ((kind == 2 || kind == 3) && own == first) {
-        // (At the value declaration: a `this.x = v` one is the assignment, tsc's bindThisPropertyAssignment; any other
-        // the property access, a Variable to reportImplicitAny)
-        if (own->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || own->assignment == ASSIGNMENT_DECL_THIS_IN_METHOD) {
-            error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
-        } else {
-            error_ctx_error_d(errs, expr_outer_span(&op->left), 7005, "Variable '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
-        }
+        // (At the value declaration, the assignment: tsgo's reportImplicitAny of a declaration that is a binary
+        // expression)
+        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
     }
 }
 
@@ -4951,14 +4947,6 @@ bool expr_is_exports_object(Expr const* me) {
 bool expr_is_require_call(Expr const* me) {
     return my tag == EXPR_CALL && !my call->uses_new && vec_expr_size(&my call->args) == 1 &&
         expr_is_plain_identifier(&my call->callable, "require");
-}
-
-bool expr_assigns_void_zero(Expr const* value) {
-    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
-        value = &value->binary_op->right;
-    }
-    return value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_VOID && value->unary_op->expr.tag == EXPR_LITERAL &&
-        value->unary_op->expr.literal.tag == VALUE_NUMBER && value->unary_op->expr.literal.number == 0;
 }
 
 CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span* name_ret) {

@@ -347,9 +347,6 @@ IdentifierExpr const* expr_this_keyword(Expr const* me);
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
 // What an assignment declares, in a CommonJS file (`file` of the assignment): tsgo's getAssignmentDeclarationKind
 CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment, Span* name_ret);
-// `void 0` as the rightmost value of an assignment chain: no assignment declaration (tsc's isVoidZero of
-// getRightMostAssignedExpression in getAssignmentDeclarationKind)
-bool expr_assigns_void_zero(Expr const* value);
 // `module.exports` (tsc's isModuleExportsAccessExpression)
 bool expr_is_module_exports(Expr const* me);
 // An unparenthesized identifier `name` (not a keyword)

@@ -1928,6 +1928,45 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, SourceFile 
 
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
 // of an identifier), aliases are seen through. Everything about a placeholder is any
+// A symbol only assignments declare: what they assign, any if that reads the symbol again (tsgo's
+// getWidenedTypeForAssignmentDeclaration pushes the symbol: TS7022 at its value declaration, the first assignment)
+static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbol) {
+    SymbolDecl const* decl = &symbol->decls[0];
+    bool single = symbol->decl_count == 1 && decl->assignment == ASSIGNMENT_DECL_PROPERTY && !symbol_decl_jsdoc_type(decl);
+    // (A class's `this.x = v` members are typed by control flow in the constructor: not here)
+    if (decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || decl->assignment == ASSIGNMENT_DECL_THIS_IN_METHOD) {
+        return single ? value_entry_type(me, symbol, decl) : assignment_symbol_type(me, symbol);
+    }
+    Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+    u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)decl };
+    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (ty_resolving_find(me, RESOLVING_DECLARATION, decl)) {
+        ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
+        return circular;
+    }
+    ty_resolving_push(me, RESOLVING_DECLARATION, decl);
+    Ty const* type = single ? value_entry_type(me, symbol, decl) : assignment_symbol_type(me, symbol);
+    if (ty_resolving_pop(me)) {
+        my circular_bindings = true;
+        *intern_slot(me, &my links, key, 2) = (void*)decl;
+        if (compiler_options()->no_implicit_any && span_valid(decl->full)) {
+            // (At the whole assignment)
+            Expr const* value = decl->node;
+            Span whole = decl->full;
+            if (value && decl->kind == SYMBOL_DECL_ASSIGNMENT) {
+                Span value_span = expr_outer_span(value);
+                if (value_span.source == whole.source && span_end_ptr(value_span) > span_start_ptr(whole)) {
+                    whole = span_make(whole.source, span_start_ptr(whole), span_end_ptr(value_span));
+                }
+            }
+            ty_error_at(me, whole, 7022, cstr_d("'", symbol->name, "' implicitly has type 'any' because it does not "
+                "have a type annotation and is referenced directly or indirectly in its own initializer."));
+        }
+        return circular;
+    }
+    return type;
+}
+
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
         Ty const* namespace_import = namespace_import_type(me, symbol);
@@ -1999,11 +2038,7 @@ static Ty const* own_type_of_symbol(Checker* me, Symbol const* symbol) {
         SymbolDeclKind kind = symbol->decls[i].kind;
         assignments = kind == SYMBOL_DECL_ASSIGNMENT || kind == SYMBOL_DECL_EXPANDO || !(symbol->decls[i].flags & SYMBOL_VALUE);
     }
-    if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
-        symbol_decl_jsdoc_type(&symbol->decls[0]))
-    ) {
-        return assignment_symbol_type(me, symbol);
-    }
+    if (assignments) return guarded_assignment_symbol_type(me, symbol);
     SymbolDecl const* only = nullptr;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (!decl_contributes_value(symbol, i)) continue;

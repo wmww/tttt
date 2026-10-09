@@ -2784,7 +2784,9 @@ static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
 
 static bool expando_target_is_annotated(PropertyExpr const* access) {
     Symbol const* declared = access->declares;
-    if (declared->decl_count && symbol_decl_jsdoc_type(&declared->decls[0])) return true;
+    // (`this.x`: its value declaration's annotation; `F.x`: only F's, tsgo's getContextualTypeForAssignmentExpression)
+    bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+    if (this_access && declared->decl_count && symbol_decl_jsdoc_type(&declared->decls[0])) return true;
     if (access->expr.tag != EXPR_IDENTIFIER || access->expr.identifier.keyword) return false;
     Symbol const* parent = access->expr.identifier.target;
     if (!parent || !(parent->flags & SYMBOL_VARIABLE)) return false;
@@ -2832,6 +2834,8 @@ static Ty const* annotated_property_context(Checker* me, BinaryOpExpr const* bin
 }
 
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
+    // A JSDoc `@type` of the assignment (tsgo's reparsed binary.Type, getContextualTypeForBinaryOperand)
+    if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
     Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
     // (Only an optional property's type differs from its annotation's: don't look further for others)
     if (assigned_context && binary->left.tag == EXPR_PROPERTY && compiler_options()->strict_null_checks &&
