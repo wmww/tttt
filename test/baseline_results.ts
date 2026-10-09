@@ -16491,7 +16491,7 @@ const baselines = {
         types: true,
     },
     'implicitEmptyObjectType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19171,7 +19171,7 @@ const baselines = {
         types: true,
     },
     'invocationErrorRecovery': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21641,32 +21641,32 @@ const baselines = {
         types: true,
     },
     'malformedDestructuringAssignmentTransformVariants(experimentaldecorators=false,target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'malformedDestructuringAssignmentTransformVariants(experimentaldecorators=false,target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'malformedDestructuringAssignmentTransformVariants(experimentaldecorators=true,target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'malformedDestructuringAssignmentTransformVariants(experimentaldecorators=true,target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'malformedObjectDestructuringAssignmentClassFields': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'malformedObjectDestructuringAssignmentESDecorators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
