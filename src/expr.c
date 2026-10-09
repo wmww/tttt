@@ -3698,7 +3698,23 @@ static bool binary_op_typecheck(
             if (suggested != op && maybe_kind(left, TYF_BOOLEAN | TYF_BOOLEAN_LITERAL, true) &&
                 maybe_kind(right, TYF_BOOLEAN | TYF_BOOLEAN_LITERAL, true)
             ) {
-                error_ctx_error_d(errs, expr->inner_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
+                // (At the operator token)
+                char const* at = span_end_ptr(expr_outer_span(&expr->binary_op->left));
+                char const* end = span_start_ptr(expr_outer_span(&expr->binary_op->right));
+                char op_char = binary_op_get_zv(op).str[0];
+                while (at < end && *at != op_char) {
+                    if (at + 1 < end && at[0] == '/' && at[1] == '*') {
+                        at += 2;
+                        while (at + 1 < end && !(at[0] == '*' && at[1] == '/')) at++;
+                        at += 2;
+                    } else if (at + 1 < end && at[0] == '/' && at[1] == '/') {
+                        while (at < end && *at != '\n') at++;
+                    } else {
+                        at++;
+                    }
+                }
+                Span op_span = at < end ? span_make(expr->inner_span.source, at, at + binary_op_get_zv(op).size) : expr->inner_span;
+                error_ctx_error_d(errs, op_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
                     "' operator is not allowed for boolean types. Consider using '", binary_op_get_zv(suggested).str, "' instead.");
                 operands_ok = false;
                 break;

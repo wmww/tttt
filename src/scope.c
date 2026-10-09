@@ -1563,9 +1563,17 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
     SymbolTable const* exports = container->exports;
     Symbol* export_equals = symbol_table_get(exports, c_sv("export="));
     if (export_equals && exports->count > 1 && export_equals->decl_count) {
-        // (tsc's checkExternalModuleExports)
-        error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
-            "An export assignment cannot be used in a module with other exported elements.");
+        // (tsc's checkExternalModuleExports: only with other exports that are values, hasExportedMembersOfKind)
+        bool values = false;
+        for (u32 i = 0; i < exports->count && !values; i++) {
+            Symbol* other = exports->entries[i].symbol;
+            if (other == export_equals) continue;
+            values = (other->flags & SYMBOL_ALIAS ? symbol_resolved_flags(other) : other->flags) & SYMBOL_VALUE;
+        }
+        if (values) {
+            error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
+                "An export assignment cannot be used in a module with other exported elements.");
+        }
         if (container->is_module) check_export_equals_merge(container, export_equals, errs);
     }
     for (u32 i = 0; i < exports->count; i++) {

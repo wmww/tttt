@@ -6071,7 +6071,7 @@ const baselines = {
         types: true,
     },
     'constructorWithIncompleteTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8091,17 +8091,17 @@ const baselines = {
         types: true,
     },
     'declarationEmitDefaultImportPrivateClass(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitDefaultImportPrivateClass(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitDefaultImportPrivateClass(module=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8291,17 +8291,17 @@ const baselines = {
         types: true,
     },
     'declarationEmitExportAssignmentWithTypeExports(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitExportAssignmentWithTypeExports(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitExportAssignmentWithTypeExports(module=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13166,7 +13166,7 @@ const baselines = {
         types: true,
     },
     'exportAssignmentMerging1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13176,7 +13176,7 @@ const baselines = {
         types: true,
     },
     'exportAssignmentMerging2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13206,7 +13206,7 @@ const baselines = {
         types: false,
     },
     'exportAssignmentMerging8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16751,7 +16751,7 @@ const baselines = {
         types: false,
     },
     'importDeclWithExportModifierAndExportAssignmentInAmbientContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17051,12 +17051,12 @@ const baselines = {
         types: true,
     },
     'importTypeAssertionDeprecation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'importTypeAssertionDeprecationIgnored': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17236,12 +17236,12 @@ const baselines = {
         types: true,
     },
     'incompatibleExports1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'incompatibleExports2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47056,7 +47056,7 @@ const baselines = {
         types: true,
     },
     'arithmeticOperatorWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50066,7 +50066,7 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxRestrictionsCJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1165,8 +1165,10 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
             if (prop->tag == OBJECT_ITEM_PROPERTY && !prop->computed_key && prop->name_span.sv.size &&
                 *prop->name_span.sv.buf != '"' && *prop->name_span.sv.buf != '\'' && cstr_equals(&prop->name_string, "assert")
             ) {
-                error_ctx_grammar_error_d(errs, prop->name_span, 2880,
+                // (A checker error in tsgo, not a grammar one: also in a file with parse errors)
+                error_ctx_error_d(errs, prop->name_span, 2880,
                     "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
+                break;
             }
         }
     }
