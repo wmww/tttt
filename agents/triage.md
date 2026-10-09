@@ -152,3 +152,19 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
     the `!`: TS2872, TS2362 one column early).
   - arrayFakeFlatNoCrashInferenceDeclarations: TS5088 from a union's circularity elision
     (typeToTypeNodeOrCircularityElision), not ported.
+
+## Source sweep after the TS 7.1 fan-out (agent A, 2026-10-09: 3049 / 3363)
+- `type CP<T extends unknown[]> = { [K in keyof T]: Conv<T[K]> }`: `CP<Parameters<T>>` against `unknown[]` (a type
+  argument constraint) is assignable in tsgo, TS2740 in tttt (probe: vitest's browser-playwright
+  `BrowserCommand<ConvertUserEventParameters<Parameters<T>>>`; tsgo reports TS2344 there for other reasons, without a
+  chain). Port getResolvedApparentTypeOfMappedType / tsgo's homomorphic-mapped-over-array relation.
+- `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>` has no `c` in tttt (TS2339; trpc's
+  `Partial<CreateHTTPHandlerOptions<TRouter>>.createContext`, 8 projects): expand_generic_intersection_homomorphic()
+  skips a part whose apparent type is a union (a deferred conditional's constraint); listing the union's common
+  properties there was not enough, the property lookup goes another way.
+- mikro-orm (120+ diagnostics): `NativeInsertUpdateOptions<T> & UpsertOptions<T, never>` not assignable to
+  `UpsertOptions<T, never>` for `getOnConflictReturningFields(meta, data, uniqueFields, options, platform)`: the
+  inferred T prints as T but isn't the caller's (TS2719-style "two different types" deep in the chain). Inference.
+- tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
+  call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
+  fine: the difference is in how `spans` becomes unknown).

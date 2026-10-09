@@ -403,6 +403,8 @@ src` finds the code-side markers; every significant one has an entry here.
   `report_property_incompatible()` reads paths back out of messages (`incompatible_line_path()`) and
   `relation_line_said()` compares a missing property line's text with the pair's (tsgo's chainArgsMatch compares
   argument strings); `headMessage` approximated by `RelationState.at_top` and `head_code`.
+  `relation_line_said()` never lets a missing-property line about a mapped type with generic keys replace the head
+  (tsgo would name its apparent type; vitest's TS2344).
   `intersection_props_related`'s TS2741 member choice fitted to one probe
   (`test/probes/plan19/valibot/overload_omit_intersection_missing_prop.ts`).
 - Elaboration (`elaborate_error`) reads memos (`ty_mutable_location_type`, `ty_array_literal_as_tuple`) instead of
