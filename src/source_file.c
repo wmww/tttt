@@ -140,6 +140,7 @@ void source_file_drop(SourceFile* me) {
     }
     free(my module_refs);
     free(my comment_directives);
+    free(my expando_containers);
     free(my unused);
     free(my parse_error_starts);
 }

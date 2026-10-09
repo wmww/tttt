@@ -187,6 +187,11 @@ typedef struct SourceFile {
     bool package_has_type;
     cstr package_json;
     Scope* scope; // The file's scope, made when names are declared. A module's container is its module symbol
+    // JavaScript `{}` initializers with expandos (`var o = {}; o.x = 1`) and the symbol they are the value of: the
+    // literal's type is that container's (tsgo: the expandos are the literal's symbol's), Expr.expando_container.
+    // malloc'd, written by the file's own resolve walk
+    struct ExpandoContainer { struct Expr const* literal; Symbol const* host; }* expando_containers;
+    u32 expando_container_count;
     cstr decl_override; // Used for the tests
     const char* display_path_override; // Used for the tests
     ModuleRef** module_refs; // Owned, in source order

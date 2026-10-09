@@ -3827,6 +3827,14 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
 
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
+    if (expr->expando_container) {
+        // `var o = {}; o.x = 1`: the container's type (tsgo's object literal symbol has the expandos)
+        SourceFile const* file = expr->inner_span.source;
+        for (u32 i = 0; i < file->expando_container_count; i++) {
+            Symbol const* host = file->expando_containers[i].host;
+            if (file->expando_containers[i].literal == expr && host->binder == my binder) return ty_namespace_type(me, host);
+        }
+    }
     Ty const* written_context = ctx.contextual;
     Ty const* written_sig_context = ctx.sig_contextual;
     if (ctx.contextual) ctx.contextual = apparent_literal_context(me, ctx.contextual);

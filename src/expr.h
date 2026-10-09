@@ -178,6 +178,8 @@ typedef struct Expr {
     // type parameters (tsc's getOuterTypeParameters is empty, instantiating it is the identity). Set by
     // expr_lookup_names()
     bool no_enclosing_type_params : 1;
+    // A JavaScript `{}` with expandos: SourceFile.expando_containers says whose. Set by the resolve walk
+    bool expando_container : 1;
     // The parentheses around it: how many bytes the outer span (expr_outer_span()) starts before inner_span and ends
     // after it. Set with expr_set_outer_span()
     u32 paren_before;

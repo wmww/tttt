@@ -219,8 +219,6 @@ static bool is_nested_expando_function(Ty const* ty) {
     Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
     if (!symbol) symbol = ty->declared.symbol;
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION)) return false;
-    // (Nor one a module's `export =` assigns while it has other exports: getCommonJsExportEquals' ValueModule)
-    if (symbol_rare(symbol)->export_equals_module) return false;
     bool expando = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];

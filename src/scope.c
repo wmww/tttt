@@ -4827,6 +4827,20 @@ static void mark_expando_host(Symbol* host, void const* node) {
 static void set_expando_initializer_host(Expr* init, Symbol* host) {
     if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->expando_host = host;
     if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
+    SourceFile* file = init ? (SourceFile*)init->inner_span.source : nullptr;
+    if (init && init->tag == EXPR_OBJECT && file) {
+        // (Once per literal: a file bound again, another program's, has a host of its own)
+        init->expando_container = true;
+        for (u32 i = 0; i < file->expando_container_count; i++) {
+            if (file->expando_containers[i].literal == init) {
+                file->expando_containers[i].host = host;
+                return;
+            }
+        }
+        file->expando_containers = realloc(file->expando_containers, sizeof(*file->expando_containers) * (file->expando_container_count + 1));
+        panic_if(!file->expando_containers, "out of memory");
+        file->expando_containers[file->expando_container_count++] = (struct ExpandoContainer){ init, host };
+    }
 }
 
 // What the entity name `f` or `a.b` of `f.x = v` names, if it can have expandos (tsgo's lookupEntity, then
