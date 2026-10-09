@@ -8635,6 +8635,20 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     if (precedence <= ctx.min_precedence || (ctx.reject_in_operator && op == BINARY_OP_IN)) {
         return parse_fail(&p);
     }
+    // `a ## b as T $$ c`: ends before a $$ that would bind before ## once `as T` is erased (tsgo 7.1's
+    // parseBinaryExpressionRest, TypeScript#63527). The binary under the assertions was made at this level
+    Expr const* asserted = left_and_ret;
+    while (asserted->tag == EXPR_AS_TYPE && !expr_is_perenthisized(asserted) &&
+        span_start_ptr(asserted->as_type->keyword_span) > span_start_ptr(expr_outer_span(&asserted->as_type->expr))
+    ) {
+        asserted = &asserted->as_type->expr;
+    }
+    if (asserted != left_and_ret && asserted->tag == EXPR_BINARY_OP && !expr_is_perenthisized(asserted) &&
+        !binary_op_is_assignment(asserted->binary_op->op) && asserted->binary_op->op != BINARY_OP_COMMA
+    ) {
+        int last = binary_op_get_precedence(asserted->binary_op->op);
+        if (precedence > last || (precedence == last && op == BINARY_OP_STAR_STAR)) return parse_fail(&p);
+    }
     // Only a left-hand side expression is assigned to (tsc's parseAssignmentExpressionOrHigher: isLeftHandSideExpression);
     // `await x = 1`, `a + b = c`, `x as T = y` end before the `=`
     if (precedence == binary_op_get_precedence(BINARY_OP_EQUAL) &&
