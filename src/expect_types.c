@@ -80,6 +80,8 @@ void program_print_expect_types(Program* program, char const* spans_path) {
         return;
     }
     program_make_current(program);
+    // (NoTruncation: checking is done, the option only matters to the printer from here on)
+    ignore compiler_options_set(program_options(program), c_sv("noerrortruncation"), c_sv("true"));
     set_compiler_options(program_options(program));
     char path[4096];
     unsigned line, col, end_line, end_col;
