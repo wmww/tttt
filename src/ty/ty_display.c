@@ -211,7 +211,7 @@ static bool is_non_local_function(Symbol const* symbol) {
     return false;
 }
 
-// A function with expando properties none of which is assigned at the top level of a file: tsc's binder makes a
+// A function with expando properties (in JavaScript: none of which is assigned at the top level of a file): tsc's binder makes a
 // function a ValueModule (bindPotentiallyMissingNamespaces) only for a top-level `f.x = v` (isTopLevelNamespaceAssignment),
 // which is what prints it as `typeof f`; otherwise it is a function like any other, whose type prints structurally
 // (shouldWriteTypeOfFunctionSymbol wants UseTypeOfFunction or recursion): `{ (): void; p6: number; }` in a namespace
@@ -227,8 +227,10 @@ static bool is_nested_expando_function(Ty const* ty) {
         if (decl->kind == SYMBOL_DECL_NAMESPACE || decl->kind == SYMBOL_DECL_CLASS) return false;
         if (decl->kind != SYMBOL_DECL_EXPANDO) continue;
         expando = true;
-        // (add_expando_namespace_decls(): a top-level assignment's declaration is named)
-        top_level |= span_valid(decl->name);
+        // (add_expando_namespace_decls(): a top-level assignment's declaration is named. tsgo has no
+        // bindPotentiallyMissingNamespaces: outside JavaScript every expando function prints structurally.
+        // PROTOTYPE: JavaScript keeps 6.0's rule until its rework, todo entry 8)
+        top_level |= span_valid(decl->name) && decl->name.source->is_js;
     }
     return expando && !top_level;
 }

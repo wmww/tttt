@@ -1103,7 +1103,7 @@ const baselines = {
     'arrayFromAsync': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayIndexWithArrayFails': {
         errors: true,
@@ -7778,7 +7778,7 @@ const baselines = {
     'declarationEmitAliasesOfArrowsWillingToUseTypeof': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitAlternativeContainingModules': {
         errors: true,
@@ -8088,7 +8088,7 @@ const baselines = {
     'declarationEmitDefaultExportWithStaticAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultImportPrivateClass(module=commonjs)': {
         errors: false,
@@ -8253,7 +8253,7 @@ const baselines = {
     'declarationEmitExpandoFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoFunctionInNamespace': {
         errors: true,
@@ -8263,12 +8263,12 @@ const baselines = {
     'declarationEmitExpandoOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoWithGenericConstraint': {
         errors: true,
@@ -8398,12 +8398,12 @@ const baselines = {
     'declarationEmitFunctionDuplicateNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitFunctionKeywordProp': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitGenericTypeParamerSerialization': {
         errors: true,
@@ -8583,12 +8583,12 @@ const baselines = {
     'declarationEmitLateBoundAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitLateBoundAssignments2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitLateBoundJSAssignments': {
         errors: true,
@@ -8598,7 +8598,7 @@ const baselines = {
     'declarationEmitLateExpandoAliasAddsExports': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitLateVisibleExpandoFunction': {
         errors: true,
@@ -8723,7 +8723,7 @@ const baselines = {
     'declarationEmitNestedExpandoPropsRegression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNestedGenerics': {
         errors: true,
@@ -9058,7 +9058,7 @@ const baselines = {
     'declarationEmitStripInternalExpandoFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitSubpathImportsReexport': {
         errors: true,
@@ -12983,7 +12983,7 @@ const baselines = {
     'expandoFunctionBlockShadowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypes': {
         errors: true,
@@ -13016,9 +13016,9 @@ const baselines = {
         types: true,
     },
     'expandoFunctionNestedAssigments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionNestedAssigmentsDeclared': {
         errors: true,
@@ -19228,7 +19228,7 @@ const baselines = {
     'isolatedDeclarationErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsAugmentation': {
         errors: true,
@@ -19283,7 +19283,7 @@ const baselines = {
     'isolatedDeclarationLazySymbols': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationsAddUndefined': {
         errors: false,
@@ -21243,7 +21243,7 @@ const baselines = {
     'lateBoundFunctionMemberAssignmentDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundMethodNameAssigmentJS': {
         errors: true,
@@ -31763,7 +31763,7 @@ const baselines = {
     'tsxStatelessComponentDefaultProps': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxTypeArgumentPartialDefinitionStillErrors': {
         errors: true,
@@ -39123,7 +39123,7 @@ const baselines = {
     'exportDefaultNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'leaveOptionalParameterAsWritten': {
         errors: true,
@@ -39143,7 +39143,7 @@ const baselines = {
     'nullPropertyName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitIdentifierPredicates01': {
         errors: true,
@@ -43778,7 +43778,7 @@ const baselines = {
     'newTargetNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAccessNumericLiterals.es6': {
         errors: true,
@@ -61413,7 +61413,7 @@ const baselines = {
     'propertyAssignmentUseParentType3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'prototypePropertyAssignmentMergeAcrossFiles': {
         errors: false,
@@ -61683,7 +61683,7 @@ const baselines = {
     'typeFromPropertyAssignment36': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment37': {
         errors: true,
@@ -61693,7 +61693,7 @@ const baselines = {
     'typeFromPropertyAssignment38': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment39': {
         errors: true,
