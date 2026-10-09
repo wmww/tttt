@@ -80,7 +80,7 @@ solid `component.type-tests.ts:100` already matched at this base. Left:
   looked at; probably the void-parameter optionality on another path (getMinArgumentCount in call resolution).
 - dokploy's react-hook-form `Control<...>` mismatches: not looked at.
 
-## Source sweep after the TS 7.1 fan-out (agent B, 2026-10-09: 3069 -> see the commit log)
+## Source sweep after the TS 7.1 fan-out (agent B, 2026-10-09: 3069 -> 3119 / 3363)
 Fixed that session: chai's assert via an export= property (TS2775), discriminant narrowing of `x!.k` with x null,
 TS2875's position, union signature return reduction (Promise | PromiseLike `then`), free type parameter limits
 (Playwright's Unboxed), TS2862 with a generic union index, `import x = require` resolving module members (mongoose
