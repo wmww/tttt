@@ -2420,17 +2420,15 @@ static Ternary props_related_impl(
         }
     }
 
-    // An object literal that isn't widened yet has no room for other properties, unless they may be undefined (tsc's
-    // propertiesRelatedTo for an isObjectLiteralType target): `string` isn't a subtype of the element `{}` of
-    // `x.push("s"); x.push({})`, so the evolving array ends up `(string | {})[]`
+    // An object literal that isn't widened yet has no room for other properties, undefined ones included since tsgo 7.1
+    // (propertiesRelatedTo for an isObjectLiteralType target): `string` isn't a subtype of the element `{}` of
+    // `x.push("s"); x.push({})`, so the evolving array ends up `(string | {})[]`, and `{ valid: boolean; msg?: undefined }`
+    // isn't one of `{ valid: true }`
     if (!optionals_only && ty_is_unwidened_object_literal(target) && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         u32 prop_count;
         SourceProp* props = source_props(me, source, source->kind == TY_INTERSECTION ? nullptr : ty_members(me, source), &prop_count);
         for (u32 i = 0; i < prop_count; i++) {
-            // (An optional property's type has undefined in it under strictNullChecks: tsc's missingType too)
-            bool undefined = (props[i].type->flags & TYF_UNDEFINED) ||
-                ((props[i].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks);
-            if (undefined || ty_get_prop(me, target, props[i].prop->name)) continue;
+            if (ty_get_prop(me, target, props[i].prop->name)) continue;
             if (report) {
                 cstr name = ty_prop_written_name(me, props[i].prop);
                 cstr target_str = display_for_report(me, target);
