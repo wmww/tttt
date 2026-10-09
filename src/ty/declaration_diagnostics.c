@@ -1969,7 +1969,17 @@ static void check_written_type(Walk* me, TypeNode const* type) {
             for_each (i, vec_spanned_type, &type->identifier->generic_params) check_written_type(me, &i->type);
             return;
         case TYPE_TYPEOF:
-            if (type->typeof_->expr) check_entity_expression(me, type->typeof_->expr);
+            if (type->typeof_->expr) {
+                // `typeof this.#a`: the emitted declaration can't name a private member (tsgo's declaration transform of
+                // a QualifiedName whose right is a PrivateIdentifier, TS7080 at the qualified name)
+                for (Expr const* e = type->typeof_->expr; e->tag == EXPR_PROPERTY; e = &e->property->expr) {
+                    csview name = e->property->prop.inner_span.sv;
+                    if (!name.size || name.buf[0] != '#') continue;
+                    error_ctx_error_d(my errs, expr_outer_span(e), 7080, "Declaration emit elides private members, but '",
+                        name, "' refers to a private member. Write an explicit type here.");
+                }
+                check_entity_expression(me, type->typeof_->expr);
+            }
             return;
         case TYPE_INDEXED:
             check_written_type(me, &type->indexed->interface);

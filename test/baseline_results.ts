@@ -8891,7 +8891,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitPrivateNameInTypeQuery': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

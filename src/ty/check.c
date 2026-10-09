@@ -3284,6 +3284,8 @@ static i32 declare_member(MemberTables* me, Atom const* name, uint8_t table, u32
 // The late-bound names (a computed name of a unique symbol or literal type that isn't written as a literal) have
 // tables of their own
 enum { LATE_TABLE = 4 };
+// The private names have tables of their own too
+enum { PRIVATE_TABLE = 2 };
 
 // tsc's lateBindMember: a conflict with the late-bound declarations of the name so far is reported at those and the
 // early-bound ones of the name, all named alike: a unique symbol by the declaration's name, else the property name
@@ -3365,7 +3367,7 @@ static void report_duplicate_members(
     bool private_static, ErrorCtx* errs
 ) {
     for_each (r, vec_dup_record, records) {
-        if (r->list != list || r->name != name || (check_static && r->table != table)) continue;
+        if (r->list != list || r->name != name || (check_static && r->table != table) || (private_static && !r->is_private)) continue;
         if (!private_static) {
             report_duplicate_named(r->span, dup_record_display(tables, r), errs);
         } else if (span_valid(r->span) && r->span.source && !r->span.source->is_stdlib && !error_ctx_find(errs, r->span, 2804)) {
@@ -3411,7 +3413,7 @@ static void check_duplicate_declarations(MemberTables const* tables, VecDupRecor
                 *state = (NameState){ r->name, 0, 0 };
             }
             if (state->state == 3) continue;
-            state->state |= r->table ? 2 : 1;
+            state->state |= r->table & 1 ? 2 : 1;
             if (state->state == 3) report_duplicate_members(tables, records, list, r->name, false, 0, true, errs);
         }
     }
@@ -3561,7 +3563,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         if (late_bound && !expr_is_entity_name(computed_key)) continue;
         i32 entry;
         if (!late_bound) {
-            entry = declare_member(tables, name, is_static, kind, name_span, errs);
+            // (A private name is its class's own, `__#1@#a` to tsc's binder: `#a` and `["#a"]` don't meet)
+            entry = declare_member(tables, name, is_static + (span_valid(private_name) ? PRIVATE_TABLE : 0), kind, name_span, errs);
         } else {
             // HACK: a late-bound name still conflicts with what the early table has (the static side's `prototype`,
             // where tsc reports TS2300 from somewhere not pinned down), without joining it
@@ -3575,7 +3578,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         }
         uint8_t check_kind = is_field ? (auto_accessor ? 2 : 1) : kind == MEMBER_METHOD ? 0 : 2;
         vec_dup_record_push(&records, (DupRecord){
-            .name = name, .span = name_span, .member = i, .entry = entry, .table = is_static, .check_kind = check_kind,
+            .name = name, .span = name_span, .member = i, .entry = entry, .check_kind = check_kind,
+            .table = is_static + (span_valid(private_name) ? PRIVATE_TABLE : 0),
             .is_private = span_valid(private_name),
         });
     }
