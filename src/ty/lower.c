@@ -678,14 +678,16 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
 
 // Free type parameters of a node, see Ty.anonymous.free_params
 
-#define MAX_FREE_PARAMS 16
+#define MAX_FREE_PARAMS 32 // (Bound ones included until the end: every `infer` of a long conditional chain is one)
+// (Generous: every `infer` of a long conditional chain is one, Playwright's Unboxed has 16)
+#define MAX_BOUND_PARAMS 64
 typedef struct FreeParams {
     Ty const* params[MAX_FREE_PARAMS];
     u32 len;
     bool unknown;
     // Type parameters declared inside the walked nodes (by a signature, a mapped type, `infer`). They aren't free,
     // and since nothing outside a node can mention what's declared inside it, they're simply taken out at the end
-    Ty const* bound[MAX_FREE_PARAMS];
+    Ty const* bound[MAX_BOUND_PARAMS];
     u32 bound_len;
     // Inside the extends type of a conditional being walked, which is what declares its `infer` type parameters.
     // Walking a node inside an extends type on its own (`(...args: any) => infer R`), R is free
@@ -697,7 +699,7 @@ typedef struct FreeParams {
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
-    if (out->bound_len == MAX_FREE_PARAMS) {
+    if (out->bound_len == MAX_BOUND_PARAMS) {
         out->unknown = true;
     } else {
         out->bound[out->bound_len++] = param;
