@@ -1303,7 +1303,7 @@ const baselines = {
     'asConstReadonlyTupleInferenceThroughNestedGenericCall': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiAbstract': {
         errors: true,
@@ -10226,9 +10226,9 @@ const baselines = {
         types: true,
     },
     'disallowUnerasableAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'disallowedBlockScopedInPresenceOfParseErrors1': {
         errors: true,
@@ -24776,7 +24776,7 @@ const baselines = {
         types: true,
     },
     'nodeNextDirectoryImportExtensionSuggestion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25008,7 +25008,7 @@ const baselines = {
     'nonUniformUnionNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nondistributiveConditionalTypeInfer': {
         errors: true,
@@ -25466,7 +25466,7 @@ const baselines = {
         types: true,
     },
     'objectNameCollisionCommonJS(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26046,7 +26046,7 @@ const baselines = {
         types: true,
     },
     'packageJsonImportsWildcardTsExtensionError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30391,9 +30391,9 @@ const baselines = {
         types: true,
     },
     'stripMembersOptionality2(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'structural1': {
         errors: true,
@@ -31641,7 +31641,7 @@ const baselines = {
         types: true,
     },
     'tsconfigMalformedNonObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
