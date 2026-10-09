@@ -12786,7 +12786,7 @@ const baselines = {
         types: true,
     },
     'esModuleInteropTslibHelpers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

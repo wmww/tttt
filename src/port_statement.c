@@ -209,6 +209,12 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
                 ty_check_emit_helpers(current_checker, span, EMIT_HELPER_EXPORT_STAR, errs);
             }
         }   break;
+        case PORT_IMPORT_DEFAULT: {
+            // `import d from "m"` (tsgo's checkImportDeclaration), unless a namespace import needs __importStar
+            bool star = false;
+            for_each (i, vec_port_item, &my items) star |= i->tag == PORT_IMPORT_GATHER;
+            if (!star) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_DEFAULT, errs);
+        }   break;
         default:
             break;
     }
