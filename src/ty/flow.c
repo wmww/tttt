@@ -1310,6 +1310,16 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
         }
         Symbol const* symbol = expr->identifier.target;
         if (keyword || !symbol) return nullptr;
+        // A named import of a property of what `export =` names (`import { assert } from "chai"`): that property's
+        // symbol, explicit if its declaration is (tsc's getExternalModuleMember: symbolFromVariable)
+        if (symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) {
+            Ty const* assigned = ty_apparent_type(me, ty_type_of_symbol(me, symbol->decls[0].node));
+            if (!(assigned->flags & TYF_OBJECT) && assigned->kind != TY_INTERSECTION) return nullptr;
+            Atom const* name = checker_atom(me, symbol->name);
+            Prop const* prop = assigned->kind == TY_INTERSECTION ? ty_property_of_type(me, assigned, name) : ty_get_prop(me, assigned, name);
+            if (!prop || !prop_has_explicit_type(prop)) return nullptr;
+            return ty_identifier_reference_type(me, &expr->identifier);
+        }
         if (!symbol_has_explicit_type(symbol)) {
             // A `for (const x of xs)` variable without annotation: what the dotted name it iterates yields (tsc's
             // getExplicitTypeOfSymbol)
