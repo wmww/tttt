@@ -1241,11 +1241,31 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
     u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
     if (my instantiation_limit_hits != limit_hits) return;
-    report_unassignable_with_head(me, source, target, is_await ? 2851 : 2850, is_await ?
+    Error* error = report_unassignable_with_head(me, source, target, is_await ? 2851 : 2850, is_await ?
         cstr_lit("The initializer of an 'await using' declaration must be either an object with a "
             "'[Symbol.asyncDispose]()' or '[Symbol.dispose]()' method, or be 'null' or 'undefined'.") :
         cstr_lit("The initializer of a 'using' declaration must be either an object with a '[Symbol.dispose]()' "
             "method, or be 'null' or 'undefined'."), false, span, errs);
+    // A plain `using` of something async disposable: a hint at `await using` (tsgo's checkVariableLikeDeclaration,
+    // AddMessageChain: a line of the chain's first level)
+    if (!is_await && error) {
+        Symbol const* symbol = program_get_global(my program, c_sv("AsyncDisposable"), SYMBOL_TYPE);
+        if (symbol && symbol->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
+            Ty const* parts[3] = { ty_declared_type_of(me, symbol), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
+            if (ty_is_related(me, source, ty_union(me, parts, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) {
+                error_sub_error_d(error, span_null, 18116,
+                    "This initializer has a '[Symbol.asyncDispose]()' method. Did you mean to use 'await using'?");
+                // (A line of the chain: before the related information, which follows the whole chain)
+                Error* subs = error->sub_errors.data;
+                isize n = vec_error_size(&error->sub_errors);
+                for (isize i = n - 1; i > 0 && span_valid(subs[i - 1].span); i--) {
+                    Error line = subs[i];
+                    subs[i] = subs[i - 1];
+                    subs[i - 1] = line;
+                }
+            }
+        }
+    }
 }
 
 void ty_report_unfit_argument(
