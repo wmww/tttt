@@ -10106,9 +10106,9 @@ const baselines = {
         types: true,
     },
     'destructuringEmptyBinding': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringFromUnionSpread': {
         errors: true,
@@ -12956,7 +12956,7 @@ const baselines = {
         types: true,
     },
     'exhaustiveSwitchStatementsGeneric1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24611,9 +24611,9 @@ const baselines = {
         types: true,
     },
     'noLibAndNoUncheckedIndexedAccessDestructuringArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noMappedGetSet': {
         errors: true,
@@ -39056,14 +39056,14 @@ const baselines = {
         types: true,
     },
     'dependentDestructuredVariablesNoCrash3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'dependentDestructuredVariablesReferenceInDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dependentDestructuredVariablesWithExport': {
         errors: true,
