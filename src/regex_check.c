@@ -68,10 +68,9 @@ typedef struct Rx {
     i32 refs_len, refs_cap;
     RxRef* decimals;
     i32 decimals_len, decimals_cap;
-    i32* scopes; // tsc's namedCapturingGroupsScopeStack, 0 for an undefined set
+    i32* scopes; // tsgo's namedCapturingGroups: a stack of the enclosing alternatives' scope ids
     i32 scopes_len, scopes_cap;
     i32 scopes_inline[16];
-    i32 top_scope; // tsc's topNamedCapturingGroupsScope
     i32 next_scope;
 } Rx;
 
@@ -219,23 +218,17 @@ static void pool_push_code_point(Rx* me, u32 cp) {
     }
 }
 
-static void pool_push_text(Rx* me, i32 start, i32 end) {
-    for (i32 p = start; p < end;) {
-        i32 cp = code_point_at(me, p);
-        if (cp >= 0x10000 && p + 1 >= end) cp = cu(me, p);
-        pool_push_code_point(me, (u32)cp);
-        p += char_size(cp);
-    }
-}
-
 static csview pool_sv(Rx const* me, i32 off, i32 len) {
     return csview_from_n(my pool + off, len);
 }
 
-static bool scope_has(Rx const* me, i32 scope, csview name) {
-    if (!scope) return false;
+// namedCapturingGroupsContains: whether an alternative on the scope stack defines the name
+static bool scopes_have(Rx const* me, csview name) {
     for (i32 i = 0; i < my names_len; i++) {
-        if (my names[i].scope == scope && csview_equals_sv(pool_sv(me, my names[i].off, my names[i].len), name)) return true;
+        if (!csview_equals_sv(pool_sv(me, my names[i].off, my names[i].len), name)) continue;
+        for (i32 k = 0; k < my scopes_len; k++) {
+            if (my scopes[k] == my names[i].scope) return true;
+        }
     }
     return false;
 }
@@ -274,6 +267,17 @@ static double digits_value(Rx const* me, i32 start, i32 end) {
     double value = 0;
     for (i32 p = start; p < end; p++) value = value * 10 + (my text[p] - '0');
     return value;
+}
+
+// compareDecimalStrings: exact for any number of digits
+static i32 compare_digits(Rx const* me, i32 a, i32 a_end, i32 b, i32 b_end) {
+    while (a < a_end - 1 && my text[a] == '0') a++;
+    while (b < b_end - 1 && my text[b] == '0') b++;
+    if (a_end - a != b_end - b) return a_end - a < b_end - b ? -1 : 1;
+    for (; a < a_end; a++, b++) {
+        if (my text[a] != my text[b]) return my text[a] < my text[b] ? -1 : 1;
+    }
+    return 0;
 }
 
 static void scan_expected_char(Rx* me, char ch) {
@@ -441,70 +445,92 @@ static RxStr scan_escape_sequence(Rx* me, bool atom_escape) {
     }
 }
 
-// peekExtendedUnicodeEscape
-static i32 peek_extended_unicode_escape(Rx* me) {
-    if (code_point_at(me, my pos + 1) == 'u' && code_point_at(me, my pos + 2) == '{') {
-        i32 start = my pos;
-        my pos += 3;
-        i64 value = scan_hex_digits_value(me);
-        my pos = start;
-        return (i32)value;
+// scanUnicodeEscape(false) at `at` (a backslash followed by 'u'), either form: the code point, or -1 when invalid;
+// *end_out is where it stops
+static i32 scan_unicode_escape_at(Rx const* me, i32 at, i32* end_out) {
+    i32 p = at + 2;
+    i64 value = 0;
+    if (cu(me, p) == '{') {
+        p++;
+        i32 count = 0;
+        while (is_hex_digit(cu(me, p))) {
+            value = value * 16 + hex_value(cu(me, p));
+            if (value > 0x110000) value = 0x110000;
+            count++;
+            p++;
+        }
+        bool invalid = !count || value > 0x10FFFF;
+        if (count && p >= my n) invalid = true;
+        else if (count && cu(me, p) == '}') p++;
+        else invalid = true;
+        *end_out = p;
+        return invalid ? -1 : (i32)value;
     }
-    return -1;
+    for (i32 k = 0; k < 4; k++, p++) {
+        if (!is_hex_digit(cu(me, p))) {
+            *end_out = p;
+            return -1;
+        }
+        value = value * 16 + hex_value(cu(me, p));
+    }
+    *end_out = p;
+    return (i32)value;
 }
 
-// peekUnicodeEscape
-static i32 peek_unicode_escape(Rx const* me) {
-    if (my pos + 5 < my end && cu(me, my pos + 1) == 'u') {
-        for (i32 p = my pos + 2; p < my pos + 6; p++) {
-            if (!is_hex_digit(cu(me, p))) return -1;
-        }
-        return parse_hex(me, my pos + 2, my pos + 6);
+// scanIdentifierEscape(isValid, allowSurrogatePairEscape = true): a `\uXXXX` or `\u{X}` escape whose code point
+// passes the check, or (group names only) a `\uHigh\uLow` pair; appends it to the pool
+static bool scan_identifier_escape(Rx* me, bool start) {
+    if (cu(me, my pos + 1) != 'u') return false;
+    i32 end;
+    i32 escaped = scan_unicode_escape_at(me, my pos, &end);
+    if (escaped >= 0 && (start ? is_identifier_start(me, escaped) : is_identifier_part(me, escaped))) {
+        my pos = end;
+        pool_push_code_point(me, (u32)escaped);
+        return true;
     }
-    return -1;
+    if (cu(me, my pos + 2) != '{' && escaped >= 0xD800 && escaped <= 0xDBFF && cu(me, end) == '\\' &&
+        cu(me, end + 1) == 'u' && cu(me, end + 2) != '{'
+    ) {
+        i32 low_end;
+        i32 low = scan_unicode_escape_at(me, end, &low_end);
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+            i32 cp = 0x10000 + ((escaped - 0xD800) << 10) + (low - 0xDC00);
+            if (start ? is_identifier_start(me, cp) : is_identifier_part(me, cp)) {
+                my pos = low_end;
+                pool_push_code_point(me, (u32)cp);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // scanIdentifierParts, appending the value to the pool
 static void scan_identifier_parts(Rx* me) {
-    i32 start = my pos;
-    while (my pos < my end) {
+    while (true) {
         i32 ch = code_point_at(me, my pos);
-        if (is_identifier_part(me, ch)) {
-            my pos += char_size(ch);
-        } else if (ch == '\\') {
-            ch = peek_extended_unicode_escape(me);
-            if (ch >= 0 && is_identifier_part(me, ch)) {
-                // (tsc drops the text before the escape here)
-                i32 escape_start = my pos;
-                RxStr value = scan_extended_unicode_escape(me);
-                if (value.len == my pos - escape_start && value.cp == '\\') pool_push_text(me, escape_start, my pos);
-                else pool_push_code_point(me, (u32)value.cp);
-                start = my pos;
-                continue;
-            }
-            ch = peek_unicode_escape(me);
-            if (!(ch >= 0 && is_identifier_part(me, ch))) break;
-            pool_push_text(me, start, my pos);
+        if (my pos < my n && is_identifier_part(me, ch)) {
             pool_push_code_point(me, (u32)ch);
-            my pos += 6;
-            start = my pos;
+            my pos += char_size(ch);
+        } else if (ch == '\\' && scan_identifier_escape(me, false)) {
+            continue;
         } else {
             break;
         }
     }
-    pool_push_text(me, start, my pos);
 }
 
 static void scan_group_name(Rx* me, bool is_reference) {
     i32 token_start = my pos;
     i32 off = my pool_len;
-    // scanIdentifier
+    // scanIdentifier(0, identifierVariantRegExpGroupName)
     i32 ch = cpc(me, my pos);
     if (is_identifier_start(me, ch)) {
+        pool_push_code_point(me, (u32)ch);
         my pos += char_size(ch);
-        while (my pos < my end && is_identifier_part(me, ch = code_point_at(me, my pos))) my pos += char_size(ch);
-        pool_push_text(me, token_start, my pos);
-        if (ch == '\\') scan_identifier_parts(me);
+        scan_identifier_parts(me);
+    } else if (ch == '\\' && scan_identifier_escape(me, true)) {
+        scan_identifier_parts(me);
     }
     csview name = pool_sv(me, off, my pool_len - off);
     if (my pos == token_start) {
@@ -514,15 +540,18 @@ static void scan_group_name(Rx* me, bool is_reference) {
         my refs[my refs_len++] = (RxRef){ token_start, my pos, off, my pool_len - off, 0 };
         return;
     } else {
-        bool duplicate = scope_has(me, my top_scope, name);
-        for (i32 i = 0; i < my scopes_len && !duplicate; i++) duplicate = scope_has(me, my scopes[i], name);
-        if (duplicate) {
+        if (scopes_have(me, name)) {
             rx_error(me, token_start, my pos - token_start, 1515,
                 "Named capturing groups with the same name must be mutually exclusive to each other.");
         } else {
-            if (!my top_scope) my top_scope = ++my next_scope;
+            // A previous definition can only have come from a mutually exclusive alternative. Below ES2018 the group
+            // itself is already reported
+            if (group_specifiers_have(me, name) && my target >= SCRIPT_TARGET_ES2018 && my target < SCRIPT_TARGET_ES2025) {
+                rx_error(me, token_start, my pos - token_start, 18063,
+                    "Duplicate named capturing groups are only available when targeting 'es2025' or later.");
+            }
             RX_GROW(my names, my names_len, my names_cap);
-            my names[my names_len++] = (RxName){ my top_scope, off, my pool_len - off };
+            my names[my names_len++] = (RxName){ my scopes_len ? my scopes[my scopes_len - 1] : 0, off, my pool_len - off };
             return;
         }
     }
@@ -542,8 +571,8 @@ static u32 scan_pattern_modifiers(Rx* me, u32 curr_flags) {
         } else if (!(flag & RF_MODIFIERS)) {
             rx_error(me, my pos, size, 1509, "This regular expression flag cannot be toggled within a subpattern.");
         } else {
+            // Modifier syntax itself requires ES2025, later than any flag that can appear here
             curr_flags |= flag;
-            check_flag_availability(me, flag, size);
         }
         my pos += size;
     }
@@ -886,8 +915,6 @@ static void scan_class_set_expression(Rx* me) {
                 my may_contain_strings = !is_character_complement && expression_may_contain_strings;
                 return;
             }
-            // (tsc reports the character the expression started with)
-            unexpected_char(me, my pos, ch);
             break;
         default:
             if (is_character_complement && my may_contain_strings) rx_error(me, start, my pos - start, 1518, negated_strings);
@@ -932,20 +959,19 @@ static void scan_class_set_expression(Rx* me) {
                 }
             }   break;
             case '&':
-                start = my pos;
-                my pos++;
-                if (cc(me, my pos) == '&') {
-                    my pos++;
+                // A lone '&' is a class set character (tsgo's scanClassSetExpression)
+                if (cc(me, my pos + 1) == '&') {
+                    start = my pos;
+                    my pos += 2;
                     rx_error(me, my pos - 2, 2, 1519, operators_mixed);
                     if (cc(me, my pos) == '&') {
                         unexpected_char(me, my pos, ch);
                         my pos++;
                     }
-                } else {
-                    unexpected_char(me, my pos - 1, ch);
+                    operand = str_slice(me, start, my pos);
+                    continue;
                 }
-                operand = str_slice(me, start, my pos);
-                continue;
+                break;
         }
         if (is_class_content_exit(me, cc(me, my pos))) break;
         start = my pos;
@@ -955,6 +981,8 @@ static void scan_class_set_expression(Rx* me) {
             operand = str_slice(me, start, my pos);
         } else {
             operand = scan_class_set_operand(me);
+            if (is_character_complement && my may_contain_strings) rx_error(me, start, my pos - start, 1518, negated_strings);
+            expression_may_contain_strings = expression_may_contain_strings || my may_contain_strings;
         }
     }
     my may_contain_strings = !is_character_complement && expression_may_contain_strings;
@@ -1133,6 +1161,11 @@ static void scan_alternative(Rx* me, bool is_in_group) {
                                         "Subpattern flags must be present when there is a minus sign.");
                                 }
                             }
+                            // Modifier characters were consumed: `(?flags:` rather than a plain `(?:` group
+                            if (my pos != modifiers_start && my target < SCRIPT_TARGET_ES2025) {
+                                rx_error(me, modifiers_start, my pos - modifiers_start, 18062,
+                                    "Regular expression pattern modifiers are only available when targeting 'es2025' or later.");
+                            }
                             scan_expected_char(me, ':');
                             is_previous_term_quantifiable = true;
                         }   break;
@@ -1167,7 +1200,7 @@ static void scan_alternative(Rx* me, bool is_in_group) {
                             is_previous_term_quantifiable = true;
                             break;
                         }
-                    } else if (has_max && digits_value(me, digits_start, min_end) > digits_value(me, max_start, my pos) &&
+                    } else if (has_max && compare_digits(me, digits_start, min_end, max_start, my pos) > 0 &&
                         (my any_unicode_mode_or_non_annex_b || cc(me, my pos) == '}')
                     ) {
                         rx_error(me, digits_start, my pos - digits_start, 1506, "Numbers out of order in quantifier.");
@@ -1230,14 +1263,19 @@ static void scan_alternative(Rx* me, bool is_in_group) {
 }
 
 // Disjunction ::= Alternative ('|' Alternative)*
+// The names any of the alternatives define are unioned and, in a group, bubbled up into the enclosing alternative's
+// scope once the group closes, so `(?:(?<a>x))(?<a>z)` is a duplicate (tsgo's scanDisjunction)
 static void scan_disjunction(Rx* me, bool is_in_group) {
+    i32 first_name = my names_len;
     while (true) {
-        scopes_push(me, my top_scope);
-        my top_scope = 0;
+        scopes_push(me, ++my next_scope);
         scan_alternative(me, is_in_group);
-        my top_scope = my scopes[--my scopes_len];
-        if (cc(me, my pos) != '|') return;
+        my scopes_len--;
+        if (cc(me, my pos) != '|') break;
         my pos++;
+    }
+    if (is_in_group && my scopes_len) {
+        for (i32 i = first_name; i < my names_len; i++) my names[i].scope = my scopes[my scopes_len - 1];
     }
 }
 
