@@ -34,12 +34,23 @@ def run(cmd, cwd, timeout):
         return None, 'timeout'
 
 
+# tsgo's own nondeterminism, normalized on both sides: TS2460 names the export that "is" the local through
+# findInMap over a Go map (reportNonExportedMember), so with several candidates (e.g. every unresolved export is the
+# same unknownSymbol) it picks a random one per run; tttt takes the first in declaration order.
+NONDETERMINISTIC = re.compile(r"(error TS2460: .* locally, but it is exported as )'[^']*'\.")
+
+
+def normalize(out):
+    return out if out is None else NONDETERMINISTIC.sub(r"\1'...'.", out)
+
+
 def compare(cwd, project, args):
     pretty = ['--pretty', 'true' if args.pretty else 'false']
     tsc_out, tsc_code = run(TSC + ['-p', project, '--noEmit', *pretty], cwd, args.timeout)
     out, code = run([os.path.join(ROOT, 'release/tttt'), '-p', project, *pretty], cwd, args.timeout)
     if tsc_out is None or out is None:
         return 'timeout', tsc_out, out, tsc_code, code
+    tsc_out, out = normalize(tsc_out), normalize(out)
     want_code = tsc_code
     if out == tsc_out:
         verdict = 'match' if code == want_code else 'exit code'
