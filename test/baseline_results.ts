@@ -5601,14 +5601,14 @@ const baselines = {
         types: true,
     },
     'conflictingDeclarationsImportFromNamespace1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conflictingDeclarationsImportFromNamespace2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conflictingMemberTypesInBases': {
         errors: true,
@@ -12386,9 +12386,9 @@ const baselines = {
         types: false,
     },
     'es6ExportEqualsInterop': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBinding': {
         errors: true,
@@ -12511,12 +12511,12 @@ const baselines = {
         types: true,
     },
     'es6ImportEqualsExportModuleCommonJsError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'es6ImportEqualsExportModuleEs2015Error': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16991,7 +16991,7 @@ const baselines = {
         types: true,
     },
     'importNonExportedMember11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17011,17 +17011,17 @@ const baselines = {
         types: true,
     },
     'importNonExportedMember5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'importNonExportedMember7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'importNonExportedMember9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

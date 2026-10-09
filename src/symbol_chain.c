@@ -156,8 +156,6 @@ bool namespace_import_is_clone(Symbol const* symbol) {
     if (symbol_get_export(module, c_sv("default"))) return true;
     Symbol const* assigned = module->is_module ? module_export_equals(module) : module;
     if (assigned && assigned->flags & SYMBOL_ALIAS) assigned = resolve_alias(assigned);
-    // (Neither a namespace nor a variable: TS2497, tsc's resolveESModuleSymbol returns it as it is)
-    if (assigned && !(assigned->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_VARIABLE))) return false;
     return assigned && (assigned->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS));
 }
 
