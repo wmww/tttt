@@ -2893,6 +2893,12 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
     return parse_fail(&p);
 }
 
+// `undefined.x`: a dotted type reference, like the other keyword types (tsc's parseNonArrayType)
+static bool undefined_then_dot(Parser* p) {
+    Tok t = tok_peek(p);
+    return tok_is(t, "undefined") && tok_is(tok_next(p, t), ".");
+}
+
 static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Parser p = parser(parent);
     VecSpannedType generic_params = {0};
@@ -2929,7 +2935,12 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
             end = after_dot;
             break;
         }
-        if (parse_identifier_or_keyword(&p, nullptr)) {
+        if (hop_private_name(&p)) {
+            // A private name isn't one (parseRightSideOfDot without allowPrivateIdentifiers): consumed, then a missing
+            // name right after it
+            name = span_from_pos(&p);
+            parse_error(&p, name, 1003, "Identifier expected.");
+        } else if (parse_identifier_or_keyword(&p, nullptr)) {
             name = span_from(member);
         } else {
             expect_identifier(&p, &name);
@@ -3400,7 +3411,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         }));
     } else if (c == '`' && parse_template_type(&p, ret)) {
     } else if ((word || c == '"' || c == '\'' || c == '`' || is_number_start_char(c)) &&
-        parse_type_compat_literal(&p, &ret->value)
+        !(c == 'u' && undefined_then_dot(&p)) && parse_type_compat_literal(&p, &ret->value)
     ) {
         ret->tag = TYPE_VALUE;
         ret->value_span = span_from(value_anchor);
