@@ -52596,7 +52596,7 @@ const baselines = {
         types: true,
     },
     'jsdocOuterTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52606,7 +52606,7 @@ const baselines = {
         types: true,
     },
     'jsdocOuterTypeParameters3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52626,7 +52626,7 @@ const baselines = {
         types: false,
     },
     'jsdocParamTagNoName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52701,12 +52701,12 @@ const baselines = {
         types: true,
     },
     'jsdocReadonly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsdocReadonlyDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52746,7 +52746,7 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateTag3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52981,7 +52981,7 @@ const baselines = {
         types: true,
     },
     'paramTagWrapping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
