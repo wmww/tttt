@@ -3718,10 +3718,11 @@ static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const c
     }
     if (!span_valid(tag->name)) {
         tag->missing_name = span_make(source, c, c);
-        // tsc's parseJSDocIdentifierName: TS1003 where the name should start (not again where an error is)
+        // tsc's parseJSDocIdentifierName: TS1003 where the name should start (not again where an error is), for a
+        // `@property` only (tsgo's parseBracketNameInPropertyAndParamTag gives a parameter's no message)
         VecError const* errors = &parent->shared->jsdoc_errors;
         bool reported = errors->size && span_start_ptr(errors->data[errors->size - 1].span) == c;
-        if (!reported) {
+        if (!reported && tag->kind != JSDOC_TAG_PARAM) {
             Parser e = parser(parent);
             parse_error(&e, span_make(source, c, c), 1003, "Identifier expected.");
             jsdoc_keep_errors(&e);
@@ -5215,18 +5216,6 @@ static void jsdoc_bind_comments(
         parse_jsdoc_comment(parent, range, &tags);
         parent->shared->jsdoc_unchecked = outer_unchecked;
         for_each (i, vec_jsdoc_tag, &tags) {
-            if (i->kind == JSDOC_TAG_TEMPLATE && !span_valid(i->name) && i->has_type) {
-                // A constraint without a type parameter (`@template {T}`) is still resolved (tsc's checkJSDocTemplateTag)
-                Span span = jsdoc_tag_decl_span(i);
-                TypeNode type = jsdoc_take_type(i, nullptr);
-                type.from_jsdoc = false;
-                vec_statement_push(out, (Statement){
-                    .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = c_new(TypeDecl, { .full_span = span, .type = type, .jsdoc = true, .jsdoc_check_only = true }),
-                    .span = span,
-                });
-                continue;
-            }
             if (i->kind == JSDOC_TAG_IMPORT && toplevel) {
                 jsdoc_import_statement(parent, i, range.end - 2, out);
                 continue;
@@ -7675,6 +7664,18 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
             if (!end) continue;
             jsdoc_error(p, span_make(p->shared->source, at, end), 18010,
                 "An accessibility modifier cannot be used with a private identifier.");
+        }
+    }
+    if ((modifiers & JSDOC_MODIFIER_READONLY) && (item->tag == CLASS_ITEM_CONSTRUCTOR || item->tag == CLASS_ITEM_METHOD)) {
+        // (tsgo's reparser makes the tag a modifier, checkGrammarModifiers' TS1024 is at it: the whole tag)
+        for_each (i, vec_jsdoc_tag, &tags) {
+            if (i->earlier || i->kind != JSDOC_TAG_READONLY) continue;
+            const char* at = i->tag_name.sv.buf - 1;
+            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.sv.buf - 1 : strstr(at, "*/");
+            if (!end) continue;
+            jsdoc_error(p, span_make(p->shared->source, at, end), 1024,
+                "'readonly' modifier can only appear on a property declaration or index signature.");
+            break;
         }
     }
     switch (item->tag) {
