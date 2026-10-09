@@ -4097,15 +4097,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     tag.type_span = span_make(source, type_start, after);
                     c = after;
                 }
-                after = jsdoc_skip_space(after, end);
-                if (after < end && *after == '}') {
-                    c = after + 1;
-                } else {
-                    token_end = after;
-                    while (token_end < end && (is_identifier_char(*token_end) || (uint8_t)*token_end >= 0x80)) token_end++;
-                    if (token_end == after && after < end) token_end++;
-                    parse_error(&e, span_make(source, after, token_end), 1005, "'}' expected.");
-                }
+                // (Without its `{`, no `}` is expected: parseExpected's false result is hasBrace)
                 jsdoc_keep_errors(&e);
                 parse_fail(&e);
             } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM || tag.kind == JSDOC_TAG_EXTENDS ||
@@ -4378,13 +4370,6 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
         JsDocRange range = comments->data[i];
         VecJsDocTag earlier = {0};
         parse_jsdoc_comment(parent, range, &earlier);
-        // An `@extends` of a comment that isn't the host's last has no host (tsc's getJSDocHost), so
-        // checkJSDocAugmentsTag reports TS8022 at nothing: a diagnostic without a position
-        for_each (t, vec_jsdoc_tag, &earlier) {
-            if (t->kind != JSDOC_TAG_EXTENDS || t->nested || !parent->shared->source->is_js) continue;
-            jsdoc_error(parent, span_null, 8022, "JSDoc '@", t->tag_name.sv, "' is not attached to a class.");
-            break;
-        }
         if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) {
             vec_jsdoc_tag_drop(&earlier);
             continue;
@@ -4402,13 +4387,6 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
         vec_jsdoc_tag_drop(&earlier);
     }
     parse_jsdoc_comment(parent, comments->data[lo], tags);
-    // (tsc's checkJSDocSatisfiesTag)
-    bool satisfies = false;
-    for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind != JSDOC_TAG_SATISFIES || i->earlier) continue;
-        if (satisfies) jsdoc_error(parent, i->tag_name, 1223, "'satisfies' tag already specified.");
-        satisfies = true;
-    }
     return true;
 }
 
@@ -5518,11 +5496,6 @@ static void jsdoc_bind_comments(
                     type = jsdoc_take_type(i, nullptr);
                     type.from_jsdoc = false;
                 } else {
-                    // (tsc's checkJSDocTypeAliasTag: no type expression, not even a literal of `@property` tags)
-                    if (!has_properties && !type_child) {
-                        jsdoc_error(parent, i->name, 8021, "JSDoc '@typedef' tag should either have a type annotation or be "
-                            "followed by '@property' or '@member' tags.");
-                    }
                     type = type_any;
                 }
             }
@@ -13881,9 +13854,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 // a variable statement's `@type` is its single declaration's annotation, and like the tags of an assignment statement
 // or `return` its `@param`s/`@returns` are for the function it gives
 // `/** @satisfies {T} */ const x = v`: v is checked like `v satisfies T` (tsc's checkDeclarationInitializer and
-// getContextualTypeForVariableLikeDeclaration: tryGetJSDocSatisfiesTypeNode). A second `@satisfies` of the host is
-// TS1223 (tsc's checkJSDocSatisfiesTag: `/** @satisfies {T} */ (v)` is the first of the initializer's)
-static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, InitializedBinding* initializer) {
+// getContextualTypeForVariableLikeDeclaration: tryGetJSDocSatisfiesTypeNode). An initializer `/** @satisfies {U} */ (v)`
+// is wrapped again (tsgo's reparser casts whatever the initializer is)
+static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBinding* initializer) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
     // (Not under a type annotation, which tsc's checkVariableLikeDeclaration checks the initializer against instead:
     // checkDeclarationInitializer, which looks at `@satisfies`, only infers an unannotated declaration's type)
@@ -13896,10 +13869,6 @@ static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, Init
         return;
     }
     Expr* value = initialized_binding_value(initializer);
-    if (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc && value->as_type->is_satisfies) {
-        jsdoc_error(p, tag->tag_name, 1223, "'satisfies' tag already specified.");
-        return;
-    }
     Expr inner = *value;
     *value = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
         .expr = inner,
@@ -13989,7 +13958,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     call->call->callable.identifier.require_call = true;
                 }
             }
-            jsdoc_apply_satisfies_initializer(p, &tags, initializer);
+            jsdoc_apply_satisfies_initializer(&tags, initializer);
             FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));
             if (!function && initialized_binding_value(initializer)->tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
                 // `@template T` here declares T in the enclosing scope: tsc's host for it is a signature, and there is
@@ -14027,12 +13996,6 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl), class_host = true;
         }   break;
         case STATEMENT_DECL_FUNCTION: {
-            // (tsc's checkJSDocAugmentsTag)
-            FunctionImpl const* function = statement->decl.function.impl;
-            for_each (i, vec_jsdoc_tag, &tags) {
-                if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested || !span_valid(function->name)) continue;
-                jsdoc_error(p, function->name, 8022, "JSDoc '@", i->tag_name.sv, "' is not attached to a class.");
-            }
             p->shared->jsdoc_declaration = true;
             jsdoc_apply_function(p, &tags, statement->decl.function.impl);
             hosts = true;
@@ -14455,21 +14418,6 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         parse_source_directives(&p, &source->ast.statements);
         hop_whitespace(&p);
         parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, source_file_start(source), &source->ast.statements);
-        if (source->is_js) {
-            // A comment at the end of the file is the end-of-file token's (tsc's JSDoc host, which checkSourceFile
-            // checks): an `@extends` there is TS8022 at it
-            const char* end = source_file_start(source) + cstr_size(&source->contents);
-            VecJsDocTag tags = {0};
-            if (jsdoc_before(&p, end, &tags)) {
-                for_each (i, vec_jsdoc_tag, &tags) {
-                    if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested) continue;
-                    jsdoc_error(&p, span_make(source, end, end), 8022, "JSDoc '@", i->tag_name.sv,
-                        "' is not attached to a class.");
-                    break;
-                }
-            }
-            vec_jsdoc_tag_drop(&tags);
-        }
     }
     if (shared.unterminated_comment) {
         const char* end = source_file_start(source) + cstr_size(&source->contents);

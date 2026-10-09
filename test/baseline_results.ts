@@ -10751,7 +10751,7 @@ const baselines = {
         types: true,
     },
     'duplicateFunctionImplementationInJsFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19766,7 +19766,7 @@ const baselines = {
         types: true,
     },
     'jsDocTypedefWithThisTag': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20481,7 +20481,7 @@ const baselines = {
         types: false,
     },
     'jsdocTypedefMissingType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51546,7 +51546,7 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51561,7 +51561,7 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52211,7 +52211,7 @@ const baselines = {
         types: true,
     },
     'extendsTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52221,7 +52221,7 @@ const baselines = {
         types: true,
     },
     'extendsTag4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52416,7 +52416,7 @@ const baselines = {
         types: true,
     },
     'jsdocAugments_notAClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2372,7 +2372,19 @@ static void function_check_flag_agreements(FunctionImpl const* me, Symbol const*
 // And that the overloads are compatible with the implementation (TS2394)
 static void function_check_duplicate_implementation(FunctionImpl const* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
-    if (!symbol || symbol_find_node(symbol, SYMBOL_DECL_FUNCTION) != me) return; // Once per symbol
+    if (!symbol) return;
+    // Once per symbol, from its first declaration that checks it. A JavaScript file may redeclare a function: its
+    // declarations only check an exported symbol (tsc's checkFunctionOrMethodDeclaration skips the local symbol of a
+    // NodeFlagsJavaScriptFile declaration)
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
+        FunctionImpl const* function = symbol->decls[i].node;
+        SourceFile const* file = function->full_span.source;
+        if (!symbol->parent && file && file->is_js) continue;
+        if (function != me) return;
+        break;
+    }
+    if (!symbol->parent && my full_span.source && my full_span.source->is_js) return;
     FunctionImpl const* implementation = nullptr;
     FunctionImpl const* overloads[32];
     Span names[32];
