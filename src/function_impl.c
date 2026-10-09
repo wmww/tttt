@@ -961,17 +961,16 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         type = ty_from_node(checker, function_impl_setter_type(me), (LowerCtx){ .generic = true });
         if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
     } else if (function_impl_rare(me)->jsdoc_signature_type && !my is_generator) {
-        // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
-        // that signature's return type node if it's written (getJSDocReturnType). An async function's is what it
-        // awaits to (unwrapReturnType)
+        // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation). An async
+        // function's is what it awaits to (unwrapReturnType)
         type = ty_jsdoc_tag_return_type(checker, me);
         if (type && my is_async) {
             type = ty_unwrap_return_type(checker, me, type);
             if (!type) type = ty_intrinsic(checker, TY_ANY);
         }
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
-        FunctionImpl const* signature = function_impl_jsdoc_tag_signature(me);
-        if (signature && signature->ret_explicit && span_valid(function_impl_ret_span(signature))) at = function_impl_ret_span(signature);
+        // (At the whole tag type: tsgo's errorNode is the function's FullSignature)
+        if (span_valid(function_impl_rare(me)->jsdoc_signature_span)) at = function_impl_rare(me)->jsdoc_signature_span;
     }
     if (type && type->flags & TYF_NEVER) {
         error_ctx_error_d(errs, at, 2534, "A function returning 'never' cannot have a reachable end point.");

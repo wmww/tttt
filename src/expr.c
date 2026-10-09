@@ -4004,7 +4004,8 @@ static void js_module_exports_implicit_any_check(Expr const* me, ErrorCtx* errs)
     // (At the value declaration, the first)
     if (!export_equals->decl_count || export_equals->decls[0].name.sv.buf != left.sv.buf) return;
     Ty const* type = ty_type_of_symbol(current_checker, export_equals);
-    if (!ty_only_nullable(type) || (type->flags & TYF_ANY)) return;
+    // (Not never, which doesn't widen: `const ns: never = {}; module.exports = ns`)
+    if (!ty_only_nullable(type) || (type->flags & (TYF_ANY | TYF_NEVER))) return;
     error_ctx_error_d(errs, my inner_span, 7008, "Member '(Missing)' implicitly has an 'any' type.");
 }
 

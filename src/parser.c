@@ -11939,10 +11939,10 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
 }
 
 // tsgo's isVariableDeclarationInitializedToRequire: in a JavaScript file `const x = require("m")` and
-// `const { a, b: c } = require("m")` declare aliases, like imports (a TypeScript annotation, TS8010, is ignored: only a
-// JSDoc type tag makes it a variable). `const a = require("m").a` is a variable (TS 7 removed the alias)
+// `const { a, b: c } = require("m")` declare aliases, like imports (not with a type, a JSDoc tag's or a TypeScript
+// annotation's, TS8010: `node.Type() == nil`). `const a = require("m").a` is a variable (TS 7 removed the alias)
 static void note_require_declaration(InitializedBinding* initializer) {
-    if (initializer->binding.has_explicit_type && initializer->binding.explicit_type.from_jsdoc) return;
+    if (initializer->binding.has_explicit_type) return;
     Expr* value = initialized_binding_value(initializer);
     if (!expr_is_require_call(value) || expr_is_perenthisized(value)) return;
     // (One that declares no aliases still names its module in the symbols baseline)
@@ -13651,7 +13651,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             // (The variable's `@type` is its declared type only, the function's contextual type: tsgo has no
             // getReturnTypeOfTypeTag, the function's return type is inferred)
             if (function) jsdoc_apply_function(p, &tags, function);
-            if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl);
+            // (Not a class expression's: tsgo's reparser applies class tags to a class declaration only, getClassLikeData)
         }   break;
         case STATEMENT_DECL_FUNCTION: {
             p->shared->jsdoc_declaration = true;
@@ -13694,9 +13694,12 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                     if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
                 }
                 if (function) {
+                    // (The statement's comment isn't the function's for checkUnmatchedJSDocParameters: tsgo's
+                    // GetNextJSDocCommentLocation doesn't go from it up through an assignment)
+                    function->jsdoc_params_checked = true;
                     jsdoc_apply_function(p, &tags, function);
                 } else if (assigned->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(assigned)) {
-                    jsdoc_apply_class(p, &tags, assigned->class_decl);
+                    // (A class expression takes no class tags: tsgo's getClassLikeData)
                 } else if (declares) {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
