@@ -97,7 +97,9 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
         scope->parent && scope->parent->kind != SCOPE_MODULE;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(my keyword_span.sv, "import");
-    if (!my jsdoc && !top && !my in_namespace && (my module_ref || is_import_alias || port_statement_is_export_declaration(me))) {
+    if (!my jsdoc && !top && !my in_namespace &&
+        (my module_ref || span_valid(my non_string_specifier) || is_import_alias || port_statement_is_export_declaration(me))
+    ) {
         my wrong_context = true;
         bool is_export = csview_equals(my keyword_span.sv, "export");
         // (A JavaScript file has no namespaces to mention)
