@@ -422,3 +422,6 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
 bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target); // flow.c
 // tsc's isMutableArrayOrTuple: an Array<T> or a tuple that isn't readonly
 bool ty_is_mutable_array_or_tuple(Checker* me, Ty const* ty);
+// tsgo's invocationErrorRecovery: TS7038 on a call or `new` of a namespace import whose `export =` value would do
+typedef struct Error Error;
+void ty_add_originating_import_invocation(Checker* me, Error* error, Expr const* callee, bool construct); // check.c

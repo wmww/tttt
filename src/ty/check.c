@@ -612,6 +612,23 @@ static void add_originating_import(Checker* me, Error* error, Symbol const* alia
     }
 }
 
+// A call or `new` of a namespace import whose module's `export =` value has signatures of that kind (tsgo's
+// invocationErrorRecovery with the synthetic namespace type's originatingImport)
+void ty_add_originating_import_invocation(Checker* me, Error* error, Expr const* callee, bool construct) {
+    if (!error || !callee || callee->tag != EXPR_IDENTIFIER) return;
+    Symbol const* alias = callee->identifier.symbol;
+    Ty const* original = alias && (alias->flags & SYMBOL_ALIAS) ? ty_namespace_import_original(me, alias) : nullptr;
+    if (!original) return;
+    Members const* members = ty_members(me, ty_apparent_type(me, original));
+    if (!(construct ? members->construct_count : members->call_count)) return;
+    PortItem const* item = alias->alias->item;
+    Span statement = span_valid(item->keyword_span) ?
+        span_between(item->keyword_span, span_with_semicolon(item->full_span)) : item->full_span;
+    error_add_related_d(error, statement, 7038, "Type originates at this import. A namespace-style import "
+        "cannot be called or constructed, and will cause a failure at runtime. Consider using a default import or "
+        "import require here instead.");
+}
+
 // The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType)
 void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function, ErrorCtx* errs) {
     if (!function->is_async || function->is_generator) return;

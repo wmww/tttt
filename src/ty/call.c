@@ -2917,6 +2917,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
             cstr_drop(&rendered);
             suggest_await_for_invocation(me, e, apparent, true, info);
+            ty_add_originating_import_invocation(me, e, &call->callable, true);
         } else if (other_count && !info->tagged_template && !info->decorator) { // (tsc's resolveCallExpression only)
             cstr rendered = ty_to_cstr(me, callee);
             error_ctx_error_d(errs, call_span, 2348,
@@ -2934,6 +2935,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
             cstr_drop(&rendered);
             suggest_await_for_invocation(me, e, apparent, false, info);
+            if (!info->jsx) ty_add_originating_import_invocation(me, e, &info->call->callable, false);
             // `f()` then `(x)` on the next line: one call (tsc's resolveCallExpression)
             if (e && !info->tagged_template && !info->decorator && !info->jsx && vec_expr_size(&info->call->args) == 1 &&
                 line_break_follows(expr_outer_span(&info->call->callable))
