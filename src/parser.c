@@ -4813,7 +4813,27 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             rare->jsdoc_overloads[rare->jsdoc_overload_count++] = type;
         }
     }
-    jsdoc_apply_template(p, tags, &function->generic, false);
+    // tsgo's reparser goes through a function's tags in order: `@type` is its signature (FullSignature) only if nothing
+    // typed it before (an `@param {T}`, `@return {T}`, `@template` or `@this`, a typed parameter); then the later
+    // `@param`/`@return`/`@template` tags aren't applied. A `@type` after those is ignored
+    bool type_wins = false;
+    JsDocTag* first_type_tag = function->accessor ? nullptr : jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
+    if (first_type_tag && !first_type_tag->earlier) {
+        bool typed = function->ret_explicit || !generic_empty(&function->generic);
+        for_each (i, vec_function_arg, &function->args) typed |= i->initializer.binding.has_explicit_type;
+        for (JsDocTag const* i = tags->data; i < first_type_tag; i++) {
+            if (i->nested || i->earlier) continue;
+            typed |= ((i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_RETURNS) && i->has_type) ||
+                i->kind == JSDOC_TAG_TEMPLATE || i->kind == JSDOC_TAG_THIS;
+        }
+        if (typed) {
+            type_drop(&first_type_tag->type);
+            first_type_tag->has_type = false;
+        } else {
+            type_wins = true;
+        }
+    }
+    if (!type_wins) jsdoc_apply_template(p, tags, &function->generic, false);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
     }
@@ -4858,7 +4878,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         vec_function_arg_insert_n(&function->args, 0, &arg, 1);
     }
     jsdoc_apply_type_signature(tags, function, declaration);
-    for_each (i, vec_function_arg, &function->args) {
+    for_each (i, vec_function_arg, type_wins ? &(VecFunctionArg){0} : &function->args) {
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type) continue;
         JsDocTag* tag = jsdoc_param_tag(tags, function, i);
@@ -4953,7 +4973,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         function_impl_rare_mut(function)->jsdoc_signature_span = type_tag->type_span;
         function_impl_rare_mut(function)->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
-    if (!function->ret_explicit && !function->is_constructor) {
+    if (!function->ret_explicit && !function->is_constructor && !type_wins) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
         if (tag) {
             Span ret_span;

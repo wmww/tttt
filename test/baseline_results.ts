@@ -52816,9 +52816,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeParameterTagConflict': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeReferenceExports': {
         errors: true,
