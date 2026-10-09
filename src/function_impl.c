@@ -1152,6 +1152,13 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     bool class_member = !my is_expression && (span_valid(function_impl_member_name(me)) || function_impl_rare(me)->constructed_class);
     for_each (i, vec_function_arg, &my args) {
         if (!class_member && vec_expr_size(function_arg_decorators(i))) {
+            // A parameter of a function or object literal member can't be decorated (tsc's checkGrammarModifiers,
+            // nodeCanBeDecorated: TS1206 at the first decorator's `@`)
+            if (span_valid(i->span)) {
+                Span at = i->span;
+                at.sv = csview_from_n(span_start_ptr(i->span), 1);
+                error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+            }
             // (Never decorated: tsc's checkDecorators doesn't look at them)
             ErrorCtx ignored = error_ctx_scratch(errs);
             for_each (decorator, vec_expr, function_arg_decorators(i)) {

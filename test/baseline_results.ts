@@ -9531,7 +9531,7 @@ const baselines = {
         types: true,
     },
     'decoratorMetadataObjectLiteralMethodNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
