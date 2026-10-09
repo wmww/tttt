@@ -1180,6 +1180,31 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         }
         VecSpan spans = symbol_declaration_spans(member);
         Prop* existing = builder_find_prop(builder, name);
+        // `this.x = v` with an accessor x in the class body: tsgo's binder adds the Property meaning to the accessor's
+        // symbol, whose type (the getter's) is then what is read and written, never readonly
+        // (Only when an assignment comes first: one in the accessor's own body, bound after it, joins nothing, as the
+        // baselines show)
+        bool assigned_first = existing && existing->decl->decl_span_count && vec_span_size(&spans) &&
+            spans.data[0].source == existing->decl->decl_spans[0].source &&
+            span_start_ptr(spans.data[0]) < span_start_ptr(existing->decl->decl_spans[0]);
+        if (existing && (existing->flags & PROP_ACCESSOR) && existing->decl->symbol != member && assigned_first) {
+            existing->flags &= ~(u32)PROP_READONLY;
+            if (prop_decl_rare(existing->decl)->write_node) prop_decl_rare_mut(me, existing->decl)->write_node = nullptr;
+            // (One symbol: the assignments are declarations of it, in source order)
+            u32 total = existing->decl->decl_span_count + (u32)vec_span_size(&spans);
+            Span* all = arena_new_n(&my arena, Span, total);
+            memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
+            memcpy(all + existing->decl->decl_span_count, spans.data, sizeof(Span) * vec_span_size(&spans));
+            for (u32 a = 1; a < total; a++) {
+                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                    Span t = all[b];
+                    all[b] = all[b - 1];
+                    all[b - 1] = t;
+                }
+            }
+            existing->decl->decl_spans = all;
+            existing->decl->decl_span_count = total;
+        }
         // (One the class body declares has no assignment declarations: tsc's declareSymbol with isReplaceableByMethod)
         if (!existing) {
             Prop* prop = prop_new_declared(me);
