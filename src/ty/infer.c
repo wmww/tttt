@@ -809,9 +809,12 @@ static bool inferable_index(Checker* me, Ty const* ty, u32 depth) {
     }
     // (Namespaces and enum objects too: tsc's isObjectTypeWithInferableIndex)
     if (ty->kind == TY_DECLARED) {
-        return ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT;
+        if (ty->declared.kind == TY_DECLARED_ENUM_OBJECT) return true;
+        if (ty->declared.kind != TY_DECLARED_NAMESPACE) return false;
+        // (Not merged with a function or class, nor an expando function: those have signatures)
+    } else if (ty->kind != TY_ANONYMOUS) {
+        return false;
     }
-    if (ty->kind != TY_ANONYMOUS) return false;
     Members const* members = ty_members(me, ty);
     return !members->call_count && !members->construct_count;
 }

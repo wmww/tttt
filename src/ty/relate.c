@@ -2625,8 +2625,12 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
         Members const* members = ty_members(me, ty);
         return !members->call_count && !members->construct_count;
     }
-    return ty->kind == TY_DECLARED &&
-        (ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT);
+    if (ty->kind != TY_DECLARED) return false;
+    if (ty->declared.kind == TY_DECLARED_ENUM_OBJECT) return true;
+    if (ty->declared.kind != TY_DECLARED_NAMESPACE) return false;
+    // (Not a namespace merged with a function or class, nor an expando function: they have signatures)
+    Members const* members = ty_members(me, ty);
+    return !members->call_count && !members->construct_count;
 }
 
 // The properties of an object type, or of every member of an intersection (tsc's getPropertiesOfUnionOrIntersectionType:
