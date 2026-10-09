@@ -231,3 +231,12 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   `/** @type {string} */ this.details = error.stack` where the base class declares `this.details` as `string=`. tsgo's
   subclass member has its own declared type (thisAssignmentDeclarationTyped) and the value is checked against it;
   tttt's `this.details` resolves to the base class's property. JS class this-properties (agent A's area). (Agent C)
+- flagflip after B's third task (2026-10-09, every cell but vscode): webpack's cells are down to its default-flag misses
+  (20; 15 under sloppy/nosnc) but for one: webpack/nuia UmdLibraryPlugin.js:233 wants TS2322 inside
+  `f([...(Array.isArray(r) ? r : [r])])` where tttt says TS2345 on the argument. tsgo's checkArrayLiteral passes
+  ForceTuple through the conditional to the `[r]` branch, so the spread operand is `string[] | [string | R]`, a
+  union isTupleLikeType accepts (a union's "0" from the array's index signature); `ty_array_literal_as_tuple()`
+  only forces a directly spread array literal and turns a non-array union into an array. Other corpora: only
+  their default-flag misses, plus xstate/sloppy and xstate/nosnc spurious TS2589/TS5114/TS5115 (State.ts:395,
+  graph/utils.ts:91: instantiation depth on `Values` without strictNullChecks), xstate/eopt one spurious TS2322
+  (input.test.ts:272, a spawn signature), vue/nuia 2 spurious + 2 other-code: TypeScript checker cases, not JS.
