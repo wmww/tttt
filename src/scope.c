@@ -760,6 +760,13 @@ bool scope_has_function(Scope const* me) {
 
 // `display`: the name to say when it isn't the declaration's text (tsc's getDisplayName: `export=`)
 // `lib_too`: a lib file's declaration is reported as well (conflicting with a user file's)
+static bool symbol_declared_in_block(Symbol const* me, Scope const* block) {
+    for (u32 i = 0; i < my decl_count; i++) {
+        if (my decls[i].block == block) return true;
+    }
+    return false;
+}
+
 static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display, bool lib_too) {
     if (!span_valid(at) || !at.source || (at.source->is_stdlib && !lib_too)) return nullptr;
     // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
@@ -785,6 +792,10 @@ static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
 // declarations, the binder's (within a file) don't
 void add_duplicate_related(Error* error, Span at, Span other) {
+    add_duplicate_related_named(error, at, other, at.sv);
+}
+
+void add_duplicate_related_named(Error* error, Span at, Span other, csview name) {
     if (!error || span_eq(at, other) || !span_valid(other) || !other.source) return;
     u32 count = 0;
     for_each (i, vec_error, &error->sub_errors) {
@@ -796,7 +807,7 @@ void add_duplicate_related(Error* error, Span at, Span other) {
     if (count) {
         error_add_related_d(error, other, 6204, "and here.");
     } else {
-        error_add_related_d(error, other, 6203, "'", at, "' was also declared here.");
+        error_add_related_d(error, other, 6203, "'", name, "' was also declared here.");
     }
 }
 
@@ -4209,6 +4220,10 @@ void binder_link(Binder* me) {
             // (Not what the import resolves to: an augmentation merged through `export { A }` of an imported A makes
             // the export its target, see merge_into_exports())
             if (exported == target) exported = nullptr;
+            // (The local symbol is the declaring block's: another `declare module "m" {}` block's export isn't)
+            if (exported && container->is_module && !container->module->file && !symbol_declared_in_block(exported, symbol->alias->scope)) {
+                exported = nullptr;
+            }
             if (exported && exported != symbol) local_flags |= exported->flags & ~(u32)SYMBOL_ALIAS;
             if (exported && exported != symbol && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS)) {
                 symbol->alias->export_value = exported;
@@ -4247,9 +4262,11 @@ void binder_link(Binder* me) {
             if (other->kind == SYMBOL_DECL_ALIAS || !(other->flags & excluded) || other->full.source == symbol->decls[0].full.source) {
                 continue;
             }
-            Error* first = report_conflict(errs, symbol->decls[0].name, 2300);
+            // (reportMergeSymbolError's message: an enum's TS2567, a block-scoped variable's TS2451)
+            unsigned code = other->flags & SYMBOL_ENUM ? 2567 : other->flags & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
+            Error* first = report_conflict(errs, symbol->decls[0].name, code);
             add_duplicate_related(first, symbol->decls[0].name, other->name);
-            Error* second = report_conflict(errs, other->name, 2300);
+            Error* second = report_conflict(errs, other->name, code);
             add_duplicate_related(second, other->name, symbol->decls[0].name);
             cross_file = true;
         }

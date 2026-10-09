@@ -831,6 +831,7 @@ void scope_report_default_import_of_export_equals(PortItem const* item, Symbol c
 // TS6203 "was also declared here" (TS6204 "and here" from the second on, at most 5) on the duplicate error at `at`,
 // pointing at `other` (tsc's addDuplicateDeclarationError)
 void add_duplicate_related(Error* error, Span at, Span other);
+void add_duplicate_related_named(Error* error, Span at, Span other, csview name); // Naming the symbol so
 // A name used with `meaning` wasn't found: TS2304, or TS2552 with the closest name in scope (tsc's
 // onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol). `shorthand`: the value of `{ a }` (TS18004)
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
