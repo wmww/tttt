@@ -1944,6 +1944,9 @@ static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, Discrimina
     bool remove_nullable = compiler_options()->strict_null_checks && has_type_facts(me, type, TF_EQ_UNDEFINED_OR_NULL) &&
         (optional_chain || (access && access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
     Ty const* holder = remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type;
+    // (`x!.kind` of an x that is only null here: never has no properties, tsc's getTypeOfPropertyOfType finds none and
+    // doesn't narrow)
+    if (holder->flags & TYF_NEVER) return type;
     // (A nullable member has no such property: the union's property is partial, tsc's getTypeOfPropertyOfType finds
     // none and doesn't narrow)
     if (holder->kind == TY_UNION) {
