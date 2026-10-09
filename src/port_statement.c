@@ -275,6 +275,18 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
     }
 }
 
+// The same for JavaScript's `const t = require("m")`, `const { t } = require("m")` (tsc's checkAliasSymbol of the
+// variable declaration or binding element: `import("m")`, never `.t`)
+void port_item_check_js_require_type(PortItem const* item, ErrorCtx* errs) {
+    if (!item->symbol || !item->symbol->alias || !item->module_ref) return;
+    Symbol const* target = symbol_resolve_alias(item->symbol);
+    if (!target || target->is_placeholder || target->is_unresolved) return;
+    // (The alias's meanings: a typedef with the `export=` value's property as its value half is a value too)
+    if ((symbol_resolved_flags(target) | symbol_resolved_flags(item->symbol)) & SYMBOL_VALUE) return;
+    error_ctx_error_d(errs, item->decl_name, 18042, "'", item->decl_name, "' is a type and cannot be imported in JavaScript "
+        "files. Use 'import(\"", cstr_sv(&item->module_ref->path), "\")' in a JSDoc type annotation.");
+}
+
 static void report_string_export_name(Span name, ErrorCtx* errs) {
     if (!span_valid(name) || !name.sv.size || (name.sv.buf[0] != '"' && name.sv.buf[0] != '\'')) return;
     error_ctx_grammar_error_d(errs, name, 18057,

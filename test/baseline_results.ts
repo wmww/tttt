@@ -28416,7 +28416,7 @@ const baselines = {
         types: false,
     },
     'requireTypesOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

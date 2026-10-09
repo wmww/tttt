@@ -150,3 +150,5 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs);
 // TS2305 for an import of a property the value `export =` names doesn't have (also a JavaScript require destructuring's)
 void port_item_check_export_equals_property(PortItem const* item, ErrorCtx* errs);
+// TS18042 for JavaScript's `const t = require("m")` of something that is only a type
+void port_item_check_js_require_type(PortItem const* item, ErrorCtx* errs);
