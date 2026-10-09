@@ -249,3 +249,12 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
     comment); jsdocParamTagTypeLiteral nested `@param` TS8032 cases.
   - B: TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge), moduleExportAlias5 TS2339,
     jsDeclarationsFunctions TS2323 (`export { j }` twice).
+- (agent D, JS mutants round 2, seeds 2/3: 18 and 19 left, all one-offs or other owners)
+  - A JS variable with both a TS annotation (TS8010) and a JSDoc `@type` on a function initializer: tsgo's reparser
+    makes the `@type` the function's FullSignature (the declaration already has a Type), so the function prints as
+    the tag's signature (`(this: Foo) => void`, `(firstParam: V) => any`); tttt keeps the contextual typing. Artificial.
+  - TS8024 quotes a JSDoc `@param` name with escapes decoded in tsgo (`a\u{62}c` -> `abc`): JSDoc names aren't
+    registered with names_register_source, so name_cooked() can't decode them.
+  - An astral-plane JSDoc `@param` name underlines one `~` in tsgo (render of extendedUnicodePlaneIdentifiersJSDoc).
+  - TS5024 maxNodeModuleJsDepth with a string value; TS8030 for `@type {Foo}` naming a deleted type alias
+    (jsDeclarationEmitFunction).

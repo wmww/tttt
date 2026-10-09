@@ -2312,6 +2312,24 @@ static Resolution resolve_with_signatures(
     CallExpr const* saved_call = my resolving_call;
     my inferential_depth = 0;
     my resolving_call = info->call;
+    // A JavaScript `super(...)` whose base clause has no type arguments: the base's constructors that take none
+    // (tsgo's getConstructorsForTypeArguments), none of them is a call checked against nothing (no error)
+    Signature* filtered[16];
+    if (info->super_fill && info->call_span.source && info->call_span.source->is_js && count <= c_arraylen(filtered)) {
+        u32 kept = 0;
+        for (u32 i = 0; i < count; i++) {
+            signature_resolve(me, signatures[i]);
+            if (!min_type_arguments(me, signatures[i])) filtered[kept++] = signatures[i];
+        }
+        if (!kept && count) {
+            my inferential_depth = saved;
+            my resolving_call = saved_call;
+            for (u32 i = 0; i < args->len; i++) if (args->data[i].expr) ty_expr_type(me, args->data[i].expr);
+            return (Resolution){ .ret = ty_intrinsic(me, TY_ANY) };
+        }
+        signatures = filtered;
+        count = kept;
+    }
     Resolution ret = resolve_with_signatures_inner(me, signatures, count, args, info, call_span, errs);
     my inferential_depth = saved;
     my resolving_call = saved_call;
