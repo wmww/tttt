@@ -4,6 +4,8 @@
 #include "program.h"
 #include "error.h"
 #include "source_file.h"
+#include "ast_walk.h"
+#include "statement.h"
 
 // JSX (tsc's checkJsx* family): the JSX namespace, the element type and intrinsic elements. The attributes of an
 // element are an object literal (check_jsx_attributes() in expr.c). Components, ie value tags, resolve like calls:
@@ -14,12 +16,29 @@ static Symbol const* export_with_meaning(Symbol const* container, csview name, u
     return found && !found->is_placeholder ? found : nullptr;
 }
 
+// (The one that starts first: tsc's walk in tree order, which recovery's AST shapes needn't follow)
+static AstWalk visit_first_jsx(Expr const* expr, void* arg) {
+    if (expr->tag != EXPR_JSX_ELEMENT && expr->tag != EXPR_JSX_FRAGMENT) return AST_WALK_CONTINUE;
+    // (A fragment's errors go on its opening `<>`)
+    Span at = expr->tag == EXPR_JSX_FRAGMENT ? expr->jsx->opening_span : expr->inner_span;
+    Span* first = arg;
+    if (!span_valid(*first) || span_start_ptr(at) < span_start_ptr(*first)) *first = at;
+    return AST_WALK_CONTINUE;
+}
+
 // tsc's getJsxNamespaceContainerForImplicitImport: the first time a checker asks about the runtime module of a file,
-// what there is to say about it is said at the element that asks (once per program: the first checked file's)
+// what there is to say about it is said at the file's first JSX tag (links.firstJSXTagInFile), whichever element asks
+// (once per program: the first checked file's)
 static void report_runtime_module(Checker* me, JsxElement const* element, Span at) {
     SourceFile const* file = element->opening_span.source;
     ModuleRef const* ref = file ? file->jsx_runtime_ref : nullptr;
     if (!ref || !my errs || my errs->phase != ERROR_PHASE_TYPECHECK || !ty_first_check(me, ref)) return;
+    Span first = span_null;
+    for_each (i, vec_statement, &file->ast.statements) {
+        ast_walk_statement(i, visit_first_jsx, &first);
+        if (span_valid(first)) break;
+    }
+    if (span_valid(first)) at = first;
     isize before = vec_error_size(&my errs->errors);
     jsx_report_runtime_module(file, at, my errs);
     for (isize i = before; i < vec_error_size(&my errs->errors); i++) {
