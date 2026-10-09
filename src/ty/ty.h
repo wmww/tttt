@@ -975,6 +975,7 @@ struct Checker {
     Ty const* global_types[14]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[14];
     u32 instantiation_depth;
+    Ty const* instantiation_stack[100]; // What each depth of instantiation_depth instantiates (tsc's instantiationStack)
     // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards
     // instantiation_depth (tsc resolves those in a loop, getConditionalType's tailCount), and the next ty_instantiate()
     // being one (ty_instantiate_tail())

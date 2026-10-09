@@ -1,3 +1,4 @@
+#include "scope.h"
 #include "ty/ty_internal.h"
 #include "error.h"
 #include "program.h"
@@ -31,9 +32,45 @@ void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
     ty_error_at(me, ty_current_node_span(me), ts_code, message);
 }
 
+// The symbol tsc names a type on the instantiation stack by (its alias's, else its own), null for none or an internal one
+static Symbol const* instantiated_symbol(Ty const* ty) {
+    if (ty->alias) return ty->alias;
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    return ty->kind == TY_DECLARED ? ty->declared.symbol : nullptr;
+}
+
 void ty_instantiation_limit_reached(Checker* me) {
     my instantiation_limit_hits++;
-    ty_error_at_current_node_d(me, 2589, "Type instantiation is excessively deep and possibly infinite.");
+    // tsc's getCircularTypeNames: the types three times on the stack
+    u32 depth = my instantiation_depth < c_arraylen(my instantiation_stack) ? my instantiation_depth : (u32)c_arraylen(my instantiation_stack);
+    Symbol const* names[8];
+    u32 name_count = 0;
+    for (u32 i = 0; i < depth && name_count < c_arraylen(names); i++) {
+        Ty const* ty = my instantiation_stack[i];
+        u32 seen = 0;
+        for (u32 j = 0; j <= i; j++) seen += my instantiation_stack[j] == ty;
+        if (seen != 3) continue;
+        Symbol const* symbol = instantiated_symbol(ty);
+        if (!symbol || !symbol->name.size) continue;
+        bool dup = false;
+        for (u32 k = 0; k < name_count && !dup; k++) dup = csview_eq(&names[k]->name, &symbol->name);
+        if (!dup) names[name_count++] = symbol;
+    }
+    if (name_count == 1) {
+        ty_error_at_current_node_d(me, 5114, "Instantiations of type '", names[0]->name, "' appear infinitely circular.");
+    } else if (name_count > 1) {
+        cstr list = cstr_init();
+        for (u32 k = 0; k < name_count; k++) {
+            if (k) cstr_append(&list, ", ");
+            cstr_append(&list, "'");
+            cstr_append_sv(&list, names[k]->name);
+            cstr_append(&list, "'");
+        }
+        ty_error_at_current_node_d(me, 5115, "Instantiations of the following types appear infinitely circular: ", list, ".");
+        cstr_drop(&list);
+    } else {
+        ty_error_at_current_node_d(me, 2589, "Type instantiation is excessively deep and possibly infinite.");
+    }
 }
 
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper) {
@@ -1072,6 +1109,7 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
         my active_mappers[my active_mapper_count++].mapper = mapper;
         pushed = true;
     }
+    my instantiation_stack[my instantiation_depth] = ty;
     my instantiation_depth++;
     my instantiation_count++;
     // Tail calls are counted per conditional type being resolved (tsc's tailCount is local to getConditionalType): what
