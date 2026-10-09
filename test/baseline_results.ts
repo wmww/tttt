@@ -8273,7 +8273,7 @@ const baselines = {
     'declarationEmitExpandoWithGenericConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExportAliasVisibiilityMarking': {
         errors: true,
@@ -12978,7 +12978,7 @@ const baselines = {
     'expandoFunctionAsAssertion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionBlockShadowing': {
         errors: true,
@@ -12993,7 +12993,7 @@ const baselines = {
     'expandoFunctionContextualTypesJSDocInTs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypesJs': {
         errors: true,
@@ -17418,7 +17418,7 @@ const baselines = {
     'indexTypeNoSubstitutionTemplateLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexWithUndefinedAndNull': {
         errors: true,
@@ -19258,7 +19258,7 @@ const baselines = {
     'isolatedDeclarationErrorsExpandoFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsExpressions': {
         errors: false,
@@ -20603,7 +20603,7 @@ const baselines = {
     'jsxComponentTypeErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxContainsOnlyTriviaWhiteSpacesNotCountedAsChild': {
         errors: true,
@@ -61643,7 +61643,7 @@ const baselines = {
     'typeFromPropertyAssignment29': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment3': {
         errors: false,

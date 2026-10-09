@@ -1237,6 +1237,11 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
 
 static bool symbol_has_explicit_type(Symbol const* symbol) {
     if (symbol->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_VALUE_MODULE)) return true;
+    // An expando assigned a function with a return type annotation (tsc's isExpandoPropertyFunctionWithReturnTypeAnnotation)
+    if ((symbol->flags & SYMBOL_PROPERTY) && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
+        Expr const* value = symbol->decls[0].node;
+        return value && value->tag == EXPR_FUNCTION && value->function->ret_explicit;
+    }
     if (!(symbol->flags & SYMBOL_VARIABLE)) return false;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent) return false;

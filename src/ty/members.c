@@ -1828,8 +1828,10 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     ) {
         prop->flags |= PROP_READONLY;
     }
-    // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
+    // An expando assigned a function is a method in JavaScript (bindPotentiallyNewExpandoMemberToNamespace). tsgo's
+    // bindDeferredExpandoAssignment declares a property (PROTOTYPE: JavaScript keeps 6.0's until todo entry 8)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
+        member->decls[0].full.source && member->decls[0].full.source->is_js &&
         !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION
     ) {
         prop->flags |= PROP_METHOD;
