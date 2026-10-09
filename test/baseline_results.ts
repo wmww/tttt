@@ -5296,9 +5296,9 @@ const baselines = {
         types: true,
     },
     'computedEnumMemberKeyNoCrash1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'computedEnumMemberSyntacticallyString(isolatedmodules=false)': {
         errors: true,
@@ -9982,8 +9982,8 @@ const baselines = {
     },
     'deprecatedReferenceInEnumComputedNameNoFlake': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'derivedClassConstructorWithExplicitReturns01(target=es2015)': {
         errors: true,
@@ -11663,7 +11663,7 @@ const baselines = {
     'enumUnicodeEscapeMemberName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumUsedBeforeDeclaration': {
         errors: true,
@@ -17162,8 +17162,8 @@ const baselines = {
     },
     'importedValueInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importsInAmbientModules1': {
         errors: true,
@@ -17227,8 +17227,8 @@ const baselines = {
     },
     'incompatibleAssignmentInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'incompatibleAssignmentOfIdenticallyNamedTypes': {
         errors: true,
@@ -21592,8 +21592,8 @@ const baselines = {
     },
     'localReferenceInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'localRequireFunction': {
         errors: true,
@@ -22233,7 +22233,7 @@ const baselines = {
     'missingIdentifierInEnumComputedNameNoFlake': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingImportAfterModuleImport': {
         errors: true,
@@ -22248,7 +22248,7 @@ const baselines = {
     'missingModuleInEnumComputedNameNoFlake': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingPropertiesOfClassExpression': {
         errors: true,
@@ -22298,7 +22298,7 @@ const baselines = {
     'misspelledIdentifierInEnumComputedNameNoFlake': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'misspelledJsDocTypedefTags': {
         errors: true,
@@ -23856,7 +23856,7 @@ const baselines = {
         types: true,
     },
     'negatedUnicodeSetUnionMayContainStrings': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28037,8 +28037,8 @@ const baselines = {
     },
     'redundantDeclareInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'reexportDefaultIsCallable': {
         errors: true,
@@ -28141,7 +28141,7 @@ const baselines = {
         types: true,
     },
     'regexNamedGroupDuplicateNestedInGroup': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28166,12 +28166,12 @@ const baselines = {
         types: true,
     },
     'regularExpressionES2025Syntax(target=es2017)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionES2025Syntax(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28191,22 +28191,22 @@ const baselines = {
         types: true,
     },
     'regularExpressionGroupNameUnicodeEscapes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionQuantifierBounds1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionScanning(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionScanning(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28216,12 +28216,12 @@ const baselines = {
         types: true,
     },
     'regularExpressionUnicodeSetsLoneAmpersand': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionWithNonBMPFlags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30302,8 +30302,8 @@ const baselines = {
     },
     'stringIncrementInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'stringIndexerAndConstructor': {
         errors: true,
@@ -33016,7 +33016,7 @@ const baselines = {
         types: true,
     },
     'unicodeEscapesInNames02(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33437,8 +33437,8 @@ const baselines = {
     },
     'unusedCommaOperandInEnumComputedNameNoFlake': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedDestructuring': {
         errors: true,

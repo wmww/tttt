@@ -1543,8 +1543,8 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
                 value_drop(&value);
             }
         }
-        // (A computed name isn't checked, its expression is any: tsc's isComputedNonLiteralName)
-        if (i->computed_key) baseline_test_case_add_type_node(ctx, expr_outer_span(i->computed_key), &type_any);
+        // (A computed name's expression is checked: tsgo's checkEnumMember)
+        if (i->computed_key) expr_compile_test_info(i->computed_key, ctx);
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i->value, ctx);
         }

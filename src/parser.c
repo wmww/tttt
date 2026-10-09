@@ -5902,6 +5902,10 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             else cstr_drop(&string_name);
         } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
             enum_case.full_name = enum_case.name;
+            // `\u0041` names the member `A`
+            if (memchr(enum_case.name.sv.buf, '\\', (size_t)enum_case.name.sv.size)) {
+                enum_case.canonical_name = identifier_name_value(enum_case.name.sv);
+            }
         } else if (isdigit((unsigned char)*p.pos) || (*p.pos == '.' && isdigit((unsigned char)p.pos[1]))) {
             // A numeric name (tsc's parsePropertyName): TS2452 from the checker
             Value value;

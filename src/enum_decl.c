@@ -134,7 +134,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
                 error_ctx_error_d(errs, i->full_name, 18056, "Enum member following a non-literal numeric member must have "
                     "an initializer when 'isolatedModules' is enabled.");
             }
-            previous_number = auto_number && !i->computed_name;
+            previous_number = auto_number;
         }
         previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, my name.source);
         if (i->computed_key) expr_typecheck(i->computed_key, errs);
@@ -144,10 +144,9 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         // (tsc's computeEnumMemberValue)
         if (i->computed_name) {
             error_ctx_error_d(errs, i->full_name, 1164, "Computed property names are not allowed in enums.");
-            continue;
         }
         // (tsc's computeEnumMemberValue: the name's text is what a number prints as, and not Infinity or NaN)
-        bool numeric = i->numeric_name ? i->numeric_name == 1 : value_is_numeric_literal_name(i->name.sv) &&
+        bool numeric = i->computed_name ? false : i->numeric_name ? i->numeric_name == 1 : value_is_numeric_literal_name(i->name.sv) &&
             !csview_equals(i->name.sv, "Infinity") && !csview_equals(i->name.sv, "-Infinity") && !csview_equals(i->name.sv, "NaN");
         if (numeric) {
             error_ctx_error_d(errs, i->full_name, 2452, "An enum member cannot have a numeric name.");
