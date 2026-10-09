@@ -19742,8 +19742,8 @@ const baselines = {
     },
     'jsDocGenericOverloads': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDocOverloadAnonDefaultExport': {
         errors: true,
@@ -19752,7 +19752,7 @@ const baselines = {
     },
     'jsDocOverloadNamedDefaultExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDocPrivateConstructor': {
@@ -19838,7 +19838,7 @@ const baselines = {
     'jsFileAlternativeUseOfOverloadTag': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileClassPropertyInitalizationInObjectLiteral': {
         errors: true,
@@ -20177,13 +20177,13 @@ const baselines = {
     },
     'jsFileFunctionOverloads': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsFileFunctionOverloads2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsFileFunctionParametersAsOptional': {
         errors: true,
@@ -20202,28 +20202,28 @@ const baselines = {
     },
     'jsFileMethodOverloads': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsFileMethodOverloads2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsFileMethodOverloads3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'jsFileMethodOverloads4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileMethodOverloads5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFunctionWithPrototypeNoErrorTruncationNoCrash': {
         errors: true,
@@ -20307,7 +20307,7 @@ const baselines = {
     },
     'jsdocCallbackParamQualifiedName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocCastCommentEmit': {
@@ -52887,8 +52887,8 @@ const baselines = {
     },
     'jsdocVariadicInOverload': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocVariadicType': {
         errors: true,
@@ -52921,8 +52921,8 @@ const baselines = {
         types: true,
     },
     'overloadTag1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'overloadTag2': {
@@ -53027,7 +53027,7 @@ const baselines = {
     },
     'templateInsideCallback': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisPrototypeMethodCompoundAssignment': {
@@ -53117,8 +53117,8 @@ const baselines = {
     },
     'typedefCrossModule3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typedefCrossModule4': {
         errors: true,
