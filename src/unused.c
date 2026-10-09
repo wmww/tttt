@@ -73,121 +73,79 @@ static void report_never_read(Reporter const* r, bool parameter, Span at, Span n
     report(r, parameter, at, 6133, cstr_d("'", name, "' is declared but its value is never read."));
 }
 
-// tsc's bindingNameText: the name of an identifier, the first name in a pattern
-static Span binding_name(Binding const* me) {
-    switch (my tag) {
-        case BINDING_IDENTIFIER: return my content_span;
-        case BINDING_ARRAY:
-            for_each (i, vec_binding, &my array) {
-                if (i->tag != BINDING_NOOP) return binding_name(i);
-            }
-            break;
-        case BINDING_OBJECT:
-            if (vec_object_binding_item_size(&my object)) return binding_name(&vec_object_binding_item_front(&my object)->target);
-            break;
-        case BINDING_NOOP: break;
-    }
-    return my content_span;
-}
+// tsc's isUnreferencedVariableDeclaration: a pattern whose elements all are, a name never read (`excused`: one whose
+// underscore excuses it, a parameter's, a binding element's but an object shorthand's; `before_rest`: an object
+// element before a rest one, which takes a property out of it)
+static bool binding_unreferenced(Binding const* me, bool excused, bool before_rest);
 
-// Where the declarations of a variable statement or parameter list that are unused altogether are collected
-typedef struct UnusedDecls {
-    Binding const* items[64];
-    u32 count;
-    bool overflow;
-} UnusedDecls;
-
-static void unused_decls_push(UnusedDecls* me, Binding const* binding) {
-    if (my count == (u32)c_countof(my items)) {
-        my overflow = true;
-        return;
-    }
-    my items[my count++] = binding;
-}
-
-// The elements of a pattern: tsc groups the unused ones by pattern (unusedDestructures). `decls`: the pattern is a
-// variable's, whose declaration counts as unused altogether if its only element is unused
-static void report_pattern(Reporter const* r, Binding const* pattern, bool parameter, UnusedDecls* decls) {
-    Binding const* unused[64];
-    u32 unused_count = 0;
-    u32 element_count = 0;
-    bool overflow = false;
+static bool pattern_unreferenced(Binding const* pattern) {
     if (pattern->tag == BINDING_OBJECT) {
         VecObjectBindingItem const* items = &pattern->object;
         bool rest_last = vec_object_binding_item_size(items) && vec_object_binding_item_back(items)->target.rest;
         for_each (i, vec_object_binding_item, items) {
-            element_count++;
-            Binding const* target = &i->target;
-            if (target->tag == BINDING_ARRAY || target->tag == BINDING_OBJECT) {
-                report_pattern(r, target, parameter, nullptr);
-                continue;
-            }
-            if (target->tag != BINDING_IDENTIFIER || !is_unused(target->symbol)) continue;
-            // `{ a: _a }` is fine (a renamed one only: `{ _a }` isn't)
-            bool renamed = !span_eq(i->source_span, target->content_span);
-            if (renamed && starts_with_underscore(target->content_span)) continue;
-            // In `{ a, ...b }`, `a` is used: it takes a property out of `b`
-            if (rest_last && !target->rest) continue;
-            if (unused_count < (u32)c_countof(unused)) unused[unused_count++] = target; else overflow = true;
+            bool renamed = !span_eq(i->source_span, i->target.content_span);
+            if (!binding_unreferenced(&i->target, renamed, rest_last && !i->target.rest)) return false;
         }
-    } else if (pattern->tag == BINDING_ARRAY) {
+    } else {
         for_each (i, vec_binding, &pattern->array) {
-            element_count++;
-            if (i->tag == BINDING_ARRAY || i->tag == BINDING_OBJECT) {
-                report_pattern(r, i, parameter, nullptr);
-                continue;
-            }
-            if (i->tag != BINDING_IDENTIFIER || !is_unused(i->symbol) || starts_with_underscore(i->content_span)) continue;
-            // A variable's array elements are reported one by one, a parameter's are grouped
-            if (!parameter) {
-                report_never_read(r, false, i->content_span, i->content_span);
-                continue;
-            }
-            if (unused_count < (u32)c_countof(unused)) unused[unused_count++] = i; else overflow = true;
+            if (!binding_unreferenced(i, true, false)) return false;
         }
     }
-    if (!unused_count || overflow) return;
-    if (unused_count == element_count) {
-        if (unused_count == 1 && decls) {
-            unused_decls_push(decls, pattern);
-        } else if (unused_count == 1) {
-            report_never_read(r, parameter, pattern->content_span, binding_name(unused[0]));
-        } else {
-            report(r, parameter, pattern->content_span, 6198, cstr_from("All destructured elements are unused."));
-        }
+    return true;
+}
+
+static bool binding_unreferenced(Binding const* me, bool excused, bool before_rest) {
+    switch (my tag) {
+        case BINDING_ARRAY:
+        case BINDING_OBJECT: return pattern_unreferenced(me);
+        case BINDING_NOOP: return true;
+        case BINDING_IDENTIFIER: break;
+    }
+    return is_unused(my symbol) && !before_rest && !(excused && starts_with_underscore(my content_span));
+}
+
+static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter);
+
+// tsc's reportUnusedBindingElements: all of a pattern's elements (of several) at once, else each
+static void report_pattern(Reporter const* r, Binding const* pattern, bool parameter) {
+    u32 count = pattern->tag == BINDING_OBJECT ? (u32)vec_object_binding_item_size(&pattern->object) :
+        (u32)vec_binding_size(&pattern->array);
+    if (count > 1 && pattern_unreferenced(pattern)) {
+        report(r, parameter, pattern->content_span, 6198, cstr_from("All destructured elements are unused."));
         return;
     }
-    for (u32 i = 0; i < unused_count; i++) {
-        report_never_read(r, parameter, unused[i]->content_span, unused[i]->content_span);
+    if (pattern->tag == BINDING_OBJECT) {
+        VecObjectBindingItem const* items = &pattern->object;
+        bool rest_last = vec_object_binding_item_size(items) && vec_object_binding_item_back(items)->target.rest;
+        for_each (i, vec_object_binding_item, items) {
+            bool renamed = !span_eq(i->source_span, i->target.content_span);
+            report_binding(r, &i->target, renamed, rest_last && !i->target.rest, parameter);
+        }
+    } else {
+        for_each (i, vec_binding, &pattern->array) report_binding(r, i, true, false, parameter);
     }
 }
 
-// tsc's unusedVariables: `list_span` is where "All variables are unused" goes
-static void report_variables(Reporter const* r, VariableStatement const* me, Span list_span, bool for_in_of) {
-    UnusedDecls decls = {0};
-    bool is_using = my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING;
-    for_each (i, vec_initialized_binding, &my initializers) {
-        Binding const* binding = &i->binding;
-        if (binding->tag == BINDING_IDENTIFIER) {
-            if (!is_unused(binding->symbol)) continue;
-            if ((for_in_of || is_using) && starts_with_underscore(binding->content_span)) continue;
-            unused_decls_push(&decls, binding);
-        } else {
-            report_pattern(r, binding, false, &decls);
-        }
+// tsc's reportUnusedVariableDeclarations of one declaration
+static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter) {
+    if (my tag == BINDING_ARRAY || my tag == BINDING_OBJECT) {
+        report_pattern(r, me, parameter);
+    } else if (my tag == BINDING_IDENTIFIER && binding_unreferenced(me, excused, before_rest)) {
+        report_never_read(r, parameter, my content_span, my content_span);
     }
-    if (!decls.count || decls.overflow) return;
-    if (decls.count == (u32)vec_initialized_binding_size(&my initializers)) {
-        if (decls.count == 1) {
-            report_never_read(r, false, decls.items[0]->content_span, binding_name(decls.items[0]));
-        } else {
-            report(r, false, list_span, 6199, cstr_from("All variables are unused."));
-        }
+}
+
+// tsc's reportUnusedVariables: `list_span` is where "All variables are unused" goes
+static void report_variables(Reporter const* r, VariableStatement const* me, Span list_span, bool for_in_of) {
+    bool is_using = my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING;
+    bool excused = for_in_of || is_using;
+    bool all = true;
+    for_each (i, vec_initialized_binding, &my initializers) all &= binding_unreferenced(&i->binding, excused, false);
+    if (all && vec_initialized_binding_size(&my initializers) > 1) {
+        report(r, false, list_span, 6199, cstr_from("All variables are unused."));
         return;
     }
-    for (u32 i = 0; i < decls.count; i++) {
-        report_never_read(r, false, decls.items[i]->content_span, binding_name(decls.items[i]));
-    }
+    for_each (i, vec_initialized_binding, &my initializers) report_binding(r, &i->binding, excused, false, false);
 }
 
 // tsc's rangeOfTypeParameters: from the character before the list (`<`, the space before a JSDoc list's first
@@ -267,16 +225,8 @@ static void report_function(Reporter const* r, FunctionImpl const* me) {
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
         if (i->is_parameter_property) continue;
-        if (binding->tag == BINDING_IDENTIFIER) {
-            if (!is_unused(binding->symbol) || starts_with_underscore(binding->content_span) ||
-                span_equals(binding->content_span, "this")
-            ) {
-                continue;
-            }
-            report_never_read(r, true, binding->content_span, binding->content_span);
-        } else {
-            report_pattern(r, binding, true, nullptr);
-        }
+        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+        report_binding(r, binding, true, false, true);
     }
 }
 
@@ -311,12 +261,8 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
         unused[unused_count++] = item;
     }
     if (!unused_count) return;
-    if (unused_count == count) {
-        if (unused_count == 1) {
-            report_never_read(r, false, statement_span, unused[0]->decl_name);
-        } else {
-            report(r, false, statement_span, 6192, cstr_from("All imports in import declaration are unused."));
-        }
+    if (count > 1 && unused_count == count) {
+        report(r, false, statement_span, 6192, cstr_from("All imports in import declaration are unused."));
         return;
     }
     for (u32 i = 0; i < unused_count; i++) {

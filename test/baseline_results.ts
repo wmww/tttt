@@ -13916,7 +13916,7 @@ const baselines = {
         types: true,
     },
     'extendsUntypedModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27486,12 +27486,12 @@ const baselines = {
         types: true,
     },
     'reactImportUnusedInNewJSXEmit(jsx=react-jsx)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'reactImportUnusedInNewJSXEmit(jsx=react-jsxdev)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33441,12 +33441,12 @@ const baselines = {
         types: false,
     },
     'unusedDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unusedDestructuringParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33501,7 +33501,7 @@ const baselines = {
         types: true,
     },
     'unusedImports1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33516,7 +33516,7 @@ const baselines = {
         types: true,
     },
     'unusedImports12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33541,7 +33541,7 @@ const baselines = {
         types: true,
     },
     'unusedImports2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33561,12 +33561,12 @@ const baselines = {
         types: true,
     },
     'unusedImports6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unusedImports7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34101,12 +34101,12 @@ const baselines = {
         types: false,
     },
     'unusedVariablesWithUnderscoreInBindingElement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unusedVariablesWithUnderscoreInForOfLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
