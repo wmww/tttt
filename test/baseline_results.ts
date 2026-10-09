@@ -21232,7 +21232,7 @@ const baselines = {
     },
     'lateBoundAssignmentCandidateJS3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'lateBoundDestructuringImplicitAnyError': {
@@ -61136,19 +61136,19 @@ const baselines = {
         types: false,
     },
     'lateBoundClassMemberAssignmentJS': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'malformedTags': {
         errors: true,

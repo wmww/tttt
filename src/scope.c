@@ -5791,16 +5791,8 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
     Expr const* object = &left->property->expr;
-    // `this[k]` with an entity name k: a late bound name (tsc's isBindableStaticElementAccessExpression), a member of a
-    // class only (tsc's bindThisPropertyAssignment: addLateBoundAssignmentDeclarationToSymbol). Named `[k]` as written
-    Expr const* late_bound_key = nullptr;
-    if (!span_valid(name) && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
-        !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
-    ) {
-        late_bound_key = &left->property->prop;
-        name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
-        if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
-    }
+    // (`this[k]` with an entity name k declares no instance member: tsgo's bindThisPropertyAssignment gives the late
+    // bound name to the class's exports, which getMembersOfSymbol only reads for its static side)
     // (Private names must be declared, even in JavaScript)
     if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
     // `this.x`, `var self = this; self.x` (tsc's isThisInitializedDeclaration)
@@ -5816,7 +5808,6 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         event->link = walk_unvisited(left);
         return;
     }
-    if (late_bound_key && this->this_kind != THIS_CLASS_INSTANCE) return;
     // The function `this` belongs to (arrow functions have their container's)
     FunctionImpl const* function = nullptr;
     for (Scope const* scope = me; scope && !function; scope = scope->parent) {
@@ -5831,8 +5822,6 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
             declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
-            if (late_bound_key && member && !symbol_rare(member)->late_bound_key) symbol_rare_mut(member)->late_bound_key = late_bound_key;
-            if (late_bound_key) break;
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned) {
                 symbol_rare_mut(member)->constructor_assigned = left;
                 symbol_rare_mut(member)->declaring_constructor = function;
