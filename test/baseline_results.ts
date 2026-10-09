@@ -10766,7 +10766,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierChecks': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16161,7 +16161,7 @@ const baselines = {
         types: true,
     },
     'globalArrayAugmentationWithAmbientModuleReexportMerge1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

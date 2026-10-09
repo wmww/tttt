@@ -3242,6 +3242,10 @@ static i32 declare_symbol_flags(
             add_duplicate_related(error_ctx_find(errs, entry->decls[i], 2300), entry->decls[i], span);
             add_duplicate_related(error, span, entry->decls[i]);
         }
+        // An accessor conflicting with another kind makes the symbol a full accessor: what comes later conflicts
+        // too (tsgo's declareSymbol)
+        u32 accessor = SYMBOL_GET_ACCESSOR | SYMBOL_SET_ACCESSOR;
+        if (entry->flags & accessor && (entry->flags & accessor) != (includes & accessor)) entry->flags |= accessor;
         return -1;
     }
     entry->flags |= includes;
@@ -3298,12 +3302,28 @@ typedef struct DupRecord {
 
 // tsc's combineSymbolTables of the early and late members: a late-bound symbol merges with the early one of its name
 // (mergeSymbol, unless one excludes the other), the early declarations first
-static void merge_late_members(MemberTables* tables, VecDupRecord* records) {
+static void merge_late_members(MemberTables* tables, VecDupRecord* records, ErrorCtx* errs) {
     for (u32 l = 0; l < tables->count; l++) {
         MemberEntry* late = &tables->entries[l];
         if (late->table < LATE_TABLE) continue;
         MemberEntry* early = find_member(tables, late->name, late->table - LATE_TABLE);
-        if (!early || (early->flags & symbol_excludes(late->flags)) || (late->flags & symbol_excludes(early->flags))) continue;
+        if (!early) continue;
+        if (early->flags & symbol_excludes(late->flags)) {
+            // tsc's mergeSymbol of the two: reportMergeSymbolError, named as the late symbol prints (`[foo]`), each
+            // side's declarations pointing at the other's
+            if (!early->has_member || !late->decl_count) continue;
+            csview display = late->decls[0].sv;
+            for (u32 i = 0; i < late->decl_count; i++) {
+                report_duplicate_named(late->decls[i], display, errs);
+                for (u32 j = 0; j < early->decl_count; j++) add_duplicate_related_named(error_ctx_find(errs, late->decls[i], 2300), late->decls[i], early->decls[j], display);
+            }
+            for (u32 j = 0; j < early->decl_count; j++) {
+                report_duplicate_named(early->decls[j], display, errs);
+                for (u32 i = 0; i < late->decl_count; i++) add_duplicate_related_named(error_ctx_find(errs, early->decls[j], 2300), early->decls[j], late->decls[i], display);
+            }
+            continue;
+        }
+        if (late->flags & symbol_excludes(early->flags)) continue;
         i32 early_index = (i32)(early - tables->entries);
         for_each (r, vec_dup_record, records) {
             if (r->entry == (i32)l) r->entry = early_index;
@@ -3408,6 +3428,17 @@ static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs)
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs);
 
 // The kind of declaration an interface member's declaration span is: `get x`, `set x`, else a property
+// The name of a member's k-th declaration (an accessor pair's, `get x(); set x(v)`, and those after)
+static Span interface_declaration_name(InterfaceMember const* member, Span const* decls, u32 k) {
+    if (k == 0 || !member->accessor) return member->key.span;
+    csview text = decls[k].sv;
+    isize skip = 0;
+    if (text.size > 4 && (csview_starts_with(text, "get") || csview_starts_with(text, "set")) && isspace((unsigned char)text.buf[3])) skip = 3;
+    isize at = csview_find_sv(csview_slice(text, skip, text.size), member->key.span.sv);
+    if (at == c_NPOS) return span_valid(member->accessor->second_name) ? member->accessor->second_name : member->key.span;
+    return span_make(decls[k].source, text.buf + skip + at, text.buf + skip + at + member->key.span.sv.size);
+}
+
 static u32 interface_declaration_kind(Span decl) {
     csview text = decl.sv;
     bool keyword = text.size > 4 && (text.buf[3] == ' ' || text.buf[3] == '\t' || text.buf[3] == '\n');
@@ -3456,7 +3487,7 @@ static void check_class_interface_members(Checker* me, Symbol const* symbol, Mem
                 Span const* decls = interface_member_declarations(i, &count);
                 for (u32 k = 0; k < count; k++) {
                     u32 kind = interface_declaration_kind(decls[k]);
-                    Span at = k > 0 && i->accessor && span_valid(i->accessor->second_name) ? i->accessor->second_name : i->key.span;
+                    Span at = interface_declaration_name(i, decls, k);
                     declare_member(tables, name, 0, kind, at, errs);
                 }
             }
@@ -3544,7 +3575,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         ClassItem* first_item = (ClassItem*)first->member;
         check_subsequent_property(me, item->field.name_span, class_item_get_type(first_item), class_item_get_type(item), first->span, errs);
     }
-    merge_late_members(tables, &records);
+    merge_late_members(tables, &records, errs);
     check_duplicate_declarations(tables, &records, 0, true, errs);
     vec_dup_record_drop(&records);
     if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
@@ -3798,14 +3829,15 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
             bool unique_symbol = late_bound && (ty_regular(me, ty_expr_type(me, key))->flags & TYF_UNIQUE_ES_SYMBOL);
             bool is_method = i->is_method || (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function);
             // (An accessor pair is one member with a declaration per accessor, written `get x`/`set x`)
+            // (An accessor after a method of its name joins the method's member: its declarations after the first)
             u32 count = 1;
             Span const* decls = nullptr;
-            if (!is_method && i->key.tag == INTERFACE_KEY_NAME) decls = interface_member_declarations(i, &count);
+            if (i->key.tag == INTERFACE_KEY_NAME && (!is_method || i->accessor)) decls = interface_member_declarations(i, &count);
             if (!decls) count = 1;
             for (u32 k = 0; k < count; k++) {
-                u32 kind = is_method ? MEMBER_METHOD : i->computed_accessor == 1 ? MEMBER_GET : i->computed_accessor == 2 ? MEMBER_SET :
+                u32 kind = is_method && k == 0 ? MEMBER_METHOD : i->computed_accessor == 1 ? MEMBER_GET : i->computed_accessor == 2 ? MEMBER_SET :
                     decls ? interface_declaration_kind(decls[k]) : MEMBER_PROPERTY;
-                Span at = k > 0 && i->accessor && span_valid(i->accessor->second_name) ? i->accessor->second_name : i->key.span;
+                Span at = decls ? interface_declaration_name(i, decls, k) : i->key.span;
                 i32 entry = late_bound ? declare_late_member(tables, name, 0, kind, at, unique_symbol, errs) :
                     declare_member(tables, name, 0, kind, at, errs);
                 uint8_t check_kind = kind == MEMBER_METHOD ? 0 : kind == MEMBER_PROPERTY ? 1 : 2;
@@ -3844,7 +3876,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
         }
         check_subsequent_property(me, i->key.span, first_type, member_declared_type(me, i), first->key.span, errs);
     }
-    merge_late_members(tables, &records);
+    merge_late_members(tables, &records, errs);
     for (u32 l = 0; l < list_count; l++) check_duplicate_declarations(tables, &records, l, false, errs);
     vec_dup_record_drop(&records);
     free(tables->entries);
