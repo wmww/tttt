@@ -2965,13 +2965,11 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     ) {
         // Through a declared index signature: `__index`, on the access and on the name (a type parameter's
         // constraint's too, tsgo; not in element accesses: tsc has no symbol there)
-        // Only types whose members have an `__index` symbol: declared ones and written type literals, not
-        // what spreads and the like synthesize (tsc's getIndexSymbolFromSymbolTable)
-        Ty const* root = object->kind == TY_ANONYMOUS ? object : nullptr;
-        while (root && root->anonymous.target) root = root->anonymous.target;
-        bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE || object->kind == TY_TYPE_PARAM ||
-            (root && root->anonymous.node && !root->anonymous.object_literal);
-        if (my property->form == PROPERTY_EXPR_DOT && declared &&
+        // (Any type whose applicable index signature has a declaration: tsgo's getApplicableIndexSymbol, a spread's
+        // too, where 6.0 looked the `__index` member up in the type's symbol). A reverse mapped type's index signatures
+        // have none (resolveReverseMappedTypeMembers)
+        bool reverse = object->kind == TY_ANONYMOUS && object->anonymous.is_reverse;
+        if (my property->form == PROPERTY_EXPR_DOT && !reverse &&
             index_symbol_compile_test_info(ctx, object, key, my inner_span, false)
         ) {
             expr_compile_test_info(&my property->expr, ctx);

@@ -65402,7 +65402,7 @@ const baselines = {
     },
     'objectSpreadIndexSignature': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectSpreadNegative(target=es2015)': {
