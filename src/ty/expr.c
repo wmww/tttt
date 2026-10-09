@@ -2824,9 +2824,24 @@ static Ty const* annotated_property_context(Checker* me, BinaryOpExpr const* bin
     return prop_type(me, prop);
 }
 
+// JavaScript `this.x = v` in an object literal's method or accessor declares x in the literal (tsgo's
+// bindThisPropertyAssignment): v has no contextual type (getContextualTypeForAssignmentExpression)
+static bool is_literal_this_declaration(BinaryOpExpr const* binary) {
+    if (binary->op != BINARY_OP_EQUAL || binary->left.tag != EXPR_PROPERTY || !span_valid(expr_static_property_name(&binary->left))) {
+        return false;
+    }
+    Expr const* object = &binary->left.property->expr;
+    IdentifierExpr const* this = expr_this_keyword(object);
+    FunctionImpl const* function = this && this->this_kind == THIS_ANY ? identifier_this_function(this) : nullptr;
+    SourceFile const* file = object->inner_span.source;
+    return function && file && file->is_js && function_impl_rare(function)->this_literal && !function_impl_is_arrow(function) &&
+        (span_valid(function_impl_member_name(function)) || function->accessor);
+}
+
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
     // A JSDoc `@type` of the assignment (tsgo's reparsed binary.Type, getContextualTypeForBinaryOperand)
     if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
+    if (is_literal_this_declaration(binary)) return nullptr;
     Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
     // (Only an optional property's type differs from its annotation's: don't look further for others)
     if (assigned_context && binary->left.tag == EXPR_PROPERTY && compiler_options()->strict_null_checks &&
@@ -2877,6 +2892,7 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
 }
 
 Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment) {
+    if (is_literal_this_declaration(assignment) && !assignment->jsdoc_type) return nullptr;
     if (assignment->op == BINARY_OP_EQUAL && is_commonjs_declaration(assignment)) return commonjs_declaration_context(assignment);
     if (assignment->op == BINARY_OP_EQUAL && is_js_container_declaration(assignment)) return nullptr;
     return assignment_value_context(me, assignment, ty_expr_type(me, &assignment->left));

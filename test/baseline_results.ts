@@ -61496,9 +61496,9 @@ const baselines = {
         types: true,
     },
     'typeFromContextualThisType': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeFromJSConstructor': {
         errors: true,
