@@ -2954,9 +2954,13 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         return any;
     }
     if (call->uses_new) {
-        if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
-            free(signatures);
-            return ty_intrinsic(me, TY_ERROR); // (tsc's resolveErrorCall)
+        // (Every construct signature's declaration, the first inaccessible one reported: tsgo 7.1's
+        // getConstructorAccessibilityError, `typeof A & typeof B` with one private constructor)
+        for (u32 i = 0; i < count; i++) {
+            if (!ty_constructor_accessible(me, call, signatures[i], call_span, errs)) {
+                free(signatures);
+                return ty_intrinsic(me, TY_ERROR); // (tsc's resolveErrorCall)
+            }
         }
         // (tsc's resolveNewExpression: someSignature, which looks into a union signature's members)
         bool some_abstract = false;

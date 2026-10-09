@@ -1199,22 +1199,26 @@ static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
     if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
     if (extends->tag == EXPR_IMPLICIT_ANY || !my symbol) return;
     Members const* members = ty_members(checker, ty_apparent_type(checker, ty_expr_type(checker, extends)));
-    if (!members->construct_count) return;
-    Signature const* sig = members->construct[0];
-    while (sig && !sig->function && sig->target) sig = sig->target;
-    FunctionImpl const* function = sig ? sig->function : nullptr;
-    if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access != ACCESS_MODIFIER_PRIVATE) return;
-    ClassDecl const* base = symbol_find_node(function_impl_rare(function)->constructed_class, SYMBOL_DECL_CLASS);
-    if (base && span_valid(base->full_span) && base->full_span.source == extends->inner_span.source &&
-        span_start_ptr(base->full_span) <= span_start_ptr(extends->inner_span) &&
-        span_end_ptr(extends->inner_span) <= span_end_ptr(base->full_span)
-    ) {
+    // (Every construct signature, the first private one outside its class reported: tsgo 7.1's
+    // getConstructorAccessibilityError, `typeof A & typeof B`)
+    for (u32 i = 0; i < members->construct_count; i++) {
+        Signature const* sig = members->construct[i];
+        while (sig && !sig->function && sig->target) sig = sig->target;
+        FunctionImpl const* function = sig ? sig->function : nullptr;
+        if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access != ACCESS_MODIFIER_PRIVATE) continue;
+        ClassDecl const* base = symbol_find_node(function_impl_rare(function)->constructed_class, SYMBOL_DECL_CLASS);
+        if (base && span_valid(base->full_span) && base->full_span.source == extends->inner_span.source &&
+            span_start_ptr(base->full_span) <= span_start_ptr(extends->inner_span) &&
+            span_end_ptr(extends->inner_span) <= span_end_ptr(base->full_span)
+        ) {
+            continue;
+        }
+        cstr name = symbol_fully_qualified_name(function_impl_rare(function)->constructed_class);
+        error_ctx_error_d(errs, my extends.inner_span, 2675, "Cannot extend a class '", name,
+            "'. Class constructor is marked as private.");
+        cstr_drop(&name);
         return;
     }
-    cstr name = symbol_fully_qualified_name(function_impl_rare(function)->constructed_class);
-    error_ctx_error_d(errs, my extends.inner_span, 2675, "Cannot extend a class '", name,
-        "'. Class constructor is marked as private.");
-    cstr_drop(&name);
 }
 
 // tsc's checkClassLikeDeclaration: the class (with its own `this`) has to fit what it extends and implements, with
