@@ -1539,7 +1539,13 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             if (node->array.readonly) out_lit(d, "readonly ");
             TyDisplay element_d = d;
             element_d.array_element_node = true;
-            display_node(me, element_d, node->array.element);
+            // (A synthesized array of a union, JSDoc's `{...T|U}`: tsgo's printer parenthesizes the element)
+            TypeNode const* element = node->array.element;
+            bool parens = !element->parenthesized && (element->tag == TYPE_UNION || element->tag == TYPE_INTERSECTION ||
+                element->tag == TYPE_CALLABLE);
+            if (parens) out(reused_if(d, false), c_sv("("));
+            display_node(me, element_d, element);
+            if (parens) out(reused_if(d, false), c_sv(")"));
             out_lit(d, "[]");
             break;
         }

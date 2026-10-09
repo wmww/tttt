@@ -52683,7 +52683,7 @@ const baselines = {
     'jsdocPrefixPostfixParsing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocPrivateName1': {
         errors: true,
