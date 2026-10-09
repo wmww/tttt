@@ -20486,12 +20486,12 @@ const baselines = {
         types: true,
     },
     'jsdocTypedefNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsdocTypedefNoCrash2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22301,7 +22301,7 @@ const baselines = {
         types: false,
     },
     'misspelledJsDocTypedefTags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53136,7 +53136,7 @@ const baselines = {
         types: true,
     },
     'typedefInnerNamepaths': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

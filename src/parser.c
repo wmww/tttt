@@ -717,6 +717,7 @@ static void jsdoc_keep_errors(Parser* me) {
         Error error = errors->data[i];
         if (my shared->source->is_js) {
             error.phase = ERROR_PHASE_RESOLVE_NAMES;
+            error.jsdoc = true;
             vec_error_push(&my shared->jsdoc_errors, error);
         } else {
             error_drop(&error);
@@ -730,7 +731,7 @@ static void jsdoc_keep_errors(Parser* me) {
 // like those
 static void jsdoc_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
     vec_error_push(&my shared->jsdoc_errors, (Error){
-        .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_RESOLVE_NAMES,
+        .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_RESOLVE_NAMES, .jsdoc = true,
     });
 }
 
@@ -3773,11 +3774,26 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
         case JSDOC_TAG_TYPEDEF:
         case JSDOC_TAG_CALLBACK:
             c = jsdoc_skip_space(c, end);
+            const char* type_end = nullptr;
             if (tag.kind != JSDOC_TAG_CALLBACK && c < end && *c == '{') {
                 parse_jsdoc_type_expression(parent, &c, end, &tag);
+                type_end = c;
                 c = jsdoc_skip_space(c, end);
             }
             c = jsdoc_parse_name(c, end, &tag.name, source);
+            if (type_end && !span_valid(tag.name)) {
+                // A typedef needs a name (tsgo's parseTypedefTag: no Closure identifier-named typedefs). tsgo says it
+                // at the last character the type expression took: its `}`, else the type's end
+                const char* last = type_end;
+                if (last[-1] != '}' && tag.has_type && span_valid(tag.type_span)) last = span_end_ptr(tag.type_span);
+                // (A syntactic error of the file in tsgo, not one of its jsdocDiagnostics: unchecked files have it too)
+                if (source->is_js) {
+                    vec_error_push(&parent->shared->jsdoc_errors, (Error){
+                        .message = cstr_lit("Identifier expected."), .span = span_make(source, last - 1, last), .ts_code = 1003,
+                        .phase = ERROR_PHASE_PARSE,
+                    });
+                }
+            }
             break;
         case JSDOC_TAG_TEMPLATE:
             // `@template {C} T, U`, `@template [T=D]` (tsc's parseTemplateTag): a tag per name, the constraint is the
@@ -4022,6 +4038,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                     .span = span_make(source, after, after + (*after == '\n' ? 1 : after[0] == '\r' && after[1] == '\n' ? 2 : 0)),
                     .ts_code = 8033,
                     .phase = ERROR_PHASE_RESOLVE_NAMES,
+                    .jsdoc = true,
                 };
                 const char* file_start = source_file_start(source);
                 error_add_related_d(&error, span_make(source, file_start, file_start), 8034, "The tag was first specified here.");
