@@ -50396,9 +50396,9 @@ const baselines = {
         types: true,
     },
     'importAttributes9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dynamicImportDefer(module=commonjs)': {
         errors: true,
