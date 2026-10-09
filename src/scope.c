@@ -1578,7 +1578,7 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
             error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
                 "An export assignment cannot be used in a module with other exported elements.");
         }
-        if (container->is_module) check_export_equals_merge(container, export_equals, errs);
+        if (container->is_module && !commonjs) check_export_equals_merge(container, export_equals, errs);
     }
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;

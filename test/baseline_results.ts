@@ -53116,12 +53116,12 @@ const baselines = {
         types: true,
     },
     'typedefCrossModule3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typedefCrossModule4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
