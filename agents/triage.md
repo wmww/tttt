@@ -277,3 +277,40 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   against ImportAttributes): agent B's import-attributes mechanism.
 - Harness: a positioned tsconfig diagnostic (TS5092 at the root value) comes out without location in the harness
   (`cstr_eq(&d->config, &i->path)` in baseline_test_case.c compares different path spellings); the CLI is right.
+## 7.1 new tests fan-out (agent C, 2026-10-09)
+- regexInvalidUtf8WithUnicodeFlag (SYM/TYP): `text_decode()` replaces invalid UTF-8 with U+FFFD when a file is loaded;
+  tsgo keeps the raw bytes (Go strings), its scanner reads them as RuneError one byte wide. Only the echoed source
+  lines differ; dropping the replacement touches the scanner, TS1490 and every UTF-16 column computation.
+- deprecatedReferenceInEnumComputedNameNoFlake (ERR): `@captureSuggestions` (TS6385 'x' is deprecated) isn't
+  implemented at all.
+- declarationEmitNonAsciiStringLiteralType (TYP): `() => [\`a\`, 'b'] as const` returns `readonly [\`a\`, 'b']` in tsgo
+  (the array literal's element nodes reused): plan 55's pseudochecker. Single quotes/backticks in object properties
+  and single returns are done.
+- declarationMapCrossFileNodeReuse (TYP): `function c(): () => "a" | "b" { return () => "a"; }` prints the returned
+  arrow as `() => string` in the types baseline though its inferred return type is `"a"` (debug print in
+  function.c's return inference shows ret "a", context `"a" | "b"`): the arrow's printed signature comes from
+  somewhere that widens. Every return-statement arrow with a literal-union contextual return (agent D's area?).
+- numericExportNameDeclaration (TYP): JS `module.exports[1] = 2` is `error` to tsgo's types baseline (any in tttt);
+  `exports[1]` is any. CommonJS (agent B's area).
+- privateNameInTypeQuery (ERR/SYM/TYP): `test4(): any.#a {` — tsgo reports TS2693 ('any' only refers to a type) for a
+  keyword as the left of an entity name and TS1003 after the private identifier (parseRightSideOfDot consumes it),
+  printing `() => any.`; tttt's TS1003 is at the `#` and its recovery cascades. The rest of the test passes.
+- symbolToNodeBoundaryNoStackOverflow (ERR/TYP): `wrapNode<typeof node.getNextNode<any>>(...)`: tsgo prints the
+  type argument (an instantiation expression type whose typeof node can't be reused out of scope) as `any`
+  (`() => CustomNode<any>`); tttt expands it.
+- declarationEmitUnserializableTypes (ERR/TYP): (1) `function inner<T>(): typeof inner<T>` recursion prints one level
+  too many; (2) `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers the arrow's return
+  while grow's return is in flight (any, so `deeper: <U_1>(next: U_1) => any` at depth 2) and reports TS7056 on
+  grow; tttt infers it lazily afterwards and prints 10+ levels.
+- reverseMappedDeclarationSerialization (ERR/TYP): reverse mapped inference through a recursive `Validator<T>`: tttt
+  reports TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly; serialization of the reverse
+  mapped results differs too. Plan-sized.
+- unionElementErrorTruncation (ERR, preexisting): with `noErrorTruncation: false` tsgo's approximateLength of a type
+  literal member is shorter than its text, and truncation is sticky (`... | ... | ...` afterwards). tttt
+  approximates by the printed text (literals match exactly).
+- Spelling suggestions: tsgo breaks distance ties by `strings.Compare` (getSpellingSuggestion's compare), tsc 6 and
+  tttt keep the first candidate. Not ported: would reorder suggestions elsewhere; check with failstats/sweep.
+- clidiff: formatjs/examples/strict-* flips between match and text run to run: TS2460 "declares 'X' locally, but it
+  is exported as 'Y'" picks a different Y (nondeterministic: hash order of an export table?).
+- `function c(): () => number { ... }` assigned elsewhere: kw4 probe's TS2322 elaboration repeats "Type 'string' is
+  not assignable to type 'number'." twice under a signature return mismatch.
