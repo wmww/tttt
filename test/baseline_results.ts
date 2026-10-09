@@ -6236,9 +6236,9 @@ const baselines = {
         types: true,
     },
     'contextualReturnTypeOfIIFE2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contextualReturnTypeOfIIFE3': {
         errors: true,

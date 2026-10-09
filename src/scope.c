@@ -5521,6 +5521,9 @@ static void add_expando_member(
     // A private name is no expando (tsc's getAssignmentDeclarationPropertyAccessKind: isBindableStaticNameExpression
     // of the target, only a prototype property doesn't ask)
     if (name.sv.size && name.sv.buf[0] == '#') return;
+    // Outside JavaScript only a name's member: tsgo's lookupEntity looks into the exports of an expando host only
+    // (getInitializerSymbol), a namespace's function `ns.f.x = v` is none
+    if (!my file->is_js && object->tag != EXPR_IDENTIFIER) return;
     // `a.x = v` where a is `module.exports` is an export (add_commonjs_export())
     Scope* module = my file && my file->is_commonjs ? commonjs_module_scope(me) : nullptr;
     if (module && is_exports_alias(module, object)) return;
