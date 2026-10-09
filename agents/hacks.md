@@ -301,13 +301,9 @@ src` finds the code-side markers; every significant one has an entry here.
   (`CallInfo.tagged_template`); a TaggedTemplate node or argument-list abstraction would avoid it.
 - `signature_resolve`: function expressions take the contextual signature's type parameters only if resolved after
   the context was assigned.
-- Printing while resolving, to imitate tsc's eager error messages: `missing_property_type()` (ty/expr.c HACK,
-  `Checker.print_probe`): tsc prints the object type of a TS2339 while checking, which can find an inferred return
-  type in progress (`this.x` in an object literal method). tttt reports it later (ty/check.c), so evaluation prints the
-  type too while something is being resolved; a return type found in progress then gets TS7023 but keeps its type
-  (tsc's errors checker makes it any). A signature that saw it isn't memoized. function.c HACK: a non-iterable
-  `yield*` prints its type while the return type is in progress, making `yield* foo` in `foo` any. Errors reported
-  during evaluation (one pass, like tsc) would remove both.
+- Printing while resolving, to imitate tsc's eager error messages: function.c HACK: a non-iterable `yield*` prints its
+  type while the return type is in progress, making `yield* foo` in `foo` any. (`missing_property_type()`'s
+  print probe for TS2339 is gone: tsgo prints a return type in progress as any without TS7023.)
 - `missing_property_type` (HACK) also decides the type of a failed access: errorType under conditions approximating
   check.c's reporting (object type, not `typeof globalThis`, no unresolved base, not JS; unchecked JS's "declared in
   another global file" by the object name's file). tsc: errorType exactly when it reports.

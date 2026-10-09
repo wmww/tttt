@@ -1000,11 +1000,6 @@ struct Checker {
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
-    // Printing a type the way tsc's eager error message would (see missing_property_type()): an inferred return type found
-    // in progress becomes circular (TS7023) but keeps its type (tsc prints it from the body, and its types baseline
-    // comes from a checker that prints nothing)
-    bool print_probe;
-    u32 print_probe_hits; // How many return types it found in progress (what saw one isn't remembered)
     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     // While explaining a relation to a synthetic type that stands for a named one (the base static side without

@@ -89,15 +89,6 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
         if (declared && declared != file && !declared->is_module) unchecked_js = false;
     }
     if (!unchecked_js && ty_is_js_literal_type(me, object)) return any_type(me);
-    // tsc reports TS2339 right here, and printing the type in the message can find a return type in progress (`this.x`
-    // in an object literal method: TS7023). HACK: print it too while something is being resolved (tttt reports the
-    // error later, from ty/check.c), see Checker.print_probe
-    if (my resolving_len > my resolving_start && !my print_probe) {
-        my print_probe = true;
-        cstr printed = ty_to_cstr(me, object);
-        cstr_drop(&printed);
-        my print_probe = false;
-    }
     return ty_intrinsic(me, TY_ERROR);
 }
 

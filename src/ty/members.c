@@ -4208,13 +4208,12 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         case LAZY_STATE_IN_FLIGHT:
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
             if (!sig->target && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
-            if (!my print_probe) ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
+            ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     sig->ret_state = LAZY_STATE_IN_FLIGHT;
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
-    u32 probe_hits = my print_probe_hits;
     Ty const* ret;
     if (sig->target) {
         ret = ty_instantiate(me, signature_return_type(me, sig->target), sig->mapper);
@@ -4238,11 +4237,6 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         ) {
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
         }
-    }
-    if (my print_probe_hits != probe_hits) {
-        // (Not remembered: it saw a return type in progress, see Checker.print_probe)
-        sig->ret_state = LAZY_STATE_NOT_STARTED;
-        return ret;
     }
     sig->ret = ret;
     sig->ret_state = LAZY_STATE_DONE;
