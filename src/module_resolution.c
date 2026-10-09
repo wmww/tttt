@@ -892,22 +892,20 @@ static bool extension_is_ok(int extensions, const char* extension) {
 }
 
 // tsc's tryLoadInputFileForPath(): a package's exports/imports that point into the outDir/declarationDir of the
-// project itself (package self-names) mean the input files the outputs are made from. The root the output structure
-// mirrors (the common source directory) isn't known while files are still being found, so without a rootDir (or a
-// config) every directory from the file system root down to the common directory of the importing file
-// and the package.json is tried, and TS2209/TS2210 says the root is ambiguous
-static bool try_load_input_file_for_path(
+// project itself (package self-names) mean the input files the outputs are made from, relative to the rootDir or the
+// config's directory
+static Search try_load_input_file_for_path(
     State* me, csview final_path, csview entry, csview package_dir, bool is_imports, int extensions, Found* out
 ) {
     CompilerOptions const* options = my resolver->options;
-    if (!cstr_size(&options->out_dir) && !cstr_size(&options->declaration_dir)) return false;
-    if (path_contains_node_modules(final_path)) return false;
+    if (!cstr_size(&options->out_dir) && !cstr_size(&options->declaration_dir)) return SEARCH_CONTINUE;
+    if (path_contains_node_modules(final_path)) return SEARCH_CONTINUE;
     bool has_config = cstr_size(&options->config_dir) > 0;
     if (has_config) {
         cstr config_dir = option_path(my resolver, c_sv("."));
         bool inside = path_contains(package_dir, cstr_sv(&config_dir));
         cstr_drop(&config_dir);
-        if (!inside) return false;
+        if (!inside) return SEARCH_CONTINUE;
     }
     StrList guesses = {0};
     // (A project's common source directory is its config's directory, 6.0: getCommonSourceDirectory)
@@ -916,25 +914,15 @@ static bool try_load_input_file_for_path(
             option_path(my resolver, c_sv("."));
         str_list_push(&guesses, cstr_sv(&dir));
         cstr_drop(&dir);
-    } else if (my containing_dir.size) {
-        // The common directory of the importing file and the package.json, and every directory above it
-        csview a = my containing_dir, b = package_dir;
-        isize n = 0, last_sep = 0;
-        while (n < a.size && n < b.size && a.buf[n] == b.buf[n]) {
-            if (a.buf[n] == '/') last_sep = n;
-            n++;
+    } else {
+        // (tsgo doesn't guess the root like 6.0 did: without a rootDir or a config it is ambiguous, TS2209/TS2210,
+        // and the target is unresolved)
+        if (!cstr_size(&my ambiguous_root_package_json)) {
+            cstr_assign_sv(&my ambiguous_root_entry, entry.size ? entry : c_sv("."));
+            my ambiguous_root_package_json = join(package_dir, c_sv("package.json"));
+            my ambiguous_root_in_imports = is_imports;
         }
-        bool whole = (n == a.size || a.buf[n] == '/') && (n == b.size || b.buf[n] == '/');
-        cstr dir = cstr_from_sv(csview_slice(a, 0, whole ? n : last_sep ? last_sep : 1));
-        if (!cstr_size(&dir)) cstr_assign(&dir, "/");
-        // (Pushed deepest first, tried from the top down: the most general root wins)
-        do str_list_push(&guesses, cstr_sv(&dir)); while (go_up(&dir));
-        cstr_drop(&dir);
-    }
-    if (guesses.count > 1 && !cstr_size(&my ambiguous_root_package_json)) {
-        cstr_assign_sv(&my ambiguous_root_entry, entry.size ? entry : c_sv("."));
-        my ambiguous_root_package_json = join(package_dir, c_sv("package.json"));
-        my ambiguous_root_in_imports = is_imports;
+        return SEARCH_STOP;
     }
     static const char* const output_extensions[] = { ".mjs", ".cjs", ".js", ".json", ".d.mts", ".d.cts", ".d.ts" };
     bool found = false;
@@ -989,7 +977,7 @@ static bool try_load_input_file_for_path(
         for (isize c = 0; c < candidate_count; c++) cstr_drop(&candidates[c]);
     }
     str_list_drop(&guesses);
-    return found;
+    return found ? SEARCH_FOUND : SEARCH_CONTINUE;
 }
 
 // tsc's loadModuleFromTargetExportOrImport(): what one target of an exports/imports map leads to. Anything that
@@ -1015,11 +1003,12 @@ static Search load_target(
             if (has_bad_segment(text, true) || has_bad_segment(subpath, false)) return SEARCH_CONTINUE;
             cstr relative = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
             cstr path = join(package_dir, cstr_sv(&relative));
-            bool found = try_load_input_file_for_path(me, cstr_sv(&path), subpath, package_dir, is_imports, extensions, out) ||
-                load_package_json_field(me, cstr_sv(&path), text, extensions, out);
+            // (An ambiguous project root stops there: tsgo's tryLoadInputFileForPath is unresolved())
+            Search input = try_load_input_file_for_path(me, cstr_sv(&path), subpath, package_dir, is_imports, extensions, out);
+            bool found = input == SEARCH_FOUND || (input == SEARCH_CONTINUE && load_package_json_field(me, cstr_sv(&path), text, extensions, out));
             cstr_drop(&relative);
             cstr_drop(&path);
-            return found ? SEARCH_FOUND : SEARCH_CONTINUE;
+            return found ? SEARCH_FOUND : input == SEARCH_STOP ? SEARCH_STOP : SEARCH_CONTINUE;
         }
         case JSON_OBJECT:
             for (isize i = 0; i < target->count; i++) {
