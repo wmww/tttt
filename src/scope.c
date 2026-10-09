@@ -973,12 +973,16 @@ static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKin
 }
 
 // tsc's checkCollisionWithRequireExportsInGeneratedCode: a declaration at the top level of a module that is emitted as
-// CommonJS, AMD, UMD or System can't be named `require` or `exports`
-static void check_require_exports_collision(Scope* me, Span name) {
+// CommonJS, AMD, UMD or System can't be named `require` or `exports`; nor `Object` (but a class) when emitted as
+// CommonJS (tsgo 7.1's checkCollisionWithGlobalObjectInGeneratedCode: the emit's `Object.defineProperty(exports, ...)`)
+static void check_require_exports_collision(Scope* me, Span name, bool is_class) {
     if (my kind != SCOPE_MODULE || my ambient || !my file || my file->unchecked || !span_valid(name)) return;
-    if (!csview_equals(name.sv, "require") && !csview_equals(name.sv, "exports")) return;
+    bool object = !is_class && csview_equals(name.sv, "Object");
+    if (!object && !csview_equals(name.sv, "require") && !csview_equals(name.sv, "exports")) return;
     // (tsc's errorSkippedOn("noEmit"))
-    if (compiler_options()->no_emit || source_file_emit_module_kind(my file) >= MODULE_KIND_ES2015) return;
+    if (compiler_options()->no_emit) return;
+    ModuleKind format = source_file_emit_module_kind(my file);
+    if (object ? format != MODULE_KIND_COMMONJS : format >= MODULE_KIND_ES2015) return;
     error_ctx_error_d(
         binder_errs(my binder), name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
         "' in top level scope of a module."
@@ -1203,7 +1207,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
         (props.kind == SYMBOL_DECL_NAMESPACE && props.is_instantiated)
     )) {
-        check_require_exports_collision(me, props.name);
+        check_require_exports_collision(me, props.name, props.kind == SYMBOL_DECL_CLASS);
     }
     u32 includes, excludes;
     symbol_flags_of_props(&props, &includes, &excludes);
@@ -1716,7 +1720,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     if (!port_item_is_export(item)) {
         // (Its local name: an imported or exported name is an identifier name, tsc's isIdentifierName)
         scope_check_strict_identifier(me, item->decl_name, false);
-        if (!item->type_only) check_require_exports_collision(me, item->decl_name);
+        if (!item->type_only) check_require_exports_collision(me, item->decl_name, false);
     }
     bool exported = port_item_declares_export(item);
     // (`declare global { export { a as b } }` declares globals, TS2666 aside)
