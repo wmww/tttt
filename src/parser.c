@@ -499,11 +499,11 @@ static void mark_named_evaluation(Expr* value, bool computed_key) {
     }
 }
 
-// tsc's getAssignedName(): an anonymous class expression that is directly (no parentheses) the value of a variable,
-// property assignment, binding element or the right operand of a binary expression is called by that name
+// tsc's getAssignedName(): an anonymous class or function expression that is directly (no parentheses) the value of a
+// variable, property assignment, binding element or the right operand of a binary expression is called by that name
 static void mark_assigned_name(Expr* value, Span name) {
-    if (value->tag == EXPR_FUNCTION && value->inner_span.source && value->inner_span.source->is_js &&
-        !function_impl_is_arrow(value->function) && expr_outer_span(value).sv.size == value->inner_span.sv.size
+    if (value->tag == EXPR_FUNCTION && !span_valid(value->function->name) && !function_impl_is_arrow(value->function) &&
+        expr_outer_span(value).sv.size == value->inner_span.sv.size
     ) {
         function_impl_rare_mut(value->function)->assigned_name = name;
         return;

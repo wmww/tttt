@@ -2126,7 +2126,7 @@ const baselines = {
         types: true,
     },
     'awaitInNonAsyncFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31741,7 +31741,7 @@ const baselines = {
         types: true,
     },
     'tsxNotUsingApparentTypeOfSFC': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53871,22 +53871,22 @@ const baselines = {
         types: true,
     },
     'tsxGenericAttributesType5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxGenericAttributesType6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxGenericAttributesType7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxGenericAttributesType8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54236,7 +54236,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentsWithTypeArguments2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67081,7 +67081,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithOptionalProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

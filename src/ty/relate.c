@@ -801,12 +801,9 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
     // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
     if (!constraint_resolved_early(me, target, source, declared, 0) && constraint_resolves_through(me, target, source, declared, 0)) return;
-    // (tsc's typeToString(target, the type parameter's declaration): names as reachable from there, `JSX.X`)
-    Symbol const* param_symbol = item ? item->owned_symbol : infer_symbol;
-    Scope const* enclosing = param_symbol && param_symbol->decl_count ? param_symbol->decls[0].block : nullptr;
+    // (tsgo's TypeToString(target), without an enclosing declaration: nothing reused, `{ s?: number | undefined; }`)
     cstr target_str = cstr_null;
-    // (With an enclosing declaration tsc's node builder reuses the annotations it can: `{ s?: number }` as written)
-    ty_display(me, (TyDisplay){ .target = &target_str, .enclosing = enclosing, .reuse_nodes = enclosing != nullptr }, target);
+    ty_display(me, (TyDisplay){ .target = &target_str }, target);
     report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."),
         item ? item->name : infer_symbol->decls[0].name);
     cstr_drop(&target_str);

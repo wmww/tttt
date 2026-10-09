@@ -169,8 +169,9 @@ typedef struct FunctionImplRare {
     // prototype_of comes from an `Object.defineProperty(F.prototype, "x", {...})` descriptor this is a function of:
     // `this.y = v` in it still declares y in the descriptor (tsc's bindThisPropertyAssignment: the literal's members)
     bool prototype_descriptor;
-    // JavaScript: the name an anonymous function expression is called by where it is written (tsc's getAssignedName:
-    // the variable, property or binding element it is directly the value of, the left of `=`), see mark_assigned_name()
+    // The name an anonymous function expression is called by where it is written (tsc's getAssignedName: the variable,
+    // property or binding element it is directly the value of, the left of `=`), see mark_assigned_name(). Where its
+    // errors go (tsgo's GetErrorRangeForNode), and in JavaScript the name of the class it may be
     Span assigned_name;
     // Owned, JavaScript: a JSDoc `@type {F}` on the function that isn't a written signature (`{Processor<A, B>}`): its
     // signature types the parameters like a contextual one (tsc's getSignatureOfTypeTag, ty_function_apply_jsdoc_type())

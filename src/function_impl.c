@@ -1000,6 +1000,8 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
 Span function_error_span(FunctionImpl const* me) {
     if (span_valid(my name)) return my name;
     if (span_valid(function_impl_member_name(me))) return function_impl_member_name(me);
+    // (An anonymous function expression's assigned name: tsgo's GetNameOfDeclaration)
+    if (span_valid(function_impl_rare(me)->assigned_name)) return function_impl_rare(me)->assigned_name;
     if (function_impl_is_arrow(me)) {
         // tsc's getErrorSpanForArrowFunction: a block body that spans lines (from right after the `=>`) makes it the
         // line of the `=>`
