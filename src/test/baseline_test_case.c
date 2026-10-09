@@ -1008,8 +1008,12 @@ BaselineTestCase run_baseline_test_case(
             cstr_drop(&absolute);
             cstr_drop(&cwd);
         }
-        // (tsc's harness makes every file but a .json a root: a `.map` or `.txt` one is TS6054)
-        if (!is_root || i->superseded || csview_ends_with(cstr_sv(&i->path), ".json")) continue;
+        // (tsc's harness makes every file but a .json or .tsbuildinfo a root: a `.map` or `.txt` one is TS6054)
+        if (!is_root || i->superseded || csview_ends_with(cstr_sv(&i->path), ".json") ||
+            csview_ends_with(cstr_sv(&i->path), ".tsbuildinfo")
+        ) {
+            continue;
+        }
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         // (A root without extension may stand for another file, `e` for e.ts: that one is shown as itself)
