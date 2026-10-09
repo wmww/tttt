@@ -2457,7 +2457,9 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     Expr const* object = &access->expr;
     bool this_access = object->tag == EXPR_IDENTIFIER && object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
     // (`this.x` under strictPropertyInitialization is only the first case)
-    if (!(this_access && options->strict_property_initialization) && is_read_in_declaring_container(me, access)) {
+    // (Not through a JSDoc cast, `/** @type {T} */ (o).x`: tsgo's reparsed assertion isn't a narrowable reference)
+    bool cast = object->tag == EXPR_AS_TYPE;
+    if (!(this_access && options->strict_property_initialization) && !cast && is_read_in_declaring_container(me, access)) {
         Ty const* type = ty_expr_type(me, expr);
         if (includes_undefined(type)) return;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };

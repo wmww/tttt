@@ -19667,7 +19667,7 @@ const baselines = {
     },
     'jsDeclarationEmitThisAssignmentWithBaseProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationExportDefaultAssignmentCrash': {
@@ -31382,7 +31382,7 @@ const baselines = {
     },
     'thisPropertyAssignmentUsedBeforeAssignedJs1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'thisReferencedInFunctionInsideArrowFunction1': {
@@ -61032,12 +61032,12 @@ const baselines = {
     },
     'inferringClassMembersFromAssignments3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'inferringClassMembersFromAssignments4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'inferringClassMembersFromAssignments5': {
@@ -61482,7 +61482,7 @@ const baselines = {
     },
     'thisPropertyAssignmentInherited': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'thisTypeOfConstructorFunctions': {

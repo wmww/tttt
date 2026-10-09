@@ -5167,7 +5167,8 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         event->right = value;
         event->jsdoc_type = jsdoc_type;
         event->jsdoc_modifiers = jsdoc_modifiers;
-        event->link = walk_unvisited(left);
+        // (The walk has resolved `left` already: the replay links the declaration)
+        event->link = true;
         return;
     }
     // The function `this` belongs to (arrow functions have their container's)
@@ -5183,6 +5184,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             AssignmentDeclKind kind = function && function->is_constructor ?
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
             declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
+            if (left->property->context) expr_link_assignment_declaration(left, my binder);
             Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned) {
                 symbol_rare_mut(member)->constructor_assigned = left;
@@ -5206,6 +5208,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             symbol_ensure_exports(class_symbol);
             mark_expando_host(class_symbol, left);
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);
+            if (left->property->context) expr_link_assignment_declaration(left, my binder);
         }   break;
         default: break;
     }

@@ -780,16 +780,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
         } else {
             for (u32 j = 0; j < own && !derived; j++) if (builder->props[j]->name == name) derived = builder->props[j];
         }
-        if (!derived) {
-            builder_push(builder, props, members->props[i]);
-        } else if (derived->decl->symbol && derived->decl->symbol->decl_count && derived->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-            !ty_is_constructor_declared(derived->decl->symbol)
-        ) {
-            // A JavaScript `this.x = v` outside of the constructor doesn't override (tsc's addInheritedMembers)
-            for (u32 j = 0; j < builder->props_count; j++) {
-                if (builder->props[j] == derived) builder->props[j] = members->props[i];
-            }
-        }
+        // (A JavaScript `this.x = v` member overrides too: tsgo's addInheritedMembers)
+        if (!derived) builder_push(builder, props, members->props[i]);
     }
     free(slots);
     // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
