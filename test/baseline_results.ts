@@ -27731,9 +27731,9 @@ const baselines = {
         types: true,
     },
     'recursiveContainerDeclarationSerialization': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveExcessPropertyChecks': {
         errors: true,
@@ -27968,7 +27968,7 @@ const baselines = {
     'recursiveTypeInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTypeInferenceReturnTypeConstraint': {
         errors: true,

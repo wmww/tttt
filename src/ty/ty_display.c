@@ -3644,6 +3644,21 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
             TyList args = ty_reference_args(me, ty);
+            // An array or tuple inside its own rendering (an alias nothing can name, `type R = R[]` in a function):
+            // `any`, the cyclic structure placeholder (tsgo's visitedTypes of typeReferenceToTypeNode)
+            bool container = target == my array_target || target == my readonly_array_target ||
+                target->declared.kind == TY_DECLARED_TUPLE_TARGET;
+            if (container) {
+                bool recursive = false;
+                for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;
+                if (recursive) {
+                    if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
+                    out_lit(d, "any");
+                    break;
+                }
+            }
+            TyDisplayVisit container_visit = { .ty = ty, .outer = d.visiting };
+            if (container) d.visiting = &container_visit;
             if (target->declared.kind == TY_DECLARED_CLASS_STATIC && is_mixin_static_side(me, target)) {
                 display_structure(me, d, ty);
             } else if (target->declared.kind != TY_DECLARED_TUPLE_TARGET && class_as_literal(d, target)) {
