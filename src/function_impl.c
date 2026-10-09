@@ -1221,10 +1221,11 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_param_issue_count && !my uses_arguments; i++) {
         JsDocParamIssue const* issue = &function_impl_rare(me)->jsdoc_param_issues[i];
         if (span_valid(issue->left)) {
-            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", issue->name,
-                "' is not allowed without a leading '@param {object} ", issue->left, "'.");
+            // (The names as tsc's scanner has them: escapes decoded)
+            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", name_cooked(issue->name.sv),
+                "' is not allowed without a leading '@param {object} ", name_cooked(issue->left.sv), "'.");
         } else {
-            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", issue->name,
+            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", name_cooked(issue->name.sv),
                 "', but there is no parameter with that name.");
         }
     }

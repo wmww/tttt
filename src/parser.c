@@ -3722,6 +3722,8 @@ static const char* jsdoc_parse_name(const char* c, const char* end, Span* ret, S
         (*c == '[' && c[1] == ']') || identifier_escape_size(c) || (*c == '-' && c > start && is_identifier_char(c[-1])))
     ) {
         int escape = identifier_escape_size(c);
+        // (The messages that quote it decode its escapes, name_cooked())
+        if (escape) names_register_source((SourceFile*)source);
         c += escape ? escape : *c == '[' ? 2 : 1;
     }
     *ret = c > start ? span_make(source, start, c) : span_null;
