@@ -176,3 +176,29 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   this-property assignment checks its value against its own @type even when a base class or another method
   declares the property (`/** @type {string} */ this.details = error.stack`, ~10 TS2322), TS2565, TS2683/TS7009
   (constructor functions), `typeof SourceProcessor` static expandos (TS2339 deferredWrite).
+
+## JS fan-out, agent B: CommonJS (2026-10-09)
+- webpack's B items in D's note above (TS2315/TS2694 through export= with typedefs, TS2309) all match tsc now.
+- A JSDoc `@typedef T` and a same-named class/variable in a JS module (ES or CommonJS) is TS2300 in tsgo (the typedef
+  gets a local twin, declareModuleMember), none in tttt (typedefCrossModule2's Foo, probe `/** @typedef {number} Foo */
+  class Foo {}`). Also tsgo binds top-level typedefs after every other statement: declaration lists put them last
+  (jsTypedefMergedWithModuleExportProperty's symbols). C's typedef binding.
+- `Object.defineProperty(o, "name", ...)` on a non-exports object names the member as written, `"name"` with quotes
+  (checkObjectDefineProperty); exports already do (add_define_property_export()). A's expando code: needs a display
+  span separate from the lookup name in add_expando_member().
+- `this.x = v` in an object literal's accessor (a defineProperty descriptor's setter) shows no symbol in tsgo (`this`
+  is any by ThisType<any>), tttt's this-property override shows one (checkExportsObjectAssignProperty, A).
+- `exports.fn2 = Math.min`: tsgo's symbols baseline names `Math.min` `Symbol(fn2, Decl(lib.es5.d.ts...))` (an alias
+  declaration's entity name shows the alias's name with the target's declarations: moduleExportsAliasLoop1/2). Quirk.
+- JS declaration emit diagnostics: only TS6424 is ported (`js_declaration_diagnostics_check()`); TS4023 for JS files
+  (jsDeclarationsTypeReassignmentFromDeclaration2, cjsObjectDefinePropertyPrivateModuleDeclarationEmit) needs the
+  declaration walk to run on JS, which it skips entirely (`declaration_diagnostics_wanted()`).
+- A module augmentation's module in the types baseline (`declare module "./test"` of a JS module): tsgo prints
+  `typeof import("./test")` from the augmenting file, tttt `typeof import(".")` (jsExportMemberMergedWithModuleAugmentation2);
+  naming it from outside the augmentation in the traversal lost two TS tests.
+- tsgo keeps a CommonJS module's typedefs on its export= symbol, which an aliasing export= then doesn't resolve past
+  (resolveExternalModuleSymbol: a non-local alias with a namespace meaning). tttt merges them into the resolved
+  target and emulates the visible effects (hacks.md "CommonJS `export =`"); a real export= symbol with its own type
+  exports would remove those rules.
+- Valgrind reports the thread-local `alias_stack` (scope.c symbol_resolve_alias) as possibly lost in every test that
+  resolves an alias (`scripts/test.sh -f importNonExportedMember11`): noise that stops `test.sh` at the first test.
