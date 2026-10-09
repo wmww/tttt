@@ -605,8 +605,9 @@ src` finds the code-side markers; every significant one has an entry here.
   `exports.x = undefined` then `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias, tttt a
   property + alias symbol. `module.exports` of the `module` variable gets its symbols line from a span override in
   the traversal (`EXPR_PROPERTY` case: tsgo's `exports` member symbol of `module`, which tttt doesn't make).
-- CommonJS `export =`: absorbs the module's other exports in place at link time (`merge_commonjs_export_equals()`,
-  tsc's getCommonJsExportEquals clone), with two of tsc's laziness artifacts emulated by rules: a variable's
+- CommonJS `export =`: absorbs the module's other exports that have a type or namespace meaning in place at link time
+  (`merge_commonjs_export_equals()`, tsgo's bindCommonJSTypeExports, but into the resolved target, not the `export=`
+  symbol; values stay hidden), with two of tsc's laziness artifacts emulated by rules: a variable's
   function/class initializer lacks the merged exports (`is_commonjs_merged_export()`), and `export import a = x.c`'s
   TS2708 ignores a value meaning only the merge gave (`symbol_is_commonjs_merged_value_only()`).
   `merged_export_equals_type()` (lower.c) keeps a typed view (`export_equals_view`) under its own keys; conflicting

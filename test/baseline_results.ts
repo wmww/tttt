@@ -12213,7 +12213,7 @@ const baselines = {
     'es5ExportEquals(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5ExportEqualsDts(target=es2015)': {
         errors: true,
@@ -12383,7 +12383,7 @@ const baselines = {
     'es6ExportEquals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportEqualsInterop': {
         errors: true,
@@ -13188,7 +13188,7 @@ const baselines = {
     'exportAssignmentMerging4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentMerging5': {
         errors: true,
@@ -16748,12 +16748,12 @@ const baselines = {
     'importDeclWithExportModifierAndExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclWithExportModifierAndExportAssignmentInAmbientContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclWithExportModifierInAmbientContext': {
         errors: true,
@@ -19806,8 +19806,8 @@ const baselines = {
         types: false,
     },
     'jsExportAssignmentNonMutableLocation': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsExportMemberMergedWithModuleAugmentation': {
@@ -19821,9 +19821,9 @@ const baselines = {
         types: false,
     },
     'jsExportMemberMergedWithModuleAugmentation3': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsExportsImportedIntoTsxLosesTypeInfo': {
         errors: true,
@@ -27256,9 +27256,9 @@ const baselines = {
         types: true,
     },
     'pushTypeGetTypeOfAlias': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'qualifiedModuleLocals': {
         errors: true,
@@ -51706,9 +51706,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsClassExtendsVisibility(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsClassImplementsGenericsSerialization(target=es2015)': {
         errors: true,
@@ -51731,9 +51731,9 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsClassStatic(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsClassStatic2': {
         errors: true,
@@ -51771,9 +51771,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsCrossfileMerge(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsDefault(target=es2015)': {
         errors: true,
@@ -51811,13 +51811,13 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsExportAssignedClassExpressionAnonymousWithSub(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsExportAssignedClassExpressionShadowing(target=es2015)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsExportAssignedClassInstance1(target=es2015)': {
@@ -51831,9 +51831,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsExportAssignedClassInstance3(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsExportAssignedConstructorFunction(target=es2015)': {
         errors: false,
@@ -51851,9 +51851,9 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsExportAssignmentExpressionPlusSecondary(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsExportAssignmentWithKeywordName(target=es2015)': {
         errors: true,
@@ -51886,9 +51886,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsExportSubAssignments(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsExportedClassAliases': {
         errors: true,
@@ -60871,9 +60871,9 @@ const baselines = {
         types: false,
     },
     'commonJSAliasedExport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'commonJSImportClassTypeReference': {
         errors: true,
@@ -61181,14 +61181,14 @@ const baselines = {
         types: true,
     },
     'moduleExportAlias4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleExportAlias5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportAliasElementAccessExpression': {
         errors: true,
@@ -61201,24 +61201,24 @@ const baselines = {
         types: true,
     },
     'moduleExportAliasImported': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportAliasUnknown': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleExportAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportAssignment2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportAssignment3': {
         errors: true,
@@ -61226,14 +61226,14 @@ const baselines = {
         types: true,
     },
     'moduleExportAssignment4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleExportAssignment5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportAssignment6': {
         errors: true,
@@ -61266,14 +61266,14 @@ const baselines = {
         types: true,
     },
     'moduleExportPropertyAssignmentDefault': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportWithExportPropertyAssignment': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportWithExportPropertyAssignment2': {
         errors: false,
@@ -61281,9 +61281,9 @@ const baselines = {
         types: false,
     },
     'moduleExportWithExportPropertyAssignment3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleExportWithExportPropertyAssignment4': {
         errors: false,

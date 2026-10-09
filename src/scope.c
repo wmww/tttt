@@ -1563,6 +1563,7 @@ static void check_export_equals_merge(Symbol const* module, Symbol* export_equal
 static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
     if (!container || !container->exports) return;
     SymbolTable const* exports = container->exports;
+    bool commonjs = container->is_module && container->module && container->module->file && container->module->file->is_commonjs;
     Symbol* export_equals = symbol_table_get(exports, c_sv("export="));
     if (export_equals && exports->count > 1 && export_equals->decl_count) {
         // (tsc's checkExternalModuleExports: only with other exports that are values, hasExportedMembersOfKind)
@@ -1570,7 +1571,8 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
         for (u32 i = 0; i < exports->count && !values; i++) {
             Symbol* other = exports->entries[i].symbol;
             if (other == export_equals) continue;
-            values = (other->flags & SYMBOL_ALIAS ? symbol_resolved_flags(other) : other->flags) & SYMBOL_VALUE;
+            // (A CommonJS export's alias is a value: its target may be in a file not declared yet)
+            values = (other->flags & SYMBOL_ALIAS && !commonjs ? symbol_resolved_flags(other) : other->flags | (other->flags & SYMBOL_ALIAS ? SYMBOL_VALUE : 0)) & SYMBOL_VALUE;
         }
         if (values) {
             error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
@@ -1581,10 +1583,18 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
         if (symbol->flags & SYMBOL_NAMESPACE) continue; // (Namespaces and enums merge)
+        // (Assignments to `exports.x` may repeat: tsc's JSDeclarationKindExportsProperty)
+        bool exports_properties = commonjs;
+        for (u32 d = 0; d < symbol->decl_count && exports_properties; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            exports_properties = decl->kind == SYMBOL_DECL_ALIAS || decl->kind == SYMBOL_DECL_EXPANDO ||
+                (decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->assignment == ASSIGNMENT_DECL_PROPERTY);
+        }
+        if (exports_properties) continue;
         u32 count = 0;
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
-            if (decl->kind == SYMBOL_DECL_INTERFACE) continue;
+            if (decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_EXPANDO) continue;
             if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
             count++;
         }
@@ -3542,6 +3552,13 @@ static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
     // TODO: a module (`module.exports = require("./y")`, tsc's clone of the `export=` property) and a symbol of the
     // shared lib program
     if (!target || target == module || target->is_placeholder || target->is_module || target->binder != me) return;
+    // (Only what has a type or namespace meaning: tsgo's bindCommonJSTypeExports, values stay hidden)
+    bool any = false;
+    for (u32 i = 0; i < module->exports->count && !any; i++) {
+        any = !csview_equals(symbol_entry_name(&module->exports->entries[i]), "export=") &&
+            (module->exports->entries[i].symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE));
+    }
+    if (!any) return;
     target->flags |= SYMBOL_VALUE_MODULE;
     symbol_rare_mut(target)->export_equals_module = module;
     // (What a function, class, enum or namespace exports is its value's members: an expando declaration, like `f.x = v`
@@ -3558,6 +3575,7 @@ static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
         csview name = symbol_entry_name(entry);
         if (csview_equals(name, "export=")) continue;
         Symbol* source = entry->symbol;
+        if (!(source->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE))) continue;
         Symbol* existing = symbol_table_get(target->exports, name);
         if (existing == source) continue;
         if (!existing) {
