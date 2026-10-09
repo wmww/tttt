@@ -389,6 +389,9 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
                     }
                     if (same_node) continue;
                 }
+                // (tsgo's binder has no bindPotentiallyMissingNamespaces: outside JavaScript an expando assignment
+                // declares the member, not its host. PROTOTYPE: JavaScript keeps 6.0's until its rework, todo entry 8)
+                if (my decls[j].kind == SYMBOL_DECL_EXPANDO && !my decls[j].full.source->is_js) continue;
                 if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) {
                     vec_span_push(&ret, my decls[j].full);
                     assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;

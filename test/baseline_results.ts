@@ -1102,7 +1102,7 @@ const baselines = {
     },
     'arrayFromAsync': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayIndexWithArrayFails': {
@@ -7777,7 +7777,7 @@ const baselines = {
     },
     'declarationEmitAliasesOfArrowsWillingToUseTypeof': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitAlternativeContainingModules': {
@@ -8087,7 +8087,7 @@ const baselines = {
     },
     'declarationEmitDefaultExportWithStaticAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitDefaultImportPrivateClass(module=commonjs)': {
@@ -8247,12 +8247,12 @@ const baselines = {
     },
     'declarationEmitExpandoArrowFunctionParameter': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpandoFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpandoFunctionInNamespace': {
@@ -8262,17 +8262,17 @@ const baselines = {
     },
     'declarationEmitExpandoOverloads': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpandoWithGenericConstraint': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExportAliasVisibiilityMarking': {
@@ -8397,12 +8397,12 @@ const baselines = {
     },
     'declarationEmitFunctionDuplicateNamespace': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitFunctionKeywordProp': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitGenericTypeParamerSerialization': {
@@ -8582,12 +8582,12 @@ const baselines = {
     },
     'declarationEmitLateBoundAssignments': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitLateBoundAssignments2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitLateBoundJSAssignments': {
@@ -8597,7 +8597,7 @@ const baselines = {
     },
     'declarationEmitLateExpandoAliasAddsExports': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitLateVisibleExpandoFunction': {
@@ -8722,7 +8722,7 @@ const baselines = {
     },
     'declarationEmitNestedExpandoPropsRegression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitNestedGenerics': {
@@ -9057,7 +9057,7 @@ const baselines = {
     },
     'declarationEmitStripInternalExpandoFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitSubpathImportsReexport': {
@@ -12972,27 +12972,27 @@ const baselines = {
     },
     'expandoContextualTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionAsAssertion': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionBlockShadowing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypesJSDocInTs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypesJs': {
@@ -13007,17 +13007,17 @@ const baselines = {
     },
     'expandoFunctionExpressionsWithDynamicNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'expandoFunctionExpressionsWithDynamicNames2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'expandoFunctionNestedAssigments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionNestedAssigmentsDeclared': {
@@ -13052,7 +13052,7 @@ const baselines = {
     },
     'expandoPropertyEmptyArrayWidening': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
@@ -14542,7 +14542,7 @@ const baselines = {
     },
     'functionExpandoPropertyDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionExpressionAndLambdaMatchesFunction': {
@@ -17417,7 +17417,7 @@ const baselines = {
     },
     'indexTypeNoSubstitutionTemplateLiteral': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indexWithUndefinedAndNull': {
@@ -19227,7 +19227,7 @@ const baselines = {
     },
     'isolatedDeclarationErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationErrorsAugmentation': {
@@ -19257,7 +19257,7 @@ const baselines = {
     },
     'isolatedDeclarationErrorsExpandoFunctions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationErrorsExpressions': {
@@ -19282,7 +19282,7 @@ const baselines = {
     },
     'isolatedDeclarationLazySymbols': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationsAddUndefined': {
@@ -20602,7 +20602,7 @@ const baselines = {
     },
     'jsxComponentTypeErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxContainsOnlyTriviaWhiteSpacesNotCountedAsChild': {
@@ -21242,7 +21242,7 @@ const baselines = {
     },
     'lateBoundFunctionMemberAssignmentDeclarations': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'lateBoundMethodNameAssigmentJS': {
@@ -31762,7 +31762,7 @@ const baselines = {
     },
     'tsxStatelessComponentDefaultProps': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxTypeArgumentPartialDefinitionStillErrors': {
@@ -34542,7 +34542,7 @@ const baselines = {
     },
     'wellKnownSymbolExpando': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'whileStatementInnerComments': {
@@ -39122,7 +39122,7 @@ const baselines = {
     },
     'exportDefaultNamespace': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'leaveOptionalParameterAsWritten': {
@@ -39142,7 +39142,7 @@ const baselines = {
     },
     'nullPropertyName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitIdentifierPredicates01': {
@@ -43777,7 +43777,7 @@ const baselines = {
     },
     'newTargetNarrowing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAccessNumericLiterals.es6': {
@@ -61402,7 +61402,7 @@ const baselines = {
     },
     'propertyAssignmentUseParentType1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAssignmentUseParentType2': {
@@ -61412,7 +61412,7 @@ const baselines = {
     },
     'propertyAssignmentUseParentType3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'prototypePropertyAssignmentMergeAcrossFiles': {
@@ -61642,7 +61642,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment29': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment3': {
@@ -61652,7 +61652,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment30': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment31': {
@@ -61662,12 +61662,12 @@ const baselines = {
     },
     'typeFromPropertyAssignment32': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromPropertyAssignment33': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromPropertyAssignment34': {
@@ -61682,7 +61682,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment36': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment37': {
@@ -61692,7 +61692,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment38': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment39': {
