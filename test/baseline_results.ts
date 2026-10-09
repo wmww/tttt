@@ -1826,7 +1826,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionReturnNonPromiseThenable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2121,7 +2121,7 @@ const baselines = {
         types: true,
     },
     'awaitInNamespaceExportedClassComputedProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3326,7 +3326,7 @@ const baselines = {
         types: false,
     },
     'circularDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20526,12 +20526,12 @@ const baselines = {
         types: false,
     },
     'jsxAttributeInitializerMultipleElementsNoCrash(jsx=react)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsxAttributeInitializerMultipleElementsNoCrash(jsx=react-jsx)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20541,7 +20541,7 @@ const baselines = {
         types: true,
     },
     'jsxAttributeValueBinaryExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20636,7 +20636,7 @@ const baselines = {
         types: true,
     },
     'jsxElementTypeUnexpectedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39046,12 +39046,12 @@ const baselines = {
         types: true,
     },
     'dependentDestructuredVariablesNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'dependentDestructuredVariablesNoCrash2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
