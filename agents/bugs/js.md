@@ -2,7 +2,8 @@
 `scripts/jsstats.py` (after `scripts/failstats.py`) lists the failing JS tests by feature; 79 of 1165 failed after the
 JS rework (todo entry 8 of the thirteenth window, 2026-10-09), which deleted what tsgo 7 removed (constructor
 functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases). documentation.md "JSDoc" / "CommonJS" describe
-what exists; plan 26 (the 6.0-era design and its leftovers) was retired 2026-10-09 (git has it).
+what exists; plan 26 (the 6.0-era design and its leftovers) was retired 2026-10-09 (git has it). Pruned 2026-10-09
+against the tsgo 7.1 suite.
 
 ## Binding and merging
 - A JSDoc `@typedef T` and a same-named class/variable in a JS module (ES or CommonJS) is TS2300 in tsgo (the typedef
@@ -42,12 +43,8 @@ what exists; plan 26 (the 6.0-era design and its leftovers) was retired 2026-10-
   a parenthesized expression statement prints `number` in tsgo, the alias name in tttt.
 
 ## JSDoc diagnostics
-- `/** @type {Foo} */ export default { ... }` elaboration position (checkJsdocTypeTagOnExportAssignment5/6); an
-  earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every
-  comment); jsdocParamTagTypeLiteral nested `@param` TS8032 cases.
-- An astral-plane JSDoc `@param` name underlines one `~` in tsgo (extendedUnicodePlaneIdentifiersJSDoc).
-- TS5024 for maxNodeModuleJsDepth with a string value; TS8030 for `@type {Foo}` naming a deleted type alias
-  (jsDeclarationEmitFunction).
+- An earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every
+  comment). No test.
 - tsgo quirks, port only if cheap: typedefTagWrapping (a `@typedef` whose type fails to parse has a missing name,
   declared globally as '(Missing)': TS2300 "Duplicate identifier '(Missing)'" across three scripts); callbackTag4 (a
   `@this` tag's synthetic `this` parameter is named by the tag's whole text in the symbols baseline).
@@ -61,31 +58,15 @@ JS constructor under isolatedDeclarations (isolatedDeclarationsJsThisPropertyAss
 
 ## Older binder gaps (written against tsc 6, before the JS rework: recheck against tsgo before working on one)
 Binder gaps (spurious TS2339 and friends):
-- **Class members aren't binder symbols**, so `Clazz.method.prop = 5` (a static method as an expando host, tsc's
-  bindPotentiallyMissingNamespaces giving the method symbol a namespace declaration) can't declare prop:
-  jsDeclarationsClassStaticMethodAugmentation (TS2339 on `() => void`).
-- **Chained expando initializers** `var G = m.G = {}` (typeFromPropertyAssignment18): tsc types G as `typeof m.G` and
-  merges the exports of the variable and of the member (getTypeOfFuncClassEnumModule -> getSymbolOfExpando ->
-  mergeJSSymbols), so `G.q` (declared on m.G) and `m.G.p` (declared on G) resolve. An approach: one exports table for
-  both hosts, and the variable's type being the member's.
-- **Entity-name CommonJS exports aren't aliases**: tsc's exportAssignmentIsAlias makes `exports.blah =
-  exports.someProp` an alias (SymbolFlags.Alias), whose resolution under a `module.exports = function` reaches itself
-  through the function's expando exports: TS2303 at `exports.blah` (pushTypeGetTypeOfAlias). tttt binds a property of
-  type any. Likewise `exports.x = undefined` then `= a` (moduleExportDuplicateAlias, moduleExportDuplicateAlias3:
-  every one an alias in tsc, TS2722; hacks.md "CommonJS").
 - `exports.x =` next to `module.exports = {...}` (typedefCrossModule2: tsc merges them).
 - **CommonJS exports inside functions**: tsc binds `exports.x = v` / `module.exports = v` from any container
   (bindExportsPropertyAssignment has no container check); `add_nested_commonjs_exports()` only walks top-level
   statement lists. Needs a declare-step walk into function bodies (the link step must see them).
 - **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment,
   SourceFile container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
-- destructuringParameterDeclaration9(strict=false) types: `json = []` under a typed parent prints `any[] | string[]`
-  (tsc `string[]`).
-Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
-const: TS18042), moduleExportWithExportPropertyAssignment4, templateInsideCallback, fixSignatureCaching (types; an
-expando-heavy JS-like file), jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
-40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),
-jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
+Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (symbols; a `@typedef ns.x` namespace merged with an
+exported const), fixSignatureCaching (types; an expando-heavy JS-like file). Declaration emit (plan 40):
+jsDeclarationsExportAssignedConstructorFunctionWithSub(target=es2015) (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
 (TS9006).
 - CommonJS leftovers: `exports.Date = Date; exports.Date = 1` also gets TS2322; `function f() { var z = 1; exports.z =
   z; }` gets TS2339 (exports inside functions).

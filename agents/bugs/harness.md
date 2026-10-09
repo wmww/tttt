@@ -1,19 +1,6 @@
 # Harness, CLI and tools
+(pruned 2026-10-09 against the tsgo 7.1 suite: tsgo's harness has no TS-1 pre/post-emit count line.)
 - `@pretty: true` is done except manyCompilerErrorsInTheTwoFiles (errors).
-- tsc's harness adds `error TS-1: Pre-emit (N) and post-emit (M) diagnostic counts do not match!` with the excess
-  diagnostics as related info when the emit resolver adds a semantic error (parseErrorIncorrectReturnToken,
-  templateInsideCallback, constructorWithIncompleteTypeAnnotation (its TS7017 only post-emit),
-  unicodeEscapesInNames02(target=es5) (TS2532 at `new Foo().\u{102A7}`)). tttt's harness has no emit and can't produce it; those tests can only pass their errors if
-  the harness learns which diagnostics tsc's emit resolver would add. 5 tests. Mechanism (triage 2026-09-29): the TS
-  transformer asks `resolver.getConstantValue()` of every property/element access (const enum inlining), which does
-  `checkExpressionCached()` on accesses the checker never visited: the operand of a top-level `return` after TS1108
-  (multiLinePropertyAccessAndArrowFunctionIndent1, parserStatementIsNotAMemberVariableDeclaration1: TS2304/TS2503 of
-  the operand's names, the arrow parameters' annotations included), a recovered method body
-  (parseErrorIncorrectReturnToken `n.toString()`). Emulation: after checking, walk the file for property/element
-  accesses without a cached type, check them into a separate ErrorCtx, and print the TS-1 header plus `!!! related
-  TSnnnn file:line:col: text` lines. templateInsideCallback (TS7012 of JS `@overload`s) and unicodeEscapesInNames02
-  (es5, TS2532 at `new Foo().\u{102A7}`) come from other emit paths, not investigated. Low value (harness-only, the
-  CLI never shows these).
 - STC's `cregex` silently matches nothing once a `-f` pattern gets long (~100 alternatives); the harness says so when
   a filter selected no tests. Use `-f @names.txt`.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.
@@ -71,8 +58,8 @@
   `scripts/expecttypes.py` skips the ~600 assertions on declarations (`DECLARATION_KINDS`: type aliases, parameters,
   binding elements...): comparing them needs getTypeAtLocation of a declaration on tttt's side (`src/expect_types.c`).
 - instanceofOperator (UTF-16 LE with a BOM) "did not run": the harness doesn't read the `// @target: es5, es2015`
-  directive out of a UTF-16 file, so it looks for an unsplit `instanceofOperator.symbols` while tsc's baselines are
-  `instanceofOperator(target=es5)` and `(target=es2015)`. The bom-utf16 tests pass (no options).
+  directive out of a UTF-16 file, so it looks for an unsplit `instanceofOperator.symbols` while tsgo's baseline is
+  `instanceofOperator(target=es2015)` (es5 is a skipped configuration). The bom-utf16 tests pass (no options).
 - Errors baseline of a file with both `\n` and lone `\r` breaks: tsc's iterateErrorBaseline splits its lines on `\n`
   only (a lone `\r` stays inside a printed line) while its squiggles index computeLineStarts (every break), so lines
   and squiggles drift apart; tttt places squiggles by every break. No suite test has such a file (a file with only

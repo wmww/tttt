@@ -1,26 +1,18 @@
 # Type core, inference and flow bugs
-Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `display.md`). Every test named here was
-failing on 2026-10-05 (suite 13098) unless the entry says otherwise.
-
-## exactOptionalPropertyTypes
-Of the tests using the option, only contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true) fails on it
-(inferred candidates keep the missing type where tsc drops it, below under Inference); discriminateWithOptionalProperty2
-fails types in both configurations.
+Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `display.md`). Pruned 2026-10-09 against
+the tsgo 7.1 suite: every test named here fails there unless the entry says otherwise (`mutNNNN` entries are mutants of
+passing tests).
 
 ## Inference
 - **First pass skips context-sensitive arguments entirely**: tsc checks them with their functions replaced by
   anyFunctionType and still infers from the (non-inferrable) literal to anything but a naked type parameter (hacks.md
-  "Skip-sensitive rounds"). correlatedUnions, which once showed it, fails types again: check whether this is why.
-- Not investigated in depth: contravariantOnlyInferenceFromAnnotatedFunction, mappedTypeRecursiveInference2
-  (`missing_checks.md` "Inference").
+  "Skip-sensitive rounds").
 - `infer_rest_variadic`/`check_rest_arg` keep an argument's type from whichever overload candidate typed it first
   (`if (arg->type) continue`), though its contextual type is the candidate's rest element; tsc re-checks per candidate.
   Clearing the non-spread rest arguments' types at the top of infer_rest_variadic changed nothing anywhere (suite,
   corpora, instructions) and no probe observes it (`q<T extends ["a"]>(n: number, ...a: T)` before `q<T extends
   string[]>(s: string, ...a: T)` passes). Look here if overloads with differing rest types ever disagree with tsc.
 - Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
-- contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true): `T` inferred from `match(y => y > 0)` for an
-  optional property keeps `undefined` (tsc strips the missing type), so the operand check says TS18048.
 - Older tsc-corpus findings (a probe each): `visitNode(node, visitor, isExpression)` resolving to the overload without
   the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
   contextual type.
@@ -29,12 +21,7 @@ fails types in both configurations.
   genericCallWithGenericSignatureArguments3's `(n: Object) => 1` keeps its literal because tsc resolves the inner
   arrow's return type only after U's first candidate is that arrow's own function type: its contextual signature is
   then its own (`contextualSignature === getSignatureFromDeclaration(func)` in getReturnTypeFromBody, contextual type
-  = the return type itself). mappedTypeInferenceErrors infers `C = { bar: unknown; baz: unknown }` where tttt has
-  `bar: number`: tsc's reverse mapped member types resolve lazily, while the method body's `this.bar` is being checked.
-- Return-type inference with Pick: hacks.md `infer_from_objects()` (twiceNestedKeyofIndexInference passes only because
-  the shortcut skips return-type inference; how tsc's returnMapper avoids K2 = `never` is unknown).
-  indexedAccessRelation differs in its elaboration (tsc: `Type 'Foo' is not assignable to type 'S["a"] & T'`,
-  the constraint of T) and in the union order of `keyof S | "a"`.
+  = the return type itself).
 - (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
   "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
@@ -94,8 +81,8 @@ fails types in both configurations.
   #2-#4 independent (4: DirectiveBinding is in flight, so both directions hold). The new union order made
   DirectiveBinding/ObjectDirective/SSRDirectiveHook match tsc where the old one didn't; only DirectiveHook is left.
   Reproduce: `TTTT_DUMP_VARIANCES=1 ./release/tttt --checkers 1 -p thirdparty/corpora/vue/tsconfig.corpus.json`
-  against `/tmp/tscvar.js`-style instrumentation of `tscinstcount.js` (`VARIANCES=1`, plus a START log in
-  getVariancesWorker printing `currentNode`). Find why tsc doesn't measure `Directive` (or measures it later) there.
+  against an instrumented tsgo (test/oracle overlay logging getVariancesWorker). Written against tsc 6: tsgo 7.1's vue
+  cache itself expects a TS2345 at vModel.ts:446 (include_order.md), so re-run the vue corpus before working on this.
 - **Two copies of one declaration file (webpack through a symlink): one diagnostic left.** From a worktree (where
   `thirdparty/corpora` is a symlink) webpack's `types.d.ts` is in the program twice, as in tsc (root files keep the
   symlinked path, only node_modules results are realpathed and `node_modules/webpack -> ..`), and the examples'
@@ -117,13 +104,9 @@ fails types in both configurations.
 - `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) gives TS2589 next to the TS2322 tsc also
   reports: the definitely-assignable checks instantiate deeply nested indexed-access chains. Repro:
   test/probes/xstate/state_id_deep_nesting.ts.
-- inferConditionalConstraintMappedMember (types): `{ [K in keyof T]: X } extends { [_ in keyof T]: infer U } ? U :
-  never` has constraint X in tsc (K4 variant with template `1` gives number), tttt unknown; why tsc infers there
-  despite the generic mapped check type is unclear. Kept out of TS2344 by the deferred-conditional HACK.
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
-  variables (see hacks.md) nor type parameters with a deferred declared constraint. mappedTypeNotMistakenlyHomomorphic
-  (`keyof Gen<ABC.A>` misses `a`).
+  variables (see hacks.md) nor type parameters with a deferred declared constraint.
 - **Permissive instantiation** for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Needs a wildcard type + cached permissive
   instantiation.
@@ -134,7 +117,6 @@ fails types in both configurations.
 - conditionalTypes2's remaining errors are elaborations: variance-based `Type 'A' is not assignable to type 'B'` for
   `Covariant<A>` vs `Covariant<B>`, and an intersection source with a bare `T` (`Foo & Bar & T`) reported whole where
   tsc reports its constraint (getEffectiveConstraintOfIntersection).
-- TS2430 leftovers: interfaceExtendsObjectIntersectionErrors (missing).
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
   type in the tsc corpus's `utilities.ts` printed a huge `keyof "a" & keyof "b"` key). Not re-probed.
 
@@ -190,10 +172,6 @@ fails types in both configurations.
   type doesn't instantiate `this` in tsc (resolveObjectTypeMembers' rangeEquals shortcut keeps the declared members),
   and tsc 6's SingleSignatureType has no outer type parameters to carry a `this` mapping; tttt maps `this` to XXX on
   the access. Check `class C { p!: F<1, this> }; declare const c: C; c.p` against tsc first.
-- (2026-10-07) computedTypesKeyofNoIndexSignatureType (types): tsc prints `K_1`..`K_9`: instantiateMappedType clones
-  the key type parameter per instantiation (a fresh K each time, renamed by the printer), ty_mapped_info_instantiate()
-  keeps the one K. Display only, but cloning would also make each instantiation's key distinct for caching; weigh
-  the cost before doing it for display alone.
 - (2026-10-07) noImplicitAnyUnionNormalizedObjectLiteral1 (types): union order of two widened object literals with the
   same symbol (the spread literal) goes by type id; tsc's getWidenedTypeWithContext makes both members anew in member
   order, tttt's separate widen_nullable() pass keeps the unchanged `{ c: string; ... }` (older id) and remakes only
@@ -211,17 +189,16 @@ fails types in both configurations.
   being made, so it recurses with fresh types to the instantiation depth limit before the mapped symbol finds itself
   circular; tttt interns the instance and meets it at once. Matching it means not interning in-flight alias
   instantiations, not tuning a counter: leave it.)
-- circularBaseTypes, infiniteConstraints, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
-- TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,
-  circularlyReferentialInterfaceAccessNoCrash. limitDeepInstantiations: `Foo<"true", {}>` never reaches the limit.
-  In circularTypeArgumentsLocalAndOuterNoCrash1 (`type X = NumArray<X extends {} ? number : number>`, NumArray local
+- circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
+- TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1
+  (`type X = NumArray<X extends {} ? number : number>`, NumArray local
   to `f<_T, _S>`) tttt does find the cycle in `ty_reference_args()`, but outside the typecheck phase (the types walk),
   where `ty_error_at` drops the error. tsc gets there during the alias's check: resolving the argument's conditional
   relates X to `{}`, which resolves X's members and so its type arguments while they're in flight. tttt's relation to
   `{}` never looks at a deferred reference's arguments, and the TS2344 check of the alias body doesn't reach them
   either. Also: the circular branch errors all arguments, outer ones included (`f<any, any>.NumArray<any>`); tsc
   keeps the outer type parameters and errors only the local ones (`NumArray<any>`).
-- Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls), recursiveTypeReferences1.
+- Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
@@ -235,7 +212,6 @@ fails types in both configurations.
   Where the cycle is entered differs: tsc defers the getter bodies, and the getter's return type is asked for while
   `tree`'s initializer resolves `variantA`'s type. Not caused by the deferral/checkReturnStatement work (base fails it
   identically); worth a TTTT_DEBUG_CYCLE look.
-- selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
 - (mut0806) `class D extends class extends Base1 { root() { return undefined } }` with `abstract root(): D`
   (strictNullChecks): tsc's checkClassExpression -> checkClassLikeDeclaration runs eagerly inside D's
   getBaseConstructorTypeOfClass; relating `() => undefined` to `() => D` calls isWeakType(D), which needs D's members
@@ -245,7 +221,6 @@ fails types in both configurations.
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
-- multipleDeclarations (JS): `F.prototype.m = function` next to `this.m = v` is two symbols in tsc, one member here.
 - mergedDeclarations7: tsc's combineValueAndTypeSymbols (a named import from an `export =` whose value has property
   `Passport` and whose namespace exports interface `Passport`) makes a transient symbol whose declared type is a
   *fresh* interface type with its own `this`, so `use(): this` fails structurally (TS2322 "could be instantiated with
@@ -262,8 +237,6 @@ fails types in both configurations.
   consts, isConstantReference, TS2588, `abstract_literals`), `using`/`await using` in for-of; (2) destructured
   never-assigned parameters, contextually typed `({ a, b }) => ...` against a union contextual type and with a
   default, under nosnc and eopt; (3) `scripts/displaydiff.py` `we-any`/widening buckets on destructured references.
-- dependentDestructuredVariables (types only now): narrowing destructured variables by each other (tsc's
-  getCandidateDiscriminantPropertyAccess on binding elements) still differs somewhere; re-diff before working on it.
 - The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
   last check wins). (An IIFE's parameters are pushed from `ty_quick_expr_type()` too now: before, a variable
   referenced above its IIFE initializer typed the function without them.)
@@ -309,7 +282,6 @@ fails types in both configurations.
 - (Fixed 2026-10-07: webpack/nuia TS2488 -1/+1, by where a union is first asked; vscode/nosft copilotAgent.ts:5860
   TS2339, overloaded method types in the stable order.) excalidraw/nuia's TS2488 -2/+1 is still the array-literal
   identity mechanism (above in triage, tsc's `[0, 0]` its own type object).
-- (Fixed 2026-10-07: vscode/eopt TS7006 x18, vscode/nonia resultCodeEditorView TS2339 x4, vue/nir TS7030.)
 - Perf lead, not looked at: 9751c955 (TS2344 on deferred conditional arguments) costs valibot ~0.75%, mostly one
   relation (`TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any, flatten.ts:41, ~13 ms): tttt's
   relation through IssueDotPath's constraint may be slower than tsc's.
@@ -326,7 +298,7 @@ fails types in both configurations.
 - Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
   (`() => Generator<any, void, unknown>` for a generator referencing itself).
 - A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
-  callSignaturesWithParameterInitializers2 types; duplicateClassElements, propertyAndAccessorMerging symbols;
+  callSignaturesWithParameterInitializers2 types; duplicateClassElements symbols;
   symbolProperty44 (late-bound name vs method). duplicateIdentifierChecks: the parser merges a name's accessor
   declarations of a type literal/interface into one member, tsgo keeps a symbol per conflicting declaration.
 - TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
@@ -347,7 +319,6 @@ fails types in both configurations.
   spread of unions doesn't reduce/dedupe like tsc's getSpreadType.
 - crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1: `props?.w` of a big union of intersections: tsc's type
   has `(X["w"] & number) | ...` members (union property type intersected with the declared number), tttt plain X["w"].
-- recursiveTypeInference2: `children: any[]` vs tsc's `children: any` in a zod-like recursive schema inference.
 - reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
   TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
 - inferFromGenericFunctionReturnTypes3: spurious errors (relation path differs too).

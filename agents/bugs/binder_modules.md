@@ -1,6 +1,6 @@
 # Binder, symbols, merging, modules, CommonJS: open divergences
 
-Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test, tsc's mechanism, why tttt differs,
+Leftovers of the 2026-10-07 triage (binder/modules share), pruned 2026-10-09 against the tsgo 7.1 suite. Each entry: the test, tsc's mechanism, why tttt differs,
 and what a fix needs. JS/JSDoc-specific items are in bugs/js.md.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
@@ -10,7 +10,7 @@ at all (bindCommonJSTypeExports for every module: the module's types move onto t
 blame getCommonJsExportEquals were written against tsc 6 and need rechecking against tsgo before any work. Stage 0 found
 tsc clones whenever the module's own file is checked, not only on import. The entries below are what is left
 (single-test ordering quirks of tsc): an augmentation into a cloneTypeAsModuleType clone, JS `module.exports = {...}`
-as an augmentable export=, mergeSymbol's alias rules across files.
+as an augmentable export=.
 tttt merges augmentations straight into what `export =` assigns (merge_augmentations()); tsc clones it and records
 the clone as the merged symbol, which everything that resolves names sees. That is equivalent except where tsc's
 clone is a *different* symbol than the one a later lookup finds:
@@ -20,14 +20,6 @@ clone is a *different* symbol than the one a later lookup finds:
   type `{ default: () => Moment; }`, moment's own symbol keeps 4 declarations); tttt merges into moment. Needs the
   namespace-import clone (TyAnonymous.module_clone / synthetic_default) to be a binder symbol augmentations can
   target.
-- jsExportMemberMergedWithModuleAugmentation3 (symbols): `module.exports.x = 1; module.exports = require("./y.js")`
-  with y's `export type x`: getCommonJsExportEquals clones y's *module* and mergeSymbol's x.js's `x` into y's `x`
-  (an Assignment merges with anything), so every reference to either `x` shows both declarations.
-  Stage 0 (2026-10-08, tsc instrumented) says otherwise: tsc's export= here is a Property|Assignment symbol (not
-  an alias), and the merge of the two `x` is getInitializerTypeFromAssignmentDeclaration's `mergeSymbol(s,
-  exportedMember)` while typing `module.exports` (x.js's x cloned, y's x recorded into it). tttt makes the export=
-  an alias to y's module and merge_commonjs_export_equals() skips module targets; tried adding the declarations to
-  y's x: not enough (x.js's own exports table must point at the merged symbol too).
 - mergedDeclarations7: `import { Passport } from "passport"` of an `export =` const+namespace. tsc's
   getExternalModuleMember combines the namespace's interface `Passport` with the const's property `Passport`
   (combineValueAndTypeSymbols): a fresh transient symbol with the interface's flags, so getDeclaredTypeOfSymbol makes
@@ -57,7 +49,7 @@ mergeSymbol, which resolves an alias target first.
 - expandoFunctionContextualTypesNoValue: `import Foo from "blah"` (unresolved) and `export function Foo() {}` share
   the module's local (Alias|ExportValue to tsc's binder); a reference `Foo` reaches the export through
   getExportSymbolOfValueSymbolIfExported, `typeof import("./x").Foo` with the expando `Foo.bar`. tttt's references
-  find the unresolved alias (any).
+  find the unresolved alias (any); tsgo's lookupName finds the function for `Foo.bar = v` (TS2440).
 
 ## Symbol display of duplicates and merged members
 - genericClassesRedeclaration: two `declare module TypeScript {}` blocks each declare `class StringHashTable<T>`
@@ -87,13 +79,8 @@ mergeSymbol, which resolves an alias target first.
   the member builders (object literal, interface, class) skipping such members, and the two grammar checks. Enum
   members with a bigint name are done (`__missing`, EnumCase.canonical_name).
 
-## Not reproduced / already passing
-- importDeclWithExportModifierAndExportAssignment(InAmbientContext): pass.
-- `module.exports = items` before `const items` under `/** @type {typeof import(...)} */`
-  (jsDeclarationsTypeReassignmentFromDeclaration mutation): a hand-made probe of that order matches tsc.
-
 ## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate scripts/mutate.py --tests multi,js -n 3000 --seed 16`)
-22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to plan 26 (since retired; bugs/js.md). TypeScript ones:
+22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to plan 26 (since retired; bugs/js.md). TypeScript ones (mut0806 and mut2320 rechecked as probes 2026-10-09: still differ):
 - mut0806 (typeGuardNarrowsIndexedAccessOfKnownProperty8, `export const key: never = "a"`): spurious TS2564 for
   `[a.key]: string` that the constructor assigns as `this[a.key]`. tsc's tryGetNameFromEntityNameExpression falls back
   to the initializer's type when the annotation gives no name, so the access is named "a" and matches; tttt goes by
@@ -103,8 +90,6 @@ mergeSymbol, which resolves an alias target first.
   returning a plain function); tttt adds nothing for it. Members from computed names (relations area).
 - mut1254 (moduleResolutionWithSymlinks_notInNodeModules): tsc writes no errors baseline at all; tttt writes one with
   only the tsconfig.json section and no diagnostics. Harness, symlinked files.
-- mut0360: tsc's baseline has the harness's TS-1 pre/post-emit count line: not matchable.
-
 ## UMD globals merged from scripts (`merge_into_umd_globals()`)
 Declarations merged into a UMD global (`export as namespace X` plus a script declaring `X`) move into its module
 whatever the file order; tsc drops the UMD global when a script declared the name first. A conflicting target is
@@ -119,8 +104,6 @@ skipped silently, where tsc reports it against the resolved target. (Moved from 
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
   time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
-- expandoFunctionContextualTypesNoValue: `import Foo` + `export function Foo` (TS2440): tsgo's lookupName finds the
-  function for `Foo.bar = v`, tttt the import.
 - checkerInitializationCrash: a global namespace's `export import VNode = react.ReactNode` merged with another file's
   `type VNode` lists one declaration in tsgo and doesn't name `react.ReactNode` (tttt merges them into an alias+type).
 - globalArrayAugmentationWithAmbientModuleReexportMerge1 (SYM/TYP): tsgo's failed cross-file merge of an export alias

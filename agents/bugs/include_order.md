@@ -37,3 +37,5 @@ reduction above tsgo reports it at `--checkers 1` and 2 but not at 4: tsgo's per
 too. For a TS7 retarget vue's corpus would expect the TS2345 (and tttt's walk-order HACK would then be the wrong way
 round); which order tsgo's checkers measure in would need a look at its checker-assignment (likely file index modulo
 the checker count, unlike tttt's contiguous runs).
+Since the TS 7.1 switch `test/corpora.tsc.jsonl`'s vue entry (tsgo 7.1) does expect the TS2345 at vModel.ts:446:
+re-run `scripts/realworld.py --corpus vue` at 1 and 4 checkers before deciding which way the walk-order HACK should go.

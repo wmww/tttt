@@ -13,6 +13,3 @@ Left:
 - Comparisons of names against literals (`span_equals(name, "constructor")`, `"prototype"`, `"__proto__"`...) are by
   raw text: `constructor` isn't a constructor. tsc compares escapedText there. No test needs it.
 - Computed keys compare by source text, JSX attribute names stay raw (TS17021 there anyway).
-- unicodeEscapesInNames02(target=es5): errors need tsc's `TS-1` pre/post-emit count mismatch line (not
-  reproducible); types print `this.𐊧` for a property access whose name is an invalid character (tsc's node text
-  includes it, ours is empty).
