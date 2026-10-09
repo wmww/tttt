@@ -2103,6 +2103,19 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (!my call->uses_new) flow->contextual_depth++;
             mark_indirect_call(&my call->callable);
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
+            // `import("m", { with: { type: "json" } })`: the attributes are a const context (tsgo's isConstContext,
+            // isInlineImportAttributes: the `with` property's own object literal, the options parenthesized or not)
+            if (my call->callable.tag == EXPR_IDENTIFIER && my call->callable.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+                vec_expr_size(&my call->args) > 1 && vec_expr_at(&my call->args, 1)->tag == EXPR_OBJECT
+            ) {
+                for_each (i, vec_object_expr_item, &vec_expr_at_mut(&my call->args, 1)->object) {
+                    if (i->tag == OBJECT_ITEM_PROPERTY && !i->computed_key && cstr_equals(&i->name_string, "with") &&
+                        i->value.tag == EXPR_OBJECT && !expr_is_perenthisized(&i->value)
+                    ) {
+                        i->inline_import_attributes = true;
+                    }
+                }
+            }
             Expr const* constructor = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
             if (my call->uses_new && constructor->tag == EXPR_IDENTIFIER) {
                 for_each (arg, vec_expr, &my call->args) {

@@ -26248,7 +26248,7 @@ const baselines = {
     'parseAssertEntriesError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseBigInt': {
         errors: false,
@@ -26298,7 +26298,7 @@ const baselines = {
     'parseImportAttributesError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseInvalidNames': {
         errors: true,
@@ -50258,17 +50258,17 @@ const baselines = {
     'importAssertion1(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion1(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion1(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion2(module=commonjs)': {
         errors: true,
@@ -50308,17 +50308,17 @@ const baselines = {
     'importAttributes1(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes1(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes1(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes10': {
         errors: true,
@@ -50388,7 +50388,7 @@ const baselines = {
     'importAttributes7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes8': {
         errors: true,
@@ -55488,22 +55488,22 @@ const baselines = {
     'nodeModulesImportAssertions(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssertions(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssertions(module=node20)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssertions(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssignments(module=node16)': {
         errors: true,
@@ -55528,22 +55528,22 @@ const baselines = {
     'nodeModulesImportAttributes(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributes(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributes(module=node20)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributes(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributesModeDeclarationEmit1(module=node16)': {
         errors: true,

@@ -3957,7 +3957,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         ExprCtx member_ctx = {
             .contextual = member_context, .sig_contextual = member_sig_context,
             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
-            .is_const = ctx.is_const, .syntactic_const = ctx.syntactic_const, .skip_sensitive = ctx.skip_sensitive,
+            .is_const = ctx.is_const || i->inline_import_attributes, .syntactic_const = ctx.syntactic_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         Ty const* type = nullptr;
