@@ -3730,7 +3730,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 // (and a static method as `typeof C.m`)
                 FunctionImpl const* method = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
                 Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;
-                if (owner && span_valid(owner->name_span) && span_valid(function_impl_member_name(method))) {
+                // (Only a name `typeof C.m` can write: not `#m`, `"m"`, `[k]` or `1`, tsgo's shouldWriteTypeOfFunctionSymbol)
+                if (owner && span_valid(owner->name_span) && span_valid(function_impl_member_name(method)) &&
+                    is_identifier_name(function_impl_member_name(method).sv) && function_impl_member_name(method).sv.buf[0] != '#'
+                ) {
                     out_lit(d, "typeof ");
                     // (Qualified by the class only where printed for a location: tsc's symbolToTypeNode without an
                     // enclosing declaration has the symbol alone)

@@ -9041,9 +9041,9 @@ const baselines = {
         types: true,
     },
     'declarationEmitStaticMethodNonIdentifierNames': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitStringEnumUsedInNonlocalSpread': {
         errors: true,
