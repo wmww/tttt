@@ -1471,7 +1471,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1666,12 +1666,12 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability44': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability45': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3991,7 +3991,7 @@ const baselines = {
         types: true,
     },
     'classSideInheritance3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47246,7 +47246,7 @@ const baselines = {
         types: true,
     },
     'instanceofOperatorWithInvalidOperands.es2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

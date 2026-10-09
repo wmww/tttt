@@ -812,10 +812,14 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
         Error* error = error_ctx_error_d(errs, left_span, 2860, "The left-hand side of an 'instanceof' expression must be "
             "assignable to the first argument of the right-hand side's '[Symbol.hasInstance]' method.");
         if (error) {
-            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Argument of type '", source_str,
-                "' is not assignable to parameter of type '", target_str, "'.");
-            Error* chain = vec_error_back_mut(&error->sub_errors);
             TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+            // (A missing property of the pair stands in for the argument's head message)
+            Error* chain = error;
+            if (!natural || !natural->missing_head) {
+                error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Argument of type '", source_str,
+                    "' is not assignable to parameter of type '", target_str, "'.");
+                chain = vec_error_back_mut(&error->sub_errors);
+            }
             isize_t first = natural && !natural->related && (natural->ts_code == 2322 || natural->ts_code == 2719) ? 1 : 0;
             for (isize_t i = first; i < vec_ty_report_line_size(&lines); i++) {
                 TyReportLine const* line = vec_ty_report_line_at(&lines, i);
