@@ -9616,7 +9616,7 @@ const baselines = {
         types: true,
     },
     'decoratorRestNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34236,7 +34236,7 @@ const baselines = {
         types: true,
     },
     'usingAsyncDisposable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37976,9 +37976,9 @@ const baselines = {
         types: true,
     },
     'privateNamesNotAllowedAsDestructuringPatterns': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesNotAllowedAsParameters': {
         errors: true,

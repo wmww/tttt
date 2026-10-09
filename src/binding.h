@@ -60,6 +60,8 @@ typedef struct ObjectBindingItem {
     Span source_span;
     Expr* computed_key; // Owned, `{ [k]: x }`. Null otherwise, and source is meaningless if set
     Binding target;
+    // `{ #a: x }` (TS18064): the key is never (tsgo's getLiteralTypeFromPropertyName), source is undefined
+    bool private_name;
 } ObjectBindingItem;
 
 typedef struct BindingAddNamesProps {

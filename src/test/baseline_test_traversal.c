@@ -539,7 +539,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                         });
                     }
                     expr_compile_test_info(i->computed_key, ctx);
-                } else if (!i->target.rest && !span_eq(i->source_span, i->target.content_span) &&
+                } else if (!i->target.rest && !i->private_name && !span_eq(i->source_span, i->target.content_span) &&
                     i->source_span.sv.size && i->source_span.sv.buf[0] != '"' && i->source_span.sv.buf[0] != '\'' && !isdigit((unsigned char)i->source_span.sv.buf[0])
                 ) {
                     // `{ a: x }`: the property name is the property of the pattern's type (tsc's getSymbolAtLocation

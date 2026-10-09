@@ -2682,7 +2682,8 @@ static TyList pattern_keys(Checker* me, Binding const* pattern) {
     u32 len = 0;
     for_each (item, vec_object_binding_item, &pattern->object) {
         if (item->target.rest) continue;
-        keys[len++] = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+        keys[len++] = item->private_name ? ty_intrinsic(me, TY_NEVER) :
+            item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
     }
     return (TyList){ .data = keys, .len = len };
 }
@@ -2993,6 +2994,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
             // A computed name of a literal or unique symbol type is a property like any other (tsc's
             // isTypeUsableAsPropertyName)
             bool is_number = false;
+            if (item->private_name) continue;
             Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
             Atom const* name = ty_property_name_of_key(me, key, &is_number);
             if (!name) {
@@ -3079,7 +3081,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
         ObjectLiteralProp* props = nullptr;
         u32 count = 0;
         for_each (item, vec_object_binding_item, &pattern->object) {
-            if (item->target.rest || item->computed_key) continue;
+            if (item->target.rest || item->computed_key || item->private_name) continue;
             bool is_number = false;
             Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
             if (!name || ty_get_prop(me, type, name)) continue;
@@ -3163,6 +3165,7 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
         return ty_contextual_element_type(me, parent_type, element->parent_index);
     }
     ObjectBindingItem const* item = element->parent_item;
+    if (item->private_name) return nullptr;
     Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
     Atom const* name = ty_literal_name(me, key);
     if (!name) return nullptr;
@@ -3269,6 +3272,8 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
         // `const { s } = t` with t possibly undefined: the property of the whole type, which undefined lacks (TS2339 by
         // binding_typecheck(), tsc's getBindingElementTypeFromParentType keeps undefined when the initializer has it)
         ret = ty_intrinsic(me, TY_ERROR);
+    } else if (binding->parent_item->private_name) {
+        ret = ty_intrinsic(me, TY_NEVER); // (A never key: getIndexedAccessType's never)
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         Ty const* key = item->computed_key ? ty_regular(me, ty_expr_type(me, item->computed_key)) : ty_literal(me, &item->source);

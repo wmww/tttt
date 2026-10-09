@@ -1911,7 +1911,8 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             return tok_is_heritage_clause_element(p, t, true);
         case PARSING_OBJECT_BINDING_ELEMENTS:
-            return tok_is(t, "[") || tok_is(t, "...") || tok_is_literal_property_name(t);
+            // (tsgo's isLiteralPropertyName: a private identifier is one, its Kind among the identifiers)
+            return tok_is(t, "[") || tok_is(t, "...") || tok_is_literal_property_name(t) || (*t.start == '#' && tok_is_word(t));
         case PARSING_ARRAY_BINDING_ELEMENTS:
             // (tsc's isBindingIdentifierOrPrivateIdentifierOrPattern)
             return tok_is(t, ",") || tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") ||
@@ -11730,6 +11731,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             Value key;
             Expr* computed_key = nullptr;
             bool shorthand_allowed = false;
+            bool private_name = false;
             binding = (Binding){0};
             if (p.pos[0] == '.' && p.pos[1] == '.' && p.pos[2] == '.' && rest_then_pattern(&p)) {
                 // `...{ }` / `...[]`: tsgo's parseObjectBindingElement reads a property name there, missing (TS1003,
@@ -11798,6 +11800,13 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 name = span_from(key_anchor);
             } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER)) {
                 name = span_from(key_anchor);
+            } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
+                // `{ #a: x }`: TS18064 from the checker, the `:` is expected (not a binding identifier)
+                p.pos++;
+                parse_identifier_or_keyword(&p, nullptr);
+                name = span_from(key_anchor);
+                key = value_undefined;
+                private_name = true;
             } else {
                 if (list_abort_or_skip(&p, PARSING_OBJECT_BINDING_ELEMENTS)) break;
                 continue;
@@ -11853,6 +11862,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 .source_span = name,
                 .computed_key = computed_key,
                 .target = binding,
+                .private_name = private_name,
             });
         object_item_done:
             hop_whitespace(&p);

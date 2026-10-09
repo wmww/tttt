@@ -2188,6 +2188,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
+                if (object_item_is_private_name(i)) i->private_name_in_class = scope_enclosing_class(names) != nullptr;
                 if (i->jsdoc_type) type_lookup_names(i->jsdoc_type, names, errs);
                 if (i->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
                     i->value.identifier.shorthand_unchecked = true;
@@ -2520,7 +2521,10 @@ static void assignment_target_typecheck_of(
                 source_expr->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
             for_each (i, vec_object_expr_item, &target->object) {
                 Ty const* property = nullptr;
-                if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
+                if (source && object_item_is_private_name(i)) {
+                    // (A never key, TS18064: tsgo's getLiteralTypeFromPropertyName of a private identifier)
+                    property = ty_intrinsic(checker, TY_NEVER);
+                } else if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
                     // (undefined and null have no properties: a union with them has none either, tsc's
                     // getIndexedAccessType on the source as it is)
@@ -4500,7 +4504,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     error_ctx_grammar_error_d(errs, i->shorthand_equals, 1312,
                         "Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.");
                 }
-                if (object_item_is_private_name(i)) {
+                if (object_item_is_private_name(i) && my assignment_pattern && i->tag == OBJECT_ITEM_PROPERTY) {
+                    // (tsgo's checkObjectLiteralDestructuringPropertyAssignment; checkGrammarObjectLiteralExpression
+                    // doesn't look at a destructuring target)
+                    error_ctx_grammar_error_d(errs, i->name_span, 18064, "Private identifiers cannot be used in destructuring patterns.");
+                } else if (object_item_is_private_name(i)) {
                     // tsc's checkGrammarObjectLiteralExpression; a method's is checkMethodDeclaration's (at its name, no
                     // grammar error), an accessor's TS18028 checkGrammarAccessor's
                     char const* message = "Private identifiers are not allowed outside class bodies.";

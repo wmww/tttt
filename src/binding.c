@@ -284,7 +284,11 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
         if (initializer->kind != TY_ANONYMOUS || !initializer->anonymous.object_literal) return;
         for_each (item, vec_object_binding_item, &my object) {
             Binding const* element = &item->target;
-            if (element->default_value || element->rest || item->computed_key || element->tag != BINDING_IDENTIFIER) continue;
+            if (element->default_value || element->rest || item->computed_key || item->private_name ||
+                element->tag != BINDING_IDENTIFIER
+            ) {
+                continue;
+            }
             bool is_number = false;
             Atom const* name = ty_property_name_of_key(current_checker, ty_literal(current_checker, &item->source), &is_number);
             if (!name || ty_get_prop(current_checker, initializer, name)) continue;
@@ -632,7 +636,11 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     // (tsc's getTypeForBindingElement: isValidSpreadType of the parent)
                     error_ctx_error_d(errs, i->target.content_span, 2700, "Rest types may only be created from object types.");
                 }
-                if (parent && !i->computed_key && !i->target.rest && !(i->target.default_value &&
+                if (i->private_name) {
+                    // (tsgo's checkVariableLikeDeclaration)
+                    error_ctx_grammar_error_d(errs, i->source_span, 18064, "Private identifiers cannot be used in destructuring patterns.");
+                }
+                if (parent && !i->computed_key && !i->private_name && !i->target.rest && !(i->target.default_value &&
                     parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)
                 ) {
                     ty_check_property_access(current_checker, parent, ty_literal(current_checker, &i->source), span_null,
@@ -656,7 +664,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                             expr_get_type(i->computed_key)), span_valid(i->source_span) ? i->source_span : expr_outer_span(i->computed_key),
                             from_this, my access_site, errs);
                     }
-                } else if (!i->target.rest && (i->source.tag == VALUE_STRING || i->source.tag == VALUE_NUMBER)) {
+                } else if (!i->target.rest && !i->private_name && (i->source.tag == VALUE_STRING || i->source.tag == VALUE_NUMBER)) {
                     Ty const* type = parent ? parent : unused_enabled() ?
                         ty_binding_type(current_checker, me, (LowerCtx){ .generic = true }) : nullptr;
                     if (type) {

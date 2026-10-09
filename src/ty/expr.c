@@ -4010,7 +4010,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             ty_add_intra_expression_site(me, type, member_context);
         }
 
-        if (object_item_is_private_name(i)) continue;
+        // (A private name in a class body is a property of its text, `{ #a: 1 }` is `{ #a: number; }`; outside of one
+        // tsc's binder has no class to name it in, and the literal lacks it)
+        if (object_item_is_private_name(i) && !i->private_name_in_class) continue;
 
         // What the member adds to index signatures (tsc's isSymbolWithNumericName, isSymbolWithSymbolName: the
         // computed name's type is assignable to number or symbol)
