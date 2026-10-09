@@ -1191,13 +1191,15 @@ typedef struct PackageLoad {
 
 // tsc's loadModuleFromSpecificNodeModulesDirectory()
 static Search load_from_node_modules_dir(State* me, csview node_modules, csview name, int extensions, Found* out) {
+    // (tsgo strips a trailing separator here, `pkg/dir/` is `pkg/dir`: `prismjs/components/` finds components.d.ts
+    // before components/index.d.ts. tsc 6 kept it, which found no file)
+    while (name.size > 1 && name.buf[name.size - 1] == '/') name.size--;
     cstr candidate = join(node_modules, name);
     csview rest;
     csview package_name = package_name_of(name, &rest);
     cstr package_dir = join(node_modules, package_name);
     Search result = SEARCH_CONTINUE;
-    // `pkg/dir/`: tsc's loadModuleFromFile adds extensions to the path with its slash, which finds no file
-    bool directory_only = ends_with(name, "/");
+    bool directory_only = false;
 
     PackageJson const* package = directory_exists(me, cstr_sv(&candidate)) ? package_json_of(me, cstr_sv(&candidate)) : nullptr;
     PackageJson const* root_package = rest.size ? package_json_of(me, cstr_sv(&package_dir)) : package;
