@@ -208,3 +208,11 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   object literal member type. (Agent C)
 - jsdocTypedefBeforeParenthesizedExpression: `@param a {NotADuplicateIdentifier}` with the typedef in a comment before
   a parenthesized expression statement prints `number` in tsgo, the alias name in tttt. (Agent C)
+- (agent D, JSDoc second pass) typedefTagWrapping: a `@typedef` whose type fails to parse (`{function(string): boolean}`)
+  has a missing name in tsgo, declared in the global scope as '(Missing)' at the '}' expected position: three such
+  script files report TS2300 "Duplicate identifier '(Missing)'". callbackTag4: tsgo's symbols baseline names a
+  `@this` tag's synthetic `this` parameter by the tag's whole text (`Symbol(@this {{ a: string, b: number }}\n, ...)`).
+  Both are tsgo quirks; port only if cheap.
+- @callback/@type contextual return types (callbackTag1/2, typedefTagTypeResolution): an arrow typed by a `@type`
+  callback infers its own return type in tsgo (`obj => void obj.title` is `=> undefined`, not the callback's `any`).
+  C's @type-on-function host rules.
