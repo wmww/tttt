@@ -3312,20 +3312,31 @@ static Symbol* resolve_alias_target(Symbol* me) {
     impossible;
 }
 
+// The aliases being resolved, innermost last (tsc's resolution stack, pushTypeResolution)
+static thread_local Symbol** alias_stack;
+static thread_local u32 alias_stack_count, alias_stack_cap;
+
 Symbol* symbol_resolve_alias(Symbol* me) {
     if (!me || !(my flags & SYMBOL_ALIAS)) return me;
     switch (my alias->state) {
         case ALIAS_DONE: return my alias->target;
         case ALIAS_IN_FLIGHT:
         case ALIAS_CIRCULAR:
-            // (tsc's resolveAlias: the inner visit makes the target unknown, the outer one reports)
+            // (tsc's resolveAlias: the inner visit is unknown, and every alias of the cycle, from this one to the
+            // innermost, reports when it is done: findResolutionCycleStartIndex)
+            for (u32 i = alias_stack_count; i-- > 0;) {
+                alias_stack[i]->alias->state = ALIAS_CIRCULAR;
+                if (alias_stack[i] == me) break;
+            }
             my alias->state = ALIAS_CIRCULAR;
             return nullptr;
         case ALIAS_UNRESOLVED: break;
     }
     if (my binder->frozen) log_error("Alias '", my name, "' resolved while typechecking: the checkers share it");
     my alias->state = ALIAS_IN_FLIGHT;
+    *(Symbol**)list_push((void**)&alias_stack, &alias_stack_count, &alias_stack_cap, sizeof(Symbol*)) = me;
     Symbol* target = resolve_alias_target(me);
+    alias_stack_count--;
     // (`export default x` looks its name up in a scope that has it)
     if (my alias->state == ALIAS_CIRCULAR && (my alias->item || (my decl_count && span_valid(my decls[0].full)))) {
         // (Import-equals declarations and `export =` are reported on the whole statement)
@@ -3335,6 +3346,14 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         bool commonjs = !item && file && file->is_js && file->is_commonjs && span_valid(my decls[0].name);
         Span at = commonjs ? my decls[0].name : !item ? my decls[0].full :
             item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
+        // (A specifier is reported whole: `A as B`)
+        bool specifier = item && (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC ||
+            item->tag == PORT_REEXPORT_SPECIFIC);
+        if (specifier && span_valid(item->source_name) && item->source_name.source == at.source &&
+            span_start_ptr(item->source_name) < span_start_ptr(at)
+        ) {
+            at = span_make(at.source, span_start_ptr(item->source_name), span_end_ptr(at));
+        }
         if (!(item && item->wrong_context)) {
             error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
         }

@@ -3361,7 +3361,7 @@ const baselines = {
         types: true,
     },
     'circularModuleImports': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9201,12 +9201,12 @@ const baselines = {
         types: true,
     },
     'declarationEmitUnknownImport(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitUnknownImport2(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27741,32 +27741,32 @@ const baselines = {
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveExportAssignmentAndFindAliasedType6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49641,7 +49641,7 @@ const baselines = {
         types: true,
     },
     'circular1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49651,7 +49651,7 @@ const baselines = {
         types: true,
     },
     'circular3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
