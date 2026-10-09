@@ -1792,24 +1792,28 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
             return ty_widened_literal(me, ty_expr_type(me, init));
         }
     }
-    // The first JSDoc `@type` of an assignment is the type, as declared (tsgo has no definedInMethod `| undefined`)
-    for (u32 i = 0; i < symbol->decl_count; i++) {
+    // The first JSDoc `@type` of an assignment is the type, as declared (tsgo has no definedInMethod `| undefined`);
+    // the last one when every declaration is a `this.x =` (tsgo's isConstructorDeclaredThisProperty overwrites it)
+    bool all_this = symbol->decl_count > 0;
+    for (u32 i = 0; i < symbol->decl_count && all_this; i++) {
+        AssignmentDeclKind kind = symbol->decls[i].assignment;
+        all_this = symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT &&
+            (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || kind == ASSIGNMENT_DECL_THIS_IN_METHOD);
+    }
+    TypeNode const* annotation = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && (all_this || !annotation); i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&symbol->decls[i])) {
-            return ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
+            annotation = symbol_decl_jsdoc_type(&symbol->decls[i]);
         }
     }
+    if (annotation) return ty_of_node(annotation);
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
     // `this.x = v` declarations only (tsgo's isConstructorDeclaredThisProperty): one in the constructor gives the type
     // `this.x` has at its end (getFlowTypeInConstructor), unless that is only null or undefined; only methods' take
     // the base class's namesake (getTypeOfPropertyInBaseClass), else what they assign, possibly undefined
-    bool all_this = symbol->decl_count > 0, in_constructor = false;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        AssignmentDeclKind kind = symbol->decls[i].assignment;
-        all_this &= symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT &&
-            (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || kind == ASSIGNMENT_DECL_THIS_IN_METHOD);
-        in_constructor |= kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-    }
+    bool in_constructor = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) in_constructor |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
     Ty const* in_constructor_type = all_this && in_constructor && ty_is_constructor_declared(symbol) ? flow_type_in_constructor(me, symbol) : nullptr;
     if (in_constructor_type) {
         if (types != stack) free(types);
