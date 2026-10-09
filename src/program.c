@@ -450,10 +450,12 @@ void program_set_references(Program* me, ProjectRedirects const* redirects, bool
     // (Reading outputs, only built ones exist: tsc's command line host is the file system's)
     if (outputs) redirects = nullptr;
     if (my resolver) module_resolver_set_redirects(my resolver, redirects);
-    my reference_count = project_redirects_count(redirects);
+    // (One per referenced project also reading outputs: their output declaration files resolve with their project's
+    // options, program_make_source())
+    my reference_count = project_redirects_count(my redirects);
     my reference_resolvers = c_new_n(ModuleResolver*, my reference_count + 1);
     for (u32 i = 0; i < my reference_count; i++) {
-        ModuleResolver* resolver = module_resolver_new(my fs, project_redirects_options(redirects, i));
+        ModuleResolver* resolver = module_resolver_new(my fs, project_redirects_options(my redirects, i));
         if (my realpath) module_resolver_set_realpath(resolver, my realpath, my realpath_ctx);
         module_resolver_set_redirects(resolver, redirects);
         my reference_resolvers[i] = resolver;
@@ -521,6 +523,7 @@ static bool source_declares_ambient_module(SourceFile const* source, csview name
 }
 
 static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr);
+static bool program_rewrite_crosses_projects(Program* me, SourceFile const* target);
 
 static bool path_is_js(csview path) {
     return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
@@ -710,6 +713,9 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (resolved.is_external_library) my node_modules_depth--;
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
     if (ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
+    if (ref->file && ref->used_ts_extension && my options.rewrite_relative_import_extensions) {
+        ref->rewrite_crosses_projects = program_rewrite_crosses_projects(me, ref->file);
+    }
     resolved_module_drop(&resolved);
 }
 
@@ -2202,6 +2208,26 @@ static cstr program_common_source_dir(Program* me) {
     }
     cstr_drop(&cwd);
     return common_dir;
+}
+
+// tsgo's TS2878 test: target is a referenced project's source (or output) whose root and output directories aren't
+// placed like this program's (a rewritten `.ts` import path would point elsewhere in the outputs)
+static bool program_rewrite_crosses_projects(Program* me, SourceFile const* target) {
+    // (tsgo's GetRedirectForResolution: a referenced project's source, or its output reading outputs)
+    u32 project = target->from_reference ? target->from_reference : target->resolution_project;
+    if (!project || !my redirects) return false;
+    CompilerOptions const* other = project_redirects_options(my redirects, project - 1);
+    csview cwd = program_cwd(me);
+    cstr own_root = program_common_source_dir(me);
+    cstr other_root = absolute_path_of(cwd, cstr_sv(cstr_size(&other->root_dir) ? &other->root_dir : &other->config_dir));
+    cstr own_out = cstr_size(&my options.out_dir) ? absolute_path_of(cwd, cstr_sv(&my options.out_dir)) : cstr_clone(own_root);
+    cstr other_out = cstr_size(&other->out_dir) ? absolute_path_of(cwd, cstr_sv(&other->out_dir)) : cstr_clone(other_root);
+    // (tsgo's RelativePathFromDirectory: `..` included)
+    cstr roots = relative_path_of(cstr_sv(&own_root), cstr_sv(&other_root));
+    cstr outs = relative_path_of(cstr_sv(&own_out), cstr_sv(&other_out));
+    bool ret = !cstr_eq(&roots, &outs);
+    c_drop(cstr, &own_root, &other_root, &own_out, &other_out, &roots, &outs);
+    return ret;
 }
 
 static void program_verify_emit_paths(Program* me) {

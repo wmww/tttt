@@ -463,6 +463,28 @@ static_failable load_config(ConfigLoad* me, csview path) {
             config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type Array."), path,
                 member->value.start, member->value.end);
         }
+        // (tsc's convertJsonOption of each reference against its declarations: `path` a non-empty string, `circular` a
+        // boolean; an entry without a path is TS5024 on the whole entry)
+        if (cstr_equals(&member->key, "references") && member->value.tag == JSON_ARRAY) {
+            for (isize r = 0; r < member->value.count; r++) {
+                JsonValue const* entry = &member->value.items[r];
+                if (entry->tag != JSON_OBJECT) continue;
+                JsonValue const* reference_path = json_get(entry, "path");
+                if (!reference_path || reference_path->tag != JSON_STRING) {
+                    JsonValue const* at = reference_path ? reference_path : entry;
+                    config_diagnostic(me, 5024, cstr_lit("Compiler option 'reference.path' requires a value of type string."),
+                        path, at->start, at->end);
+                } else if (!cstr_size(&reference_path->string)) {
+                    config_diagnostic(me, 18051, cstr_lit("Compiler option 'reference.path' cannot be given an empty string."),
+                        path, reference_path->start, reference_path->end);
+                }
+                JsonValue const* circular = json_get(entry, "circular");
+                if (circular && circular->tag != JSON_BOOL) {
+                    config_diagnostic(me, 5024, cstr_lit("Compiler option 'reference.circular' requires a value of type boolean."),
+                        path, circular->start, circular->end);
+                }
+            }
+        }
         if (cstr_equals(&member->key, "excludes")) {
             config_diagnostic(me, 6114, cstr_lit("Unknown option 'excludes'. Did you mean 'exclude'?"), path,
                 member->key_start, member->key_end);

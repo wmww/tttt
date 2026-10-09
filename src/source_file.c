@@ -472,6 +472,10 @@ static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
         while (dot > 0 && path.buf[dot - 1] != '.' && path.buf[dot - 1] != '/') dot--;
         error_ctx_error_d(errs, my span, 2877, "This import uses a '.", csview_slice(path, dot, path.size), "' extension to "
             "resolve to an input TypeScript file, but will not be rewritten during emit because it is not a relative path.");
+    } else if (my used_ts_extension && should_rewrite && my rewrite_crosses_projects) {
+        error_ctx_error_d(errs, my span, 2878, "This import path is unsafe to rewrite because it resolves to another project, "
+            "and the relative path between the projects' output files is not the same as the relative path between its "
+            "input files.");
     }
 }
 

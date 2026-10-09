@@ -54,6 +54,9 @@ typedef struct ModuleRef {
     SourceFile* redirected_from;
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
+    // The file is another project's whose directories aren't placed like this one's: rewriting a `.ts` import path is
+    // unsafe (TS2878, program_rewrite_crosses_projects())
+    bool rewrite_crosses_projects;
     bool external_library; // Found by a node_modules lookup (tsc's isExternalLibraryImport)
     // MODULE_REF_IS_JS in a package (tsc's packageId): what TS7016 suggests (createModuleNotFoundChain), set once the
     // program is loaded

@@ -210,10 +210,12 @@ def main():
             if a.v:
                 print(f"SKIP {name}: {' '.join(args)}: {out.strip().splitlines()[-1] if out.strip() else ''}")
             continue
-        if expected == actual:
+        if expected == actual and code >= 0:
             passed.append(name)
             continue
         failed.append(name)
+        if code < 0:
+            print(f"CRASH {name}   (tttt {' '.join(args)}: signal {-code})")
         if a.names:
             print(name)
             continue
