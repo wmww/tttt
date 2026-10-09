@@ -4885,10 +4885,25 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             else i->jsdoc_optional_initialized = true;
             if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag));
         }
-        // `{...T}` is only `T[]` (tsgo's JSDocVariadicType): it makes no parameter a rest parameter
+        // `{...T=}` on a rest parameter makes it optional, which it can't be (tsgo's reparser gives it a question
+        // token: checkGrammarParameterList's TS1047 at the whole tag)
+        if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {
+            const char* at = tag->tag_name.sv.buf - 1;
+            const char* end = tag + 1 < tags->data + tags->size && tag[1].comment == tag->comment ? tag[1].tag_name.sv.buf - 1 :
+                strstr(at, "*/");
+            if (end) jsdoc_error(p, span_make(p->shared->source, at, end), 1047, "A rest parameter cannot be optional.");
+        }
+        // `{...T}` is only `T[]` (tsgo's JSDocVariadicType): it makes no parameter a rest parameter. `{...T=}` is the
+        // optional of it, `T[] | undefined`
+        TypeNode* variadic_type = &binding->explicit_type;
+        if (variadic && variadic_type->jsdoc_optional && variadic_type->tag == TYPE_UNION &&
+            vec_type_size(&variadic_type->composite) == 2
+        ) {
+            variadic_type = vec_type_at_mut(&variadic_type->composite, 0);
+        }
         if (variadic) {
-            binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
-            binding->explicit_type.parsed = true;
+            *variadic_type = type_array(c_new(TypeNode, *variadic_type), false);
+            variadic_type->parsed = true;
         }
         binding->explicit_type.from_jsdoc = true;
     }
