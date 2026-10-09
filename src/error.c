@@ -372,6 +372,72 @@ static bool error_is_js_syntax(Error const* error) {
     return (error->ts_code >= 8002 && error->ts_code <= 8017) || error->ts_code == 8037;
 }
 
+static bool is_related_info(Error const* sub) {
+    return sub->detached || span_valid(sub->span);
+}
+
+// tsgo's CompareDiagnostics of two related informations: by file, start, end, code, then message
+static int related_info_cmp(void const* pa, void const* pb) {
+    Error const* a = pa;
+    Error const* b = pb;
+    char const* a_path = span_valid(a->span) && a->span.source ? cstr_str(&a->span.source->canonical_path) : "";
+    char const* b_path = span_valid(b->span) && b->span.source ? cstr_str(&b->span.source->canonical_path) : "";
+    int ret = strcmp(a_path, b_path);
+    if (ret) return ret;
+    if (span_valid(a->span) && span_valid(b->span)) {
+        if (span_start_ptr(a->span) != span_start_ptr(b->span)) return span_start_ptr(a->span) < span_start_ptr(b->span) ? -1 : 1;
+        if (span_end_ptr(a->span) != span_end_ptr(b->span)) return span_end_ptr(a->span) < span_end_ptr(b->span) ? -1 : 1;
+    }
+    if (a->ts_code != b->ts_code) return a->ts_code < b->ts_code ? -1 : 1;
+    return cstr_cmp(&a->message, &b->message);
+}
+
+// Whether two diagnostics have the same related information, in the same order
+static bool same_related_info(Error const* a, Error const* b) {
+    Error const* as = vec_error_begin(&a->sub_errors).ref;
+    Error const* bs = vec_error_begin(&b->sub_errors).ref;
+    isize_t ai = 0, bi = 0, an = vec_error_size(&a->sub_errors), bn = vec_error_size(&b->sub_errors);
+    for (;;) {
+        while (ai < an && !is_related_info(&as[ai])) ai++;
+        while (bi < bn && !is_related_info(&bs[bi])) bi++;
+        if (ai == an || bi == bn) return ai == an && bi == bn;
+        if (related_info_cmp(&as[ai], &bs[bi]) || cstr_cmp(&as[ai].message, &bs[bi].message)) return false;
+        ai++, bi++;
+    }
+}
+
+// tsgo's compactAndMergeRelatedInfos: a diagnostic that differs from `into` only by its related information adds it,
+// the related information then sorted and without duplicates. Takes `from`'s related information
+static void merge_related_info(Error* into, Error* from) {
+    isize_t into_count = 0, from_count = 0;
+    for_each (i, vec_error, &into->sub_errors) into_count += is_related_info(i);
+    for_each (i, vec_error, &from->sub_errors) from_count += is_related_info(i);
+    if (!from_count) return;
+    if (from_count == into_count && same_related_info(into, from)) return;
+    VecError related = {0};
+    VecError kept = {0};
+    for_each (i, vec_error, &into->sub_errors) vec_error_push(is_related_info(i) ? &related : &kept, *i);
+    VecError from_kept = {0};
+    for_each (i, vec_error, &from->sub_errors) vec_error_push(is_related_info(i) ? &related : &from_kept, *i);
+    from->sub_errors.size = 0; // (moved)
+    vec_error_drop(&from->sub_errors);
+    from->sub_errors = from_kept;
+    into->sub_errors.size = 0;
+    vec_error_drop(&into->sub_errors);
+    qsort(related.data, (size_t)vec_error_size(&related), sizeof(Error), related_info_cmp);
+    for (isize_t i = 0; i < vec_error_size(&related); i++) {
+        Error* r = vec_error_at_mut(&related, i);
+        if (vec_error_size(&kept) && is_related_info(vec_error_back(&kept)) && !related_info_cmp(vec_error_back(&kept), r)) {
+            error_drop(r);
+        } else {
+            vec_error_push(&kept, *r);
+        }
+    }
+    related.size = 0;
+    vec_error_drop(&related);
+    into->sub_errors = kept;
+}
+
 static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     for (intptr_t i = vec_error_size(&my errors); i > 0; i--) {
         int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
@@ -382,7 +448,11 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 // tsc's diagnostic collection drops an identical diagnostic
                 for (intptr_t j = i; j > 0 && !error_cmp(vec_error_at(&my errors, j - 1), error); j--) {
                     Error const* other = vec_error_at(&my errors, j - 1);
-                    if (span_eq(other->span, error->span) && same_message_chain(other, error)) return -1;
+                    // (One with other related information is another diagnostic until they're merged:
+                    // error_vec_merge_related())
+                    if (span_eq(other->span, error->span) && same_message_chain(other, error) && same_related_info(other, error)) {
+                        return -1;
+                    }
                 }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
@@ -573,6 +643,9 @@ void error_ctx_sort_and_dedupe(ErrorCtx* me) {
     isize kept = 0;
     for (isize i = 0; i < n; i++) {
         if (kept && data[i].phase != ERROR_PHASE_PARSE && error_same_head(&data[kept - 1], &data[i])) {
+            // (tsgo's compactAndMergeRelatedInfos: the same message chain with other related information is one
+            // diagnostic with all of it)
+            if (same_message_chain(&data[kept - 1], &data[i])) merge_related_info(&data[kept - 1], &data[i]);
             error_drop(&data[i]);
         } else {
             data[kept++] = data[i];
@@ -609,6 +682,7 @@ void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* 
     isize kept = 0;
     for (isize i = 0; i < n; i++) {
         if (kept && cstr_eq(&sorted[i].path, &sorted[i - 1].path) && error_same_head(&errors->data[kept - 1], &sorted[i].error)) {
+            if (same_message_chain(&errors->data[kept - 1], &sorted[i].error)) merge_related_info(&errors->data[kept - 1], &sorted[i].error);
             error_drop(&sorted[i].error);
         } else {
             errors->data[kept++] = sorted[i].error;

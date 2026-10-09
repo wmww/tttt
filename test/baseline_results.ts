@@ -53416,7 +53416,7 @@ const baselines = {
         types: true,
     },
     'jsxSpreadOverwritesAttributeStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65406,7 +65406,7 @@ const baselines = {
         types: true,
     },
     'objectSpreadNegative(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
