@@ -3223,6 +3223,9 @@ static Ty const* auto_to_any(Checker* me, Ty const* type) {
 }
 
 static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl const* function) {
+    // (A destructuring pattern or a function's parameters as a pseudo reference: tsc's getNarrowedTypeOfSymbol asks
+    // getFlowTypeOfReference without a flow container, so any function expression's start goes on outside)
+    if (q->pattern || q->parameters_of) return true;
     Expr const* reference = skip_reference_wrappers(q->reference);
     if (reference->tag != EXPR_IDENTIFIER) return false;
     if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return function_impl_is_arrow(function);
