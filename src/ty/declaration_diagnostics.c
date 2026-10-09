@@ -1266,7 +1266,8 @@ static void type_of_array(Walk* me, Expr const* expr, Place place, bool const_co
     element.direct = false;
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_IMPLICIT_ANY) continue; // (an omitted expression)
-        if (type_of_expression(me, i, element, true, false, false)) report_expression(me, expr_outer_span(i), element, 0, nullptr);
+        // (At the expression inside its parentheses: tsgo's typeFromExpression looks through them)
+        if (type_of_expression(me, i, element, true, false, false)) report_expression(me, i->inner_span, element, 0, nullptr);
     }
 }
 
@@ -1327,7 +1328,7 @@ static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_c
             }
             case OBJECT_ITEM_PROPERTY:
                 if (type_of_expression(me, &i->value, inner, const_context, false, false)) {
-                    report_expression(me, expr_outer_span(&i->value), inner, 0, nullptr);
+                    report_expression(me, i->value.inner_span, inner, 0, nullptr);
                 }
                 break;
             case OBJECT_ITEM_GETTER:

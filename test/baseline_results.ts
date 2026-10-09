@@ -19326,7 +19326,7 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationsNonIdentifierAssignmentInference(isolateddeclarations=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
