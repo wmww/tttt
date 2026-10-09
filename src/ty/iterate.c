@@ -697,29 +697,9 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
     bool uplevel = program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) != nullptr;
     if (uplevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
-        // A union is reported once: tsc caches its noIterationTypes (getIterationTypesOfIterable) and
-        // later lookups say nothing
-        // (By the first place it is asked at, reported or not: tsc reports wherever it first computes it, which may
-        // be a check during an inference that tttt does without reporting, `[...xs.reduce((a, k) => [...a, ...t[k]],
-        // []), ...t.b]` reports in the callback; the walk reports it when it gets there)
-        bool reported = false;
-        if (!types && uplevel && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN) && span_valid(span)) {
-            u64 key[3] = { KEY_UNION_NOT_ITERABLE_REPORTED, input->id, async };
-            void const** slot = (void const**)intern_slot(me, &my links, key, 3);
-            if (!*slot) *slot = span_start_ptr(span);
-            reported = *slot != (void const*)span_start_ptr(span);
-        }
-        if (!types && uplevel && errs && !reported) {
-            Error* e = report_not_iterable(me, use, input, span, errs);
-            if (e && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN)) {
-                // (Once per program, not per checker: keyed by the message, which names the union the same way in
-                // every checker; the top bit keeps it apart from the tslib helper keys)
-                u64 hash = 14695981039346656037ull;
-                for (isize i = 0; i < cstr_size(&e->message); i++) hash = (hash ^ (unsigned char)cstr_str(&e->message)[i]) * 1099511628211ull;
-                e->once_key = hash | (1ull << 63);
-                e->once_order = my file_order;
-            }
-        }
+        // (Wherever it is asked with an error node: tsgo's getIterationTypesOfIterable ignores a cached
+        // noIterationTypes then)
+        if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
         if (types && errs) report_iterator_methods(me, input, async, span, errs);
         if (types && errs) check_sent_type(me, use, sent, types->next_type, span, errs);
         if (types) return types->yield_type;

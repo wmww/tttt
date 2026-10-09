@@ -112,7 +112,6 @@ enum {
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
     KEY_FLOW_CALL,      // (call Expr, is a statement) -> CallEffects, see flow.c
-    KEY_UNION_NOT_ITERABLE_REPORTED, // (type id, async) -> the union was reported not iterable once
     KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union
     KEY_OPTIONAL_PARAM, // type -> ty_optional_param_type() of it (`T | undefined`)
     KEY_UNION_PAIR,     // (type id, type id) -> ty_union() of the two, without an alias

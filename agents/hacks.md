@@ -41,9 +41,7 @@ src` finds the code-side markers; every significant one has an entry here.
   Sizes from `stat()` in `main.c` (harness: FIFO).
 - Once-per-program diagnostics (permanent: K checkers each report what tsc's one reports once): `Error.once_key`,
   `error_ctx_keep_first_once()` keeps the earliest file's. Tagged: TS2343/TS2807 (`ty_check_emit_helpers`, keyed by
-  module) and TS2488 on a union (`ty_iterated_type_sending`, tsc's cached noIterationTypes: once per checker by a
-  links key, across checkers by a hash of the message, which prints a union alike in every checker). A new "said
-  once" checker memo must be tagged too.
+  module) and the JSX factory ones (jsx.c). A new "said once" checker memo must be tagged too.
 - Per-checker caches assumed pure in the type ids (permanent: tsc caches the same): `ty_union` of two types
   (KEY_UNION_PAIR), `ty_intersection` without an alias (KEY_INTERSECTION_OF), flow's `assignment_reduced_type`
   (KEY_ASSIGNMENT_REDUCED). A result computed while something it reads is in flight (constraints in

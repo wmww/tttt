@@ -19576,7 +19576,7 @@ const baselines = {
         types: true,
     },
     'iterationErrorOverNotIterableUnions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
