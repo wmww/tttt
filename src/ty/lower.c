@@ -541,12 +541,6 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
-    // `object` in a JavaScript file is any without noImplicitAny (tsc's getTypeFromTypeNode of ObjectKeyword)
-    if (identifier->name.source && identifier->name.source->is_js && !compiler_options()->no_implicit_any &&
-        decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_BUILTIN && csview_equals(decl->name, "object")
-    ) {
-        return ty_intrinsic(me, TY_ANY);
-    }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
     // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
     // getTypeFromClassOrInterfaceReference), for a type alias or a type without type parameters in JavaScript too

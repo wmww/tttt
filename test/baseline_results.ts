@@ -52951,9 +52951,9 @@ const baselines = {
         types: true,
     },
     'paramTagNestedWithoutTopLevelObject3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'paramTagNestedWithoutTopLevelObject4': {
         errors: true,
