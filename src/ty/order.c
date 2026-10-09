@@ -117,7 +117,7 @@ static csview escaped_name(Symbol const* s) {
 }
 
 // tsc's compareSymbols, minus symbol ids (0: tie)
-static int cmp_symbols(Symbol const* a, Symbol const* b) {
+int ty_compare_symbols(Symbol const* a, Symbol const* b) {
     if (a == b) return 0;
     if (!a) return 1;
     if (!b) return -1;
@@ -424,7 +424,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             break;
         case TY_LITERAL: {
             if (ra == RANK_ENUM) {
-                int c = cmp_symbols(a->literal.enum_member, b->literal.enum_member);
+                int c = ty_compare_symbols(a->literal.enum_member, b->literal.enum_member);
                 if (c) return c;
             } else if (ra == RANK_UNIQUE_ES_SYMBOL) {
                 UniqueSymbolDecl const* ua = a->literal.unique;
@@ -540,7 +540,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             break;
         }
         case TY_TYPE_PARAM: {
-            int c = cmp_symbols(a->param.symbol, b->param.symbol);
+            int c = ty_compare_symbols(a->param.symbol, b->param.symbol);
             if (c) return c;
             break;
         }

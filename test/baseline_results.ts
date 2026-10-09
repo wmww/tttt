@@ -342,8 +342,8 @@ const baselines = {
     },
     'aliasErrors': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'aliasInaccessibleModule': {
         errors: true,
@@ -1352,8 +1352,8 @@ const baselines = {
     },
     'assertionFunctionWildcardImport1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'assertionFunctionWildcardImport2': {
         errors: true,
@@ -6793,7 +6793,7 @@ const baselines = {
     'contextuallyTypedJsxAttribute2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedJsxChildren': {
         errors: true,
@@ -8232,8 +8232,8 @@ const baselines = {
     },
     'declarationEmitEnumReferenceViaImportEquals': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
         errors: true,
@@ -9757,8 +9757,8 @@ const baselines = {
     },
     'defaultDeclarationEmitShadowedNamedCorrectly': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'defaultIndexProps1': {
         errors: true,
@@ -10552,8 +10552,8 @@ const baselines = {
     },
     'dottedModuleName2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'dottedSymbolResolution1': {
         errors: true,
@@ -13412,7 +13412,7 @@ const baselines = {
     },
     'exportDefaultProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportDefaultProperty2': {
@@ -15648,7 +15648,7 @@ const baselines = {
     'genericInferenceDefaultTypeParameterJsxReact': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericInheritedDefaultConstructors': {
         errors: true,
@@ -16583,7 +16583,7 @@ const baselines = {
     'importAliasTypeOnlyExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAliasWithDottedName': {
         errors: true,
@@ -17032,8 +17032,8 @@ const baselines = {
     },
     'importOnAliasedIdentifiers': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importPropertyFromMappedType': {
         errors: true,
@@ -17147,7 +17147,7 @@ const baselines = {
     },
     'importedEnumMemberMergedWithExportedAliasIsError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importedModuleAddToGlobal': {
@@ -19482,7 +19482,7 @@ const baselines = {
     },
     'isolatedModulesReExportType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'isolatedModulesRequiresPreserveConstEnum': {
@@ -23337,7 +23337,7 @@ const baselines = {
     },
     'moduledecl(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'multiCallOverloads': {
@@ -24767,12 +24767,12 @@ const baselines = {
     },
     'nodeNextCjsNamespaceImportDefault1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextCjsNamespaceImportDefault2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextDirectoryImportExtensionSuggestion': {
@@ -31733,7 +31733,7 @@ const baselines = {
     'tsxInvokeComponentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNoTypeAnnotatedSFC': {
         errors: true,
@@ -40492,52 +40492,52 @@ const baselines = {
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=es2022)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=es6)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=node20)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=preserve)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_syntax': {
@@ -43677,12 +43677,12 @@ const baselines = {
     },
     'exportsAndImports4-es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportsAndImports4(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportsAndImports5': {
@@ -48892,7 +48892,7 @@ const baselines = {
     },
     'commonJSImportNotAsPrimaryExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'commonJsImportBindingElementNarrowType': {
@@ -49787,7 +49787,7 @@ const baselines = {
     },
     'extendsClause': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'filterNamespace_import': {
@@ -49852,8 +49852,8 @@ const baselines = {
     },
     'importEquals3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importEqualsDeclaration': {
         errors: true,
@@ -50067,7 +50067,7 @@ const baselines = {
     },
     'verbatimModuleSyntaxRestrictionsCJS': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=true)': {
@@ -51222,7 +51222,7 @@ const baselines = {
     },
     'importStatementsInterfaces': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nameCollision': {
@@ -55062,22 +55062,22 @@ const baselines = {
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node20)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsTopLevelAwait(module=node16)': {
@@ -55232,42 +55232,42 @@ const baselines = {
     },
     'nodeModulesDeclarationEmitWithPackageExports(module=node16)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesDeclarationEmitWithPackageExports(module=node18)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesDeclarationEmitWithPackageExports(module=node20)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesDeclarationEmitWithPackageExports(module=nodenext)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesDeclarationEmitWithPackageExportsNoOutDir(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesDeclarationEmitWithPackageExportsNoOutDir(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesDeclarationEmitWithPackageExportsNoOutDir(module=node20)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesDeclarationEmitWithPackageExportsNoOutDir(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesDynamicImport(module=node16)': {
@@ -56022,22 +56022,22 @@ const baselines = {
     },
     'nodeModulesSynchronousCallErrors(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node20)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesTopLevelAwait(module=node16)': {

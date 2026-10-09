@@ -291,9 +291,31 @@ static bool try_entry(
     }
     if (local_lookup && has_port_tag(entry, PORT_REEXPORT_GATHER)) return false;
     if (!ignore_qualification && is_export_specifier(entry)) return false;
+    // (`import { T } from "m"` of a type T of the namespace merged with the value m's `export =` names, which may
+    // have a property T too: tsc's getExternalModuleMember combines them into a symbol of their own
+    // (combineValueAndTypeSymbols), which names neither)
+    Symbol const* value_target = entry->alias ? entry->alias->value_target : nullptr;
+    if (value_target && value_target->decl_count && value_target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) return false;
     Symbol const* resolved = resolve_alias(entry);
     if (!resolved) return false;
     return candidate_list(me, symbol, meaning, entry, resolved, ignore_qualification, out);
+}
+
+// tsc 7's trySymbolTable keeps every candidate chain and picks the first shortest one (compareSymbolChains: by
+// length, then each symbol by compareSymbols), where 6.0 took the first in table order: `import b = a.b` names
+// `a.b` as `b` wherever both are in scope
+static int compare_chains(SymbolChain const* a, SymbolChain const* b) {
+    if (a->len != b->len) return a->len < b->len ? -1 : 1;
+    for (u32 i = 0; i < a->len; i++) {
+        int c = ty_compare_symbols(a->items[i], b->items[i]);
+        if (c) return c;
+    }
+    return 0;
+}
+
+static void keep_best_chain(SymbolChain* best, bool* found, SymbolChain const* candidate) {
+    if (!*found || compare_chains(candidate, best) < 0) *best = *candidate;
+    *found = true;
 }
 
 static char const* declared_at(Symbol const* symbol, SourceFile const* file) {
@@ -368,19 +390,20 @@ static bool try_locals_with_exports(
     }
     qsort(entries, n, sizeof(LocalEntry), compare_local_entries);
     bool ret = false;
-    for (u32 i = 0; i < n && !ret; i++) {
+    SymbolChain candidate;
+    for (u32 i = 0; i < n; i++) {
         SymbolEntry const* entry = entries[i].entry;
         if (entries[i].exported) {
             // (the local's exportSymbol)
             if (csview_equals_sv(symbol_entry_name(entry), symbol->name) &&
                 is_accessible(me, symbol, meaning, merged(me, entry->symbol), nullptr, false)
             ) {
-                out->len = 0;
-                chain_push(out, symbol);
-                ret = true;
+                candidate.len = 0;
+                chain_push(&candidate, symbol);
+                keep_best_chain(out, &ret, &candidate);
             }
-        } else {
-            ret = try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, false, true, out);
+        } else if (try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, false, true, &candidate)) {
+            keep_best_chain(out, &ret, &candidate);
         }
     }
     free(entries);
@@ -401,12 +424,15 @@ static bool try_table(
     // Through an alias in scope. (The tables a table overlays belong to the shared lib program, which has none)
     AliasIndex const* aliases = alias_index_of(table);
     u32 count = aliases ? aliases->alias_count : table->count;
+    bool found = false;
+    SymbolChain candidate;
     for (u32 j = 0; j < count; j++) {
         SymbolEntry const* entry = &table->entries[aliases ? aliases->aliases[j] : j];
-        if (try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, ignore_qualification, local_lookup, out)) {
-            return true;
+        if (try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, ignore_qualification, local_lookup, &candidate)) {
+            keep_best_chain(out, &found, &candidate);
         }
     }
+    if (found) return true;
     // Nothing in the globals: `globalThis` is an alias of them (a global shadowed here is `globalThis.X`). Its exports
     // are another table to tsc (getExportsOfSymbol), not one being visited
     Symbol const* global_this = my binder->global_this;
