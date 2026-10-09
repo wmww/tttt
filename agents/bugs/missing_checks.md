@@ -402,3 +402,21 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   or the list of expression kinds that ask).
 - A declaration file in an export context (`declare function f(): void; export function f(x: number): void;`): tsc
   reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing.
+
+## Flagflip after agent D's distributed type parameters (2026-10-09, every cell but vscode: 453 -> 141 missing)
+The 141 are almost all the corpora's own default-flag misses repeated in every cell:
+- drizzle mysql2/session.ts:281, planetscale-serverless/session.ts:198, singlestore/session.ts:277 TS2416: tsgo finds
+  `MySqlQueryResultHKT` not assignable to `MySql2QueryResultHKT` through `with(...).update(...).set(...)`'s
+  MySqlUpdateBase<..., TQueryResult, ...>; tttt measures MySqlUpdateBase's TQueryResult variance as invariant +
+  unreliable (TTTT_DUMP_VARIANCES: 8) and the structural fallback passes. Variance measurement.
+- vue compiler-sfc/src/style/pluginScoped.ts:107 TS5115 ('Container', 'Diff' of postcss-selector-parser), and TS7006 at
+  :190/:235 (`n.nodes[0].each(ss => ...)`: the callback parameter is any once the instantiation gave up). tttt never
+  hits the instantiation-stack circularity there.
+- vue runtime-dom/src/directives/vModel.ts:446 TS2345 (`DirectiveBinding<any, string>` against the intersection of a
+  union's getSSRProps parameters): a reduced probe (DirectiveBinding/ObjectDirective/DirectiveHook, a union of three
+  ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
+  ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
+- webpack NormalModuleFactory.js:658-666 TS2322 and node_modules/zod TS5115: agent C's (triage.md).
+- Flag-specific ones left: excalidraw/nuia TS2488 polygon.ts:52, vue/nuia TS2538 renderer.ts:2633, vue/npafis TS4111
+  Teleport.ts:562, xstate/sloppy spurious TS2589/TS5114/TS5115 (State.ts:395), xstate/eopt spurious TS2322
+  (input.test.ts:272), webpack/nuia UmdLibraryPlugin.js:232/233 (triage.md).
