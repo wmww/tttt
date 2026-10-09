@@ -694,7 +694,7 @@ typedef struct FreeParams {
     u32 in_extends;
     // The true branches (TypeNode.flow) whose extends types were walked already (the extends types' own nodes are in
     // the outer true branches, so a single "last chain" memo would thrash between them)
-    struct TernaryType const* flow_done[16];
+    struct TernaryType const* flow_done[32];
     u32 flow_done_len;
 } FreeParams;
 
@@ -758,7 +758,12 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             bool done = false;
             for (u32 i = 0; i < out->flow_done_len && !done; i++) done = out->flow_done[i] == flow->ternary;
             if (done) continue;
-            if (out->flow_done_len < c_arraylen(out->flow_done)) out->flow_done[out->flow_done_len++] = flow->ternary;
+            // (Too many to remember: unknown, rather than walking them again and again, exponentially)
+            if (out->flow_done_len == c_arraylen(out->flow_done)) {
+                out->unknown = true;
+                return;
+            }
+            out->flow_done[out->flow_done_len++] = flow->ternary;
             collect_free_params(me, &flow->ternary->maybe_super, out);
         }
         out->in_extends = saved_extends;
