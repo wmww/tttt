@@ -51,6 +51,13 @@ mergeSymbol, which resolves an alias target first.
   getExportSymbolOfValueSymbolIfExported, `typeof import("./x").Foo` with the expando `Foo.bar`. tttt's references
   find the unresolved alias (any); tsgo's lookupName finds the function for `Foo.bar = v` (TS2440).
 
+- duplicateVarsAcrossFileBoundaries (symbols): a global alias and a `var` of another file are one symbol in tttt's
+  binder; tsc's checker-time mergeSymbol resolves the alias first (unresolved: the source wins the table; resolved:
+  merges into a clone of the target). Needs a deferred pass at binder_link() over cross-file global merges involving
+  aliases (ex plan 35).
+- Module elements in a function/block (moduleElementsInWrongContext2, plainJSGrammarErrors: types): tsc binds them
+  anyway (TS1232/TS1233); tttt's `PortItem.wrong_context` declares nothing.
+
 ## Symbol display of duplicates and merged members
 - genericClassesRedeclaration: two `declare module TypeScript {}` blocks each declare `class StringHashTable<T>`
   (TS2300). In the second block tsc's name resolves to the block's local, whose exportSymbol is the duplicate class

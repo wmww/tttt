@@ -14,7 +14,7 @@ them, and buckets the errors-component mismatches by root-cause key, like failst
   scripts/mutate.py -k 'missing TS2551'  the mutants behind one key (prefix match), with the mutated line
   scripts/mutate.py --show mut0042_member-typo   the mutation and tttt's errors diff for one mutant
   scripts/mutate.py --syntax             include the mutants whose tsc baseline gained a syntax error (parser recovery:
-                                   separated by default, plan 27's territory)
+                                   separated by default)
 
 The mutants live in /tmp/mutate/KEY/t/tests/cases/conformance, tsc's baselines in KEY/t/baselines/reference/conformance (KEY hashes their contents and the tsgo commit, so a
 rerun after a tttt change reuses tsc's baselines; MUTATE_DIR overrides /tmp/mutate, eg for parallel worktrees); `log.json` there says which test, operator, line and text. Keys:

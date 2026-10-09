@@ -156,6 +156,19 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
   property fails with an expression it can descend into, and stops at the first reported one per literal).
+## Leftovers of plan 35 (silent type differences, retired 2026-10-09; components as of the tsgo 7.1 suite)
+- recursiveConditionalCrash3 (types): a mapped key named `K_1` where tsc says `K_2`: tsc gives every instantiated mapped
+  type a fresh key type parameter (instantiateMappedType's cloneTypeParameter), tttt keeps the declared one.
+- typeAliasesDoNotMerge (types), symbolDeclarationEmit12 (all components now): duplicate declarations that resolve to
+  the other symbol (`import("f").A`).
+- isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
+  saw the types side; the errors component fails now).
+- ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
+- instantiationExpressions (types): `fx<>`: the parser drops an empty type argument list (keeping it trips code that
+  assumes one).
+- exportAssignmentMembersVisibleInAugmentation: `typeof import("react")`-style naming of an ambient `export =` (plan 35
+  saw it in types; errors fail now).
+
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
 - **Anonymous types inside generic declarations are instantiated even when they reference no outer type parameter**
   (tsc filters getOuterTypeParameters by isTypeParameterPossiblyReferenced): `Promise<number>.finally`'s parameter type

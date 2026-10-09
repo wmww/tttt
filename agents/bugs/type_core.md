@@ -297,6 +297,9 @@ passing tests).
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
   (`() => Generator<any, void, unknown>` for a generator referencing itself).
+- Object literal methods of one name are one binder symbol in tsc (PropertyExcludes is None): `{ foo(x: 'hi') {}, foo(x:
+  'a') {} }` is `{ foo(x: "hi"): void; foo(x: "a"): void }`, each name typed with both signatures
+  (stringLiteralTypesInImplementationSignatures2, callSignaturesWithParameterInitializers2; ex plan 35).
 - A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
   callSignaturesWithParameterInitializers2 types; duplicateClassElements symbols;
   symbolProperty44 (late-bound name vs method). duplicateIdentifierChecks: the parser merges a name's accessor

@@ -53,7 +53,10 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   (flow depth 2000 silently gives the error type: largeControlFlowGraph); TS2406 (`for (#x in o)` says TS1451).
 - **Bigint property names**: TS1539 and `{ 1n: x }` as the property "1n" (TS2538 for bigint keys): bigintPropertyName,
   which also has a parse failure.
-- **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
+- **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (`<in in>`): tsc reads the second `in` as
+  a reserved-word name (TS1359, missing name, not consumed), then an empty type parameter with a missing name consumed
+  by the list's no-progress rule; both are '(Missing)': TS2300, and TS2637 twice through the merged symbol. Needs type
+  parameters with missing names (GenericItem without a name span) that the binder declares as `(Missing)`.
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
@@ -191,6 +194,13 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 ## Limits
 - TS2589: recursivelyExpandingUnionNoStackoverflow.
 
+- TS2589 by instantiation *count* (valibot under sloppy/nosnc flagflip cells, ~60 diagnostics; investigated
+  2026-10-06 against tsc 6, judged plan-sized, not attempted): tsc's hits are the 5M count limit, from cache hits it
+  counts anyway (getObjectTypeInstantiation maps type arguments before its cache lookup, composite/merged mappers
+  re-instantiate per getMappedType: ~25M calls in valibot's required.test-d.ts, no new types). Reproducing it means
+  mirroring tsc's mapper representation and cache misses, which only reproduces tsc's own blowup and costs perf.
+  Accepted divergence; revisit only if real projects show tsc's TS2589 hiding errors tttt reports.
+
 ## Relations and type core (more in `type_core.md`)
 - mappedTypeConstraints2 (indexed accesses of mapped types with template-literal keys: spurious TS2536).
 - reactReduxLikeDeferredInferenceAllowsAssignment and
@@ -239,6 +249,21 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
 - importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
   TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
   pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
+- reachabilityChecksNoCrash1: everything matches but the final stray `}`: TS1109 (an ExpressionStatement of a missing
+  identifier, typed `any` in the types baseline) in tsc, TS1128 in tttt. tsc reaches it inside an expression context
+  left open by the earlier object-literal recovery (`> { const out = [] ... }`), not through the source-element list's
+  abort. Find which construct still parses at that `}`.
+- manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a non-initial `#!` (pos++), so
+  the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
+  parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
+- jsxNamespacePrefixInName(React) (types): `<a attr:=...>` recovery types `a` undefined in tsc, any in tttt.
+- requireOfJsonFileWithoutResolveJsonModule: tsc parses a non-JSON `.json` with parseJsonText's recovery (TS1005/TS1136,
+  an object `{ contents: any; Not: any; read: any; }`); tttt says TS1328. Needs JSON files parsed with tsc's recovery
+  (an object literal expression parse of arbitrary text). Diagnosed against 6.0, recheck tsgo's resolution first.
+- typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
+- Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
+  shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".
+
 ## JSX
 - TS6229 isn't checked for union tag types or inside an overload chain.
 
@@ -252,6 +277,13 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   `@ts-expect-error`). Not reduced.
 - Elaboration chains: invariantGenericErrorElaboration, keyofAndIndexedAccessErrors, conditionalTypes1/2,
   recursiveConditionalTypes.
+- invariantGenericErrorElaboration: tsc relates `Constraint<Runtype<any>>` to `Constraint<Num>` by its type arguments
+  (variance) and reports `Runtype<any>` to `Num` directly; tttt falls back to the structure (`underlying`). Compare the
+  measured variance of Constraint's A (`TTTT_DUMP_VARIANCES=1`) with tsc's first.
+- tsxStatelessFunctionComponentsWithTypeArguments4: the overload in the message prints `{ b: number; a: unknown }` in
+  tsc, `b: unknown` in tttt (inference for that overload).
+- Lesson (ex plan 34): a message change can crash on real code the suite doesn't have (`ty_prop_written_name` on a
+  mapped property, caught by type-fest only): run the corpora after printer/elaboration changes.
 - **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
   (a single `return x as T` prints `() => T` as written; done only for a T that names nothing,
   `type_node_names_nothing()`). tttt reuses nodes only for the types baseline
