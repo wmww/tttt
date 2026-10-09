@@ -5113,7 +5113,8 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
         }
         case SYMBOL_DECL_ASSIGNMENT:
             if (!js) return false;
-            *init_ret = expando_initializer((Expr*)value->node, js, false);
+            // (A `/** @type {T} */ ns.a = {}` is annotated: no container, tsgo's isExpandoInitializer)
+            *init_ret = expando_initializer((Expr*)value->node, js, symbol_decl_jsdoc_type(value) != nullptr);
             return *init_ret != nullptr;
         default: return false;
     }

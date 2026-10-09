@@ -24907,8 +24907,8 @@ const baselines = {
     },
     'nonExpandoDeclarations': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nonExportedElementsOfMergedModules': {
         errors: true,
