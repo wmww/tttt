@@ -4062,8 +4062,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         ) {
             asserted = &i->value.as_type->type;
         }
-        // A string literal written with single quotes where it is a literal (a const context): tsgo's pseudo type of
-        // the property reuses the literal's node, quotes and all (`{ a: 'x' } as const` prints `{ readonly a: 'x'; }`).
+        // A string literal written with single quotes or backticks where it is a literal (a const context): tsgo's pseudo
+        // type of the property reuses the literal's node, quotes and all (`{ a: 'x' } as const` prints `{ readonly a: 'x'; }`).
         // A literal type node of it says so (reused where the property's type is still that literal)
         if (!asserted && i->tag == OBJECT_ITEM_PROPERTY) {
             Expr const* literal = &i->value;
@@ -4073,7 +4073,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 literal_const = true;
             }
             if (literal_const && literal->tag == EXPR_LITERAL && literal->literal.tag == VALUE_STRING &&
-                literal->inner_span.sv.size && literal->inner_span.sv.buf[0] == '\''
+                literal->inner_span.sv.size && (literal->inner_span.sv.buf[0] == '\'' || literal->inner_span.sv.buf[0] == '`')
             ) {
                 TypeNode* node = arena_new(&my arena, TypeNode);
                 node->tag = TYPE_VALUE;

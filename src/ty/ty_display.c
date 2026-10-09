@@ -568,6 +568,27 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
 
 // tsc's escapeString() with a double quote: named escapes, other control characters and U+2028/2029/0085 as \uXXXX
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
+// A no-substitution template literal node (a cooked text, escaped again for backticks: tsgo's escapeString with a
+// backtick quote, which leaves line feeds, and `${` escaped)
+static void display_template_string(TyDisplay d, csview sv) {
+    out_lit(d, "`");
+    for (isize_t i = 0; i < sv.size; i++) {
+        char c = sv.buf[i];
+        if (c == '`' || c == '\\') {
+            char escaped[2] = { '\\', c };
+            out(d, csview_from_n(escaped, 2));
+        } else if (c == '$' && i + 1 < sv.size && sv.buf[i + 1] == '{') {
+            out_lit(d, "\\$");
+        } else if (c == '\r') {
+            out_lit(d, "\\r");
+        } else if (c == '\t') {
+            out_lit(d, "\\t");
+        } else {
+            out(d, csview_from_n(&sv.buf[i], 1));
+        }
+    }
+    out_lit(d, "`");
+}
 static void display_string_literal(TyDisplay d, csview sv) {
     display_quoted_string(d, sv, false, false);
 }
@@ -1709,6 +1730,10 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             // its TokenFlagsSingleQuote, with NoAsciiEscaping, and the printer can't reach the original text of a
             // clone): `'a"b'` stays `'a"b'`, `'\x41'` prints `'A'`
             if (node->value.tag == VALUE_STRING) {
+                if (node->value_span.sv.size && node->value_span.sv.buf[0] == '`') {
+                    display_template_string(d, cstr_sv(&node->value.string));
+                    break;
+                }
                 bool single = node->value_span.sv.size && node->value_span.sv.buf[0] == '\'';
                 display_quoted_string(d, cstr_sv(&node->value.string), single, false);
                 break;
@@ -1935,7 +1960,7 @@ static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* 
 }
 
 // A function without a return annotation whose only return is `'x' as const`: tsgo's pseudo return type reuses the
-// literal's node, single quotes and all (a literal type node of it, see the object literal properties in expr.c)
+// literal's node, single quotes (or backticks) and all (a literal type node of it, see the object literal properties in expr.c)
 static TypeNode const* single_return_quoted_literal(Checker* me, FunctionImpl const* function, Ty const* ret) {
     // (Not where something may type it contextually, an IIFE's callee included: tsgo's isContextuallyTyped)
     if (function->syntactically_contextual) return nullptr;
@@ -1943,7 +1968,8 @@ static TypeNode const* single_return_quoted_literal(Checker* me, FunctionImpl co
     if (!expr || expr->tag != EXPR_AS_TYPE || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) return nullptr;
     Expr const* literal = &expr->as_type->expr;
     if (literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_STRING || !literal->inner_span.sv.size ||
-        literal->inner_span.sv.buf[0] != '\'' || ty_regular(me, ty_expr_type(me, expr)) != ty_regular(me, ret)
+        (literal->inner_span.sv.buf[0] != '\'' && literal->inner_span.sv.buf[0] != '`') ||
+        ty_regular(me, ty_expr_type(me, expr)) != ty_regular(me, ret)
     ) {
         return nullptr;
     }

@@ -19318,7 +19318,7 @@ const baselines = {
     'isolatedDeclarationsLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationsNonIdentifierAssignmentInference(isolateddeclarations=false)': {
         errors: true,
