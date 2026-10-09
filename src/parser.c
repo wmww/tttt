@@ -3591,7 +3591,9 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     p.shared->in_jsdoc = true;
     p.shared->jsdoc_end = end;
     bool outer_unchecked = p.shared->jsdoc_unchecked;
-    p.shared->jsdoc_unchecked = outer_unchecked || tag->kind == JSDOC_TAG_RETURNS || tag->kind == JSDOC_TAG_THROWS;
+    // (A `@returns` type is the function's return type annotation to tsgo's reparser, checked like any: only `@throws`'s
+    // isn't visited)
+    p.shared->jsdoc_unchecked = outer_unchecked || tag->kind == JSDOC_TAG_THROWS;
     hop_whitespace(&p);
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);

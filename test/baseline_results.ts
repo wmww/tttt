@@ -51986,7 +51986,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsMissingTypeParameters(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
