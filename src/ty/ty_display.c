@@ -3797,7 +3797,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
                 display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
                     ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL || is_function_like(me, d, t) ||
-                    displays_as_intersection(me, d, t)));
+                    displays_as_intersection(me, d, t) || mapped_as_conditional(me, d, t)));
             }
             free(collisions);
         }   break;
