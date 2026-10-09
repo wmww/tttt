@@ -4627,7 +4627,11 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         class_decl->jsdoc_augments_name = augments->type.identifier->name;
         class_decl->jsdoc_augments_tag = augments->tag_name;
         class_decl->jsdoc_extends_name = extends_name;
-        if (augments->type.identifier->name.sv.size) class_decl->jsdoc_augments = c_new(TypeNode, jsdoc_take_type(augments, nullptr));
+        if (augments->type.identifier->name.sv.size) {
+            class_decl->jsdoc_augments = c_new(TypeNode, jsdoc_take_type(augments, nullptr));
+            // (Its arity is checked, not its constraints: getTypeFromTypeNode, not checkSourceElement)
+            class_decl->jsdoc_augments->identifier->jsdoc_unchecked = true;
+        }
     }
     // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
     for_each (i, vec_jsdoc_tag, tags) {

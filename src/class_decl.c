@@ -2328,7 +2328,7 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
         // (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type is the base type, else TS8023)
         bool identical = false;
         if (my jsdoc_augments) {
-            // (Its constraints aren't checked: getTypeFromTypeNode, not checkSourceElement)
+            type_typecheck(my jsdoc_augments, errs);
             Ty const* tag = ty_of_node(my jsdoc_augments);
             Ty const* base = ty_class_base_instance(current_checker, me);
             if (!base) base = ty_intrinsic(current_checker, TY_ERROR);
