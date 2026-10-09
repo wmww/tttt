@@ -5627,7 +5627,15 @@ static void add_expando_member(
         }
         if (!host) return;
     }
-    // The member (bindPotentiallyNewExpandoMemberToNamespace)
+    // The member (bindPotentiallyNewExpandoMemberToNamespace). Outside JavaScript only when nothing but expando
+    // assignments declares it (tsgo's bindDeferredExpandoAssignment: a namespace's or class's member of that name is
+    // what the assignment assigns. Its binder sees the file's own declarations: another file's merge later)
+    if (!my file->is_js) {
+        Symbol const* existing = symbol_table_get(host->exports, name.sv);
+        for (u32 i = 0; existing && i < existing->decl_count; i++) {
+            if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && existing->decls[i].full.source == my file) return;
+        }
+    }
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
