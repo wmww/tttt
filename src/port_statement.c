@@ -171,7 +171,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
         // not `import "m"`)
         Scope const* container = scope;
         while (container && container->kind == SCOPE_BLOCK) container = container->parent;
-        bool side_effect_import = my main.tag == PORT_NOOP && csview_equals(my keyword_span.sv, "import");
+        bool side_effect_import = my side_effect_only;
         if (container && (container->kind == SCOPE_MODULE || container->kind == SCOPE_SCRIPT) && !side_effect_import) {
             module_ref_report(my module_ref, scope, errs);
         }
