@@ -1968,6 +1968,15 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         at.sv.size = 1;
         error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
     }
+    // tsgo's checkClassDeclaration: legacy decorators of a class with a static private member
+    if (compiler_options()->experimental_decorators && !my is_expression && vec_expr_size(&my decorators)) {
+        for_each (i, vec_class_item, &my items) {
+            if (!class_item_is_static(i) || !span_valid(class_item_private_name(i))) continue;
+            error_ctx_grammar_error_d(errs, decorator_span(vec_expr_at(&my decorators, 0)), 18036,
+                "Class decorators can't be used with static private identifier. Consider removing the experimental decorator.");
+            break;
+        }
+    }
     for_each (i, vec_expr, &my decorators) {
         if (!(compiler_options()->experimental_decorators && my is_expression)) {
             ty_check_decorator(current_checker, i, (DecoratorSite){ .class_decl = me, .param_index = -1, .at = decorator_span(i) }, errs);

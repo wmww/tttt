@@ -4502,13 +4502,14 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     if (access->assignment_target && lexical_item && lexical_item->tag == CLASS_ITEM_METHOD &&
         lexical_item->method.accessor == CLASS_ACCESSOR_NONE
     ) {
-        error_ctx_error_d(errs, name, 2803, "Cannot assign to private method '", name,
+        error_ctx_grammar_error_d(errs, name, 2803, "Cannot assign to private method '", name,
             "'. Private methods are not writable.");
     }
     if (object->flags & TYF_ANY) {
         if (lexical) return true;
+        // (Grammar errors: tsgo's checkPrivateIdentifierPropertyAccess)
         if (!site->enclosing_class) {
-            error_ctx_error_d(errs, name, 18016, "Private identifiers are not allowed outside class bodies.");
+            error_ctx_grammar_error_d(errs, name, 18016, "Private identifiers are not allowed outside class bodies.");
         } else {
             error_ctx_error_d(errs, name, 2339, "Property '", name, "' does not exist on type 'any'.");
         }

@@ -4462,6 +4462,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             TyWrittenProp* written = nullptr;
             u32 written_count = 0;
             for_each (i, vec_object_expr_item, &my object) {
+                // A method or accessor of a destructuring assignment target is no target: the error and nothing else
+                // (tsgo's checkObjectLiteralDestructuringPropertyAssignment, which doesn't check it as an expression)
+                if (my assignment_pattern &&
+                    (i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER)
+                ) {
+                    error_ctx_error_d(errs, i->name_span, 1136, "Property assignment expected.");
+                    continue;
+                }
                 if (i->tag != OBJECT_ITEM_SPREAD && !i->computed_key) {
                     written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
                     panic_if(!written, "out of memory");
