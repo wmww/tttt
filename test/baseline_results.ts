@@ -19831,7 +19831,7 @@ const baselines = {
         types: false,
     },
     'jsExtendsImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20331,9 +20331,9 @@ const baselines = {
         types: true,
     },
     'jsdocExtendsClauseMismatch': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocFunctionClassPropertiesDeclaration': {
         errors: false,
@@ -30611,7 +30611,7 @@ const baselines = {
         types: false,
     },
     'superCallInJSWithWrongBaseTypeArgumentCount2(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52238,7 +52238,7 @@ const baselines = {
     'extendsTagEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeferJsdoc': {
         errors: false,
@@ -52396,19 +52396,19 @@ const baselines = {
         types: true,
     },
     'jsdocAugmentsMissingType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocAugments_errorInExtendsExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAugments_nameMismatch': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAugments_noExtends': {
         errors: true,
@@ -52486,7 +52486,7 @@ const baselines = {
         types: true,
     },
     'jsdocImplements_missingType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

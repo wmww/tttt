@@ -3176,9 +3176,7 @@ static Ty const* resolve_into(
         symbol_find_node(super_callee->identifier.target, SYMBOL_DECL_CLASS) : nullptr;
     if (super_class && super_class->extends.tag == EXPR_GENERIC_PARAMS) {
         info.type_arg_nodes = &super_class->extends.generic_params->params;
-    } else if (super_class && super_class->extends.tag != EXPR_IMPLICIT_ANY && !span_valid(super_class->jsdoc_extends) &&
-        !super_class->jsdoc_base
-    ) {
+    } else if (super_class && super_class->extends.tag != EXPR_IMPLICIT_ANY && !span_valid(super_class->jsdoc_extends)) {
         info.super_fill = true;
     } else if (call->callable.tag == EXPR_GENERIC_PARAMS && !is_super_call(call)) {
         // `f<A, B>(x)`: the callee type is that of `f`

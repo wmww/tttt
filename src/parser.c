@@ -4094,7 +4094,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 e.pos = c;
                 e.whitespace_end = nullptr;
                 Span missing = span_make(source, c, c);
-                parse_error(&e, missing, 1003, "Identifier expected.");
+                // (tsgo's error at the current JSDoc token: one character, the whitespace after the tag name too)
+                parse_error(&e, *c && *c != '\n' && *c != '\r' ? span_make(source, c, c + 1) : missing, 1003, "Identifier expected.");
                 jsdoc_keep_errors(&e);
                 parse_fail(&e);
                 if (tag.kind == JSDOC_TAG_EXTENDS) {
@@ -4697,28 +4698,16 @@ static Span jsdoc_entity_name_last(Expr const* expr) {
 
 static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_decl) {
     jsdoc_apply_template(p, tags, &class_decl->generic, true);
-    // `@augments A` on `class C extends B` (tsc's checkJSDocAugmentsTag)
+    // `@augments A` on `class C extends B` (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type isn't the base's)
     JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
-    // (The tag is the base whenever there's a clause, tsc's getEffectiveBaseTypeNode: of any expression too,
-    // `extends err()`, which no name mismatches)
-    bool other_expression = !span_valid(extends_name) && class_decl->extends.tag != EXPR_IMPLICIT_ANY;
-    if (augments && augments->type.tag == TYPE_IDENTIFIER && (other_expression || (span_valid(extends_name) &&
-        !name_equals(augments->type.identifier->name.sv, extends_name.sv)))
+    if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
+        !name_equals(augments->type.identifier->name.sv, extends_name.sv)
     ) {
-        Span name = augments->type.identifier->name;
-        if (!other_expression) {
-            jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
-                extends_name.sv, "' clause.");
-        }
-        if (!csview_contains(name.sv, ".")) {
-            if (class_decl->jsdoc_base) {
-                expr_drop(class_decl->jsdoc_base);
-                free(class_decl->jsdoc_base);
-            }
-            class_decl->jsdoc_base = c_new(Expr, name.sv.size ? expr_identifier(name, (IdentifierExpr){0}) :
-                expr_implicit_any(name));
-        }
+        class_decl->jsdoc_augments_name = augments->type.identifier->name;
+        class_decl->jsdoc_augments_tag = augments->tag_name;
+        class_decl->jsdoc_extends_name = extends_name;
+        if (augments->type.identifier->name.sv.size) class_decl->jsdoc_augments = c_new(TypeNode, jsdoc_take_type(augments, nullptr));
     }
     // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
     for_each (i, vec_jsdoc_tag, tags) {
@@ -4729,17 +4718,18 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     }
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
-    if (tag && tag->type.tag == TYPE_IDENTIFIER && ((span_valid(extends_name) &&
-        name_equals(tag->type.identifier->name.sv, extends_name.sv)) || class_decl->jsdoc_base)
+    // (Only a tag naming the clause's class gives it its type arguments: tsgo's reparser, HasSamePropertyAccessName)
+    if (!tag || tag->type.tag != TYPE_IDENTIFIER || !span_valid(extends_name) ||
+        !name_equals(tag->type.identifier->name.sv, extends_name.sv)
     ) {
-        class_decl->jsdoc_extends = tag->type_span;
+        return;
     }
-    if (!tag || tag->type.tag != TYPE_IDENTIFIER || !vec_spanned_type_size(&tag->type.identifier->generic_params)) return;
+    class_decl->jsdoc_extends = tag->type_span;
+    if (!vec_spanned_type_size(&tag->type.identifier->generic_params)) return;
     VecSpannedType params = tag->type.identifier->generic_params;
     tag->type.identifier->generic_params = (VecSpannedType){0};
     for_each (i, vec_spanned_type, &params) i->type.from_jsdoc = true;
-    // (The tag's type arguments go with the base it names: the clause's, or the tag's own name, see jsdoc_base)
-    Expr* base = class_decl->jsdoc_base ? class_decl->jsdoc_base : &class_decl->extends;
+    Expr* base = &class_decl->extends;
     Span span = expr_outer_span(base);
     *base = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = *base, .params = params }));
 }

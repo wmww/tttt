@@ -191,16 +191,16 @@ void class_decl_drop(ClassDecl* me) {
     vec_expr_drop(&my decorators);
     generic_drop(&my generic);
     expr_drop(&my extends);
-    if (my jsdoc_base) {
-        expr_drop(my jsdoc_base);
-        free(my jsdoc_base);
-    }
     vec_spanned_type_drop(&my implements);
     vec_expr_drop(&my unchecked_extends);
     vec_type_drop(&my unchecked_implements);
     vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
     vec_expr_cptr_drop(&my computed_this_assignments);
+    if (my jsdoc_augments) {
+        type_drop(my jsdoc_augments);
+        free(my jsdoc_augments);
+    }
 }
 
 // A computed member name or a decorator. `own_container`: the name of a method, an accessor or a field with an
@@ -623,10 +623,10 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     } else {
         expr_lookup_names(&my extends, names, errs);
     }
-    if (my jsdoc_base) expr_lookup_names(my jsdoc_base, names, errs);
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
     }
+    if (my jsdoc_augments) type_lookup_names(my jsdoc_augments, names, errs);
     for_each (i, vec_expr, &my unchecked_extends) expr_lookup_names(i, names, nullptr);
     for_each (i, vec_type, &my unchecked_implements) type_lookup_names(i, names, nullptr);
     for_each (i, vec_expr, &my invalid_implements) expr_lookup_names(i, names, nullptr);
@@ -1746,15 +1746,11 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
 // which needs its type arguments
 // The class a base constructor that is a class names, and how many type arguments it gets (null: not a class)
 static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, bool* missing_extends) {
-    // (An `@augments` tag naming another base: that base, see ClassDecl.jsdoc_base)
-    Expr const* base = my jsdoc_base ? my jsdoc_base : &my extends;
+    Expr const* base = &my extends;
     *arg_count = 0;
-    // (tsc's getTypeFromClassOrInterfaceReference: the clause itself rather than an `@extends` tag's type)
-    *missing_extends = !my jsdoc_base && expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
+    // (tsc's getTypeFromClassOrInterfaceReference: the clause, whatever type arguments an `@extends` tag gave it)
+    *missing_extends = expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
-        SpannedType const* first = vec_spanned_type_size(&base->generic_params->params) ?
-            vec_spanned_type_at(&base->generic_params->params, 0) : nullptr;
-        if (first && first->type.from_jsdoc) *missing_extends = false;
         *arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
         base = &base->generic_params->expr;
     }
@@ -1812,10 +1808,13 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     // (A class without construct signatures, its default ones filtered by its own base's type arguments, is TS2507:
     // the base constructor is errorType, there's no reference to check)
     if (!span_valid(my jsdoc_extends) && !ty_members(current_checker, ty_static_type_of(current_checker, target))->construct_count) return;
-    // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
-    if (span_valid(my jsdoc_extends)) missing_extends = false;
-    several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : expr_outer_span(&my extends),
-        missing_extends, errs);
+    // (An `@augments` tag's own reference is checked too, at it: the type arguments the clause took from it, or none)
+    if (span_valid(my jsdoc_extends)) {
+        SpannedType const* first = my extends.tag == EXPR_GENERIC_PARAMS && vec_spanned_type_size(&my extends.generic_params->params) ?
+            vec_spanned_type_at(&my extends.generic_params->params, 0) : nullptr;
+        several_types_check_arity(target, first && first->type.from_jsdoc ? arg_count : 0, my jsdoc_extends, false, errs);
+    }
+    several_types_check_arity(target, arg_count, expr_outer_span(&my extends), missing_extends, errs);
 }
 
 // tsc's checkClassForStaticPropertyNameConflicts: a static member named like a property every function has (TS2699).
@@ -2102,14 +2101,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
-    // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration, without the
-    // type arguments, which class_check_base_arity() checks as the reference's)
-    if (my jsdoc_base && my jsdoc_base->tag == EXPR_GENERIC_PARAMS) {
-        expr_typecheck(&my jsdoc_base->generic_params->expr, errs);
-        for_each (i, vec_spanned_type, &my jsdoc_base->generic_params->params) type_typecheck(&i->type, errs);
-    } else if (my jsdoc_base) {
-        expr_typecheck(my jsdoc_base, errs);
-    }
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
@@ -2324,4 +2315,19 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
             "A class can only implement an identifier/qualified-name with optional type arguments.");
     }
     class_check_base_arity(me, errs);
+    if (span_valid(my jsdoc_augments_name)) {
+        // (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type is the base type, else TS8023)
+        bool identical = false;
+        if (my jsdoc_augments) {
+            type_typecheck(my jsdoc_augments, errs);
+            Ty const* tag = ty_of_node(my jsdoc_augments);
+            Ty const* base = ty_class_base_instance(current_checker, me);
+            if (!base) base = ty_intrinsic(current_checker, TY_ERROR);
+            identical = tag == base || ty_is_related(current_checker, tag, base, TY_RELATION_IDENTITY);
+        }
+        if (!identical) {
+            error_ctx_error_d(errs, my jsdoc_augments_name, 8023, "JSDoc '@", my jsdoc_augments_tag, " ",
+                my jsdoc_augments_name, "' does not match the 'extends ", my jsdoc_extends_name, "' clause.");
+        }
+    }
 }

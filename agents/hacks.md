@@ -489,7 +489,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `class_base()` (members.c HACK): base class names found syntactically; other expressions take the first fitting
   construct signature (TS2510 by `ty_class_base_constructors_differ()`). A base constructing `any` is no base;
   `ty_has_unresolved_base()` gates TS2339/TS7053 instead (tsc: `[x: string]: any`). Type-parameter bases take the
-  constraint's members at declaration. `ty_non_augmenting_base()` from syntax. See also `ClassDecl.jsdoc_base`.
+  constraint's members at declaration. `ty_non_augmenting_base()` from syntax.
 - A bare `C`/`this` inside generic `C` isn't its own instantiation (lower.c TODO).
 - `never_reduced_prop` (checker.c) (permanent: perf, judging them with `is_known_object` costs zod +4.1%, drizzle
   +0.9% instructions): `ty_reduced()` (getReducedType) doesn't judge members flagged `TYF_COULD_CONTAIN_TYPE_VARIABLES`
@@ -576,9 +576,8 @@ src` finds the code-side markers; every significant one has an entry here.
   runs `type_typecheck` on it, skipping just the constraint check (`IdentifierType.jsdoc_unchecked` in
   `identifier_type_check_arity()`). Real fix: a resolution-only walk (arity errors must stay:
   jsdocArrayObjectPromiseNoImplicitAny).
-- `ClassDecl.jsdoc_base` (a mismatched or empty `@augments`, tsc's getEffectiveBaseTypeNode) is only what
-  `class_base()` resolves; the other readers of `ClassDecl.extends` (base constructor checks, arity, display) still
-  see the clause. Dotted tag names (`@augments {ns.A}`) keep the clause.
+- TS8023 (`ClassDecl.jsdoc_augments`) only compares a tag whose rightmost name differs from the clause's; tsgo
+  compares every tag's type with the base type (`@augments A<string>` on `extends A<number>` would be TS8023 too).
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into
   transient `JsDocTag`s (parse errors kept for JS files through `ParserShared.jsdoc_errors`).
   `jsdoc_bind_comments()` parses every `@typedef`/`@callback`/`@import` comment again and claims it by innermost

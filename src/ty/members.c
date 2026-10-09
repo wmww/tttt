@@ -847,8 +847,6 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     SourceFile const* file = extends->inner_span.source;
     bool js = file && file->is_js;
     VecSpannedType const* written_args = nullptr;
-    // (A JavaScript `@augments` tag that names another base, or none, is the base: see ClassDecl.jsdoc_base)
-    if (class_decl->jsdoc_base) extends = class_decl->jsdoc_base;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
         written_args = &extends->generic_params->params;
         extends = &extends->generic_params->expr;
@@ -899,7 +897,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     // (A base class without construct signatures, its default ones filtered by its own base's type arguments, isn't a
     // constructor type, TS2507: the base constructor is errorType, no base. Only a derived base class can lack them)
     SymbolDecl const* base_node = symbol_find_decl(decl, SYMBOL_DECL_CLASS);
-    if (base_node && ((ClassDecl const*)base_node->node)->extends.tag != EXPR_IMPLICIT_ANY && !class_decl->jsdoc_base &&
+    if (base_node && ((ClassDecl const*)base_node->node)->extends.tag != EXPR_IMPLICIT_ANY &&
         !ty_members(me, ty_static_type_of(me, decl))->construct_count
     ) {
         return false;
@@ -2278,8 +2276,6 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
         ClassDecl const* class_decl = node->node;
         if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) continue;
         if (!class_decl_base_arity_fits(class_decl)) continue; // (errorType: no base at all, not an unknown one)
-        // (An `@augments` tag without a name: errorType too)
-        if (class_decl->jsdoc_base && class_decl->jsdoc_base->tag == EXPR_IMPLICIT_ANY) continue;
         Ty const* base = nullptr;
         Symbol const* base_decl = nullptr;
         if (!class_base(me, class_decl, ctx, &base, &base_decl)) {
@@ -2287,12 +2283,12 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
             // members, tsc's isErrorType in getBaseConstructorTypeOfClass)
             Expr const* extends = &class_decl->extends;
             if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
-            if (!class_decl->jsdoc_base && (ty_expr_type(me, extends)->flags & TYF_ERROR)) continue;
+            if (ty_expr_type(me, extends)->flags & TYF_ERROR) continue;
             // (A constructor without construct signatures, TS2507, or none that take the written type arguments,
             // TS2508, is errorType, and one that constructs something that can't be a base, TS2509, no base: tsc's
             // getBaseConstructorTypeOfClass, resolveBaseTypesOfClass). A constructor of the error type (`new () =>
             // Unresolved.T`) is no base either (resolveBaseTypesOfClass's isErrorType(baseType))
-            if (!class_decl->jsdoc_base && (base ? !(base->flags & TYF_ANY) || (base->flags & TYF_ERROR) : ty_class_base_constructor_unfit(me, class_decl))) {
+            if ((base ? !(base->flags & TYF_ANY) || (base->flags & TYF_ERROR) : ty_class_base_constructor_unfit(me, class_decl))) {
                 continue;
             }
             return true;
@@ -2318,7 +2314,7 @@ Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {
 // tsc's checkClassLikeDeclaration for a base that isn't a class: the construct signatures that take the written type
 // arguments must all return the base instance type (else TS2510). JavaScript constructor functions don't count
 bool ty_class_base_constructors_differ(Checker* me, ClassDecl const* class_decl, Ty const* base) {
-    Expr const* extends = class_decl->jsdoc_base ? class_decl->jsdoc_base : &class_decl->extends;
+    Expr const* extends = &class_decl->extends;
     VecSpannedType const* written_args = nullptr;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
         written_args = &extends->generic_params->params;

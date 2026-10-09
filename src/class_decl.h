@@ -133,13 +133,15 @@ typedef struct ClassDecl {
     OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
     Expr extends;
     Span extends_clause; // `extends A<T>`
-    // JavaScript: the type of an `@augments`/`@extends` tag naming the class `extends` names, which stands for the clause
-    // (tsc's getEffectiveBaseTypeNode): where its type arguments are checked
+    // JavaScript: the type of an `@augments`/`@extends` tag naming the class `extends` names, whose type arguments the
+    // clause takes when it has none (tsgo's reparser): where the tag's own reference is checked
     Span jsdoc_extends;
-    // JavaScript: an `@augments`/`@extends` tag naming something else than `extends` does (TS8023), or nothing, is the
-    // base anyway (tsc's getEffectiveBaseTypeNode): the tag's name as an expression (owned, null without such a tag),
-    // which class_base() takes instead of the clause
-    Expr* jsdoc_base;
+    // JavaScript: an `@augments`/`@extends` tag naming another class than the clause (or nothing): its type (owned,
+    // null for a missing name), checked against the base type (TS8023, tsgo's checkJSDocAugmentsTagMatchesExtends)
+    TypeNode* jsdoc_augments;
+    Span jsdoc_augments_name; // Valid with such a tag
+    Span jsdoc_augments_tag; // Its tag name
+    Span jsdoc_extends_name; // The clause's rightmost name
     VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)
     // Heritage tsc parses but doesn't check (the parser reports checkGrammarClassDeclarationHeritageClauses' TS1172-
     // TS1175 about it): the elements after the base (`extends A, B`, a second `extends` clause) and those of later
