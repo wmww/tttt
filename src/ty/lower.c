@@ -1346,8 +1346,9 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
     // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
+    // (Otherwise as a mutable location: unique symbols widen too, tsgo's checkExpressionForMutableLocation)
     bool direct = symbol->parent && symbol->parent->is_module;
-    return direct ? ty_regular(me, type) : ty_widened_literal(me, type);
+    return direct ? ty_regular(me, type) : ty_widened_unique_symbol(me, ty_widened_literal(me, type));
 }
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
