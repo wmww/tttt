@@ -602,8 +602,10 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 // Past the end of a tuple (TS2493), unless there's a default
                 if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
                     Value index = value_number((double)i_index);
+                    // (What isn't there at all is only possible without a lib: an Array without a number index
+                    // signature, tsc's getIndexedAccessTypeOrUndefined of an array-like parent)
                     ty_check_property_access(current_checker, parent, ty_literal(current_checker, &index), span_null,
-                        i->content_span, false, false, errs);
+                        i->content_span, false, compiler_options()->no_lib && ty_extends_array(current_checker, parent), errs);
                 }
                 binding_typecheck_at(i, nullptr, span_null, true, false, bodiless, errs);
             }

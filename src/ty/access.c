@@ -486,7 +486,12 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         // getPropertyTypeForIndexType)
         if (n < 0 && !(flags & ACCESS_NO_NODE) && ty_tuple_fixed_length(shape) == shape->arity) return nullptr;
     }
-    if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) {
+    // (Elements by number as the lib's Array declares them: with noLib and an Array interface without a number index
+    // signature, an array has none, tsc reads it off the interface)
+    if (numeric && (ty_is_tuple(object) || ty_is_array(me, object)) &&
+        (!compiler_options()->no_lib || ty_is_tuple(object) ||
+            ty_applicable_index_info(me, object, ty_intrinsic(me, TY_NUMBER)))
+    ) {
         Ty const* element = ty_rest_element_type(me, object);
         return include_undefined ? with_missing(me, element) : element;
     }

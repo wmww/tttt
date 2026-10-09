@@ -1984,8 +1984,10 @@ static void check_access(
             return;
         }
         if (!(index->flags & TYF_STRING_LITERAL)) return;
-    } else if (ty_is_array(me, object) && !(index->flags & TYF_STRING_LITERAL)) {
-        return;
+    } else if (ty_is_array(me, object) && !(index->flags & TYF_STRING_LITERAL) &&
+        (!compiler_options()->no_lib || ty_applicable_index_info(me, object, ty_intrinsic(me, TY_NUMBER)))
+    ) {
+        return; // (Unless a noLib Array declares no number index signature, see access())
     }
 
     if (!error_if_not_found) return;
