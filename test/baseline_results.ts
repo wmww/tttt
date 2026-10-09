@@ -8648,17 +8648,17 @@ const baselines = {
     'declarationEmitMergedExportAlias(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMergedExportAlias(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMergedExportAlias(module=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMethodDeclaration': {
         errors: true,
@@ -24273,7 +24273,7 @@ const baselines = {
     'noCrashOnImportShadowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCrashOnMixin': {
         errors: true,
@@ -38788,7 +38788,7 @@ const baselines = {
     'importElisionConstEnumMerge1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assertionTypePredicates1': {
         errors: true,
@@ -49182,8 +49182,8 @@ const baselines = {
     },
     'exportTypeMergedWithExportStarAsNamespace': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'globalAugmentationModuleResolution': {
         errors: true,
@@ -49617,8 +49617,8 @@ const baselines = {
     },
     'typeAndNamespaceExportMerge': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'allowsImportingTsExtension': {
         errors: true,

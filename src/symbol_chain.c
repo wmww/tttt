@@ -239,7 +239,19 @@ static bool is_accessible(
 ) {
     if (!from_table) return false;
     Symbol const* named = resolved ? resolved : from_table;
-    if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
+    if (named != symbol && identity(me, named) != identity(me, symbol)) {
+        // (tsgo's isAccessible resolves an alias that resolves to another alias on: an alias merged with a type, `type
+        // D = ...; export * as D from "m"`, is an alias that resolveAlias doesn't see through)
+        bool like = false;
+        for (u32 depth = 0; resolved && !like && (resolved->flags & SYMBOL_ALIAS) && depth < 8; depth++) {
+            Symbol const* next = symbol_resolve_alias((Symbol*)resolved);
+            if (!next || next == resolved) break;
+            resolved = next;
+            like = resolved == symbol || identity(me, resolved) == identity(me, symbol);
+        }
+        if (!like) return false;
+        named = resolved;
+    }
     if (symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
     // (and nothing but itself names the clone)
     if (named != symbol && symbol_rare(symbol)->gather_module && namespace_import_is_clone(symbol)) return false;
