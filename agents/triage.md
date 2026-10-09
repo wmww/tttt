@@ -103,3 +103,26 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   `get foo() { return 0 }` is number); tttt drops them.
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
+
+## From the TS 7.1 delta fan-out, agent D (symbols, alias naming, union order, 2026-10-09)
+- TS expandos follow tsgo's binder now (no host namespace decls, no Method flag, `name.x` only, no member over a
+  file's own non-expando declaration, `F.prototype = {}` an expando) but the binder still adds 6.0's
+  SYMBOL_DECL_EXPANDO to the host (filtered in symbol_declaration_spans(), ignored by is_nested_expando_function()):
+  the checker's expando rules want that namespace meaning. A real port of bindDeferredExpandoAssignment would drop it.
+  JavaScript keeps all of 6.0's rules (todo entry 8). Class statics aren't in host->exports at bind time, so
+  `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
+- Index symbols (`__index`) missing through a type parameter's constraint (`T.__index`), a class's `this`
+  (`c.__index`), and a rest/spread object (`t2.__index`, `__index` of `{ ...roindex }`): keyofAndIndexedAccess2,
+  noUncheckedIndexedAccessDestructuring, objectSpreadIndexSignature. tsgo parents the symbol to the apparent type's own
+  symbol and getNameOfSymbolAsWritten names a type literal by its variable.
+- Signature printing reuses lib annotations where tsgo doesn't: `Iterator.from`'s
+  `Iterator<T, ...> | Iterable<T, ...>` (tsgo sorts it, reuses the node for a local declaration only: builtinIterator,
+  awaitUsingDeclarationsWithIteratorObject). Printer reuse rule, agent C's area.
+- Union order left: tuples of different lengths each have an Array base of their own in tsgo (sliceResultCast:
+  `x.slice` is a union of two identical-looking signatures), comparisonReverseMappedTypes `sameSource` (tttt's
+  homomorphic `identity(nested)` isn't a reverse mapped type?), noImplicitAnyUnionNormalizedObjectLiteral1
+  (normalized spread literal ordered first in tsgo), instantiationExpressions (instantiation expression types).
+- checkerInitializationCrash: a global namespace's `export import VNode = react.ReactNode` merged with another file's
+  `type VNode` lists one declaration in tsgo and doesn't name `react.ReactNode` (tttt merges them into an alias+type).
+- expandoFunctionContextualTypesNoValue: `import Foo` + `export function Foo` (TS2440): tsgo's lookupName finds the
+  function for `Foo.bar = v`, tttt the import.
