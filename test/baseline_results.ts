@@ -22766,7 +22766,7 @@ const baselines = {
         types: true,
     },
     'moduleDeclarationsInNonScopeBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
