@@ -1158,8 +1158,10 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
 static bool is_js_container(Symbol const* symbol, Expr const* value);
 
 // Whether symbol's value declaration makes it a JavaScript container (see value_entry_type())
+static bool has_own_exports(Symbol const* symbol);
+
 static bool symbol_is_js_container(Symbol const* symbol) {
-    if (!symbol->exports || !symbol->decl_count) return false;
+    if (!has_own_exports(symbol) || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
     if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return is_js_container(symbol, decl->node);
     if (decl->kind != SYMBOL_DECL_VARIABLE) return false;
@@ -1357,8 +1359,20 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
 // getJSContainerObjectType). `value` is the initializer or assigned value
+// Whether a symbol has exports of its own, not only the types merge_commonjs_export_equals() gave a CommonJS module's
+// `export=` target (tsgo puts those on the `export=` symbol: `var o = {}; module.exports = o` stays `{}`)
+static bool has_own_exports(Symbol const* symbol) {
+    if (!symbol->exports || !symbol->exports->count) return false;
+    Symbol const* module = symbol_rare(symbol)->export_equals_module;
+    if (!module) return true;
+    for (u32 i = 0; i < symbol->exports->count; i++) {
+        if (symbol->exports->entries[i].symbol->parent != module) return true;
+    }
+    return false;
+}
+
 static bool is_js_container(Symbol const* symbol, Expr const* value) {
-    if (!symbol->exports || !value) return false;
+    if (!has_own_exports(symbol) || !value) return false;
     SourceFile const* file = value->inner_span.source;
     if (!file || !file->is_js) return false;
     Expr const* init = expando_initializer((Expr*)value, true, false);

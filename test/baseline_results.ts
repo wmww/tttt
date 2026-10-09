@@ -61798,7 +61798,7 @@ const baselines = {
     'typedefModuleExportsIndirect3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unannotatedParametersAreOptional': {
         errors: true,

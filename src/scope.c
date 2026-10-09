@@ -3526,6 +3526,9 @@ static void merge_commonjs_export_equals(Binder* me, Symbol* module) {
             symbol_table_insert(target->exports, binder_arena(me), name, entry->hash, source);
             continue;
         }
+        // (In a CommonJS module the target's own member of the name stays as it is: tsgo adds the type to the
+        // `export=` symbol, which the target isn't)
+        if (commonjs) continue;
         // mergeSymbol: an assignment declaration merges with anything, else what may share the name. TODO: tsc reports
         // the conflict (reportMergeSymbolError); the assigned symbol's own export stays
         bool assignment = false;
