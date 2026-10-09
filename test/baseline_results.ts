@@ -1121,12 +1121,12 @@ const baselines = {
         types: true,
     },
     'arrayIterationLibES5TargetDifferent(nolib=true,target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'arrayIterationLibES5TargetDifferent(nolib=true,target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8626,7 +8626,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitMappedTypePreservesTypeParameterConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21678,7 +21678,7 @@ const baselines = {
     'manyCompilerErrorsInTheTwoFiles': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'manyConstExports(target=es2015)': {
         errors: true,
@@ -26486,7 +26486,7 @@ const baselines = {
         types: true,
     },
     'pathsValidation5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26871,9 +26871,9 @@ const baselines = {
         types: true,
     },
     'privateNameInTypeQuery': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameJsx': {
         errors: true,
@@ -29001,9 +29001,9 @@ const baselines = {
         types: true,
     },
     'shebangError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'shorthand-property-es5-es6(target=es2015)': {
         errors: true,
