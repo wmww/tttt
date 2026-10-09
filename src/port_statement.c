@@ -57,35 +57,19 @@ static bool is_string_literal_value(Expr const* value) {
 
 ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes const* me, ErrorCtx* errs) {
     if (!me) return IMPORT_RESOLUTION_DEFAULT;
-    if (vec_import_attribute_size(&my elements) != 1) {
-        if (!errs) return IMPORT_RESOLUTION_DEFAULT;
-        if (my is_assert) {
-            error_ctx_grammar_error_d(errs, my span, 1456,
-                "Type import assertions should have exactly one key - `resolution-mode` - with value `import` or `require`.");
-        } else {
-            error_ctx_grammar_error_d(errs, my span, 1464,
-                "Type import attributes should have exactly one key - 'resolution-mode' - with value 'import' or 'require'.");
+    // (tsgo's GetResolutionModeOverride: the first attribute of that name, whatever else there is)
+    for_each (element, vec_import_attribute, &my elements) {
+        if (*element->name.sv.buf != '"' && *element->name.sv.buf != '\'') continue;
+        csview name = csview_slice(element->name.sv, 1, element->name.sv.size - 1);
+        if (!csview_equals(name, "resolution-mode")) continue;
+        if (!is_string_literal(&element->value)) return IMPORT_RESOLUTION_DEFAULT;
+        csview value = cstr_sv(&element->value.literal.string);
+        if (csview_equals(value, "import")) return IMPORT_RESOLUTION_IMPORT;
+        if (csview_equals(value, "require")) return IMPORT_RESOLUTION_REQUIRE;
+        if (errs) {
+            error_ctx_grammar_error_d(errs, expr_outer_span(&element->value), 1453, "`resolution-mode` should be either `require` or `import`.");
         }
         return IMPORT_RESOLUTION_DEFAULT;
-    }
-    ImportAttribute const* element = my elements.data;
-    if (*element->name.sv.buf != '"' && *element->name.sv.buf != '\'') return IMPORT_RESOLUTION_DEFAULT;
-    csview name = csview_slice(element->name.sv, 1, element->name.sv.size - 1);
-    if (!csview_equals(name, "resolution-mode")) {
-        if (!errs) return IMPORT_RESOLUTION_DEFAULT;
-        if (my is_assert) {
-            error_ctx_grammar_error_d(errs, element->name, 1455, "`resolution-mode` is the only valid key for type import assertions.");
-        } else {
-            error_ctx_grammar_error_d(errs, element->name, 1463, "'resolution-mode' is the only valid key for type import attributes.");
-        }
-        return IMPORT_RESOLUTION_DEFAULT;
-    }
-    if (!is_string_literal(&element->value)) return IMPORT_RESOLUTION_DEFAULT;
-    csview value = cstr_sv(&element->value.literal.string);
-    if (csview_equals(value, "import")) return IMPORT_RESOLUTION_IMPORT;
-    if (csview_equals(value, "require")) return IMPORT_RESOLUTION_REQUIRE;
-    if (errs) {
-        error_ctx_grammar_error_d(errs, expr_outer_span(&element->value), 1453, "`resolution-mode` should be either `require` or `import`.");
     }
     return IMPORT_RESOLUTION_DEFAULT;
 }
@@ -518,45 +502,23 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     for_each (i, vec_import_attribute, &node->elements) expr_typecheck(&i->value, errs);
     bool type_only = my main.type_only; // tsc's isExclusivelyTypeOnlyImportOrExport
     ImportResolutionOverride override = import_attributes_resolution_mode(node, type_only ? errs : nullptr);
-    if (type_only && override) return;
+    // (The other checks don't apply to type-only imports and exports. `assert` is the parser's TS2880 in TypeScript 7,
+    // which reports it like `with`)
+    if (type_only) return;
     CompilerOptions const* options = compiler_options();
     ModuleKind module = options->module;
     bool supported = module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE ||
         module == MODULE_KIND_ESNEXT;
     if (!supported) {
-        if (node->is_assert) {
-            error_ctx_grammar_error_d(errs, node->span, 2821,
-                "Import assertions are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.");
-        } else {
-            error_ctx_grammar_error_d(errs, node->span, 2823,
-                "Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.");
-        }
+        error_ctx_grammar_error_d(errs, node->span, 2823,
+            "Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.");
         return;
-    }
-    bool node20 = module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT;
-    if (node->is_assert) {
-        error_ctx_grammar_error_d(errs, node->keyword, 2880,
-            "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
-        if (node20) return;
     }
     bool emits_require = (module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT) &&
         !node->span.source->is_esm;
     if (emits_require) {
-        if (node->is_assert) {
-            error_ctx_grammar_error_d(errs, node->span, 2836,
-                "Import assertions are not allowed on statements that compile to CommonJS 'require' calls.");
-        } else {
-            error_ctx_grammar_error_d(errs, node->span, 2856,
-                "Import attributes are not allowed on statements that compile to CommonJS 'require' calls.");
-        }
-        return;
-    }
-    if (type_only) {
-        if (node->is_assert) {
-            error_ctx_grammar_error_d(errs, node->span, 2822, "Import assertions cannot be used with type-only imports or exports.");
-        } else {
-            error_ctx_grammar_error_d(errs, node->span, 2857, "Import attributes cannot be used with type-only imports or exports.");
-        }
+        error_ctx_grammar_error_d(errs, node->span, 2856,
+            "Import attributes are not allowed on statements that compile to CommonJS 'require' calls.");
         return;
     }
     if (override) error_ctx_grammar_error_d(errs, node->span, 1454, "`resolution-mode` can only be set for type-only imports.");

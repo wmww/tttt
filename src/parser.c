@@ -3189,6 +3189,9 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         hop_whitespace(&p);
         Anchor keyword = anchor(&p);
         bool is_assert = hop_start_if_ends_on_word_break(&p, "assert");
+        if (is_assert) {
+            parse_error(&p, span_from(keyword), 2880, "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
+        }
         if (!is_assert && !hop_start_if_ends_on_word_break(&p, "with")) expected_token_error(&p, "with");
         ImportAttributes* attributes = c_new(ImportAttributes, {
             .keyword = span_from(keyword), .is_assert = is_assert, .elements = vec_import_attribute_init(),
@@ -11509,6 +11512,7 @@ static ImportAttributes* parse_import_attributes(Parser* parent, bool is_import)
         return nullptr;
     } else if (hop_start_if_ends_on_word_break(&p, "assert")) {
         is_assert = true;
+        parse_error(&p, span_from(a), 2880, "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
     } else if (!hop_start_if_ends_on_word_break(&p, "with")) {
         parse_fail(&p);
         return nullptr;

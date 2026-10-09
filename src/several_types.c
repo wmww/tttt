@@ -726,15 +726,8 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
     IdentifierTypeRare const* rare = my rare;
     if (rare && rare->import_attributes) { // tsc's checkImportType
-        ImportAttributes const* attributes = rare->import_attributes;
-        if (attributes->is_assert && attributes->span.sv.size &&
-            *attributes->span.sv.buf == '{'
-        ) {
-            // (On the first token: the `{` of the attributes)
-            error_ctx_grammar_error_d(errs, span_make(attributes->span.source, attributes->span.sv.buf, attributes->span.sv.buf + 1), 2880,
-                "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
-        }
-        import_attributes_resolution_mode(attributes, errs);
+        // (`assert` is the parser's TS2880)
+        import_attributes_resolution_mode(rare->import_attributes, errs);
     }
     // (tsc's checkImportType doesn't check an import type's type arguments, only their constraints)
     if (!identifier_type_import_ref(me)) {
