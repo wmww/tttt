@@ -13882,7 +13882,7 @@ const baselines = {
     },
     'extendedUnicodePlaneIdentifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'extendedUnicodePlaneIdentifiersJSDoc': {
@@ -33007,12 +33007,12 @@ const baselines = {
     },
     'unicodeEscapesInNames01(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unicodeEscapesInNames01(target=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unicodeEscapesInNames02(target=es2015)': {

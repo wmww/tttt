@@ -813,12 +813,30 @@ static bool is_identifier_start(const char* c, const char* end) {
     return unicode_is_identifier_start(code);
 }
 
-// tsc's canUsePropertyAccess
+// tsgo's scanner.IsIdentifierText: every code point (decoded from UTF-8) is an identifier start, then part. An escape
+// (`x\u0078` as written) isn't
+static bool is_identifier_text(csview name) {
+    if (!name.size) return false;
+    for (isize i = 0; i < name.size;) {
+        unsigned char b = (unsigned char)name.buf[i];
+        u32 len = b < 0x80 ? 1 : b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : 2;
+        if (i + len > name.size) return false;
+        u32 code = len == 1 ? b : len == 2 ? (u32)(b & 0x1F) : len == 3 ? (u32)(b & 0x0F) : (u32)(b & 0x07);
+        for (u32 k = 1; k < len; k++) code = code << 6 | ((unsigned char)name.buf[i + k] & 0x3F);
+        bool valid = code < 0x80 ?
+            (code >= 'a' && code <= 'z') || (code >= 'A' && code <= 'Z') || code == '_' || code == '$' || (i > 0 && code >= '0' && code <= '9') :
+            i == 0 ? unicode_is_identifier_start(code) : unicode_is_identifier_part(code);
+        if (!valid) return false;
+        i += len;
+    }
+    return true;
+}
+
+// tsgo's canUsePropertyAccess (the whole name, where 6.0 looked at its first character)
 static bool can_use_property_access(csview name) {
     if (!name.size) return false;
-    const char* end = name.buf + name.size;
-    if (name.buf[0] == '#') return name.size > 1 && is_identifier_start(name.buf + 1, end);
-    return is_identifier_start(name.buf, end);
+    if (name.buf[0] == '#') return name.size > 1 && is_identifier_text(csview_slice(name, 1, name.size));
+    return is_identifier_text(name);
 }
 
 static bool is_quote(char c) {
