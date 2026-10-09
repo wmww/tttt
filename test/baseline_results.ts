@@ -49788,7 +49788,7 @@ const baselines = {
     'extendsClause': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'filterNamespace_import': {
         errors: true,
