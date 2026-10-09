@@ -3452,7 +3452,7 @@ const baselines = {
     },
     'cjsObjectDefinePropertyPrivateModuleDeclarationEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'class2': {
@@ -16997,7 +16997,7 @@ const baselines = {
     },
     'importNonExportedMember12': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importNonExportedMember2': {
@@ -51677,7 +51677,7 @@ const baselines = {
     },
     'checkOtherObjectAssignProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorTagOnClassConstructor': {
@@ -51862,7 +51862,7 @@ const baselines = {
     },
     'jsDeclarationsExportDefinePropertyEmit': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportDoubleAssignmentInClosure': {

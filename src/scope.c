@@ -1900,7 +1900,10 @@ static void declare_commonjs_export(
 static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
     Span name;
     if (!expr_is_define_property_call(call, &name) || !expr_is_exports_object(vec_expr_at(&call->call->args, 0))) return;
-    declare_commonjs_export(me, name.sv, name, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level, false);
+    // (Named as written: a string literal with its quotes, tsgo's getNameOfSymbolAsWritten)
+    Expr const* key = vec_expr_at(&call->call->args, 1);
+    Span shown = key->literal.tag == VALUE_STRING ? key->inner_span : name;
+    declare_commonjs_export(me, name.sv, shown, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level, false);
     call->call->declares = symbol_table_get(my container->exports, name.sv);
 }
 

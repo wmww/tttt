@@ -683,16 +683,24 @@ void initialized_binding_drop(InitializedBinding* me) {
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_INITIALIZED_BINDING);
     my abstract_literals = props.abstract_literals;
+    // `export const x = require("m")` is a variable (tsgo's isVariableDeclarationInitializedToRequire: not exported)
+    if (initialized_binding_rare(me)->require_port_count && props.exported) {
+        for (u32 i = 0; i < my rare->require_port_count; i++) port_item_drop(&my rare->require_ports[i]);
+        free(my rare->require_ports);
+        my rare->require_ports = nullptr;
+        my rare->require_port_count = 0;
+        Expr* call = initialized_binding_value(me);
+        if (call->tag == EXPR_CALL && call->call->callable.tag == EXPR_IDENTIFIER) call->call->callable.identifier.require_call = 1;
+    }
     if (!initialized_binding_rare(me)->require_port_count) {
         binding_add_names(&my binding, &my lazy_type, scope, props);
         return;
     }
-    // The names are aliases (see require_ports), exported like `export import x = require()`. Declared in the function
+    // The names are aliases (see require_ports). Declared in the function
     // or file around a block, like a `var` (tsc's declareSymbolAndAddToSymbolTable puts aliases in the container's
     // locals: two `const X = require()` in different blocks are TS2300, microsoft/TypeScript#41697)
     while (scope->parent && !scope_is_var_container(scope)) scope = scope->parent;
     my binding.source = &my lazy_type;
-    for (u32 i = 0; i < initialized_binding_rare(me)->require_port_count; i++) initialized_binding_rare(me)->require_ports[i].export_import = props.exported;
     if (my binding.tag == BINDING_IDENTIFIER) {
         scope_add_port(scope, &initialized_binding_rare(me)->require_ports[0]);
         my binding.symbol = initialized_binding_rare(me)->require_ports[0].symbol;
