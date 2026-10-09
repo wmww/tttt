@@ -2731,6 +2731,7 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 }
 
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts);
+static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* name, u32* flags);
 
 // A reference whose type arguments aren't generic, only its this-argument: `T extends I` with an interface I that has a
 // this-type is apparently `I<this = T>`, whose property names are I's
@@ -2841,6 +2842,14 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
     for (u32 p = 0; p < parts.len; p++) {
         Ty const* part = parts.data[p];
         if (!(part->flags & TYF_OBJECT)) part = ty_apparent_type(me, part);
+        // (A part whose apparent type is a union, a deferred conditional type's constraint `{ c?: F } | { c: F }`, has
+        // the properties every member has: tsc's getPropertiesOfType of the apparent type. Listed from the first member)
+        Ty const* whole = part;
+        if (part->kind == TY_UNION && part->composite.types.len) {
+            part = ty_apparent_type(me, part->composite.types.data[0]);
+        } else {
+            whole = nullptr;
+        }
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* source = ty_members(me, part);
         for (u32 i = 0; i < source->prop_count; i++) {
@@ -2848,13 +2857,16 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
             // Optional only if every part that has it has it optional, readonly if any has it readonly
             u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
+            if (whole && !modifiers_prop(me, whole, from->name, &flags)) continue;
             for (u32 q = p + 1; q < parts.len; q++) {
                 Ty const* other = parts.data[q];
                 if (!(other->flags & TYF_OBJECT)) other = ty_apparent_type(me, other);
-                Prop const* also = (other->flags & TYF_OBJECT) ? ty_get_prop(me, other, from->name) : nullptr;
+                u32 also_flags = 0;
+                Prop const* also = (other->flags & TYF_OBJECT) || other->kind == TY_UNION ?
+                    modifiers_prop(me, other, from->name, &also_flags) : nullptr;
                 if (!also) continue;
-                if (!(also->flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
-                flags |= also->flags & PROP_READONLY;
+                if (!(also_flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
+                flags |= also_flags & PROP_READONLY;
             }
             if (mapped->optional > 0) flags |= PROP_OPTIONAL;
             if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
