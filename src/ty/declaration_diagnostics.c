@@ -413,7 +413,7 @@ static void print_inferred(Walk* me, Ty const* type) {
     // reused name refers to anew where it means something else here)
     cstr text = cstr_init();
     ty_display(my checker, (TyDisplay){
-        .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker,
+        .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
     }, type);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
         fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.sv.size, my emitting.name.sv.buf, cstr_str(&text));
@@ -518,6 +518,10 @@ static void tracker_report(DeclTracker* tracker, DeclTrackReport kind, csview pr
         case DECL_REPORT_TRUNCATION:
             report_once(me, at, 7056, cstr_from("The inferred type of this node exceeds the maximum length the compiler will "
                 "serialize. An explicit type annotation is needed."));
+            return;
+        case DECL_REPORT_CYCLIC:
+            report_once(me, at, 5088, cstr_d("The inferred type of '", name, "' references a type with a cyclic structure which "
+                "cannot be trivially serialized. A type annotation is necessary."));
             return;
         case DECL_REPORT_NON_SERIALIZABLE:
             report_once(me, at, 4118, cstr_d("The type of this node cannot be serialized because its property '", property,

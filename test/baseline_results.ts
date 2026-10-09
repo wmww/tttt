@@ -3531,7 +3531,7 @@ const baselines = {
         types: true,
     },
     'classExpressionInClassStaticDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7691,7 +7691,7 @@ const baselines = {
         types: true,
     },
     'declFileTypeofFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8486,7 +8486,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitInferredTypeAlias4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11146,7 +11146,7 @@ const baselines = {
         types: true,
     },
     'emitClassExpressionInDeclarationFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14561,7 +14561,7 @@ const baselines = {
         types: false,
     },
     'functionExpressionReturningItself': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24586,7 +24586,7 @@ const baselines = {
         types: true,
     },
     'noImplicitThisBigThis': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -66301,7 +66301,7 @@ const baselines = {
         types: true,
     },
     'varianceAnnotations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

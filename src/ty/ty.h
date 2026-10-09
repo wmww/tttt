@@ -2262,6 +2262,7 @@ typedef enum DeclTrackReport : uint8_t {
     DECL_REPORT_THIS, // reportInaccessibleThisError
     DECL_REPORT_NON_SERIALIZABLE, // reportNonSerializableProperty (`name`: the property)
     DECL_REPORT_TRUNCATION, // reportTruncationError
+    DECL_REPORT_CYCLIC, // reportCyclicStructureError (createCyclicStructurePlaceholder)
 } DeclTrackReport;
 
 typedef struct DeclTracker {

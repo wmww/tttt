@@ -398,6 +398,7 @@ static bool class_as_literal(TyDisplay d, Ty const* declared) {
 static void display_class_literal(Checker* me, TyDisplay d, Ty const* ty) {
     for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
         if (i->ty == ty) {
+            if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
             out_lit(d, "any");
             return;
         }
@@ -3608,6 +3609,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_lit(d, "typeof ");
                     Span own = function_impl_variable_name(expression);
                     bool here = span_valid(d.at) && (span_eq(d.at, own) || span_contains_span(d.at, expression->full_span));
+                    // (Declaration emit can't name the function expression from its variable's declaration: the
+                    // structural fallback, which is the cyclic placeholder, tsgo's shouldWriteTypeOfFunctionSymbol)
+                    if (here && d.tracker) {
+                        d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
+                        out_lit(d, "any");
+                        return;
+                    }
                     if (here && span_valid(expression->name) && expression->symbol) out(d, expression->name.sv);
                     else out_symbol_name(me, d, variable, SYMBOL_VALUE);
                     return;
@@ -3632,6 +3640,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_symbol_name(me, d, alias, SYMBOL_TYPE);
                     return;
                 }
+                if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
                 out_lit(d, "any");
                 return;
             }
