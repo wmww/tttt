@@ -1191,35 +1191,43 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
 
 static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic);
 
-// tsc's getResolvedApparentTypeOfMappedType: a homomorphic mapped type over a type parameter whose constraint is arrays
-// and tuples is that mapped type applied to the constraint (`Partial<T>` with `T extends any[]` is an array)
-static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+// tsc's getResolvedApparentTypeOfMappedType: a homomorphic mapped type whose modifiers type's base constraint is arrays
+// and tuples is that mapped type applied to the constraint (`Partial<T>` with `T extends any[]` is an array). The
+// homomorphic variable is the uninstantiated mapped type's (`CP<Parameters<T>>` with `CP<A> = { [K in keyof A]: X }` is
+// CP's declaration over Parameters<T>'s constraint); a modifiers type that is itself a generic mapped type contributes its
+// own apparent type (`Identity<UnboxArray<T>>`)
+static Ty const* apparent_type_of_mapped_at(Checker* me, Ty const* ty, u32 depth) {
+    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || depth > 8) return ty;
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, ty, &generic);
     if (!mapped || !generic || !mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return ty;
-    if (mapped->constraint->kind != TY_KEYOF) return ty; // (Substituted: not homomorphic, see homomorphic_variable())
-    // (tsc's getHomomorphicTypeVariable on the constraint, where the keys of a generic mapped type are its constraint's:
-    // `Identity<UnboxArray<T>>` iterates over `keyof T`)
-    Ty const* operand = mapped->constraint->keyof.operand;
-    for (u32 depth = 0; operand->kind == TY_ANONYMOUS && depth < 8; depth++) {
-        bool inner_generic = false;
-        MappedInfo const* inner = mapped_info_of(me, operand, &inner_generic);
-        if (!inner || !inner_generic || inner->name_type || inner->constraint->kind != TY_KEYOF) break;
-        operand = inner->constraint->keyof.operand;
-    }
-    Ty const* variable = ty_actual_type_variable(me, operand);
+    Ty const* target = ty->anonymous.target && ty->anonymous.mapper ? ty->anonymous.target : ty;
+    MappedInfo const* declared = target == ty ? mapped : mapped_info_of(me, target, nullptr);
+    if (!declared || declared->name_type || !declared->constraint || declared->constraint->kind != TY_KEYOF) return ty;
+    Ty const* variable = ty_actual_type_variable(me, declared->constraint->keyof.operand);
     if (variable->kind != TY_TYPE_PARAM) return ty;
-    Ty const* constraint = base_constraint(me, variable, 0);
-    if (!constraint || constraint == variable || (constraint->flags & TYF_NEVER)) return ty;
+    Ty const* modifiers = mapped->modifiers_type;
+    bool modifiers_generic = false;
+    Ty const* constraint = mapped_info_of(me, modifiers, &modifiers_generic) && modifiers_generic ?
+        apparent_type_of_mapped_at(me, modifiers, depth + 1) : base_constraint(me, modifiers, 0);
+    if (!constraint || constraint == modifiers || (constraint->flags & TYF_NEVER)) return ty;
     TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = parts.data[i];
-        if (!is_tuple(part) && !(part->kind == TY_REFERENCE && is_array_target(me, part->reference.target))) return ty;
+        // (tsc's isArrayOrTupleType || isArrayOrTupleOrIntersection)
+        TyList members = part->kind == TY_INTERSECTION ? part->composite.types : (TyList){ .data = &part, .len = 1 };
+        for (u32 j = 0; j < members.len; j++) {
+            Ty const* member = members.data[j];
+            if (!is_tuple(member) && !(member->kind == TY_REFERENCE && is_array_target(me, member->reference.target))) return ty;
+        }
     }
-    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &variable, .len = 1 }, (TyList){ .data = &constraint, .len = 1 });
-    return ty_instantiate(me, ty, mapper);
+    TyMapper const* mapper = target == ty ?
+        ty_mapper_new(me, (TyList){ .data = &variable, .len = 1 }, (TyList){ .data = &constraint, .len = 1 }) :
+        ty_mapper_with(me, ty->anonymous.mapper, variable, constraint);
+    return ty_instantiate(me, target, mapper);
 }
+
+static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) { return apparent_type_of_mapped_at(me, ty, 0); }
 
 static Ty const* apparent_type_inner(Checker* me, Ty const* ty);
 // tsc's getReducedApparentType
