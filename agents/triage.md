@@ -57,3 +57,22 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - `tsgo_skips_configuration()` (harness) still reads module/moduleResolution as written to skip tsgo's removed
   configurations; `@module: none` no longer parses (TS6046), so such configurations run with the default module unless
   they have no baselines (all 7 `@module: none` tests have none).
+
+## From the TS 7.1 delta fan-out, agent A (relation elaboration, 2026-10-09)
+- Duplicate declarations across merges: tsgo's addDuplicateDeclarationError makes a fresh diagnostic per merge (so
+  each starts with "'x' was also declared here.", TS6203) and compactAndMergeRelatedInfos joins them; tttt's scope.c
+  counts the related information already on one diagnostic and says "and here." (TS6204): duplicateIdentifierRelatedSpans1,
+  exportAsNamespace_augment. The merge itself is ported (error.c merge_related_info()).
+- Global diagnostics order: tsgo prints TS5053 before TS2318s (arrayIterationLibES5TargetDifferent(nolib=true,...)),
+  and a file's errors before tsconfig.json's when its path sorts first (pathsValidation5); tttt sorts globals by code
+  and puts tsconfig first. Check what Loc/path tsgo gives option diagnostics.
+- Relation paths that differ from tsgo's (not elaboration rules): conditionalTypes2 (`Extract<Extract<T, Foo>, Bar>`
+  explained through `Extract<T, Bar>`), mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
+  keyofAndIndexedAccessErrors, complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
+  (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
+  mergedDeclarations7 (tsgo: a namespace import of `export =` gives `PassportStatic` not assignable to `Passport`
+  through `use(): this`), inferFromGenericFunctionReturnTypes3 (spurious errors), conditionalTypes1's
+  `Partial<T>[keyof T] & {}` target display.
+- Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
+  (`() => Generator<any, void, unknown>` for a generator referencing itself).
