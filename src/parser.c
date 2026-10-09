@@ -13556,10 +13556,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 // is wrapped again (tsgo's reparser casts whatever the initializer is)
 static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBinding* initializer) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
-    // (Not under a type annotation, which tsc's checkVariableLikeDeclaration checks the initializer against instead:
-    // checkDeclarationInitializer, which looks at `@satisfies`, only infers an unannotated declaration's type)
-    if (initializer->binding.has_explicit_type || jsdoc_find_typed(tags, JSDOC_TAG_TYPE)) return;
-    // (An empty object literal too: tsgo's reparser casts any initializer)
+    // (Under a type annotation, `@type` or written, too, and an empty object literal: tsgo's reparser casts any
+    // initializer)
     if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY) return;
     Expr* value = initialized_binding_value(initializer);
     Expr inner = *value;
@@ -13725,6 +13723,22 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             break;
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            if (statement->tag == STATEMENT_RETURN_EXPR) {
+                // `/** @type {T} */ return e` is `return e as T` (tsgo's reparser casts the expression), which a
+                // function expression is then contextually typed by: not its signature, nor its tags' host
+                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                Expr* e = &statement->expr;
+                if (tag && e->tag != EXPR_IMPLICIT_ANY && !(e->tag == EXPR_AS_TYPE && e->as_type->is_jsdoc)) {
+                    Expr inner = *e;
+                    *e = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
+                        .expr = inner,
+                        .keyword_span = tag->type_span,
+                        .type = jsdoc_take_type(tag, nullptr),
+                        .is_jsdoc = true,
+                    }));
+                    break;
+                }
+            }
             FunctionImpl* function = jsdoc_function_of(&statement->expr);
             if (function) {
                 function->jsdoc_indirect_host = statement->tag == STATEMENT_RETURN_EXPR;

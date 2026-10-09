@@ -2900,17 +2900,20 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         } else if (call->is_extends) {
             report_not_constructor_type(me, callee, expr_outer_span(&call->callable), errs);
         } else if (call->uses_new && other_count) {
-            if (compiler_options()->no_implicit_any) {
-                error_ctx_error_d(errs, call_span, 7009,
-                    "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
-            } else if (!info->new_as_call && !info->tagged_template && !info->jsx) {
-                // Resolved as a call, whose result has to be void if it has a declaration (TS2350); the new is any
-                // either way
+            // Resolved as a call (its arguments checked, tsc's resolveNewExpression), whose result has to be void if
+            // it has a declaration (TS2350) unless noImplicitAny says TS7009 instead; the new is any either way
+            bool no_implicit_any = compiler_options()->no_implicit_any;
+            Candidate chosen = {0};
+            if (!info->new_as_call && !info->tagged_template && !info->jsx) {
                 CallInfo as_call = *info;
-                Candidate chosen = {0};
                 as_call.new_as_call = true;
                 as_call.chosen_out = &chosen;
                 resolve_call(me, callee, &as_call, call_span, errs);
+            }
+            if (no_implicit_any) {
+                error_ctx_error_d(errs, call_span, 7009,
+                    "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
+            } else if (!info->new_as_call && !info->tagged_template && !info->jsx) {
                 Signature const* root = chosen.sig;
                 while (root && !root->function && root->target) root = root->target;
                 if (root && root->function && !(signature_return_type(me, chosen.sig)->flags & TYF_VOID)) {
