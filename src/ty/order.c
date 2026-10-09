@@ -140,24 +140,25 @@ typedef struct TypeName {
     bool named;
     void const* identity;
     csview name;
+    Symbol const* symbol; // The identity when it's a symbol
 } TypeName;
 
 static TypeName type_name(Ty const* t) {
-    if (t->alias) return (TypeName){ true, t->alias, t->alias->name };
+    if (t->alias) return (TypeName){ true, t->alias, t->alias->name, t->alias };
     switch ((TyKind)t->kind) {
         case TY_TYPE_PARAM:
-            if (t->param.symbol) return (TypeName){ true, t->param.symbol, t->param.symbol->name };
-            return (TypeName){ true, t, atom_sv(t->param.name) };
+            if (t->param.symbol) return (TypeName){ true, t->param.symbol, t->param.symbol->name, t->param.symbol };
+            return (TypeName){ true, t, atom_sv(t->param.name), nullptr };
         case TY_STRING_MAPPING:
-            if (t->string_mapping.symbol) return (TypeName){ true, t->string_mapping.symbol, t->string_mapping.symbol->name };
+            if (t->string_mapping.symbol) return (TypeName){ true, t->string_mapping.symbol, t->string_mapping.symbol->name, t->string_mapping.symbol };
             return (TypeName){0};
         case TY_DECLARED:
             switch (t->declared.kind) {
                 case TY_DECLARED_INTERFACE:
                 case TY_DECLARED_CLASS_INSTANCE:
                 case TY_DECLARED_SYNTHETIC:
-                    if (t->declared.symbol) return (TypeName){ true, t->declared.symbol, escaped_name(t->declared.symbol) };
-                    return (TypeName){ true, t, atom_sv(t->declared.name) };
+                    if (t->declared.symbol) return (TypeName){ true, t->declared.symbol, escaped_name(t->declared.symbol), t->declared.symbol };
+                    return (TypeName){ true, t, atom_sv(t->declared.name), nullptr };
                 default:
                     return (TypeName){0};
             }
@@ -427,6 +428,11 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
         } else {
             int c = cmp_sv(na.name, nb.name);
             if (c) return c;
+            // (Distinct same-named declarations stay together, by declaration: tsgo 7.1's compareTypeNames)
+            if (na.symbol && nb.symbol) {
+                c = ty_compare_symbols(na.symbol, nb.symbol);
+                if (c) return c;
+            }
         }
     } else if (ra == RANK_STRING_LITERAL) {
         // (The common tie: a long common prefix)
