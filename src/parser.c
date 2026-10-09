@@ -1416,6 +1416,11 @@ static bool hop_token(Parser* parent) {
             }
 
         case '#':
+            // (`#!` past the start of the file is one Unknown token, tsc's scanner after its TS18026)
+            if (parent->pos[1] == '!') {
+                parent->pos += 2;
+                return true;
+            }
             if (identifier_char_size(parent->pos + 1, true)) {
                 parent->pos++;
                 parse_identifier_or_keyword(parent, nullptr);
@@ -1476,6 +1481,8 @@ typedef struct Tok {
 // The end of the token at c, tsc's scanner's idea of it but cheap: no values
 static const char* tok_scan_end(const char* c) {
     if (!*c) return c;
+    // (`#!` past the start of the file is one Unknown token, tsc's scanner after its TS18026)
+    if (c[0] == '#' && c[1] == '!') return c + 2;
     int size = identifier_char_size(c + (*c == '#'), true);
     if (size) {
         c += size + (*c == '#');
