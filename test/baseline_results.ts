@@ -30598,22 +30598,22 @@ const baselines = {
     'superCallInJSWithWrongBaseTypeArgumentCount1(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallInJSWithWrongBaseTypeArgumentCount1(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallInJSWithWrongBaseTypeArgumentCount2(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallInJSWithWrongBaseTypeArgumentCount2(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallInNonStaticMethod': {
         errors: true,

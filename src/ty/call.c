@@ -2423,11 +2423,11 @@ static Resolution resolve_with_signatures_inner(
                 if (!(info->call && is_super_call(info->call))) {
                     report_type_argument_arity(me, signatures, count, info, errs);
                 } else {
-                    // (getInstantiatedConstructorsForTypeArguments: JavaScript may give fewer than the minimum)
+                    // (JavaScript reports the clause's arity only, TS8026, whatever the count: tsgo's baselines)
                     bool js = expr_outer_span(&info->call->callable).source && expr_outer_span(&info->call->callable).source->is_js;
-                    bool any_constructor = false;
+                    bool any_constructor = js;
                     for (u32 i = 0; i < count && !any_constructor; i++) {
-                        any_constructor = (js || info->type_args.len >= min_type_arguments(me, signatures[i])) &&
+                        any_constructor = info->type_args.len >= min_type_arguments(me, signatures[i]) &&
                             info->type_args.len <= signatures[i]->type_params.len;
                     }
                     if (!any_constructor) {

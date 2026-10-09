@@ -681,3 +681,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `declaration_diagnostics_wanted()`: JavaScript files only get declaration diagnostics with isolatedDeclarations
   (TS9010/TS9013...). tsgo reports TS4xxx for JS declaration emit too, but the walk doesn't know JSDoc namespaces/
   typedefs (jsDeclarationsImportAliasExposedWithinNamespace got a spurious TS4078 with JS enabled).
+- `resolve_with_signatures()`'s `super(...)` TS2346: JavaScript never reports it (superCallInJSWithWrongBaseTypeArgumentCount*
+  say so), though tsgo's resolveCallExpression filters the base constructors by the clause's type argument count
+  without a JS exemption. Not understood why tsgo's resolveCall reports nothing there.

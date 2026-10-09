@@ -807,7 +807,9 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
         for (u32 j = 0; j < params.len; j++) {
             if (!ty_param_default(me, params.data[j])) min = j + 1;
         }
-        if ((is_js || count >= min) && count <= params.len) return true;
+        // (In JavaScript a class reference's wrong arity is reported and the reference made anyway: tsgo's
+        // getTypeFromClassOrInterfaceReference only returns errorType for TypeScript)
+        if (is_js || (count >= min && count <= params.len)) return true;
     }
     return false;
 }
