@@ -134,3 +134,22 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   instrumented tsgo (pseudoTypeEquivalentToType false under the signature's mapper). tttt's ty_instantiate() returns
   the method's type unchanged for a `this`-only mapper that it doesn't mention, so ty_display can't tell; a display-only
   emulation needs the access path. Making the instantiation real is a checker identity change (perf, caches).
+- Left from agent B's 7.1 diagnostic-code fan-out (todo entry 7):
+  - Object literal method `this` (thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement,
+    checkingObjectWithThisInNamePositionNoCrash): 6.0's TS7023 where tsgo has none. tsgo seems to know a literal's
+    member names without resolving a method's return type (`this.spaaace` is TS2339): lazy member types, plan-sized.
+  - A merged property+accessor (now one symbol, TS 7 excludes) still has 6.0's type: objectLiteralErrors,
+    callSignaturesWithParameterInitializers2 types; duplicateClassElements, propertyAndAccessorMerging symbols (an
+    interface property joining a class/interface accessor across declarations); symbolProperty44 (late-bound name
+    vs method).
+  - TS5114/TS5115: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the instantiation depth
+    limit in tttt; recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502).
+  - exportAsNamespaceConflict: the `export =` side of an `export as namespace` cycle doesn't go through
+    symbol_resolve_alias's stack (one TS2303 of two).
+  - augmentExportEquals2: tsgo lets `declare module "./file1"` augment an `export = foo` function (no TS2671/TS2503).
+  - mappedTypeProperties: `[P in T]: any` in an interface or class declaration is only TS7061 in tsgo (no TS2304/TS2693
+    for the key), but the same in a class expression is checked fully; why the class expression differs is unclear.
+  - shebangError: `#!` not at the file's start is one Unknown token of two characters in tsgo's scanner (tttt scans
+    the `!`: TS2872, TS2362 one column early).
+  - arrayFakeFlatNoCrashInferenceDeclarations: TS5088 from a union's circularity elision
+    (typeToTypeNodeOrCircularityElision), not ported.
