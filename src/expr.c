@@ -1036,7 +1036,12 @@ void expr_drop(Expr* me) {
             free(my ternary);
             break;
 
-        case EXPR_CALL:
+        case EXPR_CALL: {
+            // (An import call parsed by an attempt that failed: its module ref, which stays, mustn't point at it)
+            Expr const* callee = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
+            ModuleRef* ref = callee->tag == EXPR_IDENTIFIER ? identifier_module_ref(&callee->identifier) : nullptr;
+            if (ref && ref->import_call == my call) ref->import_call = nullptr;
+        }
             expr_drop(&my call->callable);
             vec_expr_drop(&my call->args);
             free(my call->unique_symbol);
