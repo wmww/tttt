@@ -9,7 +9,7 @@ scripts/failstats.py --no-run -n "${1:-150}" 2>&1 | sed -n '/missing diagnostics
     if ! grep -qx "${c#TS}" /tmp/src_codes.txt; then echo "$n $t $c"; fi
 done | python3 -c '
 import json, sys
-d = json.load(open("thirdparty/tsc/src/compiler/diagnosticMessages.json"))
+d = json.load(open("thirdparty/typescript/tsc/internal/diagnostics/diagnosticMessages.json"))
 m = {v["code"]: k for k, v in d.items()}
 for line in sys.stdin:
     n, t, c = line.split()

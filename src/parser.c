@@ -1117,8 +1117,7 @@ static int identifier_char_size_slow(const char* c, bool start) {
         if (size < 2) return 0;
         code = utf8_code_point(c, size);
     }
-    bool esnext = compiler_options()->target >= SCRIPT_TARGET_ES2015;
-    return (start ? unicode_is_identifier_start(code, esnext) : unicode_is_identifier_part(code, esnext)) ? size : 0;
+    return (start ? unicode_is_identifier_start(code) : unicode_is_identifier_part(code)) ? size : 0;
 }
 
 // A character at c that starts no token (tsc's scanner: TS1127 Invalid character): its length, else 0

@@ -800,8 +800,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `may_have_readonly_member` (check.c): a perf gate before writing through a union of keys, exact where it answers
   false, conservative (true) for unions, intersections, tuples and callables. (permanent: perf, not an approximation)
 - The CLI is `tsc --noEmit` by default (`run()` in main.c adds `--noEmit true` unless the command line names noEmit;
-  not for `-b`, which is tsc -b's and emits). The sweeps' caches in `test/sweep/`, `test/sourcesweep/` are still
-  tsc 6 programs *without* noEmit (emit-only option errors TS5011/5055/5056 included) until plan 54 stage 3
-  regenerates them through `tttt-oracle`; `scenarios.py` drops those codes (`EMIT_ONLY_CODES`) from tsc's expected
-  output of emitting commands.
-- `TTTT_TYPESCRIPT_VERSION` (main.c, `--version`) is hand-written: "6.0.3", the oracle's. Bump with the oracle.
+  not for `-b`, which is tsc -b's and emits). `scenarios.py` drops the emit-only codes (`EMIT_ONLY_CODES`:
+  TS5011/5055/5056) from tsgo's expected output of emitting commands.
+- `TTTT_TYPESCRIPT_VERSION` (main.c, `--version`) is hand-written: "7.1.0-dev", what the pinned tsgo prints. Bump
+  with the oracle.

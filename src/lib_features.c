@@ -1,4 +1,4 @@
-// Generated from tsc's getScriptTargetFeatures (src/compiler/utilities.ts) by lib_features.py: which lib adds
+// Generated from tsgo's getFeatureMap (internal/checker/utilities.go) by lib_features.py: which lib adds
 // which member of which global type. Regenerate rather than edit
 #include "lib_features.h"
 
@@ -9,11 +9,13 @@ static LibFeature const lib_features[] = {
     { "Array", "es2022", (char const* const[]){ "at" }, 1 },
     { "Array", "es2023", (char const* const[]){ "findLastIndex", "findLast", "toReversed", "toSorted", "toSpliced", "with" }, 6 },
     { "Iterator", "es2015", nullptr, 0 },
+    { "IteratorConstructor", "es2026", (char const* const[]){ "concat" }, 1 },
+    { "RawJSON", "es2026", nullptr, 0 },
+    { "JSON", "es2026", (char const* const[]){ "isRawJSON", "rawJSON" }, 2 },
     { "AsyncIterator", "es2015", nullptr, 0 },
     { "ArrayBuffer", "es2024", (char const* const[]){ "maxByteLength", "resizable", "resize", "detached", "transfer", "transferToFixedLength" }, 6 },
     { "Atomics", "es2017", (char const* const[]){ "add", "and", "compareExchange", "exchange", "isLockFree", "load", "or", "store", "sub", "wait", "notify", "xor" }, 12 },
     { "Atomics", "es2024", (char const* const[]){ "waitAsync" }, 1 },
-    { "Atomics", "esnext", (char const* const[]){ "pause" }, 1 },
     { "SharedArrayBuffer", "es2017", (char const* const[]){ "byteLength", "slice" }, 2 },
     { "SharedArrayBuffer", "es2024", (char const* const[]){ "growable", "maxByteLength", "grow" }, 3 },
     { "AsyncIterable", "es2018", nullptr, 0 },
@@ -26,7 +28,7 @@ static LibFeature const lib_features[] = {
     { "RegExpConstructor", "es2025", (char const* const[]){ "escape" }, 1 },
     { "Reflect", "es2015", (char const* const[]){ "apply", "construct", "defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "getPrototypeOf", "has", "isExtensible", "ownKeys", "preventExtensions", "set", "setPrototypeOf" }, 13 },
     { "ArrayConstructor", "es2015", (char const* const[]){ "from", "of" }, 2 },
-    { "ArrayConstructor", "esnext", (char const* const[]){ "fromAsync" }, 1 },
+    { "ArrayConstructor", "es2026", (char const* const[]){ "fromAsync" }, 1 },
     { "ObjectConstructor", "es2015", (char const* const[]){ "assign", "getOwnPropertySymbols", "keys", "is", "setPrototypeOf" }, 5 },
     { "ObjectConstructor", "es2017", (char const* const[]){ "values", "entries", "getOwnPropertyDescriptors" }, 3 },
     { "ObjectConstructor", "es2019", (char const* const[]){ "fromEntries" }, 1 },
@@ -35,8 +37,9 @@ static LibFeature const lib_features[] = {
     { "NumberConstructor", "es2015", (char const* const[]){ "isFinite", "isInteger", "isNaN", "isSafeInteger", "parseFloat", "parseInt" }, 6 },
     { "Math", "es2015", (char const* const[]){ "clz32", "imul", "sign", "log10", "log2", "log1p", "expm1", "cosh", "sinh", "tanh", "acosh", "asinh", "atanh", "hypot", "trunc", "fround", "cbrt" }, 17 },
     { "Math", "es2025", (char const* const[]){ "f16round" }, 1 },
+    { "Math", "es2026", (char const* const[]){ "sumPrecise" }, 1 },
     { "Map", "es2015", (char const* const[]){ "entries", "keys", "values" }, 3 },
-    { "Map", "esnext", (char const* const[]){ "getOrInsert", "getOrInsertComputed" }, 2 },
+    { "Map", "es2026", (char const* const[]){ "getOrInsert", "getOrInsertComputed" }, 2 },
     { "MapConstructor", "es2024", (char const* const[]){ "groupBy" }, 1 },
     { "Set", "es2015", (char const* const[]){ "entries", "keys", "values" }, 3 },
     { "Set", "es2025", (char const* const[]){ "union", "intersection", "difference", "symmetricDifference", "isSubsetOf", "isSupersetOf", "isDisjointFrom" }, 7 },
@@ -47,9 +50,9 @@ static LibFeature const lib_features[] = {
     { "PromiseConstructor", "es2025", (char const* const[]){ "try" }, 1 },
     { "Symbol", "es2015", (char const* const[]){ "for", "keyFor" }, 2 },
     { "Symbol", "es2019", (char const* const[]){ "description" }, 1 },
-    { "WeakMap", "es2015", (char const* const[]){ "entries", "keys", "values" }, 3 },
-    { "WeakMap", "esnext", (char const* const[]){ "getOrInsert", "getOrInsertComputed" }, 2 },
-    { "WeakSet", "es2015", (char const* const[]){ "entries", "keys", "values" }, 3 },
+    { "WeakMap", "es2015", nullptr, 0 },
+    { "WeakMap", "es2026", (char const* const[]){ "getOrInsert", "getOrInsertComputed" }, 2 },
+    { "WeakSet", "es2015", nullptr, 0 },
     { "String", "es2015", (char const* const[]){ "codePointAt", "includes", "endsWith", "normalize", "repeat", "startsWith", "anchor", "big", "blink", "bold", "fixed", "fontcolor", "fontsize", "italics", "link", "small", "strike", "sub", "sup" }, 19 },
     { "String", "es2017", (char const* const[]){ "padStart", "padEnd" }, 2 },
     { "String", "es2019", (char const* const[]){ "trimStart", "trimEnd", "trimLeft", "trimRight" }, 4 },
@@ -79,7 +82,7 @@ static LibFeature const lib_features[] = {
     { "Int8Array", "es2023", (char const* const[]){ "findLastIndex", "findLast", "toReversed", "toSorted", "toSpliced", "with" }, 6 },
     { "Uint8Array", "es2022", (char const* const[]){ "at" }, 1 },
     { "Uint8Array", "es2023", (char const* const[]){ "findLastIndex", "findLast", "toReversed", "toSorted", "toSpliced", "with" }, 6 },
-    { "Uint8Array", "esnext", (char const* const[]){ "toBase64", "setFromBase64", "toHex", "setFromHex" }, 4 },
+    { "Uint8Array", "es2026", (char const* const[]){ "toBase64", "setFromBase64", "toHex", "setFromHex" }, 4 },
     { "Uint8ClampedArray", "es2022", (char const* const[]){ "at" }, 1 },
     { "Uint8ClampedArray", "es2023", (char const* const[]){ "findLastIndex", "findLast", "toReversed", "toSorted", "toSpliced", "with" }, 6 },
     { "Int16Array", "es2022", (char const* const[]){ "at" }, 1 },
@@ -102,11 +105,11 @@ static LibFeature const lib_features[] = {
     { "BigUint64Array", "es2022", (char const* const[]){ "at" }, 1 },
     { "BigUint64Array", "es2023", (char const* const[]){ "findLastIndex", "findLast", "toReversed", "toSorted", "toSpliced", "with" }, 6 },
     { "Error", "es2022", (char const* const[]){ "cause" }, 1 },
-    { "ErrorConstructor", "esnext", (char const* const[]){ "isError" }, 1 },
-    { "Uint8ArrayConstructor", "esnext", (char const* const[]){ "fromBase64", "fromHex" }, 2 },
-    { "Date", "esnext", (char const* const[]){ "toTemporalInstant" }, 1 },
+    { "ErrorConstructor", "es2026", (char const* const[]){ "isError" }, 1 },
+    { "Uint8ArrayConstructor", "es2026", (char const* const[]){ "fromBase64", "fromHex" }, 2 },
     { "DisposableStack", "esnext", nullptr, 0 },
     { "AsyncDisposableStack", "esnext", nullptr, 0 },
+    { "Date", "esnext", (char const* const[]){ "toTemporalInstant" }, 1 },
 };
 
 char const* lib_feature_of_global(csview name) {

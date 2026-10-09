@@ -14,8 +14,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 CORPORA = ['tsc', 'tsc-src', 'type-fest', 'valibot', 'react', 'nest', 'webpack', 'zod', 'zod-root', 'xstate', 'drizzle',
            'vue', 'effect', 'vscode', 'excalidraw', 'tanstack-router', 'typescript-eslint']
-# What tsc itself reports there (the rest are clean)
-EXPECTED = {'zod-root': 53, 'effect': 3}  # effect: plan 19's known TS2578
 
 def run(cmd, timeout=1800):
     p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
@@ -37,11 +35,13 @@ def corpora():
     rows = []
     for c in CORPORA:
         out = run(['scripts/realworld.py', '--corpus', c, '--no-build'])
-        m = re.search(r'(\d+) diagnostics', out)
-        n = int(m.group(1)) if m else None
+        # (Against tsc's cached diagnostics on the corpus: spurious/missing, `!` unless both are 0)
+        m = re.search(r'against tsc: (\d+) spurious, (\d+) missing', out)
         crash = '' if re.search(r'exit [012],', out) else ' (' + (out.splitlines() or ['?'])[0][:40] + ')'
-        rows.append(f'{c} {n if n is not None else "?"}{crash}' + ('' if n == EXPECTED.get(c, 0) else ' !'))
-    print('corpora: ' + ', '.join(rows), flush=True)
+        stale = ' STALE' if 'STALE cache' in out else ''
+        rows.append(f'{c} {m.group(1) + "/" + m.group(2) if m else "?"}{crash}{stale}' +
+                    ('' if m and m.group(1) == m.group(2) == '0' and not crash else ' !'))
+    print('corpora (spurious/missing against tsc): ' + ', '.join(rows), flush=True)
 
 def sweep():
     out = run(['scripts/sweep.py', '--no-build', '-n', '5'])

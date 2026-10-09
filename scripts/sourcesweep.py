@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """The source sweep (plan 52): tttt on ~150 real TypeScript repositories (test/sourcesweep/repos.txt, fetched and
 installed by thirdparty/ensure-sources.sh), every tsconfig.json in each checked with `-p`, compared with what tsc
-reports for it. tsc's verdicts are cached in test/sourcesweep/tsc.jsonl.gz (regenerate with --tsc, ~1 hour on 4
-cores, after changing the manifest). Most projects aren't clean under tsc (test configs without the runner's types,
+reports for it. tsc's verdicts are cached in test/sourcesweep/tsc.jsonl.gz (regenerate with --tsc, ~12 minutes on 4
+cores, after changing the manifest or the oracle's pin). Most projects aren't clean under tsc (test configs without the runner's types,
 unbuilt references, fixtures): the oracle is tsc's output, not cleanliness. A crash, hang or memory runaway is listed
 first, then the diagnostics tttt gets wrong ranked by root cause across *repositories*, then projects: code and message
 shape (quoted parts elided), and for a diagnostic in node_modules the dependency it is in.

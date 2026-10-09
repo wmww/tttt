@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Regenerates lib_features.c from tsc's getScriptTargetFeatures (thirdparty/tsc/src/compiler/utilities.ts).
+"""Regenerates lib_features.c from tsgo's getFeatureMap (thirdparty/typescript/tsc/internal/checker/utilities.go).
 Run from the repository root: python3 src/lib_features.py"""
 import re
-src = open('thirdparty/tsc/src/compiler/utilities.ts').read()
-start = src.index('export const getScriptTargetFeatures')
-txt = src[start:]
+src = open('thirdparty/typescript/tsc/internal/checker/utilities.go').read()
+txt = src[src.index('var getFeatureMap = '):]
+txt = txt[:txt.index('\n})')]
 out = []
-for m in re.finditer(r'^        (\w+): new Map\(Object\.entries\(\{(.*?)^        \}\)\),', txt, re.M | re.S):
+for m in re.finditer(r'^\t\t"(\w+)": \{\n(.*?)^\t\t\},', txt, re.M | re.S):
     t, body = m.group(1), m.group(2)
-    for lm in re.finditer(r'^            (\w+): (\[(.*?)\]|emptyArray)', body, re.M | re.S):
-        props = re.findall(r'"([^"]*)"', lm.group(3) or '')
-        out.append((t, lm.group(1), props))
-lines = ["// Generated from tsc's getScriptTargetFeatures (src/compiler/utilities.ts) by lib_features.py: which lib adds",
+    for lm in re.finditer(r'\{lib: "(\w+)", props: \[\]string\{(.*?)\}\}', body, re.S):
+        out.append((t, lm.group(1), re.findall(r'"([^"]*)"', lm.group(2))))
+lines = ["// Generated from tsgo's getFeatureMap (internal/checker/utilities.go) by lib_features.py: which lib adds",
          "// which member of which global type. Regenerate rather than edit",
          '#include "lib_features.h"', '', 'static LibFeature const lib_features[] = {']
 for t, lib, props in out:

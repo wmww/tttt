@@ -11,8 +11,6 @@ function download_all {
   # Used by the diffapp frontend
   download_javascript_package diff 5.2.0 dist/diff.js LICENSE
 
-  rm -rf tsc
-  ./ensure-tsc.sh
   ./ensure-typescript.sh
 }
 

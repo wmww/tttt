@@ -88,7 +88,7 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
 
 ## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
 Measure with `scripts/instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
-a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/tsc` and `thirdparty/corpora`, `meson setup`
+a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/{typescript,typescript-gopath,go,corpora}`, `meson setup`
 once, then `git checkout -f X && ninja`) and running `scripts/instrcount.sh --bin`. Keyed caches in `my links`
 (`intern_get`/`intern_slot` with a `KEY_*`) are the cheap fix for "the same computation again": the session's wins
 were mostly tsc caches tttt lacked (two-member unions, intersections by members, assignment-reduced types).
@@ -145,7 +145,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
   four sites; Unmeasurable separate). Probe: zod with its `in`/`out` annotations stripped (sed over a /tmp copy of
   `packages/zod/src`, `.configs/` and `vitest.config.ts` alongside) costs 4.65 G vs 4.33 annotated (was 7.8). To compare
-  variances with tsc, patch a copy of `thirdparty/tsc/lib` (`_tsc.js`, after `links.variances = variances;` in
+  variances with tsc, (tsc 6 era: patched a copy of `_tsc.js`; now a test/oracle overlay of tsgo's checker, after `links.variances = variances;` in
   getVariancesWorker print `symbol.escapedName` and the flags; tsc's Unmeasurable is 8, Unreliable 16, tttt's
   `TTTT_DUMP_VARIANCES` the other way round). ~25 of ~250 zod variances still differ in reliability, both ways
   (ordering of cached comparisons; `ZodTransform`, `ZodTuple`: tsc unreliable, tttt not).

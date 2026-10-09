@@ -653,7 +653,7 @@ static bool is_identifier_name(csview sv) {
         if ((unsigned char)c >= 0x80) {
             bool first = i == 0;
             u32 code = utf8_next(sv, &i);
-            if (!(first ? unicode_is_identifier_start(code, true) : unicode_is_identifier_part(code, true))) return false;
+            if (!(first ? unicode_is_identifier_start(code) : unicode_is_identifier_part(code))) return false;
             continue;
         }
         bool valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||

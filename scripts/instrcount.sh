@@ -8,7 +8,7 @@ cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 BIN=./release/tttt
 if test "${1:-}" = --bin; then BIN="$2"; shift 2; else ninja -C release > /dev/null; fi
 declare -A C=(
-    [tsc]=thirdparty/tsc/src/compiler
+    [tsc]=thirdparty/corpora/TypeScript6/src/compiler
     [type-fest]=thirdparty/corpora/type-fest
     [valibot]=thirdparty/corpora/valibot/library/tsconfig.corpus.json
     [react]=thirdparty/corpora/bulletproof-react/apps/react-vite/tsconfig.corpus.json

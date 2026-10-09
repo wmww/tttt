@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetches the second-oracle corpora (plan 17) into thirdparty/corpora/ (not committed, like thirdparty/tsc): modern,
+# Fetches the second-oracle corpora (plan 17) into thirdparty/corpora/ (not committed, like thirdparty/typescript): modern,
 # type-heavy TypeScript projects that are clean under tsc 5.8 with their own tsconfig. Each is a pinned commit plus
 # its devDependencies from the lockfile committed in corpora-locks/ (only their .d.ts files matter; install scripts
 # are skipped). `scripts/realworld.py --corpus NAME` and `scripts/bench.sh` use them.
@@ -143,12 +143,17 @@ CORPORA=(
     # createFileRoute() chains, Link/navigate `to` as template-literal unions over the whole tree, Register module
     # augmentation), checked through tsconfig.corpus.json from the overlay (react-router's own tsconfig, `types:
     # ["node"]`, limited to src + tests) against router-core's and history's declarations as upstream does
-    # (corpora-locks/tanstack-router.postinstall.sh builds them with thirdparty/tsc through their own tsconfigs:
+    # (corpora-locks/tanstack-router.postinstall.sh builds them with the oracle's tsc through their own tsconfigs:
     # checking router-core's sources inside react-router's program sees react-router's augmentations of its interfaces
     # and fails). moduleResolution bundler, noUncheckedIndexedAccess, checkJs. A pnpm workspace: the dependencies are
     # the type dependencies of react-router, router-core and the root at pnpm-lock.yaml's versions, from
     # corpora-locks/tanstack-router.package.json
     "tanstack-router https://github.com/TanStack/router.git 30fc108a5ebbc4eadd48439282bf1c27d55fbb94 . workspace:packages/*"
+    # TypeScript 6's own sources (commit 4d4f005c, branch tsgo-port, 2026-06-29: v6.0.3 plus stableTypeOrdering on by
+    # default, what tsgo 7.0.2 pinned; the test oracle until plan 54 moved it to tsgo 7.1): realworld's `tsc`
+    # (src/compiler, 193k lines) and `tsc-src` (src, a solution config of 13 composite projects, -b). The biggest pure-TS
+    # project we have, the first corpus and bench.sh's. Clean under tsc 6 and tsgo 7.1; the lock is upstream's
+    "TypeScript6 https://github.com/microsoft/TypeScript.git 4d4f005c8541e0255a9d8791205fdce326e462bc ."
     # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (scripts/sweep.py), every types/NAME with its own
     # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
     # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need

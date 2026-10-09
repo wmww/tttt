@@ -18,7 +18,7 @@ import argparse, collections, concurrent.futures, gzip, json, os, re, resource, 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from realworld import CORPORA, BUILD_CORPORA  # noqa: E402
+from realworld import CORPORA, BUILD_CORPORA, pin  # noqa: E402
 from sweep import lib_key  # noqa: E402
 import tscformat  # noqa: E402
 
@@ -39,18 +39,15 @@ FLAGS = {
     'unused': ['--noUnusedLocals', '--noUnusedParameters'],
     # The non-strict modes no corpus runs: the strict family off, each spelled out (a tsconfig's explicit
     # strictNullChecks would survive --strict false), and the options that need strictNullChecks (TS5052, which stops
-    # tsc before checking)
+    # tsc before checking). Not alwaysStrict: 7.0 removed `false` (TS5108, which stops tsc too)
     'sloppy': ['--exactOptionalPropertyTypes', 'false', '--strict', 'false', '--strictNullChecks', 'false', '--noImplicitAny', 'false', '--strictFunctionTypes',
                'false', '--strictBindCallApply', 'false', '--strictPropertyInitialization', 'false', '--noImplicitThis',
-               'false', '--useUnknownInCatchVariables', 'false', '--alwaysStrict', 'false',
-               '--strictBuiltinIteratorReturn', 'false', '--ignoreDeprecations', '6.0'],
+               'false', '--useUnknownInCatchVariables', 'false', '--strictBuiltinIteratorReturn', 'false'],
     'nosnc': ['--strictNullChecks', 'false', '--exactOptionalPropertyTypes', 'false', '--strictPropertyInitialization',
               'false'],
     'nonia': ['--noImplicitAny', 'false'],
     'nosft': ['--strictFunctionTypes', 'false'],
-    # Deprecated in 6.0 (TS5107 alone, before any semantic diagnostic, without ignoreDeprecations), like sloppy's
-    # --alwaysStrict false
-    'es5': ['--target', 'es5', '--ignoreDeprecations', '6.0'],
+    # (No es5 cell: 7.0 removed the target)
     'es2015': ['--target', 'es2015'],
 }
 TSC_DIAG = re.compile(r'(.*)\((\d+),\d+\): error TS(\d+): (.*)')
@@ -75,16 +72,6 @@ def corpus_cwd(corpus):
                 cwd = target[:-len(prefix) - 1]
             break
     return cwd, os.path.relpath(real, cwd)
-
-
-def pin(corpus):
-    """What tsc's cache is valid for: the corpus checkout's commit (tsc's own sources: its version)"""
-    if corpus in ('tsc', 'tsc-src'):
-        return 'tsc ' + json.load(open(os.path.join(ROOT, 'thirdparty/tsc/package.json')))['version']
-    d = os.path.join(ROOT, CORPORA[corpus])
-    while not os.path.exists(os.path.join(d, '.git')):
-        d = os.path.dirname(d)
-    return subprocess.run(['git', '-C', d, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
 
 
 def cache_path(corpus, flag):
@@ -199,7 +186,7 @@ def main():
     corpora = [c for c in FLIP_CORPORA if re.fullmatch(args.corpus, c)]
     flags = [f for f in FLAGS if re.fullmatch(args.flag, f)]
     if any(c != 'tsc' for c in corpora):
-        subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh'), *(CORPORA[c].split('/')[2] for c in corpora if c != 'tsc')], check=True)
+        subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh'), *(CORPORA[c].split('/')[2] for c in corpora)], check=True)
     cells = [(c, f) for c in corpora for f in flags]
 
     if args.tsc:

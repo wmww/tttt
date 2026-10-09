@@ -3,7 +3,6 @@ release
 .cache
 scratchpad.ts
 vgcore.*
-thirdparty/tsc
 thirdparty/corpora
 __pycache__
 thirdparty/sources

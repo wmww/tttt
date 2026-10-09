@@ -5,6 +5,7 @@
 //
 //	tttt-oracle [--flag...]           {"project", "ms", "status", "diags": [[file, line, col, code], ...]}
 //	tttt-oracle --expect [--flag...]  {"project", "ms", "asserts": [[file, line, col, endLine, endCol, kind, actual, expected], ...]}
+//	tttt-oracle --type-at PROJECT FILE LINE|* NAME   (no stdin: `line name : type` per identifier, scripts/tsctypeat.sh)
 //
 // The diagnostics are exactly what `tsc -p DIR --noEmit --pretty false --singleThreaded [--flag...]` prints (tsgo's
 // own command line runs in-process; its output is parsed back): tttt is a drop-in `tsc --noEmit`. Paths are relative
@@ -109,10 +110,18 @@ func diagnose(dir string, flags []string) map[string]any {
 func program(s *sys, dir string, flags []string) *compiler.Program {
 	commandLine := tsoptions.ParseCommandLine(append([]string{"-p", dir, "--noEmit", "--singleThreaded"}, flags...), s.fs, s.cwd)
 	if len(commandLine.Errors) > 0 {
+		if os.Getenv("TTTT_ORACLE_DEBUG") != "" {
+			fmt.Fprintln(os.Stderr, "command line:", commandLine.Errors[0].String())
+		}
 		return nil
 	}
-	directory := tspath.RootedDirectoryPathFromPath(commandLine.CompilerOptions().Project)
-	configFileName := directory.ResolveFile("tsconfig.json")
+	project := commandLine.CompilerOptions().Project
+	var configFileName tspath.RootedFilePath
+	if s.fs.FileExists(tspath.RootedFilePathFromPath(project)) { // (-p a tsconfig file rather than its directory)
+		configFileName = tspath.RootedFilePathFromPath(project)
+	} else {
+		configFileName = tspath.RootedDirectoryPathFromPath(project).ResolveFile("tsconfig.json")
+	}
 	raw := commandLine.Raw.(*collections.OrderedMap[string, any])
 	wrapped := &collections.OrderedMap[string, any]{}
 	wrapped.Set("compilerOptions", raw)
@@ -120,6 +129,9 @@ func program(s *sys, dir string, flags []string) *compiler.Program {
 	config, errors := tsoptions.GetParsedCommandLineOfConfigFilePath(configFileName,
 		s.fs.CaseSensitivity().PathKey(tspath.RootedPath(configFileName)), commandLine.CompilerOptions(), wrapped, s.fs, cache)
 	if len(errors) > 0 {
+		if os.Getenv("TTTT_ORACLE_DEBUG") != "" {
+			fmt.Fprintln(os.Stderr, "config:", errors[0].String())
+		}
 		return nil
 	}
 	host := compiler.NewCachedFSCompilerHost(s.fs, s.DefaultLibraryPath(), cache, nil, nil)
@@ -217,7 +229,47 @@ func expectTypes(dir string, flags []string) map[string]any {
 	return map[string]any{"project": dir, "ms": time.Since(start).Milliseconds(), "asserts": out}
 }
 
+// What an identifier's type is inside a project (scripts/tsctypeat.sh): each identifier NAME on line LINE ("*": every
+// line) of FILE (relative to the project directory, or to a tsconfig's), as `line name : type`, after checking the file
+func typeAt(dir, file, line, name string) {
+	s := newSys()
+	p := program(s, dir, nil)
+	if p == nil {
+		fmt.Fprintln(os.Stderr, "the project has option errors")
+		os.Exit(1)
+	}
+	base := tspath.ToRootedDirectoryPath(dir, s.cwd)
+	if strings.HasSuffix(dir, ".json") { // (a tsconfig file: FILE is relative to its directory)
+		base = tspath.ToRootedFilePath(dir, s.cwd).Directory()
+	}
+	source := p.GetSourceFile(tspath.ToRootedFilePath(file, base))
+	if source == nil {
+		fmt.Fprintln(os.Stderr, file, "isn't part of the program")
+		os.Exit(1)
+	}
+	ctx := context.Background()
+	c, done := p.GetTypeChecker(ctx)
+	defer done()
+	c.GetDiagnostics(ctx, source)
+	var visit func(node *ast.Node) bool
+	visit = func(node *ast.Node) bool {
+		if ast.IsIdentifier(node) && node.Text() == name {
+			at, _ := scanner.GetECMALineAndUTF16CharacterOfPosition(source, scanner.GetTokenPosOfNode(node, source, false))
+			if line == "*" || strconv.Itoa(at+1) == line {
+				fmt.Println(at+1, name, ":", c.TypeToString(c.GetTypeAtLocation(node)))
+			}
+		}
+		node.ForEachChild(visit)
+		return false
+	}
+	source.AsNode().ForEachChild(visit)
+}
+
 func main() {
+	if len(os.Args) == 6 && os.Args[1] == "--type-at" {
+		typeAt(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
+		return
+	}
 	expect := false
 	var flags []string
 	for _, a := range os.Args[1:] {

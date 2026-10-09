@@ -120,12 +120,12 @@ static i32 hex_value(i32 ch) { return is_digit(ch) ? ch - '0' : (ch | 0x20) - 'a
 
 static bool is_identifier_start(Rx const* me, i32 ch) {
     return is_ascii_letter(ch) || ch == '$' || ch == '_' ||
-        (ch > 0x7F && unicode_is_identifier_start((u32)ch, my target >= SCRIPT_TARGET_ES2015));
+        (ch > 0x7F && unicode_is_identifier_start((u32)ch));
 }
 
 static bool is_identifier_part(Rx const* me, i32 ch) {
     return is_ascii_letter(ch) || is_digit(ch) || ch == '$' || ch == '_' ||
-        (ch > 0x7F && unicode_is_identifier_part((u32)ch, my target >= SCRIPT_TARGET_ES2015));
+        (ch > 0x7F && unicode_is_identifier_part((u32)ch));
 }
 
 static RxStr str_empty(void) { return (RxStr){ 0, 0 }; }

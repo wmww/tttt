@@ -109,7 +109,7 @@ Result: 11860 / 13571 (87.4%), 10 s. Done as written below; module `none` is ski
 Result: `test/oracle/README.md` (probe + `tttt-oracle`, both validated as below); CLI semantics everywhere, so tttt's
 exit codes moved to 7.1's too (2 whenever diagnostics are printed, 1 only for a noEmitOnError-skipped emit). Left for
 stage 3: `sweep.EMIT_ONLY_CODES` (filters 6.0's cached emit-only codes: delete with the regenerated caches; new cache
-entries have a `status`), `scripts/tsctypeat.js`, `scripts/tscinstcount.js`, `test/probes/sweep/*/*.js` (tsc 6's
+entries have a `status`), `scripts/tsctypeat.sh`, `scripts/tscinstcount.js`, `test/probes/sweep/*/*.js` (tsc 6's
 `typescript.js`). `sweep.py --tsc` etc. now run tsgo through `tttt-oracle` (DT: ~60 ms a package).
 - `test/oracle/` (Go, our code): the probe test (arbitrary-file baselines) and `tttt-oracle` (diagnostics per
   project, `$ExpectType`), built by `ensure-typescript.sh` with an overlay map generated from `test/oracle/`.
@@ -122,7 +122,16 @@ entries have a `status`), `scripts/tsctypeat.js`, `scripts/tscinstcount.js`, `te
 - Validate: the probe reproduces the checked-in baselines for 50 random suite tests byte for byte; `tttt-oracle`'s
   diagnostics equal `built/tsc -p P --noEmit --pretty false` on 30 DT packages and 30 source sweep projects.
 
-### Stage 3: regenerate every cache (1 session)
+### Stage 3: regenerate every cache (1 session) — done 2026-10-09
+Result: every cache is tsgo 7.1's (numbers in measurements.md), `thirdparty/tsc` deleted, TypeScript 6 is the
+`TypeScript6` corpus (`ensure-corpora.sh`, its postinstall generates the diagnostics map). Beyond the plan: the corpora
+compare against tsgo's cached diagnostics (`test/corpora.tsc.jsonl`, `realworld.py --tsc`; `-b` corpora build in place
+and the outputs are deleted) instead of hand-kept counts; `scripts/tsctypeat.sh` is `tttt-oracle --type-at`;
+`tscinstcount.js` deleted (triage.md: port as an overlay when needed); the ES5 identifier tables are gone
+(`unicode_is_identifier_*` take no target: tsgo has one table); bench.sh had lost its `measure()` in 74ed7088 and runs
+the pinned tsgo now; flagflip's es5 cell is gone and sloppy no longer passes `--alwaysStrict false` (TS5108 in 7.0).
+What the new caches show for the next stages: the source sweep fell to 2242 / 3363 on 7.0's removed options (stage 4),
+the DT sweep's, corpora's and flagflip's remaining differences are 7.x checker deltas (stage 5+).
 - `test/sweep/` (DT diagnostics, nuia/eopt flag variants, `$ExpectType`), `test/sourcesweep/`, `test/flagflip/`,
   mutate's cache, the corpora's expectations: `realworld.py` corpora that tsgo 7.1 isn't clean on get their
   expected diagnostics recorded or are re-pinned (webpack's JS: 602 under 7.0.2; drizzle 16, vue 10, effect 3 are

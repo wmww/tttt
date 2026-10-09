@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The breadth sweep (plan 44): tttt on every DefinitelyTyped package (thirdparty/ensure-corpora.sh pins the checkout),
 each `-p types/NAME` with its own tsconfig, compared with what tsc reports for it. tsc's verdicts are cached in
-test/sweep/DefinitelyTyped.tsc.jsonl (regenerate with --tsc, ~40 minutes on 4 cores, after changing the pin); they're
+test/sweep/DefinitelyTyped.tsc.jsonl (regenerate with --tsc after changing a pin: tsgo, ~10 minutes on 4 cores); they're
 compared by (file, line, code), like scenarios.py. A crash, hang or memory runaway is listed first, then the
 diagnostics tttt gets wrong ranked by root cause *across packages*: code and message shape (quoted parts elided), and
 for a diagnostic in a shared dependency (types/node/..., node_modules/...) that dependency, each with the number of
@@ -127,24 +127,16 @@ def shape(message):
 def lib_key(f, l, cwd=DT):
     """A default lib's diagnostic: tsc's lib.X.d.ts and tttt's own copy (thirdparty/lib/X.d.ts) number lines
     differently, so only the lib's name counts"""
-    m = re.search(r'(?:/tsc/lib/lib\.|/tsc/built/local/lib\.|^bundled:///libs/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
+    m = re.search(r'(?:^bundled:///libs/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
     # (Relative to DefinitelyTyped in the main tree, where thirdparty/corpora isn't a symlink: ../../lib/dom.d.ts)
     if not m and f.startswith('../') and os.path.realpath(os.path.join(cwd, f)).startswith(os.path.join(ROOT, 'thirdparty/lib/')):
         m = re.search(r'([^/]+)\.d\.ts$', f)
     return (f'lib.{m.group(1)}.d.ts', 0) if m else (f, l)
 
 
-# Option errors only an emitting program reports (rootDir / common source directory, outputs overwriting inputs,
-# allowImportingTsExtensions without noEmit). tsc 6's caches were made without noEmit; tttt is `tsc --noEmit`.
-# TODO(plan 54 stage 3): goes with the caches regenerated through tttt-oracle
-EMIT_ONLY_CODES = {5011, 5055, 5056, 5096}
-
-
 def compare(package, tsc, tttt, cwd=DT):
     """The diagnostics tttt reports that tsc doesn't (spurious) and the other way round (missing), by (file, line,
     code) multiset"""
-    if 'status' not in tsc:  # (a tsc 6 cache entry: no exit status)
-        tsc = {**tsc, 'diags': [d for d in tsc['diags'] if d[3] not in EMIT_ONLY_CODES]}
     want = collections.Counter((*lib_key(f, l, cwd), c) for f, l, _, c in tsc['diags'])
     got = collections.Counter((*lib_key(f, l, cwd), c) for f, l, c, _ in tttt['diags'])
     spurious, missing = [], []

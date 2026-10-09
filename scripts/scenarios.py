@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Project reference scenarios mined from tsc's own baselines (plan 41): tsbuild/* and tsc/{projectReferences,
-projectReferencesConfig,redirect,composite}. Each baseline holds a virtual filesystem (`Input::`), a tsc command and its
+"""Project reference scenarios mined from tsgo's own baselines (plan 41; thirdparty/typescript, the 7.1 oracle): tsbuild/*
+and tsc/{projectReferences,composite}. Each baseline holds a virtual filesystem (`Input::`), a tsc command and its
 `Output::`. Only the first command counts (later ones are incremental edits). The tree is written under a temporary
 directory, release/tttt runs the command there (`-b`/`-p` and the options tttt knows; output-only flags dropped), and
 the (file, line, code) of the diagnostics are compared with tsc's.
@@ -11,15 +11,15 @@ the (file, line, code) of the diagnostics are compared with tsc's.
     scripts/scenarios.py --keep DIR    write the trees under DIR (and keep them) to poke at them
 
 Known divergences are listed in SKIP with why (plan 41: under -b tttt reads referenced projects' sources, never
-outputs; no emit nor incremental state. TypeScript 6 deprecates outFile/AMD: those configs are checked like any other). tsc's tiny fake lib is replaced by tttt's real libraries.
+outputs; no emit nor incremental state). tsc's tiny fake lib is replaced by tttt's real libraries.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REF = os.path.join(ROOT, "thirdparty/tsc/tests/baselines/reference")
-DIRS = ["tsbuild", "tsc/projectReferences", "tsc/projectReferencesConfig", "tsc/redirect", "tsc/composite"]
-TSC = "/home/src/tslibs/TS/Lib/tsc.js"
+REF = os.path.join(ROOT, "thirdparty/typescript/tsc/testdata/baselines/reference")
+DIRS = ["tsbuild", "tsc/projectReferences", "tsc/composite"]
+TSC = "tsgo"
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 # Name regex -> why it's skipped
@@ -43,7 +43,7 @@ DROP_VALUE = {"--pretty"}
 def parse(path):
     text = open(path, encoding="utf-8").read()
     lines = text.split("\n")
-    m = re.match(r"currentDirectory:: (\S+)", lines[0])
+    m = re.match(r"currentDirectory::\s*(\S+)", lines[0])
     if not m:
         return None
     cwd = m.group(1)
@@ -59,7 +59,8 @@ def parse(path):
         if line.startswith(TSC + " ") or line == TSC:
             command = line[len(TSC):].split()
             break
-        m = re.match(r"^//// \[(.+?)\]( symlink\((.+)\))?$", line)
+        # (`//// [PATH] *new* `, or a symlink `//// [PATH] -> TARGET *new*`)
+        m = re.match(r"^//// \[(.+?)\]( -> (\S+))?( \*[^*]+\*)?\s*$", line)
         if m:
             if m.group(3):
                 symlinks[m.group(1)] = m.group(3)
@@ -73,7 +74,7 @@ def parse(path):
     if command is None:
         return None
     i += 1
-    while i < len(lines) and not lines[i].strip():
+    while i < len(lines) and (not lines[i].strip() or lines[i].startswith("ExitStatus::")):
         i += 1
     if i >= len(lines) or lines[i] != "Output::":
         return None  # (A builder API scenario: an exit code, no output)

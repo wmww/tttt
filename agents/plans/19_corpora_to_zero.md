@@ -33,11 +33,11 @@ tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce eac
 `measurements.md`; the suite and the other corpora are the regression checks.
 
 Corpus notes worth keeping:
-- `scripts/tsctypeat.js TSCONFIG FILE LINE|* NAME` prints what tsc says an identifier's type is inside the corpus, where a
+- `scripts/tsctypeat.sh TSCONFIG FILE LINE|* NAME` prints what tsc says an identifier's type is inside the corpus, where a
   reduction doesn't reproduce (webpack's `any`s from JSDoc fixing were found that way).
 - Grep `scripts/filetest.sh` output for diffs only with `-d` (`FAST=1 scripts/filetest.sh f.ts -d`): without it no diff is
   printed and "no `^[-+]` lines" means nothing.
-- `scripts/tscinstcount.js TSCONFIG FILE` prints what tsc's TS2589 counter (instantiationCount, reset per checked node)
+- (Deleted with tsc 6, triage.md: port as an overlay if needed) `scripts/tscinstcount.js TSCONFIG FILE` printed what tsc's TS2589 counter (instantiationCount, reset per checked node)
   reaches per node of a file, and `VARIANCES=1` each variance measurement's cost: the budget a TS2589 runaway in tttt
   should be measured against. A probe project for a corpus: a tsconfig outside it that `extends` the corpus's with
   absolute `baseUrl`/`paths` (plus `"*": ["node_modules/*"]`) and `typeRoots`, `files: [p.ts]`: tttt doesn't type check
@@ -314,7 +314,7 @@ through Function's `name`, and the immediate distributive constraint (reactive.t
 ### zod-root (tsc 55, tttt 55: the same set)
 `scripts/realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
-8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
+8 TS6196, ...), so compare, don't count: `thirdparty/typescript/built/tsc --noEmit --pretty false -p
 thirdparty/corpora/zod` and diff `file:line code` sets with `comm`. tttt's set now equals tsc's. The arktype (bench)
 ones were three causes: interfaces extending a type parameter (`DynamicBase<t> extends t`, Members.bases), `const`
 type parameters behind conditional/mapped types (ty_is_const_type_variable), and `infer X extends keyof $ & string`
@@ -343,7 +343,7 @@ alias (`typeof CommonResult<false, O>`) left uninstantiated. Probes in `test/pro
   it flips. A `log_info` of check/extends/result in `ty_conditional`, or of the operands where something turns
   unknown, finds the step fast.
 - Multi-file probes against a corpus: put them in `/tmp/x/` with relative imports into `thirdparty/corpora/...`, run
-  `./release/tttt -q <options>` and `node thirdparty/tsc/lib/tsc.js --noEmit <options>` (filetest.sh copies the file
+  `./release/tttt -q <options>` and `thirdparty/typescript/built/tsc --noEmit <options>` (filetest.sh copies the file
   away, so relative imports break).
 - A diagnostic hidden behind `any`/the error type surfaces when its cover is fixed: counts can go up after a real fix
   (expect-type mismatches were all silent until call arity was rechecked; zod's DeepPartial behind the getter fix).

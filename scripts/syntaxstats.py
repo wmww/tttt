@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 import failstats as fs
 
-TSC = os.path.join(ROOT, 'thirdparty/tsc/src/compiler')
+TSGO = os.path.join(ROOT, 'thirdparty/typescript/tsc/internal')
 
 LEX_CODES = {'TS1125', 'TS1002', 'TS1124', 'TS1160', 'TS1198', 'TS1199', 'TS6188', 'TS1161', 'TS1126', 'TS1499',
              'TS1177', 'TS1351', 'TS1487', 'TS1185', 'TS1490', 'TS18026', 'TS1529', 'TS1489', 'TS1508'}
@@ -51,11 +51,12 @@ CLUSTERS = [
 
 
 def parser_codes():
-    gen = fs.read(f'{TSC}/diagnosticInformationMap.generated.ts')
-    name2code = {m[1]: m[2] for m in re.finditer(r'^\s*(\w+): diag\((\d+),', gen, re.M)}
+    """The codes tsgo's parser and scanner can report (the diagnostics.X messages they mention)"""
+    gen = fs.read(f'{TSGO}/diagnostics/diagnostics_generated.go')
+    name2code = {m[1]: m[2] for m in re.finditer(r'^var (\w+) = &Message\{code: (\d+),', gen, re.M)}
     codes = set()
-    for f in ('parser.ts', 'scanner.ts'):
-        for m in re.finditer(r'Diagnostics\.(\w+)', fs.read(f'{TSC}/{f}')):
+    for f in ('parser/parser.go', 'parser/jsdoc.go', 'parser/reparser.go', 'scanner/scanner.go', 'scanner/regexp.go'):
+        for m in re.finditer(r'diagnostics\.(\w+)', fs.read(f'{TSGO}/{f}')):
             if m[1] in name2code:
                 codes.add('TS' + name2code[m[1]])
     return codes

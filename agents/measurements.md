@@ -3,11 +3,36 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it (this file before the 2026-09-27 triage holds every entry since plan 05).
 
 ## Machine and caveats
-AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc = TypeScript 4d4f005c (6.0.3 + stable ordering, `thirdparty/tsc`, since 2026-10-07; 5.8.2 before), tsgo =
-`typescript@7.0.2`. Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
+AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
+is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). The perf sections below
+the oracle stage ones still compare against tsc 6 (4d4f005c, node) and tsgo `7.0.2`: `scripts/bench.sh` now runs the
+pinned tsgo only (re-baseline in the next perf session). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
+
+## Plan 54 stage 3: every cache regenerated with tsgo 7.1 (2026-10-09, thirteenth window's todo entry 5)
+tsgo's time to regenerate (4 cores): DT sweep 553 s, its nuia / eopt variants 527 / 492 s, `$ExpectType` 87 s, source
+sweep 704 s, flagflip (182 cells) 735 s, the 17 corpora ~2 min. Against the new caches:
+- suite 11860 / 13571 (unchanged), scenarios (tsgo's tsbuild + tsc/{projectReferences,composite} baselines) **185 /
+  213**, 11 skipped (failures: TS5107 where 7.0 says TS5108, stage 4).
+- corpora, spurious / missing against tsgo's own diagnostics (`test/corpora.tsc.jsonl`, was a hand-kept count): 0 / 0
+  on tsc, tsc-src, type-fest, valibot, react, nest, zod, **zod-root** (tsgo 7.1: the same 53 as tsc 6, in 3 s; 7.0.2 ran
+  away), xstate, excalidraw, tanstack-router, typescript-eslint; webpack 0 / 589 (JS rework), drizzle 0 / 41
+  (TS2416 14, TS2430 11, TS2578/2769 8 pairs), vue 0 / 14, vscode 0 / 10 (TS2345 7, TS2322 2, TS2416), effect 3 / 5
+  (tttt's 3 TS2578, tsgo's TS2769 4 + TS2719).
+- DT sweep **8553 / 8595** (spurious 1, missing 23, both 18): -TS2303 in types/webpack (16 packages), +TS2497 (12),
+  -TS2769/-TS2578, +TS2300 in selenium-webdriver. `$ExpectType` **68619 / 68640** (12 tsc-any, 4 other, 4 we-any, 1
+  union order).
+- source sweep **2242 / 3363** projects (6.0: 3003 / 3359), 30 / 174 repos; sample 4: 559 / 822. Dominated by 7.0's
+  removed options: tsgo stops at TS5108 (537 projects) / TS5102 (308), tttt says TS5107 / TS5101 and checks on (+TS2307
+  23967, +TS7006 6603, ... in those projects). Stage 4's job.
+- flagflip (es5 cell dropped, sloppy without `--alwaysStrict false`: both are TS5108 in 7.0): 168 cells, missing
+  **8139**, spurious 113, other code 222; without webpack 928 / 23 / 210 (the corpora's own 7.1 deltas repeated per
+  cell, elaboration codes TS2740->TS2344, TS2741->TS2345).
+- Instructions (callgrind, the tsc corpus now `thirdparty/corpora/TypeScript6`, same commit): tsc 4.715, type-fest
+  19.648, valibot 3.875, react 1.519, nest 1.154, webpack 10.484, zod 5.047, xstate 2.988, drizzle 7.129, vue 6.551,
+  effect 10.175, vscode 91.240, excalidraw 7.935, tanstack-router 5.452 G (flat).
 
 ## Plan 54 stage 2: the oracle tools on tsgo (2026-10-09, thirteenth window's todo entry 4)
 Probe (`scripts/tsgoprobe.sh`): 50 random suite tests in 0.18 s, 184 / 184 baselines byte-identical to the reference

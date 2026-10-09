@@ -16,7 +16,7 @@ DirectiveHook/DirectiveBinding/SSRDirectiveHook. In tsc's full check the first m
 (runtime-core directives.ts:184, `binding.dir[name] as DirectiveHook | ...` related to the imported bare
 `DirectiveHook`): ObjectDirective is measured while DirectiveHook's variances are in flight (Ternary.Unknown), so its
 HostElement comes out independent (4), Select is reduced away, the union call takes the `string` signature, no error.
-Measured from elsewhere first (tsc's language service on vModel.ts alone: `scripts/tsctypeat.js` shows two members)
+Measured from elsewhere first (tsc's language service on vModel.ts alone: `scripts/tsctypeat.sh` shows two members)
 HostElement is contravariant (2) and the error appears in tsc too.
 
 tttt now measures in tsc's order at one checker (the bare-alias fix, alias_variance_applies() /

@@ -30,11 +30,13 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    `tttt-oracle` (= `tsc -p P --noEmit`, verified on 60 projects) behind every sweep; `test/sweep_tsc.js` and
    `--as-emitting` gone; exit codes are 7.1's (2 with diagnostics); clidiff vs 7.1 176 / 261. The 6.0 caches' emit-only
    codes are filtered in `sweep.compare` until entry 5 regenerates them (sourcesweep 736 / 822).
-5. **Plan 54 stage 3: regenerate every cache** (DT sweep + flag variants, `$ExpectType`, source sweep, flagflip,
-   mutate, corpora expectations, scenarios if cheap), port the scripts that read tsc's JS sources, TypeScript 6's
-   `src` becomes a corpus, **`thirdparty/tsc` deleted**; documentation.md, CLAUDE.md, measurements.md rewritten.
+5. ~~Plan 54 stage 3: regenerate every cache~~ **done**: every cache tsgo 7.1's, `thirdparty/tsc` deleted (TypeScript 6
+   is the `TypeScript6` corpus), corpora compared against tsgo's own diagnostics. Against 7.1: DT sweep 8553 / 8595,
+   `$ExpectType` 68619, source sweep 2242 / 3363 (removed options: entry 6), flagflip 8139 / 113 / 222 (928 / 23 / 210
+   without webpack), corpora 0 but webpack 589, drizzle 41, vue 14, vscode 10, effect 3 / 5 missing; scenarios 185 / 213.
 6. **Plan 54 stage 4: delete what 7 deleted** (plan 53 stage 2's option errors, then the es5/amd/umd/system/
-   node10/classic/baseUrl/outFile/downlevelIteration code paths). A net deletion.
+   node10/classic/baseUrl/outFile/downlevelIteration code paths). A net deletion. The source sweep measures it: ~540
+   projects where tsgo stops at TS5108/TS5102 (`scripts/sourcesweep.py -k=-TS5108`), and scenarios.py's TS5107s.
 7. **Fan-out on the 7.x TS deltas** (4 sub-agents by mechanism, plan 54 "Stage 5+"): elaboration codes, TS6196,
    TS2300, the suggestion limit, TS2303, source quote style (109 tests), alias naming, lib declaration lists,
    `ty/order.c`'s 7.1 fixes.
@@ -44,7 +46,7 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    ambient-module import attributes, target-gated regex, the new diagnostics. A probe per feature against
    `thirdparty/typescript/built/tsc`.
 10. **Triage.** Drain triage.md, bookkeeping for the switch (CLAUDE.md's script descriptions, hacks.md entries that
-    referred to deleted options), check nothing reads 4d4f005c. The perf session against tsgo 7.1 (`bench.sh`
+    referred to deleted options). The perf session against tsgo 7.1 (`bench.sh`
     re-baselined, measurements.md's perf section) didn't fit this window: schedule it for the next. Write the
     7.1.0 stable re-pin (after 2026-11-24, plan 54 "The pin") into todo if it hasn't happened.
 11. **Insights.**

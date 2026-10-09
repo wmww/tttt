@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
-"""Regenerates regex_tables.c from tsc's Unicode property tables for regular expressions (the ones after
-utf16EncodeAsString in thirdparty/tsc/src/compiler/scanner.ts). Run from the repository root: python3 src/regex_tables.py"""
+"""Regenerates regex_tables.c from tsgo's Unicode property tables for regular expressions
+(thirdparty/typescript/tsc/internal/scanner/unicodeproperties.go). Run from the repository root:
+python3 src/regex_tables.py"""
 import re
-src = open('thirdparty/tsc/src/compiler/scanner.ts').read()
+src = open('thirdparty/typescript/tsc/internal/scanner/unicodeproperties.go').read()
 
-def names(pattern):
-    m = re.search(pattern, src, re.M)
-    return re.findall(r'"([^"]*)"', m.group(1))
+
+def names(start):
+    """The strings of the collections.NewSetFromItems(...) call that follows `start`, in source order"""
+    body = src[src.index(start) + len(start):]
+    return re.findall(r'"([^"]*)"', body[:body.index(')')])
+
 
 tables = [
-    ('regex_binary_properties', names(r'^const binaryUnicodeProperties = new Set\(\[([^\]]*)\]\);')),
-    ('regex_binary_properties_of_strings', names(r'^const binaryUnicodePropertiesOfStrings = new Set\(\[([^\]]*)\]\);')),
-    ('regex_general_category_values', names(r'^    General_Category: new Set\(\[([^\]]*)\]\),')),
-    ('regex_script_values', names(r'^    Script: new Set\(\[([^\]]*)\]\),')),
+    ('regex_binary_properties', names('var binaryUnicodeProperties = ')),
+    ('regex_binary_properties_of_strings', names('var binaryUnicodePropertiesOfStrings = ')),
+    ('regex_general_category_values', names('"General_Category": collections.NewSetFromItems(')),
+    ('regex_script_values', names('var scriptValues = ')),
 ]
-lines = ["// Generated from tsc's Unicode property tables for regular expressions (src/compiler/scanner.ts) by",
-         '// regex_tables.py, in tsc\'s order (which spelling suggestions depend on). Regenerate rather than edit',
+lines = ["// Generated from tsgo's Unicode property tables for regular expressions (internal/scanner/unicodeproperties.go)",
+         "// by regex_tables.py, in tsgo's order (which spelling suggestions depend on). Regenerate rather than edit",
          '#include "regex_check.h"', '']
 for name, values in tables:
     lines.append('csview const %s[] = {' % name)

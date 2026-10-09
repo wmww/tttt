@@ -1,5 +1,5 @@
-// Generated from tsc's Unicode property tables for regular expressions (src/compiler/scanner.ts) by
-// regex_tables.py, in tsc's order (which spelling suggestions depend on). Regenerate rather than edit
+// Generated from tsgo's Unicode property tables for regular expressions (internal/scanner/unicodeproperties.go)
+// by regex_tables.py, in tsgo's order (which spelling suggestions depend on). Regenerate rather than edit
 #include "regex_check.h"
 
 csview const regex_binary_properties[] = {

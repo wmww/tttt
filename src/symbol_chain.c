@@ -785,7 +785,7 @@ static bool is_identifier_start(const char* c, const char* end) {
     if (b >= 0xF0) return false;
     u32 code = b >= 0xE0 && end - c >= 3 ? (u32)(b & 0x0F) << 12 | (u32)(c[1] & 0x3F) << 6 | (c[2] & 0x3F)
         : end - c >= 2 ? (u32)(b & 0x1F) << 6 | (c[1] & 0x3F) : 0;
-    return unicode_is_identifier_start(code, compiler_options()->target >= SCRIPT_TARGET_ES2015);
+    return unicode_is_identifier_start(code);
 }
 
 // tsc's canUsePropertyAccess

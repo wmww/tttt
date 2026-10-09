@@ -41,7 +41,9 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   project's files (`a.ts` before `bundled:...`); tttt prints `../home/.../thirdparty/lib/es5.d.ts` and sorts it first.
   A clidiff mismatch whenever a diagnostic lands in a lib (`type Partial<T> = T;` in a project). `sweep.lib_key`
   accepts both spellings.
-- `scripts/tsctypeat.js`, `scripts/tscinstcount.js` and `test/probes/sweep/*/*.js` still load tsc 6's
-  `typescript.js`: port to an overlay tool in `test/oracle` or delete them with `thirdparty/tsc` (plan 54 stage 3).
+- `scripts/tscinstcount.js` (tsc's per-node TS2589 instantiation counter, `VARIANCES=1` per variance measurement) was
+  deleted with tsc 6 (plan 54 stage 3). If a TS2589 runaway needs tsc's budget again, port it as a `test/oracle`
+  overlay: a patched copy of `internal/checker/checker.go` logging `c.instantiationCount` where it's reset (in a scratch
+  branch, never committed; README's "instrument the oracle").
 - tsgo 7.1's `-b` exit codes weren't compared (stage 2 moved the non-build CLI to 7.1's: 2 with diagnostics, 1 only
   when noEmitOnError skips the emit). `build()` in main.c still returns 1 for any project with errors.

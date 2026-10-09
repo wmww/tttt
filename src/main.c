@@ -806,7 +806,7 @@ static void reexec_with_huge_pages(char const* const* argv) {
 }
 
 // The TypeScript version tttt checks like (what --version says)
-#define TTTT_TYPESCRIPT_VERSION "6.0.3"
+#define TTTT_TYPESCRIPT_VERSION "7.1.0-dev"
 
 // A command line error (tsc's TS5023 and friends) in the format diagnostics are printed in
 static int command_line_error(int pretty, unsigned code, cstr message) {

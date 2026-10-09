@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The TypeScript 7 oracle (plan 54): microsoft/TypeScript `main` at the commit a `typescript@7.1.0-dev` nightly was
 # built from (npm's gitHead), with tsgo's Go sources under tsc/ and the native test suite in tsc/testdata. Not
-# committed, like thirdparty/tsc. Also fetches the Go toolchain go.mod asks for (thirdparty/go, sha256-checked) and
+# committed. Also fetches the Go toolchain go.mod asks for (thirdparty/go, sha256-checked) and
 # builds tsgo's CLI from the same commit into typescript/built/tsc, so every oracle runs one pinned compiler.
 #
 #   thirdparty/ensure-typescript.sh          # fetch and build whatever is missing

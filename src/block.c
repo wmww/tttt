@@ -139,7 +139,7 @@ static int unicode_identifier_part_size(char const* c, char const* limit) {
         size == 3 ? (u32)(b & 0x0F) << 12 | (u32)((unsigned char)c[1] & 0x3F) << 6 | ((unsigned char)c[2] & 0x3F) :
         (u32)(b & 0x07) << 18 | (u32)((unsigned char)c[1] & 0x3F) << 12 | (u32)((unsigned char)c[2] & 0x3F) << 6 |
             ((unsigned char)c[3] & 0x3F);
-    return unicode_is_identifier_part(code, true) ? size : 0;
+    return unicode_is_identifier_part(code) ? size : 0;
 }
 
 Span block_first_token(Span at) {
