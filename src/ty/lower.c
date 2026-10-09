@@ -12,6 +12,16 @@
 #include "port_statement.h"
 #include <math.h>
 
+// A reference made by lowering a type node (tsc's createTypeReferenceEx with ObjectFlags.FromTypeNode): marked if it's
+// made here first, see recursion_identity()
+static Ty const* reference_from_type_node(Checker* me, Ty const* target, TyList args) {
+    bool outer = my creating_from_type_node;
+    my creating_from_type_node = true;
+    Ty const* ret = ty_reference(me, target, args);
+    my creating_from_type_node = outer;
+    return ret;
+}
+
 // Lowering: syntax (`TypeNode`) to semantic types (`Ty`), and what symbols are as types (ty_declared_type_of()) and as
 // values (ty_type_of_symbol()). Nodes are syntax only: what the parser made.
 
@@ -568,6 +578,9 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 TyList args = lower_type_args(
                     me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf
                 );
+                // (Not marked from_type_node, unlike tsc: tttt's signature relations don't instantiate a fresh reference
+                // at each level like tsc's do, so a generic interface reference written in a signature would never nest,
+                // performanceComparisonOfStructurallyIdenticalInterfacesWithGenericSignatures)
                 return ty_reference(me, declared, args);
             }
             return declared;
@@ -2240,7 +2253,7 @@ static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
         // TODO: tsc keeps the element type of a rest element (`T` for `...T[]`), this keeps what was written
         args[i_index] = tuple_element_type(me, i, ctx);
     }
-    Ty const* ret = ty_reference(me, target, (TyList){ .data = args, .len = arity });
+    Ty const* ret = reference_from_type_node(me, target, (TyList){ .data = args, .len = arity });
     free(args);
     return ret;
 }
@@ -3832,7 +3845,14 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             if (alias || (ctx.in_alias && may_resolve_type_alias(me, node->array.element))) {
                 return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
-            return ty_array(me, ty_from_node(me, node->array.element, ctx), node->array.readonly);
+        {
+            Ty const* element = ty_from_node(me, node->array.element, ctx);
+            bool outer = my creating_from_type_node;
+            my creating_from_type_node = true;
+            Ty const* ret = ty_array(me, element, node->array.readonly);
+            my creating_from_type_node = outer;
+            return ret;
+        }
 
         case TYPE_TUPLE: {
             // A tuple with a variadic element (going by the syntax) isn't deferred in tsc, so it goes by no alias

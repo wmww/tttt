@@ -5898,7 +5898,9 @@ static Ternary structured_related_members(
 
 static Ty const* recursion_identity(Ty const* ty) {
     switch ((TyKind)ty->kind) {
-        case TY_REFERENCE: return ty->reference.target;
+        // (One made from a type node first is its own: tsgo 7.1's getRecursionIdentityFromTarget skips ObjectFlags.FromTypeNode,
+        // such a node can't be the source of generative recursion without being instantiated)
+        case TY_REFERENCE: return ty->reference.from_type_node && !ty->reference.deferred ? ty : ty->reference.target;
         // (A non-generic class or interface is its symbol: tsc's getRecursionIdentity. `interface M { [k: string]: V }`
         // with `V = string | M` nests as M)
         case TY_DECLARED: return ty;
@@ -6132,10 +6134,12 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         relation_cache_put(cache, key, CACHE_FAILED);
         return TERNARY_FALSE;
     }
-    if (st->relation_count <= 0 || st->depth == MAX_RELATION_DEPTH) {
+    if (st->relation_count <= 0) {
         st->overflow = true;
         return TERNARY_FALSE;
     }
+    // 100 levels deep: assumed related, silently (tsgo 7.1's recursiveTypeRelatedTo backstop, no TS2321 any more)
+    if (st->depth == MAX_RELATION_DEPTH) return TERNARY_MAYBE;
     u32 maybe_start = st->maybe_count;
     maybe_push(st, key);
     unsigned saved_expanding = st->expanding;

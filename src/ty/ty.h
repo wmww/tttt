@@ -329,6 +329,9 @@ struct Ty {
             // first use
             struct TyDeferredRef* deferred;
             TyObjectState* state;
+            // First made by lowering an array, tuple or generic type reference node (tsc's ObjectFlags.FromTypeNode, which
+            // the instantiation cache keeps from whoever made it first): its own recursion identity
+            bool from_type_node;
         } reference;
         struct {
             TypeNode const* node; // TYPE_INTERFACE or TYPE_CALLABLE. Null for instantiations and functions
@@ -996,6 +999,7 @@ struct Checker {
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
+    bool creating_from_type_node; // ty_reference_with_this() marks what it makes from_type_node (see lower.c)
     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     // While explaining a relation to a synthetic type that stands for a named one (the base static side without

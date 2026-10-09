@@ -2008,6 +2008,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         ret->reference.target = target;
         ret->reference.args = ty_list_copy(me, args.data, args.len);
         ret->reference.this_arg = this_arg;
+        ret->reference.from_type_node = my creating_from_type_node;
         if (!compiler_options()->strict_null_checks) {
             for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
         }
