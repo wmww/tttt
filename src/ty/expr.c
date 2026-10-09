@@ -2915,12 +2915,10 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_EQUAL:
             if (is_commonjs_declaration(binary)) {
                 // `exports.x = v` declares x: it is what v is (no context but a JSDoc type, tsc's
-                // getContextualTypeForAssignmentDeclaration). `module.exports = v` has the type of its target
-                // (checkBinaryLikeExpression: isAssignmentDeclaration), `exports.x = v` v's, unless v is a container
+                // getContextualTypeForAssignmentDeclaration). The assignment is v's type (tsgo's
+                // checkBinaryLikeExpression), unless v is a container
                 right = ty_check_expr(me, &binary->right, commonjs_declaration_context(binary));
-                if (is_js_container_declaration(binary) || expr_is_module_exports(&binary->left)) {
-                    return ty_expr_type(me, &binary->left);
-                }
+                if (is_js_container_declaration(binary)) return ty_expr_type(me, &binary->left);
                 ty_expr_type(me, &binary->left);
                 return right;
             }

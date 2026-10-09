@@ -655,12 +655,39 @@ static u32 with_alternative_containers(ChainCtx* me, Symbol const* symbol, Symbo
     return count;
 }
 
+// The class expressions whose bodies symbols are being named from on this thread (symbol_chain_enter_class())
+static thread_local ClassDecl const* inside_classes[16];
+static thread_local u32 inside_class_count;
+
+void symbol_chain_enter_class(ClassDecl const* class_decl) {
+    if (inside_class_count < c_arraylen(inside_classes)) inside_classes[inside_class_count] = class_decl;
+    inside_class_count++;
+}
+
+void symbol_chain_leave_class(void) {
+    if (inside_class_count) inside_class_count--;
+}
+
+static bool is_inside_class(ClassDecl const* class_decl) {
+    for (u32 i = 0; i < inside_class_count && i < c_arraylen(inside_classes); i++) {
+        if (inside_classes[i] == class_decl) return true;
+    }
+    return false;
+}
+
+// A named class expression whose body symbols are named from: its own name is in scope there
+static bool is_inside_class_of(Symbol const* symbol) {
+    if (!inside_class_count || !(symbol->flags & SYMBOL_CLASS)) return false;
+    ClassDecl const* class_expression = symbol_find_node(symbol, SYMBOL_DECL_CLASS);
+    return class_expression && class_expression->is_expression && span_valid(class_expression->name) && is_inside_class(class_expression);
+}
+
 // tsc's getContainersOfSymbol
 static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol const** out) {
+    ClassDecl const* class_expression = symbol->flags & SYMBOL_CLASS ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
     Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
     if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return with_alternative_containers(me, symbol, container, meaning, out);
     // A JavaScript class expression a CommonJS module exports (`module.exports = class {}`, `exports.C = class {}`)
-    ClassDecl const* class_expression = symbol->flags & SYMBOL_CLASS ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
     if (class_expression && class_expression->is_expression && class_expression->commonjs_module) {
         out[0] = class_expression->commonjs_module;
         return 1;
@@ -746,8 +773,14 @@ static void sort_by_best_name(Symbol const** parents, u32 count, SourceFile cons
 }
 
 // tsc's getSymbolChain
+static bool is_inside_class_of(Symbol const* symbol);
+
 static bool symbol_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, bool end_of_chain, u32 depth, SymbolChain* out) {
     SymbolChain chain = {0};
+    if (depth == 0 && is_inside_class_of(symbol)) {
+        chain_push(out, symbol);
+        return true;
+    }
     bool have = accessible_chain(me, symbol, meaning, &chain);
     if (depth < 8 && (!have || needs_qualification(me, chain.items[0], chain.len == 1 ? meaning : left_meaning(meaning)))) {
         Symbol const* parents[CONTAINERS_MAX];

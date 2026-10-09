@@ -2146,6 +2146,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
     }
+    symbol_chain_enter_class(me);
     // (Those of the merged declarations: one symbol each, like tsc's)
     TyList class_params = my symbol ? ty_declared_type_of(current_checker, my symbol)->declared.type_params :
         ty_type_params_of(current_checker, &my generic);
@@ -2208,6 +2209,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     ctx->class_params_len = outer_class_params.len;
     ctx->class_params_outside = outer_class_params_outside;
     baseline_test_case_leave_generic(ctx, saved_generic);
+    symbol_chain_leave_class();
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {

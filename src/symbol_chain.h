@@ -80,6 +80,10 @@ void symbol_chain_set_kept_painted(Symbol const* const* symbols, u32 count);
 // (getSymbolChain's sortByBestName). Null (the default): by the file's path, as tsc's printer without a host does
 typedef cstr (*ModuleSpecifierFn)(void* ctx, struct SourceFile const* file);
 void symbol_chain_set_module_specifier(ModuleSpecifierFn fn, void* ctx);
+// Symbols are named from inside a named class expression's body on this thread until the matching leave: a CommonJS
+// export's class is named by its own name there, not through the module (tsc's enclosing declaration)
+void symbol_chain_enter_class(struct ClassDecl const* class_decl);
+void symbol_chain_leave_class(void);
 // Frees this thread's accessibility memo of the declaration walks (a thread that checked is done)
 void symbol_chain_release_thread(void);
 // tsc's isDeclarationVisible of the statements directly in a scope (a file is, a namespace block is if its namespace
