@@ -1974,7 +1974,6 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         case THIS_CLASS_STATIC: return ty_type_of_symbol(me, decl); // (With what a namespace merges in)
         case THIS_INTERFACE: return any_type(me);
         case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
-        case THIS_COMMONJS: return ty_commonjs_exports_type(me, identifier_expr_name(identifier).source);
         case THIS_NAMESPACE: case THIS_ENUM: return any_type(me);
         case THIS_CLASS_INSTANCE: {
             // The class's `this` type (else the instance type, for a generic class applied to its own parameters)
@@ -2006,14 +2005,6 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         !(identifier_expr_name(identifier).source && identifier_expr_name(identifier).source->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
     ) {
         return ty_intrinsic(me, TY_ERROR);
-    }
-    // `exports` of a CommonJS module that assigns `module.exports` is what it assigns (tsc's
-    // getTypeOfFuncClassEnumModuleWorker of the file's symbol)
-    SourceFile const* file = identifier_expr_name(identifier).source;
-    if (decl->is_module && file && file->is_commonjs && file->scope && file->scope->container == decl &&
-        decl->exports && symbol_table_get(decl->exports, c_sv("export="))
-    ) {
-        return ty_commonjs_exports_type(me, file);
     }
     return ty_type_of_symbol(me, decl);
 }

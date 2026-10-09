@@ -134,6 +134,7 @@ typedef enum SymbolDeclKind : uint8_t {
     // value of a function, class, enum or namespace (the members, like a namespace's); a variable's initializer has them
     SYMBOL_DECL_EXPANDO,
     SYMBOL_DECL_COMMONJS_MODULE, // SourceFile: the `module` of a CommonJS file, `{ exports: ... }`
+    SYMBOL_DECL_COMMONJS_EXPORTS, // SourceFile: the `exports` of a CommonJS file, what the module exports
     SYMBOL_DECL_BUILTIN,        // TypeNode const*: `number`, `globalThis`... (program_add_builtins())
     // Symbol const*: what `export =` names in a module a named import is from; the value is its property of the
     // import's name (tsc's symbolFromVariable in getExternalModuleMember)
@@ -777,10 +778,9 @@ void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
 // False if it isn't at the top level of a file or namespace (reported)
 bool scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsdoc_type, Span statement, bool export_equals);
-// An assignment in a CommonJS file: `exports.x = v`, `module.exports.x = v` and `module.exports = v` declare exports
-// (tsc's bindExportsPropertyAssignment, bindModuleExportsAssignment). Anything else is ignored
-void scope_add_commonjs_export(Scope* me, Expr* assignment);
-// The `module` of a CommonJS file that mentions `module.exports` (tsc declares it at the first such access)
+// The exports of a CommonJS file: every `exports.x = v`, `module.exports.x = v`, `Object.defineProperty(exports, ...)`
+// declares x and `module.exports = v` the `export=`, wherever it is (tsc's getAssignmentDeclarationKind), then its
+// `module` and `exports` variables
 void scope_add_commonjs_module(Scope* me);
 // The expandos of the statements of a block (declared in `me`): `f.x = v` where f is a function declared in the block
 // or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
@@ -789,9 +789,6 @@ void scope_add_expandos(Scope* me, struct Block const* block);
 // An assignment `f.x = v` nested in an expression (`(f.x = 1)`, `if (f.x = 1)`), which tsc's binder binds like any
 // other: called by the resolve walk for the ones scope_add_expandos() didn't see
 void scope_add_nested_expando(Scope* me, struct BinaryOpExpr* op);
-// `module.exports` in a CommonJS file, `module` its identifier: outside the file's top level each one declares the file's
-// `module` again (tsc's binder looks it up in the block scope container only), which the symbols baseline shows
-void scope_note_module_exports_access(Scope* me, struct Expr const* module);
 // The expression a declaration initialized (or a member assigned) with `init` is an expando container of (tsc's
 // getExpandoInitializer/getDefaultedExpandoInitializer): a function or arrow function, in JavaScript also a class
 // expression or `{}`, possibly defaulted (`var ns = ns || {}`: `name` is the declared name, invalid for a member)

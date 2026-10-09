@@ -145,7 +145,6 @@ typedef struct SourceFile {
     // A JavaScript file that is a CommonJS module: `exports.x =` and `module.exports =` declare its exports, `module`,
     // `exports` and `require` mean something
     bool is_commonjs;
-    Span module_exports_span; // The `module` of the first `module.exports` of a JavaScript file (where tsc declares it)
     // The JSX pragmas of the comments at the top of the file (tsc's `@jsx`, `@jsxFrag`, `@jsxRuntime` and
     // `@jsxImportSource` in `/* */` comments): their argument, empty if there is none. The first `@jsx`/`@jsxFrag`
     // counts, the last `@jsxRuntime`/`@jsxImportSource` (like tsc's uses of file.pragmas)

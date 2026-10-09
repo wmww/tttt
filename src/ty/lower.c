@@ -1219,17 +1219,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
         bool itself = symbol_resolve_alias(symbol_table_get(module->exports, c_sv("export="))) == module;
         exports = itself ? ty_namespace_type(me, module) : ty_intrinsic(me, TY_ERROR);
     } else {
-        // The module's namespace object under the name `module.exports` (tsc gives `module` a copy of the file's
-        // symbol by that name)
-        u64 key[2] = { KEY_COMMONJS_EXPORTS, (u64)(uintptr_t)module };
-        exports = intern_get(&my links, key, 2);
-        if (!exports) {
-            Ty* made = make_namespace(me, module);
-            made->declared.name = checker_atom(me, c_sv("module.exports"));
-            made->declared.commonjs_exports = true;
-            *intern_slot(me, &my links, key, 2) = made;
-            exports = made;
-        }
+        exports = ty_namespace_type(me, module);
     }
     return exports;
 }
@@ -1249,15 +1239,7 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
         .decl_spans = file_span,
         .decl_span_count = 1,
     };
-    Ty* ret = (Ty*)ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
-    // `module.a.x = v` made `module` a namespace too (commonjs_module_namespace()): tsc prints the type by its symbol
-    Symbol const* variable = file->scope ? symbol_table_get(&file->scope->locals, c_sv("module")) : nullptr;
-    if (variable && variable->decl_count && variable->decls[0].kind == SYMBOL_DECL_COMMONJS_MODULE) {
-        for (u32 i = 1; i < variable->decl_count; i++) {
-            if (variable->decls[i].kind == SYMBOL_DECL_EXPANDO) ret->anonymous.commonjs_module = true;
-        }
-    }
-    return ret;
+    return ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
@@ -1581,6 +1563,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 return undefined_alias ? type : ty_widened_nullable(me, type);
             }
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
+        case SYMBOL_DECL_COMMONJS_EXPORTS: return ty_commonjs_exports_type(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return ty_function_type(me, decl->node);
         case SYMBOL_DECL_CLASS: {
             // A local class in a generic scope: applied to the outer type parameters, so that instantiating it with

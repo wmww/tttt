@@ -354,6 +354,8 @@ CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment
 bool expr_assigns_void_zero(Expr const* value);
 // `module.exports` (tsc's isModuleExportsAccessExpression)
 bool expr_is_module_exports(Expr const* me);
+// An unparenthesized identifier `name` (not a keyword)
+bool expr_is_plain_identifier(Expr const* me, const char* name);
 // `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)
 bool expr_is_require_call(Expr const* me);
 // `Object.defineProperty(o, "p", descriptor)` with an entity name o (tsc's isBindableObjectDefinePropertyCall).

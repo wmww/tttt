@@ -496,20 +496,6 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     Symbol const* symbol = declared->declared.symbol;
     if (!symbol) symbol = declared->declared.merged_value;
     if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
-    if (declared->kind == TY_DECLARED && declared->declared.commonjs_exports) {
-        // (Without a place to be named from, the `module.exports` symbol tsc copies from the file is a module named
-        // by its file name, extension included: getSpecifierForModuleSymbol without a resolver host)
-        Symbol const* module = declared->declared.namespace_symbol;
-        SourceFile const* file = !d.enclosing && module && module->module ? module->module->file : nullptr;
-        if (file) {
-            out_lit(d, "import(\"");
-            out(d, source_file_display_path(file));
-            out_lit(d, "\")");
-            return;
-        }
-        out(d, atom_sv(declared->declared.name));
-        return;
-    }
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol != symbol_members(symbol) && namespace_import_is_clone(symbol)) {
         // The clone `import * as ns` makes is named by the import where that reaches it, else as the module
@@ -3647,10 +3633,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_ANONYMOUS: {
             if (ty->anonymous.module_clone && display_module_clone(me, d, ty)) break;
-            if (ty->anonymous.commonjs_module) {
-                out_lit(d, "typeof module");
-                break;
-            }
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
             // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see

@@ -83,17 +83,7 @@ typedef struct ParserShared {
     // in_async around the function being parsed: its parameters' decorators are in that await context (tsc's
     // parseParameterWorker, inOuterAwaitContext)
     bool outer_in_async;
-    // Every `module.exports` of a JavaScript file (malloc'd, attempts that backtrack too), and where the first thing
-    // that makes it CommonJS starts: SourceFile.module_exports_span is the first of them from there on
-    Span* module_exports_accesses;
-    u32 module_exports_access_count;
-    const char* commonjs_start;
     bool saw_commonjs; // A `require()` call, an assignment to `exports.x` or `module.exports` (a JavaScript file's)
-    // Top-level variables of a JavaScript file initialized to `module.exports`, `exports` or another of them (malloc'd):
-    // `M.x = v` with one of them makes the file CommonJS too (tsc's isExportsOrModuleExportsOrAlias)
-    csview* exports_aliases;
-    u32 exports_alias_count;
-    u32 exports_alias_cap;
     // JavaScript files: every `/** */` comment hopped so far (not `/**/`), sorted by start. Hosts find theirs by looking
     // back from their first token (jsdoc_before())
     VecJsDocRange jsdoc_comments;
@@ -467,21 +457,6 @@ static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
-// `exports.a.b = v`: tsc's getAssignmentDeclarationPropertyAccessKind makes any static access chain from `exports` (or
-// `module.exports`) an ExportsProperty assignment, which makes the file CommonJS even when it declares nothing
-static bool is_deep_exports_assignment_target(Expr const* left) {
-    // (Names, not `#x`: tsc's isBindableStaticAccessExpression)
-    Span name = left->tag == EXPR_PROPERTY ? expr_static_property_name(left) : span_null;
-    if (!span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return false;
-    Expr const* e = &left->property->expr;
-    while (e->tag == EXPR_PROPERTY && !expr_is_module_exports(e)) {
-        name = expr_static_property_name(e);
-        if (expr_is_perenthisized(e) || !span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return false;
-        e = &e->property->expr;
-    }
-    return expr_is_module_exports(e) || (e->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(e) && span_equals(e->inner_span, "exports"));
-}
-
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
 static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
@@ -5309,9 +5284,7 @@ static Span jsdoc_namespace_assignment_name(Statement const* host) {
 }
 
 // `exports.C = v` or `module.exports.C = v` as a statement: C, an invalid span otherwise
-static bool is_exports_alias_name(Parser const* p, Expr const* e);
-
-static Span jsdoc_commonjs_export_assignment_name(Parser const* p, Statement const* host) {
+static Span jsdoc_commonjs_export_assignment_name(Statement const* host) {
     if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
         expr_is_perenthisized(&host->expr)
     ) {
@@ -5321,7 +5294,7 @@ static Span jsdoc_commonjs_export_assignment_name(Parser const* p, Statement con
     if (left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_DOT || !expr_is_entity_name(left)) return span_null;
     Expr const* object = &left->property->expr;
     bool exports = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) && span_equals(object->inner_span, "exports");
-    if (!exports && !expr_is_module_exports(object) && !is_exports_alias_name(p, object)) return span_null;
+    if (!exports && !expr_is_module_exports(object)) return span_null;
     return left->property->prop.inner_span;
 }
 
@@ -8782,11 +8755,6 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     return matched ? parse_success(&p) : parse_fail(&p);
 }
 
-static bool is_exports_alias_name(Parser const* p, Expr const* e);
-
-static void note_commonjs_start(ParserShared* shared, const char* start) {
-    if (!shared->commonjs_start || start < shared->commonjs_start) shared->commonjs_start = start;
-}
 
 static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
@@ -8830,13 +8798,11 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         bool named = left_and_ret->property->form == PROPERTY_EXPR_DOT || prop->tag == EXPR_LITERAL;
         mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
     }
-    if (op == BINARY_OP_EQUAL && p.shared->source->is_js && (expr_commonjs_target(left_and_ret, nullptr) ||
-        is_deep_exports_assignment_target(left_and_ret) ||
-        (!p.shared->function_depth && span_valid(expr_static_property_name(left_and_ret)) &&
-            is_exports_alias_name(&p, &left_and_ret->property->expr)))
+    // (tsc's setCommonJSModuleIndicator for an assignment declaration: `module.exports = exports` is none)
+    if (op == BINARY_OP_EQUAL && p.shared->source->is_js && expr_commonjs_target(left_and_ret, nullptr) &&
+        !(expr_is_module_exports(left_and_ret) && expr_is_plain_identifier(&right, "exports"))
     ) {
         p.shared->saw_commonjs = true;
-        note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
     }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
@@ -9529,7 +9495,6 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
             // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
             p.shared->saw_commonjs = true;
-            note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
             left_and_ret->call->callable.identifier.require_call = true;
             Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
             if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
@@ -9554,7 +9519,6 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         ) {
             // `Object.defineProperty(exports, "x", {...})` makes it CommonJS too (tsc's bindObjectDefinePropertyExport)
             p.shared->saw_commonjs = true;
-            note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
         }
         return parse_success(&p);
     }
@@ -9620,14 +9584,6 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             // tsc's parsePropertyAccessExpressionRest
             parse_error(&p, prop_name, 18030, "An optional chain cannot contain private identifiers.");
         }
-        if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
-            u32 n = p.shared->module_exports_access_count++;
-            if (!(n & (n - 1))) {
-                p.shared->module_exports_accesses = realloc(p.shared->module_exports_accesses, sizeof(Span) * (n ? n * 2 : 1));
-                panic_if(!p.shared->module_exports_accesses, "out of memory");
-            }
-            p.shared->module_exports_accesses[n] = left_and_ret->property->expr.inner_span;
-        }
         return parse_success(&p);
     }
 
@@ -9642,15 +9598,6 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .optional_chain = optional_chain,
             })
         );
-        // (`module["exports"]` too: tsc's isModuleExportsAccessExpression takes a literal element access)
-        if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
-            u32 n = p.shared->module_exports_access_count++;
-            if (!(n & (n - 1))) {
-                p.shared->module_exports_accesses = realloc(p.shared->module_exports_accesses, sizeof(Span) * (n ? n * 2 : 1));
-                panic_if(!p.shared->module_exports_accesses, "out of memory");
-            }
-            p.shared->module_exports_accesses[n] = left_and_ret->property->expr.inner_span;
-        }
         return parse_success(&p);
     }
     if (optional_chain) {
@@ -12232,41 +12179,6 @@ static void note_require_declaration(InitializedBinding* initializer) {
 }
 
 // in_for: the declaration of a `for` loop, where `using of` is `for (using of x)`
-static bool is_exports_alias_name(Parser const* p, Expr const* e) {
-    if (e->tag != EXPR_IDENTIFIER || e->identifier.keyword || expr_is_perenthisized(e)) return false;
-    for (u32 i = 0; i < p->shared->exports_alias_count; i++) {
-        if (csview_eq(&p->shared->exports_aliases[i], &e->inner_span.sv)) return true;
-    }
-    return false;
-}
-
-// `const M = module.exports` at the top level (see ParserShared.exports_aliases)
-static void note_exports_alias(Parser* p, InitializedBinding const* initializer) {
-    if (p->shared->function_depth || initializer->binding.tag != BINDING_IDENTIFIER) return;
-    Expr const* value = initialized_binding_value(initializer);
-    bool alias = false;
-    // (`var m = module.exports = {}`: either side of an assignment, tsc's isExportsOrModuleExportsOrAlias)
-    for (Expr const* e = value; e && !alias;) {
-        alias = expr_is_module_exports(e) || is_exports_alias_name(p, e) || (e->tag == EXPR_IDENTIFIER &&
-            !e->identifier.keyword && !expr_is_perenthisized(e) && span_equals(e->inner_span, "exports"));
-        bool assignment = e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
-        if (assignment && !alias) {
-            Expr const* left = &e->binary_op->left;
-            alias = expr_is_module_exports(left) || is_exports_alias_name(p, left) || (left->tag == EXPR_IDENTIFIER &&
-                !left->identifier.keyword && !expr_is_perenthisized(left) && span_equals(left->inner_span, "exports"));
-        }
-        e = assignment ? &e->binary_op->right : nullptr;
-    }
-    if (!alias) return;
-    ParserShared* shared = p->shared;
-    if (shared->exports_alias_count == shared->exports_alias_cap) {
-        shared->exports_alias_cap = shared->exports_alias_cap ? shared->exports_alias_cap * 2 : 4;
-        shared->exports_aliases = realloc(shared->exports_aliases, sizeof(csview) * shared->exports_alias_cap);
-        panic_if(!shared->exports_aliases, "out of memory");
-    }
-    shared->exports_aliases[shared->exports_alias_count++] = initializer->binding.content_span.sv;
-}
-
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
     bool using_forced = p.shared->using_forced;
@@ -12427,7 +12339,6 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 vec_jsdoc_tag_drop(&tags);
             }
             note_require_declaration(&initializer);
-            note_exports_alias(&p, &initializer);
         }
         list_push(vec_initialized_binding, &ret->initializers, initializer);
 
@@ -14010,7 +13921,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
             JsDocTag* enum_tag = toplevel ? jsdoc_find_enum(&tags) : nullptr;
-            Span export_name = enum_tag ? jsdoc_commonjs_export_assignment_name(p, statement) : span_null;
+            Span export_name = enum_tag ? jsdoc_commonjs_export_assignment_name(statement) : span_null;
             Span enum_name = enum_tag && !span_valid(export_name) && statement->expr.tag == EXPR_BINARY_OP ?
                 jsdoc_namespace_assignment_name(statement) : span_null;
             if (span_valid(export_name)) {
@@ -14438,8 +14349,6 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
             free(source->module_refs[i]);
         }
         source->module_ref_count = module_refs_before;
-        free(shared.exports_aliases);
-        free(shared.module_exports_accesses);
         parser_shared_drop(&shared);
         return false;
     }
@@ -14449,20 +14358,6 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     // parse errors, and like all grammar errors they aren't reported in a file with parse errors (hasParseDiagnostics)
     source->has_import_meta = shared.saw_import_meta;
     source->has_commonjs = shared.saw_commonjs;
-    free(shared.exports_aliases);
-    // tsc's binder declares `module` at the first `module.exports` it binds once the file is CommonJS (binding goes
-    // in source order, a node before its children)
-    source->module_exports_span = span_null;
-    for (u32 i = 0; shared.commonjs_start && i < shared.module_exports_access_count; i++) {
-        Span access = shared.module_exports_accesses[i];
-        Span* first = &source->module_exports_span;
-        if (span_start_ptr(access) >= shared.commonjs_start &&
-            (!span_valid(*first) || span_start_ptr(access) < span_start_ptr(*first))
-        ) {
-            *first = access;
-        }
-    }
-    free(shared.module_exports_accesses);
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     free(source->parse_error_starts);

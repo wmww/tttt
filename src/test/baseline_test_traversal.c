@@ -122,31 +122,6 @@ static void add_symbol_override(BaselineTestCase* ctx, Span span, Symbol const* 
     };
 }
 
-// tsc's getSpecialPropertyAssignmentSymbolFromEntityName: in `exports.x = v` `exports` and `x` are the
-// export x; in `module.exports = v` `module` and `exports` are the `export=` (the access itself is `module.exports`)
-static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
-    SourceFile const* file = left->inner_span.source;
-    if (!file || !file->is_commonjs || !file->scope || !file->scope->container) return;
-    Symbol const* module = file->scope->container;
-    Span name = span_null;
-    switch (expr_commonjs_target(left, &name)) {
-        case COMMONJS_TARGET_NONE:
-            break;
-        case COMMONJS_TARGET_EXPORTS_PROPERTY: {
-            Symbol const* symbol = module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
-            // (The access itself shows what the property lookup finds: nothing on an `export=` of another type)
-            // (`exports["x"]`: an element access isn't a special property assignment name, its object is itself)
-            if (left->property->form != PROPERTY_EXPR_BRACKET) add_symbol_override(ctx, left->property->expr.inner_span, symbol);
-            add_symbol_override(ctx, expr_outer_span(&left->property->prop), symbol);
-        }   break;
-        case COMMONJS_TARGET_MODULE_EXPORTS: {
-            Symbol const* symbol = module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
-            add_symbol_override(ctx, left->property->expr.inner_span, symbol);
-            add_symbol_override(ctx, expr_outer_span(&left->property->prop), symbol);
-        }   break;
-    }
-}
-
 // `exports.x = undefined` is an alias of undefined to tsc, whose `undefined` shows the file's first such export
 // (getSymbolAtLocation of the name in an alias declaration)
 static void commonjs_undefined_override(BinaryOpExpr const* assignment, BaselineTestCase* ctx) {
@@ -2660,21 +2635,6 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
         return;
     }
-    if (my target && my symbol == my target && my target->is_module && my target->module->file &&
-        csview_equals(identifier_expr_name(me).sv, "exports")
-    ) {
-        // `exports` in a CommonJS file: the file's symbol, `"a"` declared by the whole file (a UMD global that
-        // declarations merged into is that module too, but named and declared like any symbol)
-        SourceFile const* file = my target->module->file;
-        VecSpan declarations = vec_span_init();
-        vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declarations,
-            .span = identifier_expr_name(me),
-            .text = module_text(ctx, my target),
-        });
-        return;
-    }
     if (my require_call && my target && csview_equals(my target->name, "require") && !span_valid(my target->name_span)) {
         // tsc's requireSymbol, which has no declaration
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = identifier_expr_name(me), .allow_declaration_empty = true });
@@ -2716,7 +2676,12 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     }
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
     // (and a module that declarations merged into, the UMD global's)
-    if (shown && (span_valid(target->name_span) || span_valid(shown->name_span) || (shown->is_module && shown->decl_count))) {
+    // (and the `module` and `exports` of a CommonJS file, declared by the file)
+    bool commonjs_variable = shown && shown->decl_count &&
+        (shown->decls[0].kind == SYMBOL_DECL_COMMONJS_MODULE || shown->decls[0].kind == SYMBOL_DECL_COMMONJS_EXPORTS);
+    if (shown && (span_valid(target->name_span) || span_valid(shown->name_span) || (shown->is_module && shown->decl_count) ||
+        commonjs_variable)
+    ) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = merged_local ? declarations : declaration_get_spans(shown),
             .span = identifier_expr_name(me),
@@ -3020,7 +2985,6 @@ static void binary_op_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             spine = grown;
         }
         spine[count++] = (SpineEntry){ node, ctx->symbol_override_count };
-        if (binary_commonjs_declaration(binary, nullptr)) commonjs_symbol_overrides(&binary->left, ctx);
         if (binary->op == BINARY_OP_EQUAL && binary->left.inner_span.source && binary->left.inner_span.source->is_js) {
             prototype_symbol_overrides(&binary->left, ctx);
             this_property_symbol_overrides(&binary->left, ctx);
@@ -3122,7 +3086,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     VecSpan declarations = vec_span_init();
                     vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
                     ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                        .span = spans[i], .text = cstr_lit("module.exports"), .declarations = declarations,
+                        .span = spans[i], .text = cstr_lit("exports"), .declarations = declarations,
                     };
                 }
             }

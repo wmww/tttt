@@ -290,9 +290,6 @@ struct Ty {
         } param;
         struct {
             uint8_t kind; // TyDeclaredKind
-            // TY_DECLARED_NAMESPACE of a CommonJS module as its `module.exports` (tsc's synthetic symbol of that name):
-            // named `name` wherever it's printed
-            bool commonjs_exports;
             // TY_DECLARED_NAMESPACE of a JavaScript `var ns = {}` with expandos (is_js_container()): open-ended like
             // the object literal it is (tsc's getJSContainerObjectType makes it ObjectFlags.JSLiteral)
             bool js_container;
@@ -377,7 +374,6 @@ struct Ty {
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
-            bool commonjs_module : 1; // The `module` of a CommonJS file that is a namespace too: prints as `typeof module`
             bool export_equals_view : 1; // See TyDeclared.export_equals_view
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias

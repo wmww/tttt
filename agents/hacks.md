@@ -601,13 +601,13 @@ src` finds the code-side markers; every significant one has an entry here.
   `block_add_names()`) and `scope_add_this_property()` write file-level symbols from the resolve walk (want per-file
   lists merged after); only expression statements and `var` initializers are scanned. `Symbol.late_bound_key` keys
   `this[k] = v` by source text.
-- CommonJS binding: the module indicator is syntactic (`saw_commonjs`, failed attempts too); `exports.x =` only from
-  top-level statements and their blocks (`add_nested_commonjs_exports()`; in functions only IIFEs, see
-  missing_checks.md); `Object.defineProperty` only as an expression statement; `is_exports_alias()` module-level only
-  (queue of 16); `require()` is parser-synthesized `PortItem`s (flat patterns only); `readonly_assignment()` never
-  reports `exports.x =`. Exported class expressions alias the class (`scope_reparent`, top level only).
+- CommonJS binding: the module indicator is syntactic (`saw_commonjs`, failed attempts too); exports are found by a
+  whole-file `ast_walk_statement()` in `scope_add_commonjs_module()` (only for CommonJS JS files); `require()` is
+  parser-synthesized `PortItem`s (flat patterns only); `readonly_assignment()` never reports `exports.x =`. Exported
+  class expressions alias the class (`scope_reparent`, top level only: nested ones are properties).
   `exports.x = undefined` then `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias, tttt a
-  property + alias symbol.
+  property + alias symbol. `module.exports` of the `module` variable gets its symbols line from a span override in
+  the traversal (`EXPR_PROPERTY` case: tsgo's `exports` member symbol of `module`, which tttt doesn't make).
 - CommonJS `export =`: absorbs the module's other exports in place at link time (`merge_commonjs_export_equals()`,
   tsc's getCommonJsExportEquals clone), with two of tsc's laziness artifacts emulated by rules: a variable's
   function/class initializer lacks the merged exports (`is_commonjs_merged_export()`), and `export import a = x.c`'s
@@ -748,7 +748,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - Symbols lines: container from the traversal or `Prop.parent`; `collect_prop_symbol()` counts a non-object union
   member as lacking the property only for binding patterns: the object of a property access is sometimes not narrowed
   as far as tsc's (doing it everywhere loses 70 symbols components: optional chains, logicalAssignment*, nonPrimitive*).
-  Span-keyed overrides (`commonjs_symbol_overrides()`, `prototype_symbol_overrides()`,
+  Span-keyed overrides (`prototype_symbol_overrides()`,
   `this_property_symbol_overrides()`) stand in for getSpecialPropertyAssignmentSymbol. JSDoc tag Decls get no leading
   trivia (sniffed). A module's `default` export symbol is named like its first declaration.
 - JS class member merges (prototype assignments into class-body members, `F.prototype = {...}` members into `this.x`

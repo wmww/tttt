@@ -1135,8 +1135,7 @@ static bool branch_hoisted(Statement const* branch) {
 
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
-        case STATEMENT_EXPR:
-            scope_add_commonjs_export(scope, &my expr);
+        case STATEMENT_EXPR: // (CommonJS exports: scope_add_commonjs_module())
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:

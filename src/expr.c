@@ -569,8 +569,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 while (container && !scope_rare(container)->this_ref.kind) container = container->parent;
                 ThisRef outer_ref = container && container->parent ? scope_get_this(container->parent, false) : (ThisRef){0};
                 ThisKind outer = outer_ref.kind;
-                my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER ||
-                    outer == THIS_COMMONJS;
+                my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER;
                 if (!outer && container && container->parent) {
                     // At the top level: a module's `this` (undefined, or what a CommonJS module exports) isn't globalThis
                     // (tsc's tryGetThisTypeAt of the container)
@@ -580,7 +579,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                     ) {
                         file = file->parent;
                     }
-                    my this_shadows_outer = file->kind == SCOPE_MODULE;
+                    my this_shadows_outer = file->kind == SCOPE_MODULE && !(file->file && file->file->is_commonjs);
                 }
                 // (A function's `this` shadows another's when that one has a type, which the checker knows)
                 if (outer == THIS_ANY && outer_ref.function && this_ref.function && this_ref.function != outer_ref.function) {
@@ -609,7 +608,8 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 ) {
                     file = file->parent;
                 }
-                if (file->kind == SCOPE_SCRIPT) {
+                // (A CommonJS file isn't a module there: tsc's tryGetThisTypeAt asks for an externalModuleIndicator)
+                if (file->kind == SCOPE_SCRIPT || (file->kind == SCOPE_MODULE && file->file && file->file->is_commonjs)) {
                     my this_kind = THIS_GLOBAL;
                     for (Scope const* scope = names; scope && scope != file; scope = scope->parent) {
                         if (scope->kind == SCOPE_FUNCTION && scope->function && function_impl_is_arrow(scope->function)) {
@@ -617,7 +617,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                         }
                     }
                 }
-                if (file->kind == SCOPE_MODULE && file->file && file->file->is_commonjs) my this_kind = THIS_COMMONJS;
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }
@@ -655,12 +654,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     // (`default` is a reserved word, which only `typeof default` looks up: never the module's default export, which
     // tsc keeps in the module's exports only)
     my target = csview_equals(identifier_expr_name(me).sv, "default") ? nullptr : scope_get_value(names, identifier_expr_name(me).sv, &my symbol);
-    if (my target && names->file && names->file->is_commonjs && span_equals(identifier_expr_name(me), "exports") &&
-        my symbol == symbol_table_get(&names->binder->globals, identifier_expr_name(me).sv)
-    ) {
-        // A global `exports` doesn't hide the module (tsc's resolveNameHelper tries the file before the globals)
-        my target = my symbol = nullptr;
-    }
     if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
         // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
         if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
@@ -671,11 +664,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
             my target = my symbol = binder_require_symbol(names->binder);
             if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
-            return;
-        }
-        if (names->file->is_commonjs && span_equals(identifier_expr_name(me), "exports")) {
-            // The module itself (tsc's resolveNameHelper: `exports` in a CommonJS file is the file's symbol)
-            my target = my symbol = names->file->scope->container;
             return;
         }
     }
@@ -2049,9 +2037,6 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 my property->prop.identifier.target
             ) {
                 my property->for_in_loop_ = scope_for_in_loop_of(names, my property->prop.identifier.target);
-            }
-            if (names->file && names->file->is_commonjs && !flow->in_type_query && my property->expr.tag == EXPR_IDENTIFIER && expr_is_module_exports(me)) {
-                scope_note_module_exports_access(names, &my property->expr);
             }
             break;
 
@@ -4923,7 +4908,7 @@ void object_expr_item_drop(ObjectExprItem* me) {
     expr_drop(&my value);
 }
 
-static bool expr_is_plain_identifier(Expr const* me, const char* name) {
+bool expr_is_plain_identifier(Expr const* me, const char* name) {
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword && !expr_is_perenthisized(me) &&
         csview_equals(my inner_span.sv, name);
 }
