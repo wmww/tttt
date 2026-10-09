@@ -1613,7 +1613,33 @@ static char const* json_typeof(JsonValue const* value) {
 // createDiagnosticForOptionPathKeyValue: on the config's `paths`, else on `compilerOptions`)
 static void program_validate_paths(Program* me) {
     JsonMember const* options = config_compiler_options(me);
-    if (!options || options->value.tag != JSON_OBJECT) return;
+    JsonValue const* written = options && options->value.tag == JSON_OBJECT ? json_get(&options->value, "paths") : nullptr;
+    if (!written || written->tag != JSON_OBJECT) {
+        // Not in the config's own compilerOptions (an extended config's, or the command line's): on its
+        // `compilerOptions` key, else without a location
+        Span site = options ? config_span(me, options->key_start, options->key_end) : span_null;
+        for (isize i = 0; i < my options.path_count; i++) {
+            PathMapping const* mapping = &my options.paths[i];
+            if (count_asterisks(cstr_sv(&mapping->pattern)) > 1) {
+                option_error_d_one(me, site, 5061, "Pattern '", mapping->pattern, "' can have at most one '*' character.");
+            }
+            if (!mapping->substitutions.count) {
+                option_error_d_one(me, site, 5066, "Substitutions for pattern '", mapping->pattern,
+                    "' shouldn't be an empty array.");
+            }
+            for (isize j = 0; j < mapping->substitutions.count; j++) {
+                cstr const* substitution = &mapping->substitutions.items[j];
+                if (count_asterisks(cstr_sv(substitution)) > 1) {
+                    option_error_d_one(me, site, 5062, "Substitution '", *substitution, "' in pattern '", mapping->pattern,
+                        "' can have at most one '*' character.");
+                }
+                if (!path_is_relative_or_absolute(cstr_sv(substitution))) {
+                    option_error_d_one(me, site, 5090, "Non-relative paths are not allowed. Did you forget a leading './'?");
+                }
+            }
+        }
+        return;
+    }
     for (isize p = 0; p < options->value.count; p++) {
         JsonMember const* paths = &options->value.members[p];
         if (!cstr_equals(&paths->key, "paths") || paths->value.tag != JSON_OBJECT) continue;

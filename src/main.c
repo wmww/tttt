@@ -394,11 +394,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;
     if (!has_inputs) {
-        if (config.size) verify_references(program, projects, project, false);
-        bool no_inputs = config.size && program_report_no_inputs(program);
-        if (config.size) program_verify_options(program);
-        // A solution config: only references (tsc says nothing, and builds nothing without -b)
+        // A solution config: only references (tsc says nothing, and builds nothing without -b). -b doesn't build it,
+        // so not even its options are checked
         bool solution = config.size && project_set_at(projects, project)->reference_count;
+        bool built = config.size && !(opts->build && solution);
+        if (built) verify_references(program, projects, project, false);
+        bool no_inputs = built && program_report_no_inputs(program);
+        if (built) program_verify_options(program);
         report_errors(&shown, errs);
         intptr_t config_errors = print_diagnostics(opts, out, program, &shown);
         if (counts) counts->errors += config_errors;

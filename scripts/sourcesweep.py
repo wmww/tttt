@@ -125,8 +125,7 @@ def main():
         # The slowest projects first, so they don't end up alone at the end
         order = sorted(projects, key=lambda p: -oracle[p]['ms'])
         with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
-            results = list(pool.map(lambda p: sweep.run_tttt(p, args.timeout, args.mem_gb, cwd=SOURCES,
-                                                                keep_going='--keep-going=options'), order))
+            results = list(pool.map(lambda p: sweep.run_tttt(p, args.timeout, args.mem_gb, cwd=SOURCES), order))
         results.sort(key=lambda r: r['package'])
         elapsed = time.time() - start
         with open(LAST, 'w') as f:

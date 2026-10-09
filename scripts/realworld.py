@@ -167,7 +167,7 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--keep-going', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
