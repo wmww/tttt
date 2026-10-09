@@ -139,7 +139,17 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) expr_lookup_names(&i->value, scope, errs);
     }
-    if (my wrong_context) return;
+    if (my wrong_context) {
+        // (tsgo's checkExternalModuleNameInGlobalScope: in a block of the file itself, the module is still resolved;
+        // not `import "m"`)
+        Scope const* container = scope;
+        while (container && container->kind == SCOPE_BLOCK) container = container->parent;
+        bool side_effect_import = my main.tag == PORT_NOOP && csview_equals(my keyword_span.sv, "import");
+        if (container && (container->kind == SCOPE_MODULE || container->kind == SCOPE_SCRIPT) && !side_effect_import) {
+            module_ref_report(my module_ref, scope, errs);
+        }
+        return;
+    }
     // `export { x }` of a local `let`: it may be assigned from anywhere, closures don't see its narrowing (tsc's
     // markNodeAssignments of an ExportSpecifier)
     if (!my module_ref && port_statement_is_export_declaration(me)) {

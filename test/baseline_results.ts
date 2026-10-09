@@ -22781,7 +22781,7 @@ const baselines = {
         types: true,
     },
     'moduleElementsInWrongContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67816,7 +67816,7 @@ const baselines = {
         types: true,
     },
     'typingsLookup1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
