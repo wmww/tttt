@@ -28,6 +28,9 @@ typedef struct IdentifierTypeRare {
     // `target`, not exports. -1 if all are exports
     int import_prop_start;
     bool import_typeof;
+    // A bare `import("./m")` of a CommonJS module whose `module.exports =` has the module's types merged in: tsc's
+    // reference is to the `export=` alias itself, not a class: the target's declared type, no type arguments (TS2315)
+    bool import_export_equals_alias;
     // `A.b` where A is only a type (tsc's checkAndReportErrorForUsingTypeAsNamespace): that type, TS2713 if it has a
     // property b, else TS2702, said when checking (it takes the type's members)
     Symbol const* type_as_namespace;

@@ -489,6 +489,14 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         decl = export_equals_property_type(me, decl, identifier);
         if (!decl) return ty_intrinsic(me, TY_ERROR);
     }
+    if (identifier->rare && identifier->rare->import_export_equals_alias && decl && !decl->is_placeholder) {
+        // (tsc's getTypeReferenceType of the `export=` alias: tryGetDeclaredTypeOfSymbol, checkNoTypeArguments)
+        if (vec_spanned_type_size(&identifier->generic_params)) {
+            ty_error_at(me, identifier_type_import_span(identifier), 2315, cstr_d("Type 'export=' is not generic."));
+            return ty_intrinsic(me, TY_ERROR);
+        }
+        return ty_declared_type_of(me, decl);
+    }
     if (span_valid(identifier_type_import_span(identifier))) {
         // `import("./a").B`: an unresolved one was reported and is the error type (tsc's getTypeFromImportTypeNode), one
         // of a shorthand ambient module is any by design

@@ -69,6 +69,23 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
     return ret;
 }
 
+// Whether a CommonJS module's `export =` has other exports that are types or namespaces next to it (its `@typedef`s):
+// tsc's bindCommonJSTypeExports makes `export=` a namespace module then
+static bool commonjs_type_exports(Symbol const* module) {
+    Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+    if (!export_equals || !export_equals->decl_count || !export_equals->decls[0].full.source ||
+        !export_equals->decls[0].full.source->is_js
+    ) {
+        return false;
+    }
+    for (u32 i = 0; module->exports && i < module->exports->count; i++) {
+        SymbolEntry const* entry = &module->exports->entries[i];
+        if (!entry->symbol || csview_equals(symbol_entry_name(entry), "export=")) continue;
+        if (symbol_resolved_flags(entry->symbol) & (SYMBOL_TYPE | SYMBOL_NAMESPACE)) return true;
+    }
+    return false;
+}
+
 // `import("./a").A.B`, `typeof import("./a")`: the names are members of the module. False if there is no module
 static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     IdentifierTypeRare* rare = identifier_type_rare(me);
@@ -101,6 +118,7 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             // `export = C`
             my target = symbol_for_meaning(container, SYMBOL_TYPE);
             my symbol = container;
+            rare->import_export_equals_alias = commonjs_type_exports(module);
         } else {
             error_ctx_error_d(errs, rare->import_span, 1340,
                 "Module '", rare->import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
