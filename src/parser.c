@@ -6560,6 +6560,11 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
             is_definitely_function = true;
         }
 
+    } else if (committed && p.pos[0] == '=' && p.pos[1] == '>') {
+        // A lone `=>`: tsc's parseParameters says '(' expected, the list is missing
+        *ret = (FunctionImpl){0};
+        expected_token_error(&p, "(");
+        function_impl_set_args_span(ret, span_from_pos(&p));
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
 
@@ -7335,7 +7340,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
         Expr expr;
         if (*p.pos == ',') {
             expr = expr_undefined(span_from_pos(&p));
-        } else if (!parse_expr_or_spread(&p, &expr)) {
+        } else if ((p.pos[0] == '=' && p.pos[1] == '>') || !parse_expr_or_spread(&p, &expr)) {
             if (!list_is_element(&p, PARSING_ARRAY_LITERAL_MEMBERS, tok_peek(&p))) {
                 if (list_abort_or_skip(&p, PARSING_ARRAY_LITERAL_MEMBERS)) break;
                 continue;
@@ -8365,7 +8370,8 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     while (*p.pos && *p.pos != ')' && *p.pos != ';') {
         const char* start = p.pos;
         Expr arg = {0};
-        if (!parse_expr_or_spread(&p, &arg)) {
+        // (A lone `=>` starts no element: the list checks isStartOfExpression before parsing one)
+        if ((p.pos[0] == '=' && p.pos[1] == '>') || !parse_expr_or_spread(&p, &arg)) {
             // (The predicate only after the parser said no: it's what the list does on valid code that costs)
             if (!list_is_element(&p, PARSING_ARGUMENT_EXPRESSIONS, tok_peek(&p))) {
                 if (list_abort_or_skip(&p, PARSING_ARGUMENT_EXPRESSIONS)) break;
@@ -10731,8 +10737,11 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         return parse_fail(&p);
     } else if (word && !yield_await_is_keyword_here(&p) && parse_identifier_expr(&p, ret)) {
         inner_span_set = true;
-    } else if ((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&
-        parse_arrow_function(&p, ctx, function_flags_null, arrow_tristate == TRISTATE_TRUE, &parsed.function)
+    } else if (((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&
+            parse_arrow_function(&p, ctx, function_flags_null, arrow_tristate == TRISTATE_TRUE, &parsed.function)) ||
+        // A lone `=>` is an arrow function missing its parameter list (tsc's isParenthesizedArrowFunctionExpression,
+        // "ERROR RECOVERY TWEAK")
+        (c == '=' && p.pos[1] == '>' && parse_arrow_function(&p, ctx, function_flags_null, true, &parsed.function))
     ) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
@@ -12869,6 +12878,7 @@ static bool statement_start_needs_check(Parser* p) {
                 starts_with_followed_by_word_break(p, "protected");
         case 'r': return starts_with_followed_by_word_break(p, "readonly");
         case 's': return starts_with_followed_by_word_break(p, "static");
+        case '=': return p->pos[1] == '>'; // (An expression statement can't start with a lone `=>`, see parse_arrow_function_inner())
         default: return false;
     }
 }
