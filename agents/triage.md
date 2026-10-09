@@ -220,10 +220,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - typeFromContextualThisType symbols: `this` in a method of a literal typed by `@type {{...}}` on `const o1` is
   `Symbol(o1, Decl(type literal))` in tsgo (the reparsed type literal is named by the variable): C's reparse naming.
 
-- webpack ChunkRenderError.js:33 / CodeGenerationError.js:30 (TS2322 missing): a subclass constructor's
-  `/** @type {string} */ this.details = error.stack` where the base class declares `this.details` as `string=`. tsgo's
-  subclass member has its own declared type (thisAssignmentDeclarationTyped) and the value is checked against it;
-  tttt's `this.details` resolves to the base class's property. JS class this-properties (agent A's area). (Agent C)
 - flagflip after B's third task (2026-10-09, every cell but vscode): webpack's cells are down to its default-flag misses
   (20; 15 under sloppy/nosnc) but for one: webpack/nuia UmdLibraryPlugin.js:233 wants TS2322 inside
   `f([...(Array.isArray(r) ? r : [r])])` where tttt says TS2345 on the argument. tsgo's checkArrayLiteral passes
