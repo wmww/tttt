@@ -368,3 +368,34 @@ Checker regressions list: 45 -> 11 failing. Leftovers:
   directives and lib files aren't recorded as reasons; in the test harness tsgo shows the config-located reason as
   related info (TS1408 "File is matched by include pattern specified here", FileIncludeReason.toRelatedInfo), which
   tsconfigRootdirInclude needs (plus harness-relative paths in TS6059 there).
+## Sweep / $ExpectType / mutate leftovers (agent C, 2026-10-09, second task)
+DT sweep 8581 -> 8591 / 8595; $ExpectType 68619 -> 68631 / 68640; mutate seed 9141 (-n 4000): 8 -> 4 differ.
+- types/ember/v2: `import Ember from "ember"` in a test with `declare global { interface Function extends
+  Ember.FunctionPrototypeExtensions {} }`, the package a script whose `declare module "ember"` is what the import means:
+  tsgo reports TS2306 "is not a module" (and then TS2339s), apparently because the alias is resolved while the global
+  augmentation merges, before the script's ambient modules are in the globals. Repro in 8 lines:
+  /tmp/c-probes/em (an @types/ember with `declare module "ember" { namespace Ember {...} export default Ember }`).
+- types/koa-router: tsgo's TS2345 at koa-router-tests.ts:100 (`.use(router3.routes())`, a deep
+  ParameterizedContext comparison through `router.use`'s overloads); tttt relates them. Not reduced.
+- types/redux-define: TS2344 "only assignable to the non-distributed 'SubAction'" — plan 57 (distributed type
+  parameters).
+- types/react-intl-redux: TS2552 inside lib.esnext.intl.d.ts — lib files aren't checked (bugs/missing_checks.md).
+- $ExpectType babel__traverse / babel__helper-plugin-utils (8 asserts): @babel/types isn't installed in the corpus;
+  tsgo prints the unresolved `t.Aliases` where tttt has `any` (`path.type`, `NodePath<t.Aliases>` through
+  Visitor's `{ [K in keyof t.Aliases]?: VisitNode<S, t.Aliases[K]> }`). Small repros of `t.Aliases[K]` pass.
+- $ExpectType map-to-obj: `MapToObj(new Map([["hello", "world"]]))` — tsgo infers `Map<string, string>` inside the
+  call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no literal context),
+  tttt keeps `"hello"`. Also `f<K extends string>(m: Map<K, string>)`. Inference (agent D's area).
+- $ExpectType knockout.mapping: union order of two KnockoutObservableArray instantiations.
+- Mutants: mut0348 (objectRestBindingContextualInference, `K extends Object`): with `const { prepare, ...rest } =`
+  tsgo infers K = "image" from the binding pattern + argument, tttt widens to string (the rest element's index
+  signature in the pattern type?); mut2626 (noInferCommonPropertyCheck1, `test2(null, ...)`): tsgo's parameter type
+  `NoInfer<T1> & NoInfer<T2>` with T1 = null is `never`, tttt keeps `null & NoInfer<Partial<...>>` (tsgo's
+  isNoInferTargetType keeps the object as a substitution too: where does never come from?); mut0422 (display of a
+  mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint); mut0663 (`async (a = => await)`
+  recovery: tsgo's single TS1005 '(' expected vs tttt's cascade).
+- Perf: 9dee2f20 (skip the source property's type against an any/unknown target property, tsgo's
+  isPropertySymbolTypeRelated) cost type-fest +0.8% because the skipped property types got resolved later by costlier
+  paths (+128k lower_node calls from ty_cond_branch_type / tuple_element_type): limited to getters in d361bdba. Why a
+  later resolution lowers more (a memo that only fills on the early path?) isn't known: worth finding, it may cost
+  elsewhere too.
