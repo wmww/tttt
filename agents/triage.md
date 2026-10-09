@@ -111,10 +111,9 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   the checker's expando rules want that namespace meaning. A real port of bindDeferredExpandoAssignment would drop it.
   JavaScript keeps all of 6.0's rules (todo entry 8). Class statics aren't in host->exports at bind time, so
   `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
-- Index symbols (`__index`) missing through a type parameter's constraint (`T.__index`), a class's `this`
-  (`c.__index`), and a rest/spread object (`t2.__index`, `__index` of `{ ...roindex }`): keyofAndIndexedAccess2,
-  noUncheckedIndexedAccessDestructuring, objectSpreadIndexSignature. tsgo parents the symbol to the apparent type's own
-  symbol and getNameOfSymbolAsWritten names a type literal by its variable.
+- Index symbols (`__index`) of an object rest (`const { ...t2 } = strMap; t2.z`) are named after the rest's binding
+  (`t2.__index`: tsgo's getRestType gives the rest type the binding element's symbol); tttt's rest type has none
+  (noUncheckedIndexedAccessDestructuring).
 - Signature printing reuses lib annotations where tsgo doesn't: `Iterator.from`'s
   `Iterator<T, ...> | Iterable<T, ...>` (tsgo sorts it, reuses the node for a local declaration only: builtinIterator,
   awaitUsingDeclarationsWithIteratorObject). Printer reuse rule, agent C's area.
