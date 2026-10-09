@@ -692,3 +692,7 @@ src` finds the code-side markers; every significant one has an entry here.
   checker takes its own binder's. A suite run never re-binds a literal under another binder (instrumented 2026-10-09:
   only the same host again), so the per-binder key is belt and braces; it assumes no two programs bind the same
   SourceFile concurrently (the array is realloc'd by the binding walk).
+- `recursion_identity()` (relate.c) / `reference_from_type_node()` (lower.c): tsc's ObjectFlags.FromTypeNode is only
+  ported for array and tuple type nodes; generic interface/class references written as nodes keep the target identity
+  because tttt's signature relations don't instantiate fresh references per level (performanceComparisonOf...Signatures
+  would hit TS2589). Also order-dependent like tsc's (first creator of the interned reference wins).
