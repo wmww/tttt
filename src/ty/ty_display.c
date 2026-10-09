@@ -1201,7 +1201,9 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             out(d, cstr_sv(&name));
             cstr_drop(&name);
         } else if (ref) {
-            display_string_literal(d, cstr_sv(&ref->path));
+            // (The argument's literal, its quotes kept: tsgo's node copy)
+            bool single = span_valid(ref->span) && ref->span.sv.size && ref->span.sv.buf[0] == '\'';
+            display_quoted_string(d, cstr_sv(&ref->path), single, false);
         } else {
             display_node(me, d, identifier_type_import_argument(identifier));
         }
@@ -1556,17 +1558,6 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
     }
 }
 
-// tsc's tryVisitSimpleTypeNode (the object of an indexed access, the operand of `keyof`) reprints a type reference,
-// `typeof`, indexed access or `keyof` without the parentheses written around it
-static TypeNode node_without_simple_parens(TypeNode const* node) {
-    TypeNode copy = *node;
-    if (copy.parenthesized && (copy.tag == TYPE_IDENTIFIER || copy.tag == TYPE_TYPEOF || copy.tag == TYPE_INDEXED ||
-        copy.tag == TYPE_KEYOF)) {
-        copy.parenthesized = false;
-    }
-    return copy;
-}
-
 // Prints an annotation as written, as reused
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     d.reused = !node->synthesized;
@@ -1630,30 +1621,25 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, "]");
             break;
         case TYPE_INDEXED: {
-            if (simple_node_fails(me, d, &node->indexed->interface)) {
+            // (A parenthesized object doesn't fail the whole: its own part prints its type, in the parentheses)
+            if (!node->indexed->interface.parenthesized && simple_node_fails(me, d, &node->indexed->interface)) {
                 display_node_fallback(me, d, node);
                 break;
             }
-            // tsc's tryVisitIndexedAccess: the object without its parentheses if it's simple, then the factory's
-            // parenthesizeNonArrayTypeOfPostfixType (`typeof a['a']` prints `(typeof a)["a"]`)
-            TypeNode object = node_without_simple_parens(&node->indexed->interface);
-            bool parens = !object.parenthesized && (object.tag == TYPE_TYPEOF || object.tag == TYPE_KEYOF);
-            if (parens) out(reused_if(d, false), c_sv("("));
-            display_node(me, d, &object);
-            if (parens) out(reused_if(d, false), c_sv(")"));
+            // (Parenthesized as written: tsgo keeps a reused node's parentheses and adds none)
+            display_node(me, d, &node->indexed->interface);
             out_lit(d, "[");
             display_node(me, d, &node->indexed->index);
             out_lit(d, "]");
             break;
         }
         case TYPE_KEYOF: {
-            if (simple_node_fails(me, d, &node->keyof->interface)) {
+            if (!node->keyof->interface.parenthesized && simple_node_fails(me, d, &node->keyof->interface)) {
                 display_node_fallback(me, d, node);
                 break;
             }
             out_lit(d, "keyof ");
-            TypeNode operand = node_without_simple_parens(&node->keyof->interface); // (tsc's tryVisitKeyOf)
-            display_node(me, d, &operand);
+            display_node(me, d, &node->keyof->interface); // (Parenthesized as written, like an indexed access's object)
             break;
         }
         case TYPE_TERNARY: {

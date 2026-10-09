@@ -8988,7 +8988,7 @@ const baselines = {
     'declarationEmitResolveTypesIfNotReusable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRetainedAnnotationRetainsImportInOutput': {
         errors: true,
@@ -9243,7 +9243,7 @@ const baselines = {
     'declarationEmitUsingTypeAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitVarInElidedBlock': {
         errors: true,
@@ -29933,7 +29933,7 @@ const baselines = {
     'spuriousCircularityOnTypeImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spyComparisonChecking': {
         errors: true,
@@ -52153,7 +52153,7 @@ const baselines = {
     'jsDeclarationsUniqueSymbolUsage': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumTag': {
         errors: false,
