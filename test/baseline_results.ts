@@ -51638,7 +51638,7 @@ const baselines = {
     'checkJsdocTypeTag6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTag7': {
         errors: true,

@@ -7177,6 +7177,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
                 item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
+            // (A method's `@type` is its FullSignature, like a declaration's: its signature, not moved into it)
+            if (function && method) p.shared->jsdoc_declaration = function->jsdoc_method_signature = true;
             if (function) jsdoc_apply_function(&p, &tags, function);
         }
         vec_jsdoc_tag_drop(&tags);

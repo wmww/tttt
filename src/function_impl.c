@@ -1049,6 +1049,8 @@ static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* err
 // Parameters without a type (and default) that nothing gives a type are implicitly any
 void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
+    // (A JSDoc `@type` signature types every parameter, any past its own: tsgo's getParameterTypeOfFullSignature)
+    if (function_impl_rare(me)->jsdoc_signature_type && ty_jsdoc_tag_return_type(current_checker, me)) return;
     for_each (i, vec_function_arg, &my args) {
         if (i->initializer.binding.has_explicit_type || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) continue;
         if (function_impl_rare(me)->jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);

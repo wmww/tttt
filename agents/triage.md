@@ -203,9 +203,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   where tsgo keeps `() => "b"` (typeTagOnPropertyAssignment): the literal return is widened as if there were no
   contextual return type. The same in a variable annotation works; suspect the object-member path of check_object
   (member_ctx with i->jsdoc_type) doesn't give the function its contextual signature. (Agent C, plan 54 fan-out)
-- Object literal methods with a JSDoc `@type`: tsgo's getSignaturesOfSymbol makes the tag's single call signature the
-  method's own (checkJsdocTypeTag6 prints `methodWithMoreParameters(): void`); jsdoc_tag_signature() doesn't reach the
-  object literal member type. (Agent C)
 - jsdocTypedefBeforeParenthesizedExpression: `@param a {NotADuplicateIdentifier}` with the typedef in a comment before
   a parenthesized expression statement prints `number` in tsgo, the alias name in tttt. (Agent C)
 - (agent D, JSDoc second pass) typedefTagWrapping: a `@typedef` whose type fails to parse (`{function(string): boolean}`)
@@ -229,3 +226,8 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   BinaryOpExpr.jsdoc_type eagerly.
 - typeFromContextualThisType symbols: `this` in a method of a literal typed by `@type {{...}}` on `const o1` is
   `Symbol(o1, Decl(type literal))` in tsgo (the reparsed type literal is named by the variable): C's reparse naming.
+
+- webpack ChunkRenderError.js:33 / CodeGenerationError.js:30 (TS2322 missing): a subclass constructor's
+  `/** @type {string} */ this.details = error.stack` where the base class declares `this.details` as `string=`. tsgo's
+  subclass member has its own declared type (thisAssignmentDeclarationTyped) and the value is checked against it;
+  tttt's `this.details` resolves to the base class's property. JS class this-properties (agent A's area). (Agent C)

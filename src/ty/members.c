@@ -4097,7 +4097,8 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
 static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function, bool* self);
 
 static Signature const* jsdoc_tag_signature(Checker* me, FunctionImpl const* function) {
-    if (function->is_expression) return nullptr;
+    // (An object literal method's too: tsgo's FullSignature, getSignaturesOfSymbol)
+    if (function->is_expression && !function->jsdoc_method_signature) return nullptr;
     bool self = false;
     return jsdoc_tag_single_signature(me, function, &self);
 }
