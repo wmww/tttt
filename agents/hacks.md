@@ -355,8 +355,7 @@ src` finds the code-side markers; every significant one has an entry here.
   `context_map`); `get_prop_context`/`contextual_signature` take apparent types at use. `context_map` drops `unknown`
   parts when others contribute (tsc: noReductions).
 - Excess properties (`has_excess_properties`): a generic mapped target knows the lower bound of its constraint's keys
-  (`generic_mapped_knows()`, a partial tsc's resolveMappedTypeMembers: no intersection/conditional lower bounds, no
-  keyofStringsOnly); no nested re-check for intersection targets; `discriminated_union_target` has no key-property map.
+  (`generic_mapped_knows()`, a partial tsc's resolveMappedTypeMembers: no intersection/conditional lower bounds); no nested re-check for intersection targets; `discriminated_union_target` has no key-property map.
 - Destructuring assignments (`assignment_target_typecheck`): for-of destructuring (statement.c HACK) relates the
   widened element type (tsc: per property, so no excess property checks); array literal targets are arrays, not
   tuples.
@@ -457,10 +456,10 @@ src` finds the code-side markers; every significant one has an entry here.
   the clause's shape (each union member / conditional branch is the key, never, or an intersection with it), not by
   relating it to the key: relating, or lowering a self-referential branch, reaches the members being resolved
   (mappedTypeAsClauseRecursiveNoCrash1). A pending lazy branch counts as remapping.
-- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): ties that still fall back to tttt's ids: roots not
+- Stable type ordering (`ty/order.c`, tsgo's compareTypes): ties that still fall back to tttt's ids: roots not
   lowered from a node (no `outer`), deferred references whose node has no cheap position (`type_node_start()`:
   parenthesized or keyword element types), two nodes starting at the same token (`(A extends B ? 1 : 2) extends C ?
-  ...`), unique symbols of one name without positions, bigint literals, intrinsic variants, same-symbol anonymous types
+  ...`), unique symbols of one name without positions, intrinsic variants, same-symbol anonymous types
   with equal mappers. noImplicitAnyUnionNormalizedObjectLiteral1: tttt's nullable widening keeps one member's id where
   tsc's recreates both.
 - Member order (`builder_sort_stable()`, tsc's getNamedMembers): object literals, mapped types, namespaces and merged
