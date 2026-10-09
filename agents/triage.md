@@ -76,3 +76,29 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   `Partial<T>[keyof T] & {}` target display.
 - Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
   (`() => Generator<any, void, unknown>` for a generator referencing itself).
+## From the TS 7.1 types-printer fan-out (agent C, 2026-10-09)
+- **tsgo's pseudochecker is only partly emulated.** serializeTypeForDeclaration/serializeReturnTypeForSignature print a
+  declaration's type from its syntax (pseudochecker, `internal/pseudochecker`) when equivalent to the checker's type,
+  wherever there's an enclosing declaration. tttt has slices (`a: x as T`, `return x as T`, single-quoted literals under
+  `as const`, `p? = 0`, mapped `a?: T`). Missing: a variable's whole initializer (`const a = { get foo() {...}, set
+  foo(v) {...} }` prints `{ get foo(): string; set foo(value: string); }` in `a`'s line only; `{ r: ['w'] } as const`
+  prints `readonly ['w']` there, `["w"]` in the expression's line), and its isolatedDeclarations errors (ErrorNodes).
+  Plan-sized: a port of pseudochecker + pseudoTypeEquivalentToType over tttt's AST.
+- **Anonymous types inside generic declarations are instantiated even when they reference no outer type parameter**
+  (tsc filters getOuterTypeParameters by isTypeParameterPossiblyReferenced): `Promise<number>.finally`'s parameter type
+  is a new union, so its annotation `(() => void) | undefined | null` isn't reused and prints `| null | undefined`
+  (es2018ObjectAssign, usePromiseFinally). Also an identity/perf question. Reusing parameter annotations with the
+  signature's mapper (tsgo does) was tried: 94 regressions (`this` must map, `then` isn't reused by tsgo).
+- Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
+  `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
+  newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
+- Nested instantiations of one mapped type share tttt's type parameter (tsgo clones it): `Compute<A>` prints `[K in ...]`
+  inside `[K in ...]`, tsgo `K_1` (computedTypesKeyofNoIndexSignatureType, declarationsWithRecursiveInternalTypes...).
+- 7.1's import attributes on module symbols: `typeof import("./0", { with: { type: "json" } })`
+  (getTypeOfModuleImportAttributes, importAttributes2/3, importAssertion2/3, typeOnlyESMImportFromCJS).
+- A rest parameter expanded from a tuple: tsgo's fake scope names the *original* parameters by index (enterNewScope),
+  so `typeof a` of the rest `a` is reused (declarationEmitTypeofRest); tttt's name_accessible() has TS 6.0's rule.
+- Accessor bodies in type literals/interfaces are kept by tsgo's parser and typed (accessorBodyInTypeContext:
+  `get foo() { return 0 }` is number); tttt drops them.
+- `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
+  baseline_test_traversal.c); the checker path that makes them any wasn't found.
