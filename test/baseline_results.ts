@@ -3153,7 +3153,7 @@ const baselines = {
     'checkJsTypeDefNoUnusedLocalMarked': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnExportAssignment1': {
         errors: true,

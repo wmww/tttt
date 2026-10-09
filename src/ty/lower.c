@@ -1121,7 +1121,8 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
-        exports = symbol_rare(assigned)->export_equals_module ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
+        // (In a CommonJS JavaScript module the merge added types only: the value is the assigned one's)
+        exports = symbol_rare(assigned)->export_equals_module && !file->is_commonjs ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
         // Nothing but null, undefined or never assigned is any in JavaScript (tsc's getTypeOfFuncClassEnumModule through
         // getWidenedTypeForAssignmentDeclaration of `export=`, which reports it: TS7008 in expr.c)
         if (file->is_js && !(exports->flags & TYF_ANY) && ty_only_nullable(exports)) exports = ty_intrinsic(me, TY_ANY);
@@ -2025,7 +2026,11 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    if (symbol && symbol_rare(symbol)->export_equals_module) return merged_export_equals_type(me, symbol, false);
+    // (A CommonJS JavaScript module's merge added types only: its value is its own)
+    Symbol const* merged_module = symbol ? symbol_rare(symbol)->export_equals_module : nullptr;
+    if (merged_module && !(merged_module->module && merged_module->module->file && merged_module->module->file->is_commonjs)) {
+        return merged_export_equals_type(me, symbol, false);
+    }
     return own_type_of_symbol(me, symbol);
 }
 
