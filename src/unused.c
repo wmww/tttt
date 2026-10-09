@@ -190,17 +190,27 @@ static void report_variables(Reporter const* r, VariableStatement const* me, Spa
     }
 }
 
-// The `<...>` of a type parameter list (tsc's rangeOfTypeParameters)
+// tsc's rangeOfTypeParameters: from the character before the list (`<`, the space before a JSDoc list's first
+// `@template`) to one past the first non-whitespace after it (`>`, the `*` of a JSDoc comment's `*/`)
 static Span type_parameters_range(Generic const* generic) {
-    Span first = vec_generic_item_front(&generic->items)->full_span;
+    GenericItem const* first = vec_generic_item_front(&generic->items);
     Span last = vec_generic_item_back(&generic->items)->full_span;
-    char const* start = span_start_ptr(first);
+    char const* file_start = cstr_str(&first->full_span.source->contents);
+    char const* start = span_start_ptr(first->full_span);
+    if (span_valid(first->jsdoc_tag)) {
+        start = span_start_ptr(first->jsdoc_tag);
+        if (start > file_start) start--;
+    } else {
+        while (start > file_start && *start != '<') start--;
+    }
     char const* end = span_end_ptr(last);
-    char const* file_start = cstr_str(&first.source->contents);
-    while (start > file_start && *start != '<') start--;
-    while (*end && *end != '>') end++;
+    if (span_valid(first->jsdoc_tag)) {
+        while (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r') end++;
+    } else {
+        while (*end && *end != '>') end++;
+    }
     if (*end) end++;
-    return span_make(first.source, start, end);
+    return span_make(first->full_span.source, start, end);
 }
 
 // The type parameters of a class or interface declaration
@@ -226,60 +236,33 @@ static bool type_parameter_is_unused(GenericItem const* me, Symbol const* owner,
     return true;
 }
 
-// tsc's checkUnusedTypeParameters. Of a class or interface (`owner`) only the last declaration reports them: all of
-// them can use them
-static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner, void const* node) {
+// tsc's checkUnusedTypeParameters: of every declaration (a class or interface's merged declarations, `owner`, share
+// their type parameters: one used in any of them is used), the whole list when it has several and none is used
+static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner) {
     if (generic_empty(generic)) return;
-    if (owner && owner->decls[owner->decl_count - 1].node != node) return;
+    // (Not when the declarations are in several files: tsc's allDeclarationsInSameSourceFile)
+    for (u32 i = 1; owner && i < owner->decl_count; i++) {
+        if (owner->decls[i].full.source != owner->decls[0].full.source) return;
+    }
     u32 unused_count = 0;
     for_each (i, vec_generic_item, &generic->items) {
         if (type_parameter_is_unused(i, owner, i_index)) unused_count++;
     }
     if (!unused_count) return;
-    if (span_valid(vec_generic_item_front(&generic->items)->jsdoc_tag)) {
-        // JSDoc: each `@template` tag is a list of its own, reported whole when none of its type parameters is used
-        for_each (i, vec_generic_item, &generic->items) {
-            if (!type_parameter_is_unused(i, owner, i_index)) continue;
-            u32 in_tag = 0, unused_in_tag = 0;
-            for_each (j, vec_generic_item, &generic->items) {
-                if (!span_eq(j->jsdoc_tag, i->jsdoc_tag)) continue;
-                in_tag++;
-                if (type_parameter_is_unused(j, owner, j_index)) unused_in_tag++;
-            }
-            if (unused_in_tag < in_tag) {
-                report_never_read(r, true, i->full_span, i->name);
-                continue;
-            }
-            // (Once per tag: at its first type parameter)
-            bool first = true;
-            for (GenericItem const* j = generic->items.data; j < i && first; j++) first = !span_eq(j->jsdoc_tag, i->jsdoc_tag);
-            if (!first) continue;
-            if (in_tag == 1) report_never_read(r, true, i->jsdoc_tag, i->name);
-            else report(r, true, i->jsdoc_tag, 6205, cstr_from("All type parameters are unused."));
-        }
-        return;
-    }
-    if (unused_count == (u32)vec_generic_item_size(&generic->items)) {
-        Span range = type_parameters_range(generic);
-        if (unused_count == 1) {
-            report_never_read(r, true, range, vec_generic_item_front(&generic->items)->name);
-        } else {
-            report(r, true, range, 6205, cstr_from("All type parameters are unused."));
-        }
+    isize count = vec_generic_item_size(&generic->items);
+    if (count > 1 && unused_count == (u32)count) {
+        report(r, true, type_parameters_range(generic), 6205, cstr_from("All type parameters are unused."));
         return;
     }
     for_each (i, vec_generic_item, &generic->items) {
         if (type_parameter_is_unused(i, owner, i_index)) {
-            report_never_read(r, true, i->full_span, i->name);
+            report(r, true, i->name, 6196, cstr_d("'", i->name, "' is declared but never used."));
         }
     }
 }
 
 static void report_function(Reporter const* r, FunctionImpl const* me) {
-    // Of overloads only the last declaration reports its type parameters (a class method's overload signatures have an
-    // implementation after them)
-    bool last = my symbol ? my symbol->decls[my symbol->decl_count - 1].node == me : !function_impl_rare(me)->overload_implementation;
-    if (last) report_type_parameters(r, &my generic, nullptr, nullptr);
+    report_type_parameters(r, &my generic, nullptr);
     if (!my has_body || my is_type) return;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
@@ -445,19 +428,19 @@ void unused_report(SourceFile const* file, ErrorCtx* errs) {
             case UNUSED_CLASS: {
                 ClassDecl const* decl = candidate->node;
                 report_class_members(&r, decl);
-                report_type_parameters(&r, &decl->generic, decl->symbol, decl);
+                report_type_parameters(&r, &decl->generic, decl->symbol);
             }   break;
             case UNUSED_INTERFACE: {
                 InterfaceDecl const* decl = candidate->node;
-                report_type_parameters(&r, &decl->generic, decl->symbol, decl);
+                report_type_parameters(&r, &decl->generic, decl->symbol);
             }   break;
-            case UNUSED_TYPE_ALIAS: report_type_parameters(&r, &((TypeDecl const*)candidate->node)->generic, nullptr, nullptr); break;
+            case UNUSED_TYPE_ALIAS: report_type_parameters(&r, &((TypeDecl const*)candidate->node)->generic, nullptr); break;
             case UNUSED_INFER: {
                 InferredType const* infer = candidate->node;
                 if (infer->owned_symbol && !(infer->owned_symbol->referenced & SYMBOL_TYPE_PARAMETER) &&
                     !starts_with_underscore(infer->name)
                 ) {
-                    report_never_read(&r, true, infer->full_span, infer->name);
+                    report(&r, true, infer->name, 6196, cstr_d("'", infer->name, "' is declared but never used."));
                 }
             }   break;
         }
