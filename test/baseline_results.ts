@@ -9646,9 +9646,9 @@ const baselines = {
         types: true,
     },
     'deduplicatePackages(deduplicatepackages=false)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'deduplicatePackages(deduplicatepackages=true)': {
         errors: true,
@@ -11281,12 +11281,12 @@ const baselines = {
         types: true,
     },
     'emitOutputPathWithCaseFoldingRootDir': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emitOutputPathWithSourceEqualToRootDir': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26036,9 +26036,9 @@ const baselines = {
         types: true,
     },
     'packageDeduplicationDuplicateGlobals': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'packageJsonImportsWildcardNoCrash': {
         errors: true,

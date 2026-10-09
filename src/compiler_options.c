@@ -272,6 +272,7 @@ void compiler_options_resolve(CompilerOptions* me) {
 #undef X
 #define DEFAULT(field, value) if (!my is_set[COMPILER_OPTION_##field]) my field = (value)
     DEFAULT(always_strict, true);
+    DEFAULT(deduplicate_packages, true);
 
     // (tsc's computed target: the latest standard)
     if (!my target_set) my target = SCRIPT_TARGET_ES2026;

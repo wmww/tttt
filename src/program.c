@@ -106,6 +106,8 @@ typedef struct Program {
     // program_copy_globals_from()) come before this one's, like tsc's default library files
     u32 order_base;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
+    // The file being added is a package's second copy of this first one (program_load_resolved())
+    SourceFile* adding_package_redirect;
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
     // them was a declaration file
     HMapPackageFlag packages;
@@ -718,21 +720,27 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
+                // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
+                // second copy stays in the program, but imports mean the first, and its own imports are the first's
+                // (tsc's redirect source file shares the first's AST: see program_share_redirect_ref()). Unless
+                // `deduplicatePackages: false` (tsgo's filesparser)
+                bool dedup = cstr_size(&resolved.package_id) && my options.deduplicate_packages;
+                auto found = dedup ? hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id)) : nullptr;
+                SourceFile* first = found ? found->second : nullptr;
+                my adding_package_redirect = first;
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                my adding_package_redirect = nullptr;
                 // (Only an extension the name itself has counts, not one a package.json or an export map wrote:
                 // tsc's candidateIsFromPackageJsonField, tryExtractTSExtension of the name)
                 ref->used_ts_extension = resolved.used_ts_extension && name_has_ts_extension(cstr_sv(&ref->path));
-                // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
-                // second copy stays in the program, but imports mean the first
-                if (cstr_size(&resolved.package_id) && ref->file) {
-                    auto first = hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id));
+                if (dedup && ref->file) {
                     if (first) {
-                        if (first->second != ref->file) {
+                        if (first != ref->file) {
                             ref->redirected_from = ref->file;
                             ref->file->package_redirect = true;
                             ref->file->unchecked = true;
                         }
-                        ref->file = first->second;
+                        ref->file = first;
                     } else {
                         hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
                     }
@@ -1295,6 +1303,26 @@ static void program_found_outside_node_modules(SourceFile* file) {
     }
 }
 
+// An import of a package's second copy (SourceFile.package_redirect) is what the same import of the first copy found,
+// which is loaded already: tsc's redirect source file has the first's AST, imports included, so nothing the second
+// copy's directory has is loaded (`import "globals"` of each copy). False if the first has no such import (the copies
+// differ), resolved as its own then
+static bool program_share_redirect_ref(SourceFile const* target, ModuleRef* ref) {
+    if (ref->is_declaration) return false;
+    for (u32 i = 0; i < target->module_ref_count; i++) {
+        ModuleRef const* own = target->module_refs[i];
+        if (own->is_declaration || own->syntax != ref->syntax || !cstr_eq(&own->path, &ref->path)) continue;
+        ref->file = own->file;
+        ref->redirected_from = own->redirected_from;
+        ref->failure = own->failure;
+        ref->used_ts_extension = own->used_ts_extension;
+        ref->external_library = own->external_library;
+        cstr_take(&ref->resolved_path, cstr_clone(own->resolved_path));
+        return true;
+    }
+    return false;
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
@@ -1330,6 +1358,15 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (span_valid(my include_site)) source_file->included_at = my include_site;
     my include_site = span_null;
 
+    // (A package's second copy, see program_load_resolved())
+    SourceFile* redirect_target = my adding_package_redirect;
+    my adding_package_redirect = nullptr;
+    // (Only once the first copy is loaded, its imports resolved: not while it is, an import cycle back to the package)
+    bool target_loaded = false;
+    for (isize i = vec_source_file_ptr_size(&my source_files_ordered); redirect_target && !target_loaded && i-- > 0;) {
+        target_loaded = *vec_source_file_ptr_at(&my source_files_ordered, i) == redirect_target;
+    }
+    if (!target_loaded) redirect_target = nullptr;
     // `/// <reference path>`s first, then the rest (`types`, `lib`): tsc's processReferencedFiles comes before
     // processTypeReferenceDirectives, and the order files load in is the program's
     for_each (i, vec_statement, &source_file->ast.statements) {
@@ -1403,6 +1440,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // A name the file declares an ambient module for is that module, not a file (tsc's resolveToOwnAmbientModule):
         // `import * as React from "react"` inside react16.d.ts's `declare module "react/jsx-runtime"`
         if (!source_file->is_module && !ref->nested_in_ambient_module && source_declares_ambient_module(source_file, cstr_sv(&ref->path))) continue;
+        if (redirect_target && program_share_redirect_ref(redirect_target, ref)) continue;
         program_load_module_ref(me, source_file, ref);
     }
 
@@ -2205,10 +2243,16 @@ static void program_verify_project_files(Program* me) {
         SourceFile const* file = *i;
         if (!emit_source_may_be_emitted(me, file)) continue;
         cstr absolute = absolute_path_of(cwd, cstr_sv(&file->canonical_path));
-        csview path = cstr_sv(&absolute);
-        csview root = cstr_sv(&root_dir);
-        bool under = path.size > root.size && !memcmp(path.buf, root.buf, (size_t)root.size) &&
-            (path.buf[root.size] == '/' || (root.size == 1 && root.buf[0] == '/'));
+        // (tsgo's ContainsFilePath: the directory itself counts, `rootDir` naming the file; a case-insensitive host
+        // compares Unicode lower cases, ToFileNameLowerCase)
+        bool fold = o->case_insensitive_file_names;
+        cstr folded_path = fold ? cstr_tolower_sv(cstr_sv(&absolute)) : cstr_null;
+        cstr folded_root = fold ? cstr_tolower_sv(cstr_sv(&root_dir)) : cstr_null;
+        csview path = cstr_sv(fold ? &folded_path : &absolute);
+        csview root = cstr_sv(fold ? &folded_root : &root_dir);
+        bool under = path.size >= root.size && !memcmp(path.buf, root.buf, (size_t)root.size) &&
+            (path.size == root.size || path.buf[root.size] == '/' || (root.size && root.buf[root.size - 1] == '/'));
+        c_drop(cstr, &folded_path, &folded_root);
         if (root_dir_check && !under) {
             program_error_explaining_file(me, file, 6059, cstr_d("File '", absolute, "' is not under 'rootDir' '",
                 root_dir, "'. 'rootDir' is expected to contain all source files."));

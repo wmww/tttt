@@ -88,6 +88,7 @@ typedef enum ModuleDetectionKind {
     X(composite, "composite", false) \
     X(declaration, "declaration", false) \
     X(declaration_map, "declarationmap", false) \
+    X(deduplicate_packages, "deduplicatepackages", false) \
     X(downlevel_iteration, "downleveliteration", false) \
     X(emit_declaration_only, "emitdeclarationonly", false) \
     X(emit_decorator_metadata, "emitdecoratormetadata", false) \
