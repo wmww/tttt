@@ -321,6 +321,12 @@ void type_flow_restore(TypeFlow const* saved) {
     current_flow = saved;
 }
 
+// The type parameters that conditional types around the node being looked up distribute over (see TYPE_TERNARY)
+static thread_local struct {
+    Symbol const* symbols[64];
+    u32 len;
+} distributing;
+
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
     my flow = current_flow;
     switch (my tag) {
@@ -344,7 +350,14 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             }
             type_lookup_names(&my inferred->extends, names, errs);
             break;
-        case TYPE_IDENTIFIER: identifier_type_lookup_names(my identifier, names, errs); break;
+        case TYPE_IDENTIFIER:
+            identifier_type_lookup_names(my identifier, names, errs);
+            if (distributing.len && my identifier->target && (my identifier->target->flags & SYMBOL_TYPE_PARAMETER)) {
+                for (u32 i = 0; i < distributing.len; i++) {
+                    if (distributing.symbols[i] == my identifier->target) my identifier->distributed = true;
+                }
+            }
+            break;
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
         case TYPE_INTERFACE: {
@@ -400,6 +413,19 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
                 super_mapped->type.inferred->position = INFER_POSITION_MAPPED_TEMPLATE;
                 super_mapped->type.inferred->check_mapped = sub_mapped;
             }
+            // A bare type parameter check type distributes: references to it anywhere in the conditional (the check type
+            // too) are its distributed twin (tsgo 7.1's getDistributedTypeParameter)
+            u32 saved_distributing = distributing.len;
+            {
+                TypeNode const* check = &my ternary->maybe_sub;
+                IdentifierType* id = check->tag == TYPE_IDENTIFIER && !check->parenthesized ? check->identifier : nullptr;
+                if (id && !id->keyword && !identifier_type_namespace_count(id) && !(id->rare && id->rare->import_ref) &&
+                    !vec_spanned_type_size(&id->generic_params) && id->target && (id->target->flags & SYMBOL_TYPE_PARAMETER) &&
+                    distributing.len < c_arraylen(distributing.symbols)
+                ) {
+                    distributing.symbols[distributing.len++] = id->target;
+                }
+            }
             type_lookup_names(&my ternary->maybe_super, names, errs);
 
             TypeFlow const* saved_flow = current_flow;
@@ -410,6 +436,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             current_flow = saved_flow;
 
             type_lookup_names(&my ternary->if_false, names, errs);
+            distributing.len = saved_distributing;
         }   break;
 
         case TYPE_UNION:

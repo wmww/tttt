@@ -600,7 +600,8 @@ static void builder_add_interface_member(
                     mapped->keyof_constraint = true;
                 } else if (mapped->constraint->kind == TY_TYPE_PARAM) {
                     // `[P in K]` with `K extends keyof T` (Pick) takes its modifiers from T too
-                    Ty const* constraint = ty_param_constraint(me, mapped->constraint);
+                    // (A distributed K's: its original's, tsgo 7.1's getModifiersTypeFromMappedType)
+                    Ty const* constraint = ty_param_constraint(me, ty_non_distributed(mapped->constraint));
                     if (constraint && constraint->kind == TY_KEYOF) mapped->modifiers_type = constraint->keyof.operand;
                 }
                 mapped->readonly = i->key.mapped->readonly;

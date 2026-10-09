@@ -62,6 +62,7 @@ static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
 static InferParam* inference_param(Inference* inf, Ty const* ty) {
     // (An indexed access is inferred to by reverse mapped types: `T[K]`, see reverse_mapped_prop_type())
     if (ty->kind != TY_TYPE_PARAM && ty->kind != TY_INDEXED) return nullptr;
+    ty = ty_non_distributed(ty); // (tsgo's getInferenceInfoForType)
     for (u32 i = 0; i < inf->len; i++) {
         if (inf->params[i].param == ty) return &inf->params[i];
     }
@@ -1689,11 +1690,11 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         inf->object_depth++;
         // (Before a union source is taken apart, like tsc's inferFromTypes: `E` of a union alias infers E itself)
         if (source->kind == TY_CONDITIONAL) {
-            infer_from(me, inf, source->conditional.check, target->conditional.check);
-            infer_from(me, inf, source->conditional.extends, target->conditional.extends);
-            Ty const* source_true = ty_conditional_branch(me, source, true);
+            infer_from(me, inf, ty_non_distributed(source->conditional.check), target->conditional.check);
+            infer_from(me, inf, ty_non_distributed(source->conditional.extends), target->conditional.extends);
+            Ty const* source_true = ty_non_distributed(ty_conditional_branch(me, source, true));
             infer_from(me, inf, source_true, ty_conditional_branch(me, target, true));
-            Ty const* source_false = ty_conditional_branch(me, source, false);
+            Ty const* source_false = ty_non_distributed(ty_conditional_branch(me, source, false));
             infer_from(me, inf, source_false, ty_conditional_branch(me, target, false));
         } else {
             // To both branches, the ones that aren't naked type parameters first, the naked ones less directly (tsc's

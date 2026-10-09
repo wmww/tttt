@@ -2612,7 +2612,8 @@ static bool mapped_needs_wrapper(Checker* me, TyDisplay d, MappedInfo const* map
             mapped->modifiers_type->kind != TY_TYPE_PARAM;
     }
     bool preserving = !mapped->keyof_constraint && !(mapped->constraint->kind == TY_TYPE_PARAM &&
-        ty_param_constraint(me, mapped->constraint) && ty_param_constraint(me, mapped->constraint)->kind == TY_KEYOF);
+        ty_param_constraint(me, ty_non_distributed(mapped->constraint)) &&
+        ty_param_constraint(me, ty_non_distributed(mapped->constraint))->kind == TY_KEYOF);
     return *homomorphic_lost || preserving;
 }
 
@@ -3181,7 +3182,7 @@ static void display_distributive_conditional(Checker* me, TyDisplay d, Ty const*
     u32 len = 1 + (outer ? outer->len : 0);
     Ty const** sources = malloc(len * sizeof(Ty const*));
     Ty const** targets = malloc(len * sizeof(Ty const*));
-    sources[0] = root->conditional.check;
+    sources[0] = ty_non_distributed(root->conditional.check); // (prependTypeMapping: getNonDistributedTypeParameter)
     targets[0] = param;
     for (u32 i = 1; i < len; i++) {
         sources[i] = outer->sources[i - 1];
@@ -3458,6 +3459,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (d.tracker && d.tracker->truncated) return;
     if (ty == my display_of) ty = my display_as;
+    ty = ty_non_distributed(ty); // (tsgo's typeToTypeNode prints a distributed type parameter as its original)
     if (ty->kind == TY_SUBSTITUTION) {
         // Its base (tsc's typeToTypeNodeHelper)
         if (!ty_is_no_infer(ty)) {

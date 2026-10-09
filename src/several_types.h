@@ -65,6 +65,9 @@ typedef struct IdentifierType {
     // The whole body of a type alias written `intrinsic`: tsc's IntrinsicKeyword (the lib's Uppercase<S> & co.), not a
     // name. Anywhere else `intrinsic` is a name like any other (TS2304)
     bool intrinsic_keyword;
+    // Inside a conditional type whose check type is a bare reference to the type parameter this names (the check type
+    // included): it stands for the distributed type parameter (tsgo 7.1's getDistributedTypeParameter, plan 57)
+    bool distributed;
 } IdentifierType;
 
 // The rare part, made on demand

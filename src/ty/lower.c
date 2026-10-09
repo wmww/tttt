@@ -3686,6 +3686,8 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             }
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
             my current_node = saved_node;
+            // (Under a conditional type distributing over it: the distributed twin, plan 57)
+            if (node->identifier->distributed && ret->kind == TY_TYPE_PARAM) ret = ty_distributed_type_param(me, ret);
             Symbol const* decl = node->identifier->target;
             // The body of an alias is an instantiation of a generic alias: it goes by the new name
             // Not when a conditional type resolved (`type C = Chars<"ab">` is the union made along the way, tsc's

@@ -1874,6 +1874,22 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
     return *slot;
 }
 
+// tsgo's getDistributedTypeFromTypeParameter: a type parameter of its own, constrained to the original
+Ty const* ty_distributed_type_param(Checker* me, Ty const* param) {
+    param = ty_non_distributed(param);
+    TyParamState* state = param->param.state;
+    if (!state->distributed) {
+        Ty* twin = (Ty*)make_type_param(me, param->param.symbol, param->param.name);
+        twin->param.state->distributed_of = param;
+        twin->param.state->constraint = param;
+        twin->param.state->constraint_state = LAZY_STATE_DONE;
+        twin->param.state->is_infer = state->is_infer;
+        twin->param.state->circular = 1;
+        state->distributed = twin;
+    }
+    return state->distributed;
+}
+
 Ty const* ty_synthetic_type_param(Checker* me, csview name) {
     return make_type_param(me, nullptr, checker_atom(me, name));
 }
@@ -2902,13 +2918,13 @@ Ty const* ty_substitution_intersection(Checker* me, Ty const* ty) {
 
 Ty const* ty_actual_type_variable(Checker* me, Ty const* ty) {
     if (ty->kind == TY_SUBSTITUTION) return ty_actual_type_variable(me, ty->substitution.base);
-    if (ty->kind == TY_INDEXED &&
-        (ty->indexed.object->kind == TY_SUBSTITUTION || ty->indexed.index->kind == TY_SUBSTITUTION)
-    ) {
+    if (ty->kind == TY_INDEXED) {
         Ty const* object = ty_actual_type_variable(me, ty->indexed.object);
-        return ty_indexed(me, object, ty_actual_type_variable(me, ty->indexed.index));
+        Ty const* index = ty_actual_type_variable(me, ty->indexed.index);
+        if (object == ty->indexed.object && index == ty->indexed.index) return ty;
+        return ty_indexed(me, object, index);
     }
-    return ty;
+    return ty_non_distributed(ty); // (tsgo 7.1: a distributed type parameter is its original)
 }
 
 // What an instantiation makes of `O[K]`: like ty_indexed(), but a non-generic access that finds nothing is unknown

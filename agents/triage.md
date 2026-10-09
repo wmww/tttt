@@ -315,8 +315,10 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - `function c(): () => number { ... }` assigned elsewhere: kw4 probe's TS2322 elaboration repeats "Type 'string' is
   not assignable to type 'number'." twice under a signature return mismatch.
 ## 7.1 new tests fan-out (agent D, 2026-10-09)
-Checker regressions list: 45 -> 13 failing. Leftovers:
-- distributedTypeParameters, distributiveConditionalBaseConstraint: TS 7.1's distributed type parameters, plan 57.
+Checker regressions list: 45 -> 11 failing. Leftovers:
+- distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
+  `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568), not the distributed
+  type parameters themselves (implemented, see hacks.md).
 - syntheticProtectedProperties: tsgo 7.1 tracks read/write access of union/intersection synthetic properties
   (createUnionOrIntersectionProperty's CheckFlagsContains{Public,Protected,Private} and ContainsWrite*: public wins for
   reading if any constituent is public; a union with a non-public read part and a different declaration has no

@@ -252,7 +252,12 @@ typedef struct TyParamState {
     // Whether the declared constraint reaches the parameter itself (tsc's getResolvedBaseConstraint returning
     // circularConstraintType, TS2313): then it has none. 0 not known yet, 1 no, 2 yes
     unsigned char circular;
+    // A distributed type parameter (tsgo 7.1's isDistributed, plan 57): the one it is the twin of, which is also its
+    // constraint. Mappers, inference and the printer see through it (ty_non_distributed())
+    Ty const* distributed_of;
+    Ty const* distributed; // The original's twin, made on demand (ty_distributed_type_param())
 } TyParamState;
+
 
 struct Ty {
     u32 id;
@@ -438,6 +443,11 @@ struct Ty {
         } string_mapping;
     };
 };
+
+// tsgo's getNonDistributedTypeParameter
+static inline Ty const* ty_non_distributed(Ty const* ty) {
+    return ty->kind == TY_TYPE_PARAM && ty->param.state->distributed_of ? ty->param.state->distributed_of : ty;
+}
 
 // (Hundreds of thousands per checker; the union is as big as `declared`)
 static_assert(sizeof(Ty) == 144);
@@ -1180,6 +1190,7 @@ Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* typ
 // tsc's getIntersectionType with NoConstraintReduction: `T & P` stays when T's constraint is a subtype of P
 Ty const* ty_intersection_no_constraint_reduction(Checker* me, Ty const* const* types, u32 len);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
+Ty const* ty_distributed_type_param(Checker* me, Ty const* param); // plan 57
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
 // Variance annotations (relate.c)
 typedef enum VarianceModifiers {

@@ -60,6 +60,7 @@ static bool function_expression_type(Ty const* target) {
 static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk, u32 depth) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
     if (ty->kind == TY_TYPE_PARAM) {
+        ty = ty_non_distributed(ty);
         for (u32 i = 0; i < walk->bound_len; i++) {
             if (walk->bound[i] == ty) return false;
         }
@@ -273,7 +274,7 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     // (Written in a Block its check type parameter is declared outside of: possibly referenced, syntactically)
     TyConditionalOuter const* outer = ty_conditional_outer(me, root);
     if (outer && outer->check_outside_block) return true;
-    MentionWalk walk = { .only = root->conditional.check };
+    MentionWalk walk = { .only = ty_non_distributed(root->conditional.check) };
     bool ret = mentions_type_variables(me, ty_conditional_branch(me, root, true), &walk, 0) ||
         mentions_type_variables(me, ty_conditional_branch(me, root, false), &walk, 0);
     free(walk.visited);
@@ -636,7 +637,8 @@ Ty const* ty_conditional_resolve(
     if (for_constraint && if_false->node && if_false->node->tag == TYPE_TERNARY && if_false->state != LAZY_STATE_DONE) {
         Ty const* nested = ty_from_node(me, if_false->node, if_false->ctx);
         if (nested->kind == TY_CONDITIONAL &&
-            (!nested->conditional.distributive || nested->conditional.check == constraint_root->conditional.check)
+            (!nested->conditional.distributive ||
+                ty_non_distributed(nested->conditional.check) == ty_non_distributed(constraint_root->conditional.check))
         ) {
             Ty const* saved = my for_constraint_root;
             my for_constraint_root = nested;

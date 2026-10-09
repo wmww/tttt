@@ -1112,9 +1112,15 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
         // What a type parameter target could be (tsc's reportRelationError), below the head reported next
         // (tsc's getBaseConstraintOfType: resolved all the way, `keyof T` to `string | number | symbol`)
         Ty const* constraint = base_constraint(me, target, 0);
-        bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
+        // (A distributed type parameter that its original would take: tsgo 7.1's reportRelationError, TS5113)
+        bool distributed_fits = target->kind == TY_TYPE_PARAM && target->param.state->distributed_of &&
+            ty_is_related(me, generalized, target->param.state->distributed_of, TY_RELATION_ASSIGNABLE);
+        bool generalized_fits = !distributed_fits && constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
         bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
-        if (generalized_fits || original_fits) {
+        if (distributed_fits) {
+            report_line(st, 5113, cstr_d("'", source_str, "' is only assignable to the non-distributed '", target_str,
+                "', but '", target_str, "' has been distributed here."));
+        } else if (generalized_fits || original_fits) {
             cstr shown = original_fits ? display_for_report(me, source) : cstr_clone(source_str);
             cstr constraint_str = display_for_report(me, constraint);
             report_line(st, 5075, cstr_d(
@@ -4013,9 +4019,9 @@ static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditi
         (check->flags & TYF_DEFERRED) || ((check->kind == TY_UNION || check->kind == TY_INTERSECTION) &&
             (check->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) || ty_is_generic_tuple(me, check) ?
             base_constraint(me, check, depth + 1) : nullptr;
-    if (!check_constraint || check_constraint == check) return nullptr;
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
     Ty const* root_check = root->conditional.check;
+    if (!check_constraint || check_constraint == check) return nullptr;
     if (root_check->kind != TY_TYPE_PARAM) return nullptr;
     TyMapper const* outer = conditional->conditional.mapper;
     u32 outer_len = outer ? outer->len : 0;
@@ -4977,6 +4983,24 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
     if (some && !related) related = is_related_to(me, st, false_branch, target, false);
     else if (related && !some) related &= is_related_to(me, st, false_branch, target, false);
     if (related) return related;
+    // Plan 57: tsgo's check type is the distributed twin T' (whose constraint is T), so its first distributive constraint
+    // is the conditional with the branches' T' mapped back to T; tttt keeps T as the check type, and relates those
+    // branches here (only a conditional type as written has twins in its branches)
+    Ty const* check = source->conditional.check;
+    Ty const* root = source->conditional.root ? source->conditional.root : source;
+    if (target->kind != TY_CONDITIONAL && check == root->conditional.check && check->kind == TY_TYPE_PARAM &&
+        check->param.state->distributed
+    ) {
+        TyMapper const* erase = ty_mapper_new(me, (TyList){ .data = &check, .len = 1 }, (TyList){ .data = &check, .len = 1 });
+        Ty const* erased_true = ty_instantiate(me, true_branch, erase);
+        Ty const* erased_false = ty_instantiate(me, false_branch, erase);
+        if (erased_true != true_branch || erased_false != false_branch) {
+            related = is_related_to(me, st, erased_true, target, false);
+            if (some && !related) related = is_related_to(me, st, erased_false, target, false);
+            else if (related && !some) related &= is_related_to(me, st, erased_false, target, false);
+            if (related) return related;
+        }
+    }
     // Through the distributive constraint (not to another conditional type, like in tsc)
     if (target->kind != TY_CONDITIONAL) {
         // tsc's is the immediate one (distributive_constraint_as()). HACK: the base constraint one first, which
@@ -6900,6 +6924,17 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // (Identity sees a distributed type parameter as its original: tsgo never compares the two for identity, its merged
+    // declarations share one type parameter and its instantiations always map the twins back, plan 57)
+    if (st->relation == TY_RELATION_IDENTITY && source->kind == target->kind && (source->kind == TY_TYPE_PARAM ||
+        (source->kind == TY_SUBSTITUTION && source->substitution.constraint == target->substitution.constraint))
+    ) {
+        Ty const* s = source->kind == TY_SUBSTITUTION ? source->substitution.base : source;
+        Ty const* t = target->kind == TY_SUBSTITUTION ? target->substitution.base : target;
+        if (s->kind == TY_TYPE_PARAM && t->kind == TY_TYPE_PARAM && ty_non_distributed(s) == ty_non_distributed(t)) {
+            return TERNARY_TRUE;
+        }
+    }
     // An object type to a primitive is what the simple relation says, before normalizing anything and with nothing
     // cached (tsc's isRelatedTo): `{ setup() {...} }` against each of `keyof HTMLElementTagNameMap`'s literals
     u32 const primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL |

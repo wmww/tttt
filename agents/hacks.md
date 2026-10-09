@@ -696,3 +696,10 @@ src` finds the code-side markers; every significant one has an entry here.
   ported for array and tuple type nodes; generic interface/class references written as nodes keep the target identity
   because tttt's signature relations don't instantiate fresh references per level (performanceComparisonOf...Signatures
   would hit TS2589). Also order-dependent like tsc's (first creator of the interned reference wins).
+- Distributed type parameters (TS 7.1, `ty_distributed_type_param()`, IdentifierType.distributed set in type.c's
+  TYPE_TERNARY lookup): tsgo distributes the conditional's own check type node too; tttt keeps the original there,
+  because its many `conditional.check ==` identity tests (mapper sources, outer params, nested-conditional tails)
+  broke 12 tests otherwise. What that would have given is emulated: conditional_source_related() relates the
+  branches with the twins mapped back (tsgo's first distributive constraint T' -> T), instantiate_conditional() keeps
+  identity mappings of params that have a twin (tsgo maps every outer parameter), and the identity relation treats a
+  twin as its original (also inside a substitution) since tttt's merged declarations have per-declaration params.

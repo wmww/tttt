@@ -760,7 +760,7 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
         if (member->kind == TY_UNION) {
             results[i] = distribute_conditional(me, root, combined, member);
         } else {
-            TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, member);
+            TyMapper const* member_mapper = ty_mapper_with(me, combined, ty_non_distributed(root->conditional.check), member);
             results[i] = conditional_from_root(me, root, member, member_mapper);
             // A member that stays deferred goes by the root's alias (tsc's getConditionalType: root.aliasSymbol with
             // its arguments instantiated): `Awaited<T | Yadda>` is `Yadda | Awaited<T>`
@@ -780,7 +780,7 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
 static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMapper const* combined, bool* distributed) {
     Ty const* check_type = ty_instantiate(me, ty_actual_type_variable(me, root->conditional.check), combined);
     if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
-        check_type != root->conditional.check
+        check_type != ty_non_distributed(root->conditional.check)
     ) {
         // (The distribution type is reduced, tsc's getConditionalTypeInstantiation)
         if ((check_type->kind == TY_UNION || check_type->kind == TY_INTERSECTION)) check_type = ty_reduced(me, check_type);
@@ -838,11 +838,14 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         *distributed = (bool)(uintptr_t)cached[1];
     } else {
         // Only what changes: identity mappings say nothing
-        Ty const** sources = malloc(sizeof(Ty const*) * (mapped ? mapped * 2 : 1));
-        Ty const** kept = sources + mapped;
+        Ty const** sources = malloc(sizeof(Ty const*) * (len ? len * 2 : 1));
+        Ty const** kept = sources + len;
         u32 kept_len = 0;
         for (u32 i = 0; i < len; i++) {
-            if (targets[i] == outer->params.data[i]) continue;
+            // (Except for a type parameter with a distributed twin: mapping it to itself maps the twin back to it, as
+            // tsgo's newTypeMapper of all the outer type parameters does, plan 57)
+            Ty const* param = outer->params.data[i];
+            if (targets[i] == param && !(param->kind == TY_TYPE_PARAM && param->param.state->distributed)) continue;
             sources[kept_len] = outer->params.data[i];
             kept[kept_len++] = targets[i];
         }
@@ -874,11 +877,14 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_DECLARED:
             return ty;
 
-        case TY_TYPE_PARAM:
+        case TY_TYPE_PARAM: {
+            // (A distributed type parameter is mapped like its original: tsgo's getMappedType)
+            Ty const* key = ty_non_distributed(ty);
             for (u32 i = 0; i < mapper->len; i++) {
-                if (mapper->sources[i] == ty) return mapper->targets[i];
+                if (mapper->sources[i] == key) return mapper->targets[i];
             }
             return ty;
+        }
 
         default:
             break;
