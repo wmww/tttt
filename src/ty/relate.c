@@ -7412,7 +7412,10 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         if (shorter == right) rest = ty_instantiate(me, rest, mapper);
         params[longest_count] = (SigParam){ .name = checker_atom(me, c_sv("args")), .type = ty_array(me, rest, false), .rest = true };
     }
-    Ty const* return_types[2] = { signature_return_type(me, left), ty_instantiate(me, signature_return_type(me, right), mapper) };
+    // (A union's are subtype-reduced before right's type parameters become left's: tsgo's getReturnTypeOfSignature of a
+    // composite signature instantiates the reduced union with its mapper, so `Promise<A> | PromiseLike<A>` of `then`
+    // stays both, each written in its own signature's type parameters when reduced)
+    Ty const* return_types[2] = { signature_return_type(me, left), intersection ? ty_instantiate(me, signature_return_type(me, right), mapper) : signature_return_type(me, right) };
     // The `this` types are combined like parameters (combineUnionThisParam, combineIntersectionThisParam)
     Ty const* this_type = left->this_type ? left->this_type : right->this_type ? ty_instantiate(me, right->this_type, mapper) : nullptr;
     if (left->this_type && right->this_type) {
@@ -7433,7 +7436,8 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         .min_args = left->min_args > right->min_args ? left->min_args : right->min_args,
         .this_type = this_type,
         .ret_state = LAZY_STATE_DONE,
-        .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) : ty_union_subtype_reduced(me, return_types, 2),
+        .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) :
+            ty_instantiate(me, ty_union_subtype_reduced(me, return_types, 2), mapper),
         .predicate_done = true,
     };
     return ret;
