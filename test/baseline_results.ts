@@ -10366,7 +10366,7 @@ const baselines = {
         types: true,
     },
     'distributedTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
