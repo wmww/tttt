@@ -1948,6 +1948,32 @@ static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* 
     return &as_type->type;
 }
 
+// A function without a return annotation whose only return is `'x' as const`: tsgo's pseudo return type reuses the
+// literal's node, single quotes and all (a literal type node of it, see the object literal properties in expr.c)
+static TypeNode const* single_return_quoted_literal(Checker* me, FunctionImpl const* function, Ty const* ret) {
+    // (Not where something may type it contextually, an IIFE's callee included: tsgo's isContextuallyTyped)
+    if (function->syntactically_contextual) return nullptr;
+    Expr const* expr = single_return_expr(function);
+    if (!expr || expr->tag != EXPR_AS_TYPE || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) return nullptr;
+    Expr const* literal = &expr->as_type->expr;
+    if (literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_STRING || !literal->inner_span.sv.size ||
+        literal->inner_span.sv.buf[0] != '\'' || ty_regular(me, ty_expr_type(me, expr)) != ty_regular(me, ret)
+    ) {
+        return nullptr;
+    }
+    TypeNode* node = arena_new(&my arena, TypeNode);
+    node->tag = TYPE_VALUE;
+    node->parsed = true;
+    node->value = literal->literal; // (Borrowed from the AST)
+    node->value_span = literal->inner_span;
+    return node;
+}
+
+static TypeNode const* single_return_node(Checker* me, FunctionImpl const* function, Ty const* ret) {
+    TypeNode const* node = single_return_assertion(me, function, ret);
+    return node ? node : single_return_quoted_literal(me, function, ret);
+}
+
 // A type node that names nothing (keywords and literals, in unions, intersections, arrays and parentheses): reusing it
 // asks no name whether it is accessible, so it is reused wherever the type is printed from
 static bool type_node_names_nothing(TypeNode const* node, u32 depth) {
@@ -2428,7 +2454,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
-        function_impl_rare(function)->jsdoc_tag_ret ? function_impl_rare(function)->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
+        function_impl_rare(function)->jsdoc_tag_ret ? function_impl_rare(function)->jsdoc_tag_ret :
+        single_return_node(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
         !(fresh_anonymous && ret->kind == TY_ANONYMOUS);

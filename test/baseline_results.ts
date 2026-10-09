@@ -7218,7 +7218,7 @@ const baselines = {
     'correlatedUnions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'corrupted': {
         errors: true,
@@ -10353,7 +10353,7 @@ const baselines = {
     'discriminatedUnionWithIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatingUnionWithUnionPropertyAgainstUndefinedWithoutStrictNullChecks': {
         errors: true,
@@ -14348,12 +14348,12 @@ const baselines = {
     'forwardRefInTypeDeclaration(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forwardRefInTypeDeclaration(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'freshLiteralInference': {
         errors: true,
@@ -17628,7 +17628,7 @@ const baselines = {
     'inferFromNestedSameShapeTuple': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferFromTupleRestAndVariadic': {
         errors: true,
@@ -23753,7 +23753,7 @@ const baselines = {
     'narrowingNoInfer1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingOfDottedNames': {
         errors: true,
@@ -38663,12 +38663,12 @@ const baselines = {
     'staticPropertyNameConflicts(target=es2015,usedefineforclassfields=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticPropertyNameConflicts(target=es2015,usedefineforclassfields=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticPropertyNameConflictsInAmbientContext': {
         errors: true,
@@ -40068,7 +40068,7 @@ const baselines = {
     'es2018IntlAPIs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidTaggedTemplateEscapeSequences(target=es2015)': {
         errors: true,
@@ -40193,7 +40193,7 @@ const baselines = {
     'es2020IntlAPIs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intlNumberFormatES2020': {
         errors: true,
