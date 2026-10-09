@@ -4948,7 +4948,7 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
         if (!intern_get(&my links, key, 2)) *intern_slot(me, &my links, key, 2) = sent;
     }
     if (!generator) {
-        if (operand->tag != EXPR_IMPLICIT_ANY && !yield->outside_generator) ty_expr_type(me, operand);
+        if (operand->tag != EXPR_IMPLICIT_ANY) ty_expr_type(me, operand);
         return any_type(me);
     }
     bool async = generator->is_async;

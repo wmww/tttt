@@ -1693,24 +1693,20 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
-            if (my export_misplaced) {
-                expr_lookup_names(&my expr, names, nullptr);
-                break;
-            }
-            // tsc's checkExportAssignment: neither belongs in a namespace, and
-            // what they name isn't resolved then
-            if (names->kind == SCOPE_NAMESPACE && !(names->container && (names->container->is_module || names->container->is_augmentation))) {
+            // tsc's checkExportAssignment: neither belongs in a namespace. (tsgo checks the expression first, wherever
+            // the statement is)
+            bool in_namespace = !my export_misplaced && names->kind == SCOPE_NAMESPACE &&
+                !(names->container && (names->container->is_module || names->container->is_augmentation));
+            if (in_namespace) {
                 if (my export_equals) {
                     error_ctx_error_d(errs, span_with_semicolon(my span), 1063, "An export assignment cannot be used in a namespace.");
                 } else {
                     error_ctx_error_d(errs, span_with_semicolon(my span), 1319, "A default export can only be used in an "
                         "ECMAScript-style module.");
                 }
-                expr_lookup_names(&my expr, names, nullptr);
-                break;
             }
             // `export = x` doesn't use x before its declaration: the emit moves it (tsc)
-            export_assignment_check_isolated(me, names, errs);
+            if (!my export_misplaced && !in_namespace) export_assignment_check_isolated(me, names, errs);
             bool saved_type_query = flow->in_type_query;
             if (my export_equals && my expr.tag == EXPR_IDENTIFIER) flow->in_type_query = flow->export_equals_name = true;
             flow->type_only_alias_ok = my expr.tag == EXPR_IDENTIFIER;
@@ -1741,14 +1737,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 1108,
                     "A 'return' statement can only be used within a function body.");
             }
-            if (container || !errs) {
-                expr_lookup_names(&my expr, names, errs);
-            } else {
-                // (tsc's checkReturnStatement stops there: nothing in the expression is reported)
-                ErrorCtx ignored = error_ctx_scratch(errs);
-                expr_lookup_names(&my expr, names, &ignored);
-                error_ctx_drop(&ignored);
-            }
+            // (tsgo's checkReturnStatement checks the expression first, wherever the `return` is)
+            expr_lookup_names(&my expr, names, errs);
             // (unreachable or not: tsc's checkAndAggregateReturnExpressionTypes goes by forEachReturnStatement)
             if (statement_is_bare_return(me)) flow->has_bare_return = true;
             if (!flow->dead) {
@@ -2803,7 +2793,10 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            if (my export_misplaced) break; // (tsc's checkExportAssignment bails out)
+            if (my export_misplaced) { // (tsc's checkExportAssignment bails out once the expression is checked)
+                expr_typecheck_export_assignment(&my expr, errs);
+                break;
+            }
             if (my expr_jsdoc_type) {
                 // (Checked with it as the contextual type, then related without elaborating: tsc's checkTypeAssignableTo)
                 type_typecheck(my expr_jsdoc_type, errs);

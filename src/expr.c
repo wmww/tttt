@@ -1965,13 +1965,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 case UNARY_OP_YIELD:
                 case UNARY_OP_YIELD_STAR:
                     if (my unary_op->outside_generator) {
-                        // tsc's checkYieldExpressionGrammar; checkYieldExpression returns any before the operand
+                        // tsc's checkYieldExpressionGrammar; tsgo's checkYieldExpression checks the operand anyway
                         Span keyword = { .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) };
                         error_ctx_grammar_error_d(errs, keyword, 1163, "A 'yield' expression is only allowed in a generator body.");
-                        expr_lookup_names(operand, names, nullptr);
-                    } else {
-                        expr_lookup_names(operand, names, errs);
                     }
+                    expr_lookup_names(operand, names, errs);
                     if (flow->function && flow->function->is_generator && !my unary_op->outside_generator && !flow->method_name) {
                         my unary_op->generator = flow->function;
                         my unary_op->no_type_params_in_scope = !names->generics;
@@ -4289,7 +4287,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_BINARY_OP: binary_expr_typecheck(me, errs); break;
 
         case EXPR_UNARY_OP:
-            if (my unary_op->outside_generator) break; // Only TS1163 (from the resolve walk)
+            if (my unary_op->outside_generator) { // TS1163 (from the resolve walk), the operand checked anyway
+                expr_typecheck(&my unary_op->expr, errs);
+                break;
+            }
             // (`void`'s operand is checked after the statements of its file, tsc's checkVoidExpression)
             if (my unary_op->op == UNARY_OP_VOID && current_checker->defer_checks) {
                 checker_defer(current_checker, DEFERRED_EXPR, &my unary_op->expr);

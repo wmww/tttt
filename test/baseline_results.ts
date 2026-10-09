@@ -3046,7 +3046,7 @@ const baselines = {
         types: true,
     },
     'checkChildrenAlwaysChecked': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23371,7 +23371,7 @@ const baselines = {
         types: true,
     },
     'multiLinePropertyAccessAndArrowFunctionIndent1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26286,7 +26286,7 @@ const baselines = {
         types: true,
     },
     'parseErrorIncorrectReturnToken': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45316,7 +45316,7 @@ const baselines = {
         types: true,
     },
     'YieldExpression12_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45326,12 +45326,12 @@ const baselines = {
         types: true,
     },
     'YieldExpression14_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'YieldExpression15_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45341,7 +45341,7 @@ const baselines = {
         types: true,
     },
     'YieldExpression17_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45366,7 +45366,7 @@ const baselines = {
         types: true,
     },
     'YieldExpression2_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57556,7 +57556,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ModuleElement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57761,7 +57761,7 @@ const baselines = {
         types: true,
     },
     'parserStatementIsNotAMemberVariableDeclaration1(alwaysstrict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57801,7 +57801,7 @@ const baselines = {
         types: true,
     },
     'parserExportAssignment5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57821,7 +57821,7 @@ const baselines = {
         types: true,
     },
     'parserExportAssignment9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
