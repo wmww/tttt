@@ -79,3 +79,26 @@ solid `component.type-tests.ts:100` already matched at this base. Left:
 - query `mutation.test.tsx:1264`, svelte-query `queryOptions.test-d.ts:90` (+TS2554 expected 1 argument, got 0): not
   looked at; probably the void-parameter optionality on another path (getMinArgumentCount in call resolution).
 - dokploy's react-hook-form `Control<...>` mismatches: not looked at.
+
+## Source sweep after the TS 7.1 fan-out (agent B, 2026-10-09: 3069 -> see the commit log)
+Fixed that session: chai's assert via an export= property (TS2775), discriminant narrowing of `x!.k` with x null,
+TS2875's position, union signature return reduction (Promise | PromiseLike `then`), free type parameter limits
+(Playwright's Unboxed), TS2862 with a generic union index, `import x = require` resolving module members (mongoose
+TS2303), TS2348 for unions with construct signatures only, destructuring typeof globalThis (TS2339). Left, by key:
+- +TS2590 mikro-orm `QueryHelper.ts:372` (24 projects): `where[key as keyof typeof where]` of FilterQuery<T> builds a
+  union over the 100k limit where tsc doesn't; not reduced.
+- +TS2345 mikro-orm `EntityManager.ts:382` (24 projects): `ObjectQuery<Entity>` not assignable to
+  `ObjectQuery<NoInfer<Entity>>` (relation through a NoInfer substitution inside an alias: variance?).
+- +TS2339 tiptap `Extendable.test.ts` (11): `this.parent` in an object literal method passed to `.extend()` of a union
+  of classes (`[Extension, Node, Mark].forEach(E => E.create(...).extend({...}))`): the `this` type from a union
+  signature's contextual type.
+- +TS2339 telegraf `markup.ts:121-135`: `B[] | B[][]` narrowed by `is2D()` and filtered; button's type wrong.
+- +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses), react-hook-form
+  `validateField.ts:67`, angular-cli `registry.ts:659` (ajv addKeyword validate), ember runloop: contextual typing
+  misses, not reduced.
+- -TS2307/-TS7006/-TS2339 commitlint (6 projects): `@commitlint/test` through project references + paths: module
+  resolution (agent A's area).
+- +TS6305 (astro & others, 1445), +TS6059 react-router rootDir, ±TS6310 react-navigation: project reference / config
+  handling (agent A's area).
+- arktype (+TS2345/2322/2339/7006/2589/2769 across ~60 projects): deep type-level library; nothing reduced yet.
+- tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
