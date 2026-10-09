@@ -1117,11 +1117,9 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
             *vec_symbol_cptr_at(identifier_type_namespace_symbols(identifier), 0) : nullptr;
     }
     Span first = qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) : identifier->name;
-    // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
-    // (Any reference whose type the instantiation changes: tsc's canReuseTypeNode with noMappedTypes, `State<T>` with
-    // T mapped prints its type, `State<{ foo: number; }>`, as a new node)
-    bool mapped = d.mapped_by && ((symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) && !qualified) ||
-        vec_spanned_type_size(&identifier->generic_params)) &&
+    // (A type parameter that the instantiation maps: tsgo's tryVisitTypeReference. A generic reference keeps its name,
+    // its type arguments are visited, `State<T>` with T mapped is `State<{ foo: number; }>`)
+    bool mapped = d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) && !qualified &&
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped) return IDENTIFIER_MAPPED;
     if (name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
@@ -1141,7 +1139,9 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_IDENTIFIER: {
             IdentifierType const* identifier = node->identifier;
             if (identifier->keyword || identifier->jsdoc || identifier_type_import_ref(identifier) || identifier_type_import_argument(identifier)) return false;
-            return identifier_reuse(me, d, node) == IDENTIFIER_FAILS;
+            // (A type parameter the instantiation maps fails too: tsgo's tryVisitTypeReference)
+            IdentifierReuse reuse = identifier_reuse(me, d, node);
+            return reuse == IDENTIFIER_FAILS || reuse == IDENTIFIER_MAPPED;
         }
         case TYPE_TYPEOF: {
             Expr const* leftmost = entity_leftmost(node->typeof_->expr);
@@ -1759,10 +1759,16 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
 
 // Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property
 // without its `undefined`), so that it can be reprinted
+static bool annotation_is_d(Checker* me, TyDisplay d, TypeNode const* node, Ty const* ty, bool optional);
 static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool optional) {
+    return annotation_is_d(me, (TyDisplay){0}, node, ty, optional);
+}
+
+// The same with the annotation instantiated by `d.mapped_by`
+static bool annotation_is_d(Checker* me, TyDisplay d, TypeNode const* node, Ty const* ty, bool optional) {
     // (A `unique symbol` where it can't be one is plain symbol, which it says as well as any annotation: tsc reuses it)
     if (!node->parsed || (node->tag == TYPE_UNIQUE_SYMBOL && node->unique_symbol.key)) return false;
-    Ty const* annotated = node_type(me, (TyDisplay){0}, node);
+    Ty const* annotated = node_type(me, d, node);
     // (An annotation that is the error type is reused whatever the type is: tsc's canReuseTypeNodeAnnotation)
     return annotated == ty || (optional && annotated == ty_without_undefined(me, ty)) ||
         (annotated->flags & TYF_ERROR);
@@ -1830,7 +1836,7 @@ static bool reuses_nodes(TyDisplay d) {
 }
 
 static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
-    if (annotation && reuses_nodes(d) && annotation_is(me, annotation, ty, optional)) {
+    if (annotation && reuses_nodes(d) && annotation_is_d(me, d, annotation, ty, optional)) {
         display_node(me, d, annotation);
     } else if (annotation && reuses_nodes(d) && !annotation->parsed && !annotation->synthesized) {
         ty_display(me, reused_if(d, true), ty); // A missing type (`(a: ) => {}`), which tsc reuses as `any`
@@ -2061,7 +2067,8 @@ static Ty const* single_return_keyword(Checker* me, FunctionImpl const* function
     return keyword;
 }
 
-static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, bool syntactic) {
+// `mapped_by`: the instantiated signature they belong to, whose mapper their declared constraints are reused with
+static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, bool syntactic, Signature const* mapped_by) {
     if (!params.len) return;
     out_lit(d, "<");
     for (u32 i = 0; i < params.len; i++) {
@@ -2101,8 +2108,16 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {
             out_lit(d, " extends ");
+            TyDisplay mapped_d = d;
+            mapped_d.mapped_by = mapped_by;
             if (d.reused) {
                 ty_display(me, d, constraint);
+            } else if (mapped_by && reusable && item && item->extends_explicit && reuses_nodes(d) &&
+                node_type(me, mapped_d, &item->extends) == constraint
+            ) {
+                // (An instantiated signature's: the declared constraint with the instantiation's mapper, tsgo's
+                // typeToTypeNodeHelperWithPossibleReusableTypeNode under enterNewScope's mapper)
+                display_node(me, mapped_d, &item->extends);
             } else if (!d.types_baseline && item && item->extends_explicit && annotation_is(me, &item->extends, constraint, false)) {
                 // (tsc's typeParameterToDeclaration reuses the constraint as written in messages too:
                 // typeToTypeNodeHelperWithPossibleReusableTypeNode)
@@ -2354,7 +2369,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         d.param_names->value_params = copies;
         d.param_names->value_param_count = copy_count;
     }
-    display_type_params(me, d, sig->type_params, reusable, syntactic);
+    display_type_params(me, d, sig->type_params, reusable, syntactic, instantiated ? sig : nullptr);
     if (copy_count) {
         d.param_names->value_params = nullptr;
         d.param_names->value_param_count = 0;

@@ -6418,7 +6418,7 @@ const baselines = {
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType3': {
         errors: true,
@@ -9673,7 +9673,7 @@ const baselines = {
     'deepKeysIndexing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyDependentLargeArrayMutation': {
         errors: true,
@@ -17763,7 +17763,7 @@ const baselines = {
     'inferenceExactOptionalProperties2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceFromGenericClassNoCrash1': {
         errors: true,
@@ -63663,7 +63663,7 @@ const baselines = {
     'inferTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypes2': {
         errors: true,
@@ -63993,7 +63993,7 @@ const baselines = {
     'keyofAndIndexedAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofAndIndexedAccess2': {
         errors: true,
@@ -64198,7 +64198,7 @@ const baselines = {
     'templateLiteralTypes4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralTypes5': {
         errors: true,
@@ -65883,7 +65883,7 @@ const baselines = {
     'partiallyNamedTuples2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyNamedTuples3': {
         errors: true,
