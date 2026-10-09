@@ -409,6 +409,21 @@ static bool is_class_instance(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_INSTANCE;
 }
 
+// tsc's emptyObjectType and unknownEmptyObjectType
+static bool empty_without_symbol(Checker* me, Ty const* ty) {
+    return ty == ty_empty_object_type(me) || ty == ty_unknown_empty_object_type(me);
+}
+
+// An anonymous object type with a symbol in tsc: an object literal's, a type literal's, a function's (or an
+// instantiation of one)
+static bool anonymous_with_symbol(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS) return false;
+    if (ty == ty_empty_type_literal(me)) return true;
+    while (ty->anonymous.target && ty->anonymous.target->kind == TY_ANONYMOUS && ty->anonymous.target != ty) ty = ty->anonymous.target;
+    return ty->anonymous.object_literal || ty->anonymous.node || ty->anonymous.function || ty->anonymous.empty_symbol ||
+        ty->anonymous.module_clone;
+}
+
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len) {
     if (len < 2) return len ? types[0] : ty_intrinsic(me, TY_NEVER);
     // Flatten first, so members of member unions take part
@@ -516,6 +531,11 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
             ) {
                 Ty const* t = ty_prop_type_of(me, target, key);
                 if (t && is_unit_for_reduction(t) && ty_regular(me, t) != key_type) continue;
+            }
+            // The symbolless `{}`s stay next to an empty object literal or type literal, which they would be mutual
+            // subtypes of (tsc's removeSubtypes: `u || {}` with u unknown is the narrowed `{}`, without an inferable index)
+            if (empty_without_symbol(me, source) && anonymous_with_symbol(me, target) && ty_is_empty_anonymous_object(me, target)) {
+                continue;
             }
             // (One class's instances are a subtype of another's only when derived from it)
             if (ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE) &&
