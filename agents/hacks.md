@@ -581,8 +581,9 @@ src` finds the code-side markers; every significant one has an entry here.
   TypeNodes of a written function type. `Statement.expr_jsdoc_type` shares a union with `expr`: every site building an expression
   statement must clear it.
 - No `SymbolFlags.Assignment`: TS2403 looks for `SYMBOL_DECL_EXPANDO`. A function's or JS class's expandos are marked
-  by a nameless `SYMBOL_DECL_EXPANDO` (`mark_expando_host()`) that also gives it `SYMBOL_VALUE_MODULE` (tsgo: only
-  exports, no flag).
+  by a nameless `SYMBOL_DECL_EXPANDO` (`mark_expando_host()`) whose decl flags say "its value has the members"
+  (value_entries() merges them in); the symbol gets no namespace meaning (like tsgo, which only adds exports), so
+  namespace lookups through an alias also accept a target with expandos (`symbol_namespace_member()`).
 - Expandos: statement level in the declare step, nested in expressions via the resolve walk
   (`scope_add_nested_expando()`: `f.x.y = v` doesn't see a nested `f.x = {}`). `scope_add_expandos()` (in
   `block_add_names()`) and `scope_add_this_property()` write file-level symbols from the resolve walk (want per-file

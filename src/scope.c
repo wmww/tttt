@@ -3234,8 +3234,10 @@ Symbol const* symbol_namespace_member(Symbol const* me, csview name) {
     if (member || !me || !(me->flags & SYMBOL_ALIAS)) return member;
     // (tsc's resolveQualifiedName: an alias with a namespace meaning of its own, a CommonJS `export=` its module's
     // typedefs made one, has the members of what it resolves to too)
-    Symbol const* target = symbol_resolve_alias((Symbol*)me);
-    target = target && target != me ? symbol_for_meaning(target, SYMBOL_NAMESPACE) : nullptr;
+    Symbol const* resolved = symbol_resolve_alias((Symbol*)me);
+    Symbol const* target = resolved && resolved != me ? symbol_for_meaning(resolved, SYMBOL_NAMESPACE) : nullptr;
+    // (Or a function or class with expandos, which has exports without a namespace meaning: tsgo's getExportsOfSymbol)
+    if (!target && resolved && resolved != me && resolved->exports && symbol_find_decl(resolved, SYMBOL_DECL_EXPANDO)) target = resolved;
     return target && !target->is_placeholder ? symbol_get_export((Symbol*)target, name) : nullptr;
 }
 
@@ -4860,8 +4862,8 @@ static void mark_expando_host(Symbol* host, void const* node) {
     for (u32 i = 0; i < host->decl_count; i++) {
         if (host->decls[i].kind == SYMBOL_DECL_EXPANDO) return;
     }
-    host->flags |= SYMBOL_VALUE_MODULE;
-    // (A node: no namespace of a CommonJS `export =`, namespace_from_expandos_only())
+    // (No namespace meaning for the host: tsgo only gives it exports. The declaration says its value has the members, a
+    // node that it is no namespace of a CommonJS `export =`, namespace_from_expandos_only())
     symbol_add_decl(host, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = node });
 }
 
