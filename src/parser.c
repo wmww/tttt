@@ -2501,7 +2501,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         hop_whitespace(&p);
     }
 
-    if (span_valid(trailing_comma_span)) {
+    if (span_valid(trailing_comma_span) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
         grammar_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
@@ -3714,7 +3714,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     p.shared->in_jsdoc = true;
     p.shared->jsdoc_end = end;
     bool outer_unchecked = p.shared->jsdoc_unchecked;
-    p.shared->jsdoc_unchecked = tag->kind == JSDOC_TAG_RETURNS || tag->kind == JSDOC_TAG_THROWS;
+    p.shared->jsdoc_unchecked = outer_unchecked || tag->kind == JSDOC_TAG_RETURNS || tag->kind == JSDOC_TAG_THROWS;
     hop_whitespace(&p);
     Anchor module_start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "module")) {
@@ -4338,7 +4338,12 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
     for (isize i = first; i < lo; i++) {
         JsDocRange range = comments->data[i];
         VecJsDocTag earlier = {0};
+        // (Only the host's last comment is reparsed into the tree: the checker's grammar errors about an earlier
+        // one's types, TS1099 or TS1009, aren't reported. Its parse errors are)
+        bool outer_unchecked = parent->shared->jsdoc_unchecked;
+        parent->shared->jsdoc_unchecked = true;
         parse_jsdoc_comment(parent, range, &earlier);
+        parent->shared->jsdoc_unchecked = outer_unchecked;
         if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) {
             vec_jsdoc_tag_drop(&earlier);
             continue;
@@ -5318,7 +5323,7 @@ static void jsdoc_bind_comments(
         if (!bind) continue;
         csview text = csview_from_range(range.start, range.end);
         // A comment before another one right before the statement is the statement's too (tsc's getJSDocCommentRanges),
-        // whose host takes nothing of it but `@overload`s: its tags are only checked
+        // whose host takes nothing of it but `@overload`s: only its declarations are bound
         bool earlier = inner_from && c + 1 < comments->size && comments->data[c + 1].end <= inner_from &&
             only_trivia_until(range.end, inner_from);
         if (!eof && !earlier && !csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
@@ -5327,7 +5332,10 @@ static void jsdoc_bind_comments(
             continue;
         }
         VecJsDocTag tags = {0};
+        bool outer_unchecked = parent->shared->jsdoc_unchecked;
+        parent->shared->jsdoc_unchecked |= earlier; // (Its types aren't checked: no grammar errors)
         parse_jsdoc_comment(parent, range, &tags);
+        parent->shared->jsdoc_unchecked = outer_unchecked;
         for_each (i, vec_jsdoc_tag, &tags) {
             if (i->kind == JSDOC_TAG_TEMPLATE && !span_valid(i->name) && i->has_type) {
                 // A constraint without a type parameter (`@template {T}`) is still resolved (tsc's checkJSDocTemplateTag)
@@ -5407,7 +5415,8 @@ static void jsdoc_bind_comments(
             Statement alias = vec_statement_pull(out);
             vec_statement_push(out, jsdoc_wrap_in_namespaces(alias, full_name, i->name, span));
         }
-        if (eof || earlier) jsdoc_push_check_only(&tags, !csview_contains(text, "@overload"), out);
+        // (An earlier comment of a host isn't reparsed into the tree, tsgo checks none of its types)
+        if (eof) jsdoc_push_check_only(&tags, !csview_contains(text, "@overload"), out);
         vec_jsdoc_tag_drop(&tags);
     }
 }
@@ -6243,6 +6252,13 @@ static bool parse_function_args_inner(
                 Anchor arg_start = anchor(&p);
                 VecExpr decorators = {0};
                 ignore parse_decorators(&p, &decorators);
+                if (vec_expr_size(&decorators) && reports_js_syntax(&p) && !compiler_options()->experimental_decorators) {
+                    // (A JavaScript file the checker doesn't check still says this, tsgo's
+                    // getAdditionalJSSyntacticDiagnostics: from the `@` to the end of the first decorator)
+                    Span first = span_make(p.shared->source, arg_start.start, span_end_ptr(expr_outer_span(vec_expr_at(&decorators, 0))));
+                    add_error_to_parser(&p, (Error){ .message = cstr_from("Decorators are not valid here."), .span = first,
+                        .ts_code = 1206, .phase = ERROR_PHASE_PARSE, .js_syntax = true, .unchecked_js = true });
+                }
 
                 ModifierList modifier_list;
                 parse_modifier_list_ex(&p, true, false, &modifier_list);
@@ -8341,10 +8357,11 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
             const char* after_name = span_end_ptr(item.constructor.name_span);
             while (is_regex_space(*after_name)) after_name++;
             if (!generic_empty(&item.constructor.func.generic)) {
-                Span generics_span = span_between(
-                    item.constructor.func.generic.items.data->full_span,
-                    vec_generic_item_back(&item.constructor.func.generic.items)->full_span
-                );
+                GenericItem const* first = item.constructor.func.generic.items.data;
+                GenericItem const* last = vec_generic_item_back(&item.constructor.func.generic.items);
+                // (`@template`s: the reparsed list spans the tags)
+                Span generics_span = first->jsdoc && span_valid(first->jsdoc_tag) && span_valid(last->jsdoc_tag) ?
+                    span_between(first->jsdoc_tag, last->jsdoc_tag) : span_between(first->full_span, last->full_span);
                 grammar_error(&p, generics_span, 1092, "Type parameters cannot appear on a constructor declaration.");
             } else if (*after_name == '<') {
                 // (`constructor<>()`: tsc's checkGrammarConstructorTypeParameters, on the empty list after the `<`)

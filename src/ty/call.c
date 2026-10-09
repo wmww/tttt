@@ -1867,6 +1867,11 @@ static void report_arity(
             cstr_append_d(&error->message, DEFAULT_DISPLAY, ".");
         } else if (has_rest) {
             error = error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
+        } else if (min == max && min == 1 && args->len == 0 && is_promise_resolve_call(me, info) && span.source && span.source->is_js) {
+            // (In JavaScript, where no type argument can be written, a message of its own without related info)
+            error_ctx_error_d(errs, span, 2810, "Expected 1 argument, but got 0. 'new Promise()' needs a JSDoc hint to "
+                "produce a 'resolve' that can be called without arguments.");
+            return;
         } else if (min == max && min == 1 && args->len == 0 && is_promise_resolve_call(me, info)) {
             error = error_ctx_error_d(errs, span, 2794, "Expected ", min, " arguments, but got ", args->len,
                 ". Did you forget to include 'void' in your type argument to 'Promise'?");

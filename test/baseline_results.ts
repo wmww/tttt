@@ -20241,7 +20241,7 @@ const baselines = {
         types: true,
     },
     'jsPromiseNeedsJSDocHint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20346,7 +20346,7 @@ const baselines = {
         types: true,
     },
     'jsdocIllegalTags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26066,7 +26066,7 @@ const baselines = {
         types: true,
     },
     'parameterDecoratorInJsFile(checkjs=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53021,7 +53021,7 @@ const baselines = {
         types: true,
     },
     'syntaxErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
