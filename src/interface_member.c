@@ -145,6 +145,26 @@ static void interface_member_check_implicit_any(InterfaceMember const* me, Error
     if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
         error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
     }
+    // An accessor pair neither of whose sides says the type (tsc's getTypeOfAccessors): at the setter if there is one,
+    // else at the getter; a setter without a getter has an implicitly any parameter too
+    InterfaceAccessor const* sides = my accessor;
+    if (sides && (span_valid(sides->getter_name) || span_valid(sides->setter_name)) && !sides->annotated &&
+        compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js
+    ) {
+        if (span_valid(sides->setter_name)) {
+            error_ctx_error_d(errs, sides->setter_name, 7032, "Property '", sides->setter_name,
+                "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
+        } else {
+            error_ctx_error_d(errs, sides->getter_name, 7033, "Property '", sides->getter_name,
+                "' implicitly has type 'any', because its get accessor lacks a return type annotation.");
+        }
+    }
+    if (sides && span_valid(sides->untyped_setter_param) && !span_valid(sides->getter_name) &&
+        compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js
+    ) {
+        error_ctx_error_d(errs, sides->untyped_setter_param, 7006, "Parameter '", sides->untyped_setter_param,
+            "' implicitly has an 'any' type.");
+    }
     if (interface_member_is_method_signature(me)) {
         function_impl_check_implicit_any_return(my type.callable->function, my key.span, interface_member_error_span(me), errs);
     }

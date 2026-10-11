@@ -5462,6 +5462,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
                             type = type_move(&arg->initializer.binding.explicit_type);
                         }
+                        InterfaceMember* target = existing;
                         if (existing) {
                             InterfaceAccessor* pair = interface_member_accessor(existing);
                             if (!vec_span_size(&pair->declarations)) vec_span_push(&pair->declarations, existing->declaration);
@@ -5500,6 +5501,18 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             member.setter_first = typed_setter;
                             if (span_valid(setter_param)) interface_member_accessor(&member)->setter_param = setter_param;
                             list_push(vec_interface_member, &members, member);
+                            target = vec_interface_member_back_mut(&members);
+                        }
+                        InterfaceAccessor* sides = interface_member_accessor(target);
+                        if (is_getter) {
+                            if (!span_valid(sides->getter_name)) sides->getter_name = item.method.name_span;
+                            sides->annotated |= item.method.func.ret_explicit || item.method.func.has_body;
+                        } else {
+                            if (!span_valid(sides->setter_name)) sides->setter_name = item.method.name_span;
+                            sides->annotated |= typed_setter;
+                            if (!typed_setter && span_valid(setter_param) && !span_valid(sides->untyped_setter_param)) {
+                                sides->untyped_setter_param = setter_param;
+                            }
                         }
                         break;
                     }

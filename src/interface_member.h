@@ -47,6 +47,13 @@ typedef struct InterfaceAccessor {
     // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
     Span second_name;
     Span setter_param;
+    // For noImplicitAny (tsc's getTypeOfAccessors): the getter's and setter's names (null if none), the setter's
+    // parameter name when it has no type annotation, and whether either accessor says the type (a getter's return
+    // annotation or body, a setter's parameter annotation)
+    Span getter_name;
+    Span setter_name;
+    Span untyped_setter_param;
+    bool annotated;
     // Not an accessor's: `a: T = v` (TS1246/TS1247), an initializer tsc's parser keeps and its types baseline shows.
     // Owned, null if none (the rare parts of a member live here)
     struct Expr* initializer;
