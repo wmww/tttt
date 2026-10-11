@@ -7,6 +7,7 @@ prompt='go!'
 model='opus'
 runs=1
 loop=''
+retry_after=3600
 quiet=''
 workdir=''
 extra=()
@@ -23,17 +24,20 @@ unattended, so only point it at somewhere you are happy for it to act freely.
   -m, --model NAME    model alias or id       (default: opus)
   -C, --dir DIR       run the session in DIR  (default: cwd)
   -n, --runs N        run N sessions back to back, stop on the first failure
-  -l, --loop          run sessions back to back forever, stop on the first failure
+  -l, --loop          run sessions back to back forever; when one fails (usage
+                      limit, API error...), wait and try again, indefinitely
+  -r, --retry-after S seconds --loop waits after a failed session (default: 3600)
   -q, --quiet         hide thinking and tool-result previews
   -h, --help          this
 
 With several runs (--runs N > 1 or --loop), the first Ctrl+C lets the current
 session finish and then stops; a second Ctrl+C kills the session right away.
 Creating a file named `claude-stop` in the session directory does the same as
-the first Ctrl+C (checked when each session ends; the file is removed then).
+the first Ctrl+C (checked when each session ends and while waiting to retry;
+the file is removed then).
 
 Anything after `--` is passed straight through to `claude`.
-Exit status is the session's: 0 if it finished cleanly, non-zero otherwise.
+Exit status is the last session's: 0 if it finished cleanly, non-zero otherwise.
 EOF
 }
 
@@ -44,6 +48,7 @@ while [[ $# -gt 0 ]]; do
     -C|--dir)    workdir="${2:?--dir needs a value}";   shift 2 ;;
     -n|--runs)   runs="${2:?--runs needs a value}";     shift 2 ;;
     -l|--loop)   loop=1; shift ;;
+    -r|--retry-after) retry_after="${2:?--retry-after needs a value}"; shift 2 ;;
     -q|--quiet)  quiet=1; shift ;;
     -h|--help)   usage; exit 0 ;;
     --)          shift; extra=("$@"); break ;;
@@ -54,6 +59,7 @@ done
 command -v claude >/dev/null 2>&1 || { echo "claude-go: no 'claude' on PATH" >&2; exit 127; }
 command -v jq     >/dev/null 2>&1 || { echo "claude-go: needs jq to decode the event stream" >&2; exit 127; }
 [[ "$runs" =~ ^[0-9]+$ && "$runs" -ge 1 ]] || { echo "claude-go: --runs wants a positive integer" >&2; exit 2; }
+[[ "$retry_after" =~ ^[0-9]+$ ]] || { echo "claude-go: --retry-after wants a number of seconds" >&2; exit 2; }
 
 if [[ -n "$workdir" ]]; then
   cd "$workdir" || exit 1
@@ -327,6 +333,25 @@ function run_session {
   return "$rc"
 }
 
+# Between a failed session and its retry: sleeps in short background chunks so
+# Ctrl+C (the trap interrupts `wait`) and claude-stop are noticed promptly.
+# Returns non-zero if asked to stop.
+function retry_wait {
+  local until=$(( $(date +%s) + retry_after )) now
+  note "$(printf 'waiting until %s to try again (Ctrl+C or claude-stop to quit)' \
+              "$(date -d "@$until" '+%H:%M:%S')")"
+  while now=$(date +%s); (( now < until )); do
+    [[ -n "$stopping" ]] && return 1
+    if [[ -e "$cwd/claude-stop" ]]; then
+      rm -f -- "$cwd/claude-stop"
+      return 1
+    fi
+    sleep $(( until - now < 10 ? until - now : 10 )) &
+    wait $! 2>/dev/null
+  done
+  [[ -z "$stopping" ]]
+}
+
 [[ -n "$multi" ]] && trap on_interrupt INT
 
 overall=0
@@ -335,8 +360,17 @@ for (( run = 1; loop || run <= runs; run++ )); do
 
   run_session
   rc=$?
+  overall=$rc
+  if (( rc != 0 )) && [[ -n "$loop" ]]; then
+    note "run $run did not finish cleanly (exit $rc)"
+    if ! retry_wait; then
+      note "stopped after run $run, as asked"
+      break
+    fi
+    printf '\n'
+    continue
+  fi
   if (( rc != 0 )); then
-    overall=$rc
     [[ -n "$multi" ]] && note "stopping: run $run did not finish cleanly"
     break
   fi
