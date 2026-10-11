@@ -17,6 +17,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Perf** (2026-10-07/08): 3.0x (vscode) to 13.9x (type-fest) faster than multi-threaded tsgo 7.0.2, less memory
   everywhere. Sharing types between checkers is not a lever (measured: 4 checkers cost ~2% more CPU than one); the
   source sweep found real pathologies instead (karakeep 55 s -> 0.6 s).
+  **A second competitor (2026-10-11): Bun 1.4.3's `bun check`**, a Rust port of tsgo claiming 7.0.2 conformance.
+  On a 12-core box it ties tttt's default on wall time (tttt ahead on small projects, bun on vscode/effect/drizzle/vue
+  at 24 threads vs our 4) and uses less memory on 10 of 14 corpora (**up to 2.9x**, vscode 2.8x); at 12 threads tttt is fastest on every corpus but uses
+  ~3.5x bun's memory on vscode. tttt's thread default (capped at 4) and its memory (the AST, per-checker redundant
+  types) are now the competitive gap, not single-threaded speed (measurements.md).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, tsc 6's stable type ordering, mapper instantiation, tsc's inference flow and ContextChecked/context anchors

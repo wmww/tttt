@@ -11,6 +11,34 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
+**Other machine**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, GCC 16.2, load ~2 (an idle desktop). Best of 3 wall
+s / peak RSS MB, `/usr/bin/time`. tttt default = 4 checkers / 4 threads (its cap), tttt-12 = `--checkers 12 --threads 12`;
+bun default = 24 threads, bun-4 = `--threads=4`; tsgo = the pinned 7.1 at its defaults. tsc-compiler with
+`--composite false --incremental false --emitDeclarationOnly false` for all three. Bun 1.4.3 is a port of tsgo 7.0.2
+(it claims its full conformance suite), so its diagnostics differ from 7.1's on webpack (591 vs 589), drizzle (18 vs
+41), vue (9 vs 14), effect (4 vs 5) and vscode (0 vs 10); tttt matches tsgo 7.1's counts but on drizzle 38 / vue 11 / effect 8.
+| corpus | tttt | tttt-12 | bun | bun-4 | tsgo 7.1 |
+|---|---|---|---|---|---|
+| tsc `src/compiler` | 0.38 / 328 | **0.26** / 449 | 0.36 / 351 | 0.42 / 221 | 0.58 / 497 |
+| type-fest | 0.90 / 2393 | **0.48** / 2630 | 1.05 / 835 | 1.70 / 555 | 4.06 / 5436 |
+| valibot | 0.24 / 343 | **0.15** / 424 | 0.25 / 276 | 0.43 / 158 | 0.72 / 823 |
+| react | 0.11 / 219 | **0.08** / 326 | 0.29 / 377 | 0.30 / 301 | 0.42 / 451 |
+| nest | 0.08 / 159 | **0.07** / 194 | 0.10 / 232 | 0.11 / 181 | 0.15 / 258 |
+| webpack | 0.53 / 699 | **0.35** / 877 | 0.60 / 521 | 1.10 / 356 | 1.17 / 1172 |
+| zod | 0.33 / 583 | **0.25** / 763 | 0.40 / 507 | 0.64 / 325 | 1.05 / 1314 |
+| xstate | 0.16 / 313 | **0.13** / 435 | 0.20 / 244 | 0.26 / 173 | 0.42 / 466 |
+| drizzle | 0.59 / 918 | **0.37** / 1285 | 0.48 / 597 | 0.91 / 347 | 1.43 / 1631 |
+| vue | 0.39 / 438 | **0.21** / 553 | 0.29 / 348 | 0.55 / 224 | 0.88 / 735 |
+| effect | 0.74 / 904 | **0.37** / 1059 | 0.59 / 511 | 1.30 / 307 | 1.44 / 1544 |
+| vscode | 4.43 / 5952 | **3.08** / 7595 | 3.29 / 2133 | 6.81 / 1557 | 8.21 / 7857 |
+| excalidraw | 0.42 / 540 | **0.27** / 753 | 0.41 / 416 | 0.79 / 266 | 1.57 / 1747 |
+| tanstack-router | 0.28 / 410 | **0.21** / 525 | 0.51 / 480 | 0.73 / 338 | 1.25 / 987 |
+At equal threads (4) tttt is 1.1-2.7x faster than bun but uses more memory on 12 of 14 corpora (up to 4.3x on
+type-fest, 3.8x on vscode; less on react and nest). At their defaults bun uses less memory on 10 of 14 (type-fest 2.9x,
+vscode 2.8x). Bun's own claim: 3-6.4x faster than tsgo 7.0.2 on a 16-core Mac; here it is 1.4-3.9x
+faster than tsgo 7.1 at defaults (2.5x on vscode).
+
 ## Plan 54 stage 5, the 7.1 language and new tests fan-out (2026-10-09, todo entry 9)
 4 agents by list over the 189 failing tests new in tsgo's tree (A source phase imports + module/config, B ambient-module
 import attributes + content mappers + merging/JS, C regex/enums/strings/declaration diagnostics, D checker

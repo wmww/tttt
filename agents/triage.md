@@ -15,3 +15,14 @@ sub-agents worked the CLI/harness, parser and real-world checker items (the comm
   shebangError, privateNameInTypeQuery, importTag13, mut0663, const T under a never context, TS8024 escapes.
 - C (real-world checker): trpc's Partial of an intersection with a conditional, `CP<Parameters<T>>` vs `unknown[]`,
   tanstack-table's untyped call, webpack's ForceTuple through a conditional, mikro-orm, source sweep top keys.
+
+## From the bun check comparison (2026-10-11, measurements.md)
+- **Perf vs `bun check`** (Bun 1.4.3, a Rust tsgo port): tttt's default caps at 4 threads; at 12 it beats bun
+  everywhere but bun uses less memory on 12 of 14 corpora (up to 3.6x, vscode). Worth a perf/insights look: raise the thread cap (or scale with
+  cores), and memory (AST share of the peak, the checkers' duplicated types, plan 36). Bun's correctness numbers
+  (conformance suite, 72-project config sweep, fuzzing, mutation of effect) are a bar to compare our oracles against.
+- `release/` failed under GCC 16.2 (a `-Wmaybe-uninitialized` false positive in `intersect_unions`, fixed with
+  `calloc`); newer compilers may find more: a CI-ish build with the newest GCC/clang is cheap insurance.
+- npm 12 defaults to `allow-remote=none`: a corpus lock entry resolved outside registry.npmjs.org breaks
+  `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten;
+  `--relock` may bring it back.

@@ -1427,7 +1427,7 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
         bool all = true;
         for (u32 i = 0; i < buf->len && all; i++) all = union_has(buf->data[i], flags[f]);
         if (!all) continue;
-        Ty const** rest = malloc(sizeof(Ty const*) * buf->len);
+        Ty const** rest = calloc(buf->len, sizeof(Ty const*));
         panic_if(!rest, "out of memory");
         for (u32 i = 0; i < buf->len; i++) {
             TyList members = buf->data[i]->composite.types;

@@ -31651,7 +31651,7 @@ const baselines = {
         types: true,
     },
     'tsconfigRootdirInclude': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
