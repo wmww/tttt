@@ -4528,7 +4528,7 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
     }
 }
 
-static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, unsigned canonical, ErrorCtx* errs);
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs);
 
 static void report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
     // A global of a later lib is said to be so rather than misspelled
@@ -4537,7 +4537,7 @@ static void report_not_found(Scope const* me, Span name, u32 meaning, bool short
         error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
-    if (report_misspelled(me, name, name.sv, meaning, false, 2304, errs)) return;
+    if (report_misspelled(me, name, name.sv, meaning, false, errs)) return;
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
@@ -4616,10 +4616,6 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorth
     report_not_found(me, name, meaning, shorthand, errs);
 }
 
-static unsigned misspelled_fallback_code(MisspelledFallback fallback) {
-    return fallback == FALLBACK_NAMESPACE ? 2503 : 2874;
-}
-
 static void report_misspelled_fallback(Span at, csview name, MisspelledFallback fallback, ErrorCtx* errs) {
     if (fallback == FALLBACK_NAMESPACE) {
         error_ctx_error_d(errs, at, 2503, "Cannot find namespace '", at, "'.");
@@ -4642,14 +4638,13 @@ static void report_misspelled_or(
         event->fallback = fallback;
         return;
     }
-    if (!report_misspelled(me, at, name, meaning, namespace, misspelled_fallback_code(fallback), errs)) {
+    if (!report_misspelled(me, at, name, meaning, namespace, errs)) {
         report_misspelled_fallback(at, name, fallback, errs);
     }
 }
 
-// `canonical`: the code of the error there would be without a suggestion (tsc's nameNotFoundMessage), which the
-// suggestion's diagnostic sorts by (its canonicalHead)
-static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, unsigned canonical, ErrorCtx* errs) {
+// (A suggestion's diagnostic sorts by its own code: tsgo's CompareDiagnostics has no canonicalHead)
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs) {
     // (Not where nothing is reported, a skipLibCheck declaration file's: a suggestion looks at every name in scope)
     if (!errs || (at.source && !source_file_is_checked(at.source))) return false;
     Suggestion suggestion = {0};
@@ -4657,7 +4652,6 @@ static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning
     Error* error = namespace ?
         error_ctx_error_d(errs, at, 2833, "Cannot find namespace '", name, "'. Did you mean '", suggestion.name, "'?") :
         error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
-    if (error) error->canonical_code = canonical;
     Symbol const* symbol = suggestion.export_local ? nullptr : suggestion.symbol;
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
         if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
@@ -5477,9 +5471,7 @@ void resolve_shard_merge(ResolveShard* me) {
                 report_not_found(event->scope, event->at, event->meaning, event->shorthand, event_errs);
                 break;
             case DEFERRED_MISSPELLED:
-                if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace,
-                    misspelled_fallback_code(event->fallback), event_errs)
-                ) {
+                if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace, event_errs)) {
                     report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
                 }
                 break;
