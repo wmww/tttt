@@ -201,3 +201,25 @@ TypeScript 7's Go compiler. The type checker itself barely changes.
 **A question for you:** should emitting output (`.d.ts` files and/or JavaScript) be in scope? Most people run `tsc` to
 emit files, so a checker-only tttt is a drop-in only for `tsc --noEmit`. Until you say otherwise, emit and watch mode
 stay out of scope and the readme will say so.
+
+## 2026-10-11 — insights (after the thirteenth window)
+The switch to TypeScript 7 went better than planned. tttt now targets TypeScript 7.1 (a nightly build for now; we'll
+move to 7.1.0 when it ships in late November) and is tested against TypeScript 7's own test suite and Go compiler.
+13316 of its 13571 tests pass (98.1%). The pass rate fell to 87% at the switch and was back above 98% within two
+sessions. Its command line now behaves like `tsc --noEmit`: same output, byte for byte, and the same exit codes. The
+features TypeScript 7 removed were deleted (about 2,200 lines of JavaScript support), and the list of workarounds kept
+shrinking.
+
+The concern is speed, which is the actual goal and was set aside this window. A new competitor, Bun's `bun check`
+(a Rust port of TypeScript 7), uses about a third of tttt's memory on large projects and matches our default speed on
+a 12-core machine. Also, our "3-14x faster than TypeScript 7" figure comes from 14 projects we've tuned for months.
+A quick look at the 3363 real projects we also check found waste those 14 never showed. tttt type-checks programs
+that tsc refuses to check because of config errors, which is about a quarter of its time on that set. On some
+projects it also creates 2-3x more types than TypeScript 7. So the next window is perf-first: measure tttt against
+TypeScript 7 on all of those projects and fix the outliers, cut memory, and redo the speed benchmark. Correctness
+work goes on alongside.
+
+**Two questions for you:** (1) Still open from last time: should emit (`.js`/`.d.ts` output) be in scope? (2) tttt
+uses at most 4 threads by default, like TypeScript 7. Bun uses every core, and at 12 threads tttt beats it
+everywhere but uses more memory. Our dev machine has 4 cores, so agents can't measure scaling past that. If you can
+run `scripts/bench.sh`-style numbers on a bigger machine after the memory work, we'll pick the default from them.

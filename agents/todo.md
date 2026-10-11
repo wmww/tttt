@@ -1,56 +1,47 @@
 # Todo
-Written by the insights of 2026-10-08 (after the twelfth window); `vision.md` "Course correction" says why. **Ten
+Written by the insights of 2026-10-11 (after the thirteenth window); `vision.md` "Course correction" says why. **Ten
 sessions, then insights.** Delete entries as they complete (leave a one-line "done" note with the numbers). A plan
 that overruns its entry takes its extra sessions out of this budget: when 10 sessions have run (count the commits
 since this file was written), the next session is insights, whatever is left here. New work goes into plans or
 triage.md, not ahead of the insights entry. Every entry ends with `scripts/fasttest.sh -s`, `scripts/oracles.py`
 (every oracle) after checker changes, `scripts/instrcount.sh` and a commit.
 
-Starting point: suite **14835 / 14969**, every corpus 0 but effect 3 (zod-root = tsc's 53), sweep 8594 / 8595,
-`$ExpectType` 68631 / 68640, flagflip 17 / 11 / 4, source sweep 3003 / 3359 (71 / 174 repos).
+Starting point: suite **13316 / 13571** (98.1%), corpora 0 spurious (missing: webpack 5, drizzle 3, vue 3; effect 3
+spurious), DT sweep 8592 / 8595, `$ExpectType` 68631 / 68640, flagflip 132 / 16 / 6, scenarios 209 / 213, source
+sweep 3119 / 3363. Instructions: measurements.md "Triage (2026-10-09..11)".
 
-**This window is plan 53**: TypeScript 7 as the target, tttt as a drop-in `tsc` (the human's request). Read plan 53,
-53_findings.md and **plan 54** (the switch, written by entry 2 with the prototype's numbers) before any entry. From
-entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only until nothing reads it (entry 5).
+**This window is perf-first** (the project's actual goal, unmeasured at breadth since the 7.1 switch). Wall times on
+this 4-vCPU box are only comparable within one session with nothing else running; type counts and callgrind
+instructions are the stable numbers.
 
-1. ~~Plan 53 stage 1: CLI parity~~ **done**: tsc's formats (plain when piped, pretty on a terminal), sorted like
-   tsc, tsc 7's exit codes, no chatter, tsgo's flags, implied `--noEmit`; `scripts/clidiff.py` 243 / 261 byte-identical
-   against tsc 6, 551 / 827 against tsgo 7.0.2 (0 exit code or order mismatches); every oracle unchanged.
-2. ~~Plan 53 stage 3 prototype~~ **done**: pinned `main` fed0bf24 = `typescript@7.1.0-dev.20261008.1`
-   (`thirdparty/ensure-typescript.sh`: checkout, Go 1.27.2, tsgo's CLI built from it); tools decided (Go + `go build
-   -overlay`: tsgo's own test runner gives any file's baselines in 45 ms, an overlay main can call the checker);
-   native suite through tttt's harness: **11842 / 13572 (87.3%)**, failures bucketed. **Plan 54** has it all.
-3. ~~Plan 54 stage 1: the switch~~ **done**: the native suite is the suite (**11860 / 13571**, 10 s; 1721 skipped
-   configurations), 7.1 libs + generated lib tables + es2026, the `^^^` machinery deleted, the 7 crashes and 2 slow
-   tests fixed, suite scripts on `scripts/suite.py`. Corpora, `$ExpectType`, flagflip unchanged; DT sweep 8586 (8 new
-   spurious: 7.1 `lib.dom` vs 6.0's caches, stage 3). filetest.sh/mutate.py still use 6.0's baselines (underlines
-   stripped) until entry 4.
-4. ~~Plan 54 stage 2: oracle tools on tsgo~~ **done**: `test/oracle` (Go overlay, built by ensure-typescript.sh):
-   the probe (`scripts/tsgoprobe.sh`, 184/184 baselines identical) behind tscbaseline/filetest/mutate/diffapp, and
-   `tttt-oracle` (= `tsc -p P --noEmit`, verified on 60 projects) behind every sweep; `test/sweep_tsc.js` and
-   `--as-emitting` gone; exit codes are 7.1's (2 with diagnostics); clidiff vs 7.1 176 / 261. The 6.0 caches' emit-only
-   codes are filtered in `sweep.compare` until entry 5 regenerates them (sourcesweep 736 / 822).
-5. ~~Plan 54 stage 3: regenerate every cache~~ **done**: every cache tsgo 7.1's, `thirdparty/tsc` deleted (TypeScript 6
-   is the `TypeScript6` corpus), corpora compared against tsgo's own diagnostics. Against 7.1: DT sweep 8553 / 8595,
-   `$ExpectType` 68619, source sweep 2242 / 3363 (removed options: entry 6), flagflip 8139 / 113 / 222 (928 / 23 / 210
-   without webpack), corpora 0 but webpack 589, drizzle 41, vue 14, vscode 10, effect 3 / 5 missing; scenarios 185 / 213.
-6. ~~Plan 54 stage 4: delete what 7 deleted~~ **done**: 7's option errors (TS5102/TS5108, TS6046, TS5023 from tsgo's
-   generated option names), ~460 lines of removed-option code deleted; the sweeps no longer pass `--keep-going` (the
-   CLI caches stop at option errors). Source sweep 2242 -> **3018 / 3363** (78 repos), scenarios **203 / 213**, suite
-   **11892**, every other oracle unchanged.
-7. ~~Fan-out on the 7.x TS deltas~~ **done**: suite 11892 -> **12681 / 13568** (93.5%), failing non-JS old-tree tests
-   904 -> 182 (leftovers in triage.md "From the TS 7.1 delta fan-out"; plan 55 written: tsgo's pseudochecker); DT sweep
-   8581, source sweep 3057, flagflip 7818 / 106 / 6, drizzle 25, vue 6, effect 3 / 3; instructions flat.
-8. ~~Fan-out on the JS rework~~ **done**: suite 12681 -> **13148 / 13568** (96.9%), failing JS tests 530 -> 79,
-   `src/` net -2246 lines (constructor functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases deleted),
-   webpack 589 -> 5 missing, flagflip 7818 / 106 -> 594 / 17; leftovers in triage.md "JS fan-out"; instructions flat.
-9. ~~7.1 language and the new tests~~ **done**: suite 13148 -> **13309 / 13568** (98.1%), failing new-tree tests
-   189 -> 43 (source phase imports, ambient-module import attributes, 7.1 regex, distributed type parameters (plan 57,
-   done), enum computed names; content mappers written up as **plan 56**); second tasks: source sweep 3069 -> 3119,
-   DT sweep 8592, `$ExpectType` 68631, flagflip 594 -> 145 missing, scenarios 209, drizzle 3 / vue 4 / effect 3 / 0.
-10. ~~Triage~~ **done** (cut off by a usage limit on 10-09; its agents' 7 commits and 3 diffs merged on 10-11): CLI/harness
-    (include-reason related info, `-b` exit codes, `bundled:///libs/`, diagnostics order, no canonicalHead), parser
-    and checker fixes, leftovers in bugs/; suite **13316**, vue 3, flagflip 132 missing, instructions flat. Not done,
-    for the next window: the perf session against tsgo 7.1 (`bench.sh` re-baselined, measurements.md's perf section)
-    and plan 58 (the 7.1.0 stable re-pin, after 2026-11-24).
+1. **Plan 59 stage 1**: the gate (no type checking when tsc wouldn't check: tiptap 3.9 s -> ~0.5 s) and
+   `scripts/perfsweep.py` (tttt vs tsgo `--singleThreaded --extendedDiagnostics` on every source sweep project tsgo
+   checks: time ratio distribution, projects ranked by type-count ratio). Baseline into measurements.md.
+2. **Plan 59 stage 2**: fan-out (four Opus sub-agents, disjoint outlier projects) on the worst type-count and time
+   ratios (rxjs 2.6x types first). Rerun perfsweep; leftovers into bugs/perf_leads.md.
+3. **Planning: plan 60, memory.** Bun's `bun check` uses 2.1 GB on vscode against tttt's 6.0 GB (type-fest 0.8 vs
+   2.4 GB; measurements.md). Find where tttt's peak goes per corpus at K1 and K4 (`scripts/arenasites.sh`,
+   `scripts/memtrack.sh`: AST, binder, checker arena by kind, relation caches, interned keys; what is duplicated per
+   checker), compare bytes per type with tsgo's `Memory used / Types`, and prototype the biggest one or two levers
+   (bugs/perf_leads.md "Memory" lists candidates: a ~40-byte instantiated Prop, the `Signature` split, interned
+   lists keyed by their ids, freeing what checking no longer needs). Write plan 60 with stages and expected savings,
+   or say no with numbers.
+4. **Plan 60 stage 1** (execution).
+5. **Plan 60 stage 2**, or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
+   (drop the tsc 6 / tsgo 7.0.2 columns), measurements.md's perf section rewritten (wall and RSS at K1 and K4 against
+   tsgo 7.1 `--singleThreaded` and default), the corpora's instructions.
+6. **Source sweep fan-out**: four Opus sub-agents on `scripts/sourcesweep.py`'s root causes (244 mismatching projects:
+   +TS2322/+TS2345 across ~20 repos each first, the TS1434 parse errors in postiz-app's `@copilotkit` `.d.mts`,
+   bugs/sourcesweep_checker.md's TS2589/TS7022/TS7023 items), one root-cause key set per agent.
+7. **Plan 55 stage 1-2**: tsgo's pseudochecker as one module (`src/ty/pseudo.c`), equivalence and printing.
+8. **Plan 55 stage 3** (delete the three partial ports it replaces), then any time left on the suite's isolated
+   declaration and accessor-pair tests it names.
+9. **Suite/JS tail fan-out**: four Opus sub-agents on the 255 failing tests (`scripts/failstats.py`,
+   `scripts/jsstats.py`, `scripts/displaydiff.py` buckets; bugs/js.md, display.md, missing_checks.md), flagflip's 132
+   missing, the DT sweep's 3. Mechanisms only, no per-test special cases.
+10. **Triage.** Also: a build with the newest GCC and clang (`-Werror` off, warnings counted) since GCC 16 found a
+    false positive; readme.md's numbers.
 11. **Insights.**
+
+After the insights entry (for the next window): **plan 58** (re-pin to TypeScript 7.1.0 stable, once it's on npm,
+expected after 2026-11-24); plan 56 (content mappers) only if a corpus or sweep starts using them.

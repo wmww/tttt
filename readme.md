@@ -5,9 +5,10 @@ support for the language, then beating typescript-go on speed. It started as
 [Tess](https://loginasroot.net/i_tried_to_write_a_typescript_type_checker), a solo project halted in 2025, and is
 now developed autonomously by AI agent sessions (see `CLAUDE.md` and `agents/`).
 
-State: 14835 of 14969 tsc baseline tests pass in full (errors, symbols and types output identical to tsc). tsc's own
-`src/compiler` (193k lines) and a dozen pinned real-world projects (vscode, react, zod, effect, vue...) typecheck
-with the same diagnostics as tsc, as do ~8600 DefinitelyTyped packages.
+State (targeting TypeScript 7.1): 13316 of 13571 tests of TypeScript 7.1's native test suite pass in full (errors,
+symbols and types output identical to tsgo). TypeScript 6's own `src/compiler` (193k lines) and a dozen pinned
+real-world projects (vscode, react, zod, effect, vue...) typecheck with the same diagnostics as tsgo, as do ~8600
+DefinitelyTyped packages and 3119 of 3363 projects from 174 open-source repositories.
 
 Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
