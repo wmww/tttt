@@ -72,3 +72,5 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub(target=es2015) (TS9005), 
   z; }` gets TS2339 (exports inside functions).
 - TS2417 (class static side) doesn't see a JS class's expando members; `export as namespace` in a JS file isn't bound
   (`scope_add_port()`). (From hacks.md, 2026-10-08)
+- importTag13: `@import x = require("m")` is TS1005 'from' expected in tsgo, which then parses the module specifier as
+  an expression and says TS1141 over `= require("types")`; tttt's JSDoc @import parser stops.

@@ -48,8 +48,9 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    189 -> 43 (source phase imports, ambient-module import attributes, 7.1 regex, distributed type parameters (plan 57,
    done), enum computed names; content mappers written up as **plan 56**); second tasks: source sweep 3069 -> 3119,
    DT sweep 8592, `$ExpectType` 68631, flagflip 594 -> 145 missing, scenarios 209, drizzle 3 / vue 4 / effect 3 / 0.
-10. **Triage.** Drain triage.md, bookkeeping for the switch (CLAUDE.md's script descriptions, hacks.md entries that
-    referred to deleted options). The perf session against tsgo 7.1 (`bench.sh`
-    re-baselined, measurements.md's perf section) didn't fit this window: schedule it for the next. Write the
-    7.1.0 stable re-pin (after 2026-11-24, plan 54 "The pin") into todo if it hasn't happened.
+10. ~~Triage~~ **done** (cut off by a usage limit on 10-09; its agents' 7 commits and 3 diffs merged on 10-11): CLI/harness
+    (include-reason related info, `-b` exit codes, `bundled:///libs/`, diagnostics order, no canonicalHead), parser
+    and checker fixes, leftovers in bugs/; suite **13316**, vue 3, flagflip 132 missing, instructions flat. Not done,
+    for the next window: the perf session against tsgo 7.1 (`bench.sh` re-baselined, measurements.md's perf section)
+    and plan 58 (the 7.1.0 stable re-pin, after 2026-11-24).
 11. **Insights.**

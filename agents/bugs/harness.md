@@ -95,3 +95,18 @@
   brought in by an import (`tsdown.config.ts` imports `../../build.utils.ts`) is TS6059 at the import in tttt, nothing
   in tsgo; a root file outside rootDir is TS6059 in both. tsgo adds it as a processing diagnostic from
   CommonSourceDirectory(), maybe only for files known at that point.
+- failstats.py's totals still disagree with the harness: `pass: all 13595 (of 13846 ran)` against the harness's 13316 /
+  13571 (2026-10-11). The errors-only tests without baselines and the skipped configurations are counted differently.
+  Make failstats read the harness's saved results for its totals.
+- TS2880 (`assert` import attributes) is a parse error in tsgo (parser.go: import declarations, import types,
+  `export ... from`); tttt reports it from the checker (`port_statement.c`, `several_types.c`). The suite matches now,
+  but on the CLI a syntactic diagnostic gates semantic checking, so a project with `assert` gets other diagnostics in
+  tttt than in tsgo. Move it to the parser (the dynamic `import(m, { assert })` one stays the checker's in tsgo too).
+- TS7016 at a package's import of its own name (`@vitest/browser/internal/vendor-types` from inside
+  vitest/packages/browser, resolved through its own exports) lacks tsc's TS7058 chain line ("If the '@vitest/browser'
+  package actually exposes this module, try adding..."): the self-name resolution leaves `ModuleRef.package_name`
+  empty, so `program.c`'s package hint pass skips it (vitest/test/e2e/dts/browser-playwright).
+- `-b` with noEmitOnError in an upstream project with errors: tsgo reports TS6305 'Output file ... has not been built
+  from source file' at the downstream import (its .d.ts wasn't written); tttt reads referenced projects from their
+  sources and doesn't. scenarios.py leftovers (each also a diagnostics mismatch): dependencyUpdate/...absolute-non-
+  root-dependency, inferredTypeFromMonorepoReference, projectReferenceRedirect/...multiple-sub-projects.

@@ -228,3 +228,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `use(): this`), conditionalTypes1's `Partial<T>[keyof T] & {}` target display.
 - The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
   declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
+- `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by
+  adbed7b9): tsgo's symbol has both declarations of `c` (`Decl(1, 70), Decl(1, 82)`), tttt only the first: the
+  homomorphic mapped property over the conditional's union keeps one declaration.
+- `type D = { get d(); set d(v: number) }`: `d` is number in tsgo (the typed setter says it), any in tttt; an
+  accessor pair in a type literal/interface takes its type from the getter side only.

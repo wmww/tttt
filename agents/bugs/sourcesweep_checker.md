@@ -102,3 +102,12 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
   handling (agent A's area).
 - arktype (+TS2345/2322/2339/7006/2589/2769 across ~60 projects): deep type-level library; nothing reduced yet.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
+
+## Left by the 2026-10-09 triage's real-world agent (cut off before it reported)
+- mikro-orm (120+ diagnostics): `NativeInsertUpdateOptions<T> & UpsertOptions<T, never>` not assignable to
+  `UpsertOptions<T, never>` for `getOnConflictReturningFields(meta, data, uniqueFields, options, platform)`: the
+  inferred T prints as T but isn't the caller's (TS2719-style "two different types" deep in the chain). Inference.
+  Recheck after 126c3296 (homomorphic mapped type apparent type): it may have moved.
+- tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
+  call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
+  fine: the difference is in how `spans` becomes unknown).

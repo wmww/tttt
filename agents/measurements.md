@@ -39,6 +39,14 @@ type-fest, 3.8x on vscode; less on react and nest). At their defaults bun uses l
 vscode 2.8x). Bun's own claim: 3-6.4x faster than tsgo 7.0.2 on a 16-core Mac; here it is 1.4-3.9x
 faster than tsgo 7.1 at defaults (2.5x on vscode).
 
+## Triage (2026-10-09..11, todo entry 10)
+Suite **13316 / 13571** (0 lost); corpora 0 but webpack 0/5, drizzle 0/3, vue 0/3 (4 -> 3: tsgo's include-pattern
+order), effect 3/0; DT sweep 8592 (3 missing); `$ExpectType` 68631; flagflip 132 / 16 / 6 (145 missing before);
+source sweep sample 763 / 822. failstats: 13595 / 13846 by its own count (bugs/harness.md).
+- Instructions (callgrind): tsc 4.699, type-fest 19.687, valibot 3.500, react 1.531, nest 1.166, webpack 10.425, zod
+  5.041, xstate 2.933, drizzle 7.153, vue 6.597, effect 10.200, vscode 91.169, excalidraw 7.969, tanstack-router
+  5.437 G (flat: +0.0..+0.4% against entry 9).
+
 ## Plan 54 stage 5, the 7.1 language and new tests fan-out (2026-10-09, todo entry 9)
 4 agents by list over the 189 failing tests new in tsgo's tree (A source phase imports + module/config, B ambient-module
 import attributes + content mappers + merging/JS, C regex/enums/strings/declaration diagnostics, D checker
