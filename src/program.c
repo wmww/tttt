@@ -120,6 +120,7 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
+    bool global_diagnostics_reported; // program_report_global_diagnostics()
     ErrorCtx* declaration_errs; // One per checker while typechecking: the declaration diagnostics of its files
     u32 threads; // program_set_threads(), 0: 1
     LoadPool* pool; // While loading with threads: parses files ahead of the loader
@@ -2971,6 +2972,18 @@ static void program_report_missing_global_types(Program* me) {
     }
 }
 
+void program_report_global_diagnostics(Program* me) {
+    panic_if(my phase != PROGRAM_PHASE_NAMES_RESOLVED, "global diagnostics are reported between resolving and checking");
+    if (my global_diagnostics_reported) return;
+    my global_diagnostics_reported = true;
+    set_compiler_options(&my options);
+    ErrorPhase phase = my errs->phase;
+    my errs->phase = ERROR_PHASE_TYPECHECK;
+    program_report_missing_global_types(me);
+    my errs->phase = phase;
+    clear_compiler_options();
+}
+
 // The checkers of program_typecheck(), taken by the threads in index order. Which files a checker checks depends only
 // on the file list and the checker count, never on which thread runs it
 typedef struct CheckShares {
@@ -3098,7 +3111,7 @@ void program_typecheck(Program* me) {
     program_make_current(me);
 
     scope_report_missing_prefixes(my binder);
-    program_report_missing_global_types(me);
+    if (!my global_diagnostics_reported) program_report_missing_global_types(me);
     // Each checker reports into its own ErrorCtx; nothing may write to the program's or make symbols meanwhile (they
     // run on threads of their own)
     u32 count = my requested_checkers ? my requested_checkers : 1;

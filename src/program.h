@@ -89,6 +89,11 @@ void program_resolve_names(Program* me);
 // Typechecks the loaded file and all imports, does not typecheck libraries loaded with program_load_lib()
 void program_typecheck(Program* me);
 
+// The global diagnostics tsc's checker reports when it's made (initializeTypeChecker: TS2318 for the global types it
+// needs), without checking anything: tsc's CLI doesn't check files when there are some. program_typecheck() reports
+// them otherwise. Call it after program_resolve_names()
+void program_report_global_diagnostics(Program* me);
+
 // How many checkers program_typecheck() deals the files to (tsgo's --checkers; 0 is the default, 1). The diagnostics
 // depend on it (only in the order of union members inside messages: type ids are per checker), not on anything else.
 // Call it while loading

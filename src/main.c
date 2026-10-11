@@ -516,11 +516,19 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             out_println(out, debug_d(&source->ast), "\n");
         }
 
-        program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names));
-        if (typecheck) program_typecheck(program);
-        // Global diagnostics (the checker's, without a file) hide the semantic ones
+        // Options diagnostics from validating the options, and the checker's global diagnostics (without a file), hide
+        // the semantic ones: then nothing is checked, as tsc doesn't (unless it emits declarations)
+        if (!syntactic) program_report_global_diagnostics(program);
         count_diagnostic_kinds(&names, kinds);
         intptr_t type_kinds[DIAGNOSTIC_KIND_COUNT];
+        count_diagnostic_kinds(errs, type_kinds);
+        if (!ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS])) {
+            gated = true;
+            typecheck = emit_declarations;
+        }
+        program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
+        if (typecheck) program_typecheck(program);
+        count_diagnostic_kinds(&names, kinds);
         count_diagnostic_kinds(errs, type_kinds);
         if (gated || (!ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS]))) {
             drop_diagnostic_kind(&names, DIAGNOSTIC_SEMANTIC);
