@@ -412,6 +412,7 @@ void program_destroy(Program* me) {
         // (The thread that destroys a program is usually the one that asked it for names outside the checkers, the test
         // harness's symbols walk: its symbol chain caches. They're per thread and lazily remade, keyed by program)
         symbol_chain_release_thread();
+        scope_release_thread();
         program_drop(me);
         free(me);
     }
@@ -2681,6 +2682,7 @@ static void* resolve_lane_thread(void* arg) {
     set_compiler_options(&thread->lane->program->options);
     resolve_lane_run(thread->lane, thread->index);
     clear_compiler_options();
+    scope_release_thread();
     return nullptr;
 }
 

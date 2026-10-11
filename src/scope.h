@@ -383,6 +383,8 @@ u32 symbol_resolved_flags(Symbol const* me);
 bool type_name_is_reserved(csview name);
 bool symbol_is_builtin_type(Symbol const* symbol); // `number`, `any`...: not a symbol to tsc
 Symbol* symbol_resolve_alias(Symbol* me);
+// Frees this thread's alias resolution stack (thread-local, lazily remade): before a thread that resolved aliases exits
+void scope_release_thread(void);
 // tsc's getTypeOnlyAliasDeclaration(): the nearest `import type`/`export type` (or `type` specifier) along the chain of
 // aliases that ends in the symbol, if any. What it names can't be used as a value
 PortItem const* symbol_type_only_declaration(Symbol const* me);

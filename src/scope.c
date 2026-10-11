@@ -3405,6 +3405,12 @@ static Symbol* resolve_alias_target(Symbol* me) {
 static thread_local Symbol** alias_stack;
 static thread_local u32 alias_stack_count, alias_stack_cap;
 
+void scope_release_thread(void) {
+    free(alias_stack);
+    alias_stack = nullptr;
+    alias_stack_count = alias_stack_cap = 0;
+}
+
 Symbol* symbol_resolve_alias(Symbol* me) {
     if (!me || !(my flags & SYMBOL_ALIAS)) return me;
     switch (my alias->state) {
