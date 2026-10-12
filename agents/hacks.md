@@ -379,6 +379,12 @@ src` finds the code-side markers; every significant one has an entry here.
   its side effects; the general fix is reporting satisfies where it's checked (tsgo's checkSatisfiesExpression).
 
 ## Relations (`ty/relate.c`)
+- `canonical_signature()` (tsc's getCanonicalSignature) returns the signature itself when none of its type parameters
+  is an unconstrained clone, where tsc instantiates it anyway (erasing its type parameters). tttt's inference treats a
+  generic contextual signature's type parameters differently from a non-generic one's: with the erasing instantiation,
+  vue's `toHandlerKey` (`<T extends string>(str: T) => T extends '' ? ...` against its annotation) loses tsc's TS2322,
+  which tttt only gets through that difference (tsgo infers T := the annotation's T and still fails the conditional
+  relation; why wasn't found). Real fix: find where tsgo's relation of the two conditionals fails.
 - `find_prop()` of an intersection: optional property types are kept without undefined (readers add it; tsc's
   getTypeOfSymbol includes it). An optional intersection property with a non-member part (`typeof f & { m?: X }`) is
   `F & X` in tsc; tttt drops PROP_OPTIONAL from it by flags, which also makes it required as a target (tsc: optional).

@@ -298,3 +298,20 @@ memo that only fills on the early path?) isn't known: worth finding, it may cost
   instantiation of every parameter type. tsgo instantiates parameter symbols lazily. Lead: lazy SigParam types.
   Instrumented-tsgo recipe: patched copies of checker.go/relater.go built with `go build -overlay X.json -o /tmp/...
   ./cmd/tsc` from `thirdparty/typescript/tsc`, so built/ isn't touched.
+## Plan 59 stage 2 leftovers (agent C)
+- **Lazy parameter types of instantiated signatures** (tsc's instantiateSymbol: an instantiated signature's parameter
+  symbols get their types when asked for). `signature_resolve()` instantiates every parameter type of an instantiated
+  signature eagerly, so signatures that are only erased (overloads compared pairwise), counted or base-instantiated
+  still make their parameter types: immutable.d.ts's `merge<KC, VC>(...collections: Array<Iterable<[KC, VC]>>)` made
+  an `Iterable<[KC', VC']>` (and tuple, and Array) for every clone of KC/VC, 11.7k against tsgo's 0.7k. Prototyped
+  (2026-10-12, /tmp/c-probes/full3.diff while it lasts): `SigParam.type` renamed to `lazy_type` plus a `pending`
+  mapper composed with each further instantiation (`ty_compose_mappers()`), read through `ty_param_type(me, param)`
+  (~90 read sites, the compiler finds them all once the field is renamed); rest parameters stay eager unless they are
+  arrays (`ty_signature_has_rest()` and friends read the shape without a checker); infer.c's `base_signature_mapper()`
+  became a cached base signature (tsc's getBaseSignature) so that its parameter types stay lazy too. Suite, corpora,
+  sweep, $ExpectType and source sweep sample 4 were all unchanged. Not landed: on top of the canonical signature fix
+  it only took immutable.d.ts from 292k to 254k types, while composing mappers cost valibot +0.25% and zod +0.2%
+  instructions (`ty_compose_mappers()` ~2M, extra arena and intern traffic). Worth it with a cheaper composition (tsc's
+  composite mapper is lazy: maps through inner then outer on lookup, no up-front instantiation of inner's targets).
+- **immutable.d.ts after the canonical signature fix**: 292k types against tsgo's 595k (the whole sweep's immutable
+  projects are at types ratio 0.43-0.57 now, from 1.3-1.8). Nothing left there.

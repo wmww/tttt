@@ -62,6 +62,7 @@ enum {
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_TYPE_VARIABLE_REDUCTION, // (type variable id, primitive id) -> reduce_type_variable_intersection (checker.c)
     KEY_DEFINITELY_RELATED, // (source id, target id, which) -> 1 + ty_definitely_assignable/unassignable (conditional.c)
+    KEY_CANONICAL_SIGNATURE, // Signature -> its canonical instantiation (relate.c canonical_signature())
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation

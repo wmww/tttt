@@ -1862,6 +1862,8 @@ static bool is_constructor_declaration(Signature const* sig) {
     return sig && sig->function && sig->function->is_constructor && !sig->function->is_type;
 }
 
+static Signature const* canonical_signature(Checker* me, Signature const* sig);
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
@@ -1896,10 +1898,10 @@ static Ternary compare_signatures(
         return TERNARY_FALSE;
     }
 
-    // A generic source is instantiated in the context of the target (whose type parameters, if any, are canonical
-    // already: instantiations share them), after the arity check, which goes by the declared parameters (a conditional
-    // rest type takes any count, tsc's compareSignaturesRelated)
+    // A generic source is instantiated in the context of the target's canonical signature, after the arity check,
+    // which goes by the declared parameters (a conditional rest type takes any count, tsc's compareSignaturesRelated)
     if (source->type_params.len && source->type_params.data != target->type_params.data) {
+        target = canonical_signature(me, target);
         source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
     }
 
@@ -2163,6 +2165,37 @@ static int constructor_access(Signature const* sig) {
     while (sig && !sig->function && sig->target) sig = sig->target;
     FunctionImpl const* function = sig ? sig->function : nullptr;
     return function && function_impl_rare(function)->constructed_class && function->is_constructor ? function_impl_rare(function)->constructor_access : -1;
+}
+
+// tsc's getCanonicalSignature: the instantiation with each unconstrained type parameter cloned for an instantiated
+// signature (ty_clone_type_param()) replaced by the one it was cloned from. Every instantiation of a generic interface
+// clones its methods' type parameters, so comparing against those would make new types at every level of a recursive
+// structural comparison (immutable.d.ts's collections: `OrderedMap<string | KM, any>` for each clone of KM)
+static Signature const* canonical_signature(Checker* me, Signature const* sig) {
+    // (Only one with a clone among its type parameters has another canonical form)
+    bool cloned = false;
+    for (u32 i = 0; i < sig->type_params.len && !cloned; i++) cloned = sig->type_params.data[i]->param.state->clone_of != nullptr;
+    if (!cloned) return sig;
+    u64 key[2] = { KEY_CANONICAL_SIGNATURE, (u64)(uintptr_t)sig };
+    Signature const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached;
+    Ty const* stack_args[16];
+    Ty const** args = sig->type_params.len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * sig->type_params.len);
+    panic_if(!args, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < sig->type_params.len; i++) {
+        Ty const* param = sig->type_params.data[i];
+        Ty const* original = param->param.state->clone_of;
+        args[i] = original && !ty_param_constraint(me, original) ? original : param;
+        changed |= args[i] != param;
+    }
+    // (Unlike tsc, not when nothing changes: an instantiation with its own type parameters would no longer be generic,
+    // and inference treats a generic contextual signature's type parameters as its own; vue's toHandlerKey
+    // `<T extends string>(str: T) => T extends '' ? ...` against its annotation relies on that for tsc's TS2322)
+    Signature const* ret = changed ? ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = sig->type_params.len }) : sig;
+    if (args != stack_args) free(args);
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
 }
 
 // tsc's signaturesRelatedTo
