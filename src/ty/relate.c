@@ -643,33 +643,6 @@ static void report_truncate(RelationState* st, isize_t len) {
     return ret;
 }
 
-static bool is_plain_identifier(csview sv) {
-    if (!sv.size || (sv.buf[0] >= '0' && sv.buf[0] <= '9')) return false;
-    for (isize i = 0; i < sv.size; i++) {
-        char c = sv.buf[i];
-        if (!(c == '_' || c == '$' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) return false;
-    }
-    return true;
-}
-
-// The name of the one missing property of TS2741 (tsc's symbolToString with WriteComputedProps): a mapped type's
-// property keyed by an enum member is `[E.A]`
-static cstr missing_prop_name(Checker* me, Prop const* prop) {
-    Prop const* template = prop->target;
-    if (template && prop_decl_rare(template->decl)->template_of && !prop_decl_rare(template->decl)->template_of->name_type && prop->mapper &&
-        prop->mapper->len == 1
-    ) {
-        Ty const* key = prop->mapper->targets[0];
-        if (key->kind == TY_LITERAL && (key->flags & TYF_ENUM_LITERAL) && key->literal.enum_member &&
-            key->literal.enum_member != key->literal.enum_decl && is_plain_identifier(key->literal.enum_member->name)
-        ) {
-            // (The member's symbol as an expression: `E.A`, even for an enum's only member)
-            return cstr_d("[", span_sv(ty_symbol_display_name(key->literal.enum_decl)), ".", key->literal.enum_member->name, "]");
-        }
-    }
-    return ty_prop_written_name(me, prop);
-}
-
 // A deferred reference as tsc's getNormalizedType makes it for the relation: a plain reference, without the alias
 // name of the alias whose body it is; a class or interface that adds nothing to its single base, that base (what
 // structural messages below the head print)
@@ -2530,7 +2503,7 @@ static Ternary props_related_impl(
             display_pair(me, apparent_intersection(me, normalized_reference(me, shown)), true,
                 normalized_reference(me, target), &source_str, &target_str);
             if (missing_count == 1) {
-                cstr name = missing_prop_name(me, missing_prop);
+                cstr name = ty_prop_written_name(me, missing_prop); // (tsgo's symbolToString, no WriteComputedProps)
                 report_line(st, 2741, cstr_d(
                     "Property '", name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                 ));
