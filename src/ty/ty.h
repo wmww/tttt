@@ -2329,7 +2329,6 @@ typedef struct TyDisplay {
     // elsewhere, and inside a reused annotation (counted by its text)
     u32* approx;
     bool naming; // Inside a name being printed, which counts as a whole (see out_symbol_name())
-    bool literal_value; // The type of an object literal's property (a function expression there isn't elided)
     bool cut_off; // A message's type being printed, cut off after (see display_cut_off())
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
@@ -2366,9 +2365,6 @@ typedef struct TyDisplay {
     // Reprinting an annotation of this instantiated signature (tsc's context.mapper): its type parameters that the
     // instantiation maps aren't reused, they print what they're mapped to
     struct Signature const* mapped_by;
-    // A function expression that tsc types syntactically where it is printed (the returned function of
-    // typeFromSingleReturnExpression): its parameter declarations are reused, `: ` and all
-    struct FunctionImpl const* syntactic_function;
     TyParamNames* param_names; // Null: type parameters print as they're called
     // The annotation being reprinted is an array's element type: a part of it that prints its type instead is
     // parenthesized as needed (tsc's factory, parenthesizeElementTypeOfArrayType). Only for the node itself

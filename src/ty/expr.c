@@ -39,9 +39,6 @@ typedef struct ExprCtx {
     // `contextual`). A function here has no contextual signature
     bool sig_absent;
     bool is_const; // inside `as const`
-    // Inside `as const` itself, not just a const context a `const` type parameter makes (tsgo's pseudochecker's
-    // IsInConstContext, which reuses a single-quoted literal's node there)
-    bool syntactic_const;
     bool template_context; // The index of an element access (a template literal there is a template type)
     // Context-sensitive functions are ty_any_function_type(), whatever contains one isn't remembered (tsc's
     // CheckMode.SkipContextSensitive: the first inference pass sees the rest of an object literal argument)
@@ -3999,7 +3996,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         ExprCtx member_ctx = {
             .contextual = member_context, .sig_contextual = member_sig_context,
             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
-            .is_const = ctx.is_const || i->inline_import_attributes, .syntactic_const = ctx.syntactic_const, .skip_sensitive = ctx.skip_sensitive,
+            .is_const = ctx.is_const || i->inline_import_attributes, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         Ty const* type = nullptr;
@@ -4090,35 +4087,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             continue;
         }
+        // (A JSDoc `@type` is the property's annotation; the rest of what its declaration says is its pseudo type, see
+        // PropDecl.item)
         TypeNode const* asserted = i->jsdoc_type;
-        // (Only an assertion that is the initializer itself, not parenthesized: tsc's typeFromPropertyAssignment)
-        if (!asserted && i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_AS_TYPE && !i->value.as_type->is_satisfies &&
-            !expr_is_perenthisized(&i->value) &&
-            !as_type_is_const(i->value.as_type) && type == ty_expr_type(me, &i->value)
-        ) {
-            asserted = &i->value.as_type->type;
-        }
-        // A string literal written with single quotes or backticks where it is a literal (a const context): tsgo's pseudo
-        // type of the property reuses the literal's node, quotes and all (`{ a: 'x' } as const` prints `{ readonly a: 'x'; }`).
-        // A literal type node of it says so (reused where the property's type is still that literal)
-        if (!asserted && i->tag == OBJECT_ITEM_PROPERTY) {
-            Expr const* literal = &i->value;
-            bool literal_const = ctx.syntactic_const;
-            if (literal->tag == EXPR_AS_TYPE && !literal->as_type->is_satisfies && as_type_is_const(literal->as_type)) {
-                literal = &literal->as_type->expr;
-                literal_const = true;
-            }
-            if (literal_const && literal->tag == EXPR_LITERAL && literal->literal.tag == VALUE_STRING &&
-                literal->inner_span.size && (literal->inner_span.buf[0] == '\'' || literal->inner_span.buf[0] == '`')
-            ) {
-                TypeNode* node = arena_new(&my arena, TypeNode);
-                node->tag = TYPE_VALUE;
-                node->parsed = true;
-                node->value = literal->literal; // (Borrowed from the AST, which outlives the checker)
-                node->value_span = literal->inner_span;
-                asserted = node;
-            }
-        }
         uint8_t name_form = ty_prop_name_form(span_sv(i->name_span), i->computed_key, key_type, true);
         // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
         // conflict: its name is only its own)
@@ -4320,12 +4291,12 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         ExprCtx element_ctx = {
             .contextual = element_context, .sig_contextual = element_sig_context,
             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !element_sig_context),
-            .is_const = ctx.is_const, .syntactic_const = ctx.syntactic_const, .skip_sensitive = ctx.skip_sensitive,
+            .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         if (i->tag == EXPR_SPREAD) {
             // (A spread of a const context is in it too: tsc's isConstContext goes up through SpreadElement)
-            Ty const* operand = ctx.is_const ? check_with(me, i->spread, (ExprCtx){ .is_const = true, .syntactic_const = ctx.syntactic_const }) : ty_expr_type(me, i->spread);
+            Ty const* operand = ctx.is_const ? check_with(me, i->spread, (ExprCtx){ .is_const = true }) : ty_expr_type(me, i->spread);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
                 if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY) &&
@@ -5388,7 +5359,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (tsc's checkAssertion: the regular literal type, which no longer widens)
             // (Its operand has the contextual type of the assertion: tsc's getContextualType of an AsExpression)
             if (as_type_is_const(as_type)) {
-                return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .contextual = ctx.contextual, .is_const = true, .syntactic_const = true }));
+                return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .contextual = ctx.contextual, .is_const = true }));
             }
             // (Resolved as the type node: tsc's checkAssertionWorker gets it under checkSourceElement(type), so what
             // goes wrong inside it, TS2590 of `a as A & B`, is reported there)

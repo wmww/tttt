@@ -2088,33 +2088,6 @@ static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* 
     return &as_type->type;
 }
 
-// A function without a return annotation whose only return is `'x' as const`: tsgo's pseudo return type reuses the
-// literal's node, single quotes (or backticks) and all (a literal type node of it, see the object literal properties in expr.c)
-static TypeNode const* single_return_quoted_literal(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    // (Not where something may type it contextually, an IIFE's callee included: tsgo's isContextuallyTyped)
-    if (function->syntactically_contextual) return nullptr;
-    Expr const* expr = single_return_expr(function);
-    if (!expr || expr->tag != EXPR_AS_TYPE || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) return nullptr;
-    Expr const* literal = &expr->as_type->expr;
-    if (literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_STRING || !literal->inner_span.size ||
-        (literal->inner_span.buf[0] != '\'' && literal->inner_span.buf[0] != '`') ||
-        ty_regular(me, ty_expr_type(me, expr)) != ty_regular(me, ret)
-    ) {
-        return nullptr;
-    }
-    TypeNode* node = arena_new(&my arena, TypeNode);
-    node->tag = TYPE_VALUE;
-    node->parsed = true;
-    node->value = literal->literal; // (Borrowed from the AST)
-    node->value_span = literal->inner_span;
-    return node;
-}
-
-static TypeNode const* single_return_node(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    TypeNode const* node = single_return_assertion(me, function, ret);
-    return node ? node : single_return_quoted_literal(me, function, ret);
-}
-
 // A type node that names nothing (keywords and literals, in unions, intersections, arrays and parentheses): reusing it
 // asks no name whether it is accessible, so it is reused wherever the type is printed from
 static bool type_node_names_nothing(TypeNode const* node, u32 depth) {
@@ -2138,87 +2111,12 @@ static bool type_node_names_nothing(TypeNode const* node, u32 depth) {
     }
 }
 
-// A function without a return annotation whose only return is a function expression prints its return type
-// syntactically (tsc's typeFromFunctionLikeExpression), unless something may type it contextually (isContextuallyTyped)
-static FunctionImpl const* single_return_function(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    Expr const* expr = single_return_expr(function);
-    if (!expr || expr->tag != EXPR_FUNCTION || expr->function->syntactically_contextual) return nullptr;
-    return ty_expr_type(me, expr) == ret ? expr->function : nullptr;
-}
-
-// The keyword type of a number, string, boolean or bigint literal (`-1` too), null for any other expression (tsgo's
-// pseudochecker outside a const context)
-static Ty const* primitive_literal_keyword(Checker* me, Expr const* expr) {
-    if (expr->tag == EXPR_UNARY_OP && (expr->unary_op->op == UNARY_OP_MINUS || expr->unary_op->op == UNARY_OP_PLUS)) {
-        expr = &expr->unary_op->expr;
-        if (expr->tag != EXPR_LITERAL || (expr->literal.tag != VALUE_NUMBER && expr->literal.tag != VALUE_BIGINT)) return nullptr;
-    }
-    if (expr->tag != EXPR_LITERAL) return nullptr;
-    switch (expr->literal.tag) {
-        case VALUE_NUMBER: return ty_intrinsic(me, TY_NUMBER);
-        case VALUE_STRING: return ty_intrinsic(me, TY_STRING);
-        case VALUE_BOOLEAN: return ty_intrinsic(me, TY_BOOLEAN);
-        case VALUE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
-        default: return nullptr;
-    }
-}
-
-// A function without a return annotation whose only return is a number, string, boolean or bigint literal prints its
-// keyword (tsc's typeFromExpression of a primitive literal). Only observable where the checker's type is another:
-// `return; return 1;` under strictNullChecks is `1 | undefined` to the checker, `number` to the printer
-static Ty const* single_return_keyword(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    // (tsc's FunctionFlags.AsyncGenerator test is a mask; in a call or an annotated initializer it's isContextuallyTyped)
-    if (function->is_async || function->syntactically_contextual) return nullptr;
-    Expr const* expr = single_return_expr(function);
-    if (!expr || expr->tag != EXPR_LITERAL) return nullptr;
-    Ty const* keyword = nullptr;
-    switch (expr->literal.tag) {
-        case VALUE_NUMBER: keyword = ty_intrinsic(me, TY_NUMBER); break;
-        case VALUE_STRING: keyword = ty_intrinsic(me, TY_STRING); break;
-        case VALUE_BOOLEAN: keyword = ty_intrinsic(me, TY_BOOLEAN); break;
-        case VALUE_BIGINT: keyword = ty_intrinsic(me, TY_BIGINT); break;
-        case VALUE_NULL:
-            if (!compiler_options()->strict_null_checks) return nullptr;
-            keyword = ty_intrinsic(me, TY_NULL);
-            break;
-        default: return nullptr;
-    }
-    // (the checker's type is that literal, widened or not, maybe with undefined)
-    TyList parts = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
-    for (u32 i = 0; i < parts.len; i++) {
-        Ty const* part = parts.data[i];
-        if (part->flags & TYF_UNDEFINED) continue;
-        if (ty_base_type_of_literal(me, part) != keyword) return nullptr;
-    }
-    return keyword;
-}
-
 // `mapped_by`: the instantiated signature they belong to, whose mapper their declared constraints are reused with
-static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, bool syntactic, Signature const* mapped_by) {
+static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, Signature const* mapped_by) {
     if (!params.len) return;
     out_lit(d, "<");
     for (u32 i = 0; i < params.len; i++) {
         if (i) out_lit(d, ", ");
-        // (A function printed syntactically reuses its type parameter declarations whole)
-        Ty const* declared_param = params.data[i];
-        GenericItem const* own = syntactic && declared_param->kind == TY_TYPE_PARAM ? declared_param->param.state->item : nullptr;
-        if (own && !declared_param->param.state->clone_of && d.types_baseline) {
-            TyDisplay whole = reused_if(d, true);
-            if (own->is_const) out_lit(whole, "const ");
-            if (own->is_in) out_lit(whole, "in ");
-            if (own->is_out) out_lit(whole, "out ");
-            // (Renamed for shadowing too: the reused node keeps its range, tsc's trackExistingEntityName)
-            out_type_param_name(me, whole, declared_param, true);
-            if (own->extends_explicit) {
-                out_lit(whole, " extends ");
-                display_node(me, whole, &own->extends);
-            }
-            if (own->fallback) {
-                out_lit(whole, " = ");
-                display_node(me, whole, own->fallback);
-            }
-            continue;
-        }
         // The name of a declared type parameter is always reused, the constraint like any annotation (tsc never reuses
         // the default)
         // (A clone made by instantiating the signature has its original's declaration)
@@ -2368,6 +2266,7 @@ static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* c
 
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional);
+static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo);
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     u32 saved = param_names_enter(d);
@@ -2482,8 +2381,6 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
     bool reusable = (d.types_baseline || d.reuse_nodes) && function;
-    bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
-    d.syntactic_function = nullptr;
     // (An instantiated signature's parameters that could contain type variables are copies: one named like a type
     // parameter shadows it, see TyParamNames.value_params)
     SigParam* copies = nullptr;
@@ -2501,7 +2398,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         d.param_names->value_params = copies;
         d.param_names->value_param_count = copy_count;
     }
-    display_type_params(me, d, sig->type_params, reusable, syntactic, instantiated ? sig : nullptr);
+    display_type_params(me, d, sig->type_params, reusable, instantiated ? sig : nullptr);
     if (copy_count) {
         d.param_names->value_params = nullptr;
         d.param_names->value_param_count = 0;
@@ -2557,7 +2454,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     for (u32 i = 0; i < param_count; i++) {
         SigParam const* param = &params[i];
         if (i) out_lit(d, ", ");
-        if (param->rest) out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv("..."));
+        if (param->rest) out(reused_if(d, d.reused), c_sv("..."));
         Binding const* name_binding = param->decl ? &param->decl->initializer.binding : nullptr;
         // (A binding pattern's symbol is `__0`)
         bool pattern_name = name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT);
@@ -2575,7 +2472,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         if (param->optional) out_lit(d, "?");
         // (A function expression's parameter typed by a JSDoc `@type` signature: tsc types it contextually)
         bool contextual_jsdoc = function && function->is_expression && param->decl && param->decl->jsdoc_span;
-        out(reused_if(d, d.reused || (syntactic && param->decl && !contextual_jsdoc)), c_sv(": "));
+        out(reused_if(d, d.reused), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
             !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type) &&
@@ -2585,15 +2482,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             !(function && function->jsdoc_callback && param->decl->explicit_optional && !binding->explicit_type.jsdoc_optional &&
                 compiler_options()->strict_null_checks);
         TyDisplay param_d = reused_if(d, false);
-        // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
-        // typeFromParameter -> typeFromExpression), unless something may type it contextually
         Expr const* initializer = param->decl ? initialized_binding_value(&param->decl->initializer) : nullptr;
-        if (reusable && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER && initializer &&
-            initializer->tag == EXPR_FUNCTION && !initializer->function->syntactically_contextual &&
-            ty_without_undefined(me, param->type) == ty_expr_type(me, initializer)
-        ) {
-            param_d.syntactic_function = initializer->function;
-        }
         // An optional parameter's type has undefined under strictNullChecks (tsc's getOptionalType in
         // serializeTypeForDeclaration), which a reused annotation doesn't say
         Ty const* shown = param->type;
@@ -2610,7 +2499,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // The parameter's pseudo type where it says the same (tsgo's serializeTypeForDeclaration of the parameter):
         // an initialized parameter before a required one has undefined added (requiresAddingImplicitUndefined), an
         // optional one's undefined isn't in its annotation (isOptionalAnnotated)
-        if (reusable && reuses_nodes(param_d) && !d.approx && !d.reused && param->decl && !contextual_jsdoc &&
+        if (reusable && reuses_nodes(param_d) && !d.reused && param->decl && !contextual_jsdoc &&
             !function->jsdoc_callback && !function->jsdoc_type &&
             param->decl >= function->args.data && param->decl < function->args.data + vec_function_arg_size(&function->args)
         ) {
@@ -2623,7 +2512,12 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             }
             bool optional_annotated = !add_undefined && param->decl->explicit_optional;
             bool equivalent = pseudo_equivalent(me, d, pseudo, type, optional_annotated);
-            if (!equivalent && add_undefined && !pseudo_could_be_undefined(pseudo)) {
+            // (Whether the pseudo type has undefined: its type's say if it has one, else its syntax)
+            Ty const* as_type = add_undefined ? pseudo_type(me, d, pseudo) : nullptr;
+            bool lacks_undefined = as_type ? ty_without_undefined(me, as_type) == as_type : !pseudo_could_be_undefined(pseudo);
+            if (equivalent && add_undefined && as_type && lacks_undefined && ty_without_undefined(me, type) != type) {
+                pseudo = pseudo_add_undefined(me, pseudo);
+            } else if (!equivalent && add_undefined && lacks_undefined) {
                 pseudo = pseudo_add_undefined(me, pseudo);
                 equivalent = pseudo_equivalent(me, d, pseudo, type, false);
             }
@@ -2635,32 +2529,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
                 continue;
             }
         }
-        // A parameter without annotation whose initializer is a type assertion `x = v as T` reuses T (tsc's
-        // typeFromParameter -> typeFromExpression -> typeFromTypeAssertion), with undefined added like an annotation
-        TypeNode const* asserted = nullptr;
-        if (reusable && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER && initializer &&
-            initializer->tag == EXPR_AS_TYPE && !initializer->as_type->is_satisfies && !as_type_is_const(initializer->as_type) &&
-            !function->syntactically_contextual && !instantiated &&
-            node_type(me, (TyDisplay){0}, &initializer->as_type->type) == ty_without_undefined(me, param->type)
-        ) {
-            asserted = &initializer->as_type->type;
-        }
-        if (asserted && reuses_nodes(param_d)) {
-            if (!param->optional && annotation_plus_undefined(me, asserted, shown)) display_node_plus_undefined(me, param_d, asserted);
-            else display_annotated(me, param_d, asserted, shown, param->optional);
-        } else if (reused && reuses_nodes(param_d) && !param->optional &&
-            annotation_plus_undefined(me, &binding->explicit_type, shown)
-        ) {
+        if (reused && reuses_nodes(param_d) && !param->optional && annotation_plus_undefined(me, &binding->explicit_type, shown)) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
             // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
             display_node_plus_undefined(me, param_d, &binding->explicit_type);
-        } else if (reusable && reuses_nodes(param_d) && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER &&
-            initializer && param->decl->explicit_optional && !function->syntactically_contextual && !instantiated &&
-            primitive_literal_keyword(me, initializer) == ty_without_undefined(me, param->type)
-        ) {
-            // `p? = 0` (TS1015): the initializer's keyword, without the undefined the `?` adds (tsgo's pseudo type of
-            // the parameter, equivalent to its type for an optional declaration)
-            ty_display(me, param_d, primitive_literal_keyword(me, initializer));
         } else {
             display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
         }
@@ -2670,8 +2542,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     out(d, csview_from(separator));
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
-    TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
-        single_return_node(me, function, signature_return_type(me, root));
+    TypeNode const* ret_annotation = !reusable || root->class_instance || !function->ret_explicit ? nullptr : &function->ret;
     bool reused = ret_annotation &&
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
         !(fresh_anonymous && ret->kind == TY_ANONYMOUS);
@@ -2699,7 +2570,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // The return type as the declaration's syntax says it, where that's the same type (tsgo's
     // serializeReturnTypeForSignature: its pseudo type; an instantiated signature's own type parameters are fresh, see
     // TyDisplay.fresh_params)
-    if (reusable && reuses_nodes(d) && !d.approx && !d.reused && !root->class_instance) {
+    if (reusable && reuses_nodes(d) && !d.reused && !root->class_instance) {
         Pseudo const* pseudo = pseudo_of_return(me, function);
         if (pseudo_equivalent(me, d, pseudo, ret, false)) {
             // (Reused through the instantiation's mapper, tsgo's ctx.mapper: what equivalence let through is an error
@@ -2709,11 +2580,6 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             display_pseudo(me, pseudo_d, pseudo, ret);
             return;
         }
-    }
-    if (reusable && !ret_annotation && !function->ret_explicit && !root->class_instance) {
-        ret_d.syntactic_function = single_return_function(me, function, ret);
-        Ty const* keyword = single_return_keyword(me, function, ret);
-        if (keyword) ret = keyword;
     }
     // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
     // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
@@ -3252,6 +3118,16 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
 
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
 
+// What tsgo's approximateLength counts for a node reused from the source (tryReuseExistingNodeHelper): its range, with
+// the whitespace before it
+static u32 reused_node_length(Span span) {
+    char const* start = span.buf;
+    SourceFile const* file = span_source(span);
+    char const* contents = file ? cstr_str(&file->contents) : start;
+    while (start > contents && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
+    return (u32)(span.buf - start + span.size);
+}
+
 // A parameter as its declaration says (pseudoParameterToNode): `type` its type in the signature
 static void display_pseudo_param(Checker* me, TyDisplay d, PseudoParam const* param, Ty const* type) {
     Binding const* binding = &param->arg->initializer.binding;
@@ -3376,13 +3252,18 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
         case PSEUDO_TRUE: out_lit(d, "true"); return;
         case PSEUDO_STRING_LITERAL:
             // (The literal node cloned: its quotes as written)
+            approx_add(d, reused_node_length(pseudo->expr->inner_span));
             out(reused_if(d, true), span_sv(pseudo->expr->inner_span));
             return;
         case PSEUDO_NUMERIC_LITERAL:
-        case PSEUDO_BIGINT_LITERAL:
+        case PSEUDO_BIGINT_LITERAL: {
             // (A cloned numeric literal prints its value: `0x1` is `1`)
-            ty_display(me, d, ty_regular(me, ty_expr_type(me, pseudo->expr)));
+            approx_add(d, reused_node_length(pseudo->expr->inner_span));
+            TyDisplay literal_d = d;
+            literal_d.approx = nullptr;
+            ty_display(me, literal_d, ty_regular(me, ty_expr_type(me, pseudo->expr)));
             return;
+        }
         case PSEUDO_SIGNATURE: {
             Signature const* sig = ty ? ty_single_signature(me, ty, false, false) : nullptr;
             TyDisplay sig_d = reused_if(d, false);
@@ -3421,9 +3302,11 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 Ty const* type = prop ? ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0) : nullptr;
                 bool readonly = is_const || (member->kind == PSEUDO_MEMBER_PROPERTY && member->readonly);
                 if (readonly) out_lit(member_d, "readonly ");
-                // (tsgo's reuseName: the name as a property name node would print it)
+                // (tsgo's reuseName: the name as a property name node would print it, counted as reused)
+                approx_add(member_d, reused_node_length(member->item->name_span));
                 TyDisplay name_d = member_d;
                 name_d.tracker = nullptr;
+                name_d.approx = nullptr;
                 switch (member->kind) {
                     case PSEUDO_MEMBER_METHOD: {
                         Signature const* sig = type ? ty_single_signature(me, type, false, false) : nullptr;
@@ -3664,7 +3547,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // An object literal's property assignment or accessor whose pseudo type says what its type is: printed from its
         // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
         // literal's own type, is printed as a type)
-        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || d.approx || !reuses_nodes(d) ? nullptr : declared->decl->item;
+        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared->decl->item;
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         if (item && ((item->tag == OBJECT_ITEM_PROPERTY && !requires_widening(type)) || item_accessor)) {
             Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
@@ -3718,8 +3601,6 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         // A module's variable (a namespace's member, spread or not): its declaration's annotation, or a `const`'s
         // literal initializer (tsc's serializeTypeOfDeclaration through the property's declarations)
-        Expr const* literal_initializer = nullptr;
-        FunctionImpl const* initializer_function = nullptr;
         Pseudo const* variable_pseudo = nullptr;
         Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
         if (!annotation && !placeholder && variable && reuses_nodes(d)) {
@@ -3727,31 +3608,18 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 variable->decls[0].node : nullptr;
             // (tsgo's typeFromVariable, through the property's declaration: not a type that still widens)
             if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable &&
-                !d.approx && !d.reused && !requires_widening(type)
+                !d.reused && !requires_widening(type)
             ) {
                 variable_pseudo = pseudo_of_variable(me, (InitializedBinding const*)binding, variable->is_const, (PseudoPlace){0});
             }
-            if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable) {
-                if (binding->has_explicit_type) {
-                    annotation = &binding->explicit_type;
-                } else {
-                    Expr const* value = initialized_binding_value((InitializedBinding const*)binding);
-                    // (A function expression: its parameter declarations reused, tsc's typeFromExpression)
-                    if (value && value->tag == EXPR_FUNCTION && !value->function->syntactically_contextual &&
-                        ty_expr_type(me, value) == type
-                    ) {
-                        initializer_function = value->function;
-                    }
-                    if (!variable->is_const) value = nullptr;
-                    bool literal = value && value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_BOOLEAN ||
-                        value->literal.tag == VALUE_NUMBER || value->literal.tag == VALUE_BIGINT);
-                    if (literal && (type->flags & TYF_LITERAL)) literal_initializer = value;
-                }
+            if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable &&
+                binding->has_explicit_type
+            ) {
+                annotation = &binding->explicit_type;
             }
         }
-        // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
-        // typeFromAccessor)
-        FunctionImpl const* syntactic_getter = nullptr;
+        // An accessor: the getter's return annotation, else the setter's parameter's (tsc's typeFromAccessor; an object
+        // literal's went the pseudo type's way above)
         if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->decl->function) {
             FunctionImpl const* accessor = origin->decl->function;
             Binding const* param = setter_value_parameter(accessor);
@@ -3759,22 +3627,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (setter_param && !accessor->ret_explicit) {
                 param = setter_param;
                 if (param->has_explicit_type) annotation = &param->explicit_type;
-                else if (origin->flags & PROP_GETTER) syntactic_getter = accessor;
             } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {
                 annotation = &accessor->ret;
-            } else if (origin->flags & PROP_GETTER) {
-                syntactic_getter = accessor;
-            } else if (param && param->has_explicit_type) {
+            } else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) {
                 annotation = &param->explicit_type;
             }
         }
-        // A getter returning a function expression has its type syntactically, parameter declarations reused (tsc's
-        // typeFromAccessor -> typeFromSingleReturnExpression)
         TyDisplay type_d = d;
-        // (tsgo's serializeTypeForDeclaration takes the pseudo type only with an enclosing declaration)
-        type_d.literal_value = d.approx && ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal && reuses_nodes(d);
-        if (syntactic_getter && reuses_nodes(d)) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
-        if (initializer_function) type_d.syntactic_function = initializer_function;
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
@@ -3805,7 +3664,6 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             display_node(me, d, annotation);
         }
-        else if (literal_initializer && !d.reused) out(reused_if(d, true), span_sv(literal_initializer->inner_span));
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
         else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && reuses_nodes(d) && span_valid(d.decl_literal) &&
@@ -4166,40 +4024,6 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 // A message's type is cut off at twice the truncation length whatever the printer did (tsc's typeToString)
 // Every parameter written with a type: a function expression whose pseudo type (tsgo's typeFromFunctionLikeExpression)
 // is what the checker says, unlike one typed by its context
-static bool params_annotated(FunctionImpl const* function) {
-    for_each (i, vec_function_arg, &function->args) {
-        if (!i->initializer.binding.has_explicit_type) return false;
-    }
-    return true;
-}
-
-// An object literal of literals and such object literals only: tsgo's pseudo type of such a property value
-// (pseudotypenodebuilder.go's object literal) is printed whole, never cut short, and counts only its names, each by its
-// source range with the whitespace before it (reuseName); literals become keywords that count nothing
-static bool pseudo_object_literal(Expr const* expr, u32 depth) {
-    if (expr->tag != EXPR_OBJECT || depth > 8) return false;
-    for_each (i, vec_object_expr_item, &expr->object) {
-        if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || i->jsdoc_type) return false;
-        Expr const* value = &i->value;
-        bool literal = value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_STRING || value->literal.tag == VALUE_NUMBER ||
-            value->literal.tag == VALUE_BOOLEAN || value->literal.tag == VALUE_NULL);
-        if (!literal && !pseudo_object_literal(value, depth + 1)) return false;
-    }
-    return true;
-}
-
-static u32 pseudo_object_length(Expr const* expr) {
-    u32 ret = 0;
-    for_each (i, vec_object_expr_item, &expr->object) {
-        char const* start = i->name_span.buf;
-        char const* contents = span_source(i->name_span) ? cstr_str(&span_source(i->name_span)->contents) : start;
-        while (start > contents && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
-        ret += (u32)(i->name_span.buf - start + i->name_span.size);
-        if (i->value.tag == EXPR_OBJECT) ret += pseudo_object_length(&i->value);
-    }
-    return ret;
-}
-
 // What tsc's typeToTypeNode counts for a keyword type: its length, but none for `unknown`
 static u32 intrinsic_length(Ty const* ty) {
     if (ty->flags & TYF_UNKNOWN) return 0;
@@ -4244,8 +4068,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     // (A union or intersection prints reduced: tsc's typeToTypeNodeHelper without NoTypeReduction)
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
-    bool literal_value = d.literal_value;
-    d.literal_value = false; // (Only the property's type itself)
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     if (d.depth > (truncating(d) ? MAX_DISPLAY_DEPTH * 4 : 8 * 16)) { // (Declaration emit: unchanged, see hacks.md TS7056)
         approx_add(d, 3);
@@ -4605,22 +4427,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out(d, truncating(d) ? c_sv("...") : c_sv("any"));
                 break;
             }
-            // (Past the truncation length: tsc's visitAndTransformType. Not a function expression typed syntactically,
-            // an object literal's property value: tsgo's pseudo type of the declaration builds that node itself)
-            if (literal_value && ty->anonymous.object_literal && ty->anonymous.literal_expr &&
-                pseudo_object_literal(ty->anonymous.literal_expr, 0)
-            ) {
-                u32* approx = d.approx;
-                d.approx = nullptr;
-                TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
-                d.visiting = &visit;
-                display_structure(me, d, ty);
-                if (approx) *approx += pseudo_object_length(ty->anonymous.literal_expr);
-                break;
-            }
-            bool syntactic = ty->anonymous.function && !ty->anonymous.target && (d.syntactic_function == ty->anonymous.function ||
-                (literal_value && ty->anonymous.function->is_expression && params_annotated(ty->anonymous.function)));
-            if (display_over(d) && !syntactic) {
+            // (Past the truncation length: tsc's visitAndTransformType)
+            if (display_over(d)) {
                 approx_add(d, 3);
                 out_lit(d, "...");
                 break;
