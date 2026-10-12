@@ -125,7 +125,7 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
         if (value->tag == JSON_NULL) {
             // null takes back what an extended config gave (tsc: the option is undefined again), e.g. a config
             // extending one with the 6.0-deprecated baseUrl. Only the options that tell "unset" from a value here
-            if (!strcmp(name, "baseUrl") || compiler_option_is_boolean(csview_from(name))) {
+            if (!strcmp(name, "baseUrl") || compiler_option_is_boolean(csview_from(name)) || compiler_option_is_string(csview_from(name))) {
                 ignore compiler_options_set(my options, csview_from(name), c_sv("null"));
             }
             continue;

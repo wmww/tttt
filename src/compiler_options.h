@@ -252,6 +252,7 @@ void compiler_options_enable_strict(CompilerOptions* me);
 // library of the target ("default", "es6", "es2016.full"...). Empty with noLib. Names aren't validated, that's up to whoever loads them
 cstr compiler_options_lib_files(CompilerOptions const* me);
 
+bool compiler_option_is_string(csview name);
 bool compiler_option_is_boolean(csview name);
 // tsgo's convertJsonOption type check of a config value (isCompilerOptionsValue): 0 if the option (exact case, as
 // written in a config) takes a JSON value of this tag (null always), else the 5024 message "Compiler option 'NAME'

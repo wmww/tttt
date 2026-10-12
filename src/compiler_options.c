@@ -216,9 +216,10 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
         return COMPILER_OPTION_OK;
     }
 
+    // (null, a config's JSON null, takes back what an extended config gave)
 #define STRING_OPTION(lowercase, field) \
     if (name_equals(name, lowercase)) { \
-        cstr_take(&my field, cstr_from_sv(value)); \
+        cstr_take(&my field, name_equals(value, "null") ? cstr_null : cstr_from_sv(value)); \
         return COMPILER_OPTION_OK; \
     }
     STRING_OPTION("jsxfactory", jsx_factory)
@@ -385,6 +386,18 @@ cstr compiler_options_lib_files(CompilerOptions const* me) {
         rest = csview_slice(rest, end + 1, INTPTR_MAX);
     }
     return ret;
+}
+
+// The options compiler_options_set() keeps as a string (a path or a name), which null unsets
+bool compiler_option_is_string(csview name) {
+    static char const* const names[] = {
+        "jsxfactory", "jsxfragmentfactory", "jsximportsource", "reactnamespace", "outdir", "outfile", "rootdir",
+        "declarationdir", "maproot", "sourceroot", "tsbuildinfofile", nullptr,
+    };
+    for (char const* const* i = names; *i; i++) {
+        if (name_equals(name, *i)) return true;
+    }
+    return false;
 }
 
 bool compiler_option_is_boolean(csview name) {
