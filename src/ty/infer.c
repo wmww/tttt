@@ -1158,7 +1158,13 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         // (Not for a limited constraint, `keyof T & X`: the reverse mapped type has only X's keys)
         bool limited = constraint->kind == TY_INTERSECTION ||
             (constraint->kind == TY_UNION && constraint->composite.origin && constraint->composite.origin->kind == TY_INTERSECTION);
-        if (template && keys_inferable && !keyof_blocked && !limited && template->kind == TY_INDEXED &&
+        // (Not for a source with call or construct signatures, which its reverse mapped type, an object of its
+        // properties, lacks: tsc's createReverseMappedType. vitest's `Mock<T>` has `{ [P in keyof T]: T[P] }`, and a
+        // callable contextual type mustn't give T a contextual signature through it)
+        Members const* source_members = (source->flags & TYF_OBJECT) ? ty_members(me, source) : nullptr;
+        bool signatures = source_members && (source_members->call_count || source_members->construct_count) &&
+            !ty_is_array(me, source) && !ty_is_tuple(source);
+        if (template && keys_inferable && !keyof_blocked && !limited && template->kind == TY_INDEXED && !signatures &&
             (mapped->modifiers_type->kind != TY_INTERSECTION || constraint->kind != TY_TYPE_PARAM) &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
             ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
