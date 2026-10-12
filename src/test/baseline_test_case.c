@@ -1781,11 +1781,17 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         cstr_append_span(&text, span_valid(data.name) ? data.name : data.span);
         if (has_namespace) cstr_append_lit(&text, "]");
     } else {
-        if (has_namespace) {
+        Span name = span_valid(data.name) ? data.name : data.span;
+        // (A name with an escape as written isn't identifier text to tsgo's printer: an element access, `C[a\u0062]`)
+        bool escaped = has_namespace && memchr(name.buf, '\\', (size_t)name.size);
+        if (has_namespace && !escaped) {
             cstr_append_lit(&text, ".");
         }
-        Span name = span_valid(data.name) ? data.name : data.span;
-        if (name.size) {
+        if (escaped) {
+            cstr_append_lit(&text, "[");
+            cstr_append_span(&text, name);
+            cstr_append_lit(&text, "]");
+        } else if (name.size) {
             cstr_append_span(&text, name);
         } else {
             cstr_append_lit(&text, "(Missing)"); // A name the parser recovered as missing (tsc's "__missing")

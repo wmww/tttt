@@ -12812,7 +12812,7 @@ const baselines = {
     },
     'escapedIdentifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'escapedReservedCompilerNamedIdentifier': {
