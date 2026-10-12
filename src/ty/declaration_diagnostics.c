@@ -59,6 +59,7 @@ typedef struct Place {
     bool direct;
     // The node is the body of this arrow function (whose return type a name reported there is about)
     FunctionImpl const* arrow_body;
+    bool property_value; // The node is a property assignment's initializer
 } Place;
 
 // An accessor pair: the getter, the setter (either may be null)
@@ -751,11 +752,18 @@ static void add_related(Error* error, Near near) {
     }
 }
 
-static Error* report(Walk* me, Span at, unsigned code, char const* message) {
+static Error* report_s(Walk* me, Span at, unsigned code, cstr message) {
     my fell_back = true;
-    if (!my isolated) return nullptr;
-    return error_ctx_error_d(my errs, at, code, message);
+    if (!my isolated) {
+        cstr_drop(&message);
+        return nullptr;
+    }
+    return error_ctx_error_s(my errs, at, code, message);
 }
+
+static Error* report(Walk* me, Span at, unsigned code, char const* message) { return report_s(me, at, code, cstr_from(message)); }
+
+#define report_d(me, at, code, ...) report_s(me, at, code, cstr_d(__VA_ARGS__))
 
 static char const* const msg_expression = "Expression type can't be inferred with --isolatedDeclarations.";
 
@@ -928,11 +936,12 @@ typedef struct Search {
     Place found;
     ObjectExpr const* object; // The object literal the target is a member (or a member's function) of
     NearKind function_kind; // The target is a function: what kind (an object literal's method isn't is_method)
+    bool property_value; // Searching a property assignment's initializer itself
     bool done;
 } Search;
 
 static bool search_found(Search* me, Near near, bool direct, FunctionImpl const* arrow_body) {
-    my found = (Place){ .near = near, .direct = direct, .arrow_body = arrow_body };
+    my found = (Place){ .near = near, .direct = direct, .arrow_body = arrow_body, .property_value = my property_value };
     my done = true;
     return true;
 }
@@ -956,6 +965,7 @@ static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearK
 // `direct`: the expression is `near`'s initializer (through type assertions), `arrow_body`: it is that one's body
 static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, FunctionImpl const* arrow_body) {
     if (target_is_expr(my target, expr)) return search_found(me, near, direct, arrow_body);
+    my property_value = false;
     switch (expr->tag) {
         case EXPR_AS_TYPE: return search_expr(me, &expr->as_type->expr, near, direct, nullptr);
         case EXPR_OBJECT:
@@ -965,7 +975,10 @@ static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, Fu
                     my object = &expr->object;
                     return search_found(me, near, false, nullptr);
                 }
-                if (i->tag == OBJECT_ITEM_PROPERTY && search_expr(me, &i->value, near, false, nullptr)) return true;
+                if (i->tag == OBJECT_ITEM_PROPERTY) {
+                    my property_value = true;
+                    if (search_expr(me, &i->value, near, false, nullptr)) return true;
+                }
                 bool function = i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
                 if (function && i->value.tag == EXPR_FUNCTION) {
                     if (target_is_function(my target, i->value.function)) my object = &expr->object;
@@ -1104,11 +1117,6 @@ static void report_return(Walk* me, FunctionImpl const* fn, Near near, Span at, 
     add_related(error, (Near){ .kind = kind, .span = at });
 }
 
-// A class expression's error span is its name, else its first token
-static Span class_expression_span(Expr const* expr) {
-    return span_valid(expr->class_decl->name) ? expr->class_decl->name : block_first_token(expr->inner_span);
-}
-
 // createParameterError
 static void report_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg) {
     if (fn->accessor == 2) {
@@ -1119,7 +1127,7 @@ static void report_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const
     Expr const* init = initialized_binding_value(&arg->initializer);
     bool add_undefined = requires_adding_undefined(me, fn, arg, true);
     if (!add_undefined && init->tag != EXPR_IMPLICIT_ANY) {
-        report_expression(me, expr_outer_span(init), (Place){ .near = parameter_near(arg), .direct = true }, 0, nullptr);
+        report_expression(me, expr_error_span(init), (Place){ .near = parameter_near(arg), .direct = true }, 0, nullptr);
         return;
     }
     if (add_undefined) {
@@ -1130,12 +1138,32 @@ static void report_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const
     report_declaration(me, parameter_near(arg));
 }
 
+// Somewhere in the reported node
+static Span reported_span(PseudoError const* node) {
+    switch (node->kind) {
+        case PSEUDO_ERROR_OBJECT_MEMBER:
+        case PSEUDO_ERROR_COMPUTED_NAME: return node->item->span;
+        case PSEUDO_ERROR_ARRAY:
+        case PSEUDO_ERROR_SPREAD_ELEMENT:
+        case PSEUDO_ERROR_CLASS:
+        case PSEUDO_ERROR_EXPRESSION: return node->expr->inner_span;
+        case PSEUDO_ERROR_ACCESSOR:
+        case PSEUDO_ERROR_FUNCTION: return function_error_span(node->function);
+        case PSEUDO_ERROR_PARAMETER: return node->arg->span;
+        case PSEUDO_ERROR_VARIABLE: return node->binding->binding.content_span;
+        case PSEUDO_ERROR_FIELD: return node->field->field.name_span;
+    }
+    impossible;
+}
+
 // tsgo's SymbolTracker.ReportInferenceFallback: the declaration emitter's isolatedDeclarations diagnostic for the node
 // (createGetIsolatedDeclarationErrors), by its kind. The declaration being emitted falls back to printing the checker's
 // type (for what its symbol tracker reports)
 static void report_fallback(Walk* me, PseudoError const* node) {
     my fell_back = true;
     if (!my isolated) return;
+    // (A node of another file is that file's declaration emit's to report)
+    if (span_source(reported_span(node)) != my file) return;
     Search found = locate(me, node);
     Place place = found.found;
     switch (node->kind) {
@@ -1152,7 +1180,7 @@ static void report_fallback(Walk* me, PseudoError const* node) {
                     return;
                 case OBJECT_ITEM_PROPERTY:
                     // (createExpressionError of its initializer, which isn't its nearest declaration's)
-                    report_expression(me, expr_outer_span(&item->value), (Place){ .near = place.near }, 0, nullptr);
+                    report_expression(me, expr_error_span(&item->value), (Place){ .near = place.near }, 0, nullptr);
                     return;
                 case OBJECT_ITEM_METHOD:
                     if (item->value.tag == EXPR_FUNCTION) report_return(me, item->value.function, place.near, (Span){0}, NEAR_METHOD);
@@ -1169,23 +1197,45 @@ static void report_fallback(Walk* me, PseudoError const* node) {
                 "Computed property names on class or object literals cannot be inferred with --isolatedDeclarations.");
             return;
         case PSEUDO_ERROR_ARRAY:
-            report_with_near(me, node->expr->inner_span, place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
+            report_with_near(me, expr_error_span_skip_parens(node->expr), place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
             return;
         case PSEUDO_ERROR_SPREAD_ELEMENT:
-            report_with_near(me, node->expr->inner_span, place, 9018,
+            report_with_near(me, expr_error_span_skip_parens(node->expr), place, 9018,
                 "Arrays with spread elements can't inferred with --isolatedDeclarations.");
             return;
         case PSEUDO_ERROR_CLASS:
-            report_expression(me, class_expression_span(node->expr), place, 9022,
+            report_expression(me, expr_error_span_skip_parens(node->expr), place, 9022,
                 "Inference from class expressions is not supported with --isolatedDeclarations.");
             return;
         case PSEUDO_ERROR_EXPRESSION:
-            // (A name that is an arrow function's body: the function's return type)
-            if (node->name_parent && place.arrow_body && is_entity_name_expression(node->expr)) {
-                report_return(me, place.arrow_body, place.near, (Span){0}, NEAR_NONE);
-                return;
+            // (By the expression's kind, like any reported node)
+            switch (node->expr->tag) {
+                case EXPR_ARRAY: report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_ARRAY, .expr = node->expr }); return;
+                case EXPR_SPREAD:
+                    report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_SPREAD_ELEMENT, .expr = node->expr });
+                    return;
+                case EXPR_CLASS_DECL: report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_CLASS, .expr = node->expr }); return;
+                case EXPR_FUNCTION:
+                    report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = node->expr->function });
+                    return;
+                default: break;
             }
-            report_expression(me, node->expr->inner_span, place, 0, nullptr);
+            if (is_entity_name_expression(node->expr)) {
+                // (pseudoTypeToNode reports a name's parent declaration instead: an arrow function's return type, a
+                // property assignment's initializer)
+                if (node->name_parent && place.arrow_body) {
+                    report_return(me, place.arrow_body, place.near, (Span){0}, NEAR_NONE);
+                    return;
+                }
+                if (!node->name_parent || !place.property_value) {
+                    // createEntityInTypeNodeError
+                    Span at = expr_error_span_skip_parens(node->expr);
+                    add_related(report_d(me, at, 9039, "Type containing private name '", span_sv(at),
+                        "' can't be used with --isolatedDeclarations."), place.near);
+                    return;
+                }
+            }
+            report_expression(me, expr_error_span_skip_parens(node->expr), place, 0, nullptr);
             return;
         case PSEUDO_ERROR_ACCESSOR:
         case PSEUDO_ERROR_FUNCTION:
@@ -1655,7 +1705,21 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
 static void check_variable(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
     if (binding->tag != BINDING_IDENTIFIER) {
-        if (binding_has_initializers(binding)) report_binding_elements(me, binding);
+        if (binding_has_initializers(binding)) {
+            report_binding_elements(me, binding);
+        } else {
+            // The declaration is written with its type, which has no syntactic type (no symbol of its own: tsgo's
+            // typeFromVariable), unless it still widens (an object literal's: serializeTypeForDeclaration doesn't try)
+            Expr const* init = initialized_binding_value(decl);
+            Ty const* type = init->tag != EXPR_IMPLICIT_ANY ? lazy_type_get((LazyType*)&init->lazy_type) : nullptr;
+            bool widens = type && ((type->flags & TYF_FRESH_OBJECT) || (type->xflags & TYX_CONTAINS_WIDENING));
+            if (type && !widens && !binding->has_explicit_type) {
+                Root outer_root = my root;
+                my root = (Root){ .kind = ROOT_VARIABLE, .binding = decl };
+                report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_VARIABLE, .binding = decl });
+                my root = outer_root;
+            }
+        }
         print_binding_elements(me, binding);
         return;
     }
@@ -1753,6 +1817,24 @@ static void check_field(Walk* me, ClassItem const* item) {
     }
     my root = outer_root;
     emit_leave(me, saved);
+}
+
+// A method an interface merged with the class declares too: the class's method implements its overloads (tsc's
+// getSignaturesOfSymbol has both), declaration emit leaves it out
+static bool interface_declares_method(ClassDecl const* cls, ClassItem const* item) {
+    Symbol const* symbol = cls->symbol;
+    if (!symbol || item->method.computed_key || item->method.is_static) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* decl = symbol->decls[i].node;
+        if (decl->type.tag != TYPE_INTERFACE) continue;
+        for_each (j, vec_interface_member, &decl->type.interface.members) {
+            if (j->key.tag == INTERFACE_KEY_NAME && (j->is_method || j->key.name_is_member_function) && cstr_eq(&j->key.name_string, &item->method.name_string)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl const* fn) {
@@ -1867,7 +1949,11 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 if (item_has_private_name(i)) break;
                 FunctionImpl const* fn = &i->method.func;
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
-                    if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn)) break;
+                    if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn) ||
+                        interface_declares_method(cls, i)
+                    ) {
+                        break;
+                    }
                     check_written_signature(me, fn, SIG_METHOD, true);
                     check_declaration_return(me, fn, SIG_METHOD, i->method.name_span, (Span){0});
                     check_declaration_parameters(me, fn, SIG_METHOD);
@@ -1929,7 +2015,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     } else {
         // (written as a variable `_base` of the expression's type)
         bool outer = fallback_begin(me);
-        report_heritage(me, base->tag == EXPR_CLASS_DECL ? class_expression_span(base) : expr_outer_span(base));
+        report_heritage(me, expr_error_span(base));
         my fell_back = true;
         fallback_end(me, outer, lazy_type_get((LazyType*)&base->lazy_type));
     }
@@ -2274,6 +2360,24 @@ static void check_import(Walk* me, Statement const* statement) {
         "This is not supported with --isolatedDeclarations.");
 }
 
+// A name the binding declares is one `export { x }` names
+static bool binding_exports_local(Walk* me, Binding const* binding) {
+    switch (binding->tag) {
+        case BINDING_IDENTIFIER: return is_exported_local(me, binding->symbol);
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &binding->array) {
+                if (binding_exports_local(me, i)) return true;
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &binding->object) {
+                if (binding_exports_local(me, &i->target)) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
 static void check_statement_now(Walk* me, Statement const* statement, Container container) {
     if (is_internal_declaration(statement->span)) return;
     switch (statement->tag) {
@@ -2285,14 +2389,11 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
                 // (`export { x }` makes that one declaration visible)
                 bool any = false;
                 for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-                    any |= i->binding.tag == BINDING_IDENTIFIER && container.module_top_level &&
-                        is_exported_local(me, i->binding.symbol);
+                    any |= container.module_top_level && binding_exports_local(me, &i->binding);
                 }
                 if (!any) return;
                 for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-                    if (i->binding.tag == BINDING_IDENTIFIER && is_exported_local(me, i->binding.symbol)) {
-                        check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
-                    }
+                    if (binding_exports_local(me, &i->binding)) check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
                 }
                 return;
             }
@@ -2402,7 +2503,10 @@ bool declaration_diagnostics_wanted(SourceFile const* file) {
     // (A JavaScript file's declaration emit has its diagnostics too, but the walk only knows TypeScript's declarations:
     // only isolatedDeclarations' are reported there, see agents/hacks.md)
     if (file->is_js && !options->isolated_declarations) return false;
-    // (A package's file that an import found: tsc's isSourceFileFromExternalLibrary)
+    // (tsc's sourceFileMayBeEmitted: not a package's file that an import found through a node_modules, even where a
+    // `paths` mapping into a symlinked node_modules leads back into the workspace (isSourceFileFromExternalLibrary), nor
+    // a referenced project's)
+    if (file->found_searching_node_modules || file->from_reference) return false;
     return !(file->loaded_by_import && strstr(cstr_str(&file->canonical_path), "node_modules/"));
 }
 

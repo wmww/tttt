@@ -514,6 +514,17 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
     cstr_drop(&text);
 }
 
+// The object literal member that declared a property, through its instantiations (a homomorphic mapped type's property
+// is declared where the property it maps is: tsgo's mapped symbol has its declarations)
+static ObjectExprItem const* declared_item(Prop const* prop) {
+    for (int depth = 0; depth < 64 && prop; depth++) {
+        if (prop->decl->item) return prop->decl->item;
+        Prop const* mapped = prop_decl_rare(prop->decl)->mapped_from;
+        prop = mapped ? mapped : prop->target;
+    }
+    return nullptr;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty);
 
 // tsc's getTypeAliasForTypeLiteral: the type alias whose declared type is this type literal (written directly, perhaps
@@ -2933,8 +2944,13 @@ static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo) {
                 Signature const* sig = ty_function_signature(me, pseudo->function);
                 return sig ? signature_return_type(me, sig) : nullptr;
             }
-            // (getWidenedType of getRegularTypeOfExpression)
-            return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, pseudo->expr))));
+            {
+                // (getWidenedType of getRegularTypeOfExpression, which checks the expression again: an object literal in
+                // it is a new type each time, never the declaration's)
+                Ty const* type = ty_expr_type(me, pseudo->expr);
+                if (type->flags & TYF_FRESH_OBJECT) return nullptr;
+                return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, type)));
+            }
         case PSEUDO_NO_RESULT: return nullptr;
         case PSEUDO_MAYBE_CONST: return pseudo_type(me, d, pseudo->in_const ? pseudo->const_type : pseudo->regular_type);
         case PSEUDO_UNION: {
@@ -3673,9 +3689,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
         // literal's own type, is printed as a type)
         bool suppress = false;
-        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared->decl->item;
+        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(prop);
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
-        if (item && ((item->tag == OBJECT_ITEM_PROPERTY && !requires_widening(type)) || item_accessor)) {
+        bool item_property = item && (item->tag == OBJECT_ITEM_PROPERTY || item->tag == OBJECT_ITEM_SHORTHAND);
+        if ((item_property && !requires_widening(type)) || item_accessor) {
             Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
             Ty const* item_type = type;
             if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
