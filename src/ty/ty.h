@@ -2277,6 +2277,8 @@ typedef struct DeclTracker {
 
 typedef struct TyDisplay {
     cstr* target;
+    u32 length_base; // What was printed before `target` (a part printed apart and appended): see display_over()
+    bool cut_off; // A message's type being printed, cut off after (see display_cut_off())
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
     TyDisplayReverse const* reverse_stack;

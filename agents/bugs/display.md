@@ -199,7 +199,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
 - **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
-  truncation is sticky. tttt only truncates by depth (MAX_DISPLAY_DEPTH hack in ty_display.c).
+  truncation is sticky. tttt estimates approximateLength from the printed text (`display_over()`, hacks.md), so
+  messages near the border can still truncate at another point than tsgo's.
 - declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.

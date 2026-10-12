@@ -274,3 +274,20 @@ computes the same constraint without it showing up.
 cost type-fest +0.8% because the skipped property types got resolved later by costlier paths (+128k lower_node calls
 from ty_cond_branch_type / tuple_element_type); limited to getters in d361bdba. Why a later resolution lowers more (a
 memo that only fills on the early path?) isn't known: worth finding, it may cost elsewhere too.
+
+## Plan 59 stage 2 leftovers (agent B)
+- **rxjs/packages/rxjs: fixed** (types ratio 2.62 -> 0.45, RSS 1943 -> 477 MB). It was not a missing cache: three spec
+  files' `expectTypeOf(x).toEqualTypeOf<Observable<...>>()` mismatches print expect-type's MismatchInfo constraint, a
+  mapped type over Observable's ~110 methods (each a DeepBrand of its overloads). tsgo truncates the message at ~160
+  characters and never resolves the rest of the properties (with `--noErrorTruncation`, tsgo makes 2.34M types on the
+  one-assertion probe, against 200k without it). tttt printed all of it. Now `display_over()` in ty_display.c (hacks.md).
+  Its property order still differs (tttt puts the unique-symbol keys first), so the elaboration names `[buffer]` where
+  tsgo names `drop`: the union order of `keyof A | keyof B`.
+- **immutable-js/type-definitions** (1.77, handed to agent C, who found the same file under sass in quill, vite, vitest,
+  soybean-admin and lucide): all of it is the interface heritage checks (OrderedMap -> Map: 717k tttt types against
+  92k for tsgo). Nested relation counts are similar (97k vs 87k), but tttt makes ~1.8x the anonymous instances (606k
+  vs 336k) and type references (185k vs 106k), with fewer signature instantiations than tsgo (tsgo: 412k
+  instantiateSignature, 76k cloned type params). 233k of the 606k are made in `signature_resolve`'s eager
+  instantiation of every parameter type. tsgo instantiates parameter symbols lazily. Lead: lazy SigParam types.
+  Instrumented-tsgo recipe: patched copies of checker.go/relater.go built with `go build -overlay X.json -o /tmp/...
+  ./cmd/tsc` from `thirdparty/typescript/tsc`, so built/ isn't touched.

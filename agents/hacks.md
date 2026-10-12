@@ -529,6 +529,13 @@ src` finds the code-side markers; every significant one has an entry here.
 - Deep nesting identity (isDeeplyNestedType's recursion identity) uses ObjectFlags.FromTypeNode only for array/tuple
   nodes, not generic interface references (commit "Arrays and tuples written as type nodes are their own recursion
   identity"): a partial port.
+- `display_over()` / `approximate_length()` (ty_display.c): tsc's 160-character message truncation (checkTruncationLength:
+  `...` for object/conditional/array types and type argument lists, `... N more ...` and the last member of a type
+  literal, typeToString's hard cut at 320 bytes) estimated from the printed text, minus the punctuation tsc's
+  approximateLength doesn't count (`; `, `: `, `{ ` outside string literals), not tsc's per-node accounting. Close on
+  the source sweep's messages (a 411-project sample: +28 lines matching tsgo, none lost), but borders differ: a real
+  approximateLength counter would fix those. The union truncation (`display_union`) has its own older estimate, and
+  `MAX_DISPLAY_DEPTH` still cuts deep types by depth.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `checker_defer_function_body()` (ty/checker.c): a function expression's body is queued from its first check

@@ -25,12 +25,72 @@
 
 // A message type is cut short (tsc's typeToString without noErrorTruncation, the CLI's default; the test harness always
 // sets it): the stand-in depth limits apply and the elided information placeholder prints `...`, not `any`
+// (A message's type printed from where its expression is, reuse_nodes, is one too)
 static bool truncating(TyDisplay d) {
-    return !d.enclosing && !compiler_options()->no_error_truncation;
+    return (!d.enclosing || d.reuse_nodes) && !d.types_baseline && !d.tracker && !compiler_options()->no_error_truncation;
 }
 
 // The length past which declaration emit doesn't serialize a type (tsc's noTruncationMaximumTruncationLength)
 #define DECLARATION_MAX_LENGTH 1000000
+
+// tsc's defaultMaximumTruncationLength: a message's type longer than this (as far as tsc's approximateLength tells) is
+// cut short from there on
+#define DEFAULT_MAXIMUM_TRUNCATION_LENGTH 160
+
+// A message's type is past the truncation length (tsc's checkTruncationLength, which is sticky like this: nothing
+// printed is ever taken back): object types print as the elided information placeholder `...`, type argument lists as
+// `<...>`, a type literal's members as `... N more ...` and its last one. Nothing past that point is worked out, which
+// is what keeps a message about a huge mapped type cheap (expect-type's MismatchInfo of an interface of a hundred
+// methods: tsgo resolves the first few properties' types). HACK: the length so far of the text, not tsc's
+// approximateLength (which leaves out punctuation and is shorter): truncates somewhat earlier than tsc
+// (Incremental: a message is checked many times as it grows, so where the last scan of the same text stopped is kept)
+typedef struct ApproximateScan {
+    char const* buf;
+    isize scanned, discount;
+    char quote;
+    bool escaped;
+} ApproximateScan;
+static _Thread_local ApproximateScan approximate_scan;
+
+static u32 approximate_length(csview text) {
+    // (tsc counts a property's name and one character for its `: ` and `; `, an index signature's `: ` and `; ` as
+    // one, `{ }` as two characters: what's in string literals as is)
+    ApproximateScan* scan = &approximate_scan;
+    if (scan->buf != text.buf || scan->scanned > text.size) *scan = (ApproximateScan){ .buf = text.buf };
+    // (The last character may be the first of a pair: looked at again with the next one)
+    isize i = scan->scanned;
+    for (; i < text.size; i++) {
+        char c = text.buf[i];
+        if (scan->quote) {
+            if (scan->escaped) scan->escaped = false;
+            else if (c == '\\') scan->escaped = true;
+            else if (c == scan->quote) scan->quote = 0;
+            continue;
+        }
+        if (c == '"' || c == '\'' || c == '`') {
+            scan->quote = c;
+            continue;
+        }
+        if (i + 1 >= text.size) break;
+        if (text.buf[i + 1] == ' ') {
+            if (c == ';') scan->discount += 2;
+            else if (c == ':') scan->discount += 1;
+            else if (c == '{') scan->discount += 1;
+        }
+    }
+    scan->scanned = i;
+    return (u32)(text.size - scan->discount);
+}
+
+[[gnu::noinline]] static bool display_over_slow(TyDisplay const* d) {
+    return truncating(*d) && d->length_base + approximate_length(cstr_sv(d->target)) > DEFAULT_MAXIMUM_TRUNCATION_LENGTH;
+}
+
+[[gnu::always_inline]] static inline bool display_over_at(TyDisplay const* d) {
+    // (Cheap first: the text is never shorter than its approximate length)
+    return d->length_base + cstr_size(d->target) > DEFAULT_MAXIMUM_TRUNCATION_LENGTH && display_over_slow(d);
+}
+#define display_over(d) display_over_at(&(d))
 
 static void out(TyDisplay d, csview sv) {
     if (d.tracker && d.tracker->truncated) return;
@@ -41,6 +101,12 @@ static void out(TyDisplay d, csview sv) {
     }
 }
 #define out_lit(d, s) out(d, c_sv(s))
+
+static void out_fmt_more(TyDisplay d, u32 count) {
+    char more[48];
+    snprintf(more, sizeof more, "... %u more ...; ", count);
+    out(d, csview_from(more));
+}
 
 typedef struct PrintedRange {
     isize_t start, end;
@@ -157,6 +223,11 @@ static TyDisplay qualified_if(TyDisplay d, bool const* collisions, u32 i) {
 // Type arguments. The first one is parenthesized if it's a generic function type (tsc's parenthesizeTypeArguments:
 // `X<<T>() => T>` would start with `<<`)
 static void display_list(Checker* me, TyDisplay d, TyList list) {
+    // (A type argument list past the truncation length: tsc's mapToTypeNodes, not a bare list)
+    if (list.len && display_over(d)) {
+        out_lit(d, "...");
+        return;
+    }
     bool* collisions = name_collisions(me, d, list);
     for (u32 i = 0; i < list.len; i++) {
         if (i) out_lit(d, ", ");
@@ -2655,6 +2726,7 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
         cstr inner = cstr_null;
         TyDisplay inner_d = d;
         inner_d.target = &inner;
+        inner_d.length_base = d.length_base + approximate_length(cstr_sv(d.target));
         display_mapped_body(me, inner_d, mapped, wrapper, homomorphic_lost);
         if (homomorphic_lost) ty_display(me, d, mapped->modifiers_type);
         else ty_display(me, d, mapped->constraint);
@@ -2688,6 +2760,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     cstr constraint_text = cstr_null;
     TyDisplay cd = d;
     cd.target = &constraint_text;
+    cd.length_base = d.length_base + approximate_length(cstr_sv(d.target));
     if (wrapper) {
         TyDisplay fresh = reused_if(cd, false);
         if (keyof_wrapper) out(fresh, c_sv("keyof "));
@@ -2881,6 +2954,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "...");
         return;
     }
+    // (Past the truncation length: tsc's createTypeNodesFromResolvedType)
+    if (display_over(d)) {
+        out_lit(d, "{ ...; }");
+        return;
+    }
     // Abstract construct signatures can't be members of a type literal: `(abstract new () => C) & { rest }` (tsc's
     // createTypeNodeFromObjectType)
     u32 abstract_count = 0;
@@ -2951,8 +3029,16 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     }
     TyDisplay outer_d = d;
     TyDisplayReverse reverse_frame;
+    bool cut = false;
     for (u32 i = 0; i < members->prop_count; i++) {
         d = outer_d;
+        // Past the truncation length, how many more and the last one (tsc's createTypeNodesFromResolvedType counts
+        // from 1)
+        if (!cut && display_over(d) && i + 3 < members->prop_count - 1) {
+            out_fmt_more(d, members->prop_count - (i + 1));
+            cut = true;
+            i = members->prop_count - 1;
+        }
         Prop const* prop = members->props[i];
         if (d.tracker) {
             if (d.tracker->truncated) break;
@@ -3386,10 +3472,6 @@ static u32 union_display_count(Checker* me, TyList types, Ty const** last) {
     return count;
 }
 
-// tsc's defaultMaximumTruncationLength: a message's type longer than this (as far as tsc's approximateLength tells, here
-// the text so far with two characters per separator) elides the rest of a union
-#define DEFAULT_MAXIMUM_TRUNCATION_LENGTH 160
-
 static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     // tsc's formatUnionTypes(): `true | false` prints as `boolean`, `null` and `undefined` go last
     TyList types = ty->composite.types;
@@ -3468,7 +3550,26 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     }
 }
 
+// A message's type is cut off at twice the truncation length whatever the printer did (tsc's typeToString)
+static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
+    isize_t start = cstr_size(d.target);
+    d.cut_off = true;
+    ty_display(me, d, ty);
+    isize_t max_length = DEFAULT_MAXIMUM_TRUNCATION_LENGTH * 2;
+    if (cstr_size(d.target) - start >= max_length) {
+        cstr_resize(d.target, start + max_length - 3, '.');
+        cstr_append(d.target, "...");
+    }
+}
+
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
+    if (!d.depth) {
+        approximate_scan = (ApproximateScan){0}; // (A new text: a freed one's buffer may be reused)
+        if (!d.cut_off && truncating(d)) {
+            display_cut_off(me, d, ty);
+            return;
+        }
+    }
     if (d.tracker && d.tracker->truncated) return;
     if (ty == my display_of) ty = my display_as;
     ty = ty_non_distributed(ty); // (tsgo's typeToTypeNode prints a distributed type parameter as its original)
@@ -3671,6 +3772,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     break;
                 }
             }
+            // (Past the truncation length: tsc's visitAndTransformType of an array or tuple)
+            if (container && display_over(d)) {
+                out_lit(d, "...");
+                break;
+            }
             TyDisplayVisit container_visit = { .ty = ty, .outer = d.visiting };
             if (container) d.visiting = &container_visit;
             if (target->declared.kind == TY_DECLARED_CLASS_STATIC && is_mixin_static_side(me, target)) {
@@ -3801,6 +3907,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out(d, truncating(d) ? c_sv("...") : c_sv("any"));
                 break;
             }
+            // (Past the truncation length: tsc's visitAndTransformType)
+            if (display_over(d)) {
+                out_lit(d, "...");
+                break;
+            }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;
             display_structure(me, d, ty);
@@ -3852,6 +3963,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_SUBSTITUTION: impossible;
 
         case TY_CONDITIONAL: {
+            if (display_over(d)) { // (tsc's visitAndTransformType)
+                out_lit(d, "...");
+                break;
+            }
             TyPrinted const* before = printed_before(d, ty);
             if (before) {
                 reprint_range(d, before->range);
