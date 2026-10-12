@@ -51,30 +51,43 @@ types 4.78M -> 217k. Every oracle unchanged.
   shared declaration types made by every checker). Not in this plan (bugs/perf_leads.md "Memory": a cost model for
   deal_files() or a shared lib checker).
 
-## Stage 1: checker side tables and structs (one session)
-Each item: measure the site before and after with `scripts/arenasites.sh` / `scripts/memtrack.sh --phase typecheck`,
-keep it only if output stays byte-identical (suite, `scripts/oracles.py --quick`, checkerdiff).
-1. **LazyMemo 24 -> 16 or 8 bytes** (`src/lazy_type.h`): five bools and `hits` into one byte; `context` is it set on
-   most expressions? If rare, move it to the checker's links keyed by the slot and keep `evaluated` + flags in 8 bytes
-   (low pointer bits or a parallel byte page). Measure how dense the pages are first (LAZY_PAGE_BITS): if most pages
-   are sparsely touched, smaller pages beat smaller memos. Expected vscode -75..-150 MB per checker.
-2. **Intern tables**: 16-byte entries at 37-75% load. Options: 8-byte entries (32-bit hash fragment + 32-bit index
-   into a per-table block vector, the block pointer looked up), a higher max load with robin hood probing, or growth
-   by 1.5x. Expected -50..-100 MB per checker on vscode; keep `intern_find`'s instruction count (callgrind).
-3. **Object literal and namespace export props**: an audit of which PropDecl fields each creator sets (members.c's
-   `prop_new_declared` callers), then either a compact declaration for literal props or PropDecl 120 -> ~64 with the
-   declared-member-only fields (`node`, `lazy`, `overloads`/`overload_count`, `ctx`, `asserted`) moved into a second
-   side struct. Expected vscode -100 MB, effect -25 MB.
-4. **CallResolution 112 -> ~56**: `failure_sig`/`failure_mapper`/`param_types` and the ErrorCtx only on failure or
-   when not empty (a rare pointer). vscode -65 MB.
-5. **Instantiated Prop 56 -> 48** (plan 42's idea: `decl` is always `ty_prop_decl_none` for instantiations; a flag
-   instead of the pointer means every `prop->decl` read goes through an accessor, ~300 sites: maybe a sub-agent's
-   mechanical job) and **Signature's declaration fields** (two Spans, class_instance, declared_by) behind a pointer so
-   instantiated signatures stop copying spans. vscode -80 MB, drizzle/effect -15 MB each.
-6. Optional: `ty_list_copy`'s duplicate of interned member lists (the key already holds the ids: drizzle 29, effect 34,
-   vscode 44 MB).
-Validation: vscode K1 peak 5.2 -> <= 4.7 GB, K4 6.0 -> <= 5.3; drizzle/effect K1 arena -10%; instructions flat
-(`scripts/instrcount.sh` within 1%; smaller structs usually pay for themselves).
+## Stage 1: done (2026-10-12, todo entry 4)
+K1 peak (`/usr/bin/time`): tsc 256 -> 244, type-fest 800 -> 711, valibot 283 -> 276, webpack 604 -> 573, zod 464 ->
+446, drizzle 473 -> 468, vue 370 -> 357, effect 771 -> 743, excalidraw 421 -> 400, **vscode 5189 -> 4839** (-6.7%; the
+target was 4.7 GB). K4: vscode 5966 -> 5438 (target 5.3), tsc 323 -> 293, type-fest 921 -> 823, effect 891 -> 828,
+excalidraw 529 -> 494, the rest -14..-38 MB. Instructions: measurements.md "Plan 60 stage 1". What landed:
+- **LazyMemo 24 -> 12 bytes**: pages are 96% used on vscode (10M memos), so the memo size counts, not page density.
+  `evaluated`/`context` are type ids, looked up in a checker-wide id -> type table (`LazySlots.types`, two levels, filled
+  by ty_alloc()); flags are bit fields. -107 MB vscode, +0.3% instructions (the lookup).
+- **CallResolution 112 -> 48** (failure candidate and diagnostics behind `rare`), **PropDecl 120 -> 96** (`overloads`,
+  `overload_count`, `name_type` into PropDeclRare; `asserted` stays: 13% of vscode's literal props have one), **Members
+  96 -> 72** (`members_rare()`: expansions, generic bases).
+- **Interned unions/intersections/references** key their lists by pointer and point their TyLists into the key
+  (`intern_key_list()`) instead of copying: vscode arena -44 MB.
+- **Node links** (`ty_link_get()`/`ty_link_set()`, `Checker.node_links`): 11 two-word key kinds of `links` (call
+  resolutions, function types/return memos, flow reachability, literal contexts and anchors, fresh literals...) in a
+  table with the key inline (16-byte entries, no arena block), growing by half. vscode: links 5.58M -> 2.63M entries,
+  3.26M node links.
+Not done, with why:
+- **The rest of `links`** (2.6M entries on vscode, 4M slots + 24-byte blocks): its kinds hand out slots that callers keep
+  across further interning (`void const** slot = intern_slot(...)`, ~50 sites), which an inline-key table can't. A kind
+  moves to node links once every use of it is a plain get/set: worth it for the next big ones (KEY_FLOW_CALL 400k and
+  KEY_FLOW_EXPR 245k are three words: a second inline table with two-word subjects, or pack (node, id)).
+- **8-byte intern entries** (hash fragment + compressed block pointer): growing has to rehash from the key blocks, a
+  cache miss per entry (vscode ~12M over the run). Not worth it.
+- **1.5x growth for intern tables**: +1.2% zod instructions (longer probes, more rehashes) for a few MB either way; only
+  node links grow by half. Peak RSS moves +-30 MB with where the last grow lands (vscode was 4866 vs 4892 between two
+  growth policies): compare corpora as a set, never one.
+- **Instantiated Prop 56 -> 48** (no `decl` pointer): mapped type props get their PropDecl after the Prop
+  (`expand_mapped()`'s `prop->decl = arena_new(...)` paths), so it can't be found next to the Prop by a flag. Would need a
+  side lookup or allocating mapped props declared up front: ~-25 MB vscode.
+- **Signature's declaration fields behind a pointer**: saves 72 bytes per instantiation but costs 8 per declared one,
+  vscode ~-11 MB. Not worth the churn alone.
+- **A compact declaration for object literal props** (1.2M on vscode, Prop 56 + PropDecl 96): PropDecl's sources
+  (`node`/`lazy`/`function`/`symbol`) as one tagged pointer would take PropDecl to ~72, but `decl->node` & co have
+  ~250 readers. -30 MB vscode. Same for `namespace_export_prop()` (effect).
+- Unexplained: `/proc` VmRSS sampled at the end of typecheck reads ~116 MB below `/usr/bin/time`'s peak on vscode, and
+  strace shows no allocation after typecheck. Probably the kernel's per-CPU RSS counters lagging; use `/usr/bin/time`.
 
 ## Stage 2: the AST (one session, sub-agents for the mechanical parts)
 1. Count Exprs and Spans per corpus first (a counter in a debug build, or memtrack's scan by struct size) to confirm

@@ -32,6 +32,26 @@ check 153 s vs tsgo's 1159 s (0.13). Its *wall* column was inflated in the load/
 renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py`'s other oracles. tsgo's side is cached in
 `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
 
+## Plan 60 stage 1 (2026-10-12, checker side tables and structs)
+Peak RSS MB (`/usr/bin/time`, best of one run; session start 6a2baa7f -> after):
+| corpus | K1 | K4 |
+|---|---|---|
+| tsc | 256 -> 244 | 323 -> 293 |
+| type-fest | 800 -> 711 | 921 -> 823 |
+| valibot | 283 -> 276 | 334 -> 321 |
+| webpack | 604 -> 573 | 685 -> 647 |
+| zod | 464 -> 446 | 551 -> 531 |
+| drizzle | 473 -> 468 | 664 -> 650 |
+| vue | 370 -> 357 | 430 -> 406 |
+| effect | 771 -> 743 | 891 -> 828 |
+| excalidraw | 421 -> 400 | 529 -> 494 |
+| vscode | 5189 -> 4839 | 5966 -> 5438 |
+vscode K1 arena 1780 -> 1660 MB; its links table 5.58M -> 2.63M entries plus 3.26M node links. Peak RSS moves by
++-30 MB with where a table's last grow lands: compare the set. Instructions (callgrind, flat: -0.2..+0.6%): tsc 4.663,
+type-fest 18.583, valibot 3.492, react 1.497, nest 1.160, webpack 10.358, zod 4.940, xstate 2.661, drizzle 5.934, vue
+6.544, effect 10.009, vscode 90.283, excalidraw 7.916, tanstack-router 5.297 G. Every oracle unchanged, threadcheck
+identical.
+
 ## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
 Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
 "Memory used": the table is in plans/60_memory.md, with vscode's split (AST 2.17 GB, binder ~0.6, checker malloc

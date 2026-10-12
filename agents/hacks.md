@@ -14,6 +14,15 @@ src` finds the code-side markers; every significant one has an entry here.
   its `Expr`'s inner_span through `offsetof` (never copy one out of its Expr). Its rare pointers (`module_ref_`,
   `this_function_`, `evolving_index_`, `extends_entity_`) share a union picked by keyword/require_call/evolving_op; a
   new writer must keep those discriminants exclusive.
+- Two kinds of `links` (plan 60 stage 1, permanent: memory): `Checker.node_links` (`ty_link_get()`/`ty_link_set()`)
+  holds 11 two-word key kinds with the key inline, value-based (no slot to keep); every other kind is still in
+  `links`, whose `intern_slot()` slots stay valid. A kind may only move once all its uses are plain gets/sets, and
+  `link_key()` packs the kind into the top byte of the subject's address (user space addresses are below 2^47).
+  Interned unions, intersections and references key their member lists by pointer, and their TyLists point into the
+  key block (`intern_key_list()`): never write through one. Pointer keys hash differently per run (ASLR): only probe
+  lengths change (callgrind counts move by ~0.01%), nothing iterates the tables.
+- `LazyMemo` holds type ids, not pointers (`lazy_memo_evaluated()`): every Ty is in its checker's id table
+  (`lazy_slots_add_type()` in ty_alloc()), so a type made outside ty_alloc() can't be a memo's result.
 - `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how the AST-side walk
   (`*_typecheck`, `*_evaluate_type`, `ty_of_node`) finds its checker; left set after `program_typecheck` for the test
   traversal. `compiler_options()` is a thread local too. Both want a passed check context (checker + errs + options).

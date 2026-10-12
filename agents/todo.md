@@ -25,8 +25,9 @@ instructions are the stable numbers.
    0.6, checker malloc 0.45 (LazyMemo pages, intern tables), arena 1.8). Landed the big lever: tuple targets share
    element type parameters and element props a read-only declaration: type-fest K1 2057 -> 797 MB RSS (Bun 835),
    every oracle unchanged. Bun's remaining 1.5-3x is representation (compact AST): not worth chasing; plan 60 aims -20%.
-4. **Plan 60 stage 1** (execution): checker side tables and structs (LazyMemo, intern tables, PropDecl,
-   CallResolution, instantiated Prop/Signature).
+4. ~~Plan 60 stage 1~~ done: LazyMemo 24 -> 12 bytes (type ids), node links (two-word keys inline), CallResolution,
+   PropDecl, Members rare parts, interned lists without copies. vscode K1 5189 -> 4839 MB, K4 5966 -> 5438 (targets 4.7
+   / 5.3 not quite), every corpus -1..-11%, instructions flat. Leftovers with reasons in plan 60.
 5. **Plan 60 stage 2** (the AST: Span 16 bytes, Expr 64), or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
    (drop the tsc 6 / tsgo 7.0.2 columns), measurements.md's perf section rewritten (wall and RSS at K1 and K4 against
    tsgo 7.1 `--singleThreaded` and default), the corpora's instructions; the user asks why threads are capped at 4
