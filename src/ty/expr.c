@@ -2440,7 +2440,15 @@ static bool is_unnarrowed_method(Checker* me, Ty const* object, Ty const* key) {
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & TYF_OBJECT) || (apparent->flags & (TYF_UNION | TYF_INTERSECTION))) return false;
     Prop const* prop = ty_property_of_type(me, apparent, name);
-    if (!prop || !(prop->flags & PROP_METHOD)) return false;
+    if (!prop) return false;
+    // (A module's export that isn't a variable: `fs.promises` of `export * as promises`, a namespace, a function)
+    Symbol const* symbol = prop->decl ? prop->decl->symbol : nullptr;
+    if (!(prop->flags & PROP_METHOD) && symbol && symbol->decl_count &&
+        !(symbol->flags & (SYMBOL_VARIABLE | SYMBOL_PROPERTY | SYMBOL_GET_ACCESSOR | SYMBOL_SET_ACCESSOR | SYMBOL_METHOD))
+    ) {
+        return true;
+    }
+    if (!(prop->flags & PROP_METHOD)) return false;
     if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) return false;
     return prop_type(me, prop)->kind != TY_UNION;
 }
