@@ -1577,7 +1577,11 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
         if (name.size > member->name.size && csview_equals_sv(csview_slice(span_sv(name), name.size - member->name.size, name.size), member->name)) {
             name = span_make_in(at, span_end_ptr(at) - member->name.size, span_end_ptr(at));
         }
-        Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, name, at);
+        // (Its accessibility errors are at the assignment, the declaration tsgo's binder records: `f.x = v`)
+        Expr const* value = member->decls[0].node;
+        Span full = value && span_valid(expr_outer_span(value)) && span_source(expr_outer_span(value)) == span_source(at) ?
+            span_between(at, expr_outer_span(value)) : at;
+        Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, name, full);
         bool outer = fallback_begin(me);
         my fell_back = true;
         fallback_end(me, outer, ty_type_of_symbol(my checker, member));

@@ -8266,7 +8266,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitExpandoPropertyPrivateName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
