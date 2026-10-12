@@ -2039,98 +2039,6 @@ static bool mentions_at(Checker* me, Ty const* ty, TyList params, u32 depth) {
 
 static bool mentions(Checker* me, Ty const* ty, TyList params) { return mentions_at(me, ty, params, 0); }
 
-// Whether a statement has a `return` in it (not counting nested functions)
-static bool block_has_return(Block const* block);
-static bool statements_have_return(VecStatement const* statements) {
-    for_each (i, vec_statement, statements) {
-        switch (i->tag) {
-            case STATEMENT_RETURN_EXPR: return true;
-            case STATEMENT_BLOCK: if (block_has_return(&i->block)) return true; break;
-            case STATEMENT_IF_ELSE: if (statements_have_return(&i->if_else.statements)) return true; break;
-            case STATEMENT_LABELED:
-                if (statements_have_return(&(VecStatement){ .data = i->labeled.body, .size = 1 })) return true;
-                break;
-            case STATEMENT_FOR_LOOP:
-                if (statements_have_return(&(VecStatement){ .data = &i->for_loop->body, .size = 1 })) return true;
-                break;
-            case STATEMENT_FOR_EACH_LOOP:
-                if (statements_have_return(&(VecStatement){ .data = &i->for_each_loop->body, .size = 1 })) return true;
-                break;
-            case STATEMENT_WITH:
-                if (statements_have_return(&(VecStatement){ .data = &i->with->body, .size = 1 })) return true;
-                break;
-            case STATEMENT_SWITCH:
-                for_each (c, vec_switch_case, &i->switch_->cases) {
-                    if (statements_have_return(&c->statements)) return true;
-                }
-                break;
-            case STATEMENT_TRY_CATCH:
-                if (block_has_return(&i->try_catch->try_block) || block_has_return(&i->try_catch->catch_block) ||
-                    block_has_return(&i->try_catch->finally_block)
-                ) {
-                    return true;
-                }
-                break;
-            default: break;
-        }
-    }
-    return false;
-}
-static bool block_has_return(Block const* block) { return statements_have_return(&block->statements); }
-
-// tsc's typeFromSingleReturnExpression(): the expression of a function's only `return`, when that is directly in its
-// body (or an arrow function's expression body), null otherwise. A bare `return;` before it doesn't count (tsc keeps
-// looking while it has no candidate: `return; return 1;` is `1`'s), after it there's none
-static Expr const* single_return_expr(FunctionImpl const* function) {
-    if (!function->has_body || function->is_generator) return nullptr;
-    Expr const* found = nullptr;
-    for_each (i, vec_statement, &function->body.statements) {
-        if (i->tag == STATEMENT_RETURN_EXPR) {
-            if (found) return nullptr;
-            if (!statement_is_bare_return(i)) found = &i->expr;
-        } else if (statements_have_return(&(VecStatement){ .data = (Statement*)i, .size = 1 })) {
-            return nullptr;
-        }
-    }
-    return found;
-}
-
-// A function without a return annotation whose only return is `return x as T` (or an arrow `=> <T>x`) prints its
-// return type by reusing `T`
-static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    Expr const* expr = single_return_expr(function);
-    if (!expr || expr->tag != EXPR_AS_TYPE) return nullptr;
-    // (Where something may type it contextually only the assertion itself, `=> (<T>x)` isn't one: tsc's
-    // typeFromFunctionLikeExpression with isContextuallyTyped, else typeFromExpression looks through parentheses)
-    if (function->syntactically_contextual && expr_is_perenthisized(expr)) return nullptr;
-    AsTypeExpr const* as_type = expr->as_type;
-    if (as_type->is_satisfies || as_type_is_const(as_type) || ty_expr_type(me, expr) != ret) return nullptr;
-    return &as_type->type;
-}
-
-// A type node that names nothing (keywords and literals, in unions, intersections, arrays and parentheses): reusing it
-// asks no name whether it is accessible, so it is reused wherever the type is printed from
-static bool type_node_names_nothing(TypeNode const* node, u32 depth) {
-    if (depth > 8) return false;
-    switch (node->tag) {
-        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
-        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE:
-            return node->parsed && !node->synthesized && !node->from_jsdoc;
-        case TYPE_IDENTIFIER:
-            return node->identifier->keyword && !vec_spanned_type_size(&node->identifier->generic_params) &&
-                !node->from_jsdoc;
-        case TYPE_ARRAY:
-            return type_node_names_nothing(node->array.element, depth + 1);
-        case TYPE_UNION: case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) {
-                if (i->placeholder || !type_node_names_nothing(i, depth + 1)) return false;
-            }
-            return vec_type_size(&node->composite) > 0;
-        default:
-            return false;
-    }
-}
-
 // `mapped_by`: the instantiated signature they belong to, whose mapper their declared constraints are reused with
 static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, Signature const* mapped_by) {
     if (!params.len) return;
@@ -2616,16 +2524,6 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
         // (serializeInferredReturnTypeForSignature: the checker's type, without reporting in it)
         ret_d.suppress_fallback = true;
-    }
-    // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
-    // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
-    if (!reusable && !d.types_baseline && function && !function->ret_explicit && !root->class_instance && !instantiated) {
-        TypeNode const* node = single_return_assertion(me, function, ret);
-        if (node && type_node_names_nothing(node, 0) && annotation_is(me, node, ret, false)) {
-            ret_d.reuse_nodes = true;
-            display_node(me, ret_d, node);
-            return;
-        }
     }
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }

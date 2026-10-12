@@ -2216,7 +2216,7 @@ const baselines = {
         types: true,
     },
     'baseClassImprovedMismatchErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2411,7 +2411,7 @@ const baselines = {
         types: true,
     },
     'bitwiseCompoundAssignmentOperators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66421,7 +66421,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithEnumIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
