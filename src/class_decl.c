@@ -180,7 +180,9 @@ Ty const* class_item_get_type(ClassItem* me) {
         case CLASS_ITEM_CONSTRUCTOR: return ty_function_type(current_checker, &my constructor.func);
         case CLASS_ITEM_METHOD:
             return my method.accessor ? lazy_type_get(&my method.accessor_type) : ty_function_type(current_checker, &my method.func);
-        case CLASS_ITEM_FIELD: return lazy_type_get(&my field.lazy_type);
+        case CLASS_ITEM_FIELD:
+            if (my field.joined_accessor) return lazy_type_get(&my field.joined_accessor->method.accessor_type);
+            return lazy_type_get(&my field.lazy_type);
         case CLASS_ITEM_INTERFACE_MEMBER: return ty_of_node(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return ty_intrinsic(current_checker, TY_NEVER);
     }
@@ -612,6 +614,18 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                         }
                     }
                 }
+            }
+        }
+    }
+    // A property an accessor after it joined: the accessors type their symbol
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag != CLASS_ITEM_FIELD) continue;
+        i->field.joined_accessor = nullptr;
+        if (i->symbol_first != i || i->field.is_auto_accessor) continue;
+        for_each (j, vec_class_item, &my items) {
+            if (j->symbol_first == i && j->tag == CLASS_ITEM_METHOD && j->method.accessor && j->method.accessor_first) {
+                i->field.joined_accessor = j->method.accessor_first;
+                break;
             }
         }
     }
@@ -1744,6 +1758,8 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
+    // (Typed by the accessors it joined: its own declaration's type is never asked for)
+    if (item->field.joined_accessor) return;
     if (span_source(name) && span_source(name)->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
         ty_is_empty_array_literal_type(current_checker, ty_expr_type(current_checker, &item->field.value))
     ) {

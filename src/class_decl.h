@@ -86,6 +86,11 @@ typedef struct ClassItem {
             // query at the end of the constructor / static blocks goes by, and the class. Set by the resolve walk
             Expr const* ts_assigned;
             struct ClassDecl const* ts_assigned_class;
+            // A property an accessor of its name after it joined (tsgo 7.1's binder: one symbol, see
+            // bind_member_symbols()): that accessor pair's first item, whose type the symbol has (getTypeOfSymbol
+            // types an accessor symbol by its accessors, the property's declaration is never typed). Set when looking up
+            // names
+            struct ClassItem* joined_accessor;
         } field;
         InterfaceMember interface_memeber;
         struct {

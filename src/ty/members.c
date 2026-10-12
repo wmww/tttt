@@ -1190,8 +1190,9 @@ static bool computed_key_may_name(Expr const* key) {
     return expr_is_entity_name(key);
 }
 
-static Prop* builder_add_class_prop(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
+static Prop* builder_add_class_prop_joined(
+    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item,
+    Prop** joined
 ) {
     Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
     Atom const* name;
@@ -1219,6 +1220,7 @@ static Prop* builder_add_class_prop(
             (item->tag == CLASS_ITEM_METHOD && item->method.accessor);
         if (accessor && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) && !existing->decl->parameter_property && !existing->decl->function) joins = true;
         if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
+        if (joins && joined) *joined = existing;
         return nullptr;
     }
     Prop* prop = prop_new_declared(me);
@@ -1232,6 +1234,12 @@ static Prop* builder_add_class_prop(
     prop_add_shared_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
     return prop;
+}
+
+static Prop* builder_add_class_prop(
+    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
+) {
+    return builder_add_class_prop_joined(me, builder, name_string, parent, ctx, item, nullptr);
 }
 
 // The members JavaScript assignments declare (`this.x = v`, `F.prototype.x = v`: Symbol.members). One the class body
@@ -1438,7 +1446,17 @@ static void builder_add_class_items(
                 if (i->method.is_static != static_side) break;
                 if (i->method.accessor) {
                     if (i->method.accessor_first != i) break; // The second half of a get/set pair
-                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, ctx, i);
+                    Prop* joined = nullptr;
+                    Prop* prop = builder_add_class_prop_joined(me, builder, &i->method.name_string, parent, ctx, i, &joined);
+                    // An accessor after a property of its name joins the property's symbol (tsgo 7.1's binder:
+                    // PropertyExcludes and the accessors' excludes allow each other), which getTypeOfSymbol then types
+                    // as accessors (getTypeOfAccessors: the property's declaration says nothing)
+                    if (!prop && joined && (joined->flags & PROP_FIELD) && !(joined->flags & (PROP_ACCESSOR | PROP_METHOD))) {
+                        prop = joined;
+                        prop->flags &= ~(u32)PROP_FIELD;
+                        prop->decl->node = nullptr;
+                        prop->thisless = false;
+                    }
                     if (!prop) break;
                     prop->decl->lazy = &i->method.accessor_type;
                     prop->flags |= PROP_ACCESSOR;
