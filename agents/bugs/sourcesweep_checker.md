@@ -249,3 +249,25 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   file importing insertNode, matches tsc, and the files before it in program order don't reproduce it alone either.
   Order-dependent; a delta-debugging bisect over the 765 project files was started and stopped.
 
+### Agent D, second round (agent C's tail list)
+- **mermaid** (+TS18048 x7 `nodeEl`/`newEl`, +TS2345, +TS7053 x2): all downstream of `node.shape` being `any` in the
+  full project (`ShapeID = keyof typeof shapes`, and `shapes` is built from handlers whose parameters mention
+  `Node`, whose `shape` is `ShapeID`). tsc itself resolves `ShapeID` to `string` mid-circularity (the Record has 176
+  literal keys), and a probe importing the types alone gets the same as tsc in tttt: order-dependent circularity.
+- **tanstack-table preact/react `selection` +TS18046 x3**: JSX overload resolution. Reduction (10 lines):
+  `interface Sub { <TS, TSel>(p: { source: SS<TS>; selector: (s: TS) => TSel }): null; <TSel>(p: { selector: (s:
+  State) => TSel }): null }` and `<S source={anyValue} selector={(selection) => selection['1']} />`: tsc picks the
+  second (non-generic) overload although it has no `source`, tttt the first with TS = unknown. The call form with an
+  object literal agrees with tttt (the excess `source` fails the second overload there). Something in tsc's
+  checkApplicableSignatureForJsxCallLikeElement (subtype pass and JSX attributes' excess checking) not found yet.
+- **tanstack-table table-core `rowModelSlots.test.ts:368` +TS2322**: AggregationFnListItem/AggregationFnRef relation
+  over the large inferred feature type; not reduced.
+- **react-select `Async.tsx:33`, `AsyncCreatable.tsx:40` +TS2345 (2 projects each)**: `useStateManager(useAsync(props))`
+  infers Option as `Option | (Option & undefined) | (Option & MultiValue<Option>) | ...`: inference to
+  `StateManagerProps<O, M, G> & AdditionalProps` (a naked type parameter in an intersection target; tsc's
+  inferFromMatchingTypes for intersections) from useAsync's Omit/Pick result. A PropsValue-only probe infers O like tsc.
+- **dexie samples/dexie-cloud-todo-app +TS2502 `todoLists` (and TS2615 changeOwner)**: `todoLists!: DexieCloudTable<
+  TodoList, 'id'>` where InsertType maps over TodoList's keys asking which are functions, and TodoList's methods' inferred
+  return types read `db.todoLists`: tttt evaluates that during the property declaration's check, tsc lazily.
+- **reselect +TS2536**: fixed by agent C's dc0ff92a (the same base-constraint change I had made; mine dropped).
+- tsx: matched at the start of the round. unocss -TS5115 is agent A's; its lib.dom TS2344 is the lib-checking triage entry.
