@@ -4058,7 +4058,8 @@ void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_typ
 // Whether the type has a call signature a function with that many required parameters fits (tsc's
 // getContextualCallSignature: not isAritySmaller)
 bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required) {
-    if (!(type->flags & TYF_OBJECT)) return type->flags & TYF_ANY;
+    // (any has no signatures either: tsgo's getContextualCallSignature, TS8030 for `@type {any}`)
+    if (!(type->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, type);
     // (Several that fit: only if they have the same parameters, getIntersectedSignatures, which overloads don't)
     Signature const* applicable = nullptr;

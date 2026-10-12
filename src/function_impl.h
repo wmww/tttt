@@ -209,6 +209,9 @@ typedef struct FunctionImpl {
     // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
     // untyped signature whose arguments are all optional
     bool jsdoc_typed : 1;
+    // JavaScript: a `@type` tag of its host applies (its own, or its variable's: the contextual type tsgo's
+    // isUntypedSignatureInJSFile asks for)
+    bool jsdoc_type_tagged : 1;
     // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
     bool uses_arguments : 1;
     // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included

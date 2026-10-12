@@ -4397,16 +4397,41 @@ static JsDocTag* jsdoc_param_tag_at(VecJsDocTag* tags, isize index) {
     return nullptr;
 }
 
-// The `@param` tag for a function's parameter, with or without a type (tsgo's findMatchingParameter): the first that
-// names it, or a nameless one (a parse error) at its position; a pattern's by position
+// tsgo's findMatchingParameter for a tag (at `tag_index` among the tags, jsdoc_param_tag_at()): the first parameter
+// it names, or that is at its position and is a pattern or it is nameless (a parse error). -1 for none
+static isize jsdoc_param_tag_owner(JsDocTag const* tag, isize tag_index, FunctionImpl const* function) {
+    for_each (i, vec_function_arg, &function->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER) {
+            if (span_valid(tag->name) ? jsdoc_name_is(span_sv(tag->name), span_sv(binding->content_span)) : i_index == tag_index) {
+                return i_index;
+            }
+        } else if (i_index == tag_index) {
+            return i_index;
+        }
+    }
+    return -1;
+}
+
+// The `@param` tag for a function's parameter, with or without a type (tsgo's findMatchingParameter, which goes by
+// tag): the first that names it, or a nameless one (a parse error) at its position; a pattern's by position. A tag
+// an earlier parameter matches is that one's
 static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
     Binding const* binding = &arg->initializer.binding;
     isize index = arg - function->args.data;
-    if (binding->tag != BINDING_IDENTIFIER) return jsdoc_param_tag_at(tags, index);
-    JsDocTag* positional = jsdoc_param_tag_at(tags, index);
+    isize tag_index = 0;
+    JsDocTag const* parent = nullptr;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
-        if (span_valid(i->name) ? jsdoc_name_is(span_sv(i->name), span_sv(binding->content_span)) : i == positional) return i;
+        // (The `o.a` children of an `{Object} o` aside: tsc's parser makes them its type)
+        if (parent && span_valid(i->name) && jsdoc_name_is_under(span_sv(i->name), span_sv(parent->name))) continue;
+        bool array;
+        parent = span_valid(i->name) && (jsdoc_is_object_type(i, &array) || i->type.tag == TYPE_INTERFACE) ? i : nullptr;
+        isize this_index = tag_index++;
+        bool candidate = binding->tag == BINDING_IDENTIFIER ?
+            (span_valid(i->name) ? jsdoc_name_is(span_sv(i->name), span_sv(binding->content_span)) : this_index == index) :
+            this_index == index;
+        if (candidate && jsdoc_param_tag_owner(i, this_index, function) == index) return i;
     }
     return nullptr;
 }
@@ -4900,6 +4925,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     if (!type_wins) jsdoc_apply_template(p, tags, &function->generic, false);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
+        function->jsdoc_type_tagged |= i->kind == JSDOC_TAG_TYPE && !i->nested && !i->earlier;
     }
     // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
     // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own

@@ -20191,7 +20191,7 @@ const baselines = {
         types: true,
     },
     'jsFileFunctionParametersAsOptional2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31671,12 +31671,12 @@ const baselines = {
         types: true,
     },
     'tslibMissingHelper': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tslibMultipleMissingHelper': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52621,9 +52621,9 @@ const baselines = {
         types: true,
     },
     'jsdocParamTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParamTagNoName': {
         errors: true,
@@ -53076,7 +53076,7 @@ const baselines = {
         types: true,
     },
     'typeTagCircularReferenceOnConstructorFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

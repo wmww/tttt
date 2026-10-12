@@ -75,9 +75,10 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
         }
         return;
     }
-    // Each helper is looked for once per helpers module, whichever file asks first
-    u64 key[2] = { KEY_EMIT_HELPERS, (u64)(uintptr_t)module };
-    void const** slot = intern_slot(me, &my links, key, 2);
+    // Each helper is looked for once per file (tsgo's sourceFileLinks.requestedExternalEmitHelpers; tsc 6 had it once
+    // per helpers module). (The key differs from the not-found one above: a module was found)
+    u64 key[3] = { KEY_EMIT_HELPERS, (u64)(uintptr_t)file, 1 };
+    void const** slot = intern_slot(me, &my links, key, 3);
     u32 requested = (u32)(uintptr_t)*slot;
     u32 unchecked = helpers & ~requested;
     *slot = (void const*)(uintptr_t)(requested | helpers | EMIT_HELPER_REQUESTED);
@@ -107,7 +108,7 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
             }
             // (Every checker asks: the program reports it once)
             if (error) {
-                error->once_key = ((u64)(uintptr_t)module << 8) ^ (bit * 2 + n + 1);
+                error->once_key = ((u64)(uintptr_t)file << 8) ^ (bit * 2 + n + 1);
                 error->once_order = my file_order;
             }
         }
