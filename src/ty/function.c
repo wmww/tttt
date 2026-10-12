@@ -105,13 +105,9 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         } else if (yield->op == UNARY_OP_YIELD_STAR) {
             u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
             Ty const* delegate = ty_expr_type(me, &yield->expr);
+            // (tsgo reports a delegate that isn't iterable from here, deferred: printing it can't find this very return
+            // type in progress, getIterationTypesOfIterableWorker's addDeferredDiagnostic)
             type = ty_iterated_type(me, use, delegate, span_null, nullptr);
-            if (!ty_iteration_types_of_iterable(me, delegate, use)) {
-                // tsc reports TS2488 from right here, and printing the type in the message can find this very return
-                // type in progress (`yield* foo` inside foo makes foo's return type any). HACK: print it too
-                cstr printed = ty_to_cstr(me, delegate);
-                cstr_drop(&printed);
-            }
         } else {
             type = ty_expr_type(me, &yield->expr);
             // In a const context (yielding to a `const` type parameter) it keeps its literals (tsc 6.0's

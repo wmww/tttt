@@ -1044,7 +1044,7 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         key = item->private_name ? ty_intrinsic(me, TY_NEVER) :
-            item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+            item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
     }
     Ty const* ret = nullptr;
     // Past the end of a tuple without a rest element: undefined (tsc's getTupleElementTypeOutOfStartCount)

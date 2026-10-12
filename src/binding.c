@@ -647,6 +647,8 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                         span_valid(i->source_span) ? i->source_span : i->target.content_span, false, true, errs);
                 }
                 if (i->computed_key) {
+                    // (The name first, like tsc's checkComputedPropertyName: what it refers to may be the element itself)
+                    ty_binding_computed_key_type(current_checker, i);
                     expr_typecheck(i->computed_key, errs);
                     // (tsc's checkBindingElement: checkComputedPropertyName)
                     ty_check_computed_name(current_checker, i->computed_key, i->source_span, false, errs);
@@ -656,7 +658,9 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                         parent->anonymous.object_literal)
                     ) {
                         Span key_span = expr_outer_span(i->computed_key);
-                        ty_check_destructuring_indexed_access(current_checker, parent, expr_get_type(i->computed_key),
+                        // (The key the element's type was read with: `{}` for one that names the element itself)
+                        Ty const* used = ty_binding_access_key(current_checker, i);
+                        ty_check_destructuring_indexed_access(current_checker, parent, used ? used : expr_get_type(i->computed_key),
                             key_span, errs);
                     }
                     if (parent && !i->target.rest) {
@@ -1036,6 +1040,19 @@ static void check_quick_callee(Expr const* quick, ErrorCtx* errs) {
     ty_check_non_null_type(current_checker, ty_expr_type(current_checker, callee), callee, errs);
 }
 
+// The computed names of a pattern's elements, in order (tsc's checkVariableLikeDeclaration checks the elements, each
+// one's computed name first, before the initializer with the pattern as its contextual type)
+static void binding_check_computed_names_first(Binding const* me) {
+    if (my tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &my object) {
+            if (i->computed_key) ty_binding_computed_key_type(current_checker, i);
+            binding_check_computed_names_first(&i->target);
+        }
+    } else if (my tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &my array) binding_check_computed_names_first(i);
+    }
+}
+
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
@@ -1062,6 +1079,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_CALL) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
+    binding_check_computed_names_first(&my binding);
     initialized_binding_check_value(me);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
@@ -1074,6 +1092,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
+    binding_check_computed_names_first(&my binding);
     initialized_binding_check_value(me);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);

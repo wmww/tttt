@@ -325,9 +325,6 @@ src` finds the code-side markers; every significant one has an entry here.
   (`CallInfo.tagged_template`); a TaggedTemplate node or argument-list abstraction would avoid it.
 - `signature_resolve`: function expressions take the contextual signature's type parameters only if resolved after
   the context was assigned.
-- Printing while resolving, to imitate tsc's eager error messages: function.c HACK: a non-iterable `yield*` prints its
-  type while the return type is in progress, making `yield* foo` in `foo` any. (`missing_property_type()`'s
-  print probe for TS2339 is gone: tsgo prints a return type in progress as any without TS7023.)
 - `missing_property_type` (HACK) also decides the type of a failed access: errorType under conditions approximating
   check.c's reporting (object type, not `typeof globalThis`, no unresolved base, not JS; unchecked JS's "declared in
   another global file" by the object name's file). tsc: errorType exactly when it reports.

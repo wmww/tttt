@@ -1559,6 +1559,12 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // The type of a binding (a variable, a parameter, an element of a destructuring pattern): what is written (lowered
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
+typedef struct ObjectBindingItem ObjectBindingItem;
+// The type of an object pattern item's computed name, `{}` while it's being computed (tsc's checkComputedPropertyName with
+// its circularConstraintType marker: `let { [a]: a } = o` reads o with a `{}` key)
+Ty const* ty_binding_computed_key_type(Checker* me, ObjectBindingItem const* item);
+// The computed key the item's element type was read with (null before): what tsc's getTypeForBindingElement reports about
+Ty const* ty_binding_access_key(Checker* me, ObjectBindingItem const* item);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // Also `{}`, but only as the non-nullish part of `unknown` while narrowing it (tsc's unknownEmptyObjectType, for TS2638)
 Ty const* ty_unknown_empty_object_type(Checker* me);

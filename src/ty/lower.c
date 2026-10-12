@@ -2700,6 +2700,21 @@ static bool pattern_names(Checker* me, TyList keys, Atom const* name, bool numer
     return false;
 }
 
+Ty const* ty_binding_computed_key_type(Checker* me, ObjectBindingItem const* item) {
+    u64 key[2] = { KEY_BINDING_COMPUTED_KEY, (u64)(uintptr_t)item };
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached == (Ty const*)&my links) return ty_empty_object_type(me);
+    if (cached) return cached;
+    *intern_slot(me, &my links, key, 2) = (Ty const*)&my links;
+    Ty const* ret = ty_expr_type(me, item->computed_key);
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
+}
+
+Ty const* ty_binding_access_key(Checker* me, ObjectBindingItem const* item) {
+    return intern_get(&my links, (u64[]){ KEY_BINDING_ACCESS_KEY, (u64)(uintptr_t)item }, 2);
+}
+
 // The keys an object pattern names before its rest: literal types of its names, the types of its computed ones
 static TyList pattern_keys(Checker* me, Binding const* pattern) {
     u32 count = 0;
@@ -2709,7 +2724,7 @@ static TyList pattern_keys(Checker* me, Binding const* pattern) {
     for_each (item, vec_object_binding_item, &pattern->object) {
         if (item->target.rest) continue;
         keys[len++] = item->private_name ? ty_intrinsic(me, TY_NEVER) :
-            item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+            item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
     }
     return (TyList){ .data = keys, .len = len };
 }
@@ -3021,7 +3036,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
             // isTypeUsableAsPropertyName)
             bool is_number = false;
             if (item->private_name) continue;
-            Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+            Ty const* key = item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
             Atom const* name = ty_property_name_of_key(me, key, &is_number);
             if (!name) {
                 has_computed |= item->computed_key != nullptr;
@@ -3192,7 +3207,7 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
     }
     ObjectBindingItem const* item = element->parent_item;
     if (item->private_name) return nullptr;
-    Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    Ty const* key = item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
     Atom const* name = ty_literal_name(me, key);
     if (!name) return nullptr;
     FoundProp found = ty_find_prop(me, parent_type, name);
@@ -3302,7 +3317,11 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
         ret = ty_intrinsic(me, TY_NEVER); // (A never key: getIndexedAccessType's never)
     } else {
         ObjectBindingItem const* item = binding->parent_item;
-        Ty const* key = item->computed_key ? ty_regular(me, ty_expr_type(me, item->computed_key)) : ty_literal(me, &item->source);
+        Ty const* key = item->computed_key ? ty_regular(me, ty_binding_computed_key_type(me, item)) : ty_literal(me, &item->source);
+        if (item->computed_key) {
+            Ty const** used = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_BINDING_ACCESS_KEY, (u64)(uintptr_t)item }, 2);
+            if (!*used) *used = key;
+        }
         // (A generic key is a deferred `T[K]`: tsc's getIndexedAccessType)
         ret = item->computed_key && ty_is_generic_index(key) ? ty_indexed(me, object, key) : ty_access_reading(me, object, key);
         if (!ret && item->computed_key && (key->flags & TYF_ES_SYMBOL_LIKE)) {

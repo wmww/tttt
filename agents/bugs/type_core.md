@@ -286,8 +286,6 @@ passing tests).
   contextual types of yield expressions); `ty_generator_context` filters only unions.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
-- Circularity results: blockScopedBindingUsedBeforeDef (tsgo `{}` where tttt says `any`), YieldExpression6_es6
-  (`() => Generator<any, void, unknown>` for a generator referencing itself).
 - Object literal methods of one name are one binder symbol in tsc (PropertyExcludes is None): `{ foo(x: 'hi') {}, foo(x:
   'a') {} }` is `{ foo(x: "hi"): void; foo(x: "a"): void }`, each name typed with both signatures
   (stringLiteralTypesInImplementationSignatures2, callSignaturesWithParameterInitializers2; ex plan 35).
