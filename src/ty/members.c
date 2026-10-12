@@ -1219,6 +1219,12 @@ static Prop* builder_add_class_prop_joined(
         bool accessor = (item->tag == CLASS_ITEM_FIELD && item->field.is_auto_accessor) ||
             (item->tag == CLASS_ITEM_METHOD && item->method.accessor);
         if (accessor && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) && !existing->decl->parameter_property && !existing->decl->function) joins = true;
+        // (A field after an interface's property: the merged class and interface members are one symbol, mergeSymbol)
+        if (item->tag == CLASS_ITEM_FIELD && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) &&
+            !existing->decl->parameter_property && !existing->decl->function
+        ) {
+            joins = true;
+        }
         if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         if (joins && joined) *joined = existing;
         return nullptr;
@@ -1428,7 +1434,17 @@ static void builder_add_class_items(
         switch (i->tag) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.is_static != static_side) break;
-                Prop* prop = builder_add_class_prop(me, builder, &i->field.name_string, parent, ctx, i);
+                Prop* joined = nullptr;
+                Prop* prop = builder_add_class_prop_joined(me, builder, &i->field.name_string, parent, ctx, i, &joined);
+                // (An auto-accessor after a property of its name: one symbol, typed by the accessor, see the methods')
+                if (!prop && joined && i->field.is_auto_accessor && (joined->flags & PROP_FIELD) &&
+                    !(joined->flags & (PROP_ACCESSOR | PROP_METHOD))
+                ) {
+                    prop = joined;
+                    prop->flags &= ~(u32)PROP_FIELD;
+                    prop->decl->node = nullptr;
+                    prop->thisless = false;
+                }
                 if (!prop) break;
                 if (i->field.has_explicit_type) {
                     prop->decl->node = &i->field.explicit_type;

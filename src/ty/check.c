@@ -1513,6 +1513,9 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
         bool everywhere = candidate.size;
         for (u32 j = 0; j < parts.len && everywhere; j++) {
             if (parts.data[j]->flags & TYF_NULLABLE) continue;
+            // (An object literal without it has it as undefined: createUnionOrIntersectionProperty's WritePartial
+            // makes it a property of the union all the same)
+            if (ty_is_object_literal_without_spread(me, parts.data[j])) continue;
             everywhere = ty_prop_type_of(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
         }
         if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
@@ -1651,7 +1654,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
                 Ty const* part = object->composite.types.data[i];
                 if (part->flags & TYF_NULLABLE) continue;
-                uniform = prop_root_decl(me, ty_apparent_type(me, part), suggestion->name) == root->decl;
+                PropDecl const* part_decl = prop_root_decl(me, ty_apparent_type(me, part), suggestion->name);
+                // (An object literal without it adds no declaration, only undefined: WritePartial)
+                if (!part_decl && ty_is_object_literal_without_spread(me, part)) continue;
+                uniform = part_decl == root->decl;
             }
         }
         if (error && uniform && !synthetic && declared->decl->decl_span_count) {
@@ -3575,6 +3581,7 @@ static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs)
 }
 
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs);
+static Ty const* with_optionality(Checker* me, Ty const* type, bool optional);
 
 // The kind of declaration an interface member's declaration span is: `get x`, `set x`, else a property
 // The name of a member's k-th declaration (an accessor pair's, `get x(); set x(v)`, and those after)
@@ -3724,7 +3731,11 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         }
         if (first == r || !first->member) continue;
         ClassItem* first_item = (ClassItem*)first->member;
-        check_subsequent_property(me, item->field.name_span, class_item_get_type(first_item), class_item_get_type(item), first->span, errs);
+        // (A field's type has undefined when it's optional: addOptionality of its declaration)
+        Ty const* first_type = class_item_get_type(first_item);
+        if (first_item->tag == CLASS_ITEM_FIELD) first_type = with_optionality(me, first_type, first_item->field.is_optional);
+        check_subsequent_property(me, item->field.name_span, first_type,
+            with_optionality(me, class_item_get_type(item), item->field.is_optional), first->span, errs);
     }
     merge_late_members(tables, &records, errs);
     check_duplicate_declarations(tables, &records, 0, true, errs);
@@ -3911,6 +3922,54 @@ static bool is_class_item_span(ClassDecl const* class_decl, Span span) {
     return false;
 }
 
+// A type with undefined when its declaration is optional (tsc's addOptionality, under strictNullChecks)
+static Ty const* with_optionality(Checker* me, Ty const* type, bool optional) {
+    if (!optional || !compiler_options()->strict_null_checks || (type->flags & TYF_ANY)) return type;
+    Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+    return ty_union(me, types, 2, nullptr, (TyList){0});
+}
+
+// The type of a property symbol whose first declaration is a class item: its declaration's, optionality included
+// (tsc's getTypeOfVariableOrParameterOrProperty of the valueDeclaration)
+static Ty const* class_first_declaration_type(Checker* me, ClassDecl const* class_decl, Prop const* root) {
+    for_each (item, vec_class_item, &class_decl->items) {
+        if (item->tag == CLASS_ITEM_FIELD && span_eq(item->span, root->decl->decl_spans[0])) {
+            return with_optionality(me, prop_type(me, root), item->field.is_optional);
+        }
+    }
+    return prop_type(me, root);
+}
+
+// The same for a first declaration in one of the interfaces merged with the class
+static Ty const* interface_first_declaration_type(Checker* me, Symbol const* symbol, Prop const* root) {
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = symbol->decls[d].node;
+        for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
+            if (span_valid(i->declaration) && span_eq(i->declaration, root->decl->decl_spans[0]) && !i->is_method &&
+                i->key.tag == INTERFACE_KEY_NAME && !i->key.name_is_member_function && !i->accessor
+            ) {
+                return member_declared_type(me, i);
+            }
+        }
+    }
+    return prop_type(me, root);
+}
+
+// The type of the property symbol an instance field declares (tsc's getTypeOfSymbol(getSymbolOfDeclaration(field))):
+// its first declaration's, which may be an interface's merged with the class or another field of its name
+Ty const* ty_class_field_symbol_type(Checker* me, ClassDecl const* class_decl, ClassItem const* field) {
+    Ty const* own = with_optionality(me, class_item_get_type((ClassItem*)field), field->field.is_optional);
+    Symbol const* symbol = class_decl->symbol;
+    if (!symbol || field->field.computed_key || field->field.is_static || span_valid(class_item_private_name(field))) return own;
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    if (!(declared->flags & TYF_OBJECT)) return own;
+    Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&field->field.name_string)));
+    if (!root || span_eq(root->decl->decl_spans[0], field->span) || !prop_declared_by(root, field->span)) return own;
+    return is_class_item_span(class_decl, root->decl->decl_spans[0]) ? class_first_declaration_type(me, class_decl, root) :
+        interface_first_declaration_type(me, symbol, root);
+}
+
 // TS2717 across a class and the interfaces it merges with: a property signature after a class member of its name (a
 // field, method or accessor), or a field after an interface member, is a secondary declaration of the one property
 // symbol, whose type is its first declaration's (tsc's checkVariableLikeDeclaration). Declarations of one kind are
@@ -3934,7 +3993,8 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
             if (!root || !is_class_item_span(class_decl, root->decl->decl_spans[0]) || !prop_declared_by(root, i->declaration)) {
                 continue;
             }
-            check_subsequent_property(me, i->key.span, prop_type(me, root), member_declared_type(me, i), root->decl->name_span, errs);
+            check_subsequent_property(me, i->key.span, class_first_declaration_type(me, class_decl, root), member_declared_type(me, i),
+                root->decl->name_span, errs);
         }
     }
     for_each (field, vec_class_item, &class_decl->items) {
@@ -3942,7 +4002,8 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
         if (span_valid(class_item_private_name(field))) continue;
         Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&field->field.name_string)));
         if (!root || is_class_item_span(class_decl, root->decl->decl_spans[0]) || !prop_declared_by(root, field->span)) continue;
-        check_subsequent_property(me, field->field.name_span, prop_type(me, root), class_item_get_type(field), root->decl->name_span, errs);
+        check_subsequent_property(me, field->field.name_span, interface_first_declaration_type(me, symbol, root),
+            with_optionality(me, class_item_get_type(field), field->field.is_optional), root->decl->name_span, errs);
     }
 }
 

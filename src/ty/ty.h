@@ -1606,6 +1606,9 @@ SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
+struct ClassDecl;
+struct ClassItem;
+Ty const* ty_class_field_symbol_type(Checker* me, struct ClassDecl const* class_decl, struct ClassItem const* field);
 // `import { x }` of a property of what `export =` names (SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) that it doesn't have
 bool ty_export_equals_property_missing(Checker* me, Symbol const* property);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);

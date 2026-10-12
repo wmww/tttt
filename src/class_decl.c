@@ -181,7 +181,10 @@ Ty const* class_item_get_type(ClassItem* me) {
         case CLASS_ITEM_METHOD:
             return my method.accessor ? lazy_type_get(&my method.accessor_type) : ty_function_type(current_checker, &my method.func);
         case CLASS_ITEM_FIELD:
-            if (my field.joined_accessor) return lazy_type_get(&my field.joined_accessor->method.accessor_type);
+            if (my field.joined_accessor) {
+                ClassItem* joined = my field.joined_accessor;
+                return joined->tag == CLASS_ITEM_FIELD ? lazy_type_get(&joined->field.lazy_type) : lazy_type_get(&joined->method.accessor_type);
+            }
             return lazy_type_get(&my field.lazy_type);
         case CLASS_ITEM_INTERFACE_MEMBER: return ty_of_node(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return ty_intrinsic(current_checker, TY_NEVER);
@@ -625,6 +628,11 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         for_each (j, vec_class_item, &my items) {
             if (j->symbol_first == i && j->tag == CLASS_ITEM_METHOD && j->method.accessor && j->method.accessor_first) {
                 i->field.joined_accessor = j->method.accessor_first;
+                break;
+            }
+            // (An auto-accessor is both accessors)
+            if (j->symbol_first == i && j != i && j->tag == CLASS_ITEM_FIELD && j->field.is_auto_accessor) {
+                i->field.joined_accessor = j;
                 break;
             }
         }
@@ -1917,12 +1925,13 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
     Checker* checker = current_checker;
     ClassItem const* constructor = class_constructor_with_body(me);
     for_each (i, vec_class_item, &my items) {
-        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.is_declare || i->field.is_abstract || i->field.is_optional) continue;
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.is_declare || i->field.is_abstract) continue;
         // (Auto-accessors and JavaScript fields too)
         if (i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
         if (i->field.name_is_value && !i->field.computed_key) continue; // (a string or numeric name)
         if (i->field.is_definite) continue;
-        Ty const* type = class_item_get_type((ClassItem*)i);
+        // (Its symbol's type: an optional one has undefined, unless its symbol's first declaration says otherwise)
+        Ty const* type = ty_class_field_symbol_type(checker, me, i);
         if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
         if (constructor && field_initialized_in_constructor(checker, me, i, type, constructor)) continue;
         error_ctx_error_d(errs, i->field.name_span, 2564, "Property '", i->field.name_span,
@@ -2329,7 +2338,9 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
                 if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
-                    Ty const* declared = ty_of_node(&i->field.explicit_type);
+                    // (Joined by accessors, it's their symbol's type: tsc's checkVariableLikeDeclaration of the symbol's
+                    // valueDeclaration checks the initializer against getTypeOfSymbol)
+                    Ty const* declared = i->field.joined_accessor ? class_item_get_type(i) : ty_of_node(&i->field.explicit_type);
                     if (i->field.is_optional) declared = ty_optional_prop_type(current_checker, declared);
                     ty_check_assignable_expr(
                         current_checker, expr_get_type(&i->field.value), declared, i->field.name_span, &i->field.value, errs
