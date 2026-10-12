@@ -4595,7 +4595,13 @@ static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
     TupleShape const* shape = ty->reference.target->declared.tuple;
     if (shape->arity != 1 || !(shape->flags[0] & TUPLE_ELEMENT_REST)) return false;
     Ty const* element = ty_reference_args(me, ty).data[0];
-    return element->kind == TY_TYPE_PARAM || (element->flags & TYF_DEFERRED);
+    if (element->kind == TY_TYPE_PARAM || (element->flags & TYF_DEFERRED)) return true;
+    // (A generic mapped type stays variadic too: `[...{ [K in keyof S]: F<S[K]> }]`, tsc's isGenericTupleType)
+    bool generic = false;
+    if (element->kind == TY_ANONYMOUS && (element->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, element)->mapped) {
+        mapped_info_of(me, element, &generic);
+    }
+    return generic;
 }
 
 // A source whose discriminants are unions is related to a union if each combination of their members is related to
