@@ -427,6 +427,14 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     }
     cstr ret = cstr_init();
     Symbol const* member = info->member_symbol;
+    // (An expando of a `{}` container is a member of the object literal in tsgo, whose symbol getSymbolChain skips:
+    // bare, even where the container is reached through another name, `module.exports = o`)
+    if (info->member_count == 1 && member && !member->parent && member->decl_count &&
+        member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
+    ) {
+        cstr_append_sv(&ret, name);
+        return ret;
+    }
     // A member of a namespace's or module's object is its export (maybe an alias: getSymbolAtLocation doesn't resolve)
     // (by the name accessed: the export's own name may differ, `export default class C`)
     csview accessed = span_sv(fallback);

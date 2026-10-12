@@ -999,6 +999,12 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
     for (u32 i = 0; i < chain->len; i++) {
         Symbol const* symbol = chain->items[i];
         csview name = written_name(enclosing, symbol, i == 0 && !after_module);
+        // (An expando's container is the initializer's symbol in tsgo: `var x = function f() {}; x.a = 1` is `f.a`)
+        Symbol const* next = i + 1 < chain->len ? chain->items[i + 1] : nullptr;
+        if (next && next->parent == symbol && next->decl_count && next->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
+            Span host_name = expando_host_written_name(symbol);
+            if (span_valid(host_name)) name = span_sv(host_name);
+        }
         // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
         // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
         // (Not a module's export, `exports["d"] = v`: the binder declares it by the literal, which getNameOfSymbolAsWritten

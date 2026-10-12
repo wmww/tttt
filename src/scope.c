@@ -5076,6 +5076,27 @@ Expr* expando_initializer(Expr* init, bool js, bool annotated) {
     }
 }
 
+Span expando_host_written_name(Symbol const* host) {
+    Expr const* init = nullptr;
+    for (u32 i = 0; i < host->decl_count && !init; i++) {
+        SymbolDecl const* decl = &host->decls[i];
+        if (!(decl->flags & SYMBOL_VALUE)) continue;
+        if (decl->kind == SYMBOL_DECL_VARIABLE) {
+            Binding const* binding = decl->node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return span_null;
+            init = initialized_binding_value((InitializedBinding*)binding);
+        } else if (decl->kind == SYMBOL_DECL_ASSIGNMENT) {
+            init = decl->node;
+        } else {
+            return span_null;
+        }
+    }
+    if (!init || expr_is_perenthisized(init)) return span_null;
+    if (init->tag == EXPR_FUNCTION) return init->function->name;
+    if (init->tag == EXPR_CLASS_DECL) return init->class_decl->name;
+    return span_null;
+}
+
 // What a name is where an assignment to one of its properties is (tsgo's lookupName): a name in the block, then in its
 // function (or file, or namespace), nowhere else
 static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
@@ -5196,6 +5217,11 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
 // The name an assignment declaration `o.x = v` / `o["x"] = v` is written with: a string element access is named with
 // its quotes (tsc's getNameOfSymbolAsWritten takes the declaration's name), which the symbols baseline prints as `o["x"]`
 static Span written_member_name(Expr const* left, Span name) {
+    // (`Object.defineProperty(o, "x", d)`: the key literal as written, quotes kept, `o['x']`)
+    if (left->tag == EXPR_CALL && vec_expr_size(&left->call->args) == 3) {
+        Expr const* key = vec_expr_at(&left->call->args, 1);
+        if (key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING) return key->inner_span;
+    }
     if (left->tag == EXPR_PROPERTY && left->property->form == PROPERTY_EXPR_BRACKET &&
         left->property->prop.tag == EXPR_LITERAL && left->property->prop.literal.tag == VALUE_STRING
     ) {

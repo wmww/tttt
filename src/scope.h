@@ -812,6 +812,9 @@ void scope_add_nested_expando(Scope* me, struct BinaryOpExpr* op);
 // IsExpandoInitializer): a function or arrow function, in JavaScript also a class expression or `{}` (unless
 // `annotated`): that expression, null otherwise
 Expr* expando_initializer(Expr* init, bool js, bool annotated);
+// The name an expando host's members are qualified with in tsgo, whose host is the initializer's symbol (getInitializerSymbol,
+// named by getNameOfSymbolAsWritten): a named function or class expression's own name, else invalid (the host's name)
+Span expando_host_written_name(Symbol const* host);
 // TypeScript `this.x = v` in a constructor or static block (`left` is `this.x`, also a target of a destructuring
 // assignment): marks the field it types (ClassItem.field.ts_assigned)
 void scope_note_ts_this_assignment(Scope const* me, struct Expr const* left);
