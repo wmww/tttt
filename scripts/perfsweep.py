@@ -256,6 +256,8 @@ def main():
         if p in results and p not in failed and not results[p]['types']:
             print(f'  tttt checked nothing: {p} (tsgo {cache[p]["types"]} types)')
     report(rows, args.n, cache)
+    if not args.last:
+        print(f'\n{sourcesweep.sweep.load_note()} at the end of the run')
     print(f'\nresults saved for --last in {LAST}')
 
 

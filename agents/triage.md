@@ -20,10 +20,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
   `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten;
   `--relock` may bring it back.
 
-## From the insights of 2026-10-11
-- `scripts/sourcesweep.py`'s timing lines are meaningless when other agents run (its 10-09 full run said "tttt 2801 s,
-  tsc 2811 s"; idle, a 1/8 sample is 84 s vs 214 s): print the machine's load average next to them, or warn.
-
 ## From the source sweep fan-out (agent D, 2026-10-12)
 - **Decision needed: tttt never checks lib files; tsc does** without skipLibCheck/skipDefaultLibCheck. Libs are clean in
   normal setups, so this only shows with partial lib sets pulled in by `/// <reference lib>` or odd `lib` lists: tsc

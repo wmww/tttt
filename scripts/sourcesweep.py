@@ -169,7 +169,8 @@ def main():
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
-          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)')
+          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)' +
+          (f'; {sweep.load_note()}' if not args.last else ''))
     for v in ('crash', 'timeout'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)

@@ -22,6 +22,14 @@ versioned directories (types/NAME/vN) are packages of their own.
 import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, threading, time
 import tscformat
 
+
+def load_note():
+    """The machine's load average, for the timing lines of a live run: other agents' builds and sweeps inflate them"""
+    one, five, fifteen = os.getloadavg()
+    cpus = os.cpu_count() or 1
+    note = f'load {one:.1f} / {five:.1f} / {fifteen:.1f} on {cpus} cpus'
+    return note + (' (busy machine: times are inflated)' if five > cpus else '')
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DT = os.path.join(ROOT, 'thirdparty/corpora/DefinitelyTyped')
 ORACLE = os.path.join(ROOT, 'test/sweep/DefinitelyTyped.tsc.jsonl')
@@ -270,7 +278,8 @@ def main():
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
-          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)')
+          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)' +
+          (f'; {load_note()}' if not args.last else ''))
     for v in ('crash', 'timeout'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)
