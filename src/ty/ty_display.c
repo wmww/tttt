@@ -4021,8 +4021,27 @@ static bool is_whole_enum(Checker* me, Ty const* ty) {
     return true;
 }
 
+// A function with expandos (or a JavaScript `{}` container, the object literal's type in tsgo) prints its structure,
+// except within itself (`typeof f`: tsc's shouldWriteTypeOfFunctionSymbol, visitedTypes) or where declaration emit
+// names it
+static bool expando_displays_structurally(TyDisplay d, Ty const* ty) {
+    if (!is_nested_expando_function(ty) && !(ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.js_container)) return false;
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        if (i->ty == ty) return false;
+    }
+    Symbol const* function = ty->declared.namespace_symbol ? ty->declared.namespace_symbol : ty->declared.symbol;
+    return !(is_non_local_function(function) && typeof_function_in_declaration(d, function));
+}
+
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty)) return false;
+    // (A structure: a type literal, or a function type when it is one signature)
+    if (ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.name && ty->declared.name->len &&
+        expando_displays_structurally(d, ty)
+    ) {
+        Members const* members = ty_members(me, ty);
+        return !members->prop_count && !members->index_count && members->call_count + members->construct_count == 1;
+    }
     if ((ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
     // `(typeof C)[]`: a type query is parenthesized too
     bool type_query = ty->kind == TY_DECLARED &&
@@ -4384,18 +4403,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
                     }
-                    // (A JavaScript `{}` container is the object literal's type in tsgo: structural too)
-                    if (is_nested_expando_function(ty) || (ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.js_container)) {
-                        // (Within itself `typeof f`: tsc's shouldWriteTypeOfFunctionSymbol, visitedTypes)
-                        bool recursive = false;
-                        for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;
-                        Symbol const* function = ty->declared.namespace_symbol ? ty->declared.namespace_symbol : ty->declared.symbol;
-                        if (!recursive && !(is_non_local_function(function) && typeof_function_in_declaration(d, function))) {
-                            TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
-                            d.visiting = &visit;
-                            display_structure(me, d, ty);
-                            break;
-                        }
+                    if (expando_displays_structurally(d, ty)) {
+                        TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+                        d.visiting = &visit;
+                        display_structure(me, d, ty);
+                        break;
                     }
                     if (class_as_literal(d, ty)) {
                         display_class_literal(me, d, ty);

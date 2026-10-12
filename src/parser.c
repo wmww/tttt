@@ -13995,13 +13995,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 while (assigned->tag == EXPR_BINARY_OP && assigned->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(assigned)) {
                     assigned = &assigned->binary_op->right;
                 }
-                // (`a.b = a.b || function () {}`: tsc's getSourceOfDefaultedAssignment)
-                if (assigned == &assignment->right && assigned->tag == EXPR_BINARY_OP && !expr_is_perenthisized(assigned) &&
-                    (assigned->binary_op->op == BINARY_OP_OR_OR || assigned->binary_op->op == BINARY_OP_EH_EH) &&
-                    assignment->left.tag == EXPR_PROPERTY
-                ) {
-                    assigned = &assigned->binary_op->right;
-                }
+                // (Not through `a.b = a.b || function () {}`: tsgo's GetRightMostAssignedExpression only goes through
+                // assignments)
                 // (`/** @type {T} */ (a).b = v`: the comment is the parenthesized expression's cast, not the statement's)
                 Expr const* leftmost = &assignment->left;
                 while (leftmost->tag == EXPR_PROPERTY && !expr_is_perenthisized(leftmost)) leftmost = &leftmost->property->expr;
