@@ -6655,10 +6655,13 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         Binding const* first = vec_function_arg_is_empty(&ret->args) ? nullptr : &vec_function_arg_at(&ret->args, 0)->initializer.binding;
         is_definitely_function = committed || (first && first->has_explicit_type &&
             span_start_ptr(binding_explicit_type_span(first)) > span_start_ptr(first->content_span));
-
-        if (ret->ret_explicit) {
+        // (The rest of tsc's isParenthesizedArrowFunctionExpression's certain cases: `()` (then `=>`, `:` or `{`),
+        // `(...`, `(a?`, `(public a`. A return type alone isn't: `(a, b): T = v` is a parenthesized expression)
+        FunctionArg const* first_arg = vec_function_arg_is_empty(&ret->args) ? nullptr : vec_function_arg_at(&ret->args, 0);
+        if (*a.start == '(' && (!first_arg || first_arg->rest || first_arg->question_offset || first_arg->is_parameter_property)) {
             is_definitely_function = true;
         }
+
 
     } else if (committed && p.pos[0] == '=' && p.pos[1] == '>') {
         // A lone `=>`: tsc's parseParameters says '(' expected, the list is missing
