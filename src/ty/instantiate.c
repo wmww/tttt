@@ -582,7 +582,9 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     // A function expression's type mentions what its resolved signature does (tsc: its outer type parameters), not
     // whatever the mapper has: a callback in a class method otherwise got a new instance for every composed mapper
     // that reached it (kysely's builders, docmost)
-    if (free_params_unknown && target->anonymous.function && ty_function_type_mentions(me, target, &free_params)) {
+    if (free_params_unknown && (target->anonymous.function || target->anonymous.object_literal) &&
+        ty_function_type_mentions(me, target, &free_params)
+    ) {
         free_params_unknown = false;
     }
     for (u32 i = 0; inner && i < inner->len; i++) {

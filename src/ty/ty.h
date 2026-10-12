@@ -1324,7 +1324,8 @@ Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's 
 bool ty_contains_missing(Checker* me, Ty const* ty);
 bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 count);
 // The type parameters a function expression's type (ty_function_type()) mentions, once its signature is resolved and
-// its return type inferred; false (unknown) before that or when unsure
+// its return type inferred, or an object literal's type once its property types are known; false (unknown) before that
+// or when unsure
 bool ty_function_type_mentions(Checker* me, Ty const* function_type, TyList* out);
 bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target);
 bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target);

@@ -298,6 +298,51 @@ bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 cou
 
 typedef struct FunctionMentions { TyList params; bool known; bool in_flight; } FunctionMentions;
 
+// An object literal's type (ty_object_literal()), which ty_function_type_mentions() answers for too
+static bool object_literal_type(Ty const* target) {
+    return target->kind == TY_ANONYMOUS && target->anonymous.object_literal && !target->anonymous.target &&
+        target->anonymous.free_params_unknown && !target->anonymous.function && !target->anonymous.node &&
+        !target->anonymous.is_reverse && !target->anonymous.applies_type_args && !target->anonymous.merged_value;
+}
+
+// What instantiating an object literal's type can change: the type parameters its properties' types mention. tsc keys
+// these instantiations by every outer type parameter of the literal (getObjectTypeInstantiation); tttt's were keyed by
+// the whole mapper, so the same literal of a generic function got a new instance for every mapper that reached it
+// (feathers' typebox: `Type.Object({ $gt: def, ... })` in a generic arrow, 7x tsgo's types). Unknown while a property's
+// type isn't (a getter or method still lazy), and when unsure
+static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out) {
+    u64 key[2] = { KEY_FUNCTION_TYPE_MENTIONS, (u64)(uintptr_t)ty };
+    FunctionMentions* cached = (FunctionMentions*)intern_get(&my links, key, 2);
+    if (cached) {
+        *out = cached->params;
+        return cached->known && !cached->in_flight;
+    }
+    TyObjectState const* state = ty->anonymous.state;
+    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    Members const* members = state->members;
+    if (members->call_count || members->construct_count || members->mapped) return false;
+    // (Not with a getter: one of a recursive schema, zod's `get content() { return z.array(z.tuple([Self, ...])) }`, can
+    // have been resolved inside its own circularity, and an instance resolving it again later is what gets it right:
+    // the identity instance made recursive-types.test.ts's TS2344 spurious)
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (prop->type_state != LAZY_STATE_DONE || prop->target || (prop->flags & PROP_GETTER)) return false;
+    }
+    FunctionMentions* computed = arena_new(&my arena, FunctionMentions);
+    computed->in_flight = true;
+    *intern_slot(me, &my links, key, 2) = computed;
+    TyBuf found = {0};
+    MentionWalk walk = { .collect = &found, .self = ty };
+    bool unsure = mentions_type_variables(me, ty, &walk, 0);
+    free(walk.visited);
+    computed->in_flight = false;
+    computed->known = !unsure;
+    if (!unsure) computed->params = ty_list_copy(me, found.data, found.len);
+    ty_buf_drop(&found);
+    *out = computed->params;
+    return computed->known;
+}
+
 // What instantiating a function expression's type can change: the type parameters its one signature mentions (its
 // parameters, `this`, the inferred return type). tsc keys these instantiations by the function's outer type parameters
 // (getObjectTypeInstantiation); tttt's contextually typed parameters may also carry a call's type parameters (plan 51),
@@ -306,6 +351,7 @@ typedef struct FunctionMentions { TyList params; bool known; bool in_flight; } F
 // whose types mention each other's), unknown
 bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     *out = (TyList){0};
+    if (object_literal_type(ty)) return object_literal_type_mentions(me, ty, out);
     if (!function_expression_type(ty)) return false;
     u64 key[2] = { KEY_FUNCTION_TYPE_MENTIONS, (u64)(uintptr_t)ty };
     FunctionMentions* cached = (FunctionMentions*)intern_get(&my links, key, 2);
