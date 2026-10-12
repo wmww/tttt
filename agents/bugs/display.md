@@ -166,6 +166,11 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   while a cycle cut it short (`<T2>(t2: T2) => any`). Modelling it needs the harness to pass each line's parent
   declaration and the printer to keep a cache keyed by it across ty_display() calls; ty_display.c only models the
   within-one-print case. Two tests; not worth it unless more show up (displaydiff's `other` bucket would tell).
+  genericCallOnMemberReturningClosedOverObject's *expression* lines are another mechanism (plan 55 "Known traps"):
+  `example<number>().foo("hello")` prints ten levels of `{ foo: <T2_1>(t2: T2_1) => ...` because the object literal
+  instantiated inside its own method's signature instantiation (T2 -> fresh T2') is a new type per level in tttt;
+  tsgo keys an anonymous type's instantiations by its outer type parameters (T1, not the method's T2), gets the same
+  type back and prints the cycle as `any`. A checker identity change (instantiation keys), pre-existing.
 - complexRecursiveCollections (TS2430 elaboration `map(...).filter(...).filter` vs tsc's `map(...).size`): after
   Seq<K,M> vs Collection<K,M> tsc's relation of `filter` (two overloads with `this`-typed predicates) succeeds, or is
   cut by isDeeplyNestedType as Maybe, so `size` (declared after `filter` in Collection) is the first failing

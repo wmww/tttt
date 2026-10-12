@@ -11,8 +11,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay on the pinned checkout, so a patched
   tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`** (plan 53): tsc's output formats, sorting, exit codes and flags; `scripts/clidiff.py`
-  compares stdout byte for byte. Check-only by design (readme.md): emit and watch stay out of scope until the human
-  says otherwise (asked on 10-08, no answer yet; Bun's `bun check` is check-only too).
+  compares stdout byte for byte. Check-only by design (readme.md). The human (answered 2026-10-12): JS emit is out of
+  scope (esbuild and co. cover it); .d.ts emit is our call, unclear importance. Not before the checker and perf goals.
 - **Corpora** 0 spurious everywhere; missing: webpack 5, drizzle 3, vue 3, effect 3 spurious. **DT sweep** 8592 /
   8595, **`$ExpectType`** 68631 / 68640, **flagflip** 132 / 16 / 6, **scenarios** 209 / 213, **source sweep** 3119 /
   3363 (88 / 174 repos).

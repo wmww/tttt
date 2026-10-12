@@ -126,3 +126,6 @@
   from source file' at the downstream import (its .d.ts wasn't written); tttt reads referenced projects from their
   sources and doesn't. scenarios.py leftovers (each also a diagnostics mismatch): dependencyUpdate/...absolute-non-
   root-dependency, inferredTypeFromMonorepoReference, projectReferenceRedirect/...multiple-sub-projects.
+- npm 12 defaults to `allow-remote=none`: a corpus lock entry resolved outside registry.npmjs.org breaks
+  `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten
+  2026-10-11; `--relock` may bring it back (rewrite resolved URLs to registry.npmjs.org after relocking).
