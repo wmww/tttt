@@ -406,7 +406,7 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
 
 // tsc's getMutableArrayOrTupleType of a union of arrays and tuples: each member mutable. Null if it isn't one
 static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_UNION || (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+    if (ty->kind != TY_UNION) return nullptr;
     TyBuf parts = {0};
     for (u32 i = 0; i < ty->composite.types.len; i++) {
         Ty const* member = ty->composite.types.data[i];
@@ -414,6 +414,11 @@ static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty) {
             TupleShape shape = *member->reference.target->declared.tuple;
             shape.readonly = false;
             member = ty_reference(me, ty_tuple_target(me, &shape), ty_reference_args(me, member));
+        } else if (member->kind == TY_DECLARED && member->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+            // (The empty tuple, `[] | [A]`, is its tuple target)
+            TupleShape shape = *member->declared.tuple;
+            shape.readonly = false;
+            member = ty_tuple_target(me, &shape);
         } else if (ty_is_array(me, member)) {
             member = ty_array(me, ty_rest_element_type(me, member), false);
         } else {
