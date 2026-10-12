@@ -4914,8 +4914,10 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // (Of two parts, the intersection is made with the property, of more only when its type is asked for: tsc's
             // createUnionOrIntersectionProperty defers `propTypes.length > 2`, which may explode when normalized. Of a
             // property the source doesn't have, that is a cross product tsc never makes: the `ref` of every
-            // JSX.IntrinsicElements member)
-            if (part_count <= 2) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
+            // JSX.IntrinsicElements member. One member's property is that very symbol, whose type is only resolved when
+            // it is related: relating `{ children?: ReactNode }` to every JSX.IntrinsicElements member would otherwise
+            // resolve all ~300 of DOM attributes' property types for each, lit's ssr-react)
+            if (part_count == 2) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
             FoundProp source_prop = find_prop(me, apparent_type(me, source), name, 0);
             if (!source_prop.found) {
                 // Usually the members' business already, but a member can have been related without looking at its
