@@ -19261,7 +19261,7 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationErrorsExpressions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19286,7 +19286,7 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationsAddUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

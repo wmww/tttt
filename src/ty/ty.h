@@ -2309,6 +2309,7 @@ typedef enum DeclTrackReport : uint8_t {
     DECL_REPORT_CYCLIC, // reportCyclicStructureError (createCyclicStructurePlaceholder)
 } DeclTrackReport;
 
+struct PseudoError;
 typedef struct DeclTracker {
     // A symbol the printer names (lookupSymbolChain's trackSymbol)
     void (*track_symbol)(struct DeclTracker* me, Symbol const* symbol, u32 meaning);
@@ -2318,6 +2319,9 @@ typedef struct DeclTracker {
     // A name the printer roots at `import("...")` of this file (symbolToTypeNode's import type: the specifier may only
     // reach it through a node_modules, TS2883 naming `symbol`)
     void (*track_module_file)(struct DeclTracker* me, struct SourceFile const* file, Symbol const* symbol);
+    // ReportInferenceFallback: where the printer serializes a declaration's type from its syntax (pseudo.h), what the
+    // syntax doesn't say (isolatedDeclarations' diagnostics)
+    void (*report_fallback)(struct DeclTracker* me, struct PseudoError const* node);
     void* ctx;
     // The printed type passed the length tsc serializes (reportTruncationError, reported): the printer stops
     bool truncated;
@@ -2373,6 +2377,9 @@ typedef struct TyDisplay {
     // intersections, function and conditional types)
     bool constituent_node;
     DeclTracker* tracker; // Declaration emit: null everywhere else
+    // Printing the checker's type where the syntax already reported (tsgo's suppressReportInferenceFallback): what is
+    // printed inside doesn't report to the tracker again
+    bool suppress_fallback;
     bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
     // The parameters of the signatures being printed (innermost first): the fake scope tsc's enterNewScope makes for a
     // signature, where a reused `typeof x` must still mean the same (see name_accessible())

@@ -2265,7 +2265,10 @@ static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* c
 }
 
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
-static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional);
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional, PseudoReporter const* rep);
+static void pseudo_report(PseudoReporter const* rep, PseudoError error);
+static PseudoReporter const* display_reporter(TyDisplay d, PseudoReporter* storage);
+static void display_pseudo_with_fallback(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
 static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo);
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
@@ -2511,7 +2514,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
                 type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
             }
             bool optional_annotated = !add_undefined && param->decl->explicit_optional;
-            bool equivalent = pseudo_equivalent(me, d, pseudo, type, optional_annotated);
+            PseudoReporter storage;
+            PseudoReporter const* rep = display_reporter(d, &storage);
+            bool equivalent = pseudo_equivalent(me, d, pseudo, type, optional_annotated, rep);
+            // (Its error nodes reported: its type is printed without reporting again)
+            bool reported = !equivalent && rep && pseudo->kind == PSEUDO_INFERRED && pseudo->count;
             // (Whether the pseudo type has undefined: its type's say if it has one, else its syntax)
             Ty const* as_type = add_undefined ? pseudo_type(me, d, pseudo) : nullptr;
             bool lacks_undefined = as_type ? ty_without_undefined(me, as_type) == as_type : !pseudo_could_be_undefined(pseudo);
@@ -2519,15 +2526,16 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
                 pseudo = pseudo_add_undefined(me, pseudo);
             } else if (!equivalent && add_undefined && lacks_undefined) {
                 pseudo = pseudo_add_undefined(me, pseudo);
-                equivalent = pseudo_equivalent(me, d, pseudo, type, false);
+                equivalent = pseudo_equivalent(me, d, pseudo, type, false, rep);
             }
             if (equivalent) {
                 TyDisplay pseudo_d = param_d;
                 pseudo_d.mapped_by = instantiated ? sig : nullptr;
-                display_pseudo(me, pseudo_d, pseudo, type);
+                display_pseudo_with_fallback(me, pseudo_d, pseudo, type);
                 approx_add(d, name_length);
                 continue;
             }
+            if (reported) param_d.suppress_fallback = true;
         }
         if (reused && reuses_nodes(param_d) && !param->optional && annotation_plus_undefined(me, &binding->explicit_type, shown)) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
@@ -2547,6 +2555,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
         !(fresh_anonymous && ret->kind == TY_ANONYMOUS);
     if (predicate) {
+        // (An inferred predicate: the pseudo return type doesn't say it, reported at the function)
+        PseudoReporter storage;
+        PseudoReporter const* rep = reusable && reuses_nodes(d) && !d.reused && !root->class_instance && !function->predicate &&
+            !function->ret_explicit ? display_reporter(d, &storage) : nullptr;
+        pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = function });
         // In an instantiated signature, a parameter it names isn't the one of the instantiated signature (tsc resolves
         // it to the declaration's own), so the whole predicate is printed
         bool names_param = function && function->predicate && !function->predicate->is_this;
@@ -2572,14 +2585,17 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // TyDisplay.fresh_params)
     if (reusable && reuses_nodes(d) && !d.reused && !root->class_instance) {
         Pseudo const* pseudo = pseudo_of_return(me, function);
-        if (pseudo_equivalent(me, d, pseudo, ret, false)) {
+        PseudoReporter storage;
+        if (pseudo_equivalent(me, d, pseudo, ret, false, display_reporter(d, &storage))) {
             // (Reused through the instantiation's mapper, tsgo's ctx.mapper: what equivalence let through is an error
             // type's instantiation, `T` of `Array<error>` prints `any`)
             TyDisplay pseudo_d = ret_d;
             pseudo_d.mapped_by = instantiated ? sig : nullptr;
-            display_pseudo(me, pseudo_d, pseudo, ret);
+            display_pseudo_with_fallback(me, pseudo_d, pseudo, ret);
             return;
         }
+        // (serializeInferredReturnTypeForSignature: the checker's type, without reporting in it)
+        ret_d.suppress_fallback = true;
     }
     // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
     // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
@@ -2960,7 +2976,7 @@ static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo) {
     impossible;
 }
 
-static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional);
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional, PseudoReporter const* rep);
 
 static bool pseudo_is_this_param(PseudoParam const* param) {
     Binding const* binding = &param->arg->initializer.binding;
@@ -2980,18 +2996,68 @@ static TyDisplay pseudo_enter_signature(Checker* me, TyDisplay d, Signature cons
     return d;
 }
 
-// pseudoParametersEquivalentToParameters
-static bool pseudo_params_equivalent(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig) {
+// ReportInferenceFallback where equivalence reports (reportErrors)
+static void pseudo_report(PseudoReporter const* rep, PseudoError error) {
+    if (rep) rep->report(rep->ctx, &error);
+}
+
+static void pseudo_report_item(PseudoReporter const* rep, ObjectExprItem const* item) {
+    pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_OBJECT_MEMBER, .item = item });
+}
+
+// An Inferred pseudo type's error nodes, else its expression (or its function, for a signature's return type).
+// `name_parent`: pseudoTypeToNode's, see PseudoError.name_parent
+static void pseudo_report_inferred(PseudoReporter const* rep, Pseudo const* pseudo, bool name_parent) {
+    if (!rep) return;
+    for (u32 i = 0; i < pseudo->count; i++) pseudo_report(rep, pseudo->errors[i]);
+    if (pseudo->count) return;
+    if (pseudo->signature_return) {
+        pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function });
+    } else {
+        pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_EXPRESSION, .expr = pseudo->expr, .name_parent = name_parent });
+    }
+}
+
+static void tracker_report_fallback(void* ctx, PseudoError const* node) {
+    DeclTracker* tracker = ctx;
+    tracker->report_fallback(tracker, node);
+}
+
+// Where the printer reports for declaration emit (tsgo's tracker's ReportInferenceFallback), null where it doesn't
+static PseudoReporter const* display_reporter(TyDisplay d, PseudoReporter* storage) {
+    if (!d.tracker || !d.tracker->report_fallback || d.suppress_fallback) return nullptr;
+    *storage = (PseudoReporter){ .report = tracker_report_fallback, .ctx = d.tracker };
+    return storage;
+}
+
+// pseudoParametersEquivalentToParameters. `where`: what is reported when the lists don't match (tsgo's
+// nonParamErrorLocation), `function`: whose parameters they are
+static bool pseudo_params_equivalent(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig,
+    PseudoReporter const* rep, PseudoError where, FunctionImpl const* function
+) {
     if (sig->this_type) {
-        if (!count || !pseudo_is_this_param(&params[0])) return false;
-        if (!pseudo_equivalent(me, d, params[0].type, sig->this_type, params[0].optional)) return false;
+        if (!count || !pseudo_is_this_param(&params[0])) {
+            pseudo_report(rep, where); // (a missing `this` parameter)
+            return false;
+        }
+        if (!pseudo_equivalent(me, d, params[0].type, sig->this_type, params[0].optional, nullptr)) {
+            pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_PARAMETER, .function = function, .arg = params[0].arg });
+            return false;
+        }
         params++;
         count--;
     }
-    if (count != sig->param_count) return false;
+    if (count != sig->param_count) {
+        pseudo_report(rep, where);
+        return false;
+    }
     for (u32 i = 0; i < count; i++) {
-        if (params[i].optional != sig->params[i].optional) return false;
-        if (!pseudo_equivalent(me, d, params[i].type, sig->params[i].type, params[i].optional)) return false;
+        if (params[i].optional != sig->params[i].optional ||
+            !pseudo_equivalent(me, d, params[i].type, sig->params[i].type, params[i].optional, nullptr)
+        ) {
+            pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_PARAMETER, .function = function, .arg = params[i].arg });
+            return false;
+        }
     }
     return true;
 }
@@ -3004,13 +3070,6 @@ static bool pseudo_matches_predicate(Checker* me, TyDisplay d, Pseudo const* ret
     if (!node->is_this && !csview_equals_sv(span_sv(node->name), atom_sv(predicate->param_name))) return false;
     if (predicate->type) return node->has_type && node_type(me, d, &node->type) == predicate->type;
     return !node->has_type;
-}
-
-// The return type part of a signature's equivalence
-static bool pseudo_return_equivalent(Checker* me, TyDisplay d, Pseudo const* ret, Signature const* sig) {
-    TyPredicate const* predicate = signature_predicate(me, sig);
-    if (predicate) return pseudo_matches_predicate(me, d, ret, predicate);
-    return pseudo_equivalent(me, d, ret, signature_return_type(me, sig), false);
 }
 
 // The property of an object type that an object literal's member declares
@@ -3031,16 +3090,61 @@ static u32 prop_declaration_count(Prop const* prop) {
     return prop->decl->decl_span_count;
 }
 
-// pseudoTypeEquivalentToType. `optional`: the declaration is optional (its type's undefined isn't in the pseudo type)
-static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional) {
+// An object literal's member against its property (`type` without the undefined its optionality adds)
+static bool pseudo_member_equivalent(Checker* me, TyDisplay d, PseudoMember const* member, Prop const* prop, Ty const* type,
+    PseudoReporter const* rep
+) {
+    switch (member->kind) {
+        case PSEUDO_MEMBER_PROPERTY:
+            if (pseudo_equivalent(me, d, member->type, type, member->optional, nullptr)) return true;
+            if (member->type->kind == PSEUDO_INFERRED && member->type->count) {
+                pseudo_report_inferred(rep, member->type, false); // (its error nodes)
+            } else if (!pseudo_is_structural(member->type)) {
+                pseudo_report_item(rep, member->item);
+            }
+            return false;
+        case PSEUDO_MEMBER_METHOD: {
+            Signature const* sig = ty_single_signature(me, type, false, false);
+            if (!sig) return true; // (Not a single call signature: nothing to compare with)
+            signature_resolve(me, sig);
+            TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
+            PseudoError where = { .kind = PSEUDO_ERROR_OBJECT_MEMBER, .item = member->item };
+            if (!pseudo_params_equivalent(me, sig_d, member->params, member->param_count, sig, rep, where, member->function)) {
+                return false;
+            }
+            TyPredicate const* predicate = signature_predicate(me, sig);
+            bool same = predicate ? pseudo_matches_predicate(me, sig_d, member->type, predicate) :
+                pseudo_equivalent(me, sig_d, member->type, signature_return_type(me, sig), false, nullptr);
+            if (!same) pseudo_report_item(rep, member->item);
+            return same;
+        }
+        case PSEUDO_MEMBER_GETTER:
+            if (pseudo_equivalent(me, d, member->type, type, false, nullptr)) return true;
+            pseudo_report_item(rep, member->item);
+            return false;
+        case PSEUDO_MEMBER_SETTER: {
+            Ty const* write = prop_write_type(me, prop);
+            if (member->param_count && pseudo_equivalent(me, d, member->params[0].type, write ? write : type, false, nullptr)) {
+                return true;
+            }
+            pseudo_report_item(rep, member->item);
+            return false;
+        }
+    }
+    impossible;
+}
+
+// pseudoTypeEquivalentToType. `optional`: the declaration is optional (its type's undefined isn't in the pseudo type).
+// `rep`: null, or where to report what makes it not equivalent (reportErrors)
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional, PseudoReporter const* rep) {
     if (!ty) return false;
     // (An error type is taken to be whatever the syntax says)
     if (ty->flags & TYF_ERROR) return true;
     Ty const* from_pseudo = pseudo_type(me, d, pseudo);
-    if (from_pseudo && d.fresh_params.len && mentions(me, from_pseudo, d.fresh_params)) return false;
-    if (from_pseudo == ty) return true;
+    bool fresh = from_pseudo && d.fresh_params.len && mentions(me, from_pseudo, d.fresh_params);
+    if (from_pseudo == ty && !fresh) return true;
     Ty const* stripped = optional ? ty_without_undefined(me, ty) : ty;
-    if (from_pseudo) {
+    if (from_pseudo && !fresh) {
         if (optional && stripped == from_pseudo) return true;
         if (ty_regular(me, from_pseudo) == ty_regular(me, ty)) return true;
         Ty const* target = optional ? stripped : ty;
@@ -3051,6 +3155,12 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
         }
     }
     switch (pseudo->kind) {
+        case PSEUDO_INFERRED:
+            pseudo_report_inferred(rep, pseudo, false);
+            return false;
+        case PSEUDO_NO_RESULT:
+            pseudo_report(rep, pseudo_no_result_node(pseudo));
+            return false;
         case PSEUDO_OBJECT: {
             if (!(stripped->flags & TYF_OBJECT)) return false;
             Members const* members = ty_members(me, stripped);
@@ -3060,33 +3170,13 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
                 Prop const* prop = pseudo_member_prop(members, member->item);
-                if (!prop) return false;
-                bool prop_optional = (prop->flags & PROP_OPTIONAL) != 0;
-                if (member->optional != prop_optional) return false;
-                Ty const* type = ty_remove_missing(me, prop_type(me, prop), prop_optional);
-                switch (member->kind) {
-                    case PSEUDO_MEMBER_PROPERTY:
-                        if (!pseudo_equivalent(me, d, member->type, type, member->optional)) return false;
-                        break;
-                    case PSEUDO_MEMBER_METHOD: {
-                        Signature const* sig = ty_single_signature(me, type, false, false);
-                        if (!sig) continue;
-                        TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
-                        if (!pseudo_params_equivalent(me, sig_d, member->params, member->param_count, sig)) return false;
-                        if (!pseudo_return_equivalent(me, sig_d, member->type, sig)) return false;
-                        break;
-                    }
-                    case PSEUDO_MEMBER_GETTER:
-                        if (!pseudo_equivalent(me, d, member->type, type, false)) return false;
-                        break;
-                    case PSEUDO_MEMBER_SETTER: {
-                        Ty const* write = prop_write_type(me, prop);
-                        if (!member->param_count || !pseudo_equivalent(me, d, member->params[0].type, write ? write : type, false)) {
-                            return false;
-                        }
-                        break;
-                    }
+                bool prop_optional = prop && (prop->flags & PROP_OPTIONAL) != 0;
+                if (!prop || member->optional != prop_optional) {
+                    pseudo_report_item(rep, member->item);
+                    return false;
                 }
+                Ty const* type = ty_remove_missing(me, prop_type(me, prop), prop_optional);
+                if (!pseudo_member_equivalent(me, d, member, prop, type, rep)) return false;
             }
             return true;
         }
@@ -3100,23 +3190,52 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             TyList args = ty_reference_args(me, stripped);
             if (shape->arity != pseudo->count || args.len < shape->arity) return false;
             for (u32 i = 0; i < pseudo->count; i++) {
-                if (!pseudo_equivalent(me, d, pseudo->types[i], args.data[i], false)) return false;
+                if (!pseudo_equivalent(me, d, pseudo->types[i], args.data[i], false, rep)) return false;
             }
             return true;
         }
         case PSEUDO_SIGNATURE: {
             Signature const* sig = ty_single_signature(me, stripped, false, false);
             if (!sig) return false;
-            if (sig->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) return false;
+            signature_resolve(me, sig);
+            PseudoError where = { .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function };
+            if (sig->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) {
+                pseudo_report(rep, where);
+                return false;
+            }
             TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
-            if (!pseudo_params_equivalent(me, sig_d, pseudo->params, pseudo->count, sig)) return false;
-            return pseudo_return_equivalent(me, sig_d, pseudo->ret, sig);
+            if (!pseudo_params_equivalent(me, sig_d, pseudo->params, pseudo->count, sig, rep, where, pseudo->function)) return false;
+            TyPredicate const* predicate = signature_predicate(me, sig);
+            if (predicate) {
+                if (pseudo_matches_predicate(me, sig_d, pseudo->ret, predicate)) return true;
+                pseudo_report(rep, where);
+                return false;
+            }
+            // (What makes the return type differ is reported in it)
+            return pseudo_equivalent(me, sig_d, pseudo->ret, signature_return_type(me, sig), false, rep);
         }
         default: return false;
     }
 }
 
+Ty const* ty_pseudo_type(Checker* me, Pseudo const* pseudo) { return pseudo_type(me, (TyDisplay){0}, pseudo); }
+
+bool ty_pseudo_equivalent(Checker* me, Pseudo const* pseudo, Ty const* ty, bool optional, PseudoReporter const* reporter) {
+    return pseudo_equivalent(me, (TyDisplay){0}, pseudo, ty, optional, reporter);
+}
+
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
+
+// pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type without reporting
+// in it
+static void display_pseudo_with_fallback(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
+    if (pseudo->kind == PSEUDO_INFERRED) {
+        PseudoReporter storage;
+        pseudo_report_inferred(display_reporter(d, &storage), pseudo, false);
+        d.suppress_fallback = true;
+    }
+    display_pseudo(me, d, pseudo, ty);
+}
 
 // What tsgo's approximateLength counts for a node reused from the source (tryReuseExistingNodeHelper): its range, with
 // the whitespace before it
@@ -3197,10 +3316,16 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             display_node(me, d, pseudo->node);
             return;
         case PSEUDO_INFERRED:
-        case PSEUDO_NO_RESULT:
+        case PSEUDO_NO_RESULT: {
+            // (What the syntax doesn't say: reported, then the checker's type)
+            PseudoReporter storage;
+            PseudoReporter const* rep = display_reporter(d, &storage);
+            if (pseudo->kind == PSEUDO_NO_RESULT) pseudo_report(rep, pseudo_no_result_node(pseudo));
+            else pseudo_report_inferred(rep, pseudo, true);
             if (ty) ty_display(me, d, ty);
             else out_lit(d, "any");
             return;
+        }
         case PSEUDO_MAYBE_CONST:
             display_pseudo(me, d, pseudo->in_const ? pseudo->const_type : pseudo->regular_type, ty);
             return;
@@ -3547,6 +3672,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // An object literal's property assignment or accessor whose pseudo type says what its type is: printed from its
         // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
         // literal's own type, is printed as a type)
+        bool suppress = false;
         ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared->decl->item;
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         if (item && ((item->tag == OBJECT_ITEM_PROPERTY && !requires_widening(type)) || item_accessor)) {
@@ -3557,17 +3683,20 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             ) {
                 item_type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
             }
-            if (pseudo_equivalent(me, d, pseudo, item_type, false)) {
+            PseudoReporter storage;
+            if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
                 if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
                 TyDisplay name_d = d;
                 name_d.tracker = nullptr; // (named from its own declaration, see track_property())
                 display_member_name(me, name_d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 out_lit(d, ": ");
-                display_pseudo(me, d, pseudo, item_type);
+                display_pseudo_with_fallback(me, d, pseudo, item_type);
                 out_lit(d, "; ");
                 continue;
             }
+            // (Its error nodes reported: its type is printed without reporting again)
+            if (pseudo->kind == PSEUDO_INFERRED && pseudo->count) suppress = true;
         }
         if (prop->flags & PROP_READONLY) {
             approx_add(d, 9);
@@ -3633,6 +3762,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 annotation = &param->explicit_type;
             }
         }
+        if (suppress) d.suppress_fallback = true;
         TyDisplay type_d = d;
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
@@ -3651,7 +3781,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
         // (A mapped one from an optional declaration reuses the annotation as it is: tsgo's pseudoTypeEquivalentToType
         // with isOptionalAnnotated, requiresAddingImplicitUndefined being only for reverse mapped ones)
-        if (variable_pseudo && pseudo_equivalent(me, d, variable_pseudo, shown, false)) {
+        if (variable_pseudo && pseudo_equivalent(me, d, variable_pseudo, shown, false, nullptr)) {
             display_pseudo(me, d, variable_pseudo, shown);
         }
         else if (reverse && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&

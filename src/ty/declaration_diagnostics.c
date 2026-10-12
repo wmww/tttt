@@ -13,6 +13,7 @@
 #include "symbol_chain.h"
 #include "several_types.h"
 #include "expr.h"
+#include "ty/pseudo.h"
 
 // tsc's declaration transformer walks what a `.d.ts` would contain: the visible statements (everything in a script,
 // the exported ones and what `export { x }` names in a module), and in them the members that are emitted. Wherever a
@@ -49,17 +50,43 @@ typedef struct Near {
     csview name; // getTextOfNode of its name, empty for an export assignment
 } Near;
 
-// The ancestors of the node the builder looks at, as far as tsc's diagnostics and isContextuallyTyped care
+// Where a node is, as far as tsc's diagnostics for it care (tsgo looks at its parents, tttt finds it from the
+// declaration being emitted, see locate())
 typedef struct Place {
     Near near;
     // The node is the initializer of `near` (or the type of a type assertion that is), through parentheses and type
     // assertions (createExpressionError's `parentDeclaration === parent`)
     bool direct;
-    // An ancestor is a call, JSX or has a type annotation (isContextuallyTyped, which stops at nothing: function
-    // declarations don't count but their ancestors do)
-    bool contextual;
-    bool heritage; // In a class's `extends` clause: every fallback is TS9021
+    // The node is the body of this arrow function (whose return type a name reported there is about)
+    FunctionImpl const* arrow_body;
 } Place;
+
+// An accessor pair: the getter, the setter (either may be null)
+typedef struct Accessors {
+    FunctionImpl const* getter;
+    FunctionImpl const* setter;
+    Span getter_name, setter_name;
+} Accessors;
+
+// The declaration whose type is being serialized: the nodes reported while serializing it are found in it
+typedef enum RootKind : uint8_t {
+    ROOT_NONE,
+    ROOT_VARIABLE, // `binding`
+    ROOT_FIELD, // `field`
+    ROOT_FUNCTION, // `function` (its parameters and return type)
+    ROOT_EXPORT_DEFAULT, // `expr`, of the statement `at`
+} RootKind;
+
+typedef struct Root {
+    RootKind kind;
+    union {
+        InitializedBinding const* binding;
+        ClassItem const* field;
+        FunctionImpl const* function;
+        Expr const* expr;
+    };
+    Span at;
+} Root;
 
 // The declaration being emitted whose diagnostics a name it can't use gets (tsc's getSymbolAccessibilityDiagnostic,
 // createGetSymbolAccessibilityDiagnosticForNode of the innermost declaration that canProduceDiagnostics)
@@ -126,6 +153,11 @@ typedef struct Walk {
     // Walking a type node the syntactic builder reuses (an assertion's, a function expression's annotations): a name
     // that isn't accessible from here makes it fall back instead (trackExistingEntityName)
     bool reusing;
+    Root root; // The declaration being serialized
+    Accessors class_pair; // Serializing a class accessor: its pair
+    // The declaration's type is printed because its pseudo type doesn't say it (tsgo's typeToTypeNode fallback): the
+    // pseudo types of what it prints report (else they did already)
+    bool print_reports;
     // The diagnostics reported since this index are of the declaration being emitted (tsc deduplicates them)
     isize_t emitting_errors;
     DeclTracker tracker;
@@ -151,8 +183,6 @@ typedef struct SpecifierMemo {
     cstr plain; // getSpecifierForModuleSymbol without a mode of its own
     cstr unsafe; // Of the import type naming the module, empty if portable
 } SpecifierMemo;
-
-static Place place_at(Near near, bool direct) { return (Place){ .near = near, .direct = direct }; }
 
 // Symbol accessibility diagnostics (TS4xxx)
 
@@ -414,6 +444,7 @@ static void print_inferred(Walk* me, Ty const* type) {
     cstr text = cstr_init();
     ty_display(my checker, (TyDisplay){
         .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
+        .suppress_fallback = !my print_reports,
     }, type);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
         fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.size, my emitting.name.buf, cstr_str(&text));
@@ -433,6 +464,7 @@ static bool fallback_begin(Walk* me) {
 static bool fallback_end(Walk* me, bool outer, Ty const* type) {
     bool fell_back = my fell_back;
     if (fell_back) print_inferred(me, type);
+    my print_reports = false;
     my fell_back = outer || fell_back;
     return fell_back;
 }
@@ -766,10 +798,6 @@ static void report_heritage(Walk* me, Span at) {
 
 // createExpressionError; code 0: the message by what the expression is the initializer of
 static void report_expression(Walk* me, Span at, Place place, unsigned code, char const* message) {
-    if (place.heritage) {
-        report_heritage(me, at);
-        return;
-    }
     if (place.near.kind == NEAR_NONE) {
         report(me, at, code ? code : 9013, code ? message : msg_expression);
         return;
@@ -788,10 +816,6 @@ static void report_expression(Walk* me, Span at, Place place, unsigned code, cha
 
 // createObjectLiteralError, createArrayLiteralError: the error and the nearest declaration
 static void report_with_near(Walk* me, Span at, Place place, unsigned code, char const* message) {
-    if (place.heritage) {
-        report_heritage(me, at);
-        return;
-    }
     add_related(report(me, at, code, message), place.near);
 }
 
@@ -870,68 +894,11 @@ static bool is_dynamic_name(Expr const* key) {
     return true;
 }
 
-// tsc's canAddUndefined: `T | undefined` can be written without knowing what T is
-static bool can_add_undefined(Walk* me, TypeNode const* type) {
-    if (!my strict_null_checks) return true;
-    switch (type->tag) {
-        case TYPE_ANY:
-        case TYPE_UNKNOWN:
-        case TYPE_NEVER:
-        case TYPE_VOID:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING:
-        case TYPE_SYMBOL:
-        case TYPE_BIGINT:
-        case TYPE_VALUE:
-        case TYPE_CALLABLE:
-        case TYPE_INTERFACE:
-        case TYPE_TEMPLATE:
-            return true;
-        case TYPE_ARRAY: return !type->array.readonly; // (`readonly T[]` is a type operator)
-        case TYPE_TUPLE: return !type->tuple.readonly;
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &type->composite) {
-                if (!i->placeholder && !can_add_undefined(me, i)) return false;
-            }
-            return true;
-        default: return false;
-    }
-}
+// The syntactic builder (tsgo's pseudochecker, pseudo.c) and what the node builder reports from it
 
-// tsc's isConstTypeReference: `as const`
-static bool is_const_type(TypeNode const* type) {
-    return type->tag == TYPE_IDENTIFIER && span_equals(type->identifier->name, "const") &&
-        !identifier_type_namespace_count(type->identifier) && !vec_spanned_type_size(&type->identifier->generic_params);
-}
-
-// Where the type of a type assertion is written
-static Span assertion_type_span(Expr const* expr) {
-    AsTypeExpr const* as = expr->as_type;
-    char const* end = span_end_ptr(expr->inner_span);
-    char const* start = span_end_ptr(as->keyword_span);
-    if (as->angle_bracket_syntax) {
-        start = span_start_ptr(expr->inner_span) + 1;
-        end = span_start_ptr(expr_outer_span(&as->expr));
-        while (end > start && end[-1] != '>') end--;
-        if (end > start) end--;
-    }
-    while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;
-    while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
-    return span_make_in(expr->inner_span, start, end);
-}
-
-// The syntactic builder
-
-static bool type_of_expression(Walk* me, Expr const* expr, Place place, bool const_context, bool add_undefined,
-    bool preserve_literals);
 static void check_written_type(Walk* me, TypeNode const* type);
 static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig sig, bool declaration);
 static void check_generic(Walk* me, Generic const* generic, EmitSig sig);
-static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback,
-    Span at);
-static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, Place place, bool in_function);
 
 // The kind of `near` a function is
 static NearKind function_kind(FunctionImpl const* fn) {
@@ -942,169 +909,438 @@ static NearKind function_kind(FunctionImpl const* fn) {
     return NEAR_FUNCTION_DECLARATION;
 }
 
-// typeFromTypeAssertion
-static bool type_of_assertion(Walk* me, Expr const* expr, Place place, bool add_undefined) {
-    AsTypeExpr const* as = expr->as_type;
-    Place inner = place;
-    inner.contextual = true;
-    if (is_const_type(&as->type)) return type_of_expression(me, &as->expr, inner, true, add_undefined, false);
-    bool outer_reusing = my reusing;
-    my reusing = true;
-    check_written_type(me, &as->type);
-    my reusing = outer_reusing;
-    // serializeExistingTypeNodeWithFallback
-    if (add_undefined && !can_add_undefined(me, &as->type)) {
-        report_expression(me, assertion_type_span(expr), place, 0, nullptr);
-    }
-    return false;
+static Near parameter_near(FunctionArg const* arg) {
+    return (Near){ .kind = NEAR_PARAMETER, .span = arg->span, .name = span_sv(arg->initializer.binding.content_span) };
 }
 
-// Whether a statement has a `return` in it (not in a nested function)
-static bool has_return(Statement const* me) {
-    switch (my tag) {
-        case STATEMENT_RETURN_EXPR: return true;
-        case STATEMENT_BLOCK:
-            for_each (i, vec_statement, &my block.statements) {
-                if (has_return(i)) return true;
-            }
-            return false;
-        case STATEMENT_IF_ELSE:
-            for_each (i, vec_statement, &my if_else.statements) {
-                if (has_return(i)) return true;
-            }
-            return false;
-        case STATEMENT_FOR_LOOP: return has_return(&my for_loop->initialization) || has_return(&my for_loop->body);
-        case STATEMENT_FOR_EACH_LOOP: return has_return(&my for_each_loop->body);
-        case STATEMENT_SWITCH:
-            for_each (i, vec_switch_case, &my switch_->cases) {
-                for_each (j, vec_statement, &i->statements) {
-                    if (has_return(j)) return true;
-                }
-            }
-            return false;
-        case STATEMENT_TRY_CATCH: {
-            VecStatement const* blocks[] = { &my try_catch->try_block.statements, &my try_catch->catch_block.statements,
-                &my try_catch->finally_block.statements };
-            for (u32 b = 0; b < c_arraylen(blocks); b++) {
-                for_each (i, vec_statement, blocks[b]) {
-                    if (has_return(i)) return true;
-                }
-            }
-            return false;
-        }
-        case STATEMENT_LABELED: return has_return(my labeled.body);
-        case STATEMENT_WITH: return has_return(&my with->body);
+static Near variable_near(Binding const* binding) {
+    return (Near){ .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) };
+}
+
+static Near field_near(ClassItem const* field) {
+    return (Near){ .kind = NEAR_PROPERTY, .span = field->field.name_span, .name = span_sv(field->field.name_span) };
+}
+
+// Finding a reported node in the declaration being serialized: the descent of the pseudochecker's builder (pseudo.c),
+// keeping what tsc's findNearestDeclaration and createExpressionError's parent would see
+typedef struct Search {
+    PseudoError const* target;
+    Place found;
+    ObjectExpr const* object; // The object literal the target is a member (or a member's function) of
+    NearKind function_kind; // The target is a function: what kind (an object literal's method isn't is_method)
+    bool done;
+} Search;
+
+static bool search_found(Search* me, Near near, bool direct, FunctionImpl const* arrow_body) {
+    my found = (Place){ .near = near, .direct = direct, .arrow_body = arrow_body };
+    my done = true;
+    return true;
+}
+
+static bool target_is_expr(PseudoError const* target, Expr const* expr) {
+    switch (target->kind) {
+        case PSEUDO_ERROR_ARRAY:
+        case PSEUDO_ERROR_SPREAD_ELEMENT:
+        case PSEUDO_ERROR_CLASS:
+        case PSEUDO_ERROR_EXPRESSION: return target->expr == expr;
         default: return false;
     }
 }
 
-// typeFromSingleReturnExpression: a function whose body is one expression, or that has a single `return` directly in
-// its body. Whether the builder fell back
-static bool type_of_single_return(Walk* me, FunctionImpl const* fn, Place place) {
-    if (!fn->has_body || fn->body_missing) return true;
-    // (getFunctionFlags & FunctionFlags.AsyncGenerator: either flag)
-    if (fn->is_async || fn->is_generator) return true;
-    Expr const* candidate = nullptr;
-    Near near = place.near;
+static bool target_is_function(PseudoError const* target, FunctionImpl const* fn) {
+    return (target->kind == PSEUDO_ERROR_FUNCTION || target->kind == PSEUDO_ERROR_ACCESSOR) && target->function == fn;
+}
+
+static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearKind kind);
+
+// `direct`: the expression is `near`'s initializer (through type assertions), `arrow_body`: it is that one's body
+static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, FunctionImpl const* arrow_body) {
+    if (target_is_expr(my target, expr)) return search_found(me, near, direct, arrow_body);
+    switch (expr->tag) {
+        case EXPR_AS_TYPE: return search_expr(me, &expr->as_type->expr, near, direct, nullptr);
+        case EXPR_OBJECT:
+            for_each (i, vec_object_expr_item, &expr->object) {
+                bool member = my target->kind == PSEUDO_ERROR_OBJECT_MEMBER || my target->kind == PSEUDO_ERROR_COMPUTED_NAME;
+                if (member && my target->item == i) {
+                    my object = &expr->object;
+                    return search_found(me, near, false, nullptr);
+                }
+                if (i->tag == OBJECT_ITEM_PROPERTY && search_expr(me, &i->value, near, false, nullptr)) return true;
+                bool function = i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
+                if (function && i->value.tag == EXPR_FUNCTION) {
+                    if (target_is_function(my target, i->value.function)) my object = &expr->object;
+                    NearKind kind = i->tag == OBJECT_ITEM_METHOD ? NEAR_METHOD : function_kind(i->value.function);
+                    if (search_function(me, i->value.function, near, kind)) return true;
+                }
+            }
+            return false;
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &expr->array) {
+                if (search_expr(me, i, near, false, nullptr)) return true;
+            }
+            return false;
+        case EXPR_FUNCTION: return search_function(me, expr->function, near, function_kind(expr->function));
+        default: return false;
+    }
+}
+
+// `kind`: what the function is (as a nearest declaration)
+static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearKind kind) {
+    if (target_is_function(my target, fn)) {
+        my function_kind = kind;
+        return search_found(me, near, false, nullptr);
+    }
+    for_each (i, vec_function_arg, &fn->args) {
+        if (my target->kind == PSEUDO_ERROR_PARAMETER && my target->arg == i) return search_found(me, near, false, nullptr);
+        Expr const* init = initialized_binding_value(&i->initializer);
+        if (init->tag != EXPR_IMPLICIT_ANY && search_expr(me, init, parameter_near(i), true, nullptr)) return true;
+    }
+    if (!fn->has_body || fn->body_missing) return false;
     if (fn->expression_body) {
         Statement const* ret = vec_statement_at(&fn->body.statements, 0);
-        if (ret && ret->tag == STATEMENT_RETURN_EXPR) candidate = &ret->expr;
-    } else {
-        // (forEachReturnStatement: a second `return`, or one that isn't directly in the body, means none)
-        bool seen = false;
-        for_each (i, vec_statement, &fn->body.statements) {
-            if (i->tag == STATEMENT_RETURN_EXPR) {
-                Expr const* expr = statement_is_bare_return(i) ? nullptr : &i->expr;
-                if (!candidate) {
-                    candidate = expr;
-                    if (seen && !expr) continue;
-                    seen = true;
-                    continue;
-                }
-                candidate = nullptr;
-                break;
-            }
-            if (has_return(i)) {
-                candidate = nullptr;
-                break;
-            }
+        return ret && ret->tag == STATEMENT_RETURN_EXPR && search_expr(me, &ret->expr, near, false, fn);
+    }
+    // (A `return` directly in the body: the function is the nearest declaration of what it returns)
+    for_each (i, vec_statement, &fn->body.statements) {
+        if (i->tag != STATEMENT_RETURN_EXPR || statement_is_bare_return(i)) continue;
+        if (search_expr(me, &i->expr, (Near){ .kind = kind, .span = function_error_span(fn) }, false, nullptr)) return true;
+    }
+    return false;
+}
+
+// Where a reported node is in the declaration being serialized (nowhere: a node of some other declaration)
+static Search locate(Walk* me, PseudoError const* target) {
+    Search search = { .target = target };
+    Root const* root = &my root;
+    switch (root->kind) {
+        case ROOT_VARIABLE: {
+            Expr const* init = initialized_binding_value(root->binding);
+            if (init->tag != EXPR_IMPLICIT_ANY) search_expr(&search, init, variable_near(&root->binding->binding), true, nullptr);
+            break;
         }
-        // The nearest declaration of a returned expression is the function the `return` is in
-        near = (Near){ .kind = function_kind(fn), .span = function_error_span(fn) };
+        case ROOT_FIELD:
+            if (root->field->field.value.tag != EXPR_IMPLICIT_ANY) {
+                search_expr(&search, &root->field->field.value, field_near(root->field), true, nullptr);
+            }
+            break;
+        case ROOT_FUNCTION: search_function(&search, root->function, (Near){0}, function_kind(root->function)); break;
+        case ROOT_EXPORT_DEFAULT:
+            search_expr(&search, root->expr, (Near){ .kind = NEAR_EXPORT_ASSIGNMENT, .span = root->at }, true, nullptr);
+            break;
+        case ROOT_NONE: break;
     }
-    if (!candidate) return true;
-    if (place.contextual) {
-        // Only a type assertion's type can be relied on
-        if (candidate->tag == EXPR_AS_TYPE && !candidate->as_type->is_satisfies) return is_const_type(&candidate->as_type->type);
-        return true;
-    }
-    return type_of_expression(me, candidate, (Place){ .near = near }, false, false, false);
+    return search;
 }
 
-// createReturnFromSignature, and the report of inferReturnTypeOfSignatureSignature. Whether the builder fell back. `at`:
-// where the function's diagnostics go, if not function_error_span()
-static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback,
-    Span at
-) {
-    if (fn->ret_explicit || fn->predicate) return false;
-    if (!type_of_single_return(me, fn, place)) return false;
-    if (!report_fallback) return true;
-    if (place.heritage) {
-        report_heritage(me, function_error_span(fn));
-        return true;
-    }
-    if (kind == NEAR_GET_ACCESSOR || kind == NEAR_SET_ACCESSOR) return true; // (the caller reports the accessor pair)
-    unsigned code = 0;
-    char const* message = nullptr;
-    kind_error(kind, &code, &message);
-    // createReturnTypeError: the nearest declaration (none for a declaration directly in a statement list or class)
-    // and the function
-    if (!span_valid(at)) at = function_error_span(fn);
-    Error* error = report(me, at, code, message);
-    add_related(error, place.near);
-    add_related(error, (Near){ .kind = kind, .span = at });
-    return true;
-}
-
-// An accessor pair: the getter, the setter (either may be null)
-typedef struct Accessors {
-    FunctionImpl const* getter;
-    FunctionImpl const* setter;
-    Span getter_name, setter_name;
-} Accessors;
+static bool is_optional_parameter(FunctionImpl const* fn, FunctionArg const* arg);
+static bool requires_adding_undefined(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool in_function);
 
 // createAccessorTypeError for `at` (one of the pair)
-static void report_accessor(Walk* me, Accessors pair, bool on_setter, Place place) {
+static void report_accessor(Walk* me, Accessors pair, bool on_setter) {
     Span at = on_setter ? pair.setter_name : pair.getter_name;
     if (on_setter && vec_function_arg_size(&pair.setter->args)) at = vec_function_arg_at(&pair.setter->args, 0)->span;
-    if (place.heritage) {
-        report_heritage(me, at);
-        return;
-    }
     Error* error = report(me, at, 9009,
         "At least one accessor must have an explicit type annotation with --isolatedDeclarations.");
     if (pair.setter) add_related(error, (Near){ .kind = NEAR_SET_ACCESSOR, .span = pair.setter_name });
     if (pair.getter) add_related(error, (Near){ .kind = NEAR_GET_ACCESSOR, .span = pair.getter_name });
 }
 
+// The accessor pair an object literal accessor belongs to (tsc's getAllAccessorDeclarations)
+static Accessors object_accessors(ObjectExpr const* object, FunctionImpl const* accessor) {
+    ObjectExprItem const* item = nullptr;
+    for_each (i, vec_object_expr_item, object) {
+        if (i->value.tag == EXPR_FUNCTION && i->value.function == accessor) item = i;
+    }
+    Accessors pair = {0};
+    if (!item) return pair;
+    for_each (i, vec_object_expr_item, object) {
+        if (i->tag != OBJECT_ITEM_GETTER && i->tag != OBJECT_ITEM_SETTER) continue;
+        if (i != item) {
+            if (!i->computed_key != !item->computed_key) continue;
+            if (i->computed_key ? !csview_equals_sv(span_sv(expr_outer_span(i->computed_key)), span_sv(expr_outer_span(item->computed_key))) :
+                !cstr_eq(&i->name_string, &item->name_string)
+            ) {
+                continue;
+            }
+        }
+        if (i->tag == OBJECT_ITEM_GETTER && !pair.getter) {
+            pair.getter = i->value.function;
+            pair.getter_name = i->name_span;
+        }
+        if (i->tag == OBJECT_ITEM_SETTER && !pair.setter) {
+            pair.setter = i->value.function;
+            pair.setter_name = i->name_span;
+        }
+    }
+    return pair;
+}
+
+// createAccessorTypeError of an accessor: its pair is the class accessor being serialized, or found in its object literal
+static void report_accessor_of(Walk* me, FunctionImpl const* accessor, Search const* found) {
+    Accessors pair = {0};
+    if (my class_pair.getter == accessor || my class_pair.setter == accessor) {
+        pair = my class_pair;
+    } else if (found->object) {
+        pair = object_accessors(found->object, accessor);
+    }
+    if (pair.getter != accessor && pair.setter != accessor) {
+        pair = (Accessors){0};
+        if (accessor->accessor == 1) pair.getter = accessor, pair.getter_name = function_error_span(accessor);
+        else pair.setter = accessor, pair.setter_name = function_error_span(accessor);
+    }
+    report_accessor(me, pair, pair.setter == accessor);
+}
+
+// createReturnTypeError: the function (of `kind`, NEAR_NONE: by itself), with its nearest declaration and itself as
+// related information
+static void report_return(Walk* me, FunctionImpl const* fn, Near near, Span at, NearKind kind) {
+    unsigned code = 0;
+    char const* message = nullptr;
+    if (kind == NEAR_NONE) kind = function_kind(fn);
+    kind_error(kind, &code, &message);
+    if (!span_valid(at)) at = function_error_span(fn);
+    Error* error = report(me, at, code, message);
+    add_related(error, near);
+    add_related(error, (Near){ .kind = kind, .span = at });
+}
+
+// A class expression's error span is its name, else its first token
+static Span class_expression_span(Expr const* expr) {
+    return span_valid(expr->class_decl->name) ? expr->class_decl->name : block_first_token(expr->inner_span);
+}
+
+// createParameterError
+static void report_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg) {
+    if (fn->accessor == 2) {
+        Search none = {0};
+        report_accessor_of(me, fn, &none);
+        return;
+    }
+    Expr const* init = initialized_binding_value(&arg->initializer);
+    bool add_undefined = requires_adding_undefined(me, fn, arg, true);
+    if (!add_undefined && init->tag != EXPR_IMPLICIT_ANY) {
+        report_expression(me, expr_outer_span(init), (Place){ .near = parameter_near(arg), .direct = true }, 0, nullptr);
+        return;
+    }
+    if (add_undefined) {
+        add_related(report(me, arg->span, 9025, "Declaration emit for this parameter requires implicitly adding "
+            "undefined to its type. This is not supported with --isolatedDeclarations."), parameter_near(arg));
+        return;
+    }
+    report_declaration(me, parameter_near(arg));
+}
+
+// tsgo's SymbolTracker.ReportInferenceFallback: the declaration emitter's isolatedDeclarations diagnostic for the node
+// (createGetIsolatedDeclarationErrors), by its kind. The declaration being emitted falls back to printing the checker's
+// type (for what its symbol tracker reports)
+static void report_fallback(Walk* me, PseudoError const* node) {
+    my fell_back = true;
+    if (!my isolated) return;
+    Search found = locate(me, node);
+    Place place = found.found;
+    switch (node->kind) {
+        case PSEUDO_ERROR_OBJECT_MEMBER: {
+            ObjectExprItem const* item = node->item;
+            switch (item->tag) {
+                case OBJECT_ITEM_SHORTHAND:
+                    report_with_near(me, item->name_span, place, 9016,
+                        "Objects that contain shorthand properties can't be inferred with --isolatedDeclarations.");
+                    return;
+                case OBJECT_ITEM_SPREAD:
+                    report_with_near(me, item->span, place, 9015,
+                        "Objects that contain spread assignments can't be inferred with --isolatedDeclarations.");
+                    return;
+                case OBJECT_ITEM_PROPERTY:
+                    // (createExpressionError of its initializer, which isn't its nearest declaration's)
+                    report_expression(me, expr_outer_span(&item->value), (Place){ .near = place.near }, 0, nullptr);
+                    return;
+                case OBJECT_ITEM_METHOD:
+                    if (item->value.tag == EXPR_FUNCTION) report_return(me, item->value.function, place.near, (Span){0}, NEAR_METHOD);
+                    return;
+                case OBJECT_ITEM_GETTER:
+                case OBJECT_ITEM_SETTER:
+                    if (item->value.tag == EXPR_FUNCTION) report_accessor_of(me, item->value.function, &found);
+                    return;
+                default: return;
+            }
+        }
+        case PSEUDO_ERROR_COMPUTED_NAME:
+            report_with_near(me, node->item->name_span, place, 9038,
+                "Computed property names on class or object literals cannot be inferred with --isolatedDeclarations.");
+            return;
+        case PSEUDO_ERROR_ARRAY:
+            report_with_near(me, node->expr->inner_span, place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
+            return;
+        case PSEUDO_ERROR_SPREAD_ELEMENT:
+            report_with_near(me, node->expr->inner_span, place, 9018,
+                "Arrays with spread elements can't inferred with --isolatedDeclarations.");
+            return;
+        case PSEUDO_ERROR_CLASS:
+            report_expression(me, class_expression_span(node->expr), place, 9022,
+                "Inference from class expressions is not supported with --isolatedDeclarations.");
+            return;
+        case PSEUDO_ERROR_EXPRESSION:
+            // (A name that is an arrow function's body: the function's return type)
+            if (node->name_parent && place.arrow_body && is_entity_name_expression(node->expr)) {
+                report_return(me, place.arrow_body, place.near, (Span){0}, NEAR_NONE);
+                return;
+            }
+            report_expression(me, node->expr->inner_span, place, 0, nullptr);
+            return;
+        case PSEUDO_ERROR_ACCESSOR:
+        case PSEUDO_ERROR_FUNCTION:
+            if (node->function->accessor) {
+                report_accessor_of(me, node->function, &found);
+                return;
+            }
+            report_return(me, node->function, place.near,
+                my root.kind == ROOT_FUNCTION && my root.function == node->function ? my root.at : (Span){0}, found.function_kind);
+            return;
+        case PSEUDO_ERROR_PARAMETER: report_parameter(me, node->function, node->arg); return;
+        case PSEUDO_ERROR_VARIABLE: report_declaration(me, variable_near(&node->binding->binding)); return;
+        case PSEUDO_ERROR_FIELD: report_declaration(me, field_near(node->field)); return;
+    }
+}
+
+static void report_fallback_callback(void* ctx, PseudoError const* node) { report_fallback(ctx, node); }
+
+static void tracker_report_fallback(DeclTracker* tracker, PseudoError const* node) { report_fallback(tracker->ctx, node); }
+
+// What an Inferred pseudo type reports where pseudoTypeToNode prints it: its error nodes, else its expression
+// (`name_parent`: see PseudoError.name_parent)
+static void report_inferred(Walk* me, Pseudo const* pseudo, bool name_parent) {
+    for (u32 i = 0; i < pseudo->count; i++) report_fallback(me, &pseudo->errors[i]);
+    if (pseudo->count) return;
+    if (pseudo->signature_return) {
+        report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function });
+        return;
+    }
+    report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_EXPRESSION, .expr = pseudo->expr, .name_parent = name_parent });
+}
+
+// A type node the pseudo type reuses: a name in it that isn't accessible from here makes the declaration print its type
+static void reuse_type(Walk* me, TypeNode const* type) {
+    bool outer_reusing = my reusing;
+    my reusing = true;
+    check_written_type(me, type);
+    my reusing = outer_reusing;
+}
+
+static void reuse_signature(Walk* me, FunctionImpl const* fn) {
+    bool outer_reusing = my reusing;
+    my reusing = true;
+    check_generic(me, &fn->generic, SIG_FUNCTION);
+    my reusing = outer_reusing;
+}
+
+static void pseudo_to_node(Walk* me, Pseudo const* pseudo);
+
+static void pseudo_params_to_node(Walk* me, PseudoParam const* params, u32 count) {
+    for (u32 i = 0; i < count; i++) pseudo_to_node(me, params[i].type);
+}
+
+// pseudoTypeToNode, for what it reports (nothing is printed: the reused nodes' names are checked, see reuse_type())
+static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
+    switch (pseudo->kind) {
+        case PSEUDO_DIRECT:
+            if (!pseudo->predicate) reuse_type(me, pseudo->node);
+            else if (pseudo->function->predicate->has_type) reuse_type(me, &pseudo->function->predicate->type);
+            return;
+        case PSEUDO_INFERRED: report_inferred(me, pseudo, true); return;
+        case PSEUDO_NO_RESULT: {
+            PseudoError node = pseudo_no_result_node(pseudo);
+            report_fallback(me, &node);
+            return;
+        }
+        case PSEUDO_MAYBE_CONST: pseudo_to_node(me, pseudo->in_const ? pseudo->const_type : pseudo->regular_type); return;
+        case PSEUDO_UNION:
+        case PSEUDO_TUPLE:
+            for (u32 i = 0; i < pseudo->count; i++) pseudo_to_node(me, pseudo->types[i]);
+            return;
+        case PSEUDO_SIGNATURE:
+            reuse_signature(me, pseudo->function);
+            pseudo_params_to_node(me, pseudo->params, pseudo->count);
+            pseudo_to_node(me, pseudo->ret);
+            return;
+        case PSEUDO_OBJECT:
+            for (u32 i = 0; i < pseudo->count; i++) {
+                PseudoMember const* member = &pseudo->members[i];
+                if (member->function) reuse_signature(me, member->function);
+                pseudo_params_to_node(me, member->params, member->param_count);
+                if (member->type) pseudo_to_node(me, member->type);
+            }
+            return;
+        default: return;
+    }
+}
+
+// pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type
+static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo) {
+    if (pseudo->kind == PSEUDO_INFERRED) report_inferred(me, pseudo, false);
+    else pseudo_to_node(me, pseudo);
+}
+
+static bool pseudo_equivalent_reporting(Walk* me, Pseudo const* pseudo, Ty const* type, bool optional) {
+    PseudoReporter reporter = { .report = report_fallback_callback, .ctx = me };
+    return ty_pseudo_equivalent(my checker, pseudo, type, optional, &reporter);
+}
+
+// tsgo's serializeTypeForDeclaration of a declaration whose type isn't written (or a parameter whose annotation lacks
+// the undefined declaration emit adds): its pseudo type where that says `type`, else the checker's type (printed).
+// `optional`: the declaration has a `?` (its type's undefined isn't the pseudo type's), `add_undefined`: a parameter
+// declaration emit writes with undefined (requiresAddingImplicitUndefined)
+static void serialize_declaration(Walk* me, Pseudo const* pseudo, Ty const* type, bool optional, bool add_undefined) {
+    if (!type) return;
+    if (add_undefined && ty_without_undefined(my checker, type) == type) {
+        type = ty_union(my checker, (Ty const*[]){ type, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+    }
+    bool outer = fallback_begin(me);
+    if (pseudo_equivalent_reporting(me, pseudo, type, optional && !add_undefined)) {
+        pseudo_to_node_with_fallback(me, pseudo);
+    } else {
+        my fell_back = true;
+        // (Its error nodes reported: the printed type doesn't report again)
+        my print_reports = !(pseudo->kind == PSEUDO_INFERRED && pseudo->count);
+        // (With undefined added to a pseudo type that can't have it, it may say the type)
+        bool should_add = false;
+        if (add_undefined) {
+            Ty const* as_type = ty_pseudo_type(my checker, pseudo);
+            should_add = as_type ? ty_without_undefined(my checker, as_type) == as_type : !pseudo_could_be_undefined(pseudo);
+        }
+        Pseudo const* with_undefined = should_add ? pseudo_add_undefined(my checker, pseudo) : nullptr;
+        if (with_undefined && pseudo_equivalent_reporting(me, with_undefined, type, false)) {
+            my fell_back = my print_reports = false;
+            pseudo_to_node_with_fallback(me, with_undefined);
+        }
+    }
+    fallback_end(me, outer, type);
+}
+
+// tsgo's serializeReturnTypeForSignature of a function without a return type: its pseudo type where that says the
+// return type (and its predicate), else the checker's
+static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pseudo) {
+    Signature const* sig = ty_function_signature(my checker, fn);
+    if (!sig) return;
+    Ty const* type = signature_return_type(my checker, sig);
+    bool outer = fallback_begin(me);
+    if (pseudo_equivalent_reporting(me, pseudo, type, false)) {
+        // (The pseudochecker doesn't know inferred type predicates: one is reported at the function)
+        TyPredicate const* predicate = signature_predicate(my checker, sig);
+        if (predicate && !(pseudo->kind == PSEUDO_DIRECT && pseudo->predicate)) {
+            report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = fn });
+        } else {
+            pseudo_to_node_with_fallback(me, pseudo);
+        }
+    } else {
+        my fell_back = true;
+    }
+    fallback_end(me, outer, type);
+}
+
 static TypeNode const* setter_type(FunctionImpl const* setter) {
     if (!setter || !vec_function_arg_size(&setter->args)) return nullptr;
     FunctionArg const* arg = vec_function_arg_at(&setter->args, 0);
     return arg->initializer.binding.has_explicit_type ? &arg->initializer.binding.explicit_type : nullptr;
-}
-
-static bool accessors_annotated(Accessors pair) {
-    return (pair.getter && pair.getter->ret_explicit) || setter_type(pair.setter);
-}
-
-// serializeTypeOfAccessor for one of a pair (typeFromAccessor, else inferAccessorType)
-static void type_of_accessor(Walk* me, Accessors pair, bool of_setter, Place place) {
-    if (accessors_annotated(pair)) return;
-    if (pair.getter) {
-        if (return_of_signature(me, pair.getter, place, NEAR_GET_ACCESSOR, true, (Span){0})) report_accessor(me, pair, false, place);
-        return;
-    }
-    if (of_setter) report_accessor(me, pair, true, place);
 }
 
 // tsc's isOptionalParameter: `?`, or an initializer with no required parameter after it
@@ -1148,51 +1384,6 @@ static bool requires_adding_undefined(Walk* me, FunctionImpl const* fn, Function
     return true;
 }
 
-static Near parameter_near(FunctionArg const* arg) {
-    return (Near){ .kind = NEAR_PARAMETER, .span = arg->span, .name = span_sv(arg->initializer.binding.content_span) };
-}
-
-// typeFromParameter, and createParameterError where it falls back. `place`: where the function is
-static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, Place place, bool in_function) {
-    if (arg->initializer.binding.tag == BINDING_IDENTIFIER && csview_equals(span_sv(arg->initializer.binding.content_span), "this")) {
-        return; // (getThisParameter: not part of the parameter list)
-    }
-    Binding const* binding = &arg->initializer.binding;
-    Expr const* init = initialized_binding_value(&arg->initializer);
-    bool add_undefined = requires_adding_undefined(me, fn, arg, in_function);
-    Near near = parameter_near(arg);
-    bool failed = true;
-    if (binding->has_explicit_type) {
-        // serializeTypeAnnotationOfDeclaration with requiresAddingUndefined: the annotation is reused unless the
-        // undefined can't be added to it syntactically
-        failed = add_undefined && !can_add_undefined(me, &binding->explicit_type);
-    } else if (init->tag != EXPR_IMPLICIT_ANY && binding->tag == BINDING_IDENTIFIER && !place.contextual) {
-        failed = type_of_expression(me, init, (Place){ .near = near, .direct = true }, false, add_undefined, false);
-    }
-    if (!failed) return;
-    if (place.heritage) {
-        report_heritage(me, arg->span);
-        return;
-    }
-    // (createParameterError asks again, with the function as the enclosing declaration)
-    add_undefined = requires_adding_undefined(me, fn, arg, true);
-    if (!add_undefined && init->tag != EXPR_IMPLICIT_ANY) {
-        report_expression(me, expr_outer_span(init), (Place){ .near = near, .direct = true }, 0, nullptr);
-        return;
-    }
-    if (add_undefined) {
-        add_related(report(me, arg->span, 9025, "Declaration emit for this parameter requires implicitly adding "
-            "undefined to its type. This is not supported with --isolatedDeclarations."), near);
-        return;
-    }
-    report_declaration(me, near);
-}
-
-// The parameters of a function the declaration has (tsc's updateParamsList / ensureParameter)
-static void check_parameters(Walk* me, FunctionImpl const* fn, Place place, bool in_function) {
-    for_each (i, vec_function_arg, &fn->args) check_parameter(me, fn, i, place, in_function);
-}
-
 // The type of a parameter where the node builder writes it: its symbol's, with `undefined` where declaration emit
 // adds it (the printer's names are all that matter here)
 static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg const* arg) {
@@ -1208,203 +1399,51 @@ static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg co
     return nullptr;
 }
 
+// ensureType of a parameter (ensureParameter): its annotation is written as it is unless declaration emit adds undefined
+// to it, else serialized. `in_function`: see requires_adding_undefined()
+static void serialize_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool in_function) {
+    Binding const* binding = &arg->initializer.binding;
+    if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) return; // (getThisParameter)
+    bool add_undefined = requires_adding_undefined(me, fn, arg, in_function);
+    if (binding->has_explicit_type && !add_undefined) return; // (check_written_signature() walks it)
+    Ty const* type = parameter_type(me, fn, arg);
+    if (type) type = ty_widened_literal(my checker, type);
+    Pseudo const* pseudo = pseudo_of_parameter(my checker, fn, arg);
+    serialize_declaration(me, pseudo, type, arg->explicit_optional, add_undefined);
+}
+
+// The parameters of a function the declaration has (tsc's updateParamsList / ensureParameter)
+static void serialize_parameters(Walk* me, FunctionImpl const* fn) {
+    for_each (i, vec_function_arg, &fn->args) serialize_parameter(me, fn, i, true);
+}
+
 // The parameters of a declaration the transformer visits, each with diagnostics of its own
 static void check_declaration_parameters(Walk* me, FunctionImpl const* fn, EmitSig sig) {
+    Root outer_root = my root;
+    my root = (Root){ .kind = ROOT_FUNCTION, .function = fn };
     for_each (i, vec_function_arg, &fn->args) {
         Span name = i->initializer.binding.content_span;
         Emitting saved = emit_enter(me, EMIT_PARAMETER, sig, name, name);
-        bool outer = fallback_begin(me);
-        check_parameter(me, fn, i, (Place){0}, true);
-        fallback_end(me, outer, parameter_type(me, fn, i));
+        serialize_parameter(me, fn, i, true);
         emit_leave(me, saved);
     }
+    my root = outer_root;
 }
 
-// The return type of a declaration's signature, with the signature's diagnostics
-static bool check_declaration_return(Walk* me, FunctionImpl const* fn, NearKind kind, EmitSig sig, Span name, Span at) {
+// The return type of a declaration's signature (a getter's: of the accessor pair), with the signature's diagnostics.
+// `at`: where the function's own diagnostics go, if not function_error_span()
+static void check_declaration_return(Walk* me, FunctionImpl const* fn, EmitSig sig, Span name, Span at) {
+    if (fn->ret_explicit || fn->predicate) return;
     if (!span_valid(name)) name = fn->name;
-    Emitting saved = emit_enter(me, EMIT_RETURN, sig, name, span_valid(at) ? at : span_valid(name) ? name : function_error_span(fn));
-    bool outer = fallback_begin(me);
-    bool failed = return_of_signature(me, fn, (Place){0}, kind, true, at);
-    my fell_back |= failed;
-    Ty const* type = nullptr;
-    if (my fell_back && !fn->ret_explicit) {
-        Signature const* sig_ = ty_function_signature(my checker, fn);
-        type = sig_ ? signature_return_type(my checker, sig_) : nullptr;
-    }
-    fallback_end(me, outer, type);
+    Emitting saved = emit_enter(me, sig == SIG_ACCESSOR ? EMIT_GETTER : EMIT_RETURN, sig, name,
+        span_valid(at) ? at : span_valid(name) ? name : function_error_span(fn));
+    Root outer_root = my root;
+    my root = (Root){ .kind = ROOT_FUNCTION, .function = fn, .at = at };
+    Pseudo const* pseudo = fn->accessor == 1 ? pseudo_of_accessors(my checker, fn, my class_pair.setter, false) :
+        pseudo_of_return(my checker, fn);
+    serialize_return(me, fn, pseudo);
+    my root = outer_root;
     emit_leave(me, saved);
-    return failed;
-}
-
-// typeFromFunctionLikeExpression: never falls back, its parts report
-static void type_of_function_expression(Walk* me, FunctionImpl const* fn, Place place) {
-    bool outer_reusing = my reusing;
-    my reusing = true;
-    check_written_signature(me, fn, SIG_FUNCTION, false); // (its annotations are reused)
-    my reusing = outer_reusing;
-    return_of_signature(me, fn, place, NEAR_FUNCTION_EXPRESSION, true, (Span){0});
-    Place params = place;
-    params.direct = false;
-    check_parameters(me, fn, params, true);
-}
-
-// typeFromArrayLiteral
-static void type_of_array(Walk* me, Expr const* expr, Place place, bool const_context) {
-    if (!const_context) {
-        report_with_near(me, expr_outer_span(expr), place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
-        return;
-    }
-    for_each (i, vec_expr, &expr->array) {
-        if (i->tag == EXPR_SPREAD) {
-            report_with_near(me, expr_outer_span(i), place, 9018,
-                "Arrays with spread elements can't inferred with --isolatedDeclarations.");
-            return;
-        }
-    }
-    Place element = place;
-    element.direct = false;
-    for_each (i, vec_expr, &expr->array) {
-        if (i->tag == EXPR_IMPLICIT_ANY) continue; // (an omitted expression)
-        // (At the expression inside its parentheses: tsgo's typeFromExpression looks through them)
-        if (type_of_expression(me, i, element, true, false, false)) report_expression(me, i->inner_span, element, 0, nullptr);
-    }
-}
-
-// The accessor pair an object literal accessor belongs to
-static Accessors object_accessors(ObjectExpr const* object, ObjectExprItem const* item, bool* first) {
-    Accessors pair = {0};
-    *first = false;
-    for_each (i, vec_object_expr_item, object) {
-        if (i->tag != OBJECT_ITEM_GETTER && i->tag != OBJECT_ITEM_SETTER) continue;
-        if (i != item && (i->computed_key || item->computed_key || !cstr_equals_sv(&i->name_string, cstr_sv(&item->name_string)))) continue;
-        if (!pair.getter && !pair.setter) *first = i == item;
-        if (i->tag == OBJECT_ITEM_GETTER && !pair.getter) {
-            pair.getter = i->value.function;
-            pair.getter_name = i->name_span;
-        }
-        if (i->tag == OBJECT_ITEM_SETTER && !pair.setter) {
-            pair.setter = i->value.function;
-            pair.setter_name = i->name_span;
-        }
-    }
-    return pair;
-}
-
-// typeFromObjectLiteral: never falls back, its properties report
-static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_context) {
-    ObjectExpr const* object = &expr->object;
-    Place inner = place;
-    inner.direct = false;
-    // canGetTypeFromObjectLiteral
-    bool can = true;
-    for_each (i, vec_object_expr_item, object) {
-        if (i->tag == OBJECT_ITEM_SHORTHAND) {
-            report_with_near(me, i->name_span, inner, 9016,
-                "Objects that contain shorthand properties can't be inferred with --isolatedDeclarations.");
-            can = false;
-        } else if (i->tag == OBJECT_ITEM_SPREAD) {
-            report_with_near(me, i->span, inner, 9015,
-                "Objects that contain spread assignments can't be inferred with --isolatedDeclarations.");
-            can = false;
-        } else if (object_item_is_private_name(i)) {
-            can = false;
-        } else if (i->computed_key && !is_primitive_literal_value(i->computed_key, false) &&
-            !is_global_symbol_reference(me, i->computed_key)
-        ) {
-            report_with_near(me, i->name_span, inner, 9038,
-                "Computed property names on class or object literals cannot be inferred with --isolatedDeclarations.");
-            can = false;
-        }
-    }
-    if (!can) return;
-    for_each (i, vec_object_expr_item, object) {
-        switch (i->tag) {
-            case OBJECT_ITEM_METHOD: {
-                FunctionImpl const* fn = i->value.function;
-                return_of_signature(me, fn, inner, NEAR_METHOD, true, (Span){0});
-                check_parameters(me, fn, inner, true);
-                break;
-            }
-            case OBJECT_ITEM_PROPERTY:
-                if (type_of_expression(me, &i->value, inner, const_context, false, false)) {
-                    report_expression(me, i->value.inner_span, inner, 0, nullptr);
-                }
-                break;
-            case OBJECT_ITEM_GETTER:
-            case OBJECT_ITEM_SETTER: {
-                // typeFromObjectLiteralAccessor
-                bool first = false;
-                Accessors pair = object_accessors(object, i, &first);
-                FunctionImpl const* fn = i->value.function;
-                bool both = pair.getter && pair.getter->ret_explicit && setter_type(pair.setter);
-                if (both) {
-                    check_parameters(me, fn, inner, true);
-                    // The setter's parameter is emitted with the property's type (typeFromParameter ->
-                    // serializeTypeOfAccessor), which reuses its annotation only if that is the getter's type
-                    // (canReuseTypeNodeAnnotation): a setter taking another type falls back
-                    if (i->tag == OBJECT_ITEM_SETTER &&
-                        ty_from_node(my checker, setter_type(pair.setter), (LowerCtx){0}) !=
-                            ty_from_node(my checker, &pair.getter->ret, (LowerCtx){0})
-                    ) {
-                        report_accessor(me, pair, true, inner);
-                    }
-                } else if (first && !accessors_annotated(pair)) {
-                    // inferAccessorType
-                    if (i->tag == OBJECT_ITEM_GETTER) {
-                        if (return_of_signature(me, fn, inner, NEAR_GET_ACCESSOR, true, (Span){0})) report_accessor(me, pair, false, inner);
-                    } else {
-                        report_accessor(me, pair, true, inner);
-                        if (pair.getter && return_of_signature(me, pair.getter, inner, NEAR_GET_ACCESSOR, true, (Span){0})) {
-                            report_accessor(me, pair, false, inner);
-                        }
-                    }
-                }
-                break;
-            }
-            default: break;
-        }
-    }
-}
-
-// typeFromExpression. Whether the builder fell back (the caller reports, at its declaration or at the expression)
-static bool type_of_expression(Walk* me, Expr const* expr, Place place, bool const_context, bool add_undefined,
-    bool preserve_literals
-) {
-    switch (expr->tag) {
-        case EXPR_LITERAL:
-            switch (expr->literal.tag) {
-                case VALUE_UNDEFINED: // (the `undefined` identifier)
-                case VALUE_NULL:
-                case VALUE_BOOLEAN:
-                case VALUE_NUMBER:
-                case VALUE_STRING:
-                case VALUE_BIGINT: return false;
-                default: return true;
-            }
-        case EXPR_FUNCTION:
-            type_of_function_expression(me, expr->function, place);
-            return false;
-        case EXPR_AS_TYPE:
-            if (expr->as_type->is_satisfies) return true;
-            return type_of_assertion(me, expr, place, add_undefined);
-        case EXPR_UNARY_OP:
-            return !is_primitive_literal_value(expr, true);
-        case EXPR_ARRAY:
-            type_of_array(me, expr, place, const_context);
-            return false;
-        case EXPR_OBJECT:
-            type_of_object(me, expr, place, const_context);
-            return false;
-        case EXPR_CLASS_DECL:
-            // (A class expression's error span is its name, else its first token)
-            report_expression(me, span_valid(expr->class_decl->name) ? expr->class_decl->name : block_first_token(expr->inner_span), place, 9022,
-                "Inference from class expressions is not supported with --isolatedDeclarations.");
-            return false;
-        case EXPR_TEMPLATE:
-            return expr->template_->tag || const_context || preserve_literals;
-        default: return true;
-    }
 }
 
 // Visibility
@@ -1489,17 +1528,25 @@ static bool is_expando_variable(Walk* me, Binding const* binding, Expr const* in
     return check_expandos(me, binding->symbol, false);
 }
 
+// The return type and parameters of a function expression declaration emit writes as a function declaration (an expando
+// function's)
+static void serialize_signature(Walk* me, FunctionImpl const* fn) {
+    if (!fn->ret_explicit && !fn->predicate) serialize_return(me, fn, pseudo_of_return(my checker, fn));
+    serialize_parameters(me, fn);
+}
+
 // reportInferenceFallback of a variable declaration
-static void report_variable(Walk* me, Binding const* binding, Expr const* init) {
+static void report_variable(Walk* me, InitializedBinding const* decl) {
+    Binding const* binding = &decl->binding;
+    Expr const* init = initialized_binding_value(decl);
     if (is_expando_variable(me, binding, init)) {
         check_expandos(me, binding->symbol, true);
         // The checker's type is written instead, and its signature's return type and parameters go through the
         // builder again (the node builder's serializeReturnTypeForSignature)
-        Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) };
-        if (init->tag == EXPR_FUNCTION) type_of_function_expression(me, init->function, place_at(near, false));
+        if (init->tag == EXPR_FUNCTION) serialize_signature(me, init->function);
         return;
     }
-    report_declaration(me, (Near){ .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) });
+    report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_VARIABLE, .binding = decl });
 }
 
 // tsc's isLiteralConstDeclaration: a const (or readonly) declaration of a fresh literal type, which declaration emit
@@ -1512,14 +1559,29 @@ static bool is_literal_const_field(ClassItem const* item) {
     return ty_is_fresh(lazy_type_get((LazyType*)&item->field.lazy_type));
 }
 
-// The elements of a binding pattern are emitted as variables of their own: TS9019
-static void check_binding_elements(Walk* me, Binding const* pattern) {
+// hasAnyBindingInitializers
+static bool binding_has_initializers(Binding const* pattern) {
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) {
+            if (i->default_value || binding_has_initializers(i)) return true;
+        }
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) {
+            if (i->target.default_value || binding_has_initializers(&i->target)) return true;
+        }
+    }
+    return false;
+}
+
+// A binding pattern with initializers is emitted as variables of its own, each with no syntactic type: TS9019
+static void report_binding_elements(Walk* me, Binding const* pattern) {
     if (pattern->tag == BINDING_ARRAY) {
         for_each (i, vec_binding, &pattern->array) {
             if (i->tag == BINDING_IDENTIFIER) {
-                report(me, i->content_span, 9019, "Binding elements can't be exported directly with --isolatedDeclarations.");
+                report(me, i->content_span, 9019,
+                    "Binding elements with initializers can't be exported directly with --isolatedDeclarations.");
             } else {
-                check_binding_elements(me, i);
+                report_binding_elements(me, i);
             }
         }
     } else if (pattern->tag == BINDING_OBJECT) {
@@ -1527,15 +1589,13 @@ static void check_binding_elements(Walk* me, Binding const* pattern) {
             Binding const* target = &i->target;
             if (target->tag == BINDING_IDENTIFIER) {
                 report(me, target->content_span, 9019,
-                    "Binding elements can't be exported directly with --isolatedDeclarations.");
+                    "Binding elements with initializers can't be exported directly with --isolatedDeclarations.");
             } else {
-                check_binding_elements(me, target);
+                report_binding_elements(me, target);
             }
         }
     }
 }
-
-static void check_variable_type(Walk* me, InitializedBinding const* decl, bool is_const);
 
 // The elements of a binding pattern are written as variables of their types (inferTypeOfDeclaration)
 static void print_binding_elements(Walk* me, Binding const* pattern) {
@@ -1552,62 +1612,59 @@ static void print_binding_elements(Walk* me, Binding const* pattern) {
     }
 }
 
-static void check_variable(Walk* me, InitializedBinding const* decl, bool is_const) {
-    Binding const* binding = &decl->binding;
-    if (binding->tag != BINDING_IDENTIFIER) {
-        check_variable_type(me, decl, is_const);
-        print_binding_elements(me, binding);
-        return;
-    }
-    Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, binding->content_span, binding->content_span);
-    bool outer = fallback_begin(me);
-    check_variable_type(me, decl, is_const);
-    // (A literal const is written with its initializer)
-    bool literal = is_const && initialized_binding_value(decl)->tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol);
-    if (literal) my fell_back = false;
-    Expr const* init = initialized_binding_value(decl);
-    if (binding->symbol && init->tag == EXPR_FUNCTION && is_expando_variable(me, binding, init)) {
-        // An expando function is emitted as a function declaration per call signature and a namespace of its members
-        // (tsc's declaration transform of isExpandoFunctionDeclaration): its signatures are printed, not its type
-        bool fell_back = my fell_back;
-        my fell_back = outer || fell_back;
-        if (fell_back) {
-            Members const* members = ty_members(my checker, ty_type_of_symbol(my checker, binding->symbol));
-            for (u32 i = 0; i < members->call_count; i++) print_inferred(me, ty_signature_type(my checker, members->call[i]));
-        }
-        emit_leave(me, saved);
-        return;
-    }
-    fallback_end(me, outer, binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr);
-    emit_leave(me, saved);
-}
-
-// typeFromVariable
-static void check_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
+// ensureType of a variable declaration
+static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
     Expr const* init = initialized_binding_value(decl);
-    if (binding->tag != BINDING_IDENTIFIER) {
-        bool empty = (binding->tag == BINDING_ARRAY && !vec_binding_size(&binding->array)) ||
-            (binding->tag == BINDING_OBJECT && !vec_object_binding_item_size(&binding->object));
-        if (!empty) check_binding_elements(me, binding);
-        return;
-    }
     bool initialized = init->tag != EXPR_IMPLICIT_ANY;
     if (is_const && initialized && is_literal_const(me, binding->symbol)) {
-        // ensureNoInitializer
-        if (!is_primitive_literal_value(init, true)) report_variable(me, binding, init);
+        // A literal const is written with its initializer, which must be a literal (ensureNoInitializer)
+        if (!is_primitive_literal_value(init, true)) report_variable(me, decl);
         return;
     }
     if (binding->has_explicit_type) {
         check_written_type(me, &binding->explicit_type);
         return;
     }
-    Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) };
-    bool failed = true;
-    if (initialized && symbol_declared_once(binding->symbol) && !is_expando_variable(me, binding, init)) {
-        failed = type_of_expression(me, init, place_at(near, true), false, false, is_const);
+    Ty const* type = binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr;
+    if (initialized && is_expando_variable(me, binding, init)) {
+        bool outer = fallback_begin(me);
+        report_variable(me, decl);
+        my fell_back = outer || my fell_back;
+        if (my fell_back && binding->symbol && init->tag == EXPR_FUNCTION) {
+            // An expando function is emitted as a function declaration per call signature and a namespace of its
+            // members (tsc's declaration transform of isExpandoFunctionDeclaration): its signatures are printed
+            Members const* members = ty_members(my checker, type);
+            for (u32 i = 0; i < members->call_count; i++) print_inferred(me, ty_signature_type(my checker, members->call[i]));
+        } else if (my fell_back) {
+            print_inferred(me, type);
+        }
+        return;
     }
-    if (failed) report_variable(me, binding, init);
+    // (A variable declared more than once has no syntactic type: typeFromVariable)
+    if (!symbol_declared_once(binding->symbol)) {
+        bool outer = fallback_begin(me);
+        report_variable(me, decl);
+        fallback_end(me, outer, type);
+        return;
+    }
+    Pseudo const* pseudo = pseudo_of_variable(my checker, decl, is_const, (PseudoPlace){0});
+    serialize_declaration(me, pseudo, type ? ty_widened_literal(my checker, type) : nullptr, false, false);
+}
+
+static void check_variable(Walk* me, InitializedBinding const* decl, bool is_const) {
+    Binding const* binding = &decl->binding;
+    if (binding->tag != BINDING_IDENTIFIER) {
+        if (binding_has_initializers(binding)) report_binding_elements(me, binding);
+        print_binding_elements(me, binding);
+        return;
+    }
+    Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, binding->content_span, binding->content_span);
+    Root outer_root = my root;
+    my root = (Root){ .kind = ROOT_VARIABLE, .binding = decl };
+    serialize_variable(me, decl, is_const);
+    my root = outer_root;
+    emit_leave(me, saved);
 }
 
 // tsc's isImplementationOfOverload for a function declaration
@@ -1637,7 +1694,7 @@ static void check_function_declaration(Walk* me, FunctionImpl const* fn, Stateme
     check_declaration_parameters(me, fn, SIG_FUNCTION);
     // (Without a name, `export default function () {}` is spanned from its first token, the `export`)
     Span at = span_valid(fn->name) ? fn->name : block_first_token(statement->span);
-    check_declaration_return(me, fn, NEAR_FUNCTION_DECLARATION, SIG_FUNCTION, (Span){0}, at);
+    check_declaration_return(me, fn, SIG_FUNCTION, (Span){0}, at);
     if (emits_function_properties(fn)) check_expandos(me, fn->symbol, true);
 }
 
@@ -1673,31 +1730,29 @@ static void find_setter(ClassDecl const* cls, ClassItem const* getter, Accessors
 }
 
 // typeFromProperty of a class field
-static void check_field_type(Walk* me, ClassItem const* item);
+// ensureType of a class's property declaration (typeFromProperty)
 static void check_field(Walk* me, ClassItem const* item) {
     if (item->access == ACCESS_MODIFIER_PRIVATE) return;
     Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_CLASS, item->field.name_span, item->field.name_span);
-    bool outer = fallback_begin(me);
-    check_field_type(me, item);
-    fallback_end(me, outer, lazy_type_get((LazyType*)&item->field.lazy_type));
-    emit_leave(me, saved);
-}
-
-static void check_field_type(Walk* me, ClassItem const* item) {
+    Root outer_root = my root;
+    my root = (Root){ .kind = ROOT_FIELD, .field = item };
     Expr const* init = &item->field.value;
-    bool initialized = init->tag != EXPR_IMPLICIT_ANY;
-    Near near = { .kind = NEAR_PROPERTY, .span = item->field.name_span, .name = span_sv(item->field.name_span) };
-    if (item->field.is_readonly && initialized && is_literal_const_field(item)) {
-        if (!is_primitive_literal_value(init, true)) report_declaration(me, near);
-        return;
-    }
-    if (item->field.has_explicit_type) {
+    Ty const* type = lazy_type_get((LazyType*)&item->field.lazy_type);
+    if (item->field.is_readonly && init->tag != EXPR_IMPLICIT_ANY && is_literal_const_field(item)) {
+        // A readonly literal is written with its initializer, which must be a literal (ensureNoInitializer)
+        if (!is_primitive_literal_value(init, true)) {
+            bool outer = fallback_begin(me);
+            report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FIELD, .field = item });
+            fallback_end(me, outer, type);
+        }
+    } else if (item->field.has_explicit_type) {
         check_written_type(me, &item->field.explicit_type);
-        return;
+    } else {
+        serialize_declaration(me, pseudo_of_field(my checker, item), type ? ty_widened_literal(my checker, type) : nullptr,
+            item->field.is_optional, false);
     }
-    bool failed = true;
-    if (initialized) failed = type_of_expression(me, init, place_at(near, true), false, false, item->field.is_readonly);
-    if (failed) report_declaration(me, near);
+    my root = outer_root;
+    emit_leave(me, saved);
 }
 
 static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl const* fn) {
@@ -1772,8 +1827,10 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 bool index = !(name_type->flags & (TYF_ANY | TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL)) &&
                     (name_type->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL));
                 if (index && i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_NONE) {
-                    return_of_signature(me, &i->method.func, (Place){0}, NEAR_METHOD, true, (Span){0});
-                    check_parameters(me, &i->method.func, (Place){0}, true);
+                    Root outer_root = my root;
+                    my root = (Root){ .kind = ROOT_FUNCTION, .function = &i->method.func };
+                    serialize_signature(me, &i->method.func);
+                    my root = outer_root;
                 }
                 continue;
             }
@@ -1787,16 +1844,15 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 if (ctor->has_body) {
                     for_each (j, vec_function_arg, &ctor->args) {
                         if (!is_parameter_property(j)) continue;
-                        if (j->initializer.binding.tag != BINDING_IDENTIFIER) {
-                            check_binding_elements(me, &j->initializer.binding);
-                        } else if (j->access != ACCESS_MODIFIER_PRIVATE) {
+                        if (j->initializer.binding.tag == BINDING_IDENTIFIER && j->access != ACCESS_MODIFIER_PRIVATE) {
                             // (a parameter's diagnostics, a property's if the constructor is private)
                             Span name = j->initializer.binding.content_span;
                             bool private_ctor = i->access == ACCESS_MODIFIER_PRIVATE;
                             Emitting saved = emit_enter(me, private_ctor ? EMIT_PROPERTY : EMIT_PARAMETER, SIG_CONSTRUCTOR, name, name);
-                            bool outer = fallback_begin(me);
-                            check_parameter(me, ctor, j, (Place){0}, false);
-                            fallback_end(me, outer, parameter_type(me, ctor, j));
+                            Root outer_root = my root;
+                            my root = (Root){ .kind = ROOT_FUNCTION, .function = ctor };
+                            serialize_parameter(me, ctor, j, false);
+                            my root = outer_root;
                             emit_leave(me, saved);
                         }
                     }
@@ -1813,7 +1869,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
                     if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn)) break;
                     check_written_signature(me, fn, SIG_METHOD, true);
-                    check_declaration_return(me, fn, NEAR_METHOD, SIG_METHOD, i->method.name_span, (Span){0});
+                    check_declaration_return(me, fn, SIG_METHOD, i->method.name_span, (Span){0});
                     check_declaration_parameters(me, fn, SIG_METHOD);
                     break;
                 }
@@ -1821,25 +1877,26 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 check_written_signature(me, fn, SIG_ACCESSOR, true);
                 Accessors pair = class_accessors(i);
                 bool getter = i->method.accessor == CLASS_ACCESSOR_GET;
-                Emitting saved = emit_enter(me, getter ? EMIT_GETTER : EMIT_SETTER, SIG_ACCESSOR, i->method.name_span, i->method.name_span);
-                bool outer = fallback_begin(me);
+                if (getter) find_setter(cls, i, &pair);
+                Accessors outer_pair = my class_pair;
+                my class_pair = pair;
                 if (getter) {
-                    find_setter(cls, i, &pair);
-                    if (!fn->ret_explicit) type_of_accessor(me, pair, false, (Place){0});
+                    check_declaration_return(me, fn, SIG_ACCESSOR, i->method.name_span, (Span){0});
                 } else {
-                    type_of_accessor(me, pair, true, (Place){0});
-                }
-                Ty const* type = nullptr;
-                if (my fell_back) {
-                    // (the accessor pair's type: the getter's return type, else the setter's parameter's)
-                    Signature const* sig = pair.getter ? ty_function_signature(my checker, pair.getter) : nullptr;
-                    if (sig) type = signature_return_type(my checker, sig);
-                    else if (pair.setter && vec_function_arg_size(&pair.setter->args)) {
-                        type = parameter_type(me, pair.setter, vec_function_arg_at(&pair.setter->args, 0));
+                    // (Its value parameter: the accessor pair's type)
+                    Emitting saved = emit_enter(me, EMIT_SETTER, SIG_ACCESSOR, i->method.name_span, i->method.name_span);
+                    Root outer_root = my root;
+                    my root = (Root){ .kind = ROOT_FUNCTION, .function = fn };
+                    for_each (j, vec_function_arg, &fn->args) {
+                        Binding const* binding = &j->initializer.binding;
+                        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                        serialize_parameter(me, fn, j, true);
+                        break;
                     }
+                    my root = outer_root;
+                    emit_leave(me, saved);
                 }
-                fallback_end(me, outer, type);
-                emit_leave(me, saved);
+                my class_pair = outer_pair;
                 break;
             }
             case CLASS_ITEM_FIELD:
@@ -1872,8 +1929,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     } else {
         // (written as a variable `_base` of the expression's type)
         bool outer = fallback_begin(me);
-        Place heritage = { .heritage = true };
-        if (type_of_expression(me, base, heritage, false, false, false)) report_heritage(me, expr_outer_span(base));
+        report_heritage(me, base->tag == EXPR_CLASS_DECL ? class_expression_span(base) : expr_outer_span(base));
         my fell_back = true;
         fallback_end(me, outer, lazy_type_get((LazyType*)&base->lazy_type));
     }
@@ -2295,13 +2351,14 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             Expr const* expr = &statement->expr;
             if (expr->tag == EXPR_IDENTIFIER) return;
-            Near near = { .kind = NEAR_EXPORT_ASSIGNMENT, .span = statement->span };
             Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
-            bool outer = fallback_begin(me);
-            if (type_of_expression(me, expr, place_at(near, true), false, false, true)) {
-                report_expression(me, expr_outer_span(expr), place_at(near, true), 0, nullptr);
-            }
-            fallback_end(me, outer, lazy_type_get((LazyType*)&expr->lazy_type));
+            Root outer_root = my root;
+            my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
+            // (The `default` symbol's type: the expression's, widened)
+            Ty const* type = lazy_type_get((LazyType*)&expr->lazy_type);
+            type = ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))));
+            serialize_declaration(me, pseudo_of_expression(my checker, expr, (PseudoPlace){0}), type, false, false);
+            my root = outer_root;
             emit_leave(me, saved);
             return;
         }
@@ -2375,7 +2432,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
     };
     walk.tracker = (DeclTracker){
         .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report,
-        .track_module_file = track_module_file, .ctx = &walk,
+        .track_module_file = track_module_file, .report_fallback = tracker_report_fallback, .ctx = &walk,
     };
     symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
     symbol_chain_set_module_specifier(walk_module_specifier, &walk);

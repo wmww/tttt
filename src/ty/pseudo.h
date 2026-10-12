@@ -20,6 +20,7 @@ typedef struct FunctionArg FunctionArg;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct InitializedBinding InitializedBinding;
 typedef struct Checker Checker;
+typedef struct ClassItem ClassItem;
 
 typedef enum PseudoKind : uint8_t {
     // An annotation (or a type assertion's type): `node`. With `predicate`: the type predicate of `function`
@@ -50,16 +51,21 @@ typedef enum PseudoKind : uint8_t {
     PSEUDO_BIGINT_LITERAL,
 } PseudoKind;
 
-// What makes a pseudo type Inferred where isolatedDeclarations reports (tsgo's ErrorNodes), by what tsgo's
-// getIsolatedDeclarationError makes of the node
+// A node tsgo's ReportInferenceFallback is given (the declaration emitter's isolatedDeclarations diagnostic for it is
+// chosen by its kind, createGetIsolatedDeclarationErrors): an Inferred pseudo type's error nodes (what makes it so), its
+// expression, a NoResult's declaration, a member or parameter whose pseudo type isn't equivalent
 typedef enum PseudoErrorKind : uint8_t {
-    PSEUDO_ERROR_OBJECT_MEMBER, // `item`: a shorthand property or spread assignment (TS9016, TS9015), a private name
+    PSEUDO_ERROR_OBJECT_MEMBER, // `item`: an object literal's member (a shorthand property, spread assignment, private name...)
     PSEUDO_ERROR_COMPUTED_NAME, // `item`'s computed name (TS9038)
     PSEUDO_ERROR_ARRAY, // `expr`: an array literal that isn't `as const` (TS9017)
     PSEUDO_ERROR_SPREAD_ELEMENT, // `expr`: a spread in an `as const` array literal (TS9018)
     PSEUDO_ERROR_CLASS, // `expr`: a class expression (TS9022)
     PSEUDO_ERROR_ACCESSOR, // `function`: an accessor without annotations (TS9009)
     PSEUDO_ERROR_PARAMETER, // `function`'s parameter `arg` (its initializer's type, TS9011 / TS9025)
+    PSEUDO_ERROR_EXPRESSION, // `expr`: an expression whose type isn't syntactic (TS9013 and friends)
+    PSEUDO_ERROR_FUNCTION, // `function`: its return type (TS9007, TS9008; an accessor's: TS9009)
+    PSEUDO_ERROR_VARIABLE, // `binding`: a variable declaration (TS9010)
+    PSEUDO_ERROR_FIELD, // `field`: a class's property declaration (TS9012)
 } PseudoErrorKind;
 
 typedef struct PseudoError {
@@ -68,9 +74,19 @@ typedef struct PseudoError {
         ObjectExprItem const* item;
         Expr const* expr;
         FunctionImpl const* function;
+        InitializedBinding const* binding;
+        ClassItem const* field;
     };
     FunctionArg const* arg;
+    // PSEUDO_ERROR_EXPRESSION from pseudoTypeToNode: a name whose parent is a declaration reports that declaration
+    bool name_parent;
 } PseudoError;
+
+// Where pseudoTypeEquivalentToType reports (reportErrors): each node it hands ReportInferenceFallback
+typedef struct PseudoReporter {
+    void (*report)(void* ctx, PseudoError const* node);
+    void* ctx;
+} PseudoReporter;
 
 // What a NoResult pseudo type is the declaration of
 typedef enum PseudoDeclKind : uint8_t {
@@ -78,6 +94,7 @@ typedef enum PseudoDeclKind : uint8_t {
     PSEUDO_DECL_PARAMETER, // `function`'s `arg`
     PSEUDO_DECL_OBJECT_MEMBER, // `item`
     PSEUDO_DECL_FUNCTION, // `function`'s return type (or an accessor's type)
+    PSEUDO_DECL_FIELD, // `field`
 } PseudoDeclKind;
 
 typedef struct Pseudo Pseudo;
@@ -123,6 +140,7 @@ struct Pseudo {
         FunctionImpl const* function; // PSEUDO_SIGNATURE, PSEUDO_INFERRED with signature_return, PSEUDO_NO_RESULT
         InitializedBinding const* binding; // PSEUDO_NO_RESULT of a variable
         ObjectExprItem const* item; // PSEUDO_NO_RESULT of an object literal's member
+        ClassItem const* field; // PSEUDO_NO_RESULT of a class's property declaration
     };
     FunctionArg const* arg; // PSEUDO_NO_RESULT of a parameter
     union {
@@ -158,6 +176,12 @@ Pseudo const* pseudo_of_parameter(Checker* me, FunctionImpl const* function, Fun
 Pseudo const* pseudo_of_return(Checker* me, FunctionImpl const* function);
 // GetTypeOfAccessor of a getter or setter (`setter` may be null, `getter` too)
 Pseudo const* pseudo_of_accessor(Checker* me, FunctionImpl const* accessor);
+// GetTypeOfAccessor of one of a pair (either may be null): the annotation of either, else the getter's return
+Pseudo const* pseudo_of_accessors(Checker* me, FunctionImpl const* getter, FunctionImpl const* setter, bool of_setter);
+// GetTypeOfDeclaration of a class's property declaration (typeFromProperty)
+Pseudo const* pseudo_of_field(Checker* me, ClassItem const* field);
+// The node a NoResult pseudo type reports (its declaration)
+PseudoError pseudo_no_result_node(Pseudo const* pseudo);
 // GetTypeOfExpression
 Pseudo const* pseudo_of_expression(Checker* me, Expr const* expr, PseudoPlace place);
 
@@ -167,3 +191,10 @@ bool pseudo_could_be_undefined(Pseudo const* pseudo);
 Pseudo const* pseudo_add_undefined(Checker* me, Pseudo const* pseudo);
 // isStructuralPseudoType
 bool pseudo_is_structural(Pseudo const* pseudo);
+
+typedef struct Ty Ty;
+// pseudoTypeToType (ty_display.c): the type a pseudo type stands for where it is direct, null for the structures
+Ty const* ty_pseudo_type(Checker* me, Pseudo const* pseudo);
+// pseudoTypeEquivalentToType (ty_display.c). `optional`: the declaration is optional (its type's undefined isn't in the
+// pseudo type). `reporter`: null, or where its reportErrors go
+bool ty_pseudo_equivalent(Checker* me, Pseudo const* pseudo, Ty const* ty, bool optional, PseudoReporter const* reporter);

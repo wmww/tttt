@@ -2,6 +2,7 @@
 #include "ty/ty_internal.h"
 #include "compiler_options.h"
 #include "statement.h"
+#include "class_decl.h"
 
 // The builder: tsgo's pseudochecker/lookup.go, function by function (named after them). tsgo looks up the parents of a
 // node to decide isContextuallyTyped and IsInConstContext; tttt has no parents, so the builder passes them down as a
@@ -619,6 +620,45 @@ Pseudo const* pseudo_of_accessor(Checker* me, FunctionImpl const* accessor) {
     Build build = build_for(me);
     if (accessor->accessor == 2) return type_from_accessor(&build, paired_getter(accessor), accessor, true);
     return type_from_accessor(&build, accessor, nullptr, false);
+}
+
+Pseudo const* pseudo_of_accessors(Checker* me, FunctionImpl const* getter, FunctionImpl const* setter, bool of_setter) {
+    Build build = build_for(me);
+    return type_from_accessor(&build, getter, setter, of_setter);
+}
+
+// typeFromProperty (a class's property declarations are never contextually typed here: the walk asking for them only
+// visits class declarations)
+Pseudo const* pseudo_of_field(Checker* me, ClassItem const* field) {
+    Build build = build_for(me);
+    if (field->field.has_explicit_type) return direct(&build, &field->field.explicit_type);
+    Expr const* init = &field->field.value;
+    if (init->tag != EXPR_IMPLICIT_ANY) {
+        // (A readonly field's template literal stays inferred, for template literal freshness later)
+        if (!(field->field.is_readonly && init->tag == EXPR_TEMPLATE && !init->template_->tag)) {
+            Pseudo const* pseudo = type_from_expression(&build, init, (PseudoPlace){0});
+            if (!inferred_plainly(pseudo)) {
+                // (`x? = v`: the initializer's type and undefined)
+                if (pseudo->kind != PSEUDO_DIRECT && field->field.is_optional) return add_undefined_if_definitely_required(&build, pseudo);
+                return pseudo;
+            }
+        }
+    }
+    Pseudo* none = (Pseudo*)no_result(&build, PSEUDO_DECL_FIELD);
+    none->field = field;
+    return none;
+}
+
+PseudoError pseudo_no_result_node(Pseudo const* pseudo) {
+    switch (pseudo->decl_kind) {
+        case PSEUDO_DECL_VARIABLE: return (PseudoError){ .kind = PSEUDO_ERROR_VARIABLE, .binding = pseudo->binding };
+        case PSEUDO_DECL_PARAMETER:
+            return (PseudoError){ .kind = PSEUDO_ERROR_PARAMETER, .function = pseudo->function, .arg = pseudo->arg };
+        case PSEUDO_DECL_OBJECT_MEMBER: return (PseudoError){ .kind = PSEUDO_ERROR_OBJECT_MEMBER, .item = pseudo->item };
+        case PSEUDO_DECL_FUNCTION: return (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function };
+        case PSEUDO_DECL_FIELD: return (PseudoError){ .kind = PSEUDO_ERROR_FIELD, .field = pseudo->field };
+    }
+    impossible;
 }
 
 Pseudo const* pseudo_of_expression(Checker* me, Expr const* expr, PseudoPlace place) {
