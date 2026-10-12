@@ -2367,6 +2367,8 @@ static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* c
 }
 
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional);
+static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     u32 saved = param_names_enter(d);
     display_signature_inner(me, d, sig, separator, with_new);
@@ -2666,6 +2668,20 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         return;
     }
     TyDisplay ret_d = reused_if(d, false);
+    // The return type as the declaration's syntax says it, where that's the same type (tsgo's
+    // serializeReturnTypeForSignature: its pseudo type; an instantiated signature's own type parameters are fresh, see
+    // TyDisplay.fresh_params)
+    if (reusable && reuses_nodes(d) && !d.approx && !d.reused && !root->class_instance) {
+        Pseudo const* pseudo = pseudo_of_return(me, function);
+        if (pseudo_equivalent(me, d, pseudo, ret, false)) {
+            // (Reused through the instantiation's mapper, tsgo's ctx.mapper: what equivalence let through is an error
+            // type's instantiation, `T` of `Array<error>` prints `any`)
+            TyDisplay pseudo_d = ret_d;
+            pseudo_d.mapped_by = instantiated ? sig : nullptr;
+            display_pseudo(me, pseudo_d, pseudo, ret);
+            return;
+        }
+    }
     if (reusable && !ret_annotation && !function->ret_explicit && !root->class_instance) {
         ret_d.syntactic_function = single_return_function(me, function, ret);
         Ty const* keyword = single_return_keyword(me, function, ret);
@@ -3057,6 +3073,19 @@ static bool pseudo_is_this_param(PseudoParam const* param) {
     return binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this");
 }
 
+// An instantiated signature's own type parameters are fresh ones in tsgo (instantiateSignature): an annotation that
+// names one doesn't say the instantiated type
+static TyDisplay pseudo_enter_signature(Checker* me, TyDisplay d, Signature const* sig) {
+    Signature const* root = sig;
+    while (root->target) root = root->target;
+    if (root == sig || !root->type_params.len) return d;
+    Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+    if (d.fresh_params.len) memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
+    memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
+    d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+    return d;
+}
+
 // pseudoParametersEquivalentToParameters
 static bool pseudo_params_equivalent(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig) {
     if (sig->this_type) {
@@ -3114,6 +3143,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
     // (An error type is taken to be whatever the syntax says)
     if (ty->flags & TYF_ERROR) return true;
     Ty const* from_pseudo = pseudo_type(me, d, pseudo);
+    if (from_pseudo && d.fresh_params.len && mentions(me, from_pseudo, d.fresh_params)) return false;
     if (from_pseudo == ty) return true;
     Ty const* stripped = optional ? ty_without_undefined(me, ty) : ty;
     if (from_pseudo) {
@@ -3147,8 +3177,9 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
                     case PSEUDO_MEMBER_METHOD: {
                         Signature const* sig = ty_single_signature(me, type, false, false);
                         if (!sig) continue;
-                        if (!pseudo_params_equivalent(me, d, member->params, member->param_count, sig)) return false;
-                        if (!pseudo_return_equivalent(me, d, member->type, sig)) return false;
+                        TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
+                        if (!pseudo_params_equivalent(me, sig_d, member->params, member->param_count, sig)) return false;
+                        if (!pseudo_return_equivalent(me, sig_d, member->type, sig)) return false;
                         break;
                     }
                     case PSEUDO_MEMBER_GETTER:
@@ -3183,8 +3214,9 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             Signature const* sig = ty_single_signature(me, stripped, false, false);
             if (!sig) return false;
             if (sig->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) return false;
-            if (!pseudo_params_equivalent(me, d, pseudo->params, pseudo->count, sig)) return false;
-            return pseudo_return_equivalent(me, d, pseudo->ret, sig);
+            TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
+            if (!pseudo_params_equivalent(me, sig_d, pseudo->params, pseudo->count, sig)) return false;
+            return pseudo_return_equivalent(me, sig_d, pseudo->ret, sig);
         }
         default: return false;
     }
