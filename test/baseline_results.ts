@@ -49851,7 +49851,7 @@ const baselines = {
         types: true,
     },
     'importEquals3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -3593,13 +3593,15 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Sym
             return my alias->type_only_star;
         }
         if (item->tag == PORT_IMPORT_ALIAS) {
-            // `import A = a.B`: type-only if a part of the name came through a type-only declaration (tsc marks the
-            // alias while resolving the entity name)
-            for_each (i, vec_symbol_cptr, &item->alias_path_symbols) {
-                PortItem const* found = type_only_declaration_at(*i, depth + 1, named);
-                if (found) return found;
-            }
-            return nullptr;
+            // `import A = a.B`: never type-only itself (tsgo's getTargetOfImportEqualsDeclaration marks nothing), but
+            // a pure alias it names passes its mark on (resolveIndirectionAlias); a type-only part further left is
+            // the declaration's own error, see port_statement_typecheck
+            isize n = vec_symbol_cptr_size(&item->alias_path_symbols);
+            if (n != vec_span_size(&item->alias_path)) return nullptr;
+            Symbol const* last = n ? *vec_symbol_cptr_at(&item->alias_path_symbols, n - 1) : nullptr;
+            if (!last || !(last->flags & SYMBOL_ALIAS) || (last->flags & (SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE))) return nullptr;
+            me = last;
+            continue;
         }
         Symbol const* next = item->source_symbol;
         if (!next && item->module_ref && (item->tag == PORT_IMPORT_GATHER || item->tag == PORT_IMPORT_DEFAULT)) {
