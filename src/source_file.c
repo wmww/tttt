@@ -386,6 +386,9 @@ static csview declaration_extension(csview path) {
 // first JSX element of a file whose runtime module it is)
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
+    // (An ambient module of the name is what the reference is, before any file: tsc's resolveExternalModule returns
+    // it before looking at the resolved file's format. dexie-react-hooks' `declare module 'yjs'` next to an ES yjs)
+    if (my module_state == ALIAS_DONE && my module && my module->is_module && my module->module && !my module->module->file) return;
     SourceFile const* from = span_source(my span);
     bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
     // (A `resolution-mode` attribute of a type-only import or an import type lets it import across formats: tsc's
