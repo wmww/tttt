@@ -1175,10 +1175,12 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
             // constraint, whose own `keyof T` constraint is what the line above stands for). HACK: not from a return
             // type, whose inference would then make the return mapper's K `never` in twiceNestedKeyofIndexInference
             // (hacks.md)
-            if (!(inf->priority & INFER_PRIORITY_RETURN_TYPE) && constraint->kind == TY_TYPE_PARAM &&
-                inference_param(inf, constraint)
-            ) {
-                infer_with_priority(me, inf, ty_keyof(me, source), constraint, INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
+            // (Each member of a union constraint, `Pick<T, K | "a">`: tsc's inferToMappedType goes through the members)
+            TyList keys = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+            for (u32 i = 0; i < keys.len && !(inf->priority & INFER_PRIORITY_RETURN_TYPE); i++) {
+                if (keys.data[i]->kind == TY_TYPE_PARAM && inference_param(inf, keys.data[i])) {
+                    infer_with_priority(me, inf, ty_keyof(me, source), keys.data[i], INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
+                }
             }
         } else if (!mapped->name_type) {
             infer_to_mapped(me, inf, source, mapped, mapped->constraint);
