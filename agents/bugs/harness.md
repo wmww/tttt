@@ -1,6 +1,15 @@
 # Harness, CLI and tools
 (pruned 2026-10-09 against the tsgo 7.1 suite: tsgo's harness has no TS-1 pre/post-emit count line.)
 - `@pretty: true` is done except manyCompilerErrorsInTheTwoFiles (errors).
+- Emit before diagnostics: tsgo's harnessutil.CompileFiles emits (postProgram.Emit) before collecting the semantic
+  diagnostics it baselines, and the emit resolver checks expressions (a property access's constant value, `x.foo`)
+  first. What's resolved first then shows: TS2313's "Circularity originates in type at this location" (TS2751, tsgo's
+  getResolvedBaseConstraint relates it to currentNode when that's elsewhere) points at the first property access
+  through the type parameter in typeParameterWithInvalidConstraintType, circularBaseTypes,
+  incorrectRecursiveMappedTypeConstraint and recursiveMappedTypes, and a `new x()` with `T extends T` says `{}` there
+  but `unknown` in the CLI. tttt (noEmit) checks in the CLI's order; the mechanism (record the current node when
+  the constraint walk finds the cycle, relate it in generic_typecheck()) was tried 2026-10-12 and dropped: it can't
+  match without emulating the emit resolver's queries.
 - STC's `cregex` silently matches nothing once a `-f` pattern gets long (~100 alternatives); the harness says so when
   a filter selected no tests. Use `-f @names.txt`.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.

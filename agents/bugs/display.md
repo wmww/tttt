@@ -209,8 +209,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
-- symbolToNodeBoundaryNoStackOverflow: `wrapNode<typeof node.getNextNode<any>>(...)`: tsgo prints the type argument
-  (an instantiation expression type whose typeof node can't be reused out of scope) as `any`; tttt expands it.
 - declarationEmitUnserializableTypes: `function inner<T>(): typeof inner<T>` recursion prints one level too many;
   `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers the arrow's return while grow's
   return is in flight (any at depth 2) and reports TS7056 on grow; tttt infers it lazily afterwards and prints 10+
@@ -227,7 +225,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
 - Relation paths that differ from tsgo's (not elaboration rules): conditionalTypes2 (`Extract<Extract<T, Foo>, Bar>`
   explained through `Extract<T, Bar>`), mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
-  keyofAndIndexedAccessErrors, complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
+  complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
   (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
   mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through

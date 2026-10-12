@@ -108,10 +108,6 @@ Each one mutant:
   computing it; one test.
 - awaitedTypeNoLib: unchanged (without lib, tsc keeps NotPromise<TResult> through `instanceof Thenable` narrowing,
   TS2345, and TS2318 'Awaited' from an unlocated lookup).
-- parenthesizedContexualTyping2: tsc puts TS2345 at the argument's outer parentheses for the two-argument calls
-  (lines 26-28: `fun((cond ? f : g), 10)`) but inside them for the three-argument one (line 29); and the third
-  argument of `fun(..., x => {...}, 10)` isn't contextually typed in tttt (TS7006 + TS2347 where tsc says TS2345 on
-  `undefined`). Two mechanisms; unexplored beyond that.
 - templateLiteralTypes1: TS2590 position (tsc's currentNode per checked type node) and no TS2590 from template literal
   / tuple-spread cross products (ty/template.c TODO), unchanged.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
@@ -236,9 +232,16 @@ Still wrong: jsExportMemberMergedWithModuleAugmentation2 (duplicates across an i
 our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
 
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
-- scannerUnexpectedNullCharacter1 (a NUL outside a string ends
-  tttt's parse: `*p.pos` is the EOF test everywhere), parser0_004152, jsxInvalidEsprimaTestSuite,
-  thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
+- scannerUnexpectedNullCharacter1 (a NUL outside a string ends tttt's parse: `*p.pos` is the EOF test everywhere),
+  manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
+- jsxInvalidEsprimaTestSuite (2026-10-12, several mechanisms): (a) in a JSX file tsc's scanner makes `</` (not
+  `</*`) one LessThanSlashToken, which is no binary operator nor expression start: `</>;` is TS1128 at `</` then
+  `>` a binary operator missing its left operand (TS1109 twice), where tttt scans `<` and a regex (TS1161); (b) a `<`
+  at a statement start not followed by a name or `>` isn't JSX (tsgo's parseUpdateExpression lookahead) but still
+  starts an expression statement (isStartOfExpression takes a binary operator): `<:a />` is TS1109 at `<` and `:`,
+  tttt TS1128 twice; (c) `<a.b.c></a>`, `<a.></a.>`, `<a[foo]>`, `<a .../*hai*/asdf/>` each recover differently
+  (missing closing-tag name checks, TS1003 positions). (a) needs a `</` token in tok_scan_end() and the expression
+  parser (JSX files only); not done, one test.
 - A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
@@ -249,10 +252,12 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
 - importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
   TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
   pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
-- reachabilityChecksNoCrash1: everything matches but the final stray `}`: TS1109 (an ExpressionStatement of a missing
-  identifier, typed `any` in the types baseline) in tsc, TS1128 in tttt. tsc reaches it inside an expression context
-  left open by the earlier object-literal recovery (`> { const out = [] ... }`), not through the source-element list's
-  abort. Find which construct still parses at that `}`.
+- reachabilityChecksNoCrash1: the diagnostics' positions match now (reparseTopLevelAwait sections, 2026-10-12); left
+  is the type of a recovered object literal with two `const` properties, `{ const out = [], for: await (<missing>
+  const v ... }`: tsc's object type says `const: never[]` (the first one's) where every probe of duplicate properties
+  (`{ a: [], a: 1 }`) gives the last one's, as tttt does (`any`, from the unresolved `v`). Reduce with a module
+  (`export {}`, target esnext) and `x > { const out = [], for await (const v of a) {} }`; suspect the reparse's
+  syntax cursor reusing the first pass's nodes, or the second `const` not being a PropertyAssignment in tsgo.
 - manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a non-initial `#!` (pos++), so
   the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
   parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
@@ -275,11 +280,7 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   member; tttt omits it.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
   `@ts-expect-error`). Not reduced.
-- Elaboration chains: invariantGenericErrorElaboration, keyofAndIndexedAccessErrors, conditionalTypes1/2,
-  recursiveConditionalTypes.
-- invariantGenericErrorElaboration: tsc relates `Constraint<Runtype<any>>` to `Constraint<Num>` by its type arguments
-  (variance) and reports `Runtype<any>` to `Num` directly; tttt falls back to the structure (`underlying`). Compare the
-  measured variance of Constraint's A (`TTTT_DUMP_VARIANCES=1`) with tsc's first.
+- Elaboration chains: conditionalTypes1/2, recursiveConditionalTypes.
 - tsxStatelessFunctionComponentsWithTypeArguments4: the overload in the message prints `{ b: number; a: unknown }` in
   tsc, `b: unknown` in tttt (inference for that overload).
 - Lesson (ex plan 34): a message change can crash on real code the suite doesn't have (`ty_prop_written_name` on a
@@ -336,15 +337,12 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
 - exportAsNamespaceConflict: the `export =` side of an `export as namespace` cycle doesn't go through
   symbol_resolve_alias's stack (one TS2303 of two).
 - augmentExportEquals2: tsgo lets `declare module "./file1"` augment an `export = foo` function (no TS2671/TS2503).
-- mappedTypeProperties: `[P in T]: any` in an interface or class declaration is only TS7061 in tsgo (no TS2304/TS2693
-  for the key), but the same in a class expression is checked fully; why the class expression differs is unclear.
 - arrayFakeFlatNoCrashInferenceDeclarations: TS5088 from a union's circularity elision
   (typeToTypeNodeOrCircularityElision), not ported. TS7056 (declarationEmitUnserializableTypes) likewise.
-- syntheticProtectedProperties: tsgo 7.1 tracks read/write access of union/intersection synthetic properties
-  (createUnionOrIntersectionProperty's CheckFlagsContains{Public,Protected,Private} and ContainsWrite*: public wins for
-  reading if any constituent is public; a union with a non-public read part and a different declaration has no
-  property). tttt checks member by member (check_synthetic_protected only for intersections) and names the declaring
-  class where tsc names the containing type ('C1 | C2'). Medium refactor of check.c's accessibility for MemberRefs.
+- syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the
+  synthetic property a parent when its members have one value declaration (`hasNonUniformValueDeclaration`, a
+  synthetic member without one skipped): `w2.content` of `(Mock & Base) | (Mock & Dummy)` is `Mock.content` in the
+  symbols baseline, tttt prints `content`. The accessibility itself is check.c's synthetic_access().
 - types/ember/v2 (DT sweep): `import Ember from "ember"` in a test with `declare global { interface Function extends
   Ember.FunctionPrototypeExtensions {} }`, the package a script whose `declare module "ember"` is what the import
   means: tsgo reports TS2306 "is not a module" (then TS2339s), apparently because the alias is resolved while the
