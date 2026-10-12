@@ -1429,9 +1429,10 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                 // Part of a qualified name: any is written like any other type, else it's the intrinsic name
                 ctx->any_keeps_rendering = vec_span_size(&my main.alias_path) > 1;
                 if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
-                    // (After an import of an unresolved module: tsc's unknownSymbol, no declarations)
-                    bool next = i_index && i_index == vec_symbol_cptr_size(&my main.alias_path_symbols);
-                    if (next && alias_of_unknown(*vec_symbol_cptr_at(&my main.alias_path_symbols, i_index - 1))) {
+                    // (After an import of an unresolved module: tsc's unknownSymbol, no declarations, and so is every
+                    // name after it: resolveEntityName of a qualified name on unknownSymbol)
+                    u32 resolved = (u32)vec_symbol_cptr_size(&my main.alias_path_symbols);
+                    if (resolved && alias_of_unknown(*vec_symbol_cptr_at(&my main.alias_path_symbols, resolved - 1))) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
                             .allow_declaration_empty = true, .span = *i, .text = unknown_symbol_text(ctx),
                         });

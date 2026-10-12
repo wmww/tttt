@@ -17122,7 +17122,7 @@ const baselines = {
     },
     'import_reference-to-type-alias': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'import_unneeded-require-when-referenecing-aliased-type-throug-array': {
@@ -17142,7 +17142,7 @@ const baselines = {
     },
     'importedAliasesInTypePositions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importedEnumMemberMergedWithExportedAliasIsError': {
