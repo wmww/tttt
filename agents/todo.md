@@ -36,9 +36,13 @@ instructions are the stable numbers.
    129), every other oracle unchanged, suite 13318; instructions +0.0..+0.8% (valibot -2.0%). Leftovers per agent in
    bugs/sourcesweep_checker.md; plans/61_constraint_functions.md written (stage 1 derisked: +1 suite test). triage.md:
    the lib-file-checking decision. measurements.md "Source sweep fan-out".
-7. **Plan 55 stage 1-2**: tsgo's pseudochecker as one module (`src/ty/pseudo.c`), equivalence and printing.
-8. **Plan 55 stage 3** (delete the three partial ports it replaces), then any time left on the suite's isolated
-   declaration and accessor-pair tests it names.
+7. ~~Plan 55 stage 1-2~~ done, with most of stage 3: `src/ty/pseudo.c` (tsgo's pseudochecker), printed where
+   equivalent at all of tsgo's serializeTypeForDeclaration/serializeReturnTypeForSignature sites (object literal
+   members, parameters, return types, namespace variables; messages too), the display/expr.c slices it replaced
+   deleted. Suite 13318 -> 13328, every other oracle unchanged. plans/55 says what's left.
+8. **Plan 55 stage 1b**: isolatedDeclarations reported from the pseudo tree (tsgo's equivalence-driven
+   ReportInferenceFallback), deleting `declaration_diagnostics.c`'s TS 6.0 builder; then the builder gaps (class
+   properties, expandos) and the suite's isolated declaration tests.
 9. **Suite/JS tail fan-out**: four Opus sub-agents on the 255 failing tests (`scripts/failstats.py`,
    `scripts/jsstats.py`, `scripts/displaydiff.py` buckets; bugs/js.md, display.md, missing_checks.md), flagflip's 132
    missing, the DT sweep's 3. Mechanisms only, no per-test special cases.

@@ -9318,7 +9318,7 @@ const baselines = {
     'declarationMapCrossFileNodeReuse': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationMapInlineSourcesContent': {
         errors: true,

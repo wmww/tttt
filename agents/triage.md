@@ -49,3 +49,10 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
   literal sources (nuxt's `defu(route, {...})`: spurious TS2590, 17dabf96); an interface extending a generic
   function-type alias ran into the instantiation limit (arktype/ark/docs: spurious TS2589/TS5114, f973cab3). Also an
   open one: agent A's zod getter probe (bugs/perf_leads.md "agent A round 2"), a spurious TS2322 where tsgo is clean.
+- (2026-10-12, plan 55 session) genericCallOnMemberReturningClosedOverObject's expression lines: `example<number>()
+  .foo("hello")` prints ten levels of `{ foo: <T2_1>(t2: T2_1) => ...` where tsgo's is `{ foo: <T2>(t2: T2) => any; ... }`.
+  The object literal `x` instantiated inside its own generic method's signature instantiation (T2 -> fresh T2') is a new
+  instantiation each level in tttt; tsgo keys an anonymous type's instantiations by its outer type parameters (T1 only,
+  not the method's T2), so the same type comes back and is cyclic (`any`). Pre-existing (base build ff7d821a prints
+  the same). Same family: `this` in an object literal method is the literal's widened type itself in tttt, another
+  type in tsgo (getWidenedType(checkExpressionCached(literal))), see plans/55 "Known traps".

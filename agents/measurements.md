@@ -9,6 +9,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Pseudochecker (2026-10-12, todo entry 7, plan 55 stages 1-3 but 1b)
+`src/ty/pseudo.c` and its printing at tsgo's serializeTypeForDeclaration/serializeReturnTypeForSignature sites, the
+old display slices deleted. Suite 13318 -> **13328** / 13568 (accessor pairs, `this`-returning literals, deeper
+function recursion, `as const` tuples, Array<error> members). Everything else unchanged: corpora (webpack 0/5, drizzle
+0/3, vue 0/3, effect 3/0, the rest 0/0), DT sweep 8592 / 8595, `$ExpectType` 68631, flagflip 132 / 16 / 3, source sweep
+3293 / 3363 (full run), perfsweep median check ratio 0.19, worst types ratio 1.56.
+- Instructions (callgrind): tsc 4.690, type-fest 18.598, valibot 3.430, react 1.502, nest 1.161, webpack 10.439, zod
+  4.992, xstate 2.670, drizzle 5.952, vue 6.572, effect 10.095, vscode 90.923, excalidraw 7.938, tanstack-router 5.323 G
+  (-0.1..+0.1% against entry 6: printing only).
+
 ## Source sweep fan-out (2026-10-12, todo entry 6)
 4 agents by repo list (A config/module resolution/references/parser/perf, B relations+inference in application code,
 C type-level libraries, D contextual typing/narrowing/calls; then second tasks: A and B their own leftovers, B plan 61,

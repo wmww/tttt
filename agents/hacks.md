@@ -496,6 +496,15 @@ src` finds the code-side markers; every significant one has an entry here.
   ...`), unique symbols of one name without positions, intrinsic variants, same-symbol anonymous types
   with equal mappers. noImplicitAnyUnionNormalizedObjectLiteral1: tttt's nullable widening keeps one member's id where
   tsc's recreates both.
+- Pseudo types (`src/ty/pseudo.c`, plan 55): tsgo walks parents for isContextuallyTyped/IsInConstContext, tttt passes
+  them down from flags the resolve walk sets (`ObjectExprItem.pseudo_contextual`/`pseudo_const`,
+  `FunctionImpl.syntactically_contextual`); `pseudo_of_variable()` is always given a non-contextual place (a variable
+  inside a callback is contextual to tsgo). Const-ness when printing (`Pseudo.in_const`) is syntactic only, where tsgo
+  asks the checker's isConstContext (equal in practice: post-inference contextual types aren't const type variables).
+  `pseudo_enter_signature()` treats an instantiated signature's own type parameters as fresh (tsgo clones them), by
+  mention, not by identity. `reused_node_length()` counts whitespace before a reused node, tsgo's range also has
+  comments. `pseudo_member_prop()` finds a member's property by declaration span, not by name. isolatedDeclarations
+  doesn't use the pseudo tree yet (plan 55 stage 1b): `declaration_diagnostics.c`'s builder is TS 6.0's.
 - Member order (`builder_sort_stable()`, tsc's getNamedMembers): object literals, mapped types, namespaces and merged
   values only; class/interface members keep tttt's own-then-inherited order, `builder_prototype_last()` moves a static
   side's `prototype` last. Props without a declaration sort by name bytes (tsc: escapedName, then symbol id).
