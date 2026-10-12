@@ -776,37 +776,29 @@ static bool specifier_is_relative(csview path) {
         csview_equals(path, "..");
 }
 
-// getSymbolChain's sortByBestName: modules with fewer path components first, non-relative before relative; the rest
-// stay where they are. V8 sorts arrays this short with a binary insertion sort, which this is (the comparison isn't a
-// total order, so the algorithm shows)
+// tsgo's getSymbolChain sorting by sortByBestName: modules with fewer path components first, non-relative before
+// relative, anything else by compareSymbols (a module that `export =`s the container is declared at its file's start,
+// so it comes before the container declared in it). Go's SortStableFunc on so few is an insertion sort, which this
+// is (the comparison isn't a total order, so the algorithm shows)
 static void sort_by_best_name(Symbol const** parents, u32 count, SourceFile const* from) {
     if (count < 2) return;
     cstr specifiers[CONTAINERS_MAX];
-    u32 order[CONTAINERS_MAX];
-    for (u32 i = 0; i < count; i++) {
-        specifiers[i] = parent_specifier(parents[i], from);
-        order[i] = i;
-    }
+    for (u32 i = 0; i < count; i++) specifiers[i] = parent_specifier(parents[i], from);
     for (u32 i = 1; i < count; i++) {
-        u32 pivot = order[i];
-        u32 left = 0, right = i;
-        while (left < right) {
-            u32 mid = left + ((right - left) >> 1);
-            csview a = cstr_sv(&specifiers[pivot]), b = cstr_sv(&specifiers[order[mid]]);
-            int compared = 0;
+        for (u32 j = i; j > 0; j--) {
+            csview a = cstr_sv(&specifiers[j]), b = cstr_sv(&specifiers[j - 1]);
+            int compared;
             if (a.size && b.size) {
                 bool a_relative = specifier_is_relative(a), b_relative = specifier_is_relative(b);
                 compared = a_relative == b_relative ? (int)path_components(a) - (int)path_components(b) : b_relative ? -1 : 1;
+            } else {
+                compared = ty_compare_symbols(parents[j], parents[j - 1]);
             }
-            if (compared < 0) right = mid;
-            else left = mid + 1;
+            if (compared >= 0) break;
+            c_swap(&parents[j], &parents[j - 1]);
+            c_swap(&specifiers[j], &specifiers[j - 1]);
         }
-        memmove(order + left + 1, order + left, (i - left) * sizeof(*order));
-        order[left] = pivot;
     }
-    Symbol const* sorted[CONTAINERS_MAX];
-    for (u32 i = 0; i < count; i++) sorted[i] = parents[order[i]];
-    memcpy(parents, sorted, count * sizeof(*parents));
     for (u32 i = 0; i < count; i++) cstr_drop(&specifiers[i]);
 }
 

@@ -116,14 +116,23 @@ static csview escaped_name(Symbol const* s) {
     return s->is_default_export ? c_sv("default") : s->name;
 }
 
+// Where a symbol's first declaration is: a source file's module symbol is declared by the file itself (position 0)
+static bool symbol_first_pos(Symbol const* s, OrderPos* out) {
+    if (s->is_module && s->module && s->module->file) {
+        *out = (OrderPos){ s->module->file->program_order, 0 };
+        return true;
+    }
+    return s->decl_count && span_pos(s->decls[0].full, out);
+}
+
 // tsc's compareSymbols, minus symbol ids (0: tie)
 int ty_compare_symbols(Symbol const* a, Symbol const* b) {
     if (a == b) return 0;
     if (!a) return 1;
     if (!b) return -1;
     OrderPos pa = {0}, pb = {0};
-    bool ha = a->decl_count && span_pos(a->decls[0].full, &pa);
-    bool hb = b->decl_count && span_pos(b->decls[0].full, &pb);
+    bool ha = symbol_first_pos(a, &pa);
+    bool hb = symbol_first_pos(b, &pb);
     if (ha && hb) {
         int c = cmp_pos(pa, pb);
         if (c) return c;
