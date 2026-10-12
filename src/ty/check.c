@@ -4551,7 +4551,12 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         .this_parameter = site->this_parameter, .this_function = site->this_function,
         .initializer_context = site->initializer_context,
     };
-    if (access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER)) {
+    // (Only when a member's property isn't public: otherwise every reading and writing is public, nothing to check)
+    bool non_public = false;
+    for (u32 i = 0; i < refs.len && !non_public; i++) {
+        non_public = (refs.props[i]->flags & (PROP_PRIVATE | PROP_PROTECTED | PROP_SET_PRIVATE | PROP_SET_PROTECTED)) != 0;
+    }
+    if (non_public && access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER)) {
         SyntheticAccess synthetic;
         synthetic_access(me, object, name, &synthetic, 0);
         if (synthetic.found && synthetic.synthetic) {
