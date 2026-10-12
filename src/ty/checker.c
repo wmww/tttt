@@ -844,15 +844,17 @@ static Ty const* intern_composite_origin(
         }
         if (kind == TY_UNION && (member_flags & TYF_UNDEFINED) && (member_flags & TYF_NULL)) xflags |= TYX_UNDEFINED_AND_NULL;
         if (kind == TY_UNION) {
-            // (Only intersections that may reduce: two object members without type variables, see never_reduced_prop())
+            // (Only intersections that may reduce: two object members without type variables, or one and a type
+            // literal with them, see never_reduced_prop())
             for (u32 i = 0; i < len && !(xflags & TYX_CONTAINS_INTERSECTIONS); i++) {
                 if (types[i]->kind != TY_INTERSECTION) continue;
-                u32 objects = 0;
+                u32 objects = 0, literals = 0;
                 TyList parts = types[i]->composite.types;
                 for (u32 j = 0; j < parts.len; j++) {
                     objects += (parts.data[j]->flags & TYF_OBJECT) && !(parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+                    literals += parts.data[j]->kind == TY_ANONYMOUS && (parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
                 }
-                if (objects >= 2) xflags |= TYX_CONTAINS_INTERSECTIONS;
+                if (objects >= 2 || (objects && literals)) xflags |= TYX_CONTAINS_INTERSECTIONS;
             }
         }
         Ty* ret = ty_alloc(me, kind, flags);
@@ -1336,12 +1338,49 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
 // a required property whose types are disjoint, one of them a literal (`{ kind: "a" } & { kind: "b" }`,
 // isDiscriminantWithNeverType), or one declared separately by two members, privately by one (isConflictingPrivateProperty).
 // Null if it isn't; `*private_conflict` says which
+// A discriminant conflict between a known object member and a type literal (or an instantiation of one) that mentions
+// type variables elsewhere: `{ type: "next"; value: T } & { type: "error" }` is never (tsc's getReducedType doesn't care
+// whether the members are generic, only isGenericObjectType). Only the literal-like properties of the known members are
+// looked up in the others: comparing every property of every generic instantiation is what made valibot +39% (c2146ada)
+static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* types, u32 len) {
+    for (u32 i = 0; i < len; i++) {
+        Ty const* known = types[i];
+        if (!(known->flags & TYF_OBJECT) || (known->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        Members const* members = ty_members(me, known);
+        for (u32 p = 0; p < members->prop_count; p++) {
+            Prop const* prop = members->props[p];
+            Ty const* a_type = nullptr;
+            for (u32 j = 0; j < len; j++) {
+                Ty const* other_type = types[j];
+                if (other_type->kind != TY_ANONYMOUS || !(other_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                if (!a_type) {
+                    a_type = prop_type(me, prop);
+                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                    if (!is_literal_like(a_type) || (a_type->flags & TYF_NEVER)) break;
+                }
+                if (ty_is_generic_object(me, other_type)) continue;
+                Prop const* other = ty_get_prop(me, other_type, prop->name);
+                if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
+                Ty const* b_type = prop_type(me, other);
+                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_type(me, b_type);
+                if (!is_literal_like(b_type) || (b_type->flags & TYF_NEVER)) continue;
+                Ty const* both[2] = { a_type, b_type };
+                if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return prop->name;
+            }
+        }
+    }
+    return nullptr;
+}
+
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
         if (is_known_object_for_reduction(me, types[i])) objects++;
     }
-    if (objects < 2) return nullptr;
+    if (objects < 2) {
+        *private_conflict = false;
+        return objects ? never_reduced_literal_prop(me, types, len) : nullptr;
+    }
     Atom const* private_name = nullptr;
     for (u32 i = 0; i < len; i++) {
         Ty const* a = types[i];
