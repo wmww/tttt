@@ -464,7 +464,10 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         Ty const* annotated = my ret_explicit ? ty_unwrapped_return_type(checker, me) : nullptr;
         checker->return_context = nullptr;
         // (`void | PromiseLike<void>` for Promise<void>: `return new Promise(resolve => resolve())` infers void)
-        if (annotated && !(annotated->flags & TYF_ANY)) {
+        // (`Promise<any>`'s is any: `this` in a returned object literal's methods is any, tsc's getThisTypeOfObjectLiteral)
+        if (annotated && (annotated->flags & TYF_ANY)) {
+            checker->return_context = annotated;
+        } else if (annotated) {
             Ty const* both[2] = { annotated, ty_promise_like_of(checker, annotated) };
             checker->return_context = ty_union(checker, both, 2, nullptr, (TyList){0});
         }
@@ -480,7 +483,9 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         checker->return_context = ty_instance_type_of_class(checker, function_impl_rare(me)->constructed_class);
     } else if (my ret_explicit || function_impl_setter_type(me)) {
         Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_setter_type(me), (LowerCtx){ .generic = true });
-        checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
+        // (An any annotation is a context too, which makes `this` in a returned object literal's methods any: tsc's
+        // getContextualTypeForReturnExpression)
+        checker->return_context = annotated->flags & TYF_VOID ? nullptr : annotated;
     } else {
         checker->return_context = ty_return_expressions_context(checker, me);
     }
