@@ -26,6 +26,14 @@ static Ty const* reference_from_type_node(Checker* me, Ty const* target, TyList 
 // values (ty_type_of_symbol()). Nodes are syntax only: what the parser made.
 
 static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
+
+// tsc's isLocalTypeAlias: a type alias declared in a function body (here: in any block or function body, TypeDecl.local)
+static bool alias_is_local(Symbol const* symbol) {
+    for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_TYPE_ALIAS) return ((TypeDecl const*)symbol->decls[i].node)->local;
+    }
+    return false;
+}
 static inline Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol) {
@@ -3790,6 +3798,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     renames = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
                 }
             }
+            // A local alias doesn't rename an instantiation of a top-level one (tsc's getTypeFromTypeAliasReference: it
+            // may end up in an inferred return type where it isn't accessible, TypeScript#43622)
+            if (renames && alias_is_local(alias) && !alias_is_local(canonical(me, decl))) renames = false;
             if (renames) {
                 ret = ty_realias(me, ret, alias, alias_args);
             }
