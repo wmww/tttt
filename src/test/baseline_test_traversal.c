@@ -415,6 +415,43 @@ static cstr member_text(BaselineTestCase* ctx, Symbol const* container, Span con
     return ret;
 }
 
+// What an import resolves to when it's a property of what a module's `export =` names (the binder's stand-in symbol)
+static Symbol const* export_equals_property_of(Symbol const* alias) {
+    Symbol const* target = symbol_resolve_alias((Symbol*)alias);
+    return target && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY ? target : nullptr;
+}
+
+// An import in scope of the property `name` of what a module's `export =` names, when that is the found property
+// (tsgo's getAccessibleSymbolChain: an alias resolving to the symbol names it, `import { a as a2 }` makes `x.a` print
+// as `a2`). The innermost scope's
+static Symbol const* export_equals_property_alias(BaselineTestCase* ctx, PropSymbolInfo const* info, csview name) {
+    if (info->member_count != 1 || !span_valid(info->first_declaration)) return nullptr;
+    Checker* checker = current_checker;
+    for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
+        if (!scope->locals.count) continue;
+        u32 count;
+        SymbolEntry* entries = symbol_table_collect(&scope->locals, &count);
+        Symbol const* found = nullptr;
+        for (u32 i = 0; i < count && !found; i++) {
+            Symbol* alias = (Symbol*)entries[i].symbol;
+            if (!(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->item) continue;
+            PortItem const* item = alias->alias->item;
+            if (item->tag != PORT_IMPORT_SPECIFIC) continue;
+            Symbol const* target = export_equals_property_of(alias);
+            if (!target) continue;
+            if (!csview_equals_sv(target->name, name)) continue;
+            Ty const* assigned = ty_type_of_symbol(checker, target->decls[0].node);
+            if (!(assigned->flags & TYF_OBJECT)) continue;
+            Prop const* prop = ty_get_prop(checker, assigned, checker_atom(checker, name));
+            while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+            if (prop && prop->decl->decl_span_count && span_eq(prop->decl->decl_spans[0], info->first_declaration)) found = alias;
+        }
+        free(entries);
+        if (found) return found;
+    }
+    return nullptr;
+}
+
 // The name of a property's symbol from here: a namespace's or module's export by its own chain, a member by the chain
 // of its container (tsc's getContainersOfSymbol of a member), else bare
 static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
@@ -439,6 +476,11 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     // (by the name accessed: the export's own name may differ, `export default class C`)
     csview accessed = span_sv(fallback);
     if (accessed.size >= 2 && (accessed.buf[0] == '"' || accessed.buf[0] == '\'')) accessed = csview_slice(accessed, 1, accessed.size - 1);
+    Symbol const* import_alias = export_equals_property_alias(ctx, info, accessed);
+    if (import_alias) {
+        cstr_append_sv(&ret, import_alias->name);
+        return ret;
+    }
     Symbol const* exported = info->member_count == 1 && info->namespace ?
         symbol_get_export(info->namespace, accessed) : nullptr;
     // (An ES module's `import * as ns` of a CommonJS one: tsc's getSpreadSymbol copies a readonly export into the
@@ -1469,6 +1511,25 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                     .span = i->source_name,
                     .text = file ? file_module_text(ctx, module) : symbol_text(ctx, module),
                 });
+            } else if (!quoted && !shorthand && export_equals_property_of(i->symbol)) {
+                // A property of what the module's `export =` names: that property's symbol (named by an import of it in
+                // scope, see export_equals_property_alias())
+                Symbol const* target = export_equals_property_of(i->symbol);
+                Checker* checker = current_checker;
+                Ty const* assigned = ty_type_of_symbol(checker, target->decls[0].node);
+                Prop const* prop = (assigned->flags & TYF_OBJECT) ? ty_get_prop(checker, assigned, checker_atom(checker, target->name)) : nullptr;
+                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+                if (prop && prop->decl->decl_span_count) {
+                    PropSymbolInfo info = { .member_count = 1, .first_declaration = prop->decl->decl_spans[0] };
+                    Symbol const* alias = export_equals_property_alias(ctx, &info, target->name);
+                    VecSpan declarations = vec_span_init();
+                    for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&declarations, prop->decl->decl_spans[k]);
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declarations,
+                        .span = i->source_name,
+                        .text = cstr_from_sv(alias ? alias->name : target->name),
+                    });
+                }
             } else if (shorthand && !quoted) {
                 // (tsc's getExternalModuleMember: any member of a shorthand ambient module is the module)
                 bool aliased = ctx->shorthand_module == shorthand && span_valid(ctx->shorthand_alias) &&

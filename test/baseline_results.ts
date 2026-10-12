@@ -12387,7 +12387,7 @@ const baselines = {
     },
     'es6ExportEqualsInterop': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'es6ImportDefaultBinding': {
@@ -55867,22 +55867,22 @@ const baselines = {
     },
     'nodeModulesJson(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesJson(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesJson(module=node20)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesJson(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesNoDirectoryModule': {
