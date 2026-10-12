@@ -691,6 +691,9 @@ static void sort_by_id(Ty const** data, u32 len) {
 
 static void ty_buf_add_flattened(TyBuf* me, TyKind kind, Ty const* const* types, u32 len) {
     for (u32 i = 0; i < len; i++) {
+        // (The same type again right after itself adds nothing: tsc's addTypesToUnion skips it, lastType. A union
+        // over a thousand keys whose properties are one big union is a thousand copies of it)
+        if (i && types[i] == types[i - 1]) continue;
         if (types[i]->kind == kind) {
             ty_buf_add_flattened(me, kind, types[i]->composite.types.data, types[i]->composite.types.len);
         } else {
