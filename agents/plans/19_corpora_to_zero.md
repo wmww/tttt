@@ -15,7 +15,7 @@ bugs/tsgo_divergences.md has what the tsc 6 era left in the corpus configs.
   to core), **vue** 4ab865a8, **tanstack-router** 30fc108a (react-router's tsconfig now says `types: ["node"]`),
   **excalidraw** 53973c3a, **type-fest** e9f614f1 (peak RSS 2.3 GB on the IntRange tests), **zod** 0b216ef6
   (tsconfig.test.json, no overlay), **typescript-eslint** 70629871 (`-b`), **vscode** 2afa73ea (src/tsconfig.corpus.json
-  = upstream's minus 3 test files tsc 6 reports circularity in; ~10.1k files / 3.41M lines, tsc 6 needs >8 GB heap).
+  = upstream's minus the webview service worker; ~10.1k files / 3.41M lines, tsc 6 needs >8 GB heap).
 
 **Status 2026-10-06**: excalidraw and tanstack-router pinned and drained to 0 the same session (see their sections).
 **Status 2026-10-05**: effect pinned (6300 -> 63, see its section); vscode pinned (129 -> 0); the rest as below. **Status 2026-09-29 (seventh

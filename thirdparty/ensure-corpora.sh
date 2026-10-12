@@ -123,9 +123,9 @@ CORPORA=(
     # more than twice the Mar 2025 pin's): the workbench, editor, chat/agent host, platform services with
     # decorator-based dependency injection (experimentalDecorators), browser + node + electron code in one program,
     # nodenext, noImplicitOverride, useDefineForClassFields off. Checked through src/tsconfig.corpus.json from the
-    # overlay: upstream's src/tsconfig.json (the extensions are separate projects, left out) minus 3 test files where
-    # tsc 6 reports TS7022/TS7024 circularity tsgo 7 doesn't (`const c = new C(() => f(c.x))`; upstream only checks with
-    # tsgo); clean under tsc 6 (which needs more than 8 GB of heap) and tsgo 7. The lock is upstream's;
+    # overlay: upstream's src/tsconfig.json (the extensions are separate projects, left out) minus the webview service
+    # worker (a .js file). tsgo 7.1 reports 10 errors on it (resolveAsync's distributive conditional return type,
+    # TS2345/TS2322/TS2416), tttt the same ones. The lock is upstream's;
     # corpora-locks/vscode.postinstall.sh fetches the electron.d.ts its `paths` map `electron` to
     "vscode https://github.com/microsoft/vscode.git 2afa73ea129cad2710fc5c6363bebc4012648070 ."
     # excalidraw (Oct 2026, plan 48 stage 5): the JSX-heavy application (whiteboard editor's React 19 components,
