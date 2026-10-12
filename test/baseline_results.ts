@@ -52451,9 +52451,9 @@ const baselines = {
         types: true,
     },
     'jsdocDisallowedInTypescript': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocFunctionType': {
         errors: true,
@@ -64001,7 +64001,7 @@ const baselines = {
         types: true,
     },
     'keyofAndIndexedAccessErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65776,9 +65776,9 @@ const baselines = {
         types: true,
     },
     'thisTypeInFunctionsNegative': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'thisTypeInInterfaces': {
         errors: true,
