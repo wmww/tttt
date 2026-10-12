@@ -22,7 +22,10 @@ in bugs/sourcesweep_checker.md; plan 61 (constraint functions) written.
   hacks.md perf gate), +0.8% nest (A: realpath on relative names), 11 source sweep projects lost (B's
   SkipGenericFunctions in conditional arguments, found only by a full-sweep match-set diff), flagflip webpack -31
   TS6196 and xstate +7 TS5115 (D: found only by flagflip against a session-start run in a base worktree).
-- Instructions (callgrind): INSTR
+- Instructions (callgrind): tsc 4.687, type-fest 18.611, valibot 3.429, react 1.502, nest 1.161, webpack 10.432, zod
+  4.990, xstate 2.671, drizzle 5.949, vue 6.568, effect 10.093, vscode 90.864, excalidraw 7.932, tanstack-router 5.325 G
+  (against the session start: valibot -2.0%, zod +0.8%, the rest +0.0..+0.5%; D's last commit moving cold code out of
+  the hot try_resolve_indexed alone took drizzle -0.8% and 0.2-0.4% elsewhere: watch GCC inlining there).
 
 ## Perf at breadth after plan 59 stage 2 (2026-10-12, the fan-out's merges up to a43aaa00)
 `scripts/perfsweep.py -j 3` with agents running (types and RSS ratios are exact; time from the end-of-session run

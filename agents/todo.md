@@ -33,7 +33,7 @@ instructions are the stable numbers.
    60. Threads uncapped (checkers stay 4, vision.md). bench.sh re-baselined: tttt 2.6-10.6x tsgo at defaults, 2.0-6.1x
    single-threaded, 0.4-0.8x its RSS (measurements.md "Bench on tsgo 7.1").
 6. ~~Source sweep fan-out~~ done: 4 agents, ~85 picks; source sweep 3132 -> 3293 / 3363 (repos fully matching 93 ->
-   129), every other oracle unchanged, suite 13318; instructions +0.2..+1% (valibot -1.5%). Leftovers per agent in
+   129), every other oracle unchanged, suite 13318; instructions +0.0..+0.8% (valibot -2.0%). Leftovers per agent in
    bugs/sourcesweep_checker.md; plans/61_constraint_functions.md written (stage 1 derisked: +1 suite test). triage.md:
    the lib-file-checking decision. measurements.md "Source sweep fan-out".
 7. **Plan 55 stage 1-2**: tsgo's pseudochecker as one module (`src/ty/pseudo.c`), equivalence and printing.
