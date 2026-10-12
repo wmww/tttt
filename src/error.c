@@ -460,8 +460,9 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
         if (cmp < 0) {
             return i;
         } else if (cmp == 0) {
-            if (error->phase == ERROR_PHASE_TYPECHECK) {
-                // tsc's diagnostic collection drops an identical diagnostic
+            if (error->phase == ERROR_PHASE_TYPECHECK || error->phase == ERROR_PHASE_RESOLVE_NAMES) {
+                // tsc's diagnostic collection drops an identical diagnostic (the binder's too: a third default export
+                // reports the first one again, related to itself, merged by sortAndDeduplicateDiagnostics)
                 for (intptr_t j = i; j > 0 && !error_cmp(vec_error_at(&my errors, j - 1), error); j--) {
                     Error const* other = vec_error_at(&my errors, j - 1);
                     // (One with other related information is another diagnostic until they're merged:
