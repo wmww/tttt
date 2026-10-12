@@ -3683,7 +3683,7 @@ static bool binary_op_typecheck(
                         at++;
                     }
                 }
-                Span op_span = at < end ? span_make_in(expr->inner_span, at, at + binary_op_get_zv(op).size) : expr->inner_span;
+                Span op_span = at < end ? span_make_in(expr->inner_span, at, at + binary_op_get_zv(expr->binary_op->op).size) : expr->inner_span;
                 error_ctx_error_d(errs, op_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
                     "' operator is not allowed for boolean types. Consider using '", binary_op_get_zv(suggested).str, "' instead.");
                 operands_ok = false;
