@@ -2168,8 +2168,9 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
             }
             free(literals);
         }
+        // (A combining priority unions them with subtype reduction: tsgo's getCovariantInference, UnionReductionSubtype)
         co = (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
-            ty_union(me, candidates, len, nullptr, (TyList){0}) :
+            (len > 1 ? ty_union_subtype_reduced(me, candidates, len) : candidates[0]) :
             common_supertype(me, candidates, len);
         co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
         free(candidates);
