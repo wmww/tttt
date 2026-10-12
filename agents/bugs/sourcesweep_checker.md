@@ -170,19 +170,29 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   silent-never mapper makes it non-inferrable: R = "dflt"), tttt's `readonly {}[]`. Cause: base_constraint()'s
   distributive constraint uses the check type's *base* constraint (hacks.md "Constraint functions are
   approximations"); switching that call to the immediate constraint (`distributive_constraint_as(.., true)`) fixes the
-  probe but makes the suite runaway-recurse (segfault). Needs the constraint-function rewrite hacks.md describes.
-- mikro-orm/tests +TS2615 x3 (`toJSON` circular in a mapped type, EntityFactory.test.ts:52), +TS2769
-  EntityManager.mongo.test.ts:1268, -TS5088 x9 / -TS2883 x2 (declaration diagnostics): not looked at.
-- better-auth get-migration-schema.test.ts:293 +TS2339 x4: `auth.api` is `InferAPI<Prettify<{ [x: string]: any }>>`
-  where tsc keeps `signUpEmail`; `Auth<BetterAuthOptions>.api = InferAPI<ReturnType<typeof router<Options>>["endpoints"]>`
-  through `OverrideMerge<typeof endpoints, PluginEndpoint>` (`{ [K in keyof Base as K extends keyof Override ? never :
-  K]: Base[K] } & Override`) with a `{ ...baseEndpoints, ...pluginEndpoints }` that spreads a Record<string, Endpoint>.
-  Not reduced; better-auth lynx-store.ts:65 -TS2345 x2 not looked at.
-- apollo-client: ObservableQuery.ts:2237 +TS2684 (`this` of a WatchQueryOptions method), LocalState.ts:501 +TS2352
-  (`DeepOmit<Partial<NoInfer<TVariables>> & {...}>`), +TS2865/+TS2694/-TS2749 in node_modules (ast-types, @types/react
-  `React.React`): not looked at.
-- sequelize model-hooks.ts:185 +TS2345 (`[...HookParameters<ModelHooks<...>[HookName]>]` to a union of tuples), +TS2578
-  model-definition.ts:747, -TS2339 connection-options.ts:50: not looked at.
+  probe but makes the suite runaway-recurse (segfault). Plan 61 (plans/61_constraint_functions.md) covers it.
+- mikro-orm/tests +TS2615 x3 (`toJSON` circularly references itself in a mapped type): reproduces in a project
+  extending `mikro-orm/tests/tsconfig.json` with only `import type { Loaded } from '@mikro-orm/core'; import type { Book }
+  from '<abs>/tests/entities/index.js'; declare function createEntity<T>(): T; createEntity<Loaded<Book>>().toObject(['id']);`
+  (BaseEntity's `toObject<Entity extends this, Ignored extends EntityKey<Entity>>(ignoreFields: Ignored[])`, EntityDTO's
+  `as`-clause mapped types with CleanKeys). Not reduced further. +TS2769 EntityManager.mongo.test.ts:1268 and -TS5088
+  x9 / -TS2883 x2 (declaration diagnostics): not looked at.
+- better-auth +TS2339 `signUpEmail` on `InferAPI<Prettify<{ [x: string]: any }>>` (get-migration-schema.test.ts:293
+  and 15 sites in other test files once that file is the only root): reproduces with a tsconfig extending the
+  package's (composite/incremental/emitDeclarationOnly turned off, its references by absolute path) whose only file is
+  get-migration-schema.test.ts; a hand-written `declare const auth: Auth<BetterAuthOptions>; auth.api.signUpEmail` or
+  `betterAuth(config)` probe doesn't. tsctypeat: tsc has `auth: Auth<BetterAuthOptions>`, `config: BetterAuthOptions`.
+  A copy of the file outside the package (modules unresolved) shows another divergence: tsc infers `Auth<any>` (api
+  any) from the error-typed config, tttt `Auth<BetterAuthOptions>` (api `FilteredAPI<Record<string, Endpoint>>`) and
+  reports TS2722 there. Not reduced further. lynx-store.ts:65 -TS2345 x2 not looked at.
+- apollo-client docs `@types/react/index.d.ts:4146` +TS2694 `React.React` / -TS2749 (`React.Component` in `declare
+  global { namespace JSX }`): near agent A's b5fcc5fc (TS2749 for value-only members of an `export =` namespace), not
+  looked at further.
+- sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
+  `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
+  reports it, so does a probe with IndexOptions alone); connection-options.ts:50 -TS2339: tsc reports TS2339 twice
+  there, once on `RawConnectionOptions<Dialect>` and once on its constraint `string | (object & { url?: string })`
+  (the binding pattern's contextual type makes the initializer's `options` substitute constraints); tttt only the first.
 - msw body-stream.node.test.ts:11 and qwik slot.e2e.tsx:19 -TS2428 (a `declare module 'vitest' { interface
   Matchers<T = any> }` augmentation of an interface vitest re-exports from a chunk): a standalone copy of the
   re-export chain (even the `config.d.CU_b-wJj.js` chunk name) reports TS2428 like tsc; something about the real
