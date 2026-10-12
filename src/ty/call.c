@@ -142,6 +142,9 @@ static bool is_empty_tuple(Ty const* ty) {
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr) {
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->is_extends) return false;
     if (expr->call->callable.tag == EXPR_GENERIC_PARAMS) return false;
+    // (An immediately invoked function's parameters are its arguments' first: asked here, before the call is checked,
+    // its type would otherwise decide them unannotated for good, TS7006, ember's `assert(..., (function (a, b) {...})(...))`)
+    ty_assign_iife_parameter_types(me, expr->call);
     Ty const* callee = ty_apparent_type(me, ty_expr_type(me, &expr->call->callable));
     if (!(callee->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getSignaturesOfType)
     Members const* members = ty_members(me, callee);
