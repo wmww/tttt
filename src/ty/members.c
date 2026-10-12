@@ -85,6 +85,12 @@ static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
 
 static TyObjectState* object_state(Ty const* ty);
 
+// The signatures among a class's or interface's raw members that its bases give it without a this-argument
+typedef struct ThislessSignatures {
+    Signature const* const* sigs;
+    u32 len;
+} ThislessSignatures;
+
 typedef struct MembersBuilder {
     // builder_add_interface(): 0 every member, 1 all but the index signatures, 2 only those (see resolve_declared_members())
     uint8_t index_pass;
@@ -2451,6 +2457,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             builder_late_bound_last(&builder, 0);
             builder_add_assignment_members(me, &builder, decl);
             TyBuf bases = {0};
+            TyBuf written_bases = {0}; // (Before the this-argument: bases[i] is written_bases[i] if it takes none)
             bool dynamic = false;
             // (tsc's getBaseTypes pushing ResolvedBaseTypes: members asked for while the bases are lowered, see
             // members_reentered())
@@ -2462,6 +2469,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     Symbol const* base_decl = nullptr;
                     if (class_base(me, node->node, ctx, &base, &base_decl) && base != ty) {
                         ty_buf_push(&bases, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                        ty_buf_push(&written_bases, base);
                         dynamic |= base_is_dynamic(me, base, 0);
                     }
                 } else if (node->kind == SYMBOL_DECL_INTERFACE) {
@@ -2474,9 +2482,11 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         if (base == ty) continue;
                         if (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
                             ty_buf_push(&bases, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                            ty_buf_push(&written_bases, base);
                             dynamic |= base_is_dynamic(me, base, 0);
                         } else if (base->kind == TY_TYPE_PARAM && is_valid_base_type(me, base, 0)) {
                             ty_buf_push(&bases, base);
+                            ty_buf_push(&written_bases, base);
                             dynamic = true;
                         } else if ((base->flags & TYF_ANY) && !(base->flags & TYF_ERROR)) {
                             // An any base gives a string index signature of any (tsc's anyBaseTypeIndexInfo)
@@ -2498,6 +2508,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 // The bases lead back to the type: it has none (TS2310, see ty_interface_in_base_cycle())
                 ty_symbol_links(me, decl)->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
                 bases.len = 0;
+                written_bases.len = 0;
                 dynamic = false;
             }
             if (dynamic) {
@@ -2509,10 +2520,34 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 ret->bases = copy;
                 ret->base_count = bases.len;
                 ty_buf_drop(&bases);
+                ty_buf_drop(&written_bases);
                 return ret;
             }
-            for (u32 i = 0; i < bases.len; i++) builder_add_inherited(me, &builder, bases.data[i]);
+            // The signatures of a base that takes no this-argument (a type literal, `interface I extends F<T>` with an
+            // alias of a function type) can't mention this type's `this`: a reference that only gives it one shares them
+            // rather than instantiating them (tsc concatenates getSignaturesOfType of such a base unchanged, so
+            // relating I to its base finds the very same signature)
+            TyBuf thisless = {0};
+            for (u32 i = 0; i < bases.len; i++) {
+                u32 calls = builder.call_count, constructs = builder.construct_count;
+                builder_add_inherited(me, &builder, bases.data[i]);
+                if (bases.data[i] == written_bases.data[i]) {
+                    for (u32 j = calls; j < builder.call_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.call[j]);
+                    for (u32 j = constructs; j < builder.construct_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.construct[j]);
+                }
+            }
             ty_buf_drop(&bases);
+            ty_buf_drop(&written_bases);
+            Members const* ret = builder_finish(me, &builder);
+            if (thisless.len) {
+                Signature const** list = arena_new_n(&my arena, Signature const*, thisless.len + 1);
+                memcpy(list, thisless.data, sizeof(Signature const*) * thisless.len);
+                ThislessSignatures* entry = arena_new(&my arena, ThislessSignatures);
+                *entry = (ThislessSignatures){ .sigs = list, .len = thisless.len };
+                *intern_slot(me, &my links, (u64[]){ KEY_THISLESS_SIGNATURES, (u64)(uintptr_t)ret }, 2) = entry;
+            }
+            ty_buf_drop(&thisless);
+            return ret;
         }   break;
 
         case TY_DECLARED_CLASS_STATIC:
@@ -2628,12 +2663,23 @@ static Members const* instantiate_members(
         };
         builder_push(&builder, props, prop);
     }
+    ThislessSignatures const* thisless = this_only ? intern_get(&my links, (u64[]){ KEY_THISLESS_SIGNATURES, (u64)(uintptr_t)source }, 2) : nullptr;
     for (u32 pass = 0; pass < 2; pass++) {
         u32 count = pass ? source->construct_count : source->call_count;
         Signature* const* sigs = pass ? source->construct : source->call;
         for (u32 i = 0; i < count; i++) {
             // (An instantiation expression drops the signatures its type arguments don't apply to)
             if (applies_type_args && !ty_instantiation_keeps_signature(me, sigs[i], mapper)) continue;
+            bool shared = false;
+            for (u32 j = 0; thisless && j < thisless->len && !shared; j++) shared = thisless->sigs[j] == sigs[i];
+            if (shared) {
+                if (pass) {
+                    builder_push(&builder, construct, sigs[i]);
+                } else {
+                    builder_push(&builder, call, sigs[i]);
+                }
+                continue;
+            }
             Signature* sig = arena_new(&my arena, Signature);
             *sig = (Signature){
                 .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper, .drops_mapped_type_params = applies_type_args,
