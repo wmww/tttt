@@ -403,13 +403,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         if (my target) unused_mark_referenced(names, (Symbol*)my symbol, SYMBOL_TYPE);
         if (!my target) {
             my target = scope_get_value(names, span_sv(my name), &my symbol); // TS2749 below
-            // (Unless it's a property of what `export =` names, which the checker finds to be a type when it is one:
-            // node's `import type { EventEmitter } from "stream"`, lower_identifier(). A value-only one, TS2749, is
-            // marked too, which tsc wouldn't)
-            Symbol const* target = my target;
-            if (target && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) {
-                unused_mark_referenced(names, (Symbol*)my symbol, SYMBOL_TYPE);
-            }
+            // (Unless it's a property of what `export =` names that is a type: the checker decides and marks it,
+            // export_equals_property_type())
         }
         // In a function's JSDoc a name is looked up from the function too, which makes what it finds there referenced
         // (tsc's resolveEntityNameFromAssignmentDeclaration through getAssignmentDeclarationLocation: the signature's

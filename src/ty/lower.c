@@ -8,6 +8,7 @@
 #include "class_decl.h"
 #include "interface_decl.h"
 #include "statement.h"
+#include "unused.h"
 #include "binding.h"
 #include "port_statement.h"
 #include <math.h>
@@ -458,7 +459,14 @@ static Symbol const* export_equals_property_type(Checker* me, Symbol const* prop
     Symbol* symbol = prop ? (Symbol*)prop->decl->symbol : nullptr;
     if (symbol && symbol_resolved_flags(symbol) & SYMBOL_TYPE) {
         Symbol const* type = symbol_for_meaning(symbol, SYMBOL_TYPE);
-        if (type && !type->is_placeholder) return canonical(me, type);
+        if (type && !type->is_placeholder) {
+            // A use of the import as a type (noUnusedLocals): the binder can't know, a value-only property used as a
+            // type (TS2749, webpack's JSDoc `@returns {TRANSITIVE}`) doesn't count, tsc's resolveName failed for it
+            if (identifier->symbol && unused_enabled()) {
+                __atomic_fetch_or(&((Symbol*)identifier->symbol)->referenced, SYMBOL_TYPE, __ATOMIC_RELAXED);
+            }
+            return canonical(me, type);
+        }
     }
     if (!prop && ty_export_equals_property_missing(me, property)) return nullptr;
     ty_error_at(me, identifier->name, 2749, cstr_d("'", span_sv(identifier->name),
