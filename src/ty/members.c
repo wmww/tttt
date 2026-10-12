@@ -4107,6 +4107,14 @@ Span ty_prop_decl_span(Prop const* prop) {
     // (A JSDoc `@property` too: tsgo reparses it into a PropertySignature, whose error span is its name)
     // A parameter property is the whole parameter, its modifiers first
     if (prop->decl->parameter_property && prop->decl->decl_span_count) return prop->decl->decl_spans[0];
+    // An object literal's property assignment is the whole member, modifiers (TS1042) first (getErrorSpanForNode has
+    // no case for it)
+    ObjectExprItem const* item = prop->decl->item;
+    if (prop->decl->literal_own && item && item->tag == OBJECT_ITEM_PROPERTY && span_valid(item->span) &&
+        span_contains_span(item->span, prop->decl->name_span)
+    ) {
+        return span_make_in(item->span, span_start_ptr(item->span), span_end_ptr(prop->decl->name_span));
+    }
     return prop->decl->name_span;
 }
 

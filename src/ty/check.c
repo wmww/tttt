@@ -305,6 +305,15 @@ static bool elaborate_element(
     Ty const* global_object = !declared && item->name ? ty_global_object_type(me) : nullptr;
     if (global_object && ty_get_prop(me, global_object, item->name)) return true;
     Span decl = declared ? ty_prop_decl_span(declared) : (Span){0};
+    // (tsc's targetProp.Declarations[0]: a namespace merged with a class is the namespace's name when it came first)
+    Prop const* declared_root = declared;
+    while (declared_root && declared_root->target && !declared_root->decl->symbol) declared_root = declared_root->target;
+    Symbol const* declared_symbol = declared_root ? declared_root->decl->symbol : nullptr;
+    if (declared_symbol && declared_symbol->decl_count > 1 && declared_symbol->decls[0].kind == SYMBOL_DECL_NAMESPACE &&
+        span_valid(declared_symbol->decls[0].name)
+    ) {
+        decl = declared_symbol->decls[0].name;
+    }
     if (!span_valid(decl)) decl = type_decl_span(me, target);
     if (in_lib(decl)) return true;
     // (A unique symbol name is typeToString's default, `unique symbol`)
