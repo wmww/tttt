@@ -17,8 +17,10 @@ instructions are the stable numbers.
 1. ~~Plan 59 stage 1~~ done: the gate (tiptap 3.9 -> 0.2 s), `scripts/perfsweep.py` (1779 projects tsgo checks:
    tttt K1's median check time 0.21x tsgo's, types 0.76x, RSS 0.71x; worst types ratios date-fns/pkgs/docs 16.4,
    feathers typebox 7.0, nitro 5.2, rxjs 2.6). measurements.md "Perf at breadth".
-2. **Plan 59 stage 2**: fan-out (four Opus sub-agents, disjoint outlier projects) on the worst type-count and time
-   ratios (plan 59's stage 2 list: date-fns docs 16x, typebox, nitro/nuxt, rxjs, dokploy). Rerun perfsweep; leftovers into bugs/perf_leads.md.
+2. ~~Plan 59 stage 2~~ done (plan 59 deleted): ~20 fixes from four agents, all tsgo caches/lazinesses (types
+   keyed by the whole mapper, eager intersection props/erased/canonical signatures, recursion identity, message
+   truncation). perfsweep: worst types ratio 16.4 -> 1.55, total 96.0M -> 71.3M (tsgo 127.9M), no project above
+   tsgo's RSS (was 28); drizzle -17%, xstate -9% instructions; suite 13317. Check time median 0.21 -> 0.16x tsgo.
 3. **Planning: plan 60, memory.** Bun's `bun check` uses 2.1 GB on vscode against tttt's 6.0 GB (type-fest 0.8 vs
    2.4 GB; measurements.md). Find where tttt's peak goes per corpus at K1 and K4 (`scripts/arenasites.sh`,
    `scripts/memtrack.sh`: AST, binder, checker arena by kind, relation caches, interned keys; what is duplicated per
@@ -29,7 +31,8 @@ instructions are the stable numbers.
 4. **Plan 60 stage 1** (execution).
 5. **Plan 60 stage 2**, or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
    (drop the tsc 6 / tsgo 7.0.2 columns), measurements.md's perf section rewritten (wall and RSS at K1 and K4 against
-   tsgo 7.1 `--singleThreaded` and default), the corpora's instructions.
+   tsgo 7.1 `--singleThreaded` and default), the corpora's instructions; the user asks why threads are capped at 4
+   (triage.md "From human").
 6. **Source sweep fan-out**: four Opus sub-agents on `scripts/sourcesweep.py`'s root causes (244 mismatching projects:
    +TS2322/+TS2345 across ~20 repos each first, the TS1434 parse errors in postiz-app's `@copilotkit` `.d.mts`,
    bugs/sourcesweep_checker.md's TS2589/TS7022/TS7023 items), one root-cause key set per agent.

@@ -12,8 +12,8 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
 ## Perf at breadth after plan 59 stage 2 (2026-10-12, the fan-out's merges up to a43aaa00)
-`scripts/perfsweep.py -j 3` with agents running: **types and RSS ratios are exact, the time ratios below are not**
-(tttt's side load-inflated against tsgo's cached idle-ish side; remeasure on a quiet machine). 1779 projects:
+`scripts/perfsweep.py -j 3` with agents running (types and RSS ratios are exact; time from the end-of-session run
+below). 1779 projects:
 | ratio tttt / tsgo | median | p90 | worst | > 1 |
 |---|---|---|---|---|
 | types | 0.68 (was 0.76) | 0.94 (1.07) | 1.55 (16.40) | 92 (322) |
@@ -25,8 +25,11 @@ immutable-js 1.77 -> 0.45, vitest/examples/lit 1.62 -> 0.45; arktype/ark/docs 1.
 runaway, 300k TS2589 hits), linkwarden/apps/mobile one file 1.54 -> 0.14 s. New worst: lightweight-charts plugins
 (~1.5k types, 1.3-1.55), karakeep/packages/plugins 1.40 (bugs/perf_leads.md). Callgrind on the corpora (base e273be72
 -> 2nd checkpoint): drizzle -17.5%, xstate -9.3%, react -2.8%, tanstack-router -2.8%, zod -2.2%, effect -2.0%, the
-rest -0.4..-1.0%, none up. The last valid time ratios are stage 1's (2026-10-11, both sides at -j 4, before
-these fixes): check time median 0.21, p90 0.35, 5 projects > 1; wall median 0.27; tsgo's side is cached in
+rest -0.4..-1.0%, none up. Time, from `scripts/oracles.py`'s perfsweep at the end (-j 4, nothing else running, the
+same setting as stage 1's baseline): check time median 0.16 (stage 1: 0.21), p90 0.29 (0.35), 2 projects > 1 (5); total
+check 153 s vs tsgo's 1159 s (0.13). Its *wall* column was inflated in the load/parse phase (82 projects > 1, nest
+11 s) right after the oracle run's sweeps; rerun alone, those projects were faster than at stage 1 (nest 0.19 vs 0.28 s,
+renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py`'s other oracles. tsgo's side is cached in
 `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
 
 ## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
