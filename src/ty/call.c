@@ -961,6 +961,21 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
     return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
 }
 
+// tsc's couldContainTypeVariables at the top: an object type named by a non-generic type alias declared outside any
+// function (isNonGenericTopLevelType) can't, whatever its members mention (`type F = (x: <T>(p: T) => T) => void`)
+static bool could_contain_type_variables(Ty const* ty) {
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (!(ty->flags & TYF_OBJECT) || !ty->alias || ty->alias_args.len) return true;
+    for (u32 i = 0; i < ty->alias->decl_count; i++) {
+        if (ty->alias->decls[i].kind != SYMBOL_DECL_TYPE_ALIAS) continue;
+        for (struct Scope const* scope = ty->alias->decls[i].block; scope; scope = scope->parent) {
+            if (scope->kind == SCOPE_FUNCTION || scope->kind == SCOPE_STATIC_BLOCK) return true;
+        }
+        return false;
+    }
+    return true;
+}
+
 static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper const* return_mapper);
 
 // The second pass's inference from generic function argument `arg` (see Arg.generic_function), with `param_type` its
@@ -1463,6 +1478,10 @@ static TyMapper const* infer_type_arguments(
         }
         if (!arg->context_sensitive || arg->generic_function || skip_sensitive) continue;
         Ty const* param_type = shape_type_at(&shape, i);
+        // (Not one whose parameter can't mention a type parameter: tsc's inferTypeArguments asks
+        // couldContainTypeVariables first, so a callback typed by a plain alias isn't checked, and its contextual
+        // signature not decided, until the applicability check gets to it, if it does)
+        if (param_type && !could_contain_type_variables(param_type)) continue;
         if (param_type && arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) {
             infer_from_annotated_params(me, &inf, arg->expr->function, param_type);
         }
@@ -1933,7 +1952,7 @@ static Span report_unfit_argument(
         // (tsc's getSignatureApplicabilityError: the effective check node, or a synthetic expression over the rest
         // arguments when there are several; getErrorSpanForNode then shortens functions to their name or first token)
         span = is_rest_tuple && (u32)index + 1 < args->len ? span_of_args(args, (u32)index, args->len - 1) :
-            expr_error_span(effective);
+            expr_error_span_skip_parens(effective);
         // (A tagged template's TemplateStringsArray is tsc's synthetic expression over the template, without the tag)
         bool template_strings = info->tagged_template && arg->expr == info->tagged_template;
         if (template_strings) span = info->tagged_template->template_->template_span;
