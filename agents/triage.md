@@ -10,13 +10,3 @@ The commit messages have the outcome.
 ## For the insights session
 - `AGENTS.md` is a copy of `CLAUDE.md` that stopped being synced on 2026-10-08 (agents edit CLAUDE.md, a few edited
   both). Ask the human whether it's still wanted, or make it a symlink to CLAUDE.md.
-
-## Open
-- (2026-10-12, test/cases wiring) A JSX element spreading five unions of ten object types
-  (`<Comp {...a} {...b} {...c} {...d} {...e} />`, Comp generic, `@jsx: preserve`) is TS2590 in tsgo, nothing in tttt
-  (missed, before and after 16b4bb4b). The same five unions in `inter(a, b, c, d, e)` returning `P & Q & R & S & T`
-  match tsgo. Probe: the jsx spread's union/intersection size check.
-- (2026-10-12, test/cases wiring) TS2322 elaboration "Type 'SVGCircleElement' is missing the following properties from
-  type 'HTMLSpanElement': ..." lists `accessKey, accessKeyLabel, ...` in tttt, `contentEditable, enterKeyHint, ...` in
-  tsgo (react16.d.ts, test/cases/ttttDeferredCheckErrorLocation.tsx without its @ts-ignore; tiptap's MarkViewContent):
-  the missing-properties list's order or filtering differs (both say "and 26 more").

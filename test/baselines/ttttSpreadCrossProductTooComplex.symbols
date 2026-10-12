@@ -1,0 +1,119 @@
+//// [test/cases/ttttSpreadCrossProductTooComplex.tsx] ////
+
+=== ttttSpreadCrossProductTooComplex.tsx ===
+// Spreading a union into a union whose cross product reaches 100000 members is TS2590 (tsc's checkCrossProductUnion in
+// getSpreadType), in an object literal and in JSX attributes alike; what is spread after it is any
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(ttttSpreadCrossProductTooComplex.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttSpreadCrossProductTooComplex.tsx, 2, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttSpreadCrossProductTooComplex.tsx, 2, 44))
+
+type U1 = {a0: 1} | {a1: 1} | {a2: 1} | {a3: 1} | {a4: 1} | {a5: 1} | {a6: 1} | {a7: 1} | {a8: 1} | {a9: 1};
+>U1 : Symbol(U1, Decl(ttttSpreadCrossProductTooComplex.tsx, 2, 77))
+>a0 : Symbol(a0, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 11))
+>a1 : Symbol(a1, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 21))
+>a2 : Symbol(a2, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 31))
+>a3 : Symbol(a3, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 41))
+>a4 : Symbol(a4, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 51))
+>a5 : Symbol(a5, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 61))
+>a6 : Symbol(a6, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 71))
+>a7 : Symbol(a7, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 81))
+>a8 : Symbol(a8, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 91))
+>a9 : Symbol(a9, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 101))
+
+type U2 = {b0: 1} | {b1: 1} | {b2: 1} | {b3: 1} | {b4: 1} | {b5: 1} | {b6: 1} | {b7: 1} | {b8: 1} | {b9: 1};
+>U2 : Symbol(U2, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 108))
+>b0 : Symbol(b0, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 11))
+>b1 : Symbol(b1, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 21))
+>b2 : Symbol(b2, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 31))
+>b3 : Symbol(b3, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 41))
+>b4 : Symbol(b4, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 51))
+>b5 : Symbol(b5, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 61))
+>b6 : Symbol(b6, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 71))
+>b7 : Symbol(b7, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 81))
+>b8 : Symbol(b8, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 91))
+>b9 : Symbol(b9, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 101))
+
+type U3 = {c0: 1} | {c1: 1} | {c2: 1} | {c3: 1} | {c4: 1} | {c5: 1} | {c6: 1} | {c7: 1} | {c8: 1} | {c9: 1};
+>U3 : Symbol(U3, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 108))
+>c0 : Symbol(c0, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 11))
+>c1 : Symbol(c1, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 21))
+>c2 : Symbol(c2, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 31))
+>c3 : Symbol(c3, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 41))
+>c4 : Symbol(c4, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 51))
+>c5 : Symbol(c5, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 61))
+>c6 : Symbol(c6, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 71))
+>c7 : Symbol(c7, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 81))
+>c8 : Symbol(c8, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 91))
+>c9 : Symbol(c9, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 101))
+
+type U4 = {d0: 1} | {d1: 1} | {d2: 1} | {d3: 1} | {d4: 1} | {d5: 1} | {d6: 1} | {d7: 1} | {d8: 1} | {d9: 1};
+>U4 : Symbol(U4, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 108))
+>d0 : Symbol(d0, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 11))
+>d1 : Symbol(d1, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 21))
+>d2 : Symbol(d2, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 31))
+>d3 : Symbol(d3, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 41))
+>d4 : Symbol(d4, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 51))
+>d5 : Symbol(d5, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 61))
+>d6 : Symbol(d6, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 71))
+>d7 : Symbol(d7, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 81))
+>d8 : Symbol(d8, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 91))
+>d9 : Symbol(d9, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 101))
+
+type U5 = {e0: 1} | {e1: 1} | {e2: 1} | {e3: 1} | {e4: 1} | {e5: 1} | {e6: 1} | {e7: 1} | {e8: 1} | {e9: 1};
+>U5 : Symbol(U5, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 108))
+>e0 : Symbol(e0, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 11))
+>e1 : Symbol(e1, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 21))
+>e2 : Symbol(e2, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 31))
+>e3 : Symbol(e3, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 41))
+>e4 : Symbol(e4, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 51))
+>e5 : Symbol(e5, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 61))
+>e6 : Symbol(e6, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 71))
+>e7 : Symbol(e7, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 81))
+>e8 : Symbol(e8, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 91))
+>e9 : Symbol(e9, Decl(ttttSpreadCrossProductTooComplex.tsx, 7, 101))
+
+declare const a: U1, b: U2, c: U3, d: U4, e: U5;
+>a : Symbol(a, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 13))
+>U1 : Symbol(U1, Decl(ttttSpreadCrossProductTooComplex.tsx, 2, 77))
+>b : Symbol(b, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 20))
+>U2 : Symbol(U2, Decl(ttttSpreadCrossProductTooComplex.tsx, 3, 108))
+>c : Symbol(c, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 27))
+>U3 : Symbol(U3, Decl(ttttSpreadCrossProductTooComplex.tsx, 4, 108))
+>d : Symbol(d, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 34))
+>U4 : Symbol(U4, Decl(ttttSpreadCrossProductTooComplex.tsx, 5, 108))
+>e : Symbol(e, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 41))
+>U5 : Symbol(U5, Decl(ttttSpreadCrossProductTooComplex.tsx, 6, 108))
+
+declare function Comp<P>(props: P): JSX.Element;
+>Comp : Symbol(Comp, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 48))
+>P : Symbol(P, Decl(ttttSpreadCrossProductTooComplex.tsx, 9, 22))
+>props : Symbol(props, Decl(ttttSpreadCrossProductTooComplex.tsx, 9, 25))
+>P : Symbol(P, Decl(ttttSpreadCrossProductTooComplex.tsx, 9, 22))
+>JSX : Symbol(JSX, Decl(ttttSpreadCrossProductTooComplex.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttSpreadCrossProductTooComplex.tsx, 2, 23))
+
+const x = <Comp {...a} {...b} {...c} {...d} {...e} />;
+>x : Symbol(x, Decl(ttttSpreadCrossProductTooComplex.tsx, 10, 5))
+>Comp : Symbol(Comp, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 48))
+>a : Symbol(a, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 13))
+>b : Symbol(b, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 20))
+>c : Symbol(c, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 27))
+>d : Symbol(d, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 34))
+>e : Symbol(e, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 41))
+
+const o = { ...a, ...b, ...c, ...d, ...e, ...a, f: 1 };
+>o : Symbol(o, Decl(ttttSpreadCrossProductTooComplex.tsx, 11, 5))
+>a : Symbol(a, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 13))
+>b : Symbol(b, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 20))
+>c : Symbol(c, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 27))
+>d : Symbol(d, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 34))
+>e : Symbol(e, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 41))
+>a : Symbol(a, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 13))
+>f : Symbol(f, Decl(ttttSpreadCrossProductTooComplex.tsx, 11, 47))
+
+const small = { ...a, ...b };
+>small : Symbol(small, Decl(ttttSpreadCrossProductTooComplex.tsx, 12, 5))
+>a : Symbol(a, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 13))
+>b : Symbol(b, Decl(ttttSpreadCrossProductTooComplex.tsx, 8, 20))
+

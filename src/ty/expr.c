@@ -3534,6 +3534,7 @@ static bool spread_alt_type(Checker* me, SpreadAlt* alt, Ty const* member, bool 
 // Something spread: `...x`
 static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
     acc->error = false;
+    if (acc->any) return; // (Anything spread into any is any)
     if (type->flags & TYF_ANY) {
         acc->any = true;
         return;
@@ -3575,8 +3576,15 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
         }
         return;
     }
-    // Member by member, each into each of what was spread so far (tsc's getSpreadType maps over a union)
+    // Member by member, each into each of what was spread so far (tsc's getSpreadType maps over a union), unless the
+    // cross product is too large (tsc's checkCrossProductUnion: TS2590 at the node being checked, and the error type,
+    // which makes the rest of the spreads any)
     if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
+    if ((u64)acc->alt_count * members.len >= 100000) {
+        ty_error_at_current_node_d(me, 2590, "Expression produces a union type that is too complex to represent.");
+        acc->any = true;
+        return;
+    }
     SpreadAcc next = {0};
     for (u32 i = 0; i < acc->alt_count; i++) {
         for (u32 j = 0; j < members.len; j++) {

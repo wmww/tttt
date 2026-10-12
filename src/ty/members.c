@@ -213,17 +213,19 @@ static int prop_order_cmp(PropOrder const* a, PropOrder const* b) {
     return a->index < b->index ? -1 : a->index > b->index;
 }
 
-static void builder_sort_stable(MembersBuilder* builder) {
-    u32 n = builder->props_count;
-    if (n < 2) return;
+// (From the `from`-th property on)
+static void builder_sort_stable_from(MembersBuilder* builder, u32 from) {
+    if (builder->props_count < from + 2) return;
+    u32 n = builder->props_count - from;
+    Prop** props = builder->props + from;
     PropOrder stack[32];
     PropOrder* order = n <= c_arraylen(stack) ? stack : malloc(sizeof(PropOrder) * n);
     panic_if(!order, "out of memory");
     bool sorted = true;
     for (u32 i = 0; i < n; i++) {
         u32 file = 0, offset = 0;
-        bool has = prop_order_pos(builder->props[i], &file, &offset);
-        order[i] = (PropOrder){ has ? (u64)file << 32 | offset : UINT64_MAX, builder->props[i], i };
+        bool has = prop_order_pos(props[i], &file, &offset);
+        order[i] = (PropOrder){ has ? (u64)file << 32 | offset : UINT64_MAX, props[i], i };
         if (i && sorted) sorted = prop_order_cmp(&order[i - 1], &order[i]) < 0;
     }
     if (!sorted) {
@@ -244,11 +246,13 @@ static void builder_sort_stable(MembersBuilder* builder) {
             src = dst;
             dst = swap;
         }
-        for (u32 i = 0; i < n; i++) builder->props[i] = src[i].prop;
+        for (u32 i = 0; i < n; i++) props[i] = src[i].prop;
         free(tmp);
     }
     if (order != stack) free(order);
 }
+
+static void builder_sort_stable(MembersBuilder* builder) { builder_sort_stable_from(builder, 0); }
 
 // tsc's getNamedMembers lists a class's static members declared in the class first, then the others by declaration
 // (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
@@ -2455,6 +2459,9 @@ static Members const* complete_members(Checker* me, Members const* raw) {
     for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
     for (u32 i = 0; i < raw->index_count; i++) builder_push(&builder, index, raw->index[i]);
     for (u32 i = 0; i < members_rare(raw)->base_count; i++) builder_add_inherited(me, &builder, members_rare(raw)->bases[i]);
+    // (tsgo's getNamedMembers: the members declared in the type first, then the inherited ones, all of them by where
+    // they're declared rather than base by base: ElementContentEditable's before HTMLElement's own in HTMLSpanElement)
+    builder_sort_stable_from(&builder, raw->prop_count);
     return builder_finish(me, &builder);
 }
 
@@ -2652,6 +2659,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             // rather than instantiating them (tsc concatenates getSignaturesOfType of such a base unchanged, so
             // relating I to its base finds the very same signature)
             TyBuf thisless = {0};
+            u32 own_props = builder.props_count;
             for (u32 i = 0; i < bases.len; i++) {
                 u32 calls = builder.call_count, constructs = builder.construct_count;
                 builder_add_inherited(me, &builder, bases.data[i]);
@@ -2660,6 +2668,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     for (u32 j = constructs; j < builder.construct_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.construct[j]);
                 }
             }
+            builder_sort_stable_from(&builder, own_props); // (Inherited ones by declaration, see complete_members())
             ty_buf_drop(&bases);
             ty_buf_drop(&written_bases);
             Members const* ret = builder_finish(me, &builder);
@@ -2823,7 +2832,9 @@ static Members const* instantiate_members(
         builder_push(&builder, index, info);
     }
     if (source->mapped) builder.mapped = ty_mapped_info_instantiate(me, source->mapped, mapper);
+    u32 own_props = builder.props_count;
     for (u32 i = 0; i < members_rare(source)->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, members_rare(source)->bases[i], mapper));
+    builder_sort_stable_from(&builder, own_props); // (Inherited ones by declaration, see complete_members())
     if (!members_rare(source)->base_count) builder.same_names = source;
     Members* ret = (Members*)builder_finish(me, &builder);
     if (members_rare(source)->expanded_from) {

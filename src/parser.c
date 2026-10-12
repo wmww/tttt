@@ -10524,6 +10524,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     });
     bool is_fragment = hop_char(&p, '>');
     Anchor attributes_a = anchor(&p);
+    const char* attributes_last = nullptr; // The end of the last attribute
     VecJsxAttribute attributes = {0};
     if (!is_fragment) {
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
@@ -10570,6 +10571,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             attributes_a = anchor(&p);
         }
         const char* attributes_end = parse_jsx_attributes(&p, name_end, &attributes);
+        attributes_last = attributes_end;
         if (!hop_char(&p, '>')) {
             bool slash = hop_char(&p, '/');
             if (!slash) parse_error(&p, span_from_token(&p), 1005, "'/' expected.");
@@ -10583,10 +10585,12 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             el->self_closing = true;
         }
     }
+    // (Up to its last attribute, like tsc's JsxAttributes node: not the tag's end. No attributes: empty, where they'd be)
     el->attributes = (Expr){
         .tag = EXPR_JSX_ATTRIBUTES,
         .jsx_attributes = attributes,
-        .inner_span = span_from(attributes_a),
+        .inner_span = span_make(p.shared->source, attributes_a.start,
+            attributes_last && attributes_last > attributes_a.start ? attributes_last : attributes_a.start),
     };
     el->opening_span = span_from(a);
 

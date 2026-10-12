@@ -1,0 +1,35 @@
+//// [test/cases/ttttInheritedMembersDeclarationOrder.ts] ////
+
+=== ttttInheritedMembersDeclarationOrder.ts ===
+// An interface's members are its own, then the inherited ones by where they are declared (tsgo's getNamedMembers
+// sorts them), not base by base: the missing-properties list shows that order
+interface Z { z1: 1; z2: 1; }
+>z1 : 1
+>z2 : 1
+
+interface Y { y1: 1; y2: 1; y3: 1; }
+>y1 : 1
+>y2 : 1
+>y3 : 1
+
+interface A extends Y, Z { a: 1; }
+>a : 1
+
+const x: A = {};
+>x : A
+>{} : {}
+
+interface G<T> extends Y, Z { g: T; }
+>g : T
+
+const y: G<string> = {};
+>y : G<string>
+>{} : {}
+
+declare const c: SVGCircleElement;
+>c : SVGCircleElement
+
+const s: HTMLSpanElement = c;
+>s : HTMLSpanElement
+>c : SVGCircleElement
+

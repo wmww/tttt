@@ -35,6 +35,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInheritedMembersDeclarationOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInterfaceExtendsGenericFunctionAlias': {
         errors: true,
         symbols: true,
@@ -76,6 +81,11 @@ const baselines = {
         types: true,
     },
     'ttttRestMappedOverEmptyTuple': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSpreadCrossProductTooComplex': {
         errors: true,
         symbols: true,
         types: true,

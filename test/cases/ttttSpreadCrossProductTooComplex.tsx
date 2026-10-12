@@ -1,0 +1,16 @@
+// Spreading a union into a union whose cross product reaches 100000 members is TS2590 (tsc's checkCrossProductUnion in
+// getSpreadType), in an object literal and in JSX attributes alike; what is spread after it is any
+// @jsx: preserve
+// @strict: true
+// @target: esnext
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+type U1 = {a0: 1} | {a1: 1} | {a2: 1} | {a3: 1} | {a4: 1} | {a5: 1} | {a6: 1} | {a7: 1} | {a8: 1} | {a9: 1};
+type U2 = {b0: 1} | {b1: 1} | {b2: 1} | {b3: 1} | {b4: 1} | {b5: 1} | {b6: 1} | {b7: 1} | {b8: 1} | {b9: 1};
+type U3 = {c0: 1} | {c1: 1} | {c2: 1} | {c3: 1} | {c4: 1} | {c5: 1} | {c6: 1} | {c7: 1} | {c8: 1} | {c9: 1};
+type U4 = {d0: 1} | {d1: 1} | {d2: 1} | {d3: 1} | {d4: 1} | {d5: 1} | {d6: 1} | {d7: 1} | {d8: 1} | {d9: 1};
+type U5 = {e0: 1} | {e1: 1} | {e2: 1} | {e3: 1} | {e4: 1} | {e5: 1} | {e6: 1} | {e7: 1} | {e8: 1} | {e9: 1};
+declare const a: U1, b: U2, c: U3, d: U4, e: U5;
+declare function Comp<P>(props: P): JSX.Element;
+const x = <Comp {...a} {...b} {...c} {...d} {...e} />;
+const o = { ...a, ...b, ...c, ...d, ...e, ...a, f: 1 };
+const small = { ...a, ...b };

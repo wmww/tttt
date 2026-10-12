@@ -1,0 +1,23 @@
+ttttInheritedMembersDeclarationOrder.ts(6,7): error TS2740: Type '{}' is missing the following properties from type 'A': a, z1, z2, y1, and 2 more.
+ttttInheritedMembersDeclarationOrder.ts(8,7): error TS2740: Type '{}' is missing the following properties from type 'G<string>': g, z1, z2, y1, and 2 more.
+ttttInheritedMembersDeclarationOrder.ts(10,7): error TS2740: Type 'SVGCircleElement' is missing the following properties from type 'HTMLSpanElement': contentEditable, enterKeyHint, inputMode, isContentEditable, and 26 more.
+
+
+==== ttttInheritedMembersDeclarationOrder.ts (3 errors) ====
+    // An interface's members are its own, then the inherited ones by where they are declared (tsgo's getNamedMembers
+    // sorts them), not base by base: the missing-properties list shows that order
+    interface Z { z1: 1; z2: 1; }
+    interface Y { y1: 1; y2: 1; y3: 1; }
+    interface A extends Y, Z { a: 1; }
+    const x: A = {};
+          ~
+!!! error TS2740: Type '{}' is missing the following properties from type 'A': a, z1, z2, y1, and 2 more.
+    interface G<T> extends Y, Z { g: T; }
+    const y: G<string> = {};
+          ~
+!!! error TS2740: Type '{}' is missing the following properties from type 'G<string>': g, z1, z2, y1, and 2 more.
+    declare const c: SVGCircleElement;
+    const s: HTMLSpanElement = c;
+          ~
+!!! error TS2740: Type 'SVGCircleElement' is missing the following properties from type 'HTMLSpanElement': contentEditable, enterKeyHint, inputMode, isContentEditable, and 26 more.
+    
