@@ -1320,7 +1320,12 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
         Ty const* b = types[j];
         if (!is_known_object_for_reduction(me, b)) continue;
         Prop const* other = ty_get_prop(me, b, prop->name);
-        if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
+        // (Only declarations count: a mapped type's property, `Record<"m", unknown>`'s, has none, so with a class's
+        // private `m` the property has that one value declaration and isn't conflicting, tsc's
+        // createUnionOrIntersectionProperty hasNonUniformValueDeclaration)
+        Prop const* a = root_declaration(prop);
+        Prop const* c = other ? root_declaration(other) : nullptr;
+        if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && a != c && span_valid(a->decl->name_span) && span_valid(c->decl->name_span)) {
             return true;
         }
     }
