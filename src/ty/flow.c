@@ -1074,6 +1074,27 @@ static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign
     return q->substitutes_constraints ? ty_substitute_constraints(q->me, ret) : ret;
 }
 
+// tsc's getQuickTypeOfExpression of an assigned call checks its callee not to be nullish (checkNonNullExpression), and
+// reports what it finds: `x = f()` that a read of `x` narrows by is TS18048 'f' is possibly 'undefined' besides the
+// call's own TS2722. Once per assignment, into the checker's diagnostics (a variable declaration's is
+// initialized_binding_typecheck()'s)
+static void check_assigned_callee(Checker* me, Expr const* assignment, Expr const* value) {
+    if (!my errs || my errs->phase != ERROR_PHASE_TYPECHECK || !compiler_options()->strict_null_checks) return;
+    if (value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_AWAIT) value = &value->unary_op->expr;
+    if (value->tag != EXPR_CALL || value->call->uses_new || value->call->is_extends || expr_is_optional_chain(value) ||
+        expr_is_require_call(value)
+    ) {
+        return;
+    }
+    Expr const* callee = &value->call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) return;
+    void const** slot = intern_slot(me, &my links, (u64[]){ KEY_QUICK_CALLEE_CHECKED, (u64)(uintptr_t)assignment }, 2);
+    if (*slot) return;
+    *slot = assignment;
+    ty_check_non_null_type(me, ty_flow_expr_type(me, callee), callee, my errs);
+}
+
 static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* assign) {
     Checker* me = q->me;
     switch (assign->kind) {
@@ -1092,6 +1113,7 @@ static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* as
             // query gets there before the walk has checked it (a caller inferring the function's return type)
             bool assigns = assignment->op == BINARY_OP_EQUAL || assignment->op == BINARY_OP_OR_OR_EQUAL ||
                 assignment->op == BINARY_OP_AND_AND_EQUAL || assignment->op == BINARY_OP_EH_EH_EQUAL;
+            check_assigned_callee(me, assign->assignment, &assignment->right);
             if (assigns && !is_auto(me, q->declared)) return ty_flow_assigned_value_type(me, assignment);
             return ty_flow_expr_type(me, &assignment->right);
         }
