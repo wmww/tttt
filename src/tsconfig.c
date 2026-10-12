@@ -2,6 +2,7 @@
 #define _XOPEN_SOURCE 700
 #include <limits.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #include "tsconfig.h"
 #include "json.h"
@@ -102,6 +103,12 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
                 compiler_options->members[i].key_end);
             continue;
         }
+        // (tsgo's convertJsonOption: not one a config may set, on its name)
+        if (compiler_option_is_command_line_only(csview_from(name))) {
+            config_diagnostic(me, 6266, cstr_d("Option '", name, "' can only be specified on command line."), config,
+                compiler_options->members[i].key_start, compiler_options->members[i].key_end);
+            continue;
+        }
         // tsgo's convertPropertyValueToJson and convertJsonOption: a value of another type (or none: TS1328 too, from
         // the parser) is TS5024 at it, and the option stays as it was; so is a list's element, which is left out
         cstr type_message = cstr_null;
@@ -178,6 +185,89 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             ignore compiler_options_set(my options, csview_from(name), cstr_sv(&joined));
             cstr_drop(&joined);
         }
+    }
+}
+
+// tsgo's content mappers (`contentMappers`: packages that turn other files, `.mdx`, into TypeScript), of the config
+// asked for: each one's shape (parseContentMapper, TS5024 at it) and extensions (TS18065-18067 at them), then TS18068 at
+// the key without --runExternalCode (tsgo then drops them all: their files stay unknown). tttt runs no mappers either way
+static void check_content_mappers(ConfigLoad* me, csview path, JsonValue const* document) {
+    JsonMember const* key = nullptr;
+    for (isize i = 0; document->tag == JSON_OBJECT && i < document->count; i++) {
+        if (cstr_equals(&document->members[i].key, "contentMappers")) key = &document->members[i];
+    }
+    if (!key || key->value.tag != JSON_ARRAY) return;
+    static const char* const native[] = { ".ts", ".tsx", ".d.ts", ".cts", ".d.cts", ".mts", ".d.mts", ".js", ".jsx", ".cjs",
+        ".mjs", ".json" };
+    StrList seen = {0};
+    bool any = false;
+    for (isize i = 0; i < key->value.count; i++) {
+        JsonValue const* mapper = &key->value.items[i];
+        if (mapper->tag != JSON_OBJECT) {
+            // (getPropFromRaw's element check)
+            if (mapper->tag != JSON_NULL) {
+                config_diagnostic(me, 5024, cstr_lit("Compiler option 'contentMappers' requires a value of type object."),
+                    path, mapper->start, mapper->end);
+            }
+            continue;
+        }
+        JsonValue const* package = json_get(mapper, "package");
+        JsonValue const* extensions = json_get(mapper, "extensions");
+        JsonValue const* options = json_get(mapper, "options");
+        bool valid = true;
+        if (!package || package->tag != JSON_STRING || !cstr_size(&package->string)) {
+            config_diagnostic(me, 5024, cstr_lit("Compiler option 'contentMapper.package' requires a value of type string."),
+                path, mapper->start, mapper->end);
+            valid = false;
+        }
+        bool strings = extensions && extensions->tag == JSON_ARRAY;
+        for (isize j = 0; strings && j < extensions->count; j++) strings = extensions->items[j].tag == JSON_STRING;
+        if (!strings) {
+            config_diagnostic(me, 5024, cstr_lit("Compiler option 'contentMapper.extensions' requires a value of type string[]."),
+                path, mapper->start, mapper->end);
+            valid = false;
+        }
+        if (options && options->tag != JSON_OBJECT) {
+            config_diagnostic(me, 5024, cstr_lit("Compiler option 'contentMapper.options' requires a value of type object."),
+                path, mapper->start, mapper->end);
+            valid = false;
+        }
+        if (!valid) continue;
+        any = true;
+        for (isize j = 0; j < extensions->count; j++) {
+            csview ext = cstr_sv(&extensions->items[j].string);
+            // (At the first element with that text: getContentMapperExtensionSyntax)
+            JsonValue const* extension = &extensions->items[j];
+            for (isize k = 0; k < j; k++) {
+                if (csview_equals_sv(cstr_sv(&extensions->items[k].string), ext)) {
+                    extension = &extensions->items[k];
+                    break;
+                }
+            }
+            bool builtin = false;
+            for (u32 k = 0; k < c_arraylen(native) && !builtin; k++) {
+                builtin = ext.size == (isize)strlen(native[k]) && !strncasecmp(ext.buf, native[k], (size_t)ext.size);
+            }
+            bool duplicate = false;
+            for (isize k = 0; k < seen.count && !duplicate; k++) duplicate = csview_equals_sv(cstr_sv(&seen.items[k]), ext);
+            if (!csview_starts_with(ext, ".")) {
+                config_diagnostic(me, 18065, cstr_d("Content mapper file extension '", ext, "' must begin with a '.'."), path,
+                    extension->start, extension->end);
+            } else if (builtin) {
+                config_diagnostic(me, 18066, cstr_d("Content mapper file extension '", ext,
+                    "' is a built-in extension and cannot be registered by a content mapper."), path, extension->start, extension->end);
+            } else if (duplicate) {
+                config_diagnostic(me, 18067, cstr_d("Content mapper file extension '", ext,
+                    "' is registered by more than one content mapper."), path, extension->start, extension->end);
+            } else {
+                str_list_push(&seen, ext);
+            }
+        }
+    }
+    str_list_drop(&seen);
+    if (any && !my options->run_external_code) {
+        config_diagnostic(me, 18068, cstr_lit("Content mappers require the '--runExternalCode' command line flag to be enabled."),
+            path, key->key_start, key->key_end);
     }
 }
 
@@ -564,6 +654,7 @@ static_failable load_config(ConfigLoad* me, csview path) {
     }
     JsonValue const* compiler_options = json_get_tagged(document, "compilerOptions", JSON_OBJECT);
     if (compiler_options) apply_compiler_options(me, path, cstr_sv(&dir), compiler_options);
+    if (!my depth) check_content_mappers(me, path, document);
 
     // `files` and `include` are inherited as a pair, `exclude` on its own
     JsonValue const* files = json_get_tagged(document, "files", JSON_ARRAY);

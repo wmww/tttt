@@ -434,6 +434,13 @@ static const char* kind_name(char kind) {
     }
 }
 
+bool compiler_option_is_command_line_only(csview name) {
+    for (u32 i = 0; i < tsc_command_line_only_options_count; i++) {
+        if (csview_equals(name, tsc_command_line_only_options[i])) return true;
+    }
+    return false;
+}
+
 unsigned compiler_option_check_json_type(csview name, int json_tag, bool element, cstr* message) {
     char kind = option_kind(name, element);
     if (!kind || json_tag == JSON_NULL || kind_takes(kind, name, json_tag)) return 0;

@@ -602,6 +602,12 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         *options = compiler_options_init();
         options->capture_suggestions = capture_suggestions;
         options->case_insensitive_file_names = case_insensitive;
+        // (A command line only option the config's parsing depends on: content mappers without it are TS18068)
+        for (isize j = 0; j + 1 < vec_cstr_size(&my directives); j += 2) {
+            if (!strcasecmp(cstr_str(vec_cstr_at(&my directives, j)), "runexternalcode")) {
+                ignore compiler_options_set(options, c_sv("runexternalcode"), cstr_sv(vec_cstr_at(&my directives, j + 1)));
+            }
+        }
         bool loaded = true;
         TsconfigDiagnostics diagnostics = {0};
         try (tsconfig_load_diagnosed(mock_fs_get_fs(my fs), cstr_sv(&i->path), program_options(my program),

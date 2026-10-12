@@ -194,3 +194,8 @@ char const* const tsc_option_elements[][2] = {
     { "libFiles", "s" },
 };
 u32 const tsc_option_elements_count = 14;
+
+char const* const tsc_command_line_only_options[] = {
+    "help", "help", "watch", "locale", "runExternalCode", "showConfig", "listFilesOnly", "ignoreConfig",
+};
+u32 const tsc_command_line_only_options_count = 8;

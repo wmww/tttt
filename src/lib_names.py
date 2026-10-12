@@ -46,4 +46,10 @@ elements = re.findall(r'^\t"(\w+)": \{\n\t\tName:\s+"[^"]*",\n\t\tKind:\s+Comman
 lines += ['char const* const tsc_option_elements[][2] = {']
 lines += ['    { "%s", "%s" },' % (n, KINDS[k]) for n, k in elements]
 lines += ['};', 'u32 const tsc_option_elements_count = %d;' % len(elements), '']
+# The options a config can't set (IsCommandLineOnly: TS6266 there)
+def command_line_only(var):
+    s = src.index('var %s = ' % var)
+    blocks = re.split(r'\n\t\{\n', src[s:src.index('\n}\n', s)])
+    return [re.search(r'Name:\s+"([^"]*)"', b).group(1) for b in blocks if 'IsCommandLineOnly:' in b and 'IsCommandLineOnly:       false' not in b]
+lines += name_list('tsc_command_line_only_options', command_line_only('commonOptionsWithBuild') + command_line_only('optionsForCompiler'))
 open('src/lib_names.c', 'w').write('\n'.join(lines))

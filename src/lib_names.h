@@ -23,3 +23,6 @@ extern u32 const tsc_build_only_option_names_count;
 extern char const tsc_option_kinds[];
 extern char const* const tsc_option_elements[][2];
 extern u32 const tsc_option_elements_count;
+// The options only a command line may set (IsCommandLineOnly)
+extern char const* const tsc_command_line_only_options[];
+extern u32 const tsc_command_line_only_options_count;

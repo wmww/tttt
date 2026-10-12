@@ -179,6 +179,12 @@ static i64 file_size_of(void* ctx, csview path) {
 static_failable apply_compiler_options(Options const* opts, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
     if (config.size) {
+        // (A command line only option the config's parsing depends on: tsgo parses it with the command line's)
+        for (intptr_t i = 0; i < opts->option_count; i++) {
+            if (!strcasecmp(opts->option_names[i], "runExternalCode")) {
+                ignore compiler_options_set(options, c_sv("runexternalcode"), csview_from(opts->option_values[i]));
+            }
+        }
         // Files on the command line replace the config's
         TsconfigDiagnostics diagnostics = {0};
         try (tsconfig_load_diagnosed(fs, config, options, nullptr, &diagnostics)) cleanup {

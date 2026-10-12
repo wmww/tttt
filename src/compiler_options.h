@@ -125,6 +125,8 @@ typedef enum ModuleDetectionKind {
     X(resolve_package_json_exports, "resolvepackagejsonexports", false) \
     X(resolve_package_json_imports, "resolvepackagejsonimports", false) \
     X(rewrite_relative_import_extensions, "rewriterelativeimportextensions", false) \
+    /* (Command line only: content mappers may run. tttt runs no external code, so this only decides TS18068) */ \
+    X(run_external_code, "runexternalcode", false) \
     X(skip_default_lib_check, "skipdefaultlibcheck", false) \
     X(source_map, "sourcemap", false) \
     X(stable_type_ordering, "stabletypeordering", false) \
@@ -253,6 +255,8 @@ bool compiler_option_is_boolean(csview name);
 // tsgo's convertJsonOption type check of a config value (isCompilerOptionsValue): 0 if the option (exact case, as
 // written in a config) takes a JSON value of this tag (null always), else the 5024 message "Compiler option 'NAME'
 // requires a value of type T." in *message. element: the check of one element of a list option instead
+// An option only a command line may set (tsgo's IsCommandLineOnly: TS6266 in a config), exact case
+bool compiler_option_is_command_line_only(csview name);
 unsigned compiler_option_check_json_type(csview name, int json_tag, bool element, cstr* message);
 
 // tsc's createUnknownOptionError with compilerOptionsDidYouMeanDiagnostics: 0 if name is one of tsc's compiler options
