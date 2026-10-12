@@ -4194,8 +4194,10 @@ void binder_link(Binder* me) {
         }
         if (!(local_flags & excluded)) {
             // An import merged with a local value looks like a value to a transpiler (isolatedModules itself, not
-            // verbatimModuleSyntax, which says the import needs `type` anyway)
-            if (compiler_options()->isolated_modules && !port_item_is_export(item) && !item->type_only && !item->jsdoc &&
+            // verbatimModuleSyntax, which says the import needs `type` anyway: the option as written, which
+            // verbatimModuleSyntax's default doesn't set, tsc's compilerOptions.IsolatedModules.IsTrue())
+            CompilerOptions const* written = compiler_options();
+            if (written->is_set[COMPILER_OPTION_isolated_modules] && written->isolated_modules && !port_item_is_export(item) && !item->type_only && !item->jsdoc &&
                 !item->type_modifier && local_flags & SYMBOL_VALUE
             ) {
                 error_ctx_error_d(errs, at, 2865, "Import '", item->decl_name, "' conflicts with local value, so must "
