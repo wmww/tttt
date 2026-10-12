@@ -17,9 +17,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   8595, **`$ExpectType`** 68631 / 68640, **flagflip** 132 / 16 / 6, **scenarios** 209 / 213, **source sweep** 3119 /
   3363 (88 / 174 repos).
 - **Perf**: on the curated corpora, single-threaded tttt is ~5x faster than single-threaded tsgo 7.1 with less
-  memory (type-fest: 1.45 s / 2.0 GB vs 8.0 s / 3.3 GB). **Not yet measured at breadth**: on the source sweep, tttt
-  checks programs tsc refuses to check (gated by option errors: tiptap 3.9 s vs 0.7 s) and makes 2.6x tsgo's types
-  on rxjs (plan 59). **Bun 1.4.3's `bun check`** (a Rust port of tsgo 7.0.2, 2026-10-11) ties tttt's default wall
+  memory (type-fest: 1.45 s / 2.0 GB vs 8.0 s / 3.3 GB). **At breadth** (plan 59, done 2026-10-12: 1779 source
+  sweep projects tsgo checks, `scripts/perfsweep.py`): tttt makes 0.68x tsgo's types at the median, no project above
+  1.55x (was 16.4x), and no project above tsgo's peak RSS. The fan-out's ~15 fixes were all tsgo caches and lazinesses
+  tttt lacked (instantiations keyed by the whole mapper, eager work tsgo defers); they also cut drizzle -17% and xstate
+  -9% instructions. **Bun 1.4.3's `bun check`** (a Rust port of tsgo 7.0.2, 2026-10-11) ties tttt's default wall
   time on a 12-core box and uses less memory on 10 of 14 corpora (vscode 2.1 GB vs our 6.0 GB): memory and core
   scaling are now the competitive gap, not single-threaded speed.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
@@ -83,8 +85,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   transliterate weak algorithms onto a new foundation; write them the way tsc observably behaves. When a checker
   feature "doesn't work" on lib types, look at what the lib *parsed* to first.
 - **A small perf session every few plans**: every check costs a little (plan 15's ~4%). Single-threaded tttt must
-  stay ahead of single-threaded tsgo before parallelism is worth building. Measure perf at breadth (plan 59's
-  perfsweep, type-count ratios against tsgo), not only on the corpora perf sessions have tuned.
+  stay ahead of single-threaded tsgo before parallelism is worth building. Measure perf at breadth (`scripts/perfsweep.py`:
+  type-count ratios against tsgo), not only on the corpora perf sessions have tuned.
 - **The oracle is tsc as it ships, and we follow it** (plans 48, 53, 54): no dual-version modes, delete what the
   oracle deleted, re-pin when a release lands (plan 58). The oracle tools are tsgo built from source with a Go
   overlay (`test/oracle`), so instrumenting tsgo stays one `go build` away.

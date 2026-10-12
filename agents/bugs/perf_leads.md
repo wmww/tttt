@@ -9,13 +9,16 @@ allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/
 and checker arenas by call site.
 
 ## Perf at breadth (plan 59): `scripts/perfsweep.py` ranks the outliers
-Stage 1's baseline (measurements.md "Perf at breadth") ranks every source sweep project by tttt/tsgo **types ratio**,
-machine-independent (median 0.76: tttt is lazier than tsgo). Above ~1.5 is a missing cache or a runaway: date-fns/pkgs/docs
-16.4, feathers/packages/typebox 7.0, nitro 5.2, rxjs 2.6 (and RSS 2.5x), nuxt 2.6, lit ssr-react 2.4, dokploy x3 2.3
-(one shared cause, likely), mcp-sdk/packages/codemod 2.2, quill 1.8, immutable-js 1.8 (the section below), vite and
-vitest ~1.6. By time: linkwarden/apps/mobile (1.6x tsgo's check time with fewer types: a slow path, not a blowup),
-mcp-sdk/packages/core-internal and arktype/ark/docs (~0.9). Recipe: `scripts/perfsweep.py -f '^PROJECT$'` reruns one,
-`TTTT_FILE_TIMES=1` finds the file, then which type kinds grow (`scripts/arenasites.sh`).
+Stage 2 (2026-10-12) drained every project above 1.5x tsgo's types (measurements.md "Perf at breadth": worst 16.4 ->
+1.55, total 96.0M -> 71.3M types against tsgo's 127.9M, worst RSS ratio 2.48 -> 0.95). The mechanisms, for the next
+outlier: instantiations keyed by the whole mapper where tsgo keys by the outer type parameters the declaration
+possibly references (overloads, object literals, declared methods, `typeof f<T>`/imported `typeof ns.x`); eager work
+tsgo defers (single-member intersection properties, erased signatures, the canonical signature); a missing recursion
+identity (deep nesting never stopping); messages printing whole types where tsgo truncates (rxjs). What's left is
+below per agent; the new top of the ranking is small projects (1-3k types, lightweight-charts plugins ~1.4) and
+karakeep/packages/plugins 1.40. Recipe: `scripts/perfsweep.py -f '^PROJECT$'` reruns one, `TTTT_FILE_TIMES=1` finds
+the file, then which type kinds grow (`scripts/arenasites.sh`); instrumented tsgo builds (overlay outside the shared
+tree) answer "does tsgo make these too".
 
 ## Plan 59 stage 2 leftovers (agent D)
 Fixed (2026-10-12): dokploy x4 (`typeof f<T>` / `typeof ns.x` free params, 2.3 -> 0.69), arktype/ark/docs (this-only
@@ -126,12 +129,7 @@ Fixed that session: `typeof` of a top-level name made a literal generic (karakee
 quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types); later (agent ta) function expression
 types keyed by the whole mapper (docmost/apps/server 2.19M types -> 153k, typecheck 2.7 s -> 0.4 s: now by what the
 resolved signature mentions, `ty_function_type_mentions()`). Open:
-- **immutable-js/type-definitions**: 997k types vs tsc 6's 203k (tsgo 7.1: 564k); ~600k anonymous instances spread over hundreds of
-  member types (4-parameter mappers, ~8.9k instances each). Member types are lazy (`instantiate_members`), so
-  something reads every member of many distinct instantiations: probably structural relations of `this`-returning
-  interface instantiations where tsc goes by variance. It's all the check of the one `immutable.d.ts` (merged
-  interface + namespace + function declarations): assignable cache 67.8k vs tsc's 23.8k, identity 28.9k vs 8.3k. Find
-  the top-level relation queries that grow the caches most (the recipe above).
+- immutable-js/type-definitions: fixed by plan 59 stage 2 (canonical signatures, 997k -> 292k types, tsgo 564k).
 
 ## Parallelism (from the finished plans 36, 41, 44, 45; numbers in measurements.md)
 - **Parallel declare and link** (ex plan 45 stage 3, "maybe never"): vscode's resolve phase was declare 40 + link 28

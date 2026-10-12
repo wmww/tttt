@@ -11,29 +11,23 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
-## Perf at breadth: tttt vs tsgo 7.1 on the source sweep (2026-10-11, plan 59 stage 1, after the gate fix)
-`scripts/perfsweep.py -j 4` (both sides at -j 4 on this box: times inflated alike, types and RSS exact): tttt
-`--checkers 1 --threads 1` against tsgo `--singleThreaded --extendedDiagnostics`, every source sweep project tsgo
-checks (Types >= 1000: **1786 of 3363**; the rest are gated by options errors or have no inputs). tsgo's side is cached
-in `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile` in /tmp: tsc
---noEmit otherwise reads the checkout's .tsbuildinfo and skips checking, which hid ~300 projects in a first pass).
-| ratio tttt / tsgo (1779 projects) | median | p90 | worst | > 1 |
+## Perf at breadth after plan 59 stage 2 (2026-10-12, the fan-out's merges up to a43aaa00)
+`scripts/perfsweep.py -j 3` with agents running: **types and RSS ratios are exact, the time ratios below are not**
+(tttt's side load-inflated against tsgo's cached idle-ish side; remeasure on a quiet machine). 1779 projects:
+| ratio tttt / tsgo | median | p90 | worst | > 1 |
 |---|---|---|---|---|
-| check time | 0.21 | 0.35 | 11.07 | 5 |
-| wall (whole process) | 0.27 | 0.32 | 1.26 | 1 |
-| types | 0.76 | 1.07 | 16.40 | 322 |
-| peak RSS | 0.71 | 0.81 | 2.48 | 28 |
-Total check 238 s vs 1159 s, wall 488 s vs 2131 s, 96.0M vs 127.9M types. The gate fix: tiptap (TS5090) 3.9 s -> 0.2 s,
-like tsgo's `Types: 89`. 7 projects where tttt checks nothing and tsgo does are tttt's spurious TS6305/TS5069 (source
-sweep root causes). Worst types ratios (tttt / tsgo types, check s tttt / tsgo, tttt RSS MB):
-date-fns/pkgs/docs 16.4 (348k / 21k, 0.85 / 0.08 s, 305), feathers/packages/typebox 7.0 (22k / 3k), nitro 5.2
-(600k / 116k), rxjs/packages/rxjs 2.6 (1.83M / 0.70M, 4.2 / 4.2 s, 1943 MB: RSS 2.5x), nuxt 2.6 (756k / 294k),
-lit/packages/labs/ssr-react 2.4, dokploy/{apps/api,apps/schedules,packages/server} 2.3 (560k / 240k), mcp-sdk/packages/codemod
-2.2, quill/packages/quill 1.8, immutable-js/type-definitions 1.8 (997k / 564k), vitest/examples/lit 1.6, vite's
-module-runner and __tests_dts__ 1.6, soybean-admin 1.3, lucide/packages/solid 1.3. Worst check time ratios (tsgo > 0.2
-s): linkwarden/apps/mobile 1.62 (types 0.87, RSS 1.49), rxjs 1.00, mcp-sdk/packages/core-internal 0.95, arktype/ark/docs
-0.87 (types 1.51), tanstack-table hero-ui examples 0.55-0.63. Slowest in tttt: mikro-orm 9.8 s (tsgo 41.9 s, 3.3M
-types each), mikro-orm/tests 7.6 s, folo renderer 4.3 s, rxjs 4.2 s, renovate 3.3 s.
+| types | 0.68 (was 0.76) | 0.94 (1.07) | 1.55 (16.40) | 92 (322) |
+| peak RSS | 0.69 (0.71) | 0.79 (0.81) | 0.95 (2.48) | 0 (28) |
+Total types 71.3M vs tsgo's 127.9M (was 96.0M). Each stage 1 outlier (types ratio before -> after): date-fns/pkgs/docs
+16.4 -> 0.94, feathers typebox 7.0 -> 1.08, nitro 5.18 -> 0.79, rxjs 2.62 -> 0.45 (RSS 1943 -> 475 MB), nuxt 2.57 ->
+0.84, lit ssr-react 2.43 -> 0.64, dokploy x3 2.3 -> 0.69, mcp-sdk codemod 2.24 -> 0.89, quill 1.82 -> 0.57,
+immutable-js 1.77 -> 0.45, vitest/examples/lit 1.62 -> 0.45; arktype/ark/docs 1.51 -> 0.92 (a 5M-instantiation
+runaway, 300k TS2589 hits), linkwarden/apps/mobile one file 1.54 -> 0.14 s. New worst: lightweight-charts plugins
+(~1.5k types, 1.3-1.55), karakeep/packages/plugins 1.40 (bugs/perf_leads.md). Callgrind on the corpora (base e273be72
+-> 2nd checkpoint): drizzle -17.5%, xstate -9.3%, react -2.8%, tanstack-router -2.8%, zod -2.2%, effect -2.0%, the
+rest -0.4..-1.0%, none up. The last valid time ratios are stage 1's (2026-10-11, both sides at -j 4, before
+these fixes): check time median 0.21, p90 0.35, 5 projects > 1; wall median 0.27; tsgo's side is cached in
+`test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
 
 ## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
 **Other machine**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, GCC 16.2, load ~2 (an idle desktop). Best of 3 wall
