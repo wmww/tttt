@@ -2272,6 +2272,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         if (issue_only) return nullptr;
         // A function's `this` that nothing types is any, not narrowed (tsgo's tryGetThisTypeAt: no type to narrow)
+        // (Not narrowable as a reference to a generic with a union constraint: tsc's tryGetThisTypeAt goes to
+        // getFlowTypeOfReference with the declared `this` type, no getNarrowableTypeForReference. `this.next(...)` in a
+        // method with `this: Opts<V> & VariablesOption<V>` passes that, not the constraint)
+        type = declared_type;
         if (identifier->this_kind == THIS_ANY) {
             FunctionImpl const* function = identifier_this_function(identifier);
             if (!function || (!function_impl_rare(function)->paired_this && !ty_contextual_this_type(me, function))) return type;
