@@ -295,9 +295,12 @@ passing tests).
   declarations of a type literal/interface into one member, tsgo keeps a symbol per conflicting declaration.
 - TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
   instantiation depth limit in tttt; recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
-  recursiveIndexedAccessSimplification lacks TS4109 and two TS2589; xstate under sloppy/nosnc (flagflip) gets spurious
-  TS2589/TS5114/TS5115 (State.ts:395, graph/utils.ts:91, instantiation depth on `Values` without strictNullChecks);
-  webpack misses zod's TS5115 at node_modules/zod/v4/classic/schemas.d.cts:806 (reached through webpack's use of zod).
+  recursiveIndexedAccessSimplification lacks TS4109 and two TS2589; xstate under sloppy/nosnc (flagflip) gets one spurious
+  TS5115 at graph/utils.ts:91 next to tsgo's at State.ts:395 (another StateId instantiation tsgo finds cached; tsgo's
+  sites move with its checker count: -p with 4 checkers reports State.ts, setup.ts, stateUtils.ts); webpack misses
+  zod's TS5115 at node_modules/zod/v4/classic/schemas.d.cts:806 (`interface ZodJSONSchemaInternals extends
+  _ZodJSONSchema["_zod"]`, reproducible with that file alone: tsgo 162k instantiations, tttt no runaway; the same
+  family as sourcesweep_checker.md's -TS5115 and vue's postcss-selector-parser one).
 - distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
   `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
 - contextualTypingGenericFunction2 (TypeScript#61979): a context-sensitive arrow returned from a generic arrow argument
@@ -320,11 +323,11 @@ passing tests).
   (objectRestBindingContextualInference, `K extends Object`): with `const { prepare, ...rest } =` tsgo infers
   K = "image" from the binding pattern + argument, tttt widens to string; mut2626 (noInferCommonPropertyCheck1,
   `test2(null, ...)`): tsgo's `NoInfer<T1> & NoInfer<T2>` with T1 = null is `never`, tttt keeps `null &
-  NoInfer<Partial<...>>`; webpack NormalModuleFactory.js:658-666 (TS2322 missing): `/** @type {TypedHookMap<...>} */
-  createParser: new HookMap(() => new SyncBailHook([...]))`: tsgo infers HookMap<SyncBailHook<ParserOptions |
-  [EmptyParserOptions], ...>> under that context and it isn't assignable; tttt's inference produces something that is.
-- types/koa-router (DT sweep): tsgo's TS2345 at koa-router-tests.ts:100 (`.use(router3.routes())`, a deep
-  ParameterizedContext comparison through `router.use`'s overloads); tttt relates them. Not reduced.
+  NoInfer<Partial<...>>`.
+- Inference from an intersection to one generic reference (`SyncBailHook<[OA], PA> & SyncBailHook<[OB], PB>` to
+  `SyncBailHook<T, R>`, tapable): tsgo infers T = `OB | [OB]` (through the members' `AsArray<T>` conditional rest
+  parameters), tttt `[OB]`; both then fail the same assignment (webpack's HookMap TS2322, fixed 2026-10-12 by the
+  any-key index read), only the message's types differ.
 - types/redux-define (DT sweep): TS2344 "only assignable to the non-distributed 'SubAction'" (distributed type
   parameters, plan 57's area).
 - flagflip xstate/eopt: one spurious TS2322 (input.test.ts:272, a spawn signature); vue/nuia 2 spurious + 2 other-code.

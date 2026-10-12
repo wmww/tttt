@@ -321,10 +321,15 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   union's getSSRProps parameters): a reduced probe (DirectiveBinding/ObjectDirective/DirectiveHook, a union of three
   ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
   ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
-- webpack NormalModuleFactory.js:658-666 TS2322 and node_modules/zod TS5115: agent C's (triage.md).
-- Flag-specific ones left: excalidraw/nuia TS2488 polygon.ts:52, vue/nuia TS2538 renderer.ts:2633, vue/npafis TS4111
-  Teleport.ts:562, xstate/sloppy spurious TS2589/TS5114/TS5115 (State.ts:395), xstate/eopt spurious TS2322
-  (input.test.ts:272), webpack/nuia UmdLibraryPlugin.js:232/233 (triage.md).
+- webpack node_modules/zod TS5115: see type_core.md (instantiation limits).
+- Flag-specific ones left: vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562 are one cause, an
+  auto-typed `let v` assigned from itself in a loop (`while (u-- > 0) { v = p[v] }`, `node = node.nextSibling`): the
+  back edge's assigned type is any in tttt (the access with the incomplete `number | undefined` index is any, like a
+  complete one: tsgo agrees on that for a declared index, v3 probe), so v is any at the reference; tsgo ends with
+  `number | undefined` there and reports TS2538. Something in tsgo's loop evaluation doesn't let that any in (an
+  instrumented tsgo would tell: getTypeAtFlowAssignment's getInitialOrAssignedType for the auto-typed v). xstate/sloppy
+  spurious TS5115 (type_core.md), xstate/eopt spurious TS2322 (input.test.ts:272), webpack/nuia UmdLibraryPlugin.js
+  (triage.md).
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with
