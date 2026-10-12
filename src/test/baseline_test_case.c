@@ -1240,10 +1240,17 @@ static CodeLines split_code_lines(csview contents) {
 // tsc's harness iterateBaseLine() for one file of the types or symbols baseline: code lines up to each result's line,
 // an empty line before a run of code lines that don't follow the last result's line directly (unless the first of them
 // is blank or a lone brace), the file's rest, a final line break
+// A types or symbols baseline's file header: tsgo's walker prints the program's file name, its slashes normalized
+static void append_file_header(cstr* target, const char* source_path) {
+    cstr_append_lit(target, "=== ");
+    for (const char* c = source_path; *c; c++) cstr_append_n(target, *c == '\\' ? "/" : c, 1);
+    cstr_append_lit(target, " ===\r\n");
+}
+
 static void render_types_or_symbols_file(
     cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool intrinsic_anys
 ) {
-    cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
+    append_file_header(target, source_path);
     CodeLines code = split_code_lines(source_contents);
     i64 last = -2; // -2: nothing written yet
     for_each (i, vec_line_numbered_str, lines) {
@@ -1296,7 +1303,7 @@ static void render_lines_woven_with_file(
     bool newline_if_next_line_non_empty = false;
 
     if (!is_errors) {
-        cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
+        append_file_header(target, source_path);
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
