@@ -6547,6 +6547,9 @@ static Ty const* discriminated_union_target(
         if (!ty_is_discriminant_property(me, target, prop->name)) continue;
         *discriminants = true;
         Ty const* prop_ty = props ? props[p].type : prop_type(me, prop);
+        // (An optional one's type includes undefined, which matches a member's `x?: undefined`: tsc's
+        // TypeDiscriminator.matches takes getTypeOfSymbol. `{ ...v1Event, rawPath }` against `V1 | V2` keeps V2)
+        if (!props && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) prop_ty = ty_optional_prop_type(me, prop_ty);
         TyList parts = prop_ty->kind == TY_UNION ? prop_ty->composite.types : (TyList){ .data = &prop_ty, .len = 1 };
         bool matched = false;
         for (u32 i = 0; i < types.len; i++) {
