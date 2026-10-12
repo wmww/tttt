@@ -4143,6 +4143,37 @@ static void merge_into_umd_globals(Binder* me) {
         if (target == global && global->alias->item && augmentation_merges) {
             error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(global->alias->item->full_span), 2303,
                 "Circular definition of import alias '", global->alias->item->decl_name, "'.");
+            // (The `export =` resolving to it is on the same cycle: tsgo's resolveAlias fails every alias from the
+            // cycle's start, both report)
+            Symbol const* export_equals = own->exports ? symbol_table_get(own->exports, c_sv("export=")) : nullptr;
+            if (export_equals && (export_equals->flags & SYMBOL_ALIAS) && export_equals->decl_count &&
+                span_valid(export_equals->decls[0].full)
+            ) {
+                error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(export_equals->decls[0].full), 2303,
+                    "Circular definition of import alias '", global->alias->item->decl_name, "'.");
+            }
+            // (mergeSymbol gets the unknown symbol for the alias and returns the source: the global is what merged,
+            // the alias is left with its own declaration)
+            u32 merged_flags = 0;
+            for (u32 d = 0; d < global->decl_count; d++) {
+                if (global->decls[d].kind != SYMBOL_DECL_ALIAS) merged_flags |= global->decls[d].flags;
+            }
+            Symbol* merged = binder_new_symbol(me, global->name, merged_flags);
+            merged->is_ambient = global->is_ambient;
+            u32 kept = 0;
+            for (u32 d = 0; d < global->decl_count; d++) {
+                if (global->decls[d].kind == SYMBOL_DECL_ALIAS) {
+                    global->decls[kept++] = global->decls[d];
+                    continue;
+                }
+                symbol_add_decl(merged, global->decls[d]);
+                retarget_decl(&global->decls[d], merged);
+            }
+            global->decl_count = kept;
+            global->flags = SYMBOL_ALIAS;
+            merged->exports = global->exports;
+            global->exports = nullptr;
+            globals->entries[i].symbol = merged;
             continue;
         }
         if (!target || target->is_placeholder || target->binder != me || (target->flags & SYMBOL_ALIAS)) continue;

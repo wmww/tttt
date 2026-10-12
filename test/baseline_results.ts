@@ -13086,8 +13086,8 @@ const baselines = {
         types: true,
     },
     'exportAsNamespaceConflict': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'exportAsNamespace_augment': {
