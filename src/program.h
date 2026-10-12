@@ -45,6 +45,7 @@ SourceFile const* program_set_config_file(Program* me, csview path);
 // A diagnostic at those byte offsets of the config file (a global one without a config)
 typedef struct Error Error;
 Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr message);
+Error* program_extended_config_error(Program* me, csview path, u32 start, u32 end, unsigned code, cstr message);
 // For a config that gave no root files: tsc's TS18002 (an empty `files` without references) or TS18003 (no inputs, no
 // `files` nor `references`). Whether it reported one
 bool program_report_no_inputs(Program* me);

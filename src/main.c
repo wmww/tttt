@@ -195,10 +195,15 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
         cstr absolute = absolute_path_of(cstr_sv(&cwd), config);
         for (u32 i = 0; i < diagnostics.count; i++) {
             TsconfigDiagnostic* d = &diagnostics.items[i];
-            // (One in a config it extends has no location: the program doesn't have a file for that one)
-            Error* error = cstr_eq(&d->config, &absolute) ?
-                program_config_error(program, d->start, d->end, d->code, d->message) :
-                error_ctx_global_error_s(program_errors(program), d->code, d->message);
+            // (One in a config it extends is at that config, named relative to the working directory like this one)
+            Error* error = nullptr;
+            if (cstr_eq(&d->config, &absolute)) {
+                error = program_config_error(program, d->start, d->end, d->code, d->message);
+            } else {
+                cstr extended = relative_path_of(cstr_sv(&cwd), cstr_sv(&d->config));
+                error = program_extended_config_error(program, cstr_sv(&extended), d->start, d->end, d->code, d->message);
+                cstr_drop(&extended);
+            }
             error->phase = ERROR_PHASE_PARSE;
             d->message = cstr_null;
         }

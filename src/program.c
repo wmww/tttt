@@ -130,6 +130,9 @@ typedef struct Program {
     // program_set_config_file(): the config and its JSON (with offsets), null / a null value without one
     SourceFile* config_source;
     JsonValue config_json;
+    // program_extended_config_error(): the configs the config extends that diagnostics are about
+    SourceFile** extended_configs;
+    u32 extended_config_count;
 } Program;
 
 static void program_add_builtins(Program* me) {
@@ -247,6 +250,11 @@ static void program_drop(Program* me) {
         free(my config_source);
     }
     json_drop(&my config_json);
+    for (u32 i = 0; i < my extended_config_count; i++) {
+        source_file_drop(my extended_configs[i]);
+        free(my extended_configs[i]);
+    }
+    free(my extended_configs);
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
 
@@ -393,6 +401,34 @@ Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr
         return error_ctx_global_error_s(my errs, code, message);
     }
     return error_ctx_error_s(my errs, config_span(me, start, end), code, message);
+}
+
+// A diagnostic about a config the config extends (tsc: at its own JSON source file, named relative to the working
+// directory like the config); without a location when it can't be read
+Error* program_extended_config_error(Program* me, csview path, u32 start, u32 end, unsigned code, cstr message) {
+    SourceFile* source = nullptr;
+    for (u32 i = 0; i < my extended_config_count && !source; i++) {
+        if (csview_equals_sv(cstr_sv(&my extended_configs[i]->canonical_path), path)) source = my extended_configs[i];
+    }
+    if (!source) {
+        cstr contents = cstr_null;
+        try (fs_read_file(my fs, path, &contents)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+            return error_ctx_global_error_s(my errs, code, message);
+        }
+        text_decode(&contents);
+        source = c_new(SourceFile, source_file_make(cstr_from_sv(path), contents));
+        source_file_register(source);
+        source->is_json = true;
+        source->is_config = true;
+        source->unchecked = true;
+        my extended_configs = realloc(my extended_configs, sizeof(SourceFile*) * (my extended_config_count + 1));
+        my extended_configs[my extended_config_count++] = source;
+    }
+    if (end > cstr_size(&source->contents) || start > end) return error_ctx_global_error_s(my errs, code, message);
+    char const* text = cstr_str(&source->contents);
+    return error_ctx_error_s(my errs, span_make(source, text + start, text + end), code, message);
 }
 
 // tsc's createDiagnosticForOptionName (on_key) and createOptionValueDiagnostic
