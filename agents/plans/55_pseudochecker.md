@@ -31,18 +31,17 @@ with an enclosing declaration (types baseline, declaration emit, hover, messages
   corpora, `$ExpectType` (68631) unchanged.
 
 ## Remaining
-1. **Stage 1b: isolatedDeclarations from the pseudo tree.** `declaration_diagnostics.c` still runs TS 6.0's
-   expressionToTypeNode walk (`type_of_expression` and friends). tsgo reports from `pseudoTypeEquivalentToType` with
-   reportErrors (an Inferred's error nodes, else the expression or its declaration; a parameter, property or method
-   whose pseudo type isn't equivalent) and `pseudoTypeToNode` (nested Inferred/NoResult), mapped to messages by
-   `createGetIsolatedDeclarationErrors` by node kind. `Pseudo.errors` (PseudoError kinds) are ready for it. Port that
-   as a reporting pass over the declarations the walk already visits (keep the walk's visibility, painting, tracker
-   and heritage parts), then delete `type_of_expression`, `type_of_object`, `type_of_array`,
-   `type_of_function_expression`, `return_of_signature`, `type_of_assertion`, `check_parameter`'s decisions.
-   Motivating failures: isolatedDeclarationsAddUndefined (`(ip = 10 as T, v: number)`: tsgo's TS9025 at the
-   parameter, because Direct(T) isn't equivalent to `number | undefined`; tttt says TS9011 at `T`),
-   isolatedDeclarationErrorsExpressions (TS9019 binding element messages). Validate with the suite's
-   isolatedDeclaration* tests and `TTTT_DECLARATION_DIAGNOSTICS=1` on drizzle (`scripts/realworld.py --corpus drizzle`).
+1. ~~Stage 1b~~ done (2026-10-12, todo entry 8): `declaration_diagnostics.c` serializes each emitted declaration like
+   serializeTypeForDeclaration / serializeReturnTypeForSignature (pseudo type, `ty_pseudo_equivalent()` with a
+   reporter, pseudoTypeToNode's reports), `report_fallback()` picks the diagnostic by node kind like
+   createGetIsolatedDeclarationErrors, the printer reports where tsgo's typeToTypeNode does (`DeclTracker.report_fallback`,
+   `TyDisplay.suppress_fallback`). TS 6.0's builder is deleted. Checked against tsgo with `--declaration
+   --isolatedDeclarations` flipped on 400 clean source sweep projects (missing/spurious TS9xxx: old 4944/7352, now 714/1;
+   487 of the missing are in projects where tttt has unrelated type errors, so the CLI drops declaration diagnostics) and
+   zod/xstate/nest (exact). Leftovers: properties past a truncation (monkeytype contracts' TS7056), mapped chains
+   knip's schema/configuration.ts (42: spreads of zod shapes `...x.shape` in huge printed types), react-navigation routers'
+   TS9039 for `State` (8). The probe scripts are easy to rebuild: tsgo `-p P --noEmit --declaration
+   --isolatedDeclarations --tsBuildInfoFile /tmp/x` against `tttt -p P --declaration --isolatedDeclarations`, TS9xxx only.
 2. **Stage 2b: messages.** A message printed from its expression (`reuse_nodes`, `d.approx`) uses the pseudo type in
    tsgo too. tsgo counts approximateLength for each reused node by its source range including leading trivia
    (`tryReuseExistingNodeHelper`: Direct annotations, literals, reused names, type parameters) and nothing for the
@@ -57,8 +56,8 @@ with an enclosing declaration (types baseline, declaration emit, hover, messages
    property loop `literal_initializer`, `initializer_function`, `syntactic_getter`; in `src/ty/expr.c`
    `check_object_literal`'s `asserted` for `a: x as T` and the synthesized single-quoted literal node (PropDecl.asserted
    then only carries annotations of spread/mapped/reverse-mapped properties: give those a pseudo Direct instead).
-4. **Builder gaps**: class property declarations (`typeFromProperty`: printed members of a class's structural type,
-   declaration emit of fields), expandos (`typeFromExpandoProperty`), JSDoc (`FullSignature`, `@type` on properties is
+4. **Builder gaps**: class property declarations are built (`pseudo_of_field()`) but only declaration emit uses them
+   (not printed members of a class's structural type), expandos (`typeFromExpandoProperty`), JSDoc (`FullSignature`, `@type` on properties is
    only partly there), a variable's own contextual place (`pseudo_of_variable` takes `PseudoPlace{0}`: a variable inside
    a callback is contextually typed to tsgo), binding elements (NoResult).
 

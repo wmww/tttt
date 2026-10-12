@@ -503,8 +503,19 @@ src` finds the code-side markers; every significant one has an entry here.
   asks the checker's isConstContext (equal in practice: post-inference contextual types aren't const type variables).
   `pseudo_enter_signature()` treats an instantiated signature's own type parameters as fresh (tsgo clones them), by
   mention, not by identity. `reused_node_length()` counts whitespace before a reused node, tsgo's range also has
-  comments. `pseudo_member_prop()` finds a member's property by declaration span, not by name. isolatedDeclarations
-  doesn't use the pseudo tree yet (plan 55 stage 1b): `declaration_diagnostics.c`'s builder is TS 6.0's.
+  comments. `pseudo_member_prop()` finds a member's property by declaration span, not by name. `pseudo_type()` of an
+  Inferred expression whose type is a fresh object literal is null (never equivalent): tsgo re-checks the expression and
+  gets a new type, tttt interns literal types by shape, so this is decided by the flag rather than by identity.
+- isolatedDeclarations reporting (`declaration_diagnostics.c`, plan 55): tttt has no parents, so `locate()` finds a
+  reported node by walking the declaration being serialized along the pseudo builder's descent (for
+  findNearestDeclaration and createExpressionError's parent); a node the printer reports from another declaration of
+  the same file gets no related information. `print_part()` prints an Inferred part as `ty_pseudo_type()` (tsgo:
+  serializeTypeForDeclaration of the node's declaration); NoResult parts print nothing (their TS4xxx would be missed).
+  Printing stops at truncation (TS7056), so properties past it don't report (tsgo's do: monkeytype contracts).
+  A destructuring declaration's RequiresWidening is TYF_FRESH_OBJECT | TYX_CONTAINS_WIDENING.
+  `interface_declares_method()` matches a merged interface's method by name only (tsgo: getSignaturesOfSymbol).
+  `declared_item()` (ty_display.c) follows mapped_from and mapped_intersection to an object literal member; some deeper
+  chains (spreads of zod shapes, knip's schema/configuration.ts) still lose it.
 - Member order (`builder_sort_stable()`, tsc's getNamedMembers): object literals, mapped types, namespaces and merged
   values only; class/interface members keep tttt's own-then-inherited order, `builder_prototype_last()` moves a static
   side's `prototype` last. Props without a declaration sort by name bytes (tsc: escapedName, then symbol id).

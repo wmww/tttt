@@ -17,16 +17,18 @@
 
 // tsc's declaration transformer walks what a `.d.ts` would contain: the visible statements (everything in a script,
 // the exported ones and what `export { x }` names in a module), and in them the members that are emitted. Wherever a
-// type would be written that the source doesn't spell out, it asks the syntactic type builder (expressionToTypeNode.ts)
-// for one, and with isolatedDeclarations every place where that builder falls back to the checker's type is an error
-// (reportInferenceFallback, TS9007-TS9025, with the "Add a type annotation" related information of
-// createGetIsolatedDeclarationErrors). The transformer adds a few checks of its own (TS9020, TS9023, TS9026, TS9038).
+// type would be written that the source doesn't spell out, the node builder serializes the declaration's pseudo type
+// (pseudo.h: what its syntax says) where that is equivalent to its type, else prints the type (tsgo's
+// serializeTypeForDeclaration and serializeReturnTypeForSignature). With isolatedDeclarations every place the syntax
+// doesn't say the type is reported (ReportInferenceFallback: TS9007-TS9039, with the "Add a type annotation" related
+// information of createGetIsolatedDeclarationErrors). The transformer adds a few checks of its own (TS9019, TS9021,
+// TS9023, TS9026, TS9038), and the symbol tracker reports what the printed types can't name (TS4xxx).
 //
-// This file walks the same way and ports the builder's decisions (can this be typed from syntax, where does it fall
-// back), building no type nodes. The builder's result is only "fell back" (tsc's `failed`, the caller reports) or not
-// (a type, or a fallback already reported or not reported at all: tsc's alreadyReported and notImplemented)
+// This file walks the same way and does the serializing's equivalence and reporting, printing types only for the
+// tracker (into scratch strings)
 //
-// Not done: JavaScript (no JS declaration emit); what is approximated is in agents/hacks.md "Declaration diagnostics"
+// Not done: JavaScript (no JS declaration emit); what is approximated is in agents/hacks.md "isolatedDeclarations
+// reporting"
 
 // What tsc's findNearestDeclaration finds for a node: the declaration the "Add a type annotation" related information
 // is about

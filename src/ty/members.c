@@ -3236,7 +3236,20 @@ static bool name_type_filters(Checker* me, Ty const* name, Ty const* key, u32 de
             return false;
         case TY_CONDITIONAL: {
             for (u32 which = 0; which < 2; which++) {
-                Ty const* branch = peek_cond_branch(&name->conditional.branches[which]);
+                TyCondBranch const* cond = &name->conditional.branches[which];
+                Ty const* branch = peek_cond_branch(cond);
+                // (One still to be lowered, by its syntax: `never`, or the key's own name)
+                if (!branch && cond->node && cond->state == LAZY_STATE_NOT_STARTED) {
+                    TypeNode const* node = cond->node;
+                    if (node->tag == TYPE_NEVER) continue;
+                    if (node->tag == TYPE_IDENTIFIER && key->kind == TY_TYPE_PARAM && key->param.name &&
+                        !identifier_type_namespace_count(node->identifier) &&
+                        !vec_spanned_type_size(&node->identifier->generic_params) &&
+                        csview_equals_sv(span_sv(node->identifier->name), atom_sv(key->param.name))
+                    ) {
+                        continue;
+                    }
+                }
                 if (!branch || !name_type_filters(me, branch, key, depth + 1)) return false;
             }
             return true;
