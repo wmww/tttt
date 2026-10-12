@@ -4814,8 +4814,11 @@ static void push_members(TyBuf* out, Ty const* ty) {
     }
 }
 
+// (tsc's isObjectLiteralType, which a widened one no longer is: getWidenedTypeOfObjectLiteral drops
+// ObjectFlags.ObjectLiteral. `[left, { id: 1, value: "" }]` with `const left = { value: "" }` doesn't give left's type
+// `id?: undefined`)
 static bool is_object_literal_type(Ty const* ty) {
-    return ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal;
+    return ty_is_unwidened_object_literal(ty);
 }
 
 // tsc's getSiblingsOfContext
