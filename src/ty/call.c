@@ -1026,9 +1026,19 @@ static void infer_from_annotated_params_of(Checker* me, Inference* inf, Function
     if (ret) infer_types(me, inf, ty_from_node(me, ret, (LowerCtx){ .generic = true }), signature_return_type(me, contextual), INFER_PRIORITY_NORMAL);
 }
 
-static bool is_literal_arg(Arg const* arg) {
-    return !arg->spread && !arg->part_of_spread &&
-        (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY || arg->expr->tag == EXPR_TERNARY);
+// A conditional expression with a generic call returning a function as a branch (`c ? share() : shareReplay(..)`),
+// which the first pass skips like tsc's SkipGenericFunctions does wherever it is in the argument
+static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
+    if (expr->tag != EXPR_TERNARY) return ty_calls_generic_function_returning_function(me, expr);
+    return ternary_has_generic_call(me, &expr->ternary->yes) || ternary_has_generic_call(me, &expr->ternary->no);
+}
+
+// (A conditional only for its generic calls: checked like a literal otherwise, its type would differ, the literal
+// branches of `Promise.resolve(c ? "open" : "close")` widened against the first pass's context)
+static bool is_literal_arg(Checker* me, Arg const* arg) {
+    if (arg->spread || arg->part_of_spread) return false;
+    if (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY) return true;
+    return arg->expr->tag == EXPR_TERNARY && ternary_has_generic_call(me, arg->expr);
 }
 
 // The contextual type of a literal argument in the first pass: what the return type says about the type parameters
@@ -1363,7 +1373,7 @@ static TyMapper const* infer_type_arguments(
         // mentions too: tsc assigns contextual parameter types with the fixing mapper under any inferential check)
         my outer_inference = &self;
         self.fixing = true;
-        if (is_literal_arg(arg)) {
+        if (is_literal_arg(me, arg)) {
             GenericFunctionMode mode = {0};
             Ty const* param_type = shape_type_at(&shape, i);
             arg->type = ty_check_literal_argument(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
