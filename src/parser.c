@@ -7033,8 +7033,9 @@ static bool hop_member_keyword(Parser* parent, const char* keyword, bool allow_n
     if (!allow_newline && p.whitespace == WHITESPACE_NEWLINE) {
         return parse_fail(&p);
     }
-    if (is_identifier_char(*p.pos) || *p.pos == '[' || *p.pos == '"' || *p.pos == '\'' || *p.pos == '#' ||
-        (*p.pos == '*' && strcmp(keyword, "async") == 0)
+    // (A name may start with a non-ASCII letter or an escape: `get ɵx()`)
+    if (is_identifier_char(*p.pos) || identifier_char_size(p.pos, true) || *p.pos == '[' || *p.pos == '"' ||
+        *p.pos == '\'' || *p.pos == '#' || (*p.pos == '*' && strcmp(keyword, "async") == 0)
     ) {
         return parse_success(&p);
     }
