@@ -1542,10 +1542,9 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     // Reading outputs, a referenced project's source is its output (tsc's getSourceFileFromReferenceWorker)
     csview output = my reference_outputs ? program_output_of_source(me, path) : c_sv("");
     if (output.size && !fs_is_reg_file(my fs, output)) {
+        // An unbuilt one isn't in the program (tsgo's root file redirected to an output that isn't there: nothing is
+        // reported for it, an import of it is TS6305 at the import)
         if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
-        Error* error = error_ctx_global_error_d(my errs, 6305, "Output file '", output,
-            "' has not been built from source file '", path, "'.");
-        program_explain_root(me, error, path);
         return ok(nullptr);
     }
     if (output.size) path = output;
