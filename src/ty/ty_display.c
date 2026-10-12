@@ -515,10 +515,19 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
 }
 
 // The object literal member that declared a property, through its instantiations (a homomorphic mapped type's property
-// is declared where the property it maps is: tsgo's mapped symbol has its declarations)
-static ObjectExprItem const* declared_item(Prop const* prop) {
-    for (int depth = 0; depth < 64 && prop; depth++) {
+// is declared where the property it maps is, a property of one over an intersection where any of its members' is:
+// tsgo's mapped symbol has their declarations)
+static ObjectExprItem const* declared_item(Checker* me, Prop const* prop, u32 depth) {
+    for (; depth < 64 && prop; depth++) {
         if (prop->decl->item) return prop->decl->item;
+        Ty const* intersection = prop_decl_rare(prop->decl)->mapped_intersection;
+        for (u32 i = 0; intersection && i < intersection->composite.types.len; i++) {
+            Ty const* part = ty_apparent_type(me, intersection->composite.types.data[i]);
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Prop const* found = ty_get_prop(me, part, prop->name);
+            ObjectExprItem const* item = found ? declared_item(me, found, depth + 1) : nullptr;
+            if (item) return item;
+        }
         Prop const* mapped = prop_decl_rare(prop->decl)->mapped_from;
         prop = mapped ? mapped : prop->target;
     }
@@ -3021,29 +3030,22 @@ static void pseudo_report_item(PseudoReporter const* rep, ObjectExprItem const* 
     pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_OBJECT_MEMBER, .item = item });
 }
 
-// An Inferred pseudo type's error nodes, else its expression (or its function, for a signature's return type).
-// `name_parent`: pseudoTypeToNode's, see PseudoError.name_parent
-static void pseudo_report_inferred(PseudoReporter const* rep, Pseudo const* pseudo, bool name_parent) {
-    if (!rep) return;
-    for (u32 i = 0; i < pseudo->count; i++) pseudo_report(rep, pseudo->errors[i]);
-    if (pseudo->count) return;
-    if (pseudo->signature_return) {
-        pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function });
-    } else {
-        pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_EXPRESSION, .expr = pseudo->expr, .name_parent = name_parent });
-    }
-}
-
 static void tracker_report_fallback(void* ctx, PseudoError const* node) {
     DeclTracker* tracker = ctx;
     tracker->report_fallback(tracker, node);
 }
 
-// Where the printer reports for declaration emit (tsgo's tracker's ReportInferenceFallback), null where it doesn't
-static PseudoReporter const* display_reporter(TyDisplay d, PseudoReporter* storage) {
-    if (!d.tracker || !d.tracker->report_fallback || d.suppress_fallback) return nullptr;
+// ... whether or not the type being printed is the checker's fallback (pseudoTypeToNode's reports don't look)
+static PseudoReporter const* display_reporter_unsuppressed(TyDisplay d, PseudoReporter* storage) {
+    if (!d.tracker || !d.tracker->report_fallback) return nullptr;
     *storage = (PseudoReporter){ .report = tracker_report_fallback, .ctx = d.tracker };
     return storage;
+}
+
+// Where the printer reports for declaration emit (tsgo's tracker's ReportInferenceFallback), null where it doesn't
+static PseudoReporter const* display_reporter(TyDisplay d, PseudoReporter* storage) {
+    if (d.suppress_fallback) return nullptr;
+    return display_reporter_unsuppressed(d, storage);
 }
 
 // pseudoParametersEquivalentToParameters. `where`: what is reported when the lists don't match (tsgo's
@@ -3114,7 +3116,7 @@ static bool pseudo_member_equivalent(Checker* me, TyDisplay d, PseudoMember cons
         case PSEUDO_MEMBER_PROPERTY:
             if (pseudo_equivalent(me, d, member->type, type, member->optional, nullptr)) return true;
             if (member->type->kind == PSEUDO_INFERRED && member->type->count) {
-                pseudo_report_inferred(rep, member->type, false); // (its error nodes)
+                pseudo_report_inferred(rep, member->type); // (its error nodes)
             } else if (!pseudo_is_structural(member->type)) {
                 pseudo_report_item(rep, member->item);
             }
@@ -3172,7 +3174,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
     }
     switch (pseudo->kind) {
         case PSEUDO_INFERRED:
-            pseudo_report_inferred(rep, pseudo, false);
+            pseudo_report_inferred(rep, pseudo);
             return false;
         case PSEUDO_NO_RESULT:
             pseudo_report(rep, pseudo_no_result_node(pseudo));
@@ -3247,8 +3249,11 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
 static void display_pseudo_with_fallback(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
     if (pseudo->kind == PSEUDO_INFERRED) {
         PseudoReporter storage;
-        pseudo_report_inferred(display_reporter(d, &storage), pseudo, false);
+        pseudo_report_inferred(display_reporter(d, &storage), pseudo);
         d.suppress_fallback = true;
+        if (ty) ty_display(me, d, ty);
+        else out_lit(d, "any");
+        return;
     }
     display_pseudo(me, d, pseudo, ty);
 }
@@ -3261,6 +3266,23 @@ static u32 reused_node_length(Span span) {
     char const* contents = file ? cstr_str(&file->contents) : start;
     while (start > contents && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
     return (u32)(span.buf - start + span.size);
+}
+
+// display_pseudo() of a pseudo type whose parent is a declaration (`property`: that object literal member's, `function`:
+// that arrow function's body's): a name there reports the declaration. `in_return`: a function's return type (printed
+// by serializeInferredReturnTypeForSignature, which doesn't report)
+static void display_pseudo_in(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, ObjectExprItem const* property,
+    FunctionImpl const* function, bool in_return
+) {
+    if (pseudo->kind != PSEUDO_INFERRED) {
+        display_pseudo(me, d, pseudo, ty);
+        return;
+    }
+    PseudoReporter storage;
+    pseudo_report_inferred_node(display_reporter_unsuppressed(d, &storage), pseudo, property, function);
+    if (in_return || pseudo->signature_return) d.suppress_fallback = true;
+    if (ty) ty_display(me, d, ty);
+    else out_lit(d, "any");
 }
 
 // A parameter as its declaration says (pseudoParameterToNode): `type` its type in the signature
@@ -3305,7 +3327,8 @@ static void display_pseudo_params(Checker* me, TyDisplay d, PseudoParam const* p
     out_lit(d, ")");
 }
 
-static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, Signature const* sig) {
+// `function`: whose return type it is
+static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, Signature const* sig, FunctionImpl const* function) {
     if (ret->kind == PSEUDO_DIRECT && ret->predicate) {
         TypePredicateNode const* node = ret->function->predicate;
         TyDisplay reused = reused_if(d, true);
@@ -3317,7 +3340,9 @@ static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, S
         }
         return;
     }
-    display_pseudo(me, d, ret, sig ? signature_return_type(me, sig) : nullptr);
+    // (An arrow function's expression body has the function as its parent)
+    FunctionImpl const* parent = function && function->expression_body ? function : nullptr;
+    display_pseudo_in(me, d, ret, sig ? signature_return_type(me, sig) : nullptr, nullptr, parent, true);
 }
 
 // pseudoTypeToNode. `ty`: what it is equivalent to, printed where the pseudo type says nothing (Inferred, NoResult)
@@ -3335,9 +3360,10 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
         case PSEUDO_NO_RESULT: {
             // (What the syntax doesn't say: reported, then the checker's type)
             PseudoReporter storage;
-            PseudoReporter const* rep = display_reporter(d, &storage);
+            PseudoReporter const* rep = display_reporter_unsuppressed(d, &storage);
             if (pseudo->kind == PSEUDO_NO_RESULT) pseudo_report(rep, pseudo_no_result_node(pseudo));
-            else pseudo_report_inferred(rep, pseudo, true);
+            else pseudo_report_inferred_node(rep, pseudo, nullptr, nullptr);
+            if (pseudo->kind == PSEUDO_INFERRED && pseudo->signature_return) d.suppress_fallback = true;
             if (ty) ty_display(me, d, ty);
             else out_lit(d, "any");
             return;
@@ -3411,7 +3437,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             display_node_type_params(me, sig_d, &pseudo->function->generic);
             display_pseudo_params(me, sig_d, pseudo->params, pseudo->count, sig);
             out_lit(sig_d, " => ");
-            display_pseudo_return(me, sig_d, pseudo->ret, sig);
+            display_pseudo_return(me, sig_d, pseudo->ret, sig, pseudo->function);
             return;
         }
         case PSEUDO_TUPLE: {
@@ -3457,13 +3483,14 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         display_node_type_params(me, member_d, &member->function->generic);
                         display_pseudo_params(me, member_d, member->params, member->param_count, sig);
                         out(member_d, is_const ? c_sv(" => ") : c_sv(": "));
-                        display_pseudo_return(me, member_d, member->type, sig);
+                        display_pseudo_return(me, member_d, member->type, sig, member->function);
                         break;
                     }
                     case PSEUDO_MEMBER_PROPERTY:
                         if (prop) display_member_name(me, name_d, prop);
                         out_lit(member_d, ": ");
-                        display_pseudo(me, member_d, member->type, type);
+                        display_pseudo_in(me, member_d, member->type, type,
+                            member->item->tag == OBJECT_ITEM_PROPERTY ? member->item : nullptr, nullptr, false);
                         break;
                     case PSEUDO_MEMBER_SETTER: {
                         out_lit(member_d, "set ");
@@ -3689,7 +3716,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
         // literal's own type, is printed as a type)
         bool suppress = false;
-        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(prop);
+        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(me, prop, 0);
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         bool item_property = item && (item->tag == OBJECT_ITEM_PROPERTY || item->tag == OBJECT_ITEM_SHORTHAND);
         if ((item_property && !requires_widening(type)) || item_accessor) {

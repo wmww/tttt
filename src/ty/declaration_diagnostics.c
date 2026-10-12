@@ -57,9 +57,6 @@ typedef struct Place {
     // The node is the initializer of `near` (or the type of a type assertion that is), through parentheses and type
     // assertions (createExpressionError's `parentDeclaration === parent`)
     bool direct;
-    // The node is the body of this arrow function (whose return type a name reported there is about)
-    FunctionImpl const* arrow_body;
-    bool property_value; // The node is a property assignment's initializer
 } Place;
 
 // An accessor pair: the getter, the setter (either may be null)
@@ -159,6 +156,9 @@ typedef struct Walk {
     // The declaration's type is printed because its pseudo type doesn't say it (tsgo's typeToTypeNode fallback): the
     // pseudo types of what it prints report (else they did already)
     bool print_reports;
+    // Walking an object literal's members (tsgo's pseudoTypeToNode sets InObjectTypeLiteral): `this` printed there is
+    // inaccessible (TS2527)
+    bool in_object_literal;
     // The diagnostics reported since this index are of the declaration being emitted (tsc deduplicates them)
     isize_t emitting_errors;
     DeclTracker tracker;
@@ -437,7 +437,12 @@ static void emit_leave(Walk* me, Emitting saved) { my emitting = saved; }
 
 // The node builder printing `type` for the declaration being emitted, for what its tracker reports (printed into a
 // scratch string)
-static void print_inferred(Walk* me, Ty const* type) {
+static void print_type(Walk* me, Ty const* type, bool reports);
+
+static void print_inferred(Walk* me, Ty const* type) { print_type(me, type, my print_reports); }
+
+// ... `reports`: what the printer prints from syntax reports (tsgo's typeToTypeNode without suppressReportInferenceFallback)
+static void print_type(Walk* me, Ty const* type, bool reports) {
     if (!type || my emitting.kind == EMIT_NONE) return;
     my tracker.truncated = false;
     // (With the types baseline's node reuse: tsc's declaration emit reuses annotations the same way, naming what a
@@ -445,7 +450,7 @@ static void print_inferred(Walk* me, Ty const* type) {
     cstr text = cstr_init();
     ty_display(my checker, (TyDisplay){
         .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
-        .suppress_fallback = !my print_reports,
+        .suppress_fallback = !reports, .in_object_literal = my in_object_literal,
     }, type);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
         fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.size, my emitting.name.buf, cstr_str(&text));
@@ -867,14 +872,6 @@ static bool is_primitive_literal_value(Expr const* expr, bool include_bigint) {
     }
 }
 
-// tsc's isEntityNameExpression: a name, or a dotted name of names
-static bool is_entity_name_expression(Expr const* expr) {
-    if (expr_is_perenthisized(expr)) return false;
-    if (expr->tag == EXPR_IDENTIFIER) return !expr->identifier.keyword;
-    if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return false;
-    return !expr->property->optional_chain && is_entity_name_expression(&expr->property->expr);
-}
-
 // tsc's isDefinitelyReferenceToGlobalSymbolObject: exactly `Symbol.x` (or `globalThis.Symbol.x`) with the global Symbol
 static bool is_global_symbol_reference(Walk* me, Expr const* expr) {
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return false;
@@ -936,12 +933,11 @@ typedef struct Search {
     Place found;
     ObjectExpr const* object; // The object literal the target is a member (or a member's function) of
     NearKind function_kind; // The target is a function: what kind (an object literal's method isn't is_method)
-    bool property_value; // Searching a property assignment's initializer itself
     bool done;
 } Search;
 
-static bool search_found(Search* me, Near near, bool direct, FunctionImpl const* arrow_body) {
-    my found = (Place){ .near = near, .direct = direct, .arrow_body = arrow_body, .property_value = my property_value };
+static bool search_found(Search* me, Near near, bool direct) {
+    my found = (Place){ .near = near, .direct = direct };
     my done = true;
     return true;
 }
@@ -962,23 +958,19 @@ static bool target_is_function(PseudoError const* target, FunctionImpl const* fn
 
 static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearKind kind);
 
-// `direct`: the expression is `near`'s initializer (through type assertions), `arrow_body`: it is that one's body
-static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, FunctionImpl const* arrow_body) {
-    if (target_is_expr(my target, expr)) return search_found(me, near, direct, arrow_body);
-    my property_value = false;
+// `direct`: the expression is `near`'s initializer (through type assertions)
+static bool search_expr(Search* me, Expr const* expr, Near near, bool direct) {
+    if (target_is_expr(my target, expr)) return search_found(me, near, direct);
     switch (expr->tag) {
-        case EXPR_AS_TYPE: return search_expr(me, &expr->as_type->expr, near, direct, nullptr);
+        case EXPR_AS_TYPE: return search_expr(me, &expr->as_type->expr, near, direct);
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &expr->object) {
                 bool member = my target->kind == PSEUDO_ERROR_OBJECT_MEMBER || my target->kind == PSEUDO_ERROR_COMPUTED_NAME;
                 if (member && my target->item == i) {
                     my object = &expr->object;
-                    return search_found(me, near, false, nullptr);
+                    return search_found(me, near, false);
                 }
-                if (i->tag == OBJECT_ITEM_PROPERTY) {
-                    my property_value = true;
-                    if (search_expr(me, &i->value, near, false, nullptr)) return true;
-                }
+                if (i->tag == OBJECT_ITEM_PROPERTY && search_expr(me, &i->value, near, false)) return true;
                 bool function = i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
                 if (function && i->value.tag == EXPR_FUNCTION) {
                     if (target_is_function(my target, i->value.function)) my object = &expr->object;
@@ -989,7 +981,7 @@ static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, Fu
             return false;
         case EXPR_ARRAY:
             for_each (i, vec_expr, &expr->array) {
-                if (search_expr(me, i, near, false, nullptr)) return true;
+                if (search_expr(me, i, near, false)) return true;
             }
             return false;
         case EXPR_FUNCTION: return search_function(me, expr->function, near, function_kind(expr->function));
@@ -1001,22 +993,22 @@ static bool search_expr(Search* me, Expr const* expr, Near near, bool direct, Fu
 static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearKind kind) {
     if (target_is_function(my target, fn)) {
         my function_kind = kind;
-        return search_found(me, near, false, nullptr);
+        return search_found(me, near, false);
     }
     for_each (i, vec_function_arg, &fn->args) {
-        if (my target->kind == PSEUDO_ERROR_PARAMETER && my target->arg == i) return search_found(me, near, false, nullptr);
+        if (my target->kind == PSEUDO_ERROR_PARAMETER && my target->arg == i) return search_found(me, near, false);
         Expr const* init = initialized_binding_value(&i->initializer);
-        if (init->tag != EXPR_IMPLICIT_ANY && search_expr(me, init, parameter_near(i), true, nullptr)) return true;
+        if (init->tag != EXPR_IMPLICIT_ANY && search_expr(me, init, parameter_near(i), true)) return true;
     }
     if (!fn->has_body || fn->body_missing) return false;
     if (fn->expression_body) {
         Statement const* ret = vec_statement_at(&fn->body.statements, 0);
-        return ret && ret->tag == STATEMENT_RETURN_EXPR && search_expr(me, &ret->expr, near, false, fn);
+        return ret && ret->tag == STATEMENT_RETURN_EXPR && search_expr(me, &ret->expr, near, false);
     }
     // (A `return` directly in the body: the function is the nearest declaration of what it returns)
     for_each (i, vec_statement, &fn->body.statements) {
         if (i->tag != STATEMENT_RETURN_EXPR || statement_is_bare_return(i)) continue;
-        if (search_expr(me, &i->expr, (Near){ .kind = kind, .span = function_error_span(fn) }, false, nullptr)) return true;
+        if (search_expr(me, &i->expr, (Near){ .kind = kind, .span = function_error_span(fn) }, false)) return true;
     }
     return false;
 }
@@ -1028,17 +1020,17 @@ static Search locate(Walk* me, PseudoError const* target) {
     switch (root->kind) {
         case ROOT_VARIABLE: {
             Expr const* init = initialized_binding_value(root->binding);
-            if (init->tag != EXPR_IMPLICIT_ANY) search_expr(&search, init, variable_near(&root->binding->binding), true, nullptr);
+            if (init->tag != EXPR_IMPLICIT_ANY) search_expr(&search, init, variable_near(&root->binding->binding), true);
             break;
         }
         case ROOT_FIELD:
             if (root->field->field.value.tag != EXPR_IMPLICIT_ANY) {
-                search_expr(&search, &root->field->field.value, field_near(root->field), true, nullptr);
+                search_expr(&search, &root->field->field.value, field_near(root->field), true);
             }
             break;
         case ROOT_FUNCTION: search_function(&search, root->function, (Near){0}, function_kind(root->function)); break;
         case ROOT_EXPORT_DEFAULT:
-            search_expr(&search, root->expr, (Near){ .kind = NEAR_EXPORT_ASSIGNMENT, .span = root->at }, true, nullptr);
+            search_expr(&search, root->expr, (Near){ .kind = NEAR_EXPORT_ASSIGNMENT, .span = root->at }, true);
             break;
         case ROOT_NONE: break;
     }
@@ -1157,10 +1149,8 @@ static Span reported_span(PseudoError const* node) {
 }
 
 // tsgo's SymbolTracker.ReportInferenceFallback: the declaration emitter's isolatedDeclarations diagnostic for the node
-// (createGetIsolatedDeclarationErrors), by its kind. The declaration being emitted falls back to printing the checker's
-// type (for what its symbol tracker reports)
+// (createGetIsolatedDeclarationErrors), by its kind
 static void report_fallback(Walk* me, PseudoError const* node) {
-    my fell_back = true;
     if (!my isolated) return;
     // (A node of another file is that file's declaration emit's to report)
     if (span_source(reported_span(node)) != my file) return;
@@ -1220,20 +1210,12 @@ static void report_fallback(Walk* me, PseudoError const* node) {
                     return;
                 default: break;
             }
-            if (is_entity_name_expression(node->expr)) {
-                // (pseudoTypeToNode reports a name's parent declaration instead: an arrow function's return type, a
-                // property assignment's initializer)
-                if (node->name_parent && place.arrow_body) {
-                    report_return(me, place.arrow_body, place.near, (Span){0}, NEAR_NONE);
-                    return;
-                }
-                if (!node->name_parent || !place.property_value) {
-                    // createEntityInTypeNodeError
-                    Span at = expr_error_span_skip_parens(node->expr);
-                    add_related(report_d(me, at, 9039, "Type containing private name '", span_sv(at),
-                        "' can't be used with --isolatedDeclarations."), place.near);
-                    return;
-                }
+            if (pseudo_is_entity_name(node->expr)) {
+                // createEntityInTypeNodeError
+                Span at = expr_error_span_skip_parens(node->expr);
+                add_related(report_d(me, at, 9039, "Type containing private name '", span_sv(at),
+                    "' can't be used with --isolatedDeclarations."), place.near);
+                return;
             }
             report_expression(me, expr_error_span_skip_parens(node->expr), place, 0, nullptr);
             return;
@@ -1256,17 +1238,7 @@ static void report_fallback_callback(void* ctx, PseudoError const* node) { repor
 
 static void tracker_report_fallback(DeclTracker* tracker, PseudoError const* node) { report_fallback(tracker->ctx, node); }
 
-// What an Inferred pseudo type reports where pseudoTypeToNode prints it: its error nodes, else its expression
-// (`name_parent`: see PseudoError.name_parent)
-static void report_inferred(Walk* me, Pseudo const* pseudo, bool name_parent) {
-    for (u32 i = 0; i < pseudo->count; i++) report_fallback(me, &pseudo->errors[i]);
-    if (pseudo->count) return;
-    if (pseudo->signature_return) {
-        report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function });
-        return;
-    }
-    report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_EXPRESSION, .expr = pseudo->expr, .name_parent = name_parent });
-}
+static PseudoReporter walk_reporter(Walk* me) { return (PseudoReporter){ .report = report_fallback_callback, .ctx = me }; }
 
 // A type node the pseudo type reuses: a name in it that isn't accessible from here makes the declaration print its type
 static void reuse_type(Walk* me, TypeNode const* type) {
@@ -1285,6 +1257,28 @@ static void reuse_signature(Walk* me, FunctionImpl const* fn) {
 
 static void pseudo_to_node(Walk* me, Pseudo const* pseudo);
 
+// What the syntax doesn't say is printed as the checker's type: pseudoTypeToNode's serializeTypeForDeclaration of the
+// expression's declaration, whose own pseudo types report, or of a return type (serializeReturnTypeForSignature without
+// reuse: serializeInferredReturnTypeForSignature, which doesn't). `in_return`: the expression is a returned one
+static void print_part(Walk* me, Pseudo const* pseudo, bool in_return) {
+    Ty const* type = ty_pseudo_type(my checker, pseudo);
+    if (type) print_type(me, type, !in_return && !pseudo->signature_return);
+}
+
+// pseudo_to_node() of a pseudo type whose parent is a declaration (see pseudo_report_inferred_node()), or that is a
+// function's return type (`in_return`)
+static void pseudo_to_node_in(Walk* me, Pseudo const* pseudo, ObjectExprItem const* property, FunctionImpl const* function,
+    bool in_return
+) {
+    if (pseudo->kind != PSEUDO_INFERRED) {
+        pseudo_to_node(me, pseudo);
+        return;
+    }
+    PseudoReporter reporter = walk_reporter(me);
+    pseudo_report_inferred_node(&reporter, pseudo, property, function);
+    print_part(me, pseudo, in_return);
+}
+
 static void pseudo_params_to_node(Walk* me, PseudoParam const* params, u32 count) {
     for (u32 i = 0; i < count; i++) pseudo_to_node(me, params[i].type);
 }
@@ -1296,7 +1290,12 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
             if (!pseudo->predicate) reuse_type(me, pseudo->node);
             else if (pseudo->function->predicate->has_type) reuse_type(me, &pseudo->function->predicate->type);
             return;
-        case PSEUDO_INFERRED: report_inferred(me, pseudo, true); return;
+        case PSEUDO_INFERRED: {
+            PseudoReporter reporter = walk_reporter(me);
+            pseudo_report_inferred_node(&reporter, pseudo, nullptr, nullptr);
+            print_part(me, pseudo, false);
+            return;
+        }
         case PSEUDO_NO_RESULT: {
             PseudoError node = pseudo_no_result_node(pseudo);
             report_fallback(me, &node);
@@ -1310,24 +1309,36 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
         case PSEUDO_SIGNATURE:
             reuse_signature(me, pseudo->function);
             pseudo_params_to_node(me, pseudo->params, pseudo->count);
-            pseudo_to_node(me, pseudo->ret);
+            // (An arrow function's expression body has the function as its parent)
+            pseudo_to_node_in(me, pseudo->ret, nullptr, pseudo->function->expression_body ? pseudo->function : nullptr, true);
             return;
-        case PSEUDO_OBJECT:
+        case PSEUDO_OBJECT: {
+            bool outer_in_object = my in_object_literal;
+            my in_object_literal = true;
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
                 if (member->function) reuse_signature(me, member->function);
                 pseudo_params_to_node(me, member->params, member->param_count);
-                if (member->type) pseudo_to_node(me, member->type);
+                bool property = member->kind == PSEUDO_MEMBER_PROPERTY && member->item->tag == OBJECT_ITEM_PROPERTY;
+                bool in_return = member->kind == PSEUDO_MEMBER_METHOD || member->kind == PSEUDO_MEMBER_GETTER;
+                if (member->type) pseudo_to_node_in(me, member->type, property ? member->item : nullptr, nullptr, in_return);
             }
+            my in_object_literal = outer_in_object;
             return;
+        }
         default: return;
     }
 }
 
 // pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type
 static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo) {
-    if (pseudo->kind == PSEUDO_INFERRED) report_inferred(me, pseudo, false);
-    else pseudo_to_node(me, pseudo);
+    if (pseudo->kind != PSEUDO_INFERRED) {
+        pseudo_to_node(me, pseudo);
+        return;
+    }
+    PseudoReporter reporter = walk_reporter(me);
+    pseudo_report_inferred(&reporter, pseudo);
+    my fell_back = true; // (The declaration's type is printed, not reporting)
 }
 
 static bool pseudo_equivalent_reporting(Walk* me, Pseudo const* pseudo, Ty const* type, bool optional) {
@@ -1378,6 +1389,7 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
         TyPredicate const* predicate = signature_predicate(my checker, sig);
         if (predicate && !(pseudo->kind == PSEUDO_DIRECT && pseudo->predicate)) {
             report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = fn });
+            my fell_back = true;
         } else {
             pseudo_to_node_with_fallback(me, pseudo);
         }
@@ -1695,6 +1707,7 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
     if (!symbol_declared_once(binding->symbol)) {
         bool outer = fallback_begin(me);
         report_variable(me, decl);
+        my fell_back = my print_reports = true;
         fallback_end(me, outer, type);
         return;
     }
@@ -2010,7 +2023,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name,
         span_valid(cls->extends_clause) ? cls->extends_clause : expr_outer_span(&cls->extends));
     my emitting.fallback = block_first_token(statement);
-    if (is_entity_name_expression(base)) {
+    if (pseudo_is_entity_name(base)) {
         check_entity_expression(me, base);
     } else {
         // (written as a variable `_base` of the expression's type)
@@ -2089,13 +2102,13 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
         bool callable = i->type.tag == TYPE_CALLABLE && i->type.callable && i->type.callable->function;
         if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr) {
             Expr const* key = i->key.expr;
-            if (is_dynamic_name(key) && !is_global_symbol_reference(me, key) && !is_entity_name_expression(key)) {
+            if (is_dynamic_name(key) && !is_global_symbol_reference(me, key) && !pseudo_is_entity_name(key)) {
                 report(me, at, 9014, "Computed properties must be number or string literals, variables or dotted "
                     "expressions with --isolatedDeclarations.");
                 continue;
             }
             // A late bound name's entity (checkName)
-            if (is_entity_name_expression(key)) {
+            if (pseudo_is_entity_name(key)) {
                 Emitting saved = emit_enter_nested(me, i->is_method ? EMIT_METHOD_NAME : EMIT_PROPERTY, SIG_METHOD, i->key.span, i->key.span);
                 check_entity_expression(me, key);
                 emit_leave(me, saved);

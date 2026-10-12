@@ -730,3 +730,43 @@ bool pseudo_is_structural(Pseudo const* pseudo) {
         default: return false;
     }
 }
+
+bool pseudo_is_entity_name(Expr const* expr) {
+    if (expr_is_perenthisized(expr)) return false;
+    if (expr->tag == EXPR_IDENTIFIER) return !expr->identifier.keyword;
+    if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return false;
+    return !expr->property->optional_chain && pseudo_is_entity_name(&expr->property->expr);
+}
+
+static void report(PseudoReporter const* reporter, PseudoError error) {
+    if (reporter) reporter->report(reporter->ctx, &error);
+}
+
+void pseudo_report_inferred(PseudoReporter const* reporter, Pseudo const* pseudo) {
+    if (!reporter) return;
+    for (u32 i = 0; i < pseudo->count; i++) report(reporter, pseudo->errors[i]);
+    if (pseudo->count) return;
+    if (pseudo->signature_return) {
+        report(reporter, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function });
+    } else {
+        report(reporter, (PseudoError){ .kind = PSEUDO_ERROR_EXPRESSION, .expr = pseudo->expr });
+    }
+}
+
+void pseudo_report_inferred_node(PseudoReporter const* reporter, Pseudo const* pseudo, ObjectExprItem const* property,
+    FunctionImpl const* function
+) {
+    if (!reporter) return;
+    if (!pseudo->count && !pseudo->signature_return && pseudo_is_entity_name(pseudo->expr)) {
+        // (A property assignment reports its initializer as an expression; an arrow function, its return type)
+        if (property) {
+            report(reporter, (PseudoError){ .kind = PSEUDO_ERROR_OBJECT_MEMBER, .item = property });
+            return;
+        }
+        if (function) {
+            report(reporter, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = function });
+            return;
+        }
+    }
+    pseudo_report_inferred(reporter, pseudo);
+}

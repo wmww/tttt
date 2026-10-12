@@ -78,8 +78,6 @@ typedef struct PseudoError {
         ClassItem const* field;
     };
     FunctionArg const* arg;
-    // PSEUDO_ERROR_EXPRESSION from pseudoTypeToNode: a name whose parent is a declaration reports that declaration
-    bool name_parent;
 } PseudoError;
 
 // Where pseudoTypeEquivalentToType reports (reportErrors): each node it hands ReportInferenceFallback
@@ -193,6 +191,17 @@ Pseudo const* pseudo_add_undefined(Checker* me, Pseudo const* pseudo);
 bool pseudo_is_structural(Pseudo const* pseudo);
 
 typedef struct Ty Ty;
+// What pseudoTypeToNode reports where it meets an Inferred pseudo type: its error nodes, else its expression (its
+// function, for a signature's return type), except that a name whose parent is a declaration reports that declaration:
+// `property` the object literal member whose type it is, `function` the arrow function whose body it is (else null)
+void pseudo_report_inferred_node(PseudoReporter const* reporter, Pseudo const* pseudo, ObjectExprItem const* property,
+    FunctionImpl const* function);
+// What equivalence (and pseudoTypeToNodeWithCheckerFallback) reports for an Inferred pseudo type: its error nodes, else
+// its expression (its function)
+void pseudo_report_inferred(PseudoReporter const* reporter, Pseudo const* pseudo);
+// tsc's isEntityNameExpression: a name, or a dotted name of names
+bool pseudo_is_entity_name(Expr const* expr);
+
 // pseudoTypeToType (ty_display.c): the type a pseudo type stands for where it is direct, null for the structures
 Ty const* ty_pseudo_type(Checker* me, Pseudo const* pseudo);
 // pseudoTypeEquivalentToType (ty_display.c). `optional`: the declaration is optional (its type's undefined isn't in the
