@@ -2703,6 +2703,16 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
 // A cycle found while resolving a call doesn't reach what is being resolved around the call (tsc's getResolvedSignature
 // setting resolutionStart), only for a call's first resolution: one re-entered while in flight (call_return_type())
 // sees the whole stack
+// The arguments of a call that resolved to tsc's unknownSignature (resolveErrorCall: an invocation error) have the
+// contextual type any (getContextualTypeForArgumentAtIndex: no parameter, `?? anyType`): `this` in their object literal
+// methods is any, `x.extend({ m() { this.parent } })` on a union of incompatible signatures
+static void check_args_untyped(Checker* me, CallExpr const* call) {
+    if (!call) return;
+    for_each (i, vec_expr, &call->args) {
+        if (i->tag == EXPR_OBJECT || i->tag == EXPR_CALL) ty_check_expr(me, i, ty_intrinsic(me, TY_ANY));
+    }
+}
+
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     u32 start = my resolving_start, call_start = my resolving_call_start;
     my resolving_call_start = start;
@@ -2800,6 +2810,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                     construct ? "construct " : "", "signatures, but none of those signatures are compatible with each other.");
                 cstr_drop(&rendered);
             }
+            check_args_untyped(me, call);
             return ty_intrinsic(me, TY_ERROR);
         }
         // Some member has none: the union isn't callable, and the first such member is named (tsc's
@@ -2970,7 +2981,9 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         }
         // (An invocation error is tsc's resolveErrorCall, unknownSignature: the error type. `new` of something with
         // only call signatures is resolved as that call, any)
-        return call->uses_new && other_count && !call->is_extends ? ret : ty_intrinsic(me, TY_ERROR);
+        if (call->uses_new && other_count && !call->is_extends) return ret;
+        check_args_untyped(me, call);
+        return ty_intrinsic(me, TY_ERROR);
     }
 
     if (call->is_extends) {
