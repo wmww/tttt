@@ -690,19 +690,21 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
         // An array: its element type is (the union of) the elements' types, each nested literal is one of its members
         Ty const* element = ty_reference_args(me, type).data[0];
         TyList members = element->kind == TY_UNION ? element->composite.types : (TyList){ .data = &element, .len = 1 };
-        // (Which member is whose isn't known: each member is looked into with the first nested literal of its kind)
-        Expr const* first_array = nullptr;
-        Expr const* first_object = nullptr;
-        for_each (i, vec_expr, &expr->array) {
-            if (i->tag == EXPR_ARRAY && !first_array) first_array = i;
-            if (i->tag == EXPR_OBJECT && !first_object) first_object = i;
-        }
-        for (u32 j = 0; j < members.len && (first_array || first_object); j++) {
+        // (Which member is whose isn't known: each member is looked into with every nested literal of its kind, an
+        // element object literal by its property names: `[{ output: 1 }, { options: [...] }]`'s second member has the
+        // array literal the first element doesn't)
+        bool any_array = false;
+        for_each (i, vec_expr, &expr->array) any_array |= i->tag == EXPR_ARRAY;
+        for (u32 j = 0; j < members.len; j++) {
             Ty const* member = members.data[j];
             bool array_like = ty_is_tuple(member) || ty_is_array(me, member);
-            if (array_like && first_array) add_array_literal(inf, member);
-            Expr const* nested = array_like ? first_array : first_object;
-            if (nested) add_nested_array_literals(me, inf, nested, member, depth + 1);
+            if (array_like && any_array) add_array_literal(inf, member);
+            u32 looked = 0;
+            for_each (i, vec_expr, &expr->array) {
+                if (i->tag != (array_like ? EXPR_ARRAY : EXPR_OBJECT) || looked >= 8) continue;
+                add_nested_array_literals(me, inf, i, member, depth + 1);
+                looked++;
+            }
         }
         return;
     }
