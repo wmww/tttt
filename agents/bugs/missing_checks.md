@@ -353,3 +353,42 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   means: tsgo reports TS2306 "is not a module" (then TS2339s), apparently because the alias is resolved while the
   global augmentation merges, before the script's ambient modules are in the globals (8-line repro: an @types/ember
   with `declare module "ember" { namespace Ember {...} export default Ember }`).
+
+## Mutation seeds 41/42 leftovers (2026-10-12, agent C: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
+Seed 41: 10 -> 6 differing, seed 42: 13 -> 6 (plus the render fixes below once merged). Left, each looked at:
+- **Flow loop partial types in messages** (seed 41 typeGuardsAsAssertions null-arg and str-to-num): an error inside
+  a loop whose expression is first checked during the loop's flow analysis is reported by tsgo with the incomplete
+  (first-iteration) type: `Property 'some' does not exist on type 'None'` where tttt says `Optional<r>` (with the
+  `None` elaboration). tttt checks once with the final type. Modelling it means reporting from the flow-loop
+  evaluation (tsgo's checkExpressionCached during getTypeAtFlowLoopLabel); plan-sized, deterministic in tsgo.
+- **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in some type parameter positions**
+  (seed 41 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1): tsgo says implicit any (no flow node there)
+  for a type alias's constraint and an interface call signature's default, but not for an alias's default or body
+  (probes in the commit message's spirit: `type T2<X extends typeof a> = X` errors, `type T1<X = typeof a> = X`
+  doesn't). tttt types them all by the flow (`undefined`). Find which identifiers get no flow node in tsgo's binder
+  before touching it.
+- **Lazy name resolution** (seed 41 restElementWithInitializer2 delete-stmt): `[...x = a] = a` with x undeclared: tsgo
+  only reports TS2304 for x when something resolves it (it's TS1186 and unchecked; the post-emit pass or a later flow
+  walk through the assignment reports it); tttt reports every unresolved name at bind time. Suppressing it at the
+  rest element makes `[...x = a] = a; [...a = y] = a;` wrong instead (tsgo reports x there, reached by the flow walk
+  of the second statement). Order-dependent in tsgo.
+- **TS2590 where an intersection is first normalized** (seed 41 normalizedIntersectionTooComplex ann-string-number):
+  tttt also reports it at the call (36,14), tsgo only at the callback parameter. Which node is current when the
+  too-complex intersection is first built; tttt may build it twice.
+- seed 41 moduleElementsInWrongContext delete-stmt: TS2305 for `baz` of a `declare module "ambient"` inside a block
+  appears in tsgo only once `export default v` has nothing to resolve; check order.
+- seed 41 noCircularitySelfReferentialGetter2 str-to-num: a getter's circular type prints `any` in tttt's message,
+  `ZodOptional<ZodType>` in tsgo (circularity resolution order).
+- **Missing circularity errors** (seed 42): TS4109 "Type arguments for 'Array' circularly reference themselves" when a
+  conditional `P extends Object` (was `void`) relates `ReducerAction[]` while ReducerAction's alias is being resolved
+  (recursiveArrayNotCircular extends-object); TS7022/TS7024 when a reduce callback returns the variable it
+  initializes (unknownSymbolOffContextualType1 swap-stmts). See "Circularity tsc finds and tttt doesn't".
+- seed 42 narrowingDestructuring literal-type: `(({ kind, ...rest }) => rest)(t)` with t narrowed to never: tttt says
+  TS2700 for the rest of never, tsgo nothing (`rest: any`); the parameter's contextual never isn't the binding
+  element's parent type there. Not found where.
+- seed 42 objectRestNegative undefined-init (strictNullChecks off): `let o = undefined; var { ...m, a } = o` is TS2700
+  in tsgo when the pattern has another element (the initializer isn't widened to any under the pattern's contextual
+  type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`.
+- seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
+  type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
+  the rest parameter to never and says TS2345.
