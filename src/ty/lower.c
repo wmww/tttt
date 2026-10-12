@@ -678,7 +678,7 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
 
 // Free type parameters of a node, see Ty.anonymous.free_params
 
-#define MAX_FREE_PARAMS 32 // (Bound ones included until the end: every `infer` of a long conditional chain is one)
+#define MAX_FREE_PARAMS 32 // (Bound ones that are mentioned before they are declared included until the end)
 // (Generous: every `infer` of a long conditional chain is one, Playwright's Unboxed has 16)
 #define MAX_BOUND_PARAMS 64
 typedef struct FreeParams {
@@ -709,6 +709,11 @@ static void free_params_bind(FreeParams* out, Ty const* param) {
 static void free_params_add(FreeParams* out, Ty const* param) {
     for (u32 i = 0; i < out->len; i++) {
         if (out->params[i] == param) return;
+    }
+    // (Declared inside the walked nodes already: not free. Only a forward reference, `<A extends B, B>`, is added and
+    // taken out at the end)
+    for (u32 i = 0; i < out->bound_len; i++) {
+        if (out->bound[i] == param) return;
     }
     if (out->len == MAX_FREE_PARAMS) {
         out->unknown = true;
@@ -906,6 +911,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 // A signature written as a type, or an overload signature. A parameter without a type is `any`
 static void collect_free_params_of_function(Checker* me, FunctionImpl const* function, FreeParams* out) {
     if (function->jsdoc_callback) out->unknown = true;
+    u32 saved_bound = out->bound_len;
     collect_free_params_of_generic(me, &function->generic, out);
     for_each (i, vec_function_arg, &function->args) {
         if (i->initializer.binding.has_explicit_type) collect_free_params(me, &i->initializer.binding.explicit_type, out);
@@ -915,6 +921,27 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     if (function->has_body && !function->ret_explicit) out->unknown = true;
     collect_free_params(me, &function->ret, out);
     if (function->predicate && function->predicate->has_type) collect_free_params(me, &function->predicate->type, out);
+    // The signature's own type parameters are in scope nowhere else: out of the lists once it's walked, so the many
+    // overloads of a generic method (typesaurus's `field`, 10 of up to 10 type parameters each) don't run out of room
+    // and make the type's free parameters unknown (instantiated by the whole mapper: a new type for every mapper)
+    // (Only its type parameters: an `infer` in a parameter, `then(f: infer F)` in an extends type, is the conditional's.
+    // They were bound first, by collect_free_params_of_generic(), in order)
+    if (!out->unknown && vec_generic_item_size(&function->generic.items)) {
+        u32 kept_bound = saved_bound;
+        u32 next_own = saved_bound;
+        for_each (item, vec_generic_item, &function->generic.items) {
+            if (!item->symbol_ref) continue;
+            Ty const* param = ty_type_param(me, item->symbol_ref);
+            u32 kept = 0;
+            for (u32 i = 0; i < out->len; i++) if (out->params[i] != param) out->params[kept++] = out->params[i];
+            out->len = kept;
+            // (What a constraint bound on the way, before this one, stays)
+            while (next_own < out->bound_len && out->bound[next_own] != param) out->bound[kept_bound++] = out->bound[next_own++];
+            if (next_own < out->bound_len) next_own++;
+        }
+        while (next_own < out->bound_len) out->bound[kept_bound++] = out->bound[next_own++];
+        out->bound_len = kept_bound;
+    }
 }
 
 // The type parameters from outside that the type of a declared function mentions, when its signature is all
