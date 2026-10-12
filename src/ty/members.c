@@ -2851,6 +2851,13 @@ static bool only_this_arg_generic(Checker* me, Ty const* ty) {
     return true;
 }
 
+// A class or interface instantiated with type variables (not an array or tuple, whose mapped types are arrays and tuples):
+// its property names are known all the same, `T extends Ctx<P>` has Ctx's (tsc's resolveMappedTypeMembers lists
+// getPropertiesOfType of the apparent modifiers type whatever its type arguments)
+static bool generic_object_reference(Checker* me, Ty const* ty) {
+    return ty->kind == TY_REFERENCE && !ty_is_array(me, ty) && !ty_is_tuple(ty);
+}
+
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
@@ -2867,20 +2874,10 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     if (apparent == mapped->modifiers_type && apparent->kind == TY_ANONYMOUS && ty_members(me, apparent)->mapped) {
         return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &apparent, .len = 1 });
     }
-    if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !only_this_arg_generic(me, apparent))) {
-        // (A generic reference without any properties or index signatures, an interface whose bases are all
-        // unresolved, `RData<H>`: none either, and that's known, `Partial<T>` with `T extends RData<H>` has no `open`)
-        if (apparent != mapped->modifiers_type && apparent->kind == TY_REFERENCE && (apparent->flags & TYF_OBJECT) &&
-            !ty_has_unresolved_base(me, apparent)
-        ) {
-            Members const* source = ty_members(me, apparent);
-            if (!source->mapped && !source->prop_count && !source->index_count) {
-                MembersBuilder empty = { .mapped = mapped };
-                Members* ret = (Members*)builder_finish(me, &empty);
-                members_rare_mut(me, ret)->generic_keys_known = true;
-                return ret;
-            }
-        }
+    // (A generic class or interface reference whose bases resolve has its properties whatever its type arguments,
+    // `T extends Ctx<P>` has Ctx's, and none if it has none: `Partial<T>` with `T extends RData<H>` has no `open`)
+    if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+        !only_this_arg_generic(me, apparent) && !(generic_object_reference(me, apparent) && !ty_has_unresolved_base(me, apparent)))) {
         return members;
     }
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
