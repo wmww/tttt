@@ -179,6 +179,18 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                     "Private identifiers are not allowed outside class bodies.");
             }
             interface_member_check_implicit_any(me, errs);
+            // A property signature's initializer (TS1246/TS1247 already) is still checked against its type: tsc's
+            // checkVariableLikeDeclaration, at the name
+            if (my accessor && my accessor->initializer && !my is_method && !my key.name_is_member_function) {
+                Checker* checker = current_checker;
+                Ty const* type = ty_of_node(&my type);
+                if (my optional && compiler_options()->strict_null_checks && !(type->flags & TYF_ANY)) {
+                    Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
+                    type = ty_union(checker, parts, 2, nullptr, (TyList){0});
+                }
+                ty_check_assignable_expr(checker, ty_expr_type(checker, my accessor->initializer), type, my key.span,
+                    my accessor->initializer, errs);
+            }
             break;
 
         case INTERFACE_KEY_INDEX: {
