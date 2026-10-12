@@ -44,9 +44,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
   require }` isn't type-only for TS2441; a nested
   `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace).
-- **Templates**: `${symbol}` not rejected, TS2590 at the type node (templateLiteralTypes1/3; reporting it from
-  `intersect_unions()`/`ty_template_literal()` at the current node put it at the wrong node and fired where tsc
-  doesn't).
+- **Templates**: `${symbol}` not rejected.
 - **Misc**: TS2353 for an object literal assigned to an assignment pattern (`({ a } = { a, b })`); TS2561/TS2820 want
   the spelling suggestion (`spelling_suggestion()` exists); TS2551 suggestions don't filter inaccessible members;
   TS2793 only for function declarations, not overloaded methods/constructors (`add_implementation_success`); TS2563
@@ -108,8 +106,6 @@ Each one mutant:
   computing it; one test.
 - awaitedTypeNoLib: unchanged (without lib, tsc keeps NotPromise<TResult> through `instanceof Thenable` narrowing,
   TS2345, and TS2318 'Awaited' from an unlocated lookup).
-- templateLiteralTypes1: TS2590 position (tsc's currentNode per checked type node) and no TS2590 from template literal
-  / tuple-spread cross products (ty/template.c TODO), unchanged.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
   self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
   tttt. Still so.
