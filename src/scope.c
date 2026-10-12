@@ -1073,7 +1073,10 @@ static Symbol* declare_symbol(
         if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
             !((includes & SYMBOL_VARIABLE) && symbol_has_assignment_decl(existing))
         ) {
-            if (default_export && existing->decl_count) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
+            // (Across files it's tsc's checker that merges, whose mergeSymbol reports a duplicate identifier: two
+            // ambient `declare module '*.css' { export default classes }`)
+            bool same_file = existing->decl_count && span_source(default_error_span(&existing->decls[0])) == span_source(name_span);
+            if (default_export && existing->decl_count && same_file) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
             else report_conflicts(binder_errs(scope->binder), existing, name_span, includes, false,
                 csview_equals(name, "export=") ? name : (csview){0});
             return binder_new_symbol(binder, name, includes);
