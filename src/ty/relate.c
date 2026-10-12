@@ -5949,14 +5949,18 @@ static Ty const* recursion_identity(Ty const* ty) {
         case TY_DECLARED: return ty;
         // (An uninstantiated type literal or function type is its own: tsc tracks object types by their symbol, and
         // `type S = { states?: Record<string, S> }` nests as S. Not object literal expressions)
-        case TY_ANONYMOUS: return ty->anonymous.target ? ty->anonymous.target : ty->anonymous.object_literal ? nullptr : ty;
+        // (An object literal expression's is its own too: tsc's getRecursionIdentity doesn't track those by their symbol,
+        // and falls back to the type itself)
+        case TY_ANONYMOUS: return ty->anonymous.target ? ty->anonymous.target : ty;
         case TY_CONDITIONAL: return ty->conditional.root;
         case TY_INDEXED: {
             Ty const* object = ty;
             while (object->kind == TY_INDEXED) object = object->indexed.object;
             return object;
         }
-        default: return nullptr;
+        // (Anything else is its own, as in tsc: the same type on a stack again counts. tsc tracks type parameters by
+        // their symbol, which tttt's clones of one don't share)
+        default: return ty;
     }
 }
 
@@ -6036,12 +6040,14 @@ static bool is_deeply_nested_max(Checker* me, Ty const* ty, uintptr_t entry, Ty 
     if (depth + 1 < max) return false;
     // An intersection is as deeply nested as its most deeply nested member: `C<T> & { a: 1 }` whose members return
     // `this & { a: 1 }` grows a new intersection at each level, with C<T> in each
+    // (A member that stands for an intersection itself, `Required<Pick<A & B, K>>`, by that one's members: tsc's
+    // isDeeplyNestedType recurses)
     if (entry & 1) {
         Ty const* key = (Ty const*)(entry & ~(uintptr_t)1);
         for (u32 i = 0; i < key->composite.types.len; i++) {
             Ty const* member = recursion_key(me, key->composite.types.data[i]);
-            Ty const* identity = member->kind != TY_INTERSECTION ? recursion_identity(member) : nullptr;
-            if (identity && is_deeply_nested_as(me, identity, ty, stack, entries, depth, max)) return true;
+            uintptr_t member_entry = member->kind == TY_INTERSECTION ? (uintptr_t)member | 1 : (uintptr_t)recursion_identity(member);
+            if (member != key && is_deeply_nested_max(me, ty, member_entry, stack, entries, depth, max)) return true;
         }
         return false;
     }
