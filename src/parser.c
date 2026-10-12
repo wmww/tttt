@@ -8189,7 +8189,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 hop_whitespace(&p);
             } else if (p.whitespace != WHITESPACE_NEWLINE) {
                 switch (*p.pos) {
-                    case ';': case ',': case '}': case '\0': break;
+                    case ';': case '}': case '\0': break;
+                    case ',':
+                        // (A type member's separator; a class property's is only `;`: tsc's
+                        // parseSemicolonAfterPropertyName)
+                        if (is_type) break;
+                        goto missing_semicolon;
                     case '@':
                         // tsc's parseSemicolonAfterPropertyName: `public @dec m()` is a property `public`
                         if (!is_type) {
@@ -8199,6 +8204,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                         }
                         // fallthrough
                     default:
+                    missing_semicolon:
                         if (missing_name) {
                             parse_error(&p, span_from_token(&p), 1005, "';' expected.");
                         } else if (is_definitely_field) {
@@ -8223,6 +8229,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                                 modifier_list_drop(&modifiers);
                                 return parse_fail(&p);
                             }
+                        } else if (ret->field.computed_key || !name_span.size ||
+                            !(isalpha((unsigned char)*name_span.buf) || *name_span.buf == '_' || *name_span.buf == '$' ||
+                                *name_span.buf == '\\' || (unsigned char)*name_span.buf >= 0x80)
+                        ) {
+                            // (Of a name that isn't an identifier, tsc's parseErrorForMissingSemicolonAfter only says
+                            // ';' expected)
+                            parse_error(&p, span_from_token(&p), 1005, "';' expected.");
                         } else {
                             parse_error(&p, name_span, 1434, "Unexpected keyword or identifier.");
                         }
