@@ -2909,6 +2909,39 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
     return true;
 }
 
+// What a never index reads before the general access (out of line: try_resolve_indexed is hot). Null: no shortcut
+[[gnu::noinline, gnu::cold]] static Ty const* never_index_read(Checker* me, Ty const* object, Ty const* index) {
+    // A never index on a tuple reads its number index signature, the union of its elements, without resolving the
+    // tuple's (Array's) members: resolving them for every `[never][never]` made enough extra instantiations to push
+    // xstate's recursive StateId into TS5115 without strictNullChecks (flagflip)
+    // (Nor a mapped type over no keys, `{ [K in never]: StateId<...> }`: tsc never instantiates its template, which
+    // resolving its members here would, xstate's recursive StateId then ran into TS5115 without strictNullChecks)
+    // HACK: an anonymous object indexed by never is never, its members unresolved. tsc reads an index signature there
+    // (`{ [k: string]: X }[never]` is X), but resolving the members of xstate's `{ [K in never]: StateId<...> }` (and
+    // the other `{}`s on the way) instantiated enough to push its recursive StateId into TS5115 without
+    // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template
+    if (object->kind == TY_ANONYMOUS) return index;
+    if (ty_is_tuple(object)) {
+        TyList elements = ty_reference_args(me, object);
+        TupleShape const* shape = ty_tuple_shape(object);
+        TyBuf parts = {0};
+        for (u32 i = 0; i < shape->arity && i < elements.len; i++) {
+            Ty const* element = elements.data[i];
+            if ((shape->flags[i] & TUPLE_ELEMENT_REST) && (ty_is_array(me, element) || ty_is_tuple(element))) {
+                element = ty_is_array(me, element) ? ty_reference_args(me, element).data[0] : ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER));
+            } else if (shape->flags[i] & TUPLE_ELEMENT_REST) {
+                ty_buf_drop(&parts);
+                return ty_access(me, object, index);
+            }
+            ty_buf_push(&parts, element);
+        }
+        Ty const* ret = parts.len ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : index;
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    return nullptr;
+}
+
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
@@ -2930,33 +2963,9 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         // (`unknown[K]` with a generic K is unknown, like any's: tsc's getIndexedAccessTypeOrUndefined)
         return object->flags & TYF_UNKNOWN ? object : nullptr;
     }
-    // A never index on a tuple reads its number index signature, the union of its elements, without resolving the
-    // tuple's (Array's) members: resolving them for every `[never][never]` made enough extra instantiations to push
-    // xstate's recursive StateId into TS5115 without strictNullChecks (flagflip)
-    // (Nor a mapped type over no keys, `{ [K in never]: StateId<...> }`: tsc never instantiates its template, which
-    // resolving its members here would, xstate's recursive StateId then ran into TS5115 without strictNullChecks)
-    // HACK: an anonymous object indexed by never is never, its members unresolved. tsc reads an index signature there
-    // (`{ [k: string]: X }[never]` is X), but resolving the members of xstate's `{ [K in never]: StateId<...> }` (and
-    // the other `{}`s on the way) instantiated enough to push its recursive StateId into TS5115 without
-    // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template
-    if ((index->flags & TYF_NEVER) && object->kind == TY_ANONYMOUS) return index;
-    if ((index->flags & TYF_NEVER) && ty_is_tuple(object)) {
-        TyList elements = ty_reference_args(me, object);
-        TupleShape const* shape = ty_tuple_shape(object);
-        TyBuf parts = {0};
-        for (u32 i = 0; i < shape->arity && i < elements.len; i++) {
-            Ty const* element = elements.data[i];
-            if ((shape->flags[i] & TUPLE_ELEMENT_REST) && (ty_is_array(me, element) || ty_is_tuple(element))) {
-                element = ty_is_array(me, element) ? ty_reference_args(me, element).data[0] : ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER));
-            } else if (shape->flags[i] & TUPLE_ELEMENT_REST) {
-                ty_buf_drop(&parts);
-                return ty_access(me, object, index);
-            }
-            ty_buf_push(&parts, element);
-        }
-        Ty const* ret = parts.len ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : index;
-        ty_buf_drop(&parts);
-        return ret;
+    if (index->flags & TYF_NEVER) {
+        Ty const* read = never_index_read(me, object, index);
+        if (read) return read;
     }
     // A negative index of a tuple without a rest element written as a type is undefined (TS2514, tsc's
     // getPropertyTypeForIndexType with an access node)
