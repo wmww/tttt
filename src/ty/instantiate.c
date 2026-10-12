@@ -840,12 +840,11 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         mapped += targets[i] != outer->params.data[i];
     }
     Ty const* const* cached = intern_get(&my types, key, key_len);
-    // (One cut short by the limits is only good until the instantiation count starts over)
     if (cached && (uintptr_t)cached[2]) {
-        // One cut short by the limits stays what it is, like tsc's (root.instantiations keeps the errorType): reported
-        // again only while the count that ran out lasts (the same node, deduplicated), later users are only told
-        if ((uintptr_t)cached[2] == (uintptr_t)my instantiation_epoch + 1) ty_instantiation_limit_reached(me);
-        else my instantiation_limit_hits++;
+        // One cut short by the limits stays what it is, like tsgo's (root.instantiations keeps the errorType), and
+        // isn't reported again: the hit was reported where it happened (from a shallower stack a report would name
+        // other types, TS2589/TS5114 next to tsgo's one TS5115). Users are only told it was cut short
+        my instantiation_limit_hits++;
     }
     Ty const* ret = nullptr;
     if (cached) {
