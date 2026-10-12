@@ -249,9 +249,10 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
     }
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
     Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
-    if (ty_is_tuple(rest)) {
-        TupleShape const* shape = rest->reference.target->declared.tuple;
-        TyList elements = ty_reference_args(me, rest);
+    // (`[]` too, a tuple target rather than a reference: `(...args: Parameters<() => R>)` has no parameter 0)
+    TupleShape const* shape = ty_tuple_shape(rest);
+    if (shape) {
+        TyList elements = shape->arity ? ty_reference_args(me, rest) : (TyList){0};
         u32 j = i + 1 - sig->param_count;
         bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
         if (j >= shape->arity) return ends_in_rest ? ty_rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
