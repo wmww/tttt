@@ -16,6 +16,7 @@
 #include <cleat/filesystem.h>
 #include "binding.h"
 #include "scope.h"
+#include "statement.h"
 #include "symbol_chain.h"
 
 typedef struct LineNumberedStr {
@@ -383,6 +384,13 @@ static_failable add_virtual_source_file(BaselineTestCase* me, csview written_pat
         if (cstr_data(&normalized)[k] == '\\') cstr_data(&normalized)[k] = '/';
     }
     bool renamed = !csview_equals_sv(cstr_sv(&normalized), written_path);
+    // (A repeated `/` is one: tsgo's harness normalizes the unit name, `development//x.d.ts`, shown normalized too)
+    for (isize k = 1; k < cstr_size(&normalized); k++) {
+        if (cstr_data(&normalized)[k] == '/' && cstr_data(&normalized)[k - 1] == '/') {
+            cstr_erase(&normalized, k, 1);
+            k--;
+        }
+    }
     csview virtual_path = cstr_sv(&normalized);
     if (fs_exists(mock_fs_get_fs(my fs), virtual_path)) {
         // A handful of tsc tests repeat a // @Filename:, in which case the last copy is the file (tsc's harness
@@ -2002,25 +2010,34 @@ VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
     }
     if (!twin || twin == me) return symbol_declaration_spans(me);
     u32 count = 0;
-    for (u32 i = 0; i < twin->decl_count; i++) count += !twin_same_block || twin->decls[i].block == block;
+    // (A type's local twin conflicts with a local it excludes, TS2300: tsgo's declareModuleMember doesn't add it)
+    #define TWIN_DECL_TAKEN(decl) ((!twin_same_block || (decl)->block == block) && \
+        !((decl)->kind == SYMBOL_DECL_TYPE_ALIAS && (me->flags & SYMBOL_TYPE_ALIAS_EXCLUDES & ~(u32)SYMBOL_TYPE_ALIAS)) && \
+        !((decl)->kind == SYMBOL_DECL_INTERFACE && (me->flags & SYMBOL_INTERFACE_EXCLUDES & ~(u32)SYMBOL_INTERFACE)))
+    for (u32 i = 0; i < twin->decl_count; i++) count += TWIN_DECL_TAKEN(&twin->decls[i]);
     if (!count) return symbol_declaration_spans(me);
-    // (In the order the binder declares them: source order, see symbol_declaration_spans() for functions)
+    // (In the order the binder declares them: source order, see symbol_declaration_spans() for functions; a JavaScript
+    // file's typedefs after everything else, tsgo's delayed binding of JSDoc declarations)
     SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (me->decl_count + count));
     u32 len = 0;
-    for (u32 i = 0; i < twin->decl_count; i++) if (!twin_same_block || twin->decls[i].block == block) decls[len++] = twin->decls[i];
+    for (u32 i = 0; i < twin->decl_count; i++) if (TWIN_DECL_TAKEN(&twin->decls[i])) decls[len++] = twin->decls[i];
+    #undef TWIN_DECL_TAKEN
     for (u32 i = 0; i < me->decl_count; i++) {
         // (A local function has the exported declarations of its block already, see scope_init_declaration())
         bool seen = false;
         for (u32 k = 0; k < len && !seen; k++) seen = decls[k].node && decls[k].node == me->decls[i].node;
         if (!seen) decls[len++] = me->decls[i];
     }
+    #define LATE_DECL(decl) ((decl).kind == SYMBOL_DECL_TYPE_ALIAS && (decl).node && ((TypeDecl const*)(decl).node)->jsdoc)
     for (u32 i = 1; i < len; i++) {
-        for (u32 j = i; j > 0 && span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full); j--) {
+        for (u32 j = i; j > 0 && (LATE_DECL(decls[j]) == LATE_DECL(decls[j - 1]) ?
+            span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full) : LATE_DECL(decls[j - 1])); j--) {
             SymbolDecl t = decls[j];
             decls[j] = decls[j - 1];
             decls[j - 1] = t;
         }
     }
+    #undef LATE_DECL
     Symbol merged = *me;
     merged.decls = decls;
     merged.decl_count = len;

@@ -3773,8 +3773,17 @@ static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const c
         VecError const* errors = &parent->shared->jsdoc_errors;
         bool reported = errors->size && span_start_ptr(errors->data[errors->size - 1].span) == c;
         if (!reported && tag->kind != JSDOC_TAG_PARAM) {
+            // (At the current token: a whitespace run, a line break, or a character like `#`)
+            const char* token_end = c;
+            if (c < end && (*c == ' ' || *c == '\t')) {
+                while (token_end < end && (*token_end == ' ' || *token_end == '\t')) token_end++;
+            } else if (c + 1 < end && c[0] == '\r' && c[1] == '\n') {
+                token_end += 2;
+            } else if (c < end) {
+                token_end++;
+            }
             Parser e = parser(parent);
-            parse_error(&e, span_make(source, c, c), 1003, "Identifier expected.");
+            parse_error(&e, span_make(source, c, token_end), 1003, "Identifier expected.");
             jsdoc_keep_errors(&e);
             parse_fail(&e);
         }

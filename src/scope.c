@@ -1249,6 +1249,19 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     }
     bool merged;
     Span error_at = props.default_export && !span_valid(props.name) ? first_token(props.full) : props.name;
+    // An exported declaration of a module or namespace has a local twin too (tsgo's declareModuleMember), declared with
+    // the declaration's excludes: a local of the name declared before it that they exclude is a duplicate
+    // (`class Foo {}` then `export type Foo = number`)
+    if (!props.default_export && my container && table == my container->exports && table != &scope->locals &&
+        (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE)
+    ) {
+        Symbol const* local = symbol_table_get_own(&scope->locals, name, symbol_name_hash(name));
+        if (local && (local->flags & excludes) && local->decl_count &&
+            span_source(local->decls[0].name) == span_source(props.name)
+        ) {
+            report_conflicts(binder_errs(scope->binder), local, error_at, includes, false, (csview){0});
+        }
+    }
     Symbol* symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
