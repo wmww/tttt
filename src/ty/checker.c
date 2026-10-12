@@ -121,8 +121,9 @@ static u64 hash_words(u64 const* words, u32 count) {
     return (h & 0x00007fffffffffffull) | 1ull << 47 | (u64)(count < INTERN_LONG_KEY ? count : INTERN_LONG_KEY) << 48;
 }
 
-// Tables of any capacity (they grow by half: the big ones would be a third emptier on average doubling): the slot
-// where a hash starts probing, and the next one
+// Tables of any capacity: the slot where a hash starts probing, and the next one. Intern tables double; node links
+// (cheap to probe: the key is in the entry) grow by half, a third fuller on average (growing intern tables by half cost
+// zod 1.2% more instructions in probes and rehashes for a few MB either way)
 static u32 table_index(u64 hash, u32 cap) {
     return (u32)(((u64)(u32)hash * cap) >> 32);
 }
@@ -135,7 +136,7 @@ static u32 table_grown(u32 cap, u32 initial) {
     return cap ? cap / 2 * 3 : initial;
 }
 
-static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
+__attribute__((always_inline)) static inline InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
     if (!my cap) return nullptr;
     // (The hash has the count: the same hash is the same count, but a long key's count is in its block)
     bool long_key = count >= INTERN_LONG_KEY;
@@ -153,7 +154,7 @@ static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* word
 }
 
 static void intern_grow(InternTable* me) {
-    InternTable bigger = { .cap = table_grown(my cap, 64), .len = my len };
+    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
@@ -266,7 +267,7 @@ Atom const* checker_atom(Checker* me, csview sv) {
     // Atoms are keyed by content, so they get their own probing rather than the word keys
     InternTable* table = &my atoms;
     if ((table->len + 1) * 4 > table->cap * 3) {
-        InternTable bigger = { .cap = table_grown(table->cap, 256), .len = table->len };
+        InternTable bigger = { .cap = table->cap ? table->cap * 2 : 256, .len = table->len };
         bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
         panic_if(!bigger.entries, "out of memory");
         for (u32 i = 0; i < table->cap; i++) {

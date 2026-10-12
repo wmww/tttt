@@ -52,7 +52,7 @@ typedef struct InternEntry {
 
 typedef struct InternTable {
     InternEntry* entries;
-    u32 cap; // 0 or the initial capacity * 1.5^n
+    u32 cap; // power of two or 0
     u32 len;
 } InternTable;
 
