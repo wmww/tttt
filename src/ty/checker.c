@@ -181,6 +181,18 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     return entry->block;
 }
 
+// The key's words in a block intern_slot() returned
+static u64 const* intern_key_words(void const** block, u32 count) {
+    return (u64 const*)block + 1 + (count >= INTERN_LONG_KEY);
+}
+
+// A list of types that is part of an interned key as pointers (`at` words in): the type's list can be the key's
+// instead of a copy (drizzle 29, effect 34, vscode 44 MB of copies)
+static TyList intern_key_list(void const** block, u32 count, u32 at, u32 len) {
+    if (!len) return (TyList){0};
+    return (TyList){ .data = (Ty const* const*)(intern_key_words(block, count) + at), .len = len };
+}
+
 void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     InternEntry* entry = intern_find(table, hash_words(words, count), words, count);
     return entry && entry->hash ? entry->block[0] : nullptr;
@@ -711,7 +723,8 @@ typedef struct {
     u32 len;
 } OriginSpec;
 
-static Ty const* make_origin(Checker* me, OriginSpec const* spec) {
+// `types`: the spec's types, the interned key's (see intern_key_list())
+static Ty const* make_origin(Checker* me, OriginSpec const* spec, TyList types) {
 #ifdef TTTT_TY_POISON
     Ty* ret = arena_new(&my arena, Ty);
     memset((char*)ret + ty_size_of_kind(spec->kind), 0xa5, sizeof(Ty) - ty_size_of_kind(spec->kind));
@@ -725,7 +738,7 @@ static Ty const* make_origin(Checker* me, OriginSpec const* spec) {
         ret->keyof.operand = spec->types[0];
     } else {
         ret->flags = spec->kind == TY_UNION ? TYF_UNION : TYF_INTERSECTION;
-        ret->composite.types = ty_list_copy(me, spec->types, spec->len);
+        ret->composite.types = types;
     }
     return ret;
 }
@@ -742,12 +755,14 @@ static Ty const* intern_composite_origin(
     key[0] = kind == TY_UNION ? KEY_UNION : KEY_INTERSECTION;
     key[1] = (u64)(uintptr_t)alias;
     key[2] = alias_args.len;
-    for (u32 i = 0; i < alias_args.len; i++) key[3 + i] = alias_args.data[i]->id;
-    for (u32 i = 0; i < len; i++) key[3 + alias_args.len + i] = types[i]->id;
+    // (The lists by pointer, which are as unique as ids: the type's lists are the key's, see intern_key_list(). No
+    // pointer equals the marker, they're 8-byte aligned)
+    for (u32 i = 0; i < alias_args.len; i++) key[3 + i] = (u64)(uintptr_t)alias_args.data[i];
+    for (u32 i = 0; i < len; i++) key[3 + alias_args.len + i] = (u64)(uintptr_t)types[i];
     if (origin) {
         u64* okey = key + 3 + alias_args.len + len;
         okey[0] = ((u64)origin->kind << 32) | UINT32_MAX;
-        for (u32 i = 0; i < origin->len; i++) okey[1 + i] = origin->types[i]->id;
+        for (u32 i = 0; i < origin->len; i++) okey[1 + i] = (u64)(uintptr_t)origin->types[i];
     }
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
@@ -781,9 +796,9 @@ static Ty const* intern_composite_origin(
         Ty* ret = ty_alloc(me, kind, flags);
         ret->xflags = xflags;
         ret->alias = alias;
-        ret->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
-        ret->composite.types = ty_list_copy(me, types, len);
-        if (origin) ret->composite.origin = make_origin(me, origin);
+        ret->alias_args = intern_key_list(slot, count, 3, alias_args.len);
+        ret->composite.types = intern_key_list(slot, count, 3 + alias_args.len, len);
+        if (origin) ret->composite.origin = make_origin(me, origin, intern_key_list(slot, count, 4 + alias_args.len + len, origin->len));
         if (kind == TY_INTERSECTION) ret->composite.state = arena_new(&my arena, TyObjectState);
         *slot = ret;
     }
@@ -2015,7 +2030,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
     key[0] = KEY_REFERENCE;
     key[1] = target->id;
     key[2] = this_arg ? this_arg->id : 0;
-    for (u32 i = 0; i < args.len; i++) key[3 + i] = args.data[i]->id;
+    for (u32 i = 0; i < args.len; i++) key[3 + i] = (u64)(uintptr_t)args.data[i]; // (See intern_key_list())
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
@@ -2026,7 +2041,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         u32 kept = TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE | (widens ? TYF_FRESH_OBJECT : 0);
         Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (flags & kept));
         ret->reference.target = target;
-        ret->reference.args = ty_list_copy(me, args.data, args.len);
+        ret->reference.args = intern_key_list(slot, count, 3, args.len);
         ret->reference.this_arg = this_arg;
         ret->reference.from_type_node = my creating_from_type_node;
         if (!compiler_options()->strict_null_checks) {
