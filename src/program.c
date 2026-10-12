@@ -258,6 +258,8 @@ static void program_drop(Program* me) {
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
 
+static csview program_cwd(Program const* me);
+
 SourceFile const* program_set_config_file(Program* me, csview path) {
     cstr contents = cstr_null;
     try (fs_read_file(my fs, path, &contents)) if_err (e) {
@@ -271,7 +273,8 @@ SourceFile const* program_set_config_file(Program* me, csview path) {
         source_file_drop(my config_source);
         free(my config_source);
     }
-    my config_source = c_new(SourceFile, source_file_make(cstr_from_sv(path), contents));
+    // (Named like the other files, relative to the working directory: diagnostics sort by it)
+    my config_source = c_new(SourceFile, source_file_make(relative_path_of(program_cwd(me), path), contents));
     source_file_register(my config_source);
     my config_source->is_json = true;
     my config_source->is_config = true;
@@ -328,8 +331,6 @@ static Error* option_error_s(Program* me, Span site, unsigned code, cstr message
     if (span_valid(site)) return error_ctx_error_s(my errs, site, code, message);
     return error_ctx_global_error_s(my errs, code, message);
 }
-static csview program_cwd(Program const* me);
-
 // JSON.stringify of an array of strings as written in the config, `fallback` without one
 static cstr config_string_list(JsonValue const* list, char const* fallback) {
     if (!list || list->tag != JSON_ARRAY) return cstr_from(fallback);
