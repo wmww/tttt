@@ -1603,7 +1603,22 @@ static Ty const* primitive_constraint_of(Checker* me, Ty const* variable) {
     Ty const* declared = variable->kind == TY_INDEXED ? nullptr : ty_param_constraint(me, variable);
     TyList declared_parts = !declared ? (TyList){0} :
         declared->kind == TY_UNION ? declared->composite.types : (TyList){ .data = &declared, .len = 1 };
-    bool possible = declared != nullptr || variable->kind == TY_INDEXED;
+    bool possible = declared != nullptr;
+    if (variable->kind == TY_INDEXED) {
+        // HACK (perf, like the declared constraint's below): an access into a conditional type's result whose branches
+        // are generic (`NonNullable<ComponentPropsWithRef<C>["ref"]>` in @types/react's ElementRef) is taken to be no
+        // primitive. tsc asks its base constraint, which distributes the conditional type over C's constraint: every
+        // intrinsic element's props resolved, react +15% instructions. Plain branches stay (arktype's
+        // `(kind extends "required" ? Required.Declaration : Optional.Declaration)["kind"]`)
+        Ty const* object = variable->indexed.object;
+        while (object->kind == TY_INDEXED) object = object->indexed.object;
+        possible = true;
+        if (object->kind == TY_CONDITIONAL) {
+            Ty const* root = object->conditional.root ? object->conditional.root : object;
+            possible = !((ty_conditional_branch(me, root, true)->flags | ty_conditional_branch(me, root, false)->flags) &
+                TYF_COULD_CONTAIN_TYPE_VARIABLES);
+        }
+    }
     for (u32 i = 0; i < declared_parts.len && possible; i++) {
         Ty const* part = declared_parts.data[i];
         // HACK: a deferred type in the declared constraint (expect-type's `Expected extends Cond<...> ? ... : ...`) is
