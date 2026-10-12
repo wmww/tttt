@@ -510,7 +510,8 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         !identifier_type_namespace_count(identifier) && !span_valid(identifier_type_import_span(identifier))
     ) {
         decl = export_equals_property_type(me, decl, identifier);
-        if (!decl) return ty_intrinsic(me, TY_ERROR);
+        // (Missing, or a value used as a type: errorType, printed by the reference as written)
+        if (!decl) return unresolved_reference(me, identifier, ctx);
     }
     if (identifier->rare && identifier->rare->import_export_equals_alias && decl && !decl->is_placeholder) {
         // (tsc's getTypeReferenceType of the `export=` alias: tryGetDeclaredTypeOfSymbol, checkNoTypeArguments)

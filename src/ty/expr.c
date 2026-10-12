@@ -1348,12 +1348,18 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
         return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
     }
     if (function_impl_rare(function)->this_assigned_object) {
-        // Not `exports` in `exports.F = function () { this.x = 1 }` (tsgo's getContextualThisParameterType)
+        // Not `exports` in `exports.F = function () { this.x = 1 }`, nor `module` in `module.exports = function`
+        // (tsgo's getContextualThisParameterType: an identifier whose symbol is ModuleExports)
         Expr const* object = function_impl_rare(function)->this_assigned_object;
         SourceFile const* file = span_source(object->inner_span);
         Symbol const* target = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
         if (in_js && file && file->is_commonjs && expr_is_plain_identifier(object, "exports") &&
             (!target || symbol_find_decl(target, SYMBOL_DECL_COMMONJS_EXPORTS))
+        ) {
+            return nullptr;
+        }
+        if (in_js && file && file->is_commonjs && expr_is_plain_identifier(object, "module") &&
+            (!target || symbol_find_decl(target, SYMBOL_DECL_COMMONJS_MODULE))
         ) {
             return nullptr;
         }

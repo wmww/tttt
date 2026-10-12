@@ -1257,9 +1257,8 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     // (An unresolved name is reused as written: tsc's errorType for it, unresolved names allowed)
     // (A qualified one too, `lf.schema.Table`)
     if (!identifier->target) return node_type(me, d, node)->flags & TYF_ERROR;
-    // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by
-    // a type lookup, which reuse needs
-    if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return false;
+    // A value used as a type (TS2749) is tsgo's errorType, reused as written like an unresolved name
+    if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return node_type(me, d, node)->flags & TYF_ERROR;
     Symbol const* first = identifier_type_namespace_count(identifier) ?
         (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&

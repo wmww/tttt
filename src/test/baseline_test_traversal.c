@@ -2381,6 +2381,15 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             }
         }
     }
+    // (A file's module, `this` of `module.exports.F = function () { this }`: declared by the file, at its start)
+    if (symbol && !symbol->decl_count && symbol->is_module && symbol->module && symbol->module->file) {
+        SourceFile const* file = symbol->module->file;
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_single(span_from_sv(file, csview_from_n(source_file_start(file), 0))),
+            .span = identifier_expr_name(me), .text = module_text(ctx, symbol),
+        });
+        return;
+    }
     if (!symbol || !symbol->decl_count) return;
     // The `this` parameter of a JSDoc `@this {T}` (its name is the tag's): tsgo's reparsed parameter, a missing name
     // at the tag's

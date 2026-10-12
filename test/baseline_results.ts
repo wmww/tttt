@@ -19813,7 +19813,7 @@ const baselines = {
     'jsExportMemberMergedWithModuleAugmentation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsExportMemberMergedWithModuleAugmentation2': {
         errors: true,
@@ -51837,13 +51837,13 @@ const baselines = {
     },
     'jsDeclarationsExportAssignedConstructorFunction(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportAssignedConstructorFunctionWithSub(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportAssignedVisibility(target=es2015)': {
         errors: true,
@@ -52063,7 +52063,7 @@ const baselines = {
     'jsDeclarationsReferenceToClassInstanceCrossFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsRestArgsWithThisTypeInJSDocFunction(target=es2015)': {
         errors: true,
