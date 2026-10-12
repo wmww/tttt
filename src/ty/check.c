@@ -2383,13 +2383,7 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
     // `any` fits any index signature (and finds no property)
     if (index->flags & TYF_ANY) {
         // (A union's index signatures are those all of its members have: tsc's resolveUnionTypeMembers)
-        if (object->kind == TY_UNION) {
-            for (u32 i = 0; i < object->composite.types.len; i++) {
-                Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
-                if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) || !ty_applicable_index_info(me, member, index)) return index;
-            }
-            return nullptr;
-        }
+        if (object->kind == TY_UNION) return ty_union_any_index_type(me, object, index, TYF_OBJECT | TYF_INTERSECTION) ? nullptr : index;
         return ty_applicable_index_info(me, object, index) ? nullptr : index;
     }
     if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access_element(me, object, index, false) ? nullptr : index;

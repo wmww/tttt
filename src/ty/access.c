@@ -142,6 +142,59 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
     return find_applicable_index_info(me, members->index, members->index_count, index);
 }
 
+// What `U[any]` reads of a union U through index signatures, null if none: only the key types every member has an
+// index signature for count (tsc's resolveUnionTypeMembers, getUnionIndexInfos by getIndexInfoOfType's exact key), so
+// `(string | Record<string, X>)[any]` has none (String's is a number one), then each member's applicable one of those,
+// united. Null and undefined members don't count (the caller reports them, tsc's checkNonNullExpression).
+// `kinds`: the apparent member types that have index signatures here
+Ty const* ty_union_any_index_type(Checker* me, Ty const* object, Ty const* index, u32 kinds) {
+    TyList members = object->composite.types;
+    Ty const* common[8];
+    u32 common_count = 0;
+    bool first = true;
+    for (u32 i = 0; i < members.len; i++) {
+        if (members.data[i]->flags & TYF_NULLABLE) continue;
+        Ty const* member = ty_apparent_type(me, members.data[i]);
+        if (!(member->flags & kinds)) return nullptr;
+        Members const* m = ty_members(me, member);
+        if (first) {
+            for (u32 j = 0; j < m->index_count && common_count < c_arraylen(common); j++) common[common_count++] = m->index[j].key;
+            first = false;
+            continue;
+        }
+        u32 kept = 0;
+        for (u32 k = 0; k < common_count; k++) {
+            bool has = false;
+            for (u32 j = 0; j < m->index_count && !has; j++) has = m->index[j].key == common[k];
+            if (has) common[kept++] = common[k];
+        }
+        common_count = kept;
+        if (!common_count) return nullptr;
+    }
+    if (!common_count) return nullptr;
+    Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+    panic_if(!parts, "out of memory");
+    u32 len = 0;
+    bool all = true;
+    for (u32 i = 0; i < members.len && all; i++) {
+        if (members.data[i]->flags & TYF_NULLABLE) continue;
+        Members const* m = ty_members(me, ty_apparent_type(me, members.data[i]));
+        IndexInfo shared[8];
+        u32 shared_count = 0;
+        for (u32 j = 0; j < m->index_count; j++) {
+            for (u32 k = 0; k < common_count; k++) {
+                if (m->index[j].key == common[k] && shared_count < c_arraylen(shared)) shared[shared_count++] = m->index[j];
+            }
+        }
+        IndexInfo const* info = find_applicable_index_info(me, shared, shared_count, index);
+        if (info) parts[len++] = info->value;
+        else all = false;
+    }
+    Ty const* ret = all && len ? ty_union(me, parts, len, nullptr, (TyList){0}) : nullptr;
+    free(parts);
+    return ret;
+}
+
 static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* index) {
     IndexInfo const* info = ty_applicable_index_info(me, object, index);
     return info ? info->value : nullptr;
@@ -321,25 +374,8 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         u32 any_key_kinds = TYF_OBJECT | (flags & ACCESS_ELEMENT ? TYF_INTERSECTION : 0);
         Ty const* apparent = ty_apparent_type(me, object);
         if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
-            // A union's index signatures are those every member has, of the union of their types (tsc's
-            // resolveUnionTypeMembers)
-            TyList members = apparent->composite.types;
-            Ty const** parts = malloc(sizeof(Ty const*) * members.len);
-            panic_if(!parts, "out of memory");
-            u32 len = 0;
-            // (null and undefined don't count, as below: the caller reports them, tsc's checkNonNullExpression)
-            bool all = true;
-            for (u32 i = 0; i < members.len && all; i++) {
-                if (members.data[i]->flags & TYF_NULLABLE) continue;
-                Ty const* member = ty_apparent_type(me, members.data[i]);
-                IndexInfo const* info = (member->flags & any_key_kinds) ? ty_applicable_index_info(me, member, index) : nullptr;
-                if (info) parts[len++] = info->value;
-                else all = false;
-            }
-            all &= len > 0;
-            Ty const* ret = all ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ANY);
-            free(parts);
-            return include_undefined && all ? with_missing(me, ret) : ret;
+            Ty const* ret = ty_union_any_index_type(me, apparent, index, any_key_kinds);
+            return !ret ? ty_intrinsic(me, TY_ANY) : include_undefined ? with_missing(me, ret) : ret;
         }
         IndexInfo const* info = (apparent->flags & any_key_kinds) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);
