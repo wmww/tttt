@@ -719,43 +719,71 @@ typedef struct SyntheticParts {
     Prop const* props[];
 } SyntheticParts;
 
+// The properties named `name` that `ty` (through its apparent type) has, appended to `out`: an object's, or each of a
+// union's members' if every member has one (tsc's getPropertiesOfType of a union). How many were appended
+static u32 append_part_props(Checker* me, Ty const* ty, Atom const* name, Prop const*** out, u32* len, u32* cap) {
+    if (!(ty->flags & TYF_OBJECT)) ty = ty_apparent_type(me, ty);
+    TyList members = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    u32 before = *len;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (!(member->flags & TYF_OBJECT)) member = ty_apparent_type(me, member);
+        Prop const* prop = member->flags & TYF_OBJECT ? ty_get_prop(me, member, name) : nullptr;
+        if (!prop) {
+            *len = before;
+            return 0;
+        }
+        if (*len == *cap) {
+            *cap = *cap ? *cap * 2 : 8;
+            *out = realloc(*out, sizeof(Prop const*) * *cap);
+            panic_if(!*out, "out of memory");
+        }
+        (*out)[(*len)++] = prop;
+    }
+    return *len - before;
+}
+
 // Every member of every part of an intersection (only the properties if `props_only`); a property several parts have
 // is one of the intersection's own, with the intersected type (tsc's getPropertiesOfType on the base,
-// createUnionOrIntersectionProperty)
-static void builder_add_intersection_members(Checker* me, MembersBuilder* builder, Ty const* base, bool props_only) {
-    for (u32 i = 0; i < base->composite.types.len; i++) {
-        Ty const* part = base->composite.types.data[i];
+// createUnionOrIntersectionProperty). A part whose apparent type is a union (`T[K]` constrained to one) has the
+// properties every member has, a synthetic one of theirs
+static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty const* base, TyList base_parts, bool props_only) {
+    Prop const** found_props = nullptr;
+    u32 found_len = 0, found_cap = 0;
+    for (u32 i = 0; i < base_parts.len; i++) {
+        Ty const* part = base_parts.data[i];
         if (!(part->flags & TYF_OBJECT)) part = ty_apparent_type(me, part);
-        if (!(part->flags & TYF_OBJECT)) continue;
-        Members const* members = ty_members(me, part);
+        bool union_part = part->kind == TY_UNION && part->composite.types.len;
+        Ty const* listed = union_part ? ty_apparent_type(me, part->composite.types.data[0]) : part;
+        if (!(listed->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, listed);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop* prop = members->props[j];
             if (builder_find_prop(builder, prop->name)) continue;
-            u32 owners = 0;
-            for (u32 k = 0; k < base->composite.types.len; k++) {
-                Ty const* other = base->composite.types.data[k];
-                owners += (other->flags & TYF_OBJECT) && ty_get_prop(me, other, prop->name);
+            found_len = 0;
+            u32 own = 0;
+            for (u32 k = 0; k < base_parts.len; k++) {
+                u32 added = append_part_props(me, base_parts.data[k], prop->name, &found_props, &found_len, &found_cap);
+                if (k == i) own = added;
             }
-            if (owners > 1) {
+            if (!own) continue; // (Not every member of this part's union has it)
+            if (found_len > 1) {
                 FoundProp found = ty_find_prop(me, base, prop->name);
+                if (!found.found) continue;
                 Prop* merged = arena_new(&my arena, Prop);
                 *merged = (Prop){
                     .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
                     .type = found.type, .type_state = LAZY_STATE_DONE, .decl = prop_decl_none(), .synthetic = true,
                 };
-                SyntheticParts* parts = arena_alloc(&my arena, sizeof(SyntheticParts) + sizeof(Prop const*) * owners);
-                parts->len = 0;
-                for (u32 k = 0; k < base->composite.types.len && parts->len < owners; k++) {
-                    Ty const* other = base->composite.types.data[k];
-                    Prop const* part = other->flags & TYF_OBJECT ? ty_get_prop(me, other, prop->name) : nullptr;
-                    if (part) parts->props[parts->len++] = part;
-                }
+                SyntheticParts* parts = arena_alloc(&my arena, sizeof(SyntheticParts) + sizeof(Prop const*) * found_len);
+                parts->len = found_len;
+                memcpy(parts->props, found_props, sizeof(Prop const*) * found_len);
                 *intern_slot(me, &my links, (u64[]){ KEY_SYNTHETIC_PROP_PARTS, (u64)(uintptr_t)merged }, 2) = parts;
                 prop = merged;
             }
             builder_push(builder, props, prop);
         }
-        if (props_only) continue;
+        if (props_only || union_part) continue;
         for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
         for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
         for (u32 j = 0; j < members->index_count; j++) {
@@ -764,6 +792,11 @@ static void builder_add_intersection_members(Checker* me, MembersBuilder* builde
             if (!has_own) builder_push(builder, index, members->index[j]);
         }
     }
+    free(found_props);
+}
+
+static void builder_add_intersection_members(Checker* me, MembersBuilder* builder, Ty const* base, bool props_only) {
+    builder_add_parts_members(me, builder, base, base->composite.types, props_only);
 }
 
 u32 ty_synthetic_prop_parts(Checker* me, Prop const* prop, Prop const* const** out) {
@@ -780,6 +813,11 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
     if (!(base->flags & (TYF_OBJECT | TYF_INTERSECTION))) base = ty_apparent_type(me, base);
     if (base->kind == TY_INTERSECTION) {
         builder_add_intersection_members(me, builder, base, false);
+        return;
+    }
+    // (A base type parameter or indexed access whose constraint is a union: `extends NoopBase<T[K]>`)
+    if (base->kind == TY_UNION) {
+        builder_add_parts_members(me, builder, base, (TyList){ .data = &base, .len = 1 }, false);
         return;
     }
     Members const* members = ty_members(me, base);

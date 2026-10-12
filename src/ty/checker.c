@@ -1551,9 +1551,8 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
     return my intrinsics[TY_ERROR];
 }
 
-// HACK: tsc's TypeVariable is indexed accesses too, but tttt's base constraint of one can be premature (valibot's
-// `NonNullable<TSchema['~types']>` would be never: the constraint came out as undefined), see hacks.md
-static bool is_type_variable(Ty const* t) { return t->kind == TY_TYPE_PARAM; }
+// tsc's TypeFlags.TypeVariable: type parameters and indexed accesses
+static bool is_type_variable(Ty const* t) { return t->kind == TY_TYPE_PARAM || t->kind == TY_INDEXED; }
 
 // A primitive, `object` or `{}`: what a constrained type variable intersection is made of (tsc's getIntersectionType)
 static bool is_primitive_or_empty_object(Checker* me, Ty const* t) {
@@ -1591,12 +1590,15 @@ static Ty const* primitive_constraint_of(Checker* me, Ty const* variable) {
     u64 key[3] = { KEY_TYPE_VARIABLE_REDUCTION, variable->id, 0 };
     void const* known = intern_get(&my links, key, 3);
     if (known) return (uintptr_t)known == 1 ? nullptr : known;
+    // (Re-entered while its base constraint is computed: none, like tsc's circular base constraint)
+    *intern_slot(me, &my links, key, 3) = (void const*)(uintptr_t)1;
     Ty const* ret = nullptr;
-    // (The declared constraint tells first, cheaply: an object type in it is the end of it)
-    Ty const* declared = ty_param_constraint(me, variable);
+    // (The declared constraint tells first, cheaply: an object type in it is the end of it. An indexed access has
+    // none: its base constraint is all there is)
+    Ty const* declared = variable->kind == TY_INDEXED ? nullptr : ty_param_constraint(me, variable);
     TyList declared_parts = !declared ? (TyList){0} :
         declared->kind == TY_UNION ? declared->composite.types : (TyList){ .data = &declared, .len = 1 };
-    bool possible = declared != nullptr;
+    bool possible = declared != nullptr || variable->kind == TY_INDEXED;
     for (u32 i = 0; i < declared_parts.len && possible; i++) {
         Ty const* part = declared_parts.data[i];
         // HACK: a deferred type in the declared constraint (expect-type's `Expected extends Cond<...> ? ... : ...`) is

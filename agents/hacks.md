@@ -525,11 +525,8 @@ src` finds the code-side markers; every significant one has an entry here.
   +0.9% instructions): `ty_reduced()` (getReducedType) doesn't judge members flagged `TYF_COULD_CONTAIN_TYPE_VARIABLES`
   unless `is_known_object_for_reduction` (a written type literal mentioning no type parameter); tsc looks at every
   member.
-- `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
-  `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint; letting `TY_INDEXED` in
-  through `primitive_constraint_of` now crashes the suite: unbounded recursion). `primitive_constraint_of` takes a
-  deferred type in the declared constraint as no primitive (permanent: perf; asking its base constraint like tsc costs
-  valibot +6% instructions).
+- `primitive_constraint_of` (checker.c HACK) takes a deferred type in a type parameter's declared constraint as no
+  primitive (permanent: perf; asking its base constraint like tsc costs valibot +6% instructions).
 - Generic tuples: `base_constraint` replaces only variadics with array constraints; `lower_tuple` keeps the written
   `T[]` for rests (tsc: `T`).
 - `lower_identifier`: `object` is a builtin declaration named "object".
