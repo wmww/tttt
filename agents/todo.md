@@ -43,9 +43,11 @@ instructions are the stable numbers.
 8. ~~Plan 55 stage 1b~~ done: isolatedDeclarations reported from the pseudo tree (tsgo's ReportInferenceFallback and
    createGetIsolatedDeclarationErrors), TS 6.0's builder deleted. Suite 13328 -> 13330; flipped-flag probe against tsgo
    on 400 source sweep projects 4944/7352 -> 568/1 missing/spurious; other oracles unchanged; tsc corpus +1.8% instr.
-9. **Suite/JS tail fan-out**: four Opus sub-agents on the 255 failing tests (`scripts/failstats.py`,
-   `scripts/jsstats.py`, `scripts/displaydiff.py` buckets; bugs/js.md, display.md, missing_checks.md), flagflip's 132
-   missing, the DT sweep's 3. Mechanisms only, no per-test special cases.
+9. ~~Suite/JS tail fan-out~~ done: 4 agents + second tasks, ~85 picks. Suite 13330 -> 13440 (JS failing 63 -> 22),
+   webpack missing 5 -> 1, drizzle 3 -> 0, flagflip 132 / 16 -> 46 / 8, DT sweep 8593, source sweep sample 804 / 822;
+   instructions +0.3..+0.6%. New perf lead: feathers/knex types 2.5x tsgo from the variance port (perf_leads.md).
+   Leftovers in bugs/{js,display,missing_checks,harness,sourcesweep_checker,type_core}.md. measurements.md
+   "Suite/JS tail fan-out".
 10. **Triage.** Also: a build with the newest GCC and clang (`-Werror` off, warnings counted) since GCC 16 found a
     false positive; readme.md's numbers.
 11. **Insights.**

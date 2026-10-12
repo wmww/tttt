@@ -9,6 +9,25 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Suite/JS tail fan-out (2026-10-12, todo entry 9)
+4 agents by test list (A/B the 80 non-JS errors-failing tests split alphabetically, C the 89 types/symbols-only, D the
+63 JS tests), then second tasks (B source sweep, C mutation seeds 41/42, D corpora/flagflip missing); ~85 picks, 0 lost
+components at every merge, 0 duplicates, 0 conflicts.
+- suite **13330 -> 13440 / 13568** (99.1%); errors 13455 -> 13511, symbols 13489 -> 13526, types 13431 -> 13474.
+  Failing JS tests 63 -> **22** (1143 / 1165).
+- corpora: webpack 0/5 -> **0/1**, drizzle 0/3 -> **0/0**, vue 0/3, effect 3/0, vscode 0/0, the rest 0/0.
+  DT sweep 8592 -> **8593 / 8595**, `$ExpectType` 68631, flagflip 132 / 16 / 3 -> **46 / 8 / 3**, source sweep sample 4
+  800 -> **804 / 822** (full: 3295 -> 3304 / 3363 by agent B's runs), mutants seed 41 10 -> 7, seed 42 13 -> 5.
+  clidiff `--sample 4` 820 / 839, scenarios 209 / 213.
+- perfsweep: worst types ratio 1.56 -> **2.50** (feathers/packages/knex 4518 -> 18287 types, tsgo 7324: the variance
+  measurement port d93172d5 makes QueryBuilder's parameter unreliable where tsgo's is reliable; perf_leads.md, needs
+  an instrumented tsgo); total types 67.1M vs tsgo 128.0M, check median 0.20x.
+- Instructions (callgrind): tsc 4.774, type-fest 18.686, valibot 3.433, react 1.497, nest 1.167, webpack 10.468, zod
+  5.022, xstate 2.680, drizzle 6.007, vue 6.601, effect 10.130, vscode 91.288, excalidraw 7.971, tanstack-router
+  5.339 G (+0.3..+0.6% creep from ~85 commits; drizzle +0.96%, 0.77 of it a GCC layout shift from 6c3c5419 whose new
+  path never runs there, checked by agent D; two real regressions bisected and fixed mid-session: excalidraw +0.7%
+  union accessibility, valibot/zod +0.8% marker-reference search).
+
 ## isolatedDeclarations from the pseudo tree (2026-10-12, todo entry 8, plan 55 stage 1b)
 TS 6.0's syntactic builder in `declaration_diagnostics.c` replaced by tsgo's serializeTypeForDeclaration /
 pseudoTypeToNode reporting. Suite 13328 -> **13330** (isolatedDeclarationsAddUndefined,
