@@ -4791,14 +4791,23 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                 for (u32 j = 0; j < seen.len && !skip; j++) skip = seen.data[j] == name_type;
                 if (skip) continue;
                 ty_buf_push(&seen, name_type);
-                FoundProp target_prop = find_prop(me, member, name, 0);
-                if (!target_prop.found) continue;
+                // (The target's property type only if the source has one too, like tsc's propertiesRelatedTo: a type
+                // whose property types need this relation's result relates fine when they're not compared, mermaid's
+                // `Omit<Node, 'shape'>` to Node while ShapeID is resolving)
                 FoundProp source_prop = find_prop(me, apparent, name, 0);
                 if (!source_prop.found) {
+                    u32 target_flags = part_members->props[i]->flags;
+                    if (member->kind == TY_INTERSECTION) {
+                        FoundProp target_prop = find_prop(me, member, name, 0);
+                        if (!target_prop.found) continue;
+                        target_flags = target_prop.flags;
+                    }
                     // (Optional ones too for the subtype relations: tsc's propertiesRelatedTo, requireOptionalProperties)
-                    if (!(target_prop.flags & PROP_OPTIONAL) || require_optional) result = TERNARY_FALSE;
+                    if (!(target_flags & PROP_OPTIONAL) || require_optional) result = TERNARY_FALSE;
                     continue;
                 }
+                FoundProp target_prop = find_prop(me, member, name, 0);
+                if (!target_prop.found) continue;
                 if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop.flags & PROP_OPTIONAL) && st->relation != TY_RELATION_COMPARABLE) {
                     result = TERNARY_FALSE;
                     continue;
