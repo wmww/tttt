@@ -3821,6 +3821,14 @@ static void merge_augmentations(Binder* me) {
         // (tsc's resolveExternalModule for the augmentation's name: a CommonJS file can't augment an ES module, TS1479)
         if (ref->file) module_ref_report_require_of_esm(ref, ref->span, decl->inner_scope->binder->errs);
         if (ref->file || binder_module_of_ref(me, ref)) continue;
+        // (Augmentations of one name in one file are one symbol, resolved once, at its first declaration: tsc's
+        // mergeModuleAugmentation)
+        bool repeated = false;
+        for (u32 j = 0; j < i && !repeated; j++) {
+            NamespaceDecl const* other = my augmentations[j];
+            repeated = span_source(other->name) == span_source(decl->name) && cstr_equals_sv(&other->module_ref->path, cstr_sv(&ref->path));
+        }
+        if (repeated) continue;
         if (ref->failure != MODULE_REF_IS_JS) {
             // (tsc's mergeModuleAugmentation: not for one in an ambient context, a declaration file's)
             Scope const* outer = decl->inner_scope->parent;
