@@ -40,9 +40,9 @@ instructions are the stable numbers.
    equivalent at all of tsgo's serializeTypeForDeclaration/serializeReturnTypeForSignature sites (object literal
    members, parameters, return types, namespace variables; messages too), the display/expr.c slices it replaced
    deleted. Suite 13318 -> 13328, every other oracle unchanged. plans/55 says what's left.
-8. **Plan 55 stage 1b**: isolatedDeclarations reported from the pseudo tree (tsgo's equivalence-driven
-   ReportInferenceFallback), deleting `declaration_diagnostics.c`'s TS 6.0 builder; then the builder gaps (class
-   properties, expandos) and the suite's isolated declaration tests.
+8. ~~Plan 55 stage 1b~~ done: isolatedDeclarations reported from the pseudo tree (tsgo's ReportInferenceFallback and
+   createGetIsolatedDeclarationErrors), TS 6.0's builder deleted. Suite 13328 -> 13330; flipped-flag probe against tsgo
+   on 400 source sweep projects 4944/7352 -> 568/1 missing/spurious; other oracles unchanged; tsc corpus +1.8% instr.
 9. **Suite/JS tail fan-out**: four Opus sub-agents on the 255 failing tests (`scripts/failstats.py`,
    `scripts/jsstats.py`, `scripts/displaydiff.py` buckets; bugs/js.md, display.md, missing_checks.md), flagflip's 132
    missing, the DT sweep's 3. Mechanisms only, no per-test special cases.

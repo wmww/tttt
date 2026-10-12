@@ -32,8 +32,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them,
   parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
-- **Absent or approximated**: isolatedDeclarations still on TS 6.0's syntactic builder (plan 55 stage 1b; the
-  types baseline, declaration emit and messages print tsgo's pseudo types, `src/ty/pseudo.c`), content mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive
+- **Absent or approximated**: pseudo types (`src/ty/pseudo.c`, tsgo's pseudochecker: the types baseline, messages
+  and isolatedDeclarations all go through them; plan 55 has the builder gaps left), content mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive
   instantiation, member identity (members aren't Symbols; decided acceptable).
 
 ## Course correction (insights of 2026-10-11, end of the thirteenth window)

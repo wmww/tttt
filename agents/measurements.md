@@ -9,6 +9,21 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## isolatedDeclarations from the pseudo tree (2026-10-12, todo entry 8, plan 55 stage 1b)
+TS 6.0's syntactic builder in `declaration_diagnostics.c` replaced by tsgo's serializeTypeForDeclaration /
+pseudoTypeToNode reporting. Suite 13328 -> **13330** (isolatedDeclarationsAddUndefined,
+isolatedDeclarationErrorsExpressions; 29/30 isolatedDeclaration tests, the JS one left). Every other oracle unchanged
+(corpora, DT sweep 8592, `$ExpectType` 68631, flagflip 132 / 16 / 3, source sweep sample 800 / 822, perfsweep median
+0.19 / worst types 1.56).
+- New probe, `--declaration --isolatedDeclarations` flipped against tsgo (TS9xxx lines): 400 tsc-clean source sweep
+  projects, missing / spurious 4944 / 7352 (old builder) -> 568 / 1, of which 487 missing are in arktype, redux-toolkit
+  and trpc/react-query where tttt has unrelated type errors (the CLI then drops declaration diagnostics); zod, xstate,
+  nest exact (old: 82/77, 9/11, 6/6).
+- Instructions: tsc corpus 4.690 -> 4.774 G (+1.8%: it has isolatedDeclarations, every declaration now gets the
+  equivalence check and Inferred parts print), valibot 3.431, others within 0.1% (type-fest 18.600, react 1.502,
+  nest 1.161, webpack 10.439, zod 4.994, xstate 2.670, drizzle 5.950, vue 6.573, effect 10.083, vscode 90.917,
+  excalidraw 7.938, tanstack-router 5.324 G).
+
 ## Pseudochecker (2026-10-12, todo entry 7, plan 55 stages 1-3 but 1b)
 `src/ty/pseudo.c` and its printing at tsgo's serializeTypeForDeclaration/serializeReturnTypeForSignature sites, the
 old display slices deleted. Suite 13318 -> **13328** / 13568 (accessor pairs, `this`-returning literals, deeper
