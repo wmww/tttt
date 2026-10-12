@@ -96,10 +96,6 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
 - +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses), react-hook-form
   `validateField.ts:67`, angular-cli `registry.ts:659` (ajv addKeyword validate), ember runloop: contextual typing
   misses, not reduced.
-- -TS2307/-TS7006/-TS2339 commitlint (6 projects): `@commitlint/test` through project references + paths: module
-  resolution (agent A's area).
-- +TS6305 (astro & others, 1445), +TS6059 react-router rootDir, ±TS6310 react-navigation: project reference / config
-  handling (agent A's area).
 - arktype (+TS2345/2322/2339/7006/2589/2769 across ~60 projects): deep type-level library; nothing reduced yet.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 
