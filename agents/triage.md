@@ -2,36 +2,16 @@
 Uninvestigated items: dump here what you don't want to deal with now. Triage sessions drain this into `bugs/*.md`,
 plans, or fixes.
 
-Last drained 2026-10-09 (triage session, todo entry 10 of the thirteenth window): the TS 7.1 window's leftovers moved
-to bugs/display.md, type_core.md, missing_checks.md, binder_modules.md, harness.md, perf_leads.md and the new
-bugs/js.md (plan 26 retired into it); plans 53/54 retired, plan 58 (7.1.0 stable re-pin) written; three Opus
-sub-agents worked the CLI/harness, parser and real-world checker items (the commit message has the outcome).
+Last drained 2026-10-12 (triage session, todo entry 10 of the fourteenth window): own regression tests wired in
+(test/cases), lib files checked like tsgo, the knex variance blow-up fixed, the vscode excludes dropped, GCC 16 /
+clang 22 builds clean, the small items filed into bugs/display.md and harness.md, the human's emit answer in vision.md.
+The commit messages have the outcome.
 
-Finished 2026-10-11: the triage session above was cut off (usage limit) before merging its agents; the next session
-merged their 7 commits and 3 uncommitted diffs (suite 13316, every oracle same or better) and filed what was left
-into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
+## For the insights session
+- `AGENTS.md` is a copy of `CLAUDE.md` that stopped being synced on 2026-10-08 (agents edit CLAUDE.md, a few edited
+  both). Ask the human whether it's still wanted, or make it a symlink to CLAUDE.md.
 
-## From the bun check comparison (2026-10-11, measurements.md)
-- Perf and memory vs `bun check` are now plans 59/60 (todo.md); the thread cap is in vision.md (needs a many-core
-  machine). Bun's correctness numbers (conformance suite, 72-project config sweep, fuzzing, mutation of effect) are a
-  bar to compare our oracles against.
-- The newest-compiler build is in todo entry 10.
-- npm 12 defaults to `allow-remote=none`: a corpus lock entry resolved outside registry.npmjs.org breaks
-  `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten;
-  `--relock` may bring it back.
-
-
-## From human
-- Not sure how important emitting .d.ts files are. for now emitting js should def be out of scope. there are already plenty of fast emitters (eg esbuild), so for now anything covered by them doesn't need to be a focus. otherwise up to you what's important.
-- I'll test on various configurations in the future. for now I don't see why we would cap at a particular number of threads. maybe tsgo has it's reasons but cargo culting from that seems silly. idk, you're the boss. just make it sensible and fast.
-  - (Answered 2026-10-12, todo entry 5) Threads are no longer capped: `--threads` defaults to every core. Checkers stay a fixed 4 by default because K changes output details (union order in messages) and memory; see vision.md "Thread defaults". Numbers from a many-core machine would tell whether a bigger fixed K pays.
-- (2026-10-12, plan 55 session) genericCallOnMemberReturningClosedOverObject's expression lines: `example<number>()
-  .foo("hello")` prints ten levels of `{ foo: <T2_1>(t2: T2_1) => ...` where tsgo's is `{ foo: <T2>(t2: T2) => any; ... }`.
-  The object literal `x` instantiated inside its own generic method's signature instantiation (T2 -> fresh T2') is a new
-  instantiation each level in tttt; tsgo keys an anonymous type's instantiations by its outer type parameters (T1 only,
-  not the method's T2), so the same type comes back and is cyclic (`any`). Pre-existing (base build ff7d821a prints
-  the same). Same family: `this` in an object literal method is the literal's widened type itself in tttt, another
-  type in tsgo (getWidenedType(checkExpressionCached(literal))), see plans/55 "Known traps".
+## Open
 - (2026-10-12, test/cases wiring) A JSX element spreading five unions of ten object types
   (`<Comp {...a} {...b} {...c} {...d} {...e} />`, Comp generic, `@jsx: preserve`) is TS2590 in tsgo, nothing in tttt
   (missed, before and after 16b4bb4b). The same five unions in `inter(a, b, c, d, e)` returning `P & Q & R & S & T`
