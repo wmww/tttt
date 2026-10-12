@@ -1513,7 +1513,7 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
     for_each (i, vec_initialized_binding, &my initializers) {
         TypeNode const* type_literal = ctx->variable_type_literal;
         Span type_literal_name = ctx->variable_type_literal_name;
-        if (i->binding.tag == BINDING_IDENTIFIER && i->binding.has_explicit_type && !i->binding.explicit_type.from_jsdoc &&
+        if (i->binding.tag == BINDING_IDENTIFIER && i->binding.has_explicit_type &&
             i->binding.explicit_type.tag == TYPE_INTERFACE && !i->binding.explicit_type.parenthesized) {
             ctx->variable_type_literal = &i->binding.explicit_type;
             ctx->variable_type_literal_name = i->binding.content_span;
@@ -2749,7 +2749,10 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     if (my property->expr.tag == EXPR_IDENTIFIER && my property->expr.identifier.target) {
         info.synthetic_namespace = symbol_rare(my property->expr.identifier.target)->synthetic_default != nullptr;
     }
-    if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
+    // (Not of a parenthesized key: getSymbolAtLocation of `0` in `o[(0)]` sees no element access around it)
+    if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
+        !(my property->form == PROPERTY_EXPR_BRACKET && expr_is_perenthisized(&my property->prop))
+    ) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }
     // The synthetic `default` of a namespace import of a JSON module (with_synthetic_default()): named as the module

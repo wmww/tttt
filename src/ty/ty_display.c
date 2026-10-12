@@ -1267,12 +1267,6 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     ) {
         return false;
     }
-    Symbol const* target = identifier->target;
-    if (target->decl_count && target->decls[0].kind == SYMBOL_DECL_TYPE_ALIAS &&
-        ((TypeDecl const*)target->decls[0].node)->jsdoc_twice
-    ) {
-        return false;
-    }
     if (!identifier_type_namespace_count(identifier)) {
         // (`array`, `promise` and `Object` mean something else only without type arguments and noImplicitAny)
         static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };

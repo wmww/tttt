@@ -1216,12 +1216,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
     if (!my is_constructor) function_impl_check_jsdoc_overloads(me, my name, errs);
     // (tsc's checkUnmatchedJSDocParameters: a body that uses `arguments` only has its last tag checked, which could
-    // stand for it with an array type: a `{...T}` of a function without parameters is one)
+    // stand for it with an array type)
     u32 candidate = function_impl_rare(me)->jsdoc_arguments_candidate;
     if (my uses_arguments && candidate && candidate - 1 < function_impl_rare(me)->jsdoc_unmatched_count) {
         JsDocUnmatchedParam const* last = &function_impl_rare(me)->jsdoc_unmatched[candidate - 1];
-        bool array = last->variadic ? !my jsdoc_indirect_host && !vec_function_arg_size(&my args) :
-            ty_is_array(current_checker, ty_of_node(&last->type));
+        // (A `{...T}` is `T[]`: tsgo's getTypeFromTypeNode of a JSDocVariadicType)
+        bool array = last->variadic || ty_is_array(current_checker, ty_of_node(&last->type));
         if (!array) {
             error_ctx_error_d(errs, last->name, 8029, "JSDoc '@param' tag has name '", last->name,
                 "', but there is no parameter with that name. It would match 'arguments' if it had an array type.");

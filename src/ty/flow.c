@@ -1269,16 +1269,9 @@ static bool symbol_has_explicit_type(Symbol const* symbol) {
     if (!(symbol->flags & SYMBOL_VARIABLE)) return false;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent) return false;
-    if (binding->has_explicit_type) return true;
-    // In JavaScript, a function initializer with a declared return type (JSDoc) counts (tsc's
-    // isDeclarationWithExplicitTypeAnnotation)
-    if (span_source(binding->content_span) && span_source(binding->content_span)->is_js && binding->source &&
-        binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
-    ) {
-        Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
-        return value->tag == EXPR_FUNCTION && value->function->ret_explicit;
-    }
-    return false;
+    // (Only an annotation, a JSDoc `@type` too: tsgo's isDeclarationWithExplicitTypeAnnotation has no JavaScript
+    // function initializer with a `@returns` any more)
+    return binding->has_explicit_type;
 }
 
 static bool prop_has_explicit_type(Prop const* prop) {

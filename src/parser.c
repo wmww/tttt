@@ -5423,8 +5423,6 @@ static void jsdoc_bind_comments(
             }
             jsdoc_check_template_modifiers(parent, &tags, true, false);
             Span span = tag_span;
-            const char* after = range.end;
-            while (is_js_ascii_space(*after)) after++;
             vec_statement_push(out, (Statement){
                 .tag = STATEMENT_DECL_TYPE,
                 .decl.type = c_new(TypeDecl, {
@@ -5433,7 +5431,6 @@ static void jsdoc_bind_comments(
                     .generic = jsdoc_template_generic(&tags),
                     .type = type,
                     .jsdoc = true,
-                    .jsdoc_twice = *after == '(',
                 }),
                 .span = span,
             });
@@ -13948,15 +13945,11 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
         case STATEMENT_DECL_VARIABLE: {
             VecInitializedBinding* list = &statement->decl.variable.initializers;
             if (vec_initialized_binding_size(list) > 1) {
-                // tsc's getNextJSDocCommentLocation takes the statement's JSDoc for the initializer of any of its
-                // declarations (getSingleVariableOfVariableStatement is the first, which is always there): each
-                // function gets the tags (their types go to the first)
-                // (The first one's `@type`: getJSDocCommentsAndTags of the statement's first declaration)
+                // The `@type` is the first declaration's, the function tags its initializer's (tsgo's reparser,
+                // getFunctionLikeHost: the first declaration's initializer only)
                 if (!list->data[0].binding.parent) jsdoc_apply_type_to_binding(&tags, &list->data[0].binding);
-                for_each (i, vec_initialized_binding, list) {
-                    FunctionImpl* function = jsdoc_function_of(initialized_binding_value(i));
-                    if (function) jsdoc_apply_function(p, &tags, function);
-                }
+                FunctionImpl* function = jsdoc_function_of(initialized_binding_value(&list->data[0]));
+                if (function) jsdoc_apply_function(p, &tags, function);
                 break;
             }
             if (vec_initialized_binding_size(list) != 1) break;
@@ -14084,7 +14077,6 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             }
             FunctionImpl* function = jsdoc_function_of(&statement->expr);
             if (function) {
-                function->jsdoc_indirect_host = statement->tag == STATEMENT_RETURN_EXPR;
                 jsdoc_apply_function(p, &tags, function);
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
                 // `/** @type {T} */ export default e`: e is checked against T and T is the export's type (tsc's

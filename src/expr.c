@@ -4880,10 +4880,9 @@ bool expr_is_plain_identifier(Expr const* me, const char* name) {
 Span expr_static_property_name(Expr const* me) {
     if (my tag != EXPR_PROPERTY || expr_is_perenthisized(me) || my property->optional_chain) return span_null;
     Expr const* prop = &my property->prop;
-    if (prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER && my property->form == PROPERTY_EXPR_BRACKET &&
-        !expr_is_perenthisized(prop)
-    ) {
-        // `o[77]` (tsc's isStringOrNumericLiteralLike): named by the number's text, when that is how it prints
+    if (prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER && my property->form == PROPERTY_EXPR_BRACKET) {
+        // `o[77]` (tsc's isStringOrNumericLiteralLike): named by the number's text, when that is how it prints. Also
+        // `o[(77)]`: tsgo's GetElementOrPropertyAccessName skips parentheses
         csview digits = span_sv(prop->inner_span);
         bool canonical = digits.size && (digits.buf[0] != '0' || digits.size == 1);
         for (isize i = 0; i < digits.size && canonical; i++) canonical = digits.buf[i] >= '0' && digits.buf[i] <= '9';

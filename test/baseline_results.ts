@@ -20478,7 +20478,7 @@ const baselines = {
     'jsdocTypedefBeforeParenthesizedExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypedefMissingType': {
         errors: true,
@@ -24626,7 +24626,7 @@ const baselines = {
         types: true,
     },
     'noParameterReassignmentIIFEAnnotated': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38796,7 +38796,7 @@ const baselines = {
         types: true,
     },
     'assertionTypePredicates2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51516,7 +51516,7 @@ const baselines = {
         types: true,
     },
     'checkJsdocParamOnVariableDeclaredFunctionExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61393,7 +61393,7 @@ const baselines = {
     'propertyAssignmentOnParenthesizedNumber': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAssignmentOnUnresolvedImportedSymbol': {
         errors: true,
@@ -61497,7 +61497,7 @@ const baselines = {
     },
     'typeFromContextualThisType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromJSConstructor': {
