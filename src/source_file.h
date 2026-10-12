@@ -185,6 +185,7 @@ typedef struct SourceFile {
     // A second copy of a package (same name and version) whose imports mean the first: tsc's redirect source file has
     // the first copy's AST, so nothing in this one's text is reported (not even parse errors)
     bool package_redirect;
+    struct SourceFile* package_redirect_target; // The first copy, what an augmentation of this one augments
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;

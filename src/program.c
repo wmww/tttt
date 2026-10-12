@@ -778,6 +778,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                         if (first != ref->file) {
                             ref->redirected_from = ref->file;
                             ref->file->package_redirect = true;
+                            ref->file->package_redirect_target = first;
                             ref->file->unchecked = true;
                         }
                         ref->file = first;
@@ -2772,6 +2773,9 @@ void program_resolve_names(Program* me) {
             if (ref->is_declaration && !ref->file && cstr_size(&ref->augmented_path)) {
                 ref->file = program_find_source(me, cstr_sv(&ref->augmented_path));
             }
+            // (A package's second copy is the first to an augmentation too: tsc's redirect source file has the
+            // first's symbol)
+            while (ref->is_declaration && ref->file && ref->file->package_redirect_target) ref->file = ref->file->package_redirect_target;
         }
     }
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
