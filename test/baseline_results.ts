@@ -47451,9 +47451,9 @@ const baselines = {
         types: true,
     },
     'parenthesizedContexualTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parenthesizedContexualTyping3': {
         errors: true,
@@ -57956,7 +57956,7 @@ const baselines = {
         types: true,
     },
     'parser0_004152': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
