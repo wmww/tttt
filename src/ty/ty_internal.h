@@ -143,6 +143,7 @@ enum {
     KEY_MODULE_CLONE,   // that module type -> the alias Symbol it was made for (TyAnonymous.module_clone)
     KEY_THISLESS_SIGNATURES, // raw Members of a class or interface -> ThislessSignatures (members.c)
     KEY_ACCESSIBLE_CHAIN, // (location Scope, Symbol, meaning and lookup flags) -> its accessible chain (symbol_chain.c)
+    KEY_PSEUDO,         // ObjectExprItem, FunctionArg or FunctionImpl (its return type) -> its Pseudo (pseudo.c)
     KEY_MODULE_DISPLAY_NAME, // (module Symbol, file printed from, override mode, usage ModuleRef) -> its name in `import()` (csview)
 };
 

@@ -1,3 +1,4 @@
+#include "ty/pseudo.h"
 #include "ty/ty_internal.h"
 #include "scope.h"
 #include "program.h"
@@ -2992,6 +2993,425 @@ static u32 prop_symbol_name_length(Checker* me, Atom const* name) {
     return 3 + own + 1 + 6;
 }
 
+// tsgo's pseudo types (pseudo.h): where a declaration's type is printed (serializeTypeForDeclaration and
+// serializeReturnTypeForSignature), its pseudo type is printed instead of its type when it stands for the same type
+// (pseudoTypeEquivalentToType), built from the declaration's nodes (pseudoTypeToNode)
+
+// pseudoTypeToType: the type a pseudo type stands for where that's direct, null for the structures
+static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo) {
+    bool strict = compiler_options()->strict_null_checks;
+    switch (pseudo->kind) {
+        case PSEUDO_DIRECT: return pseudo->predicate ? ty_intrinsic(me, TY_BOOLEAN) : node_type(me, d, pseudo->node);
+        case PSEUDO_INFERRED:
+            if (pseudo->signature_return) {
+                Signature const* sig = ty_function_signature(me, pseudo->function);
+                return sig ? signature_return_type(me, sig) : nullptr;
+            }
+            // (getWidenedType of getRegularTypeOfExpression)
+            return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, pseudo->expr))));
+        case PSEUDO_NO_RESULT: return nullptr;
+        case PSEUDO_MAYBE_CONST: return pseudo_type(me, d, pseudo->in_const ? pseudo->const_type : pseudo->regular_type);
+        case PSEUDO_UNION: {
+            Ty const** types = arena_new_n(&my arena, Ty const*, pseudo->count ? pseudo->count : 1);
+            u32 count = 0;
+            bool elided = false;
+            for (u32 i = 0; i < pseudo->count; i++) {
+                Pseudo const* member = pseudo->types[i];
+                if (!strict && (member->kind == PSEUDO_UNDEFINED || member->kind == PSEUDO_NULL)) {
+                    elided = true;
+                    continue;
+                }
+                Ty const* type = pseudo_type(me, d, member);
+                if (!type) return nullptr;
+                types[count++] = type;
+            }
+            if (count == 1) return types[0];
+            if (!count) return ty_intrinsic(me, elided ? TY_ANY : TY_NEVER);
+            return ty_union(me, types, count, nullptr, (TyList){0});
+        }
+        case PSEUDO_UNDEFINED: return ty_intrinsic(me, strict ? TY_UNDEFINED : TY_UNDEFINED_WIDENING);
+        case PSEUDO_NULL: return ty_intrinsic(me, strict ? TY_NULL : TY_NULL_WIDENING);
+        case PSEUDO_ANY: return ty_intrinsic(me, TY_ANY);
+        case PSEUDO_STRING: return ty_intrinsic(me, TY_STRING);
+        case PSEUDO_NUMBER: return ty_intrinsic(me, TY_NUMBER);
+        case PSEUDO_BIGINT: return ty_intrinsic(me, TY_BIGINT);
+        case PSEUDO_BOOLEAN: return ty_intrinsic(me, TY_BOOLEAN);
+        case PSEUDO_FALSE: return ty_intrinsic(me, TY_FALSE);
+        case PSEUDO_TRUE: return ty_intrinsic(me, TY_TRUE);
+        case PSEUDO_STRING_LITERAL:
+        case PSEUDO_NUMERIC_LITERAL:
+        case PSEUDO_BIGINT_LITERAL:
+            return ty_regular(me, ty_expr_type(me, pseudo->expr));
+        case PSEUDO_SIGNATURE:
+        case PSEUDO_TUPLE:
+        case PSEUDO_OBJECT:
+            return nullptr;
+    }
+    impossible;
+}
+
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional);
+
+static bool pseudo_is_this_param(PseudoParam const* param) {
+    Binding const* binding = &param->arg->initializer.binding;
+    return binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this");
+}
+
+// pseudoParametersEquivalentToParameters
+static bool pseudo_params_equivalent(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig) {
+    if (sig->this_type) {
+        if (!count || !pseudo_is_this_param(&params[0])) return false;
+        if (!pseudo_equivalent(me, d, params[0].type, sig->this_type, params[0].optional)) return false;
+        params++;
+        count--;
+    }
+    if (count != sig->param_count) return false;
+    for (u32 i = 0; i < count; i++) {
+        if (params[i].optional != sig->params[i].optional) return false;
+        if (!pseudo_equivalent(me, d, params[i].type, sig->params[i].type, params[i].optional)) return false;
+    }
+    return true;
+}
+
+// pseudoReturnTypeMatchesPredicate
+static bool pseudo_matches_predicate(Checker* me, TyDisplay d, Pseudo const* ret, TyPredicate const* predicate) {
+    if (ret->kind != PSEUDO_DIRECT || !ret->predicate) return false;
+    TypePredicateNode const* node = ret->function->predicate;
+    if (node->asserts != predicate->asserts || node->is_this != predicate->is_this) return false;
+    if (!node->is_this && !csview_equals_sv(span_sv(node->name), atom_sv(predicate->param_name))) return false;
+    if (predicate->type) return node->has_type && node_type(me, d, &node->type) == predicate->type;
+    return !node->has_type;
+}
+
+// The return type part of a signature's equivalence
+static bool pseudo_return_equivalent(Checker* me, TyDisplay d, Pseudo const* ret, Signature const* sig) {
+    TyPredicate const* predicate = signature_predicate(me, sig);
+    if (predicate) return pseudo_matches_predicate(me, d, ret, predicate);
+    return pseudo_equivalent(me, d, ret, signature_return_type(me, sig), false);
+}
+
+// The property of an object type that an object literal's member declares
+static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item) {
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        Prop const* declared = prop;
+        while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+        for (u32 j = 0; j < declared->decl->decl_span_count; j++) {
+            if (span_eq(declared->decl->decl_spans[j], item->span)) return prop;
+        }
+    }
+    return nullptr;
+}
+
+static u32 prop_declaration_count(Prop const* prop) {
+    while (prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    return prop->decl->decl_span_count;
+}
+
+// pseudoTypeEquivalentToType. `optional`: the declaration is optional (its type's undefined isn't in the pseudo type)
+static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty, bool optional) {
+    if (!ty) return false;
+    // (An error type is taken to be whatever the syntax says)
+    if (ty->flags & TYF_ERROR) return true;
+    Ty const* from_pseudo = pseudo_type(me, d, pseudo);
+    if (from_pseudo == ty) return true;
+    Ty const* stripped = optional ? ty_without_undefined(me, ty) : ty;
+    if (from_pseudo) {
+        if (optional && stripped == from_pseudo) return true;
+        if (ty_regular(me, from_pseudo) == ty_regular(me, ty)) return true;
+        Ty const* target = optional ? stripped : ty;
+        if (from_pseudo->kind == TY_UNION && target->kind == TY_UNION &&
+            ty_is_related(me, from_pseudo, target, TY_RELATION_IDENTITY)
+        ) {
+            return true;
+        }
+    }
+    switch (pseudo->kind) {
+        case PSEUDO_OBJECT: {
+            if (!(stripped->flags & TYF_OBJECT)) return false;
+            Members const* members = ty_members(me, stripped);
+            u32 declarations = 0;
+            for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(members->props[i]);
+            if (declarations != pseudo->count) return false;
+            for (u32 i = 0; i < pseudo->count; i++) {
+                PseudoMember const* member = &pseudo->members[i];
+                Prop const* prop = pseudo_member_prop(members, member->item);
+                if (!prop) return false;
+                bool prop_optional = (prop->flags & PROP_OPTIONAL) != 0;
+                if (member->optional != prop_optional) return false;
+                Ty const* type = ty_remove_missing(me, prop_type(me, prop), prop_optional);
+                switch (member->kind) {
+                    case PSEUDO_MEMBER_PROPERTY:
+                        if (!pseudo_equivalent(me, d, member->type, type, member->optional)) return false;
+                        break;
+                    case PSEUDO_MEMBER_METHOD: {
+                        Signature const* sig = ty_single_signature(me, type, false, false);
+                        if (!sig) continue;
+                        if (!pseudo_params_equivalent(me, d, member->params, member->param_count, sig)) return false;
+                        if (!pseudo_return_equivalent(me, d, member->type, sig)) return false;
+                        break;
+                    }
+                    case PSEUDO_MEMBER_GETTER:
+                        if (!pseudo_equivalent(me, d, member->type, type, false)) return false;
+                        break;
+                    case PSEUDO_MEMBER_SETTER: {
+                        Ty const* write = prop_write_type(me, prop);
+                        if (!member->param_count || !pseudo_equivalent(me, d, member->params[0].type, write ? write : type, false)) {
+                            return false;
+                        }
+                        break;
+                    }
+                }
+            }
+            return true;
+        }
+        case PSEUDO_TUPLE: {
+            if (stripped->kind != TY_REFERENCE || stripped->reference.target->declared.kind != TY_DECLARED_TUPLE_TARGET) return false;
+            TupleShape const* shape = stripped->reference.target->declared.tuple;
+            // (From an `as const` array literal: only required elements)
+            for (u32 i = 0; i < shape->arity; i++) {
+                if (shape->flags[i]) return false;
+            }
+            TyList args = ty_reference_args(me, stripped);
+            if (shape->arity != pseudo->count || args.len < shape->arity) return false;
+            for (u32 i = 0; i < pseudo->count; i++) {
+                if (!pseudo_equivalent(me, d, pseudo->types[i], args.data[i], false)) return false;
+            }
+            return true;
+        }
+        case PSEUDO_SIGNATURE: {
+            Signature const* sig = ty_single_signature(me, stripped, false, false);
+            if (!sig) return false;
+            if (sig->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) return false;
+            if (!pseudo_params_equivalent(me, d, pseudo->params, pseudo->count, sig)) return false;
+            return pseudo_return_equivalent(me, d, pseudo->ret, sig);
+        }
+        default: return false;
+    }
+}
+
+static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty);
+
+// A parameter as its declaration says (pseudoParameterToNode): `type` its type in the signature
+static void display_pseudo_param(Checker* me, TyDisplay d, PseudoParam const* param, Ty const* type) {
+    Binding const* binding = &param->arg->initializer.binding;
+    if (param->rest) out(reused_if(d, true), c_sv("..."));
+    if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
+        cstr pattern = cstr_init();
+        append_binding_pattern(&pattern, binding);
+        out(reused_if(d, true), cstr_sv(&pattern));
+        cstr_drop(&pattern);
+    } else {
+        out(reused_if(d, true), span_sv(binding->content_span));
+    }
+    if (param->optional) out_lit(d, "?");
+    out_lit(d, ": ");
+    // (A declaration without a type of its own: its type, with the undefined a `?` adds, tsgo's
+    // serializeTypeForDeclaration of the parameter)
+    if (param->type->kind == PSEUDO_NO_RESULT && type && param->arg->explicit_optional && compiler_options()->strict_null_checks &&
+        ty_without_undefined(me, type) == type
+    ) {
+        type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+    }
+    display_pseudo(me, d, param->type, type);
+}
+
+// The parameters of a signature as declared: `(a: A, b?: B)`
+static void display_pseudo_params(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig) {
+    out_lit(d, "(");
+    u32 index = 0;
+    for (u32 i = 0; i < count; i++) {
+        if (i) out_lit(d, ", ");
+        Ty const* type = nullptr;
+        if (pseudo_is_this_param(&params[i])) {
+            type = sig ? sig->this_type : nullptr;
+        } else {
+            type = sig && index < sig->param_count ? sig->params[index].type : nullptr;
+            index++;
+        }
+        display_pseudo_param(me, d, &params[i], type);
+    }
+    out_lit(d, ")");
+}
+
+static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, Signature const* sig) {
+    if (ret->kind == PSEUDO_DIRECT && ret->predicate) {
+        TypePredicateNode const* node = ret->function->predicate;
+        TyDisplay reused = reused_if(d, true);
+        if (node->asserts) out_lit(reused, "asserts ");
+        out(reused, node->is_this ? c_sv("this") : span_sv(node->name));
+        if (node->has_type) {
+            out_lit(reused, " is ");
+            display_node(me, d, &node->type);
+        }
+        return;
+    }
+    display_pseudo(me, d, ret, sig ? signature_return_type(me, sig) : nullptr);
+}
+
+// pseudoTypeToNode. `ty`: what it is equivalent to, printed where the pseudo type says nothing (Inferred, NoResult)
+static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
+    bool strict = compiler_options()->strict_null_checks;
+    switch (pseudo->kind) {
+        case PSEUDO_DIRECT:
+            if (pseudo->predicate) {
+                ty_display(me, d, ty_intrinsic(me, TY_BOOLEAN));
+                return;
+            }
+            display_node(me, d, pseudo->node);
+            return;
+        case PSEUDO_INFERRED:
+        case PSEUDO_NO_RESULT:
+            if (ty) ty_display(me, d, ty);
+            else out_lit(d, "any");
+            return;
+        case PSEUDO_MAYBE_CONST:
+            display_pseudo(me, d, pseudo->in_const ? pseudo->const_type : pseudo->regular_type, ty);
+            return;
+        case PSEUDO_UNION: {
+            // (A union node's members join the new union's, undefined once)
+            u32 printed = 0;
+            bool elided = false, has_undefined = false;
+            for (u32 i = 0; i < pseudo->count; i++) {
+                Pseudo const* member = pseudo->types[i];
+                if (!strict && (member->kind == PSEUDO_UNDEFINED || member->kind == PSEUDO_NULL)) {
+                    elided = true;
+                    continue;
+                }
+                if (member->kind == PSEUDO_UNDEFINED) {
+                    if (has_undefined) continue;
+                    has_undefined = true;
+                }
+                if (member->kind == PSEUDO_DIRECT && !member->predicate && member->node->tag == TYPE_UNION &&
+                    !member->node->parenthesized
+                ) {
+                    for_each (j, vec_type, &member->node->composite) {
+                        if (j->placeholder) continue;
+                        bool undefined = j->tag == TYPE_VALUE && j->value.tag == VALUE_UNDEFINED;
+                        if (undefined && has_undefined) continue;
+                        has_undefined |= undefined;
+                        if (printed++) out(reused_if(d, false), c_sv(" | "));
+                        TyDisplay member_d = d;
+                        member_d.constituent_node = true;
+                        display_node(me, member_d, j);
+                    }
+                    continue;
+                }
+                if (printed++) out(reused_if(d, false), c_sv(" | "));
+                TyDisplay member_d = d;
+                member_d.constituent_node = true;
+                display_pseudo(me, member_d, member, nullptr);
+            }
+            if (!printed) out(d, elided ? c_sv("any") : c_sv("never"));
+            return;
+        }
+        case PSEUDO_UNDEFINED: out(d, strict ? c_sv("undefined") : c_sv("any")); return;
+        case PSEUDO_NULL: out(d, strict ? c_sv("null") : c_sv("any")); return;
+        case PSEUDO_ANY: out_lit(d, "any"); return;
+        case PSEUDO_STRING: out_lit(d, "string"); return;
+        case PSEUDO_NUMBER: out_lit(d, "number"); return;
+        case PSEUDO_BIGINT: out_lit(d, "bigint"); return;
+        case PSEUDO_BOOLEAN: out_lit(d, "boolean"); return;
+        case PSEUDO_FALSE: out_lit(d, "false"); return;
+        case PSEUDO_TRUE: out_lit(d, "true"); return;
+        case PSEUDO_STRING_LITERAL:
+            // (The literal node cloned: its quotes as written)
+            out(reused_if(d, true), span_sv(pseudo->expr->inner_span));
+            return;
+        case PSEUDO_NUMERIC_LITERAL:
+        case PSEUDO_BIGINT_LITERAL:
+            // (A cloned numeric literal prints its value: `0x1` is `1`)
+            ty_display(me, d, ty_regular(me, ty_expr_type(me, pseudo->expr)));
+            return;
+        case PSEUDO_SIGNATURE: {
+            Signature const* sig = ty ? ty_single_signature(me, ty, false, false) : nullptr;
+            TyDisplay sig_d = reused_if(d, false);
+            display_node_type_params(me, sig_d, &pseudo->function->generic);
+            display_pseudo_params(me, sig_d, pseudo->params, pseudo->count, sig);
+            out_lit(sig_d, " => ");
+            display_pseudo_return(me, sig_d, pseudo->ret, sig);
+            return;
+        }
+        case PSEUDO_TUPLE: {
+            TyList args = {0};
+            if (ty && ty->kind == TY_REFERENCE && ty->reference.target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+                args = ty_reference_args(me, ty);
+            }
+            out_lit(d, "readonly [");
+            for (u32 i = 0; i < pseudo->count; i++) {
+                if (i) out_lit(d, ", ");
+                display_pseudo(me, d, pseudo->types[i], i < args.len ? args.data[i] : nullptr);
+            }
+            out_lit(d, "]");
+            return;
+        }
+        case PSEUDO_OBJECT: {
+            if (!pseudo->count) {
+                out_lit(d, "{}");
+                return;
+            }
+            Members const* members = ty && (ty->flags & TYF_OBJECT) ? ty_members(me, ty) : nullptr;
+            bool is_const = pseudo->in_const;
+            TyDisplay member_d = reused_if(d, false);
+            member_d.in_object_literal = true;
+            out_lit(d, "{ ");
+            for (u32 i = 0; i < pseudo->count; i++) {
+                PseudoMember const* member = &pseudo->members[i];
+                Prop const* prop = members ? pseudo_member_prop(members, member->item) : nullptr;
+                Ty const* type = prop ? ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0) : nullptr;
+                bool readonly = is_const || (member->kind == PSEUDO_MEMBER_PROPERTY && member->readonly);
+                if (readonly) out_lit(member_d, "readonly ");
+                // (tsgo's reuseName: the name as a property name node would print it)
+                TyDisplay name_d = member_d;
+                name_d.tracker = nullptr;
+                switch (member->kind) {
+                    case PSEUDO_MEMBER_METHOD: {
+                        Signature const* sig = type ? ty_single_signature(me, type, false, false) : nullptr;
+                        if (prop && csview_equals(atom_sv(prop->name), "new")) out_lit(name_d, "\"new\"");
+                        else if (prop) display_member_name(me, name_d, prop);
+                        if (is_const) out_lit(member_d, ": ");
+                        display_node_type_params(me, member_d, &member->function->generic);
+                        display_pseudo_params(me, member_d, member->params, member->param_count, sig);
+                        out(member_d, is_const ? c_sv(" => ") : c_sv(": "));
+                        display_pseudo_return(me, member_d, member->type, sig);
+                        break;
+                    }
+                    case PSEUDO_MEMBER_PROPERTY:
+                        if (prop) display_member_name(me, name_d, prop);
+                        out_lit(member_d, ": ");
+                        display_pseudo(me, member_d, member->type, type);
+                        break;
+                    case PSEUDO_MEMBER_SETTER: {
+                        out_lit(member_d, "set ");
+                        if (prop) display_member_name(me, name_d, prop);
+                        out_lit(member_d, "(");
+                        Ty const* write = prop ? prop_write_type(me, prop) : nullptr;
+                        if (member->param_count) display_pseudo_param(me, member_d, &member->params[0], write ? write : type);
+                        out_lit(member_d, ")");
+                        break;
+                    }
+                    case PSEUDO_MEMBER_GETTER:
+                        out_lit(member_d, "get ");
+                        if (prop) display_member_name(me, name_d, prop);
+                        out_lit(member_d, "(): ");
+                        display_pseudo(me, member_d, member->type, type);
+                        break;
+                }
+                out_lit(member_d, "; ");
+            }
+            out_lit(d, "}");
+            return;
+        }
+    }
+    impossible;
+}
+
+// tsgo's ObjectFlags.RequiresWidening: an object or array literal that isn't widened yet, or a widening null or
+// undefined in it. A declaration of such a type is printed from its type, not its syntax
+static bool requires_widening(Ty const* ty) {
+    return (ty->flags & TYF_FRESH_OBJECT) || (ty->xflags & TYX_CONTAINS_WIDENING);
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
@@ -3178,6 +3598,31 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                     &vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding.explicit_type : prop_decl_rare(declared->decl)->write_node;
                 display_annotated(me, d, fresh ? nullptr : write_node, write, false);
                 out_lit(d, "); ");
+                continue;
+            }
+        }
+        // An object literal's property assignment or accessor whose pseudo type says what its type is: printed from its
+        // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
+        // literal's own type, is printed as a type)
+        ObjectExprItem const* item = placeholder || reverse_prop || d.reused || d.approx || !reuses_nodes(d) ? nullptr : declared->decl->item;
+        bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
+        if (item && ((item->tag == OBJECT_ITEM_PROPERTY && !requires_widening(type)) || item_accessor)) {
+            Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
+            Ty const* item_type = type;
+            if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
+                !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
+            ) {
+                item_type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            }
+            if (pseudo_equivalent(me, d, pseudo, item_type, false)) {
+                if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
+                TyDisplay name_d = d;
+                name_d.tracker = nullptr; // (named from its own declaration, see track_property())
+                display_member_name(me, name_d, prop);
+                if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
+                out_lit(d, ": ");
+                display_pseudo(me, d, pseudo, item_type);
+                out_lit(d, "; ");
                 continue;
             }
         }

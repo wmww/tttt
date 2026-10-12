@@ -4695,6 +4695,7 @@ Ty const* ty_object_literal_alternative(
             prop->decl->name_form = props[i].name_form;
             if (props[i].name_type) prop_decl_rare_mut(me, prop->decl)->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
+            prop->decl->item = props[i].item;
             if (props[i].spread_variable) {
                 prop_decl_rare_mut(me, prop->decl)->spread_variable = props[i].spread_variable;
                 prop_decl_rare_mut(me, prop->decl)->spread_namespace = props[i].spread_namespace;
@@ -4853,6 +4854,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
+            .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,
@@ -5022,6 +5024,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .decl_span_count = prop->decl->decl_span_count,
                 .name_is_value = prop->decl->name_is_value,
                 .asserted = prop->decl->asserted,
+                .item = prop->decl->item,
                 .own = prop->decl->literal_own,
                 .name_form = ty_prop_name_form_of(prop),
                 .name_type = prop_decl_rare(prop->decl)->name_type,
@@ -5096,6 +5099,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
+            .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,

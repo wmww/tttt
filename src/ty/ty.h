@@ -580,20 +580,26 @@ typedef struct PropDecl {
     FunctionImpl const* function; // A class method: ty_function_type()
     Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
     LowerCtx ctx;
+    uint8_t name_form; // PropNameForm: how the name prints
+    bool parameter_property; // `constructor(public x: T)`: declared by the parameter, decl_spans[0]
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
     Span const* decl_spans;
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
-    bool parameter_property; // `constructor(public x: T)`: declared by the parameter, decl_spans[0]
-    uint8_t name_form; // PropNameForm: how the name prints
-    // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
+    // Types baseline only: an annotation that still says the property's type, reused (see ty_display.c): of a property
+    // it was spread or mapped from, an object literal property's JSDoc `@type`
     TypeNode const* asserted;
+    // Types baseline only: the object literal member that declared it (tsc's valueDeclaration), whose pseudo type
+    // (pseudo.h) prints it where it says the same. Copies of the property (widened, spread) keep it
+    struct ObjectExprItem const* item;
     // Arena-allocated, null if all of it is: read through prop_decl_rare(), made by prop_decl_rare_mut() (members.c).
     // Never shared: a copied PropDecl gets a copy (prop_copy_into())
     PropDeclRare* rare;
 } PropDecl;
+
+static_assert(sizeof(PropDecl) == 96);
 
 static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
     static const PropDeclRare none = {0};
@@ -1842,7 +1848,8 @@ typedef struct ObjectLiteralProp {
     Span const* decl_spans;
     u32 decl_span_count;
     bool name_is_value;
-    TypeNode const* asserted; // See Prop.asserted
+    TypeNode const* asserted; // See PropDecl.asserted
+    struct ObjectExprItem const* item; // See PropDecl.item
     // Made optional by a partial spread: the annotation of a required property, which says the same again once an
     // existing property takes this one's type without undefined (spread_into())
     TypeNode const* asserted_required;

@@ -3272,6 +3272,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .type = type,
             .asserted = annotation,
             .asserted_required = annotation_required,
+            .item = origin->decl->item,
             .name_span = origin->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,
@@ -4177,6 +4178,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .decl_span_count = decl_span_count,
             .name_is_value = name_is_value,
             .asserted = asserted,
+            // (A member written again is declared by the first one: tsc's valueDeclaration)
+            .item = redeclares && existing->item ? existing->item : i,
             .own = true,
             .name_form = name_form,
             .name_type = i->computed_key && (key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) ? key_type : nullptr,

@@ -764,6 +764,11 @@ typedef struct ObjectExprItem {
     bool private_name_in_class;
     // `import("m", { with: {...} })`: the `with` property's object is a const context (tsgo's isInlineImportAttributes)
     bool inline_import_attributes;
+    // The literal is somewhere tsgo's pseudochecker sees as contextually typed (isContextuallyTyped: in a call, a type
+    // assertion, an annotated declaration's initializer...), and in a const context as far as syntax goes
+    // (IsInConstContext, FlowBuilder.const_context). Set by expr_lookup_names(), see ty/pseudo.h
+    bool pseudo_contextual : 1;
+    bool pseudo_const : 1;
     // `a?: 1`, `a?` (TS1162 unless a destructuring target): 1 + the offset of the `?` from the end of the name, 0: none
     uint16_t question_offset;
     Expr* computed_key; // Owned, null unless the key is `[expr]`

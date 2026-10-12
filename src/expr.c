@@ -1721,6 +1721,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     flow->false_target = nullptr;
     flow->chain_continues = false;
     flow->assignment_target = FLOW_TARGET_NONE;
+    // (Only object and array literals, spreads and prefix `-`/`+` pass it on to their operands, see EXPR_AS_TYPE)
+    bool const_context = flow->const_context;
+    flow->const_context = const_context && (my tag == EXPR_OBJECT || my tag == EXPR_ARRAY || my tag == EXPR_SPREAD ||
+        (my tag == EXPR_UNARY_OP && (my unary_op->op == UNARY_OP_MINUS || my unary_op->op == UNARY_OP_PLUS)));
 
     // `undefined` is a name: a declaration of it (`var undefined` in a module, an import, a script's `class undefined`,
     // which tsc's addUndefinedToGlobalsOrErrorOnRedeclaration keeps as the global) hides tsc's undefinedSymbol
@@ -2005,7 +2009,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case EXPR_AS_TYPE:
+            // (A type assertion or `satisfies` types its operand contextually to tsgo's isContextuallyTyped, `as const`
+            // makes it a const context)
+            if (as_type_is_const_assertion(my as_type)) flow->const_context = true;
+            else flow->contextual_depth++;
             expr_lookup_names(&my as_type->expr, names, errs);
+            if (!as_type_is_const_assertion(my as_type)) flow->contextual_depth--;
             if (!as_type_is_const_assertion(my as_type)) {
                 type_lookup_names(&my as_type->type, names, errs);
             }
@@ -2188,6 +2197,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
+                i->pseudo_contextual = flow->contextual_depth > 0;
+                i->pseudo_const = flow->const_context;
                 if (object_item_is_private_name(i)) i->private_name_in_class = scope_enclosing_class(names) != nullptr;
                 if (i->jsdoc_type) type_lookup_names(i->jsdoc_type, names, errs);
                 if (i->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
@@ -2258,6 +2269,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             break;
     }
     if (my tag == EXPR_CALL && !my call->uses_new) flow->contextual_depth--;
+    flow->const_context = const_context;
 }
 
 static BinaryOp binary_op_without_assignment(BinaryOp op) {

@@ -140,6 +140,9 @@ typedef struct FlowBuilder {
     // Inside a call expression, or the initializer of a declaration with a type annotation (not counting a function's
     // own), however deep: tsc's isContextuallyTyped (expressionToTypeNode.ts), see FunctionImpl.syntactically_contextual
     u32 contextual_depth;
+    // The expression being walked is in a const context as far as syntax goes: the nearest ancestor that isn't an
+    // object or array literal, a spread or a prefix `-`/`+` is `as const` (tsgo's pseudochecker IsInConstContext)
+    bool const_context;
     ErrorCtx* errs;
     FunctionImpl const* function; // The container if it is a function, for "assigned in a closure"
     // What tsc's getControlFlowContainer is (a function that isn't an IIFE, a namespace body, a field's initializer, the
