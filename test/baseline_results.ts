@@ -10796,12 +10796,12 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateIdentifierRelatedSpans2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10811,7 +10811,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10826,12 +10826,12 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateIdentifierRelatedSpans_moduleAugmentation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13091,7 +13091,7 @@ const baselines = {
         types: true,
     },
     'exportAsNamespace_augment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

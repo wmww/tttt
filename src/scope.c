@@ -769,11 +769,29 @@ static bool symbol_declared_in_block(Symbol const* me, Scope const* block) {
     return false;
 }
 
-static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display, bool lib_too) {
+// `merge`: a conflict of tsgo's checker merge (reportMergeSymbolError), whose lookupOrIssueError only finds an identical
+// diagnostic: one with related information already (from another merge) leaves this merge its own diagnostic, which
+// tsgo's compactAndMergeRelatedInfos joins with it at the end (each merge's first related is "was also declared here")
+static Error* report_conflict_create(ErrorCtx* errs, Span at, unsigned code, csview display);
+
+static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display, bool lib_too, bool merge) {
     if (!span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_too)) return nullptr;
-    // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
+    // Once per declaration: a later conflict adds to the error that's there (the binder's declareSymbol)
     Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
-    if (existing) return existing;
+    bool fresh = false;
+    if (existing && merge) {
+        for_each (i, vec_error, &existing->sub_errors) fresh |= span_valid(i->span);
+    }
+    if (existing && !fresh) return existing;
+    ErrorPhase phase = errs->phase;
+    // (A diagnostic of its own at the same span: the checker's collection keeps those)
+    if (fresh) errs->phase = ERROR_PHASE_TYPECHECK;
+    Error* ret = report_conflict_create(errs, at, code, display);
+    errs->phase = phase;
+    return ret;
+}
+
+static Error* report_conflict_create(ErrorCtx* errs, Span at, unsigned code, csview display) {
     // (A missing name is tsc's "__missing", shown as "(Missing)")
     csview name = display.size ? display : at.size ? span_sv(at) : c_sv("(Missing)");
     Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
@@ -788,7 +806,7 @@ static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csvi
 }
 
 static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
-    return report_conflict_named(errs, at, code, (csview){0}, false);
+    return report_conflict_named(errs, at, code, (csview){0}, false, false);
 }
 
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
@@ -888,11 +906,11 @@ static void report_conflicts(
         // (tsc reports both sides of a conflict, a lib file's too when lib files are checked: the harness lists those
         // without a position)
         bool lib_too = span_source(name) && !span_source(name)->is_stdlib && lib_files_checked();
-        Error* error = report_conflict_named(errs, at, code, display, lib_too);
+        Error* error = report_conflict_named(errs, at, code, display, lib_too, related);
         if (related) add_duplicate_related(error, at, name);
     }
     if (!same_file && span_source(name) && span_source(name)->plain_js) return;
-    Error* error = report_conflict_named(errs, name, code, display, false);
+    Error* error = report_conflict_named(errs, name, code, display, false, related);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
         add_duplicate_related(error, name, existing->decls[i].name);
     }
@@ -4218,9 +4236,9 @@ void binder_link(Binder* me) {
             }
             // (reportMergeSymbolError's message: an enum's TS2567, a block-scoped variable's TS2451)
             unsigned code = other->flags & SYMBOL_ENUM ? 2567 : other->flags & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
-            Error* first = report_conflict(errs, symbol->decls[0].name, code);
+            Error* first = report_conflict_named(errs, symbol->decls[0].name, code, (csview){0}, false, true);
             add_duplicate_related(first, symbol->decls[0].name, other->name);
-            Error* second = report_conflict(errs, other->name, code);
+            Error* second = report_conflict_named(errs, other->name, code, (csview){0}, false, true);
             add_duplicate_related(second, other->name, symbol->decls[0].name);
             cross_file = true;
         }

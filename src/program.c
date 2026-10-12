@@ -2540,78 +2540,6 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
 }
 
 // TS2578 for every @ts-expect-error nothing was reported under, once all semantic diagnostics are in
-// A duplicate between two files: the other file (of its "was also declared here"), else null
-static SourceFile const* cross_file_duplicate_other(Error const* e) {
-    if ((e->ts_code != 2300 && e->ts_code != 2451) || !span_valid(e->span) || !span_source(e->span)) return nullptr;
-    for_each (i, vec_error, &e->sub_errors) {
-        if (i->ts_code == 6203 && span_valid(i->span) && span_source(i->span) && span_source(i->span) != span_source(e->span)) {
-            return span_source(i->span);
-        }
-    }
-    return nullptr;
-}
-
-// tsc's amalgamatedDuplicates: when 8 or more names conflict between two files, their duplicate errors become one
-// TS6200 per file listing the names, related to the other file (TS6201)
-static void program_amalgamate_duplicates(Program* me) {
-    VecError* errors = &my errs->errors;
-    for (isize i = 0; i < vec_error_size(errors); i++) {
-        Error const* seed = vec_error_at(errors, i);
-        SourceFile const* other = cross_file_duplicate_other(seed);
-        if (!other) continue;
-        SourceFile const* a = span_source(seed->span);
-        // The pair's errors, the first file's (by path) first
-        SourceFile const* first = cstr_cmp(&a->canonical_path, &other->canonical_path) < 0 ? a : other;
-        SourceFile const* second = first == a ? other : a;
-        // The names in the order of the file merged into the other's symbols, the later one in the program (tsc's
-        // mergeSymbolTable walks the source's table, its declaration order)
-        SourceFile const* merged = a->program_order > other->program_order ? a : other;
-        SourceFile const* into = merged == a ? other : a;
-        cstr names = cstr_null;
-        isize name_count = 0;
-        for (int side = 0; side < 2; side++) {
-            for_each (e, vec_error, errors) {
-                SourceFile const* o = cross_file_duplicate_other(e);
-                if (!o || span_source(e->span) != (side ? into : merged) || o != (side ? merged : into)) continue;
-                csview name = span_sv(e->span);
-                bool seen = false;
-                for (isize at = 0; at < cstr_size(&names) && !seen;) {
-                    isize next = cstr_find_at(&names, at, ", ");
-                    if (next == c_NPOS) next = cstr_size(&names);
-                    seen = csview_equals_sv(csview_slice(cstr_sv(&names), at, next), name);
-                    at = next + 2;
-                }
-                if (seen) continue;
-                if (name_count++) cstr_append(&names, ", ");
-                cstr_append_sv(&names, name);
-            }
-        }
-        if (name_count < 8) {
-            cstr_drop(&names);
-            continue;
-        }
-        for (isize j = vec_error_size(errors) - 1; j >= 0; j--) {
-            Error const* e = vec_error_at(errors, j);
-            SourceFile const* o = cross_file_duplicate_other(e);
-            if (o && ((span_source(e->span) == first && o == second) || (span_source(e->span) == second && o == first))) {
-                vec_error_erase_n(errors, j, 1); // (drops it)
-            }
-        }
-        for (int side = 0; side < 2; side++) {
-            SourceFile const* here = side ? second : first;
-            SourceFile const* there = side ? first : second;
-            Error error = {
-                .message = cstr_d("Definitions of the following identifiers conflict with those in another file: ", names),
-                .span = source_file_first_token(here), .ts_code = 6200, .phase = ERROR_PHASE_TYPECHECK,
-            };
-            error_add_related_d(&error, source_file_first_token(there), 6201, "Conflicts are in this file.");
-            vec_error_push(errors, error);
-        }
-        cstr_drop(&names);
-        i = -1; // (the vector changed: start over, the pair's errors are gone)
-    }
-}
-
 static void program_report_unused_expect_errors(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
@@ -3242,7 +3170,6 @@ void program_typecheck(Program* me) {
         free(my declaration_errs);
         my declaration_errs = nullptr;
     }
-    program_amalgamate_duplicates(me);
     error_ctx_sort_and_dedupe(my errs);
 
     clear_compiler_options();
