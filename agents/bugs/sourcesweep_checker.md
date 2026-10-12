@@ -204,3 +204,42 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   return types read `db.todoLists`: tttt evaluates that during the property declaration's check, tsc lazily.
 - **reselect +TS2536**: fixed by agent C's dc0ff92a (the same base-constraint change I had made; mine dropped).
 - tsx: matched at the start of the round. unocss -TS5115 is agent A's; its lib.dom TS2344 is the lib-checking triage entry.
+
+## Source sweep round 2026-10-12 (agent B, second task)
+Fixed: vitest configs (starlight, feathers, react-scan, react-window: augmentations of a deduplicated package copy),
+mermaid (discriminated relation reading target property types the source lacks), noUnusedLocals of a local merged
+with an export (graphql-js, renovate), pi (widened object literals normalized), es-toolkit without (never candidates),
+soybean-admin (implicit jsx-runtime import only for .tsx/JS), apollo ObservableStream (never-reduction with a
+generic type literal member), ember runloop (IIFE parameters inside a call argument), vueuse/scripts (null for
+string config options), tsx cache.ts (no flow narrowing of a non-variable module export). Left:
+- **tsx `esm/api/register.ts:151` +TS7022**: two `const unregister`s in one arrow, the first in an `if` block
+  (`(async () => {}) as NU`), the second at function level (an expando host, `async () => {}`). tsc's binder, like
+  tttt's, binds the first block's `unregister.unregister = unregister` (inside a nested `if`) as an expando member of
+  the *outer* const (lookupSymbolForName searches the container's locals). tttt then reports TS7022 on that member;
+  tsc doesn't (its member type is computed lazily, and its initializer resolves to the inner const). Reduced:
+  `const register = () => { if (cond) { const u = (async () => {}) as NU; if (ns) { u.unregister = u; } return u; }
+  const u = async () => {}; if (ns) { u.unregister = u; } return u; }` with `NU = (() => Promise<void>) & {
+  unregister: () => Promise<void> }`. Not found which evaluation is circular (TTTT_DEBUG_CYCLE prints nothing: a
+  member type cycle).
+- **vueuse `createEventHook/index.ts:63` +TS2556**: `fn(...args)` with `fn: Callback<T>` (a conditional whose branches
+  are rest-parameter signatures, one `(...param: [T, ...unknown[]])`) and `args: Parameters<Callback<T>>`. Reduced in
+  one file (IsAny + Callback + EventHookTrigger, 15 lines). Suspect: the union signature of the conditional's apparent
+  type combines `min_args` from the expanded rest tuple (relate.c combine_signatures, param optionality from
+  signature_min_args) where tsc's combineUnionParameters keeps `minArgumentCount` raw (0 for a rest-only signature).
+- **es-toolkit `compat/array/sampleSize.ts:68` +TS2578**: needs `Record<string, T>[never]` to be T (tsc reads the
+  index signature); never_index_read()'s HACK makes any anonymous object's never index never. Letting a mapped type
+  over string/number/symbol keys through fixes it but made xstate's flagflip sloppy cells +14 TS5115 (the template
+  instantiation the hack avoids): reverted.
+- **monkeytype storybook +TS2307 x8 in @sentry/browser `feedbackAsync.d.ts`**: an unresolvable `import("@sentry-internal/
+  feedback/build/npm/types/core/types")` nested in a *type argument of an import type*
+  (`import("@sentry/core").IntegrationFn<... & { attachTo(o?: import("...").X) }>`). tsc's checkImportType doesn't
+  check type arguments and only resolves them lazily (a type literal's members), so the nested import is never
+  resolved; tttt's name-resolution walk reports its TS2307 (import_type_lookup_names passes `errs` into a found
+  import type's type arguments). Reduced: three packages under node_modules (pkga's index.d.ts `export declare const
+  x: import("pkgc").F<import("pkgc").I & { a(o?: import("pkgb/deep/x").T): void }>`, pkgb with an exports map
+  without `./deep/x`).
+- **tiptap/demos `VueNodeViewRenderer.test.ts` +TS2345 x9**: `ReturnType<typeof defineComponent>` (overloaded,
+  generic) prints as `DefineComponent<unknown, unknown, ...>` in tttt's message and isn't a Component<NodeViewProps>;
+  not reduced.
+- pixijs (+TS2451 in @webgpu/types) and feathers matched in some runs and not in others of this round: check
+  whether the result depends on the checker count or file order before chasing them.
