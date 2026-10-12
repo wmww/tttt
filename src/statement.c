@@ -271,6 +271,21 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
         CurrentNode saved = ty_enter_node(current_checker, my type.template_->span);
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
+    } else if (my symbol && (my type.tag == TYPE_UNION || my type.tag == TYPE_INTERSECTION) && !my jsdoc) {
+        // (A union or intersection body, after its members (tsc's checkUnionOrIntersectionType): TS2590 of a cross
+        // product at it, from the `=` to the end without the `;`)
+        type_typecheck(&my type, errs);
+        isize items = vec_generic_item_size(&my generic.items);
+        char const* start = span_end_ptr(items ? vec_generic_item_at(&my generic.items, items - 1)->full_span : my name);
+        char const* end = span_end_ptr(my full_span);
+        while (start < end && *start != '=') start++;
+        if (start < end) start++;
+        while (start < end && strchr(" \t\r\n", *start)) start++;
+        while (end > start && strchr("; \t\r\n", end[-1])) end--;
+        CurrentNode saved = ty_enter_node(current_checker, span_make_in(my full_span, start, end));
+        ty_declared_type_of(current_checker, my symbol);
+        ty_leave_node(current_checker, saved);
+        return;
     } else if (my symbol && my type.tag == TYPE_TUPLE && span_valid(my type.tuple.span)) {
         // (Likewise a tuple body, where the elements are spread: TS2799 at the tuple node)
         CurrentNode saved = ty_enter_node(current_checker, my type.tuple.span);

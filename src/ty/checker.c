@@ -2213,7 +2213,18 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         }
     }
     if (!needed) return nullptr;
+    // (Distributed only while the cross product of the spread unions stays under 100000, else TS2590 and the union
+    // stays spread: tsc's createNormalizedTupleType with checkCrossProductUnion)
+    double cross = 1;
     for (u32 i = 0; i < shape->arity; i++) {
+        Ty const* arg = args.data[i];
+        if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
+        if (arg->flags & TYF_NEVER) cross = 0;
+        else if (arg->kind == TY_UNION) cross *= arg->composite.types.len;
+    }
+    bool distribute = cross < 100000;
+    if (!distribute) ty_error_at_current_node_d(me, 2590, "Expression produces a union type that is too complex to represent.");
+    for (u32 i = 0; i < shape->arity && distribute; i++) {
         Ty const* arg = args.data[i];
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST) || !((arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER))) {
             continue;
@@ -2267,6 +2278,14 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name, label);
         } else if (arg->flags & (TYF_ANY | TYF_UNKNOWN)) {
             tuple_builder_add(me, &b, ty_array(me, arg, false), TUPLE_ELEMENT_REST, name, label);
+        } else if (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) {
+            // A union spread that wasn't distributed (TS2590): a rest element of its elements (tsc's
+            // createNormalizedTupleType, getIndexedAccessType(t, number) of an array-like type)
+            TyBuf elements = {0};
+            for (u32 m = 0; m < arg->composite.types.len; m++) ty_buf_push(&elements, ty_rest_element_type(me, arg->composite.types.data[m]));
+            Ty const* element = ty_union(me, elements.data, elements.len, nullptr, (TyList){0});
+            ty_buf_drop(&elements);
+            tuple_builder_add(me, &b, ty_array(me, element, false), TUPLE_ELEMENT_REST, name, label);
         } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
             tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name, label);
         }

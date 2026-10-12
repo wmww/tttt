@@ -3740,6 +3740,15 @@ static inline __attribute__((always_inline)) Ty const* lower(
         *intern_slot(me, &my links, key, 2) = ret;
         return ret;
     }
+    // A template whose cross product is too large (TS2590 at the node being checked) is the error type however it is
+    // lowered again: reported once per node, like tsc's links.resolvedType
+    if (node->tag == TYPE_TEMPLATE) {
+        u64 key[2] = { KEY_UNION_NODE | (u64)1 << 40, (u64)(uintptr_t)node };
+        if (intern_get(&my links, key, 2)) return ty_intrinsic(me, TY_ERROR);
+        Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
+        if (ret == ty_intrinsic(me, TY_ERROR)) *intern_slot(me, &my links, key, 2) = ret;
+        return node->flow ? conditional_flow_type(me, node, ret) : ret;
+    }
     Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
     return node->flow ? conditional_flow_type(me, node, ret) : ret;
 }
@@ -3848,7 +3857,20 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_INFERRED: {
             // (Outside a conditional's extends clause, TS1338: an anonymous type parameter, tsc's
             // bindAnonymousDeclaration)
-            if (!node->inferred->owned_symbol) return ty_synthetic_type_param(me, span_sv(node->inferred->name));
+            if (!node->inferred->owned_symbol) {
+                // (Its implied constraint all the same, tsc's getInferredTypeParameterConstraint goes by where the
+                // declaration is: `${infer X}` is a string)
+                Ty const* param = ty_synthetic_type_param(me, span_sv(node->inferred->name));
+                InferPosition position = node->inferred->position;
+                Ty const* constraint = position == INFER_POSITION_TEMPLATE ? ty_intrinsic(me, TY_STRING) :
+                    position == INFER_POSITION_REST ? ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false) :
+                    position == INFER_POSITION_MAPPED_KEY ? ty_keyof(me, ty_intrinsic(me, TY_ANY)) : nullptr;
+                if (constraint) {
+                    param->param.state->constraint = constraint;
+                    param->param.state->constraint_state = LAZY_STATE_DONE;
+                }
+                return param;
+            }
             Ty const* param = ty_type_param(me, node->inferred->owned_symbol);
             param->param.state->is_infer = true;
             return param;

@@ -448,6 +448,8 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
 
         case TYPE_TEMPLATE:
             for_each (i, vec_type, &my template_->types) {
+                // (An `infer X` outside a conditional, TS1338, still has its implied constraint: see lower.c)
+                if (i->tag == TYPE_INFERRED && !i->inferred->owned_symbol) i->inferred->position = INFER_POSITION_TEMPLATE;
                 type_lookup_names(i, names, errs);
             }
             break;
@@ -627,7 +629,14 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_TEMPLATE: template_type_typecheck(my template_, errs); break;
+        case TYPE_TEMPLATE: {
+            template_type_typecheck(my template_, errs);
+            // tsc's checkTemplateLiteralType resolves the template itself too, at it (getTemplateLiteralType's
+            // checkCrossProductUnion: TS2590 there)
+            CurrentNode saved = ty_enter_node(current_checker, my template_->span);
+            ty_of_node(me);
+            ty_leave_node(current_checker, saved);
+        }   break;
 
         case TYPE_JSDOC:
             jsdoc_type_typecheck(me, errs);
