@@ -4592,6 +4592,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     display_node(me, node_d, query);
                     break;
                 }
+                // (A reuse that fails falls back to printing the type, which is being visited then: tsgo's
+                // createAnonymousTypeNodeEx guards that with the cyclic structure placeholder)
+                if (query) {
+                    if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
+                    approx_add(d, 3);
+                    out_lit(d, "any");
+                    break;
+                }
             }
             // Eleven instantiations of one anonymous type deep (their symbol: the root they were instantiated from),
             // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
