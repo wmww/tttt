@@ -2752,6 +2752,16 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
         Members const* members = ty_members(me, ty);
         return !members->call_count && !members->construct_count;
     }
+    // (An interface merged with an instantiated namespace is a value module too, unless a class: tsc's test is the
+    // symbol's flags. immutable's `interface Record<TProps>` + `namespace Record`)
+    Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    if (declared->kind == TY_DECLARED && declared->declared.kind == TY_DECLARED_INTERFACE && declared->declared.symbol &&
+        (symbol_resolved_flags(declared->declared.symbol) & SYMBOL_VALUE_MODULE) &&
+        !(symbol_resolved_flags(declared->declared.symbol) & SYMBOL_CLASS)
+    ) {
+        Members const* members = ty_members(me, ty);
+        return !members->call_count && !members->construct_count;
+    }
     if (ty->kind != TY_DECLARED) return false;
     if (ty->declared.kind == TY_DECLARED_ENUM_OBJECT) return true;
     if (ty->declared.kind != TY_DECLARED_NAMESPACE) return false;
