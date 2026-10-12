@@ -2008,6 +2008,8 @@ static bool is_literal_of_same_base(Checker* me, TyList types) {
     Symbol const* enum_decl = nullptr;
     bool first = true;
     for (u32 i = 0; i < types.len; i++) {
+        // (never is no obstacle: `[]`'s element type, a candidate that was only null or undefined)
+        if (types.data[i]->flags & TYF_NEVER) continue;
         if (!literal_base(me, types.data[i], &common, &enum_decl, &first)) return false;
     }
     return types.len > 0;
