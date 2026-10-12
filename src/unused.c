@@ -232,8 +232,20 @@ static void report_function(Reporter const* r, FunctionImpl const* me) {
     }
 }
 
+// A local declaration with an exported one of the same name in its block: one symbol to tsc (the export's local
+// symbol, which the local declaration merges into), never unused (checkUnusedLocalsAndParameters skips a local with an
+// exportSymbol): `export const K = {...}; type K = (typeof K)[keyof typeof K]`
+static bool merged_with_export(Symbol const* symbol) {
+    if (!symbol->decl_count) return false;
+    Scope const* block = symbol->decls[0].block;
+    Symbol const* container = block ? block->container : nullptr;
+    if (!container || !container->exports) return false;
+    Symbol const* exported = symbol_table_get(container->exports, symbol->name);
+    return exported && exported != symbol;
+}
+
 static void report_declaration(Reporter const* r, Symbol const* symbol, Span name, bool is_type) {
-    if (!is_unused(symbol)) return;
+    if (!is_unused(symbol) || merged_with_export(symbol)) return;
     if (is_type) {
         report(r, false, name, 6196, cstr_d("'", name, "' is declared but never used."));
     } else {
