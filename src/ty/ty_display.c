@@ -956,8 +956,8 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
     // enclosing file there
     if (d.enclosing) {
         Prop const* declared = prop;
-        while (declared->target && !declared->decl->decl_span_count && !declared->decl->name_type) declared = declared->target;
-        Ty const* name_type = declared->decl->name_type;
+        while (declared->target && !declared->decl->decl_span_count && !prop_decl_rare(declared->decl)->name_type) declared = declared->target;
+        Ty const* name_type = prop_decl_rare(declared->decl)->name_type;
         if (name_type && (name_type->flags & TYF_ENUM_LITERAL) && name_type->kind == TY_LITERAL) {
             Symbol const* enum_symbol = name_type->literal.enum_decl;
             csview member_name = name_type->literal.enum_member->name;
@@ -3195,7 +3195,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             while (origin->target) origin = origin->target;
         }
         TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted;
-        if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !origin->decl->overload_count &&
+        if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !prop_decl_rare(origin->decl)->overload_count &&
             !origin->decl->symbol
         ) {
             annotation = origin->decl->node;

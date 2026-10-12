@@ -554,6 +554,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                     ", comparable ", checker->relations[TY_RELATION_COMPARABLE].len, ", subtype ",
                     checker->relations[TY_RELATION_SUBTYPE].len, ", strict subtype ", checker->relations[TY_RELATION_STRICT_SUBTYPE].len,
                     ", identity ", checker->relations[TY_RELATION_IDENTITY].len);
+                out_eprintln(out, "time: checker ", i, " intern tables (entries / capacity): types ", checker->types.len, " / ",
+                    checker->types.cap, ", links ", checker->links.len, " / ", checker->links.cap, ", atoms ", checker->atoms.len,
+                    " / ", checker->atoms.cap, ", intersection props ", checker->intersection_props.len, " / ",
+                    checker->intersection_props.cap);
             }
 #ifdef TTTT_ARENA_SITES
             arena_sites_print();

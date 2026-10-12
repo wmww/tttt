@@ -3376,19 +3376,24 @@ static Ty const* require_type(Checker* me, CallExpr const* call) {
 // A call is resolved once (tsc's links.resolvedSignature): its node remembers what the first resolution returned and
 // reported, wherever that happened (under an outer call's inference, against one of its overloads...), and the
 // typecheck walk reports that. Outer inference rounds, overload rounds and the walk don't resolve it again
+// What few resolutions have: a failure, diagnostics
+typedef struct CallResolutionRare {
+    Signature const* failure_sig; // If none fit: the candidate for overload failure (tsc's resolvedSignature then)
+    TyMapper const* failure_mapper;
+    ErrorCtx errs; // (Registered in Checker.call_errors when not empty)
+} CallResolutionRare;
+
 typedef struct CallResolution {
     Ty const* ret;
     Signature const* sig; // The signature it resolved to, null if none fit
     TyMapper const* mapper; // Its inferred type arguments
-    Signature const* failure_sig; // If none fit: the candidate for overload failure (tsc's resolvedSignature then)
-    TyMapper const* failure_mapper;
     Ty const* const* param_types; // See CallOutcome
     u32 param_count;
     // A non-generic signature, the only one: the contextual types its arguments were checked with are the resolved
     // ones already, nothing to derive again (ty_call_resolved_candidate())
     bool exact;
-    ErrorCtx errs; // (Registered in Checker.call_errors when not empty)
     bool in_flight;
+    CallResolutionRare const* rare; // Null if it has neither a failure candidate nor diagnostics (most calls: vscode 1.2M)
 } CallResolution;
 
 // `node`: what the resolution is remembered by, the call or the tagged template
@@ -3415,16 +3420,33 @@ static Ty const* call_return_type(
     }
     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)
     resolution = arena_new(&my arena, CallResolution);
-    *resolution = (CallResolution){ .errs = { .phase = ERROR_PHASE_TYPECHECK }, .in_flight = true };
+    *resolution = (CallResolution){ .in_flight = true };
     *intern_slot(me, &my links, key, 2) = resolution;
     Candidate chosen = {0};
     CallOutcome outcome = {0};
-    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &resolution->errs, &chosen, &outcome);
+    ErrorCtx errs = { .phase = ERROR_PHASE_TYPECHECK };
+    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &errs, &chosen, &outcome);
     resolution->sig = chosen.sig;
     resolution->mapper = chosen.mapper;
-    if (!chosen.sig) {
-        resolution->failure_sig = outcome.failure.sig;
-        resolution->failure_mapper = outcome.failure.mapper;
+    bool failed = !chosen.sig && outcome.failure.sig;
+    if (failed || !error_ctx_empty(&errs)) {
+        CallResolutionRare* rare = arena_new(&my arena, CallResolutionRare);
+        if (failed) {
+            rare->failure_sig = outcome.failure.sig;
+            rare->failure_mapper = outcome.failure.mapper;
+        }
+        rare->errs = errs;
+        resolution->rare = rare;
+        if (!error_ctx_empty(&errs)) {
+            if (my call_errors_len == my call_errors_cap) {
+                my call_errors_cap = my call_errors_cap ? my call_errors_cap * 2 : 64;
+                my call_errors = realloc(my call_errors, my call_errors_cap * sizeof(ErrorCtx*));
+                panic_if(!my call_errors, "out of memory");
+            }
+            my call_errors[my call_errors_len++] = &rare->errs;
+        }
+    } else {
+        error_ctx_drop(&errs);
     }
     resolution->exact = chosen.sig && !chosen.mapper && outcome.signatures == 1;
     resolution->param_types = outcome.param_types;
@@ -3432,14 +3454,6 @@ static Ty const* call_return_type(
     // (Only read once it is resolved, and not needed then if exact)
     if (!resolution->exact && !tagged_template && node == call) ty_record_call_anchors(me, call);
     resolution->in_flight = false;
-    if (!error_ctx_empty(&resolution->errs)) {
-        if (my call_errors_len == my call_errors_cap) {
-            my call_errors_cap = my call_errors_cap ? my call_errors_cap * 2 : 64;
-            my call_errors = realloc(my call_errors, my call_errors_cap * sizeof(ErrorCtx*));
-            panic_if(!my call_errors, "out of memory");
-        }
-        my call_errors[my call_errors_len++] = &resolution->errs;
-    }
     return resolution->ret;
 }
 
@@ -3463,9 +3477,9 @@ bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Si
     if (!resolution || resolution->in_flight || resolution->exact) return false;
     *param_type = resolution->sig && index < resolution->param_count ? resolution->param_types[index] : nullptr;
     if (!resolution->sig) {
-        if (!resolution->failure_sig) return false;
-        *sig = resolution->failure_sig;
-        *mapper = resolution->failure_mapper;
+        if (!resolution->rare || !resolution->rare->failure_sig) return false;
+        *sig = resolution->rare->failure_sig;
+        *mapper = resolution->rare->failure_mapper;
         return true;
     }
     *sig = resolution->sig;
@@ -3485,9 +3499,9 @@ static void call_typecheck(
         resolve_into(me, callee, call, tagged_template, contextual, call_span, errs, nullptr, nullptr);
         return;
     }
-    if (!errs) return;
+    if (!errs || !resolution->rare) return;
     ErrorCtx copy = error_ctx_scratch(errs);
-    for_each (i, vec_error, &resolution->errs.errors) {
+    for_each (i, vec_error, &resolution->rare->errs.errors) {
         error_ctx_append_error(&copy, error_clone(*i));
     }
     error_ctx_merge(errs, &copy);

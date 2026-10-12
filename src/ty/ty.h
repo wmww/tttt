@@ -526,8 +526,13 @@ uint8_t ty_prop_name_form_of(Prop const* prop);
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
 // What a declared property knows about its declaration. Instantiations (which follow `target`) and synthetic
 // properties share ty_prop_decl_none, all zero and read-only: a property is 56 bytes, not 250
-// What few props have: accessors with a write type, mapped and reverse mapped types' (PropDecl.rare)
+// What few props have: overloads, computed literal names, accessors with a write type, mapped and reverse mapped types'
+// (PropDecl.rare)
 typedef struct PropDeclRare {
+    // An overloaded method: all of its signatures (a source of the type, see PropDecl)
+    FunctionImpl const* const* overloads;
+    u32 overload_count;
+    Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
     // `target`. See prop_write_type()
     TypeNode const* write_node;
@@ -555,13 +560,12 @@ typedef struct PropDeclRare {
 
 typedef struct PropDecl {
     // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
-    // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
+    // (an inferred class field, an accessor), a method, the overloads of a method (in `rare`), a symbol, a target to
+    // instantiate
     TypeNode const* node;
     LazyType const* lazy;
     FunctionImpl const* function; // A class method: ty_function_type()
-    FunctionImpl const* const* overloads; // An overloaded method: all of its signatures
     Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
-    u32 overload_count;
     LowerCtx ctx;
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
@@ -571,7 +575,6 @@ typedef struct PropDecl {
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
     bool parameter_property; // `constructor(public x: T)`: declared by the parameter, decl_spans[0]
     uint8_t name_form; // PropNameForm: how the name prints
-    Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
     // Arena-allocated, null if all of it is: read through prop_decl_rare(), made by prop_decl_rare_mut() (members.c).

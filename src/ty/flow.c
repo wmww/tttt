@@ -1272,7 +1272,7 @@ static bool prop_has_explicit_type(Prop const* prop) {
     if (prop->flags & PROP_METHOD) return true; // (tsc: a method's type is always known)
     if (prop->decl->symbol) return symbol_has_explicit_type(prop->decl->symbol);
     if (prop->flags & (PROP_GETTER | PROP_SETTER)) return prop->decl->function->ret_explicit;
-    return prop->decl->node || prop->decl->function || prop->decl->overload_count;
+    return prop->decl->node || prop->decl->function || prop_decl_rare(prop->decl)->overload_count;
 }
 
 // tsc's getTypeOfDottedName(): the type of the callee of a call statement from declarations alone, without control

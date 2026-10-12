@@ -3232,7 +3232,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
         TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
-            !origin->decl->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
+            !prop_decl_rare(origin->decl)->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
         // (A property spread in from an object literal reuses what that one reused: `{ ...{ ...b1, z } }`)
         if (!annotation && origin->decl->asserted && declared_type == prop_type(me, origin)) annotation = origin->decl->asserted;
         // (A mapped type's property is declared where the property it maps is, `{ ...(x as Readonly<A>) }`: tsc's mapped
@@ -3255,7 +3255,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .asserted_required = annotation_required,
             .name_span = origin->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
-            .name_type = prop->decl->name_type,
+            .name_type = prop_decl_rare(prop->decl)->name_type,
             .decl_spans = origin->decl->decl_spans,
             .decl_span_count = origin->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,

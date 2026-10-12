@@ -1652,7 +1652,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
             // (tsc's spread symbol keeps the declarations: a property signature's annotation is reused)
             PropDecl const* decl = prop->decl;
             TypeNode const* annotation = !prop->target && decl->node && decl->node->parsed && !decl->lazy &&
-                !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
+                !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
             from[from_count++] = (ObjectLiteralProp){
                 .name = prop->name, .flags = prop->flags & (PROP_OPTIONAL | PROP_METHOD), .type = prop_type(me, prop),
                 .name_span = prop->decl->name_span, .name_form = ty_prop_name_form_of(prop),
@@ -2654,9 +2654,9 @@ static bool computed_key_names(Checker* me, Ty const* key, Atom const* name, boo
 // Whether a property's literal key type is a number (tsc's getLiteralTypeFromProperty): declared with a numeric
 // literal name, or a computed one of a number literal type
 static bool prop_has_numeric_name(Prop const* prop) {
-    while (prop->target && !prop->decl->name_type) prop = prop->target;
+    while (prop->target && !prop_decl_rare(prop->decl)->name_type) prop = prop->target;
     PropDecl const* decl = prop->decl;
-    if (decl->name_type) return (decl->name_type->flags & TYF_NUMBER_LITERAL) != 0;
+    if (prop_decl_rare(decl)->name_type) return (prop_decl_rare(decl)->name_type->flags & TYF_NUMBER_LITERAL) != 0;
     if (!decl->name_is_value || !span_valid(decl->name_span) || !decl->name_span.sv.size) return false;
     char c = decl->name_span.sv.buf[0];
     return (c >= '0' && c <= '9') || c == '.';
@@ -2692,7 +2692,7 @@ static TyList pattern_keys(Checker* me, Binding const* pattern) {
 TypeNode const* ty_prop_annotation(Prop const* prop) {
     PropDecl const* decl = prop->decl;
     if (decl->asserted) return decl->asserted;
-    return decl->node && decl->node->parsed && !decl->lazy && !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
+    return decl->node && decl->node->parsed && !decl->lazy && !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
 }
 
 // The rest of an intersection: the properties of all of its members, each of the intersection's type for it

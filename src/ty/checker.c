@@ -2373,8 +2373,8 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
 // literal, others by the name's string literal (or unique symbol)
 Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     Prop const* declared = prop;
-    while (declared->target && !declared->decl->decl_span_count && !declared->decl->name_type) declared = declared->target;
-    if (declared->decl->name_type) return declared->decl->name_type; // (tsc's nameType, fresh if it was)
+    while (declared->target && !declared->decl->decl_span_count && !prop_decl_rare(declared->decl)->name_type) declared = declared->target;
+    if (prop_decl_rare(declared->decl)->name_type) return prop_decl_rare(declared->decl)->name_type; // (tsc's nameType, fresh if it was)
     csview text = declared->decl->name_span.sv;
     if (declared->decl->name_is_value && span_valid(declared->decl->name_span) && text.size &&
         ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.' || text.buf[0] == '[')

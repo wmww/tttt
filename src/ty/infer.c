@@ -670,7 +670,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
             while (origin->target) origin = origin->target;
             PropDecl const* decl = origin->decl;
             TypeNode const* annotation = origin == prop && decl->node && decl->node->parsed && !decl->lazy &&
-                !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
+                !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
             (*out)[i] = (ObjectLiteralProp){
                 .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
                 .name_span = prop->decl->name_span,
@@ -679,7 +679,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
                 .decl_span_count = prop->decl->decl_span_count ? prop->decl->decl_span_count : decl->decl_span_count,
                 .name_is_value = prop->decl->name_is_value,
                 // (Or an object literal property's type assertion: tsc's typeFromExpression reuses it too)
-                .asserted = annotation ? annotation : origin == prop ? decl->asserted : nullptr, .name_type = prop->decl->name_type,
+                .asserted = annotation ? annotation : origin == prop ? decl->asserted : nullptr, .name_type = prop_decl_rare(prop->decl)->name_type,
             };
         }
         return members->prop_count;
@@ -704,7 +704,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
             (*out)[count++] = (ObjectLiteralProp){
                 .name = name, .flags = found.flags, .type = found.type,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
-                .name_type = found.prop ? found.prop->decl->name_type : nullptr,
+                .name_type = found.prop ? prop_decl_rare(found.prop->decl)->name_type : nullptr,
                 .name_span = found.prop ? found.prop->decl->name_span : span_null,
                 .decl_spans = found.prop ? found.prop->decl->decl_spans : nullptr,
                 .decl_span_count = found.prop ? found.prop->decl->decl_span_count : 0,

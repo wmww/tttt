@@ -509,16 +509,16 @@ static void builder_add_interface_member(
                     bool existing_method = existing->decl->node ? existing->decl->node->tag == TYPE_CALLABLE :
                         existing->decl->function != nullptr;
                     if (is_method && (existing->flags & PROP_METHOD) && existing_method) {
-                        u32 count = existing->decl->overload_count ? existing->decl->overload_count : 1;
+                        u32 count = prop_decl_rare(existing->decl)->overload_count ? prop_decl_rare(existing->decl)->overload_count : 1;
                         FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, count + 1);
-                        if (existing->decl->overload_count) {
-                            memcpy(functions, existing->decl->overloads, sizeof(FunctionImpl const*) * count);
+                        if (prop_decl_rare(existing->decl)->overload_count) {
+                            memcpy(functions, prop_decl_rare(existing->decl)->overloads, sizeof(FunctionImpl const*) * count);
                         } else {
                             functions[0] = existing->decl->node ? existing->decl->node->callable->function : existing->decl->function;
                         }
                         functions[count] = i->type.callable->function;
-                        existing->decl->overloads = functions;
-                        existing->decl->overload_count = count + 1;
+                        prop_decl_rare_mut(me, existing->decl)->overloads = functions;
+                        prop_decl_rare_mut(me, existing->decl)->overload_count = count + 1;
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         // (Optional if any overload is: tsc's binder adds SymbolFlags.Optional per declaration)
                         if (i->optional) existing->flags |= PROP_OPTIONAL;
@@ -565,7 +565,7 @@ static void builder_add_interface_member(
                 if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 // (A computed enum member name is that member, tsc's late bound nameType: keyof gives it, it prints `[E.A]`)
-                if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop->decl->name_type = ty_regular(me, key);
+                if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, key);
                 { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, prop, d, n); }
                 builder_push(builder, props, prop);
             }   break;
@@ -1483,16 +1483,16 @@ static void builder_add_class_items(
                     if (interface_method && (interface_method->flags & PROP_METHOD) && interface_method->decl->node &&
                         interface_method->decl->node->tag == TYPE_CALLABLE
                     ) {
-                        u32 had = interface_method->decl->overload_count ? interface_method->decl->overload_count : 1;
+                        u32 had = prop_decl_rare(interface_method->decl)->overload_count ? prop_decl_rare(interface_method->decl)->overload_count : 1;
                         FunctionImpl const** all = arena_new_n(&my arena, FunctionImpl const*, had + count);
-                        if (interface_method->decl->overload_count) {
-                            memcpy(all, interface_method->decl->overloads, sizeof(FunctionImpl const*) * had);
+                        if (prop_decl_rare(interface_method->decl)->overload_count) {
+                            memcpy(all, prop_decl_rare(interface_method->decl)->overloads, sizeof(FunctionImpl const*) * had);
                         } else {
                             all[0] = interface_method->decl->node->callable->function;
                         }
                         memcpy(all + had, functions, sizeof(FunctionImpl const*) * count);
-                        interface_method->decl->overloads = all;
-                        interface_method->decl->overload_count = had + count;
+                        prop_decl_rare_mut(me, interface_method->decl)->overloads = all;
+                        prop_decl_rare_mut(me, interface_method->decl)->overload_count = had + count;
                         for (u32 f = 0; f < count; f++) interface_method->thisless &= function_is_thisless(functions[f]);
                         prop_add_shared_decl_spans(me, interface_method, &i->span, 1);
                         prop_add_decl_spans(me, interface_method, spans, span_count);
@@ -1510,8 +1510,8 @@ static void builder_add_class_items(
                     add_jsdoc_overload_decl_spans(me, prop, class_decl, i, static_side);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
-                        prop->decl->overloads = functions;
-                        prop->decl->overload_count = count;
+                        prop_decl_rare_mut(me, prop->decl)->overloads = functions;
+                        prop_decl_rare_mut(me, prop->decl)->overload_count = count;
                     }
                 }
             }   break;
@@ -3284,9 +3284,9 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     // Two keys with one name (members of different enums with the same value, or an `as` clause
                     // mapping several keys to one name): the property is about both
                     // (tsc's nameType becomes the union of both names, which is no member's: the plain literal)
-                    Ty const* existing_name = existing->decl->name_type;
+                    Ty const* existing_name = prop_decl_rare(existing->decl)->name_type;
                     if (existing_name && (existing_name->flags & TYF_ENUM_LITERAL) && existing_name != ty_regular(me, prop_name)) {
-                        existing->decl->name_type = (existing_name->flags & TYF_NUMBER_LITERAL) ?
+                        prop_decl_rare_mut(me, existing->decl)->name_type = (existing_name->flags & TYF_NUMBER_LITERAL) ?
                             ty_literal(me, &existing_name->literal.value) : nullptr;
                     }
                     Ty const* both[2] = { existing->mapper->targets[0], key };
@@ -3353,7 +3353,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 // the name, a string, doesn't say; an enum member is that member (and prints as one, `[E.A]`)
                 if (prop_name->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL)) {
                     if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
-                    prop->decl->name_type = ty_regular(me, prop_name);
+                    prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, prop_name);
                 }
                 builder_push(&builder, props, prop);
             } else {
@@ -3595,7 +3595,7 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         prop->decl->name_span = props[i].name_span;
         prop->decl->name_is_value = props[i].name_is_value;
         prop->decl->name_form = props[i].name_form;
-        prop->decl->name_type = props[i].name_type;
+        if (props[i].name_type) prop_decl_rare_mut(me, prop->decl)->name_type = props[i].name_type;
         // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
         if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
         // (Its own key is the name's string literal, `1` too: tsc's reverse mapped symbol has no valueDeclaration)
@@ -4037,8 +4037,8 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         }
     } else if (prop->target) {
         type = instantiated_prop_type(me, prop);
-    } else if (prop->decl->overload_count) {
-        type = ty_anonymous_from_overloads(me, prop->decl->overloads, prop->decl->overload_count, prop->decl->ctx);
+    } else if (prop_decl_rare(prop->decl)->overload_count) {
+        type = ty_anonymous_from_overloads(me, prop_decl_rare(prop->decl)->overloads, prop_decl_rare(prop->decl)->overload_count, prop->decl->ctx);
     } else if (prop->decl->symbol) {
         type = ty_type_of_symbol(me, prop->decl->symbol);
     } else if (prop->decl->function) {
@@ -4576,7 +4576,7 @@ Ty const* ty_object_literal_alternative(
             prop->decl->name_is_value = props[i].name_is_value;
             prop->decl->literal_own = props[i].own;
             prop->decl->name_form = props[i].name_form;
-            prop->decl->name_type = props[i].name_type;
+            if (props[i].name_type) prop_decl_rare_mut(me, prop->decl)->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
             if (props[i].spread_variable) {
                 prop_decl_rare_mut(me, prop->decl)->spread_variable = props[i].spread_variable;
@@ -4740,7 +4740,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
-            .name_type = prop->decl->name_type,
+            .name_type = prop_decl_rare(prop->decl)->name_type,
             .parent = !prop->decl->function && type == prop_type(me, prop) ? prop->parent : nullptr,
         };
     }
@@ -4767,7 +4767,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
-            .name_type = prop->decl->name_type,
+            .name_type = prop_decl_rare(prop->decl)->name_type,
             .decl_spans = first->decl->decl_spans,
             .decl_span_count = first->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
@@ -4907,7 +4907,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .asserted = prop->decl->asserted,
                 .own = prop->decl->literal_own,
                 .name_form = ty_prop_name_form_of(prop),
-                .name_type = prop->decl->name_type,
+                .name_type = prop_decl_rare(prop->decl)->name_type,
             };
         }
         IndexInfo index[8] = {0};
@@ -4983,7 +4983,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
-            .name_type = prop->decl->name_type,
+            .name_type = prop_decl_rare(prop->decl)->name_type,
         };
     }
     IndexInfo index[8] = {0};
