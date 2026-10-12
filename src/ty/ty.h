@@ -52,9 +52,22 @@ typedef struct InternEntry {
 
 typedef struct InternTable {
     InternEntry* entries;
-    u32 cap; // power of two or 0
+    u32 cap; // 0 or the initial capacity * 1.5^n
     u32 len;
 } InternTable;
+
+// The commonest two-word keys of Checker.links, (kind, AST node or other address) -> value, with the key in the entry
+// itself: no arena block, no hash to keep (vscode: 3.5M of them). See ty_link_get()
+typedef struct LinkEntry {
+    u64 key; // The kind in the top byte, the subject's address below. 0: empty
+    void const* value;
+} LinkEntry;
+
+typedef struct LinkTable {
+    LinkEntry* entries;
+    u32 cap; // 0 or 1024 * 1.5^n (about)
+    u32 len;
+} LinkTable;
 
 typedef struct TyList {
     Ty const* const* data;
@@ -969,6 +982,7 @@ struct Checker {
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
+    LinkTable node_links; // Same for some kinds of two-word keys: see ty_link_get()
     // The errors of calls' resolutions (call.c), kept until the checker is dropped
     struct ErrorCtx** call_errors;
     u32 call_errors_len, call_errors_cap;

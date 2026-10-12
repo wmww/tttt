@@ -45,10 +45,9 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
     while (true) {
         u32 flags = flow->flags;
         if (flags & FLOW_SHARED && use_cache && !overrides) {
-            u64 key[2] = { KEY_FLOW_REACHABLE, (u64)(uintptr_t)flow };
-            uintptr_t cached = (uintptr_t)intern_get(&my links, key, 2);
+            uintptr_t cached = (uintptr_t)ty_link_get(me, KEY_FLOW_REACHABLE, flow);
             FlowReachability ret = cached ? (FlowReachability)(cached - 1) : reachability_walk(me, flow, overrides, false);
-            if (!cached) *intern_slot(me, &my links, key, 2) = (void const*)((uintptr_t)ret + 1);
+            if (!cached) ty_link_set(me, KEY_FLOW_REACHABLE, flow, (void const*)((uintptr_t)ret + 1));
             return ret;
         }
         use_cache = true;

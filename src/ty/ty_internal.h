@@ -160,6 +160,12 @@ TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // 
 
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
+
+// Checker.node_links: what `kind` (a KEY_ of Checker.links) says about `subject`, null if nothing. The value is held
+// in the table, which moves: no slot to write later, unlike intern_slot(); set again to change it. Only for the kinds
+// whose every use goes through these two (the commonest: calls, functions, shared flow nodes, object literals)
+void const* ty_link_get(Checker const* me, u32 kind, void const* subject);
+void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value);
 // Two type ids as one key word: keys made of mapper pairs are most of the interned key bytes
 static inline u64 ty_id_pair(Ty const* a, Ty const* b) { return (u64)a->id << 32 | b->id; }
 

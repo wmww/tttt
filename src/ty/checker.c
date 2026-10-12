@@ -121,12 +121,25 @@ static u64 hash_words(u64 const* words, u32 count) {
     return (h & 0x00007fffffffffffull) | 1ull << 47 | (u64)(count < INTERN_LONG_KEY ? count : INTERN_LONG_KEY) << 48;
 }
 
+// Tables of any capacity (they grow by half: the big ones would be a third emptier on average doubling): the slot
+// where a hash starts probing, and the next one
+static u32 table_index(u64 hash, u32 cap) {
+    return (u32)(((u64)(u32)hash * cap) >> 32);
+}
+
+static u32 table_next(u32 i, u32 cap) {
+    return i + 1 == cap ? 0 : i + 1;
+}
+
+static u32 table_grown(u32 cap, u32 initial) {
+    return cap ? cap / 2 * 3 : initial;
+}
+
 static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
     if (!my cap) return nullptr;
-    u32 mask = my cap - 1;
     // (The hash has the count: the same hash is the same count, but a long key's count is in its block)
     bool long_key = count >= INTERN_LONG_KEY;
-    for (u32 i = (u32)hash & mask;; i = (i + 1) & mask) {
+    for (u32 i = table_index(hash, my cap);; i = table_next(i, my cap)) {
         InternEntry* entry = &my entries[i];
         if (!entry->hash) return entry;
         if (entry->hash != hash) continue;
@@ -140,16 +153,15 @@ static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* word
 }
 
 static void intern_grow(InternTable* me) {
-    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len };
+    InternTable bigger = { .cap = table_grown(my cap, 64), .len = my len };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
-    u32 mask = bigger.cap - 1;
     for (u32 i = 0; i < my cap; i++) {
         InternEntry* entry = &my entries[i];
         if (entry->hash) {
             // (Keys are distinct: the first empty slot)
-            u32 j = (u32)entry->hash & mask;
-            while (bigger.entries[j].hash) j = (j + 1) & mask;
+            u32 j = table_index(entry->hash, bigger.cap);
+            while (bigger.entries[j].hash) j = table_next(j, bigger.cap);
             bigger.entries[j] = *entry;
         }
     }
@@ -198,19 +210,70 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     return entry && entry->hash ? entry->block[0] : nullptr;
 }
 
+static u64 link_key(u32 kind, void const* subject) {
+    // (User space addresses are below 2^47)
+    return (u64)(kind + 1) << 56 | (u64)(uintptr_t)subject;
+}
+
+static u32 link_index(u64 key, u32 cap) {
+    return table_index((key * 0x9e3779b97f4a7c15ull) >> 32, cap);
+}
+
+void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
+    LinkTable const* table = &my node_links;
+    if (!table->cap) return nullptr;
+    u64 key = link_key(kind, subject);
+    for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
+        LinkEntry const* entry = &table->entries[i];
+        if (entry->key == key) return entry->value;
+        if (!entry->key) return nullptr;
+    }
+}
+
+void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
+    LinkTable* table = &my node_links;
+    if ((table->len + 1) * 4 > table->cap * 3) {
+        LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
+        bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
+        panic_if(!bigger.entries, "out of memory");
+        for (u32 i = 0; i < table->cap; i++) {
+            LinkEntry entry = table->entries[i];
+            if (!entry.key) continue;
+            u32 j = link_index(entry.key, bigger.cap);
+            while (bigger.entries[j].key) j = table_next(j, bigger.cap);
+            bigger.entries[j] = entry;
+        }
+        free(table->entries);
+        *table = bigger;
+    }
+    u64 key = link_key(kind, subject);
+    for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
+        LinkEntry* entry = &table->entries[i];
+        if (entry->key == key) {
+            entry->value = value;
+            return;
+        }
+        if (!entry->key) {
+            *entry = (LinkEntry){ key, value };
+            table->len++;
+            return;
+        }
+    }
+}
+
 Atom const* checker_atom(Checker* me, csview sv) {
     sv = name_cooked(sv); // (an identifier's name: by its value)
     // Atoms are keyed by content, so they get their own probing rather than the word keys
     InternTable* table = &my atoms;
     if ((table->len + 1) * 4 > table->cap * 3) {
-        InternTable bigger = { .cap = table->cap ? table->cap * 2 : 256, .len = table->len };
+        InternTable bigger = { .cap = table_grown(table->cap, 256), .len = table->len };
         bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
         panic_if(!bigger.entries, "out of memory");
         for (u32 i = 0; i < table->cap; i++) {
             InternEntry* entry = &table->entries[i];
             if (!entry->hash) continue;
-            u32 j = (u32)entry->hash & (bigger.cap - 1);
-            while (bigger.entries[j].hash) j = (j + 1) & (bigger.cap - 1);
+            u32 j = table_index(entry->hash, bigger.cap);
+            while (bigger.entries[j].hash) j = table_next(j, bigger.cap);
             bigger.entries[j] = *entry;
         }
         free(table->entries);
@@ -225,8 +288,7 @@ Atom const* checker_atom(Checker* me, csview sv) {
     hash *= 0xc4ceb9fe1a85ec53ULL;
     hash ^= hash >> 33;
     if (!hash) hash = 1;
-    u32 mask = table->cap - 1;
-    for (u32 i = (u32)hash & mask;; i = (i + 1) & mask) {
+    for (u32 i = table_index(hash, table->cap);; i = table_next(i, table->cap)) {
         InternEntry* entry = &table->entries[i];
         if (!entry->hash) {
             Atom* atom = arena_alloc(&my arena, sizeof(Atom) + (size_t)sv.size + 1);
@@ -432,10 +494,8 @@ void checker_defer(Checker* me, DeferredCheckKind kind, void const* node) {
 }
 
 void checker_defer_function_body(Checker* me, FunctionImpl const* function) {
-    u64 key[2] = { KEY_DEFERRED_BODY, (u64)(uintptr_t)function };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (*slot) return;
-    *slot = function;
+    if (ty_link_get(me, KEY_DEFERRED_BODY, function)) return;
+    ty_link_set(me, KEY_DEFERRED_BODY, function, function);
     checker_defer(me, DEFERRED_FUNCTION_BODY, function);
 }
 
@@ -452,6 +512,7 @@ void checker_drop(Checker* me) {
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
+    free(my node_links.entries);
     free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     ty_active_mappers_drop(me);
@@ -611,15 +672,15 @@ Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty) {
 
 Ty const* ty_fresh_literal(Checker* me, Ty const* ty) {
     if (ty->kind != TY_LITERAL || (ty->flags & (TYF_FRESH_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return ty;
-    u64 key[2] = { KEY_FRESH_LITERAL, (u64)(uintptr_t)ty };
-    void const** slot = intern_slot(me, &my types, key, 2);
-    if (!*slot) {
+    Ty const* fresh = ty_link_get(me, KEY_FRESH_LITERAL, ty);
+    if (!fresh) {
         Ty* ret = ty_alloc(me, TY_LITERAL, ty->flags | TYF_FRESH_LITERAL);
         ret->literal = ty->literal;
         ret->literal.regular = ty;
-        *slot = ret;
+        ty_link_set(me, KEY_FRESH_LITERAL, ty, ret);
+        fresh = ret;
     }
-    return *slot;
+    return fresh;
 }
 
 Ty const* ty_regular(Checker* me, Ty const* ty) {

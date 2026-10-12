@@ -3401,8 +3401,7 @@ static Ty const* call_return_type(
     Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, void const* node, Ty const* contextual,
     Span call_span
 ) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
-    CallResolution* resolution = (CallResolution*)intern_get(&my links, key, 2);
+    CallResolution* resolution = (CallResolution*)ty_link_get(me, KEY_CALL_RESOLUTION, node);
     if (resolution && !resolution->in_flight) return resolution->ret;
     // A call asked for again while in flight is resolved again (tsc's getResolvedSignature: resolvingSignature only
     // reaches SkipGenericFunctions and contextual types)
@@ -3421,7 +3420,7 @@ static Ty const* call_return_type(
     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)
     resolution = arena_new(&my arena, CallResolution);
     *resolution = (CallResolution){ .in_flight = true };
-    *intern_slot(me, &my links, key, 2) = resolution;
+    ty_link_set(me, KEY_CALL_RESOLUTION, node, resolution);
     Candidate chosen = {0};
     CallOutcome outcome = {0};
     ErrorCtx errs = { .phase = ERROR_PHASE_TYPECHECK };
@@ -3459,21 +3458,18 @@ static Ty const* call_return_type(
 
 // What a call's resolution returned, if it is remembered and done (tsc's links.resolvedSignature), else null
 Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
-    CallResolution const* resolution = intern_get(&my links, key, 2);
+    CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
     return resolution && !resolution->in_flight ? resolution->ret : nullptr;
 }
 
 // The signature a call resolved to, if its resolution is remembered and done and something fit
 Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
-    CallResolution const* resolution = intern_get(&my links, key, 2);
+    CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
     return resolution && !resolution->in_flight ? resolution->sig : nullptr;
 }
 
 bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Signature const** sig, TyMapper const** mapper, Ty const** param_type) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
-    CallResolution const* resolution = intern_get(&my links, key, 2);
+    CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
     if (!resolution || resolution->in_flight || resolution->exact) return false;
     *param_type = resolution->sig && index < resolution->param_count ? resolution->param_types[index] : nullptr;
     if (!resolution->sig) {
@@ -3493,8 +3489,7 @@ static void call_typecheck(
     Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, void const* node, Ty const* contextual,
     Span call_span, ErrorCtx* errs
 ) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
-    CallResolution const* resolution = node ? intern_get(&my links, key, 2) : nullptr;
+    CallResolution const* resolution = node ? ty_link_get(me, KEY_CALL_RESOLUTION, node) : nullptr;
     if (!resolution || resolution->in_flight) {
         resolve_into(me, callee, call, tagged_template, contextual, call_span, errs, nullptr, nullptr);
         return;

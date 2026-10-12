@@ -558,6 +558,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                     checker->types.cap, ", links ", checker->links.len, " / ", checker->links.cap, ", atoms ", checker->atoms.len,
                     " / ", checker->atoms.cap, ", intersection props ", checker->intersection_props.len, " / ",
                     checker->intersection_props.cap);
+                out_eprintln(out, "time: checker ", i, " node links ", checker->node_links.len, " / ", checker->node_links.cap);
             }
 #ifdef TTTT_ARENA_SITES
             arena_sites_print();

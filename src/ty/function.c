@@ -10,8 +10,7 @@
 static LowerCtx const function_lower_ctx = { .generic = true };
 
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
-    u64 key[2] = { KEY_FUNCTION, (u64)(uintptr_t)function };
-    Ty const* existing = intern_get(&my links, key, 2);
+    Ty const* existing = ty_link_get(me, KEY_FUNCTION, function);
     if (existing) return existing;
     // A function body can mention every type parameter in scope, if there are any. Where none encloses it (nor a
     // class), instantiating its type is the identity (tsc's getObjectTypeInstantiation: getOuterTypeParameters is
@@ -24,7 +23,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     ret->anonymous.ctx.method = function->is_method;
     ret->anonymous.free_params_unknown = !closed;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
-    *intern_slot(me, &my links, key, 2) = ret;
+    ty_link_set(me, KEY_FUNCTION, function, ret);
     return ret;
 }
 
@@ -317,8 +316,7 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
-    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
-    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
     return memo && memo->state == LAZY_STATE_IN_FLIGHT;
 }
 
@@ -327,8 +325,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 // The inferred return type if it is known already (tsc's signature.resolvedReturnType), else null
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
-    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
-    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
     return memo && memo->state == LAZY_STATE_DONE ? memo->type : nullptr;
 }
 
@@ -339,8 +336,7 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     return_type_speculative = true;
     ty_function_return_type(me, function);
     return_type_speculative = outer;
-    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
-    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
     return memo && memo->circular;
 }
 
@@ -368,10 +364,11 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
         if (tagged) return tagged;
     }
-    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (!*slot) *slot = arena_new(&my arena, FunctionReturn);
-    FunctionReturn* memo = (FunctionReturn*)*slot;
+    FunctionReturn* memo = (FunctionReturn*)ty_link_get(me, KEY_FUNCTION_RETURN, function);
+    if (!memo) {
+        memo = arena_new(&my arena, FunctionReturn);
+        ty_link_set(me, KEY_FUNCTION_RETURN, function, memo);
+    }
     switch (memo->state) {
         case LAZY_STATE_DONE:
             report_promise_missing(me, function, memo);
