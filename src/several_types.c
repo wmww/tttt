@@ -585,6 +585,9 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     // (A JSDoc `import("./m").C` of a property of the module's value: the target is the module's value, the type
     // arguments go to the class the property's type is, tsc's getTypeFromJSDocValueReference)
     if (my rare && my rare->import_prop_start >= 0 && !my rare->import_typeof) return;
+    // (`typeof import("./m").C` names the value C, not the class type: no type arguments needed, those written make an
+    // instantiation expression, tsc's getTypeFromImportTypeNode with isTypeOf)
+    if (my rare && my rare->import_typeof && span_valid(my name)) return;
     // (`import("./m")<T>` names what the module's `export=` assigns, by that symbol's name)
     bool import_itself = !span_valid(my name) && my rare && my rare->import_ref && !my rare->import_typeof;
     if (my keyword || (!import_itself && (!span_valid(my name) || !span_source(my name)))) return;
