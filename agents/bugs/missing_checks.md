@@ -355,7 +355,7 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   with `declare module "ember" { namespace Ember {...} export default Ember }`).
 
 ## Mutation seeds 41/42 leftovers (2026-10-12, agent C: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
-Seed 41: 10 -> 6 differing, seed 42: 13 -> 6 (plus the render fixes below once merged). Left, each looked at:
+Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - **Flow loop partial types in messages** (seed 41 typeGuardsAsAssertions null-arg and str-to-num): an error inside
   a loop whose expression is first checked during the loop's flow analysis is reported by tsgo with the incomplete
   (first-iteration) type: `Property 'some' does not exist on type 'None'` where tttt says `Optional<r>` (with the
