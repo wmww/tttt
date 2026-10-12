@@ -2558,7 +2558,7 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
         return ty_keyof(me, operand);
     }
     Members const* members = ty_members(me, operand);
-    if (members->mapped || members->expanded_from) {
+    if (members->mapped || members_rare(members)->expanded_from) {
         // A mapped type's keys, less those that are index signatures, `string` (tsc's getIndexTypeForMappedType with
         // IndexFlags.NoIndexSignatures): `{ [P in string]: X }` has none but `number` (its addMemberForKeyType makes a
         // string key `string | number` before the filter)
@@ -2686,7 +2686,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         Members const* members = ty_members(me, operand);
         // Of a mapped type without an `as` clause, its constraint (tsc's getIndexTypeForMappedType):
         // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown
-        if (members->expanded_from && !members->expanded_from->name_type) return members->expanded_from->constraint;
+        if (members_rare(members)->expanded_from && !members_rare(members)->expanded_from->name_type) return members_rare(members)->expanded_from->constraint;
         if (members->mapped && !members->mapped->name_type) return members->mapped->constraint;
         // (A generic mapped type with an `as` clause stays `keyof` it: tsc 6.0's shouldDeferIndexType, see ty_simplified())
         if (!members->mapped) {
@@ -2712,7 +2712,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             // remembers it (prints `keyof X`)
             // Of a mapped type with an `as` clause, the union of the names (tsc's getIndexTypeForMappedType), or its
             // constraint if that has the same members
-            MappedInfo const* renamed = members->expanded_from && members->expanded_from->name_type ? members->expanded_from : nullptr;
+            MappedInfo const* renamed = members_rare(members)->expanded_from && members_rare(members)->expanded_from->name_type ? members_rare(members)->expanded_from : nullptr;
             bool named = !renamed && entries != 1 && (operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
                 (operand->declared.kind == TY_DECLARED_INTERFACE || operand->declared.kind == TY_DECLARED_CLASS_INSTANCE)));
             OriginSpec spec = { TY_KEYOF, &operand, 1 };

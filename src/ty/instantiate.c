@@ -498,7 +498,7 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
     TyObjectState const* state = target->anonymous.state;
     if (!state || state->members_state != LAZY_STATE_DONE) return false;
     Members const* members = state->members;
-    if (members->call_count || members->construct_count || members->mapped || members->base_count) return false;
+    if (members->call_count || members->construct_count || members->mapped || members_rare(members)->base_count) return false;
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (prop->type_state != LAZY_STATE_DONE || !prop->type) return false;

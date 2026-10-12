@@ -262,6 +262,12 @@ static void builder_prototype_last(MembersBuilder* builder) {
     }
 }
 
+// The rare part of members being made, to write
+static MembersRare* members_rare_mut(Checker* me, Members* members) {
+    if (!members->rare) members->rare = arena_new(&my arena, MembersRare);
+    return (MembersRare*)members->rare;
+}
+
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
@@ -2334,18 +2340,18 @@ static bool base_is_dynamic(Checker* me, Ty const* base, u32 depth) {
     Ty const* target = base->kind == TY_REFERENCE ? base->reference.target : base;
     if (target->kind != TY_DECLARED || !target->declared.raw) return false;
     if (base->kind == TY_REFERENCE && base->reference.deferred) return false;
-    return declared_raw_members(me, target)->base_count > 0;
+    return members_rare(declared_raw_members(me, target))->base_count > 0;
 }
 
 // Raw members with their bases' (Members.bases) added as they are
 static Members const* complete_members(Checker* me, Members const* raw) {
-    if (!raw->base_count) return raw;
+    if (!members_rare(raw)->base_count) return raw;
     MembersBuilder builder = {0};
     for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, raw->props[i]);
     for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, raw->call[i]);
     for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
     for (u32 i = 0; i < raw->index_count; i++) builder_push(&builder, index, raw->index[i]);
-    for (u32 i = 0; i < raw->base_count; i++) builder_add_inherited(me, &builder, raw->bases[i]);
+    for (u32 i = 0; i < members_rare(raw)->base_count; i++) builder_add_inherited(me, &builder, members_rare(raw)->bases[i]);
     return builder_finish(me, &builder);
 }
 
@@ -2531,8 +2537,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 Members* ret = (Members*)builder_finish(me, &builder);
                 Ty const** copy = arena_new_n(&my arena, Ty const*, bases.len);
                 memcpy(copy, bases.data, sizeof(Ty const*) * bases.len);
-                ret->bases = copy;
-                ret->base_count = bases.len;
+                MembersRare* rare = members_rare_mut(me, ret);
+                rare->bases = copy;
+                rare->base_count = bases.len;
                 ty_buf_drop(&bases);
                 ty_buf_drop(&written_bases);
                 return ret;
@@ -2713,10 +2720,12 @@ static Members const* instantiate_members(
         builder_push(&builder, index, info);
     }
     if (source->mapped) builder.mapped = ty_mapped_info_instantiate(me, source->mapped, mapper);
-    for (u32 i = 0; i < source->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, source->bases[i], mapper));
-    if (!source->base_count) builder.same_names = source;
+    for (u32 i = 0; i < members_rare(source)->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, members_rare(source)->bases[i], mapper));
+    if (!members_rare(source)->base_count) builder.same_names = source;
     Members* ret = (Members*)builder_finish(me, &builder);
-    if (source->expanded_from) ret->expanded_from = ty_mapped_info_instantiate(me, source->expanded_from, mapper);
+    if (members_rare(source)->expanded_from) {
+        members_rare_mut(me, ret)->expanded_from = ty_mapped_info_instantiate(me, members_rare(source)->expanded_from, mapper);
+    }
     return ret;
 }
 
@@ -2832,7 +2841,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         // (No constraint or one without members, `P extends {}`: none, and that's known, `Readonly<P>` has no `foo`)
         MembersBuilder empty = { .mapped = mapped };
         Members* ret = (Members*)builder_finish(me, &empty);
-        ret->generic_keys_known = true;
+        members_rare_mut(me, ret)->generic_keys_known = true;
         return ret;
     }
     Prop* template = prop_new(me);
@@ -3398,8 +3407,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     }
     builder_sort_stable(&builder);
     Members* ret = (Members*)builder_finish(me, &builder);
-    if (!generic) ret->expanded_from = mapped;
-    ret->generic_keys_known = generic;
+    if (!generic) members_rare_mut(me, ret)->expanded_from = mapped;
+    if (generic) members_rare_mut(me, ret)->generic_keys_known = true;
     return ret;
 }
 
@@ -3647,7 +3656,7 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
 MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return nullptr;
-    if (state->members_state == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : state->members->expanded_from;
+    if (state->members_state == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : members_rare(state->members)->expanded_from;
     if (state->members_state == LAZY_STATE_IN_FLIGHT) return nullptr;
     if (!state->unexpanded) {
         state->members_state = LAZY_STATE_IN_FLIGHT;

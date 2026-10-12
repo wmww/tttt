@@ -2033,7 +2033,7 @@ static void check_access(
         Members const* members = ty_members(me, object);
         // (Keys that are a type parameter, `Pick<T, K>`, `Record<K, V>`, are their own lower bound: no members at all
         // in tsc's resolveMappedTypeMembers either)
-        if (members->mapped && !members->prop_count && !members->index_count && !members->generic_keys_known &&
+        if (members->mapped && !members->prop_count && !members->index_count && !members_rare(members)->generic_keys_known &&
             (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && members->mapped->constraint->kind != TY_TYPE_PARAM
         ) {
             return;

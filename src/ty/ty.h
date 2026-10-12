@@ -764,6 +764,12 @@ struct Members {
     // Non-null for a mapped type whose keys aren't known. It has no other members, except `{ [K in keyof T]: X }` with T
     // generic: a property per property of T's constraint (see expand_generic_homomorphic())
     MappedInfo const* mapped;
+    // Arena-allocated, null if all of it is: read through members_rare() (there are a million Members on vscode)
+    struct MembersRare const* rare;
+};
+
+// What few Members have: mapped types' expansions, generic bases
+typedef struct MembersRare {
     MappedInfo const* expanded_from; // The mapped type these are the members of, once its keys are known
     // A generic mapped type whose members are those of the lower bound of its keys (expand_mapped()), maybe none: they
     // are all it has as far as property access goes
@@ -774,7 +780,12 @@ struct Members {
     // uses them adds each base's (instantiated) members (tsc's resolveObjectTypeMembers)
     Ty const* const* bases;
     u32 base_count;
-};
+} MembersRare;
+
+static inline MembersRare const* members_rare(Members const* me) {
+    static const MembersRare none = {0};
+    return my rare ? my rare : &none;
+}
 
 // sources[i] -> targets[i]. Always flat in stage 1 (composition builds a new flat mapper).
 struct TyMapper {

@@ -3527,7 +3527,7 @@ static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic
     if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_OBJECT) || ty->anonymous.function) return nullptr;
     Members const* members = ty_members(me, ty);
     if (generic) *generic = members->mapped != nullptr;
-    return members->mapped ? members->mapped : members->expanded_from;
+    return members->mapped ? members->mapped : members_rare(members)->expanded_from;
 }
 
 // tsc's getMappedTypeNameTypeKind == Remapping: an `as` clause that isn't just a filter of the keys
