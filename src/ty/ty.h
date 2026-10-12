@@ -1767,6 +1767,7 @@ Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr);
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
 // The contextual signature a function expression's parameters were typed by, if any (after it was checked)
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);
+bool ty_function_closed(Checker* me, FunctionImpl const* function); // function.c: instantiating its type is the identity
 // The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
 // TS2353 for a literal whose contextual type is an object binding pattern's implied type
 void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* errs);

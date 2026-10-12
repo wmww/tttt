@@ -9,6 +9,19 @@
 
 static LowerCtx const function_lower_ctx = { .generic = true };
 
+// Whether a function's type mentions no type parameters but its own signature's, so instantiating it is the identity
+// (tsc's getOuterTypeParameters is empty): no type parameter list or class encloses it, nor a function expression typed
+// by a generic contextual signature, whose type parameters that function takes (assignContextualParameterTypes):
+// `(c) => run(() => cw(c))` for `<CF>(c: CF) => ReturnType<CF>`
+bool ty_function_closed(Checker* me, FunctionImpl const* function) {
+    if (!function->no_outer_type_params && !function->no_enclosing_type_params) return false;
+    for (FunctionImpl const* outer = function->contextual_ancestor; outer; outer = outer->contextual_ancestor) {
+        Signature const* contextual = ty_function_assigned_contextual_signature(me, outer);
+        if (contextual && contextual->type_params.len) return false;
+    }
+    return true;
+}
+
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     Ty const* existing = ty_link_get(me, KEY_FUNCTION, function);
     if (existing) return existing;
@@ -16,7 +29,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     // class), instantiating its type is the identity (tsc's getObjectTypeInstantiation: getOuterTypeParameters is
     // empty): an object literal with methods inferred for a type parameter isn't copied by every instantiation that
     // reads it back (the copies relate structurally, asking for the methods' return types too early)
-    bool closed = function->no_outer_type_params || function->no_enclosing_type_params;
+    bool closed = ty_function_closed(me, function);
     Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (closed ? 0 : TYF_COULD_CONTAIN_TYPE_VARIABLES));
     ret->anonymous.function = function;
     ret->anonymous.ctx = function_lower_ctx;

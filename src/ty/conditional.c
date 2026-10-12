@@ -80,7 +80,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             // A function's type mentions no type parameter from outside when none encloses it (not asking for its
             // return type, which may not be inferred yet: an object literal method's `this` can be what fixes the call
             // inferring it)
-            if (ty->anonymous.function && ty->anonymous.function->no_enclosing_type_params) return false;
+            if (ty->anonymous.function && ty_function_closed(me, ty->anonymous.function)) return false;
             Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
             TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
             // A function expression's type (or an instance of one) by what its signature mentions, without reading the

@@ -223,6 +223,10 @@ typedef struct FunctionImpl {
     bool private_ambient : 1; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
     bool ambient : 1; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
     bool expression_body : 1; // An arrow function whose body is an expression (a synthesized `return`)
+    // The nearest function expression around it that is context-sensitive (tsc's isContextSensitive), null if none: one
+    // typed by a generic contextual signature takes that signature's type parameters, which the functions inside it
+    // may mention (tsc's getOuterTypeParameters), see ty_function_closed()
+    struct FunctionImpl const* contextual_ancestor;
     // A declaration no type parameter list encloses (not an expression, whose context may have some, nor a method, nor
     // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
     // instantiating it is the identity. Set by the resolve walk
