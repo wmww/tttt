@@ -3242,7 +3242,12 @@ static Symbol* resolve_alias_target(Symbol* me) {
             }
             return nullptr;
         }
-        if (module->is_shorthand_module) return nullptr; // Everything is any
+        // Everything is any. But a default import looks for a `default` export first, which a non-shorthand declaration
+        // merged with it may have (tsgo's getTargetOfModuleDefault doesn't short-circuit shorthand modules: `declare
+        // module '*.css';` and another file's `declare module '*.css' { export default s }` give s's type)
+        if (module->is_shorthand_module && !(item->tag == PORT_IMPORT_DEFAULT && symbol_get_export(module, c_sv("default")))) {
+            return nullptr;
+        }
         assigned = module_export_equals(module);
         if (assigned == module) assigned = nullptr;
     }
