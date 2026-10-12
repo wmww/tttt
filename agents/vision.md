@@ -88,6 +88,9 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **A small perf session every few plans**: every check costs a little (plan 15's ~4%). Single-threaded tttt must
   stay ahead of single-threaded tsgo before parallelism is worth building. Measure perf at breadth (`scripts/perfsweep.py`:
   type-count ratios against tsgo), not only on the corpora perf sessions have tuned.
+- **Default lib files are checked like tsgo checks them** (unless skipLibCheck/skipDefaultLibCheck): it costs ~0.3 G
+  instructions per esnext+dom program (~40 ms; tsgo spends ~150 ms on the same), and it found a real checker bug. Lib
+  errors are dropped only for unchecked lib files, never emulated at user declarations.
 - **The oracle is tsc as it ships, and we follow it** (plans 48, 53, 54): no dual-version modes, delete what the
   oracle deleted, re-pin when a release lands (plan 58). The oracle tools are tsgo built from source with a Go
   overlay (`test/oracle`), so instrumenting tsgo stays one `go build` away.

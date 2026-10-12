@@ -1299,11 +1299,14 @@ static Ty const* apparent_type_of_mapped_at(Checker* me, Ty const* ty, u32 depth
     TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = parts.data[i];
-        // (tsc's isArrayOrTupleType || isArrayOrTupleOrIntersection)
+        // (tsc's isArrayOrTupleType || isArrayOrTupleOrIntersection; `[]` is the tuple target itself)
         TyList members = part->kind == TY_INTERSECTION ? part->composite.types : (TyList){ .data = &part, .len = 1 };
         for (u32 j = 0; j < members.len; j++) {
             Ty const* member = members.data[j];
-            if (!is_tuple(member) && !(member->kind == TY_REFERENCE && is_array_target(me, member->reference.target))) return ty;
+            if (!is_tuple(member) && !is_empty_tuple(member) &&
+                !(member->kind == TY_REFERENCE && is_array_target(me, member->reference.target))) {
+                return ty;
+            }
         }
     }
     TyMapper const* mapper = target == ty ?

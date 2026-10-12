@@ -116,7 +116,9 @@ typedef struct Program {
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     u32 checker_count;
-    u32* file_shares; // malloc'd: the checker of each checked file of source_files_ordered (see share_of())
+    // What program_typecheck() checks, in order: every checked file of source_files_ordered
+    VecSourceFilePtr check_files;
+    u32* file_shares; // malloc'd: the checker of each file of check_files (see share_of())
     u32 requested_checkers; // program_set_checkers()
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
@@ -231,6 +233,7 @@ static void program_drop(Program* me) {
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
     free(my file_shares);
+    vec_source_file_ptr_drop(&my check_files);
     free(my checkers);
     checker_drop(my checker);
     drop_source_files(me);
@@ -1222,6 +1225,8 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
 
     if (is_stdlib) {
         source_file->is_stdlib = true;
+        // (tsc's skipTypeChecking: skipDefaultLibCheck leaves the default library's files unchecked)
+        if (my options.skip_default_lib_check) source_file->unchecked = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
         cstr_take(&source_file->bundled_path, csview_equals(filename, "default.d.ts") ?
@@ -2915,12 +2920,10 @@ static u32 share_of(Program const* me, u32 index) {
 // are only complete in the checker that walked the file: one that didn't would type an expression without the
 // contextual type its parent gives it (see "Expressions" in documentation.md)
 Checker* program_checker_of(Program const* me, SourceFile const* file) {
-    if (my checker_count <= 1 || file->is_stdlib || !source_file_is_checked(file)) return my checker;
+    if (my checker_count <= 1) return my checker;
     u32 index = 0;
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile const* source = *i;
-        if (source->is_stdlib || !source_file_is_checked(source)) continue;
-        if (source == file) return my checkers[share_of(me, index)];
+    for_each (i, vec_source_file_ptr, &my check_files) {
+        if (*i == file) return my checkers[share_of(me, index)];
         index++;
     }
     return my checker;
@@ -3020,9 +3023,9 @@ static void check_share(Program* me, u32 c, u32 count) {
     checker_make_current(checker);
     ty_init_global_types(checker);
     u32 index = 0;
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+    for_each (i, vec_source_file_ptr, &my check_files) {
         SourceFile* source = *i;
-        if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
+        if (share_of(me, index++) != c) continue;
         checker->file_order = index - 1;
         checker->flow_analysis_disabled = false;
         struct timespec file_start;
@@ -3043,13 +3046,13 @@ static void check_share(Program* me, u32 c, u32 count) {
     }
     // After its files are checked: the checker marks members it reads
     index = 0;
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+    for_each (i, vec_source_file_ptr, &my check_files) {
         SourceFile* source = *i;
-        if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
+        if (share_of(me, index++) != c) continue;
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
-        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
+        if (my declaration_errs && !source->is_stdlib) declaration_diagnostics_check(source, &my declaration_errs[c]);
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
     }
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
@@ -3071,23 +3074,31 @@ static void check_share(Program* me, u32 c, u32 count) {
 // types, and each checker instantiates what its files use again: the files are cut into 2 runs of about equal size
 // per checker, dealt round robin. One run each makes the least duplication (drizzle's peak 1688 -> 1277 MB at 4
 // checkers) but balances worse (valibot's test files sit together, type-fest's biggest file takes its neighbours);
-// two keep most of it (1337 MB) at round robin's wall times or better. Bytes are the cost proxy
+// two keep most of it (1337 MB) at round robin's wall times or better. Bytes are the cost proxy, except for the default
+// library's files: megabytes of declarations (lib.dom.d.ts) that check in a few milliseconds would take most runs and
+// leave a small project's own files to one checker. They are dealt round robin instead
 static void deal_files(Program* me) {
     enum { RUNS_PER_CHECKER = 2 };
-    u32 total = 0;
-    u64 bytes = 0;
+    vec_source_file_ptr_clear(&my check_files);
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if ((*i)->is_stdlib || !source_file_is_checked(*i)) continue;
-        total++;
-        bytes += cstr_size(&(*i)->contents);
+        if (source_file_is_checked(*i)) vec_source_file_ptr_push(&my check_files, *i);
+    }
+    u32 total = (u32)vec_source_file_ptr_size(&my check_files);
+    u64 bytes = 0;
+    for_each (i, vec_source_file_ptr, &my check_files) {
+        if (!(*i)->is_stdlib) bytes += cstr_size(&(*i)->contents);
     }
     free(my file_shares);
     my file_shares = c_new_n(u32, total ? total : 1);
     u64 runs = (u64)my checker_count * RUNS_PER_CHECKER;
     u32 index = 0;
+    u32 libs = 0;
     u64 before = 0;
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if ((*i)->is_stdlib || !source_file_is_checked(*i)) continue;
+    for_each (i, vec_source_file_ptr, &my check_files) {
+        if ((*i)->is_stdlib) {
+            my file_shares[index++] = libs++ % my checker_count;
+            continue;
+        }
         u64 size = cstr_size(&(*i)->contents);
         // (A file belongs to the run its middle byte falls in)
         my file_shares[index++] = (u32)((before + size / 2) * runs / (bytes ? bytes : 1) % my checker_count);

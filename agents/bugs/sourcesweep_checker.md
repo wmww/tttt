@@ -137,10 +137,6 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
 - **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
   over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
   storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
-- **angularfire test/functions -TS2552 in lib.esnext.intl.d.ts** (and DT react-intl-redux): tsc checks lib files
-  without skipLibCheck/skipDefaultLibCheck; @types/node's `/// <reference lib="esnext.intl">` without es2021.intl
-  leaves `DateTimeRangeFormatPart` unresolved there. tttt never checks stdlib files (`is_stdlib` skipped in program.c).
-  Checking them costs time on every project; only partial lib sets ever produce errors. A policy decision.
 - **es-toolkit tests/types `compat.spec-d.ts:34` -TS2344** (flatMapDepth vs lodash) and root `without.spec.ts:6`
   +TS2345: not looked at.
 - **svelte** (JS/JSDoc, see the agent tc entry above): not looked at this round.

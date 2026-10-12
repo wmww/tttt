@@ -794,7 +794,7 @@ static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csvi
 static Error* report_conflict_create(ErrorCtx* errs, Span at, unsigned code, csview display) {
     // (A missing name is tsc's "__missing", shown as "(Missing)")
     csview name = display.size ? display : at.size ? span_sv(at) : c_sv("(Missing)");
-    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = error_ctx_error_s;
     switch (code) {
         case 2567:
             return report(errs, at, 2567, cstr_d("Enum declarations can only merge with namespace or other enum declarations."));

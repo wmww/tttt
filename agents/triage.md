@@ -20,16 +20,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
   `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten;
   `--relock` may bring it back.
 
-## From the source sweep fan-out (agent D, 2026-10-12)
-- **Decision needed: tttt never checks lib files; tsc does** without skipLibCheck/skipDefaultLibCheck. Libs are clean in
-  normal setups, so this only shows with partial lib sets pulled in by `/// <reference lib>` or odd `lib` lists: tsc
-  then reports inside the lib. Numbers at the end of the 2026-10-12 sweeps: sourcesweep -TS2552 in
-  lib.esnext.intl.d.ts in 3 projects (angularfire/test/functions, react-select/docs and react-select/.../__tests__:
-  @types/node's `/// <reference lib="esnext.intl">` without es2021.intl, `DateTimeRangeFormatPart` unresolved), -TS2344
-  in lib.dom.d.ts x3 in unocss/examples/vite-lit; DT sweep 1 package (react-intl-redux, the same intl case). 5 projects
-  of 3363 and 1 of 8595. Checking libs fully costs on every project (tsc's own check time includes them); cheaper
-  options: only the name resolution / unresolved-type diagnostics of lib files, or checking a lib file only when the
-  program's lib set is incomplete (a `/// <reference lib>` set that isn't closed under the libs' own references).
 
 ## From human
 - Not sure how important emitting .d.ts files are. for now emitting js should def be out of scope. there are already plenty of fast emitters (eg esbuild), so for now anything covered by them doesn't need to be a focus. otherwise up to you what's important.

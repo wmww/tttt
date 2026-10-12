@@ -82,6 +82,8 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
         return value->second;
     }
     Program* program = program_new(my errors, fs);
+    // (Shared by the tests that don't check library files, baseline_test_case's others load their own)
+    ignore compiler_options_set(program_options(program), c_sv("skipdefaultlibcheck"), c_sv("true"));
     comma_sep_libs = cstr_sv(&key);
     while (comma_sep_libs.size) {
         intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
@@ -981,8 +983,29 @@ BaselineTestCase run_baseline_test_case(
         return ret;
     }
 
-    Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
-    program_copy_globals_from(program, lib_program);
+    // A test that checks the default library (`@skipDefaultLibCheck: false`) loads it itself, like the CLI: the cached
+    // programs' library files are unchecked, and their declarations aren't merged with the test's (a merged interface's
+    // first declaration, checked in the library, has to see the test's declarations)
+    CompilerOptions const* options = program_options(program);
+    if (!options->skip_default_lib_check && !options->skip_lib_check && !options->no_check) {
+        // (In the test's file system: a directory of its own that no test path names)
+        mount_test_lib_folder(&ret, c_sv("thirdparty/lib"), c_sv("/.tttt-default-lib"));
+        program_set_lib_dir(program, c_sv("/.tttt-default-lib"));
+        for (csview rest = cstr_sv(&ret.lib_list); rest.size;) {
+            isize end = csview_find_sv(rest, c_sv(","));
+            csview single = csview_trim_whitespace(csview_slice(rest, 0, end));
+            rest = end == c_NPOS ? c_sv("") : csview_slice(rest, end + 1, INTPTR_MAX);
+            if (!single.size) continue;
+            cstr name = cstr_from_sv(single);
+            cstr_lowercase(&name);
+            try (SourceFile* lib, program_load_stdlib(program, cstr_sv(&name), &lib)) or_log(info);
+            ignore lib;
+            cstr_drop(&name);
+        }
+    } else {
+        Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
+        program_copy_globals_from(program, lib_program);
+    }
 
     // tsc's harness: with `@noImplicitReferences`, or when the last file mentions `require(` or `reference path`, that
     // file is the only root (the others are part of the program if something refers to them) and comes first in the

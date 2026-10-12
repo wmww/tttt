@@ -121,25 +121,29 @@ static bool inherited_props_identical(
     return identical;
 }
 
-// tsc's checkInterfaceDeclaration, once per symbol (at its first declaration): the interface (with its own `this`) has to
-// fit every base of every declaration, with that `this`
+// Whether the program walks the file a declaration is in: a library file only when lib files are checked (the test
+// harness shares them between programs with other options)
+static bool decl_file_walked(Span name) {
+    SourceFile const* file = span_source(name);
+    if (!file) return false;
+    return file->is_stdlib ? lib_files_checked() : source_file_is_checked(file);
+}
+
+// tsc's checkInterfaceDeclaration, once per symbol, by the first of its declarations that is checked (a user one when
+// the first is a library's that isn't), reported at its first declaration: the interface (with its own `this`) has to
+// fit every base of every declaration, with that `this`. (What it finds in an unchecked library file goes unreported)
 static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!symbol) return;
     InterfaceDecl const* first = symbol_find_node(symbol, SYMBOL_DECL_INTERFACE);
-    Span name = my name;
-    if (first != me) {
-        // Lib files are never checked here: when tsc checks them, their first declaration's check is done by the first
-        // user one
-        if (!first || !span_source(first->name) || !span_source(first->name)->is_stdlib || !lib_files_checked()) return;
-        for (u32 d = 0; d < symbol->decl_count; d++) {
-            SymbolDecl const* decl = &symbol->decls[d];
-            if (decl->kind != SYMBOL_DECL_INTERFACE || !span_source(decl->name) || span_source(decl->name)->is_stdlib) continue;
-            if (decl->node != me) return;
-            break;
-        }
-        name = first->name;
+    if (!first) return;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        SymbolDecl const* decl = &symbol->decls[d];
+        if (decl->kind != SYMBOL_DECL_INTERFACE || !decl_file_walked(decl->name)) continue;
+        if (decl->node != me) return;
+        break;
     }
+    Span name = first->name;
     Checker* checker = current_checker;
     Ty const* declared = ty_declared_type_of(checker, symbol);
     if (declared->kind != TY_DECLARED) return;
@@ -265,11 +269,10 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
         ty_check_property_modifiers(current_checker, my symbol, nullptr, nullptr, errs);
     }
-    // (tsc's checkTypeForDuplicateIndexSignatures runs for the symbol's first declaration: not at all when that is a
-    // lib's and lib files aren't checked)
+    // (tsc's checkClassOrInterfaceForDuplicateIndexSignatures runs for the symbol's first declaration only: not at all
+    // when that is in a file that isn't checked)
     SymbolDecl const* first_decl = my symbol && my symbol->decl_count ? &my symbol->decls[0] : nullptr;
-    bool first_is_lib = first_decl && span_source(first_decl->name) && span_source(first_decl->name)->is_stdlib;
-    if (first_checked == me && (!first_is_lib || lib_files_checked())) {
+    if (first_decl && first_decl->node == me) {
         InterfaceMember const* indexes[32];
         u32 index_count = 0;
         for (u32 d = 0; d < my symbol->decl_count; d++) {

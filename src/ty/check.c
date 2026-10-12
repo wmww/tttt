@@ -778,8 +778,7 @@ static Error* report_unrelated_with_head(
 ) {
     VecTyReportLine lines = {0};
     ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
-    // (A check of a lib's declaration on purpose, when lib files are checked: interface_heritage_typecheck())
-    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span_source(span) && span_source(span)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = error_ctx_error_s;
     span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
@@ -3317,14 +3316,7 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
         for (u32 j = 0; j < entry_count; j++) {
             if (entries[j].key != entries[i].key) continue;
             Span at = span_valid(entries[j].member->declaration) ? entries[j].member->declaration : entries[j].member->key.span;
-            // (A lib's declarations are only checked when lib files are)
             if (!span_source(at)) continue;
-            if (span_source(at)->is_stdlib) {
-                if (lib_files_checked()) {
-                    error_ctx_lib_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
-                }
-                continue;
-            }
             error_ctx_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
         }
         cstr_drop(&key_str);
@@ -3368,7 +3360,7 @@ static void report_duplicate_named(Span at, csview name, ErrorCtx* errs) {
     // (A lib's declaration only when lib files are checked: the lib side of the conflict, tsc's check of the lib)
     if (!span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_files_checked())) return;
     Error* existing = error_ctx_find(errs, at, 2300);
-    if (!existing) (span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
+    if (!existing) error_ctx_error_s(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
 }
 
 static void report_duplicate(Span name, ErrorCtx* errs) {
@@ -3873,7 +3865,7 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
             }
         }
         if (differs) {
-            (span_source(decl->span)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, decl->span, 2687,
+            error_ctx_error_s(errs, decl->span, 2687,
                 cstr_d("All declarations of '", decl->span, "' must have identical modifiers."));
         }
     }
@@ -4256,8 +4248,8 @@ void ty_check_index_constraints(
             cstr type_str = ty_to_cstr(me, prop_ty);
             cstr key_str = ty_to_cstr(me, info->key);
             cstr value_str = ty_to_cstr(me, info->value);
-            // (A lib's declarations: only when lib files are checked, the caller's business)
-            Error* e = (span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2411, cstr_d("Property '",
+            // (A lib's declarations: dropped unless lib files are checked)
+            Error* e = error_ctx_error_s(errs, at, 2411, cstr_d("Property '",
                 prop_str, "' of type '", type_str, "' is not assignable to '", key_str, "' index type '", value_str, "'."));
             // (Reported elsewhere than at a property with a computed name: where it is declared. tsc also does it for
             // JavaScript assignment declarations, TODO)

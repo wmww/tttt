@@ -124,13 +124,6 @@ Each one mutant:
   emulation. The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
   old;` in two methods: tsc TS7022 on the first `old` and on `labels`, tttt on both `old`s) is the same family:
   which declaration's resolution meets the cycle first.
-- Default lib files are never checked (react-intl-redux: `lib: [..., "esnext.intl"]` without es2021.intl, TS2552
-  DateTimeRangeFormatPart in lib.esnext.intl.d.ts). Decision: don't check lib files in full; tsc spends 2.67 s of a
-  3.73 s run on an empty es2022+dom project checking them (skipLibCheck false), which would be most of tttt's time on
-  small projects. The faithful-enough cheap form, if wanted: when lib_files_checked(), resolve every type reference of
-  the loaded lib files eagerly and report what doesn't resolve (TS2304/TS2552/TS2694); error_ctx_error_s() currently
-  drops lib-file errors because names there resolve lazily. Worth noting for benchmarks: on corpora without
-  skipLibCheck tsc pays this lib check and tttt doesn't.
 - libTypeScriptOverride*/libTypeScriptSubfileResolving* (4 tests): libReplacement (`/// <reference lib="dom">` and
   the default libs resolve `@typescript/lib-dom` from node_modules) isn't implemented at all; the harness's shared lib
   program would also have to be replaced per test. The option defaults off in 6.0; low value.

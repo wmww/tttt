@@ -3321,7 +3321,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         bool lists = over_union;
         for (u32 i = 0; lists && i < keyed_apparent->composite.types.len; i++) {
             Ty const* part = keyed_apparent->composite.types.data[i];
-            lists = ty_is_array(me, part) || ty_is_tuple(part);
+            lists = ty_is_array(me, part) || ty_tuple_shape(part); // (`[]` too, the tuple target itself)
         }
         if (lists) over_union = false;
         if (mapped->keyof_constraint && !mapped->name_type && !over_union) return expand_generic_homomorphic(me, members);
