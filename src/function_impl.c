@@ -332,8 +332,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             .is_function_arg = true,
             .full = i->span,
         });
-        // (An arrow function's `this` stays the outer one, whatever parameter it declares: tsc's getThisContainer)
-        if (i->initializer.binding.tag == BINDING_IDENTIFIER && !function_impl_is_arrow(me) &&
+        // (An arrow function's `this` stays the outer one, whatever parameter it declares: tsc's getThisContainer.
+        // Only a first parameter is the `this` parameter: tsc's getThisParameter)
+        if (i->initializer.binding.tag == BINDING_IDENTIFIER && !function_impl_is_arrow(me) && i == my args.data &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
             if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) initialized_binding_rare_mut(&i->initializer)->this_of = me;

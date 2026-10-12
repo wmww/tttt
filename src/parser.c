@@ -6295,7 +6295,7 @@ static bool parse_function_args_inner(
                 const char* before_param = p.pos;
                 u32 errors_before_param = p.shared->errors_attempted;
                 bool explicit_optional = false;
-                bool rest = false;
+                bool rest = false, this_param = false;
                 Span rest_span = span_null;
                 Anchor arg_start = anchor(&p);
                 VecExpr decorators = {0};
@@ -6334,7 +6334,10 @@ static bool parse_function_args_inner(
 
                 if (parse_binding_content_or_private_name(&p, &initializer.binding, 18009,
                         "Private identifiers cannot be used as parameters.")) {
-                } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+                } else if (!rest && hop_start_if_ends_on_word_break(&p, "this")) {
+                    // (A `this` parameter is one before any `...`: tsc's parseParameterWorker. `...this` is a rest
+                    // parameter missing its name, TS1359)
+                    this_param = true;
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
                     if (first_modifier_end) {
@@ -6380,7 +6383,8 @@ static bool parse_function_args_inner(
                 hop_whitespace(&p);
 
                 Span question_span = span_null;
-                if (hop_char(&p, '?')) {
+                // (A `this` parameter has a type annotation and nothing else: tsc's parseParameterWorker)
+                if (!this_param && hop_char(&p, '?')) {
                     explicit_optional = true;
                     question_span = span_from_previous_char(&p);
                     js_syntax_error(&p, question_span, 8009, "The '?' modifier can only be used in TypeScript files.");
@@ -6396,8 +6400,8 @@ static bool parse_function_args_inner(
                     vec_jsdoc_tag_drop(&tags);
                 }
 
-                initializer.value = parse_initialization_boxed(&p, expr_ctx_null);
-                if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(initialized_binding_value(&initializer), false);
+                initializer.value = this_param ? nullptr : parse_initialization_boxed(&p, expr_ctx_null);
+                if (initializer.binding.tag == BINDING_IDENTIFIER && !rest && !this_param) mark_named_evaluation(initialized_binding_value(&initializer), false);
                 hop_whitespace(&p);
 
                 // tsc's skipParameterStart: only a name or pattern that parses without errors counts. In a type
