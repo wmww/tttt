@@ -5313,6 +5313,12 @@ static Ternary structured_related_members(
                 return by_alias;
             }
         }
+        // `[...T]` is T against the whole union too (tsc's structuredTypeRelatedToWorker goes on after the members for
+        // an object source, to isSingleElementGenericTupleType): `[...HookParameters<H[K]>]` to a union of tuples
+        if (!related && is_single_generic_tuple(me, source) && !source->reference.target->declared.tuple->readonly) {
+            related = is_related_to(me, st, ty_reference_args(me, source).data[0], target, false);
+            if (related) report_truncate(st, saved);
+        }
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
     if (target->kind == TY_INTERSECTION) {
