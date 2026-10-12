@@ -1386,7 +1386,9 @@ static Search node_try_resolve(State* me, csview name, int extensions, Found* ou
     if (is_directory) cstr_append_lit(&candidate, "/");
     bool found = load_as_file_or_directory(me, cstr_sv(&candidate), extensions, out);
     cstr_drop(&candidate);
-    *external = found && path_contains_node_modules(name);
+    // (tsgo's resolveNodeLikeWorker: whether what was found is in a node_modules, for a relative name too: a package's
+    // own `./types` is an external library import)
+    *external = found && path_contains_node_modules(cstr_sv(&out->path));
     return found ? SEARCH_FOUND : SEARCH_CONTINUE;
 }
 
