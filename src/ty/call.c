@@ -2017,6 +2017,9 @@ static Span signature_decl_span(Signature const* sig) {
     if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
     if (sig->function && span_valid(function_impl_member_name(sig->function))) return function_impl_member_name(sig->function); // A method signature
     if (span_valid(sig->name_span)) return sig->name_span;
+    if (span_valid(sig->decl_span)) return sig->decl_span;
+    // (A function type's signature: the type node, tsc's getErrorSpanForNode of the declaration)
+    if (sig->function && sig->function->is_type && span_valid(sig->function->full_span)) return sig->function->full_span;
     return sig->decl_span;
 }
 
