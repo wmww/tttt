@@ -661,11 +661,12 @@ void error_ctx_sort_and_dedupe(ErrorCtx* me) {
         }
         start = end;
     }
-    // tsc's sortAndDeduplicateDiagnostics: of the diagnostics with the same location, code and head message only the
-    // first (the most elaborate) stays
+    // tsgo's compactAndMergeRelatedInfos: of the diagnostics with the same location, code and whole message chain only
+    // the first stays (with every one's related information). Other chains stay: TS2320 once per property that differs
     isize kept = 0;
     for (isize i = 0; i < n; i++) {
-        if (kept && data[i].phase != ERROR_PHASE_PARSE && error_same_head(&data[kept - 1], &data[i])) {
+        if (kept && data[i].phase != ERROR_PHASE_PARSE && error_same_head(&data[kept - 1], &data[i]) &&
+            same_message_chain(&data[kept - 1], &data[i])) {
             // (tsgo's compactAndMergeRelatedInfos: the same message chain with other related information is one
             // diagnostic with all of it)
             if (same_message_chain(&data[kept - 1], &data[i])) merge_related_info(&data[kept - 1], &data[i]);
@@ -704,8 +705,9 @@ void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* 
     qsort(sorted, (size_t)n, sizeof(SortedError), sorted_error_cmp);
     isize kept = 0;
     for (isize i = 0; i < n; i++) {
-        if (kept && cstr_eq(&sorted[i].path, &sorted[i - 1].path) && error_same_head(&errors->data[kept - 1], &sorted[i].error)) {
-            if (same_message_chain(&errors->data[kept - 1], &sorted[i].error)) merge_related_info(&errors->data[kept - 1], &sorted[i].error);
+        if (kept && cstr_eq(&sorted[i].path, &sorted[i - 1].path) && error_same_head(&errors->data[kept - 1], &sorted[i].error) &&
+            same_message_chain(&errors->data[kept - 1], &sorted[i].error)) {
+            merge_related_info(&errors->data[kept - 1], &sorted[i].error);
             error_drop(&sorted[i].error);
         } else {
             errors->data[kept++] = sorted[i].error;
