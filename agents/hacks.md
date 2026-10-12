@@ -337,12 +337,6 @@ src` finds the code-side markers; every significant one has an entry here.
   `KEY_LITERAL_PARENT` is a parent side table (permanent: ThisType markers of outer literals, plan 51).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
-- `access()` any-key case (`ACCESS_ELEMENT`, HACK): only an element access *expression* reads an intersection's index
-  signatures for an `any` key; an `X[any]` *type* on an intersection still gives any. tsc reads them there too, but
-  then jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` becomes the intersection of every event and tttt fails
-  to relate those intersections during JQuery's variance measurement (JQuery<T> invariant, 13 DT sweep packages
-  regress). The real bug is the intersection-source relation. Repro: `declare const a: JQuery<HTMLElement>; const b:
-  JQuery<Node> = a;` with jquery's and sizzle's index.d.ts, `TTTT_DEBUG_RELATE_NESTED=1`.
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a type parameter the node mentions is unmapped
   or mapped to something generic (tsc's couldContainTypeVariables says yes for any reference with a node). Precise
   where conditional.c's "infer constraint that stays generic" HACK needs it (react-relay); drizzle -24%, valibot +2%.

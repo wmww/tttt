@@ -230,9 +230,6 @@ enum {
     // getPropertyTypeForIndexType does (reporting TS2538 where there's an access node). Not for lookups by name (tsc's
     // getPropertyOfType and getApplicableIndexInfoForName: a late-bound name only looks for symbol index signatures)
     ACCESS_SYMBOL_STRING = 1 << 1,
-    // An element access expression: an any key reads an intersection's index signatures (HACK: only there, see
-    // the any key case of access())
-    ACCESS_ELEMENT = 1 << 3,
 };
 
 // ACCESS_INCLUDE_UNDEFINED: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
@@ -368,10 +365,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
     if (index->flags & TYF_ANY) {
         // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
         // tsc's getPropertyTypeForIndexType with getApplicableIndexInfo)
-        // (HACK: an intersection's only for an element access expression. tsc reads them for `X[any]` types too, but
-        // jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` then is the intersection of every event, and relating
-        // such intersections fails where it shouldn't, which made JQuery<T> invariant: 13 DefinitelyTyped packages)
-        u32 any_key_kinds = TYF_OBJECT | (flags & ACCESS_ELEMENT ? TYF_INTERSECTION : 0);
+        u32 any_key_kinds = TYF_OBJECT | TYF_INTERSECTION;
         Ty const* apparent = ty_apparent_type(me, object);
         if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
             Ty const* ret = ty_union_any_index_type(me, apparent, index, any_key_kinds);
@@ -608,7 +602,7 @@ Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index)
 
 // `object[index]` as an element access expression reads it: a symbol key reads a string index signature too (TS2538)
 Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading) {
-    u32 flags = ACCESS_SYMBOL_STRING | ACCESS_ELEMENT | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);
+    u32 flags = ACCESS_SYMBOL_STRING | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);
     return access(me, object, ty_regular(me, index), 0, flags);
 }
 

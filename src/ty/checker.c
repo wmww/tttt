@@ -2963,7 +2963,8 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
 
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
-    if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
+    // (An error index is any to tsgo's getIndexedAccessType: the index signatures say, `keyof Record<Unresolved, X>`)
+    if (object->flags & TYF_ANY) return object;
     // (No shortcut for a never index: a generic object defers first, `(T | Record<string, T> | null)[never]`, and an
     // index signature takes never, `Record<string, T>[never]` is T: tsc's getIndexedAccessTypeOrUndefined and
     // getPropertyTypeForIndexType, which access() follows)
