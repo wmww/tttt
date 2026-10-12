@@ -615,6 +615,21 @@ static void report_truncate(RelationState* st, isize_t len) {
     while (vec_ty_report_line_size(&st->lines) > len) vec_ty_report_line_pop(&st->lines); // drops the line
 }
 
+// An invariant type argument's error put back after the structural comparison that was to explain it succeeded
+// (`lines` were pulled off the end, last first): tsgo's structuredTypeRelatedToWorker restores only the errorChain to
+// originalErrorChain, its relatedInfo stays restored to before the variance check
+[[gnu::cold]] static void restore_variance_lines(RelationState* st, isize_t len, VecTyReportLine* lines) {
+    report_truncate(st, len);
+    while (vec_ty_report_line_size(lines)) {
+        TyReportLine line = vec_ty_report_line_pull(lines);
+        if (line.related) {
+            ty_report_line_drop(&line);
+        } else {
+            vec_ty_report_line_push(&st->lines, line);
+        }
+    }
+}
+
 [[gnu::cold]] static cstr display_for_report(Checker* me, Ty const* ty) {
     cstr ret = cstr_null;
     Scope const* enclosing = ty_report_enclosing(me, ty);
@@ -5471,10 +5486,7 @@ static Ternary structured_related_members(
                     vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
                 }
                 if (structured_related_impl(me, st, source, target, true, false)) {
-                    report_truncate(st, saved);
-                    while (vec_ty_report_line_size(&variance_lines)) {
-                        vec_ty_report_line_push(&st->lines, vec_ty_report_line_pull(&variance_lines));
-                    }
+                    restore_variance_lines(st, saved, &variance_lines);
                 }
                 vec_ty_report_line_drop(&variance_lines);
                 return TERNARY_FALSE;
@@ -5996,10 +6008,7 @@ static Ternary structured_related_members(
                             vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
                         }
                         if (structured_related_impl(me, st, source, target, true, false)) {
-                            report_truncate(st, args_saved);
-                            while (vec_ty_report_line_size(&variance_lines)) {
-                                vec_ty_report_line_push(&st->lines, vec_ty_report_line_pull(&variance_lines));
-                            }
+                            restore_variance_lines(st, args_saved, &variance_lines);
                         }
                         vec_ty_report_line_drop(&variance_lines);
                         return TERNARY_FALSE;
