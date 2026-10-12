@@ -2277,7 +2277,11 @@ typedef struct DeclTracker {
 
 typedef struct TyDisplay {
     cstr* target;
-    u32 length_base; // What was printed before `target` (a part printed apart and appended): see display_over()
+    // A message's type: tsc's approximateLength so far, which decides where it is cut short (see display_over()). Null
+    // elsewhere, and inside a reused annotation (counted by its text)
+    u32* approx;
+    bool naming; // Inside a name being printed, which counts as a whole (see out_symbol_name())
+    bool literal_value; // The type of an object literal's property (a function expression there isn't elided)
     bool cut_off; // A message's type being printed, cut off after (see display_cut_off())
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack

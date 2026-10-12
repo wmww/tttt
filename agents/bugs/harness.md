@@ -36,9 +36,9 @@
   `order_base` puts the test's files after the libraries in program_order, like tsc's fileIndexMap. Anything else
   that numbers files per program (file_shares, checker lanes) still counts from 0: fine as long as it's only an index.
 - tsc's harness always sets noErrorTruncation (harnessIO compileFiles), whatever the test says; the suite sets
-  CompilerOptions.no_error_truncation the same way. The CLI default (false) keeps ty_display.c's depth stand-ins for
-  the 160-character truncation (now `display_over()`'s text-based estimate as well, hacks.md; no TS2719 when both sides
-  truncate to the same text: flagflip vscode/eopt's TS2719->TS2322 x3). A real approximateLength model would fix both.
+  CompilerOptions.no_error_truncation the same way. The CLI default (false) does
+  tsgo's 160-character truncation (approximateLength ported, `display_over()`). Whether TS2719 now fires where both
+  sides truncate to the same text (flagflip vscode/eopt's TS2719->TS2322 x3) is unchecked.
 - largeControlFlowGraph (types): tsc's first deep flow query comes from the end of the file (its checker reaches the
   last statement's reference first through some deferred check), so every `data` is errorType there; tttt's from the
   2000th statement. Check order, not a flow bug; one test.

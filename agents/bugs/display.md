@@ -199,8 +199,13 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
 - **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
-  truncation is sticky. tttt estimates approximateLength from the printed text (`display_over()`, hacks.md), so
-  messages near the border can still truncate at another point than tsgo's.
+  truncation is sticky. Ported (TyDisplay.approx counts where tsgo's node builder counts, `display_over()`). Left:
+  a reused annotation counts its reprinted text plus one (tsgo: its source range with the leading trivia, newlines and
+  indentation included), and tsgo's pseudo types (serializeTypeForDeclaration with an enclosing declaration types a
+  declaration syntactically, pseudotypenodebuilder.go): their keywords and object literals count nothing, their names
+  count their source range. tttt prints those types as checker types, so a JSON module's object (msw/test's
+  package.json exports) truncates later than tsgo. Only an object literal property's function expression with
+  annotated parameters is exempted from elision, as its pseudo type is.
 - declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
@@ -234,3 +239,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   homomorphic mapped property over the conditional's union keeps one declaration.
 - `type D = { get d(); set d(v: number) }`: `d` is number in tsgo (the typed setter says it), any in tttt; an
   accessor pair in a type literal/interface takes its type from the getter side only.
+- **`typeof s` vs `unique symbol` in messages** (found 2026-10-12, agent B): with `declare const s1: unique symbol`,
+  `let v: "a" | typeof s1 = ...; const r: number = v;` makes tsgo print `string | typeof s1` and tttt `string | unique
+  symbol`. A mapped type's property of that type prints `unique symbol` on both sides. tsgo's typeToTypeNode names
+  the symbol when the type isn't AllowUniqueESSymbolType and the symbol is accessible. Find which flags the message's
+  typeToString passes there.

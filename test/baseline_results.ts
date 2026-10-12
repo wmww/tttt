@@ -33066,7 +33066,7 @@ const baselines = {
         types: true,
     },
     'unionElementErrorTruncation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

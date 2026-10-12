@@ -18,9 +18,8 @@
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
 
-// How deep a type literal prints in a message before `...`: a stand-in for tsc's approximateLength truncation (160
-// characters), deep enough that tsc's own elision of an anonymous type nested eleven times (anonymous_elided()) comes
-// first. HACK: by depth, not length
+// A safety net: a message's type nested deeper than four times this prints `...` (the truncation length and tsc's own
+// elision of an anonymous type nested eleven times, anonymous_elided(), come long before)
 #define MAX_DISPLAY_DEPTH 11
 
 // A message type is cut short (tsc's typeToString without noErrorTruncation, the CLI's default; the test harness always
@@ -37,60 +36,19 @@ static bool truncating(TyDisplay d) {
 // cut short from there on
 #define DEFAULT_MAXIMUM_TRUNCATION_LENGTH 160
 
-// A message's type is past the truncation length (tsc's checkTruncationLength, which is sticky like this: nothing
-// printed is ever taken back): object types print as the elided information placeholder `...`, type argument lists as
-// `<...>`, a type literal's members as `... N more ...` and its last one. Nothing past that point is worked out, which
-// is what keeps a message about a huge mapped type cheap (expect-type's MismatchInfo of an interface of a hundred
-// methods: tsgo resolves the first few properties' types). HACK: the length so far of the text, not tsc's
-// approximateLength (which leaves out punctuation and is shorter): truncates somewhat earlier than tsc
-// (Incremental: a message is checked many times as it grows, so where the last scan of the same text stopped is kept)
-typedef struct ApproximateScan {
-    char const* buf;
-    isize scanned, discount;
-    char quote;
-    bool escaped;
-} ApproximateScan;
-static _Thread_local ApproximateScan approximate_scan;
-
-static u32 approximate_length(csview text) {
-    // (tsc counts a property's name and one character for its `: ` and `; `, an index signature's `: ` and `; ` as
-    // one, `{ }` as two characters: what's in string literals as is)
-    ApproximateScan* scan = &approximate_scan;
-    if (scan->buf != text.buf || scan->scanned > text.size) *scan = (ApproximateScan){ .buf = text.buf };
-    // (The last character may be the first of a pair: looked at again with the next one)
-    isize i = scan->scanned;
-    for (; i < text.size; i++) {
-        char c = text.buf[i];
-        if (scan->quote) {
-            if (scan->escaped) scan->escaped = false;
-            else if (c == '\\') scan->escaped = true;
-            else if (c == scan->quote) scan->quote = 0;
-            continue;
-        }
-        if (c == '"' || c == '\'' || c == '`') {
-            scan->quote = c;
-            continue;
-        }
-        if (i + 1 >= text.size) break;
-        if (text.buf[i + 1] == ' ') {
-            if (c == ';') scan->discount += 2;
-            else if (c == ':') scan->discount += 1;
-            else if (c == '{') scan->discount += 1;
-        }
-    }
-    scan->scanned = i;
-    return (u32)(text.size - scan->discount);
+// A message's type is past the truncation length (tsc's checkTruncationLength): object types print as the elided
+// information placeholder `...`, type argument lists as `<...>`, a type literal's members as `... N more ...` and its
+// last one. Nothing past that point is worked out, which is what keeps a message about a huge mapped type cheap
+// (expect-type's MismatchInfo of an interface of a hundred methods: tsgo resolves the first few properties' types).
+// The length is tsc's approximateLength (TyDisplay.approx), counted where its node builder counts: keywords and
+// literals, names, list separators, members, signatures and parameters, the fixed parts of mapped, conditional,
+// keyof, indexed access and template types, and a reused annotation by its text
+static bool display_over(TyDisplay d) {
+    return d.approx && *d.approx > DEFAULT_MAXIMUM_TRUNCATION_LENGTH;
 }
 
-[[gnu::noinline]] static bool display_over_slow(TyDisplay const* d) {
-    return truncating(*d) && d->length_base + approximate_length(cstr_sv(d->target)) > DEFAULT_MAXIMUM_TRUNCATION_LENGTH;
-}
-
-[[gnu::always_inline]] static inline bool display_over_at(TyDisplay const* d) {
-    // (Cheap first: the text is never shorter than its approximate length)
-    return d->length_base + cstr_size(d->target) > DEFAULT_MAXIMUM_TRUNCATION_LENGTH && display_over_slow(d);
-}
-#define display_over(d) display_over_at(&(d))
+// (A macro: what is counted is only worked out for a message)
+#define approx_add(d, n) do { if ((d).approx) *(d).approx += (u32)(n); } while (0)
 
 static void out(TyDisplay d, csview sv) {
     if (d.tracker && d.tracker->truncated) return;
@@ -225,12 +183,21 @@ static TyDisplay qualified_if(TyDisplay d, bool const* collisions, u32 i) {
 static void display_list(Checker* me, TyDisplay d, TyList list) {
     // (A type argument list past the truncation length: tsc's mapToTypeNodes, not a bare list)
     if (list.len && display_over(d)) {
+        approx_add(d, 3);
         out_lit(d, "...");
         return;
     }
     bool* collisions = name_collisions(me, d, list);
     for (u32 i = 0; i < list.len; i++) {
         if (i) out_lit(d, ", ");
+        // (Past the truncation length: how many more and the last one, tsc's mapToTypeNodes)
+        if (display_over(d) && i + 3 < list.len - 1) {
+            char more[48];
+            snprintf(more, sizeof more, "... %u more ..., ", list.len - (i + 1));
+            out(d, csview_from(more));
+            i = list.len - 1;
+        }
+        approx_add(d, 2); // (tsc's mapToTypeNodes: whitespace and separator)
         // (A generic function type first isn't parenthesized, `X<<T>() => T>`: tsgo's printer has no
         // parenthesizeLeadingTypeArgument)
         ty_display(me, qualified_if(d, collisions, i), list.data[i]);
@@ -413,7 +380,31 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     out_lit(d, ")");
 }
 
+// What tsc's createAccessFromSymbolChain counts for a name: each part's length and one, the first part's twice (it
+// counts it when it starts the chain and again with every part), nothing for a module's `import("m")` (counted as its
+// specifier by symbolToTypeNode, and printed in messages only where that isn't reached)
+static u32 entity_name_length(csview text) {
+    if (csview_starts_with(text, "import(")) return (u32)text.size;
+    isize_t first = 0;
+    while (first < text.size && text.buf[first] != '.') first++;
+    return (u32)text.size + 1 + (u32)first + 1;
+}
+
+static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning);
+// A name counts its text and one more (tsc's createAccessFromSymbolChain: each part's length and one)
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
+    if (!d.approx || d.naming) {
+        out_symbol_name_impl(me, d, symbol, meaning);
+        return;
+    }
+    isize_t start = cstr_size(d.target);
+    TyDisplay inner = d;
+    inner.naming = true;
+    out_symbol_name_impl(me, inner, symbol, meaning);
+    approx_add(d, entity_name_length(csview_slice(cstr_sv(d.target), start, cstr_size(d.target))));
+}
+
+static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
     if (!d.enclosing && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
         // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
@@ -602,7 +593,21 @@ static bool display_module_clone(Checker* me, TyDisplay d, Ty const* ty) {
     return true;
 }
 
+static void out_declared_name_impl(Checker* me, TyDisplay d, Ty const* declared, u32 meaning);
+// A name counts its text and one more (tsc's createAccessFromSymbolChain: each part's length and one)
 static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 meaning) {
+    if (!d.approx || d.naming) {
+        out_declared_name_impl(me, d, declared, meaning);
+        return;
+    }
+    isize_t start = cstr_size(d.target);
+    TyDisplay inner = d;
+    inner.naming = true;
+    out_declared_name_impl(me, inner, declared, meaning);
+    approx_add(d, entity_name_length(csview_slice(cstr_sv(d.target), start, cstr_size(d.target))));
+}
+
+static void out_declared_name_impl(Checker* me, TyDisplay d, Ty const* declared, u32 meaning) {
     Symbol const* symbol = declared->declared.symbol;
     if (!symbol) symbol = declared->declared.merged_value;
     if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
@@ -826,7 +831,20 @@ static bool is_numeric_name(csview sv) {
 }
 
 // How a unique symbol is written as an expression: `sym`, `C.key`, `Symbol.iterator`
+static void out_unique_symbol_name_impl(Checker* me, TyDisplay d, UniqueSymbolDecl const* decl);
 static void out_unique_symbol_name(Checker* me, TyDisplay d, UniqueSymbolDecl const* decl) {
+    if (!d.approx || d.naming) {
+        out_unique_symbol_name_impl(me, d, decl);
+        return;
+    }
+    isize_t start = cstr_size(d.target);
+    TyDisplay inner = d;
+    inner.naming = true;
+    out_unique_symbol_name_impl(me, inner, decl);
+    approx_add(d, entity_name_length(csview_slice(cstr_sv(d.target), start, cstr_size(d.target))));
+}
+
+static void out_unique_symbol_name_impl(Checker* me, TyDisplay d, UniqueSymbolDecl const* decl) {
     Symbol const* owner = decl->owner;
     if (!span_valid(decl->member)) {
         if (owner) out_symbol_name(me, d, owner, SYMBOL_VALUE);
@@ -927,6 +945,7 @@ uint8_t ty_prop_name_form_of(Prop const* prop) {
 // tsc's getPropertyNameNodeForSymbol: an identifier, a number, a string literal quoted like every declaration wrote it,
 // or `[-1]` for a negative number that came from a type
 static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
+    d.naming = true; // (Counted by its symbol's name, see prop_symbol_name_length())
     csview sv = atom_sv(prop->name);
     if (ty_unique_symbol_of_name(me, prop->name)) {
         display_prop_name(me, d, prop->name);
@@ -1651,7 +1670,22 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
 }
 
 // Prints an annotation as written, as reused
+static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node);
+// A reused annotation counts as its text with the whitespace before it, whatever printing it counted (tsc's
+// tryReuseExistingNodeHelper: the node's range, inside a recovery boundary)
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    if (!d.approx) {
+        display_node_impl(me, d, node);
+        return;
+    }
+    u32* approx = d.approx;
+    isize_t start = cstr_size(d.target);
+    d.approx = nullptr;
+    display_node_impl(me, d, node);
+    *approx += (u32)(cstr_size(d.target) - start) + 1;
+}
+
+static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
     // `readonly T` of what isn't an array or tuple (TS1354): reprinted as written, `readonly (T | null)` around a
     // JSDoc `?T` (the operator is printed, then the node again without it)
     static _Thread_local TypeNode const* readonly_printed;
@@ -2184,7 +2218,10 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         if (item && item->is_const) out_lit(d, "const ");
         if (item && item->is_in) out_lit(d, "in ");
         if (item && item->is_out) out_lit(d, "out ");
-        ty_display(me, reused_if(d, d.reused || item), params.data[i]);
+        // (The name isn't counted: tsc's typeParameterToName)
+        TyDisplay name_d = reused_if(d, d.reused || item);
+        name_d.approx = nullptr;
+        ty_display(me, name_d, params.data[i]);
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {
             out_lit(d, " extends ");
@@ -2377,6 +2414,7 @@ static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature 
 
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     signature_resolve(me, sig);
+    approx_add(d, 3); // (tsc's signatureToSignatureDeclarationHelper; its parameters each their name and three)
     if (with_new) {
         // (Only a constructor type is: tsc's signatureToSignatureDeclarationHelper gives a construct signature member,
         // which is what `: ` prints, no modifiers)
@@ -2499,6 +2537,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             reused = true;
         }
         display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, sig->this_type, false);
+        approx_add(d, 4 + 3); // (After its type, like the parameters)
         if (param_count) out_lit(d, ", ");
     }
     for (u32 i = 0; i < param_count; i++) {
@@ -2506,6 +2545,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         if (i) out_lit(d, ", ");
         if (param->rest) out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv("..."));
         Binding const* name_binding = param->decl ? &param->decl->initializer.binding : nullptr;
+        // (A binding pattern's symbol is `__0`)
+        bool pattern_name = name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT);
+        // (Counted after its type: tsc's symbolToParameterDeclaration makes the type first)
+        u32 name_length = (pattern_name ? 3 : (u32)atom_sv(param->name).size) + 3;
         if (name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT)) {
             cstr pattern = cstr_init();
             append_binding_pattern(&pattern, name_binding);
@@ -2579,6 +2622,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         } else {
             display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
         }
+        approx_add(d, name_length);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
@@ -2726,7 +2770,6 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
         cstr inner = cstr_null;
         TyDisplay inner_d = d;
         inner_d.target = &inner;
-        inner_d.length_base = d.length_base + approximate_length(cstr_sv(d.target));
         display_mapped_body(me, inner_d, mapped, wrapper, homomorphic_lost);
         if (homomorphic_lost) ty_display(me, d, mapped->modifiers_type);
         else ty_display(me, d, mapped->constraint);
@@ -2760,7 +2803,6 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     cstr constraint_text = cstr_null;
     TyDisplay cd = d;
     cd.target = &constraint_text;
-    cd.length_base = d.length_base + approximate_length(cstr_sv(d.target));
     if (wrapper) {
         TyDisplay fresh = reused_if(cd, false);
         if (keyof_wrapper) out(fresh, c_sv("keyof "));
@@ -2790,7 +2832,9 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     out_lit(d, "{ ");
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
-    ty_display(me, reused_if(d, !fresh_mapper), type_param); // (tsc reuses the name of the declared type parameter)
+    TyDisplay name_d = reused_if(d, !fresh_mapper);
+    name_d.approx = nullptr; // (tsc's typeParameterToDeclarationWithConstraint doesn't count the name)
+    ty_display(me, name_d, type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
     cstr_append_sv(d.target, cstr_sv(&constraint_text));
     cstr_drop(&constraint_text);
@@ -2821,6 +2865,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     }
     ty_display(me, d, template);
     out_lit(d, "; }");
+    approx_add(d, 10); // (tsc's createMappedTypeNodeFromType, after its parts)
     param_names_leave(d, saved);
 }
 
@@ -2926,6 +2971,16 @@ static Binding const* setter_value_parameter(FunctionImpl const* setter) {
     return count == 2 && first_this ? &vec_function_arg_at(&setter->args, 1)->initializer.binding : first;
 }
 
+// What tsc's addPropertyToElementList counts for a property's name: its symbol's name, which for a unique symbol's is
+// `__@name@` and the symbol's id (taken as six digits)
+static u32 prop_symbol_name_length(Checker* me, Atom const* name) {
+    Ty const* unique = ty_unique_symbol_of_name(me, name);
+    if (!unique) return (u32)atom_sv(name).size;
+    UniqueSymbolDecl const* decl = unique->literal.unique;
+    u32 own = span_valid(decl->member) ? (u32)decl->member.sv.size : decl->owner ? (u32)ty_symbol_display_name(decl->owner).sv.size : 0;
+    return 3 + own + 1 + 6;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
@@ -2947,15 +3002,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
     if (only_signatures && !members->call_count && !members->construct_count) {
+        approx_add(d, 2);
         out_lit(d, "{}");
-        return;
-    }
-    if (d.depth > MAX_DISPLAY_DEPTH && truncating(d)) {
-        out_lit(d, "...");
         return;
     }
     // (Past the truncation length: tsc's createTypeNodesFromResolvedType)
     if (display_over(d)) {
+        approx_add(d, 2);
         out_lit(d, "{ ...; }");
         return;
     }
@@ -3023,8 +3076,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ty_display(me, d, info->key);
         out_lit(d, "]: ");
         // (A reverse mapped type's is the elided information placeholder: tsc's createTypeNodeFromObjectType)
-        if (ty_reverse_of(ty)) out_lit(d, "any");
+        if (ty_reverse_of(ty)) {
+            approx_add(d, 3);
+            out_lit(d, "any");
+        }
         else ty_display(me, d, info->value);
+        // (tsc's indexInfoToIndexSignatureDeclarationHelper, after the types: the parameter's name and four, readonly nine)
+        approx_add(d, (info->param_name ? (u32)atom_sv(info->param_name).size : 1) + 4 + (info->readonly ? 9 : 0));
         out_lit(d, "; ");
     }
     TyDisplay outer_d = d;
@@ -3044,6 +3102,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (d.tracker->truncated) break;
             if (track_property(me, d, prop)) continue;
         }
+        approx_add(d, prop_symbol_name_length(me, prop->name) + 1); // (tsc's addPropertyToElementList)
         bool reverse_prop = prop_decl_rare(prop->decl)->reverse_of != nullptr;
         bool placeholder = reverse_prop && reverse_placeholder(d, prop);
         Ty const* type = placeholder ? ty_intrinsic(me, TY_ANY) : prop_type(me, prop);
@@ -3080,6 +3139,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             Ty const* write = prop_write_type(me, prop);
             if (write && write != type && type != ty_intrinsic(me, TY_ERROR) && write != ty_intrinsic(me, TY_ERROR)) {
+                // (Two signatures: three each, the setter's parameter its name and three)
+                approx_add(d, 3 + 3 + 3 + (prop_decl_rare(declared->decl)->setter ? 5 : (u32)prop_decl_rare(declared->decl)->setter_param.sv.size));
                 out_lit(d, "get ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(): ");
@@ -3109,7 +3170,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 continue;
             }
         }
-        if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
+        if (prop->flags & PROP_READONLY) {
+            approx_add(d, 9);
+            out_lit(d, "readonly ");
+        }
         TyDisplay name_d = d;
         name_d.tracker = nullptr; // (named from its own declaration, see track_property())
         display_member_name(me, name_d, prop);
@@ -3184,6 +3248,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // A getter returning a function expression has its type syntactically, parameter declarations reused (tsc's
         // typeFromAccessor -> typeFromSingleReturnExpression)
         TyDisplay type_d = d;
+        // (tsgo's serializeTypeForDeclaration takes the pseudo type only with an enclosing declaration)
+        type_d.literal_value = d.approx && ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal && reuses_nodes(d);
         if (syntactic_getter && reuses_nodes(d)) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
         if (initializer_function) type_d.syntactic_function = initializer_function;
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
@@ -3226,6 +3292,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         else display_annotated(me, type_d, annotation, shown, optional);
         out_lit(d, "; ");
     }
+    approx_add(d, 2); // (tsc's createTypeNodeFromObjectType)
     out_lit(d, "}");
 }
 
@@ -3351,6 +3418,7 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     // visitAndTransformType counts conditional types by their root's node); `any` without truncation (the
     // types baseline, declaration emit), `...` in messages
     if (conditional_elided(d, ty)) {
+        approx_add(d, 3);
         out(d, truncating(d) ? c_sv("...") : c_sv("any"));
         return;
     }
@@ -3363,6 +3431,7 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
             (ty->conditional.check->kind == TY_CONDITIONAL && !shows_alias(d, ty->conditional.check))
     );
     printed_range_end(d, &check_range);
+    approx_add(d, 15); // (tsc's conditionalTypeToTypeNode, after the check type)
     out_lit(d, " extends ");
     if (d.param_names && ty->conditional.root && ty->conditional.root->conditional.distributive &&
         ty->conditional.check->kind != TY_TYPE_PARAM
@@ -3415,9 +3484,22 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {
     if (shape->readonly) out_lit(d, "readonly ");
     out_lit(d, "[");
+    // (Its elements are a list like type arguments: tsc's mapToTypeNodes)
+    if (shape->arity && display_over(d)) {
+        approx_add(d, 3);
+        out_lit(d, "...]");
+        return;
+    }
     bool* collisions = name_collisions(me, d, (TyList){ .data = args.data, .len = shape->arity });
     for (u32 i = 0; i < shape->arity; i++) {
         if (i) out_lit(d, ", ");
+        if (display_over(d) && i + 3 < shape->arity - 1) {
+            char more[48];
+            snprintf(more, sizeof more, "... %u more ..., ", shape->arity - (i + 1));
+            out(d, csview_from(more));
+            i = shape->arity - 1;
+        }
+        approx_add(d, 2);
         bool rest = shape->flags[i] & TUPLE_ELEMENT_REST;
         bool optional = shape->flags[i] & TUPLE_ELEMENT_OPTIONAL;
         Ty const* element = ty_remove_missing(me, args.data[i], optional); // (tsc's typeReferenceToTypeNode)
@@ -3479,9 +3561,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     u32 nullable = 0;
     // (tsc's mapToTypeNodes: past the truncation length, `... N more ...` and the last member)
     Ty const* last = nullptr;
-    u32 display_count = truncating(d) && types.len > 3 ? union_display_count(me, types, &last) : 0;
+    u32 display_count = d.approx ? union_display_count(me, types, &last) : 0;
+    if (display_count < 3) last = nullptr; // (Nothing to elide)
     u32 display_index = 0;
-    isize separators = 0;
     bool* collisions = name_collisions(me, d, types);
     for (u32 i = 0; i < types.len; i++) {
         Ty const* t = types.data[i];
@@ -3490,9 +3572,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             continue;
         }
         display_index++;
-        bool over = last && (isize)cstr_size(d.target) - separators > DEFAULT_MAXIMUM_TRUNCATION_LENGTH;
+        bool over = last && display_over(d);
         // (Already past it before the first member: the first, how many more, the last)
-        if (over && display_index == 1) {
+        if (over && display_index == 1 && display_count > 2) {
             ty_display(me, d, t);
             char more[48];
             snprintf(more, sizeof more, " | ... %u more ... | ", display_count - 2);
@@ -3509,11 +3591,14 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             free(collisions);
             return;
         }
-        if (!first) out_lit(d, " | "), separators++;
+        if (!first) out_lit(d, " | ");
         first = false;
+        // (tsc's mapToTypeNodes: whitespace and separator, unless formatUnionTypes left one type, `boolean`)
+        if (display_count > 1) approx_add(d, 2);
         if (ty_regular(me, t) == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len &&
             ty_regular(me, types.data[i + 1]) == ty_intrinsic(me, TY_TRUE)
         ) {
+            approx_add(d, 7);
             out_lit(d, "boolean");
             i++;
             continue;
@@ -3542,18 +3627,65 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     }
     free(collisions);
     if (nullable & TYF_NULL) {
+        approx_add(d, (display_count > 1 ? 2 : 0) + 4);
         out(d, first ? c_sv("null") : c_sv(" | null"));
         first = false;
     }
     if (nullable & TYF_UNDEFINED) {
+        approx_add(d, (display_count > 1 ? 2 : 0) + 9);
         out(d, first ? c_sv("undefined") : c_sv(" | undefined"));
     }
 }
 
 // A message's type is cut off at twice the truncation length whatever the printer did (tsc's typeToString)
+// Every parameter written with a type: a function expression whose pseudo type (tsgo's typeFromFunctionLikeExpression)
+// is what the checker says, unlike one typed by its context
+static bool params_annotated(FunctionImpl const* function) {
+    for_each (i, vec_function_arg, &function->args) {
+        if (!i->initializer.binding.has_explicit_type) return false;
+    }
+    return true;
+}
+
+// An object literal of literals and such object literals only: tsgo's pseudo type of such a property value
+// (pseudotypenodebuilder.go's object literal) is printed whole, never cut short, and counts only its names, each by its
+// source range with the whitespace before it (reuseName); literals become keywords that count nothing
+static bool pseudo_object_literal(Expr const* expr, u32 depth) {
+    if (expr->tag != EXPR_OBJECT || depth > 8) return false;
+    for_each (i, vec_object_expr_item, &expr->object) {
+        if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || i->jsdoc_type) return false;
+        Expr const* value = &i->value;
+        bool literal = value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_STRING || value->literal.tag == VALUE_NUMBER ||
+            value->literal.tag == VALUE_BOOLEAN || value->literal.tag == VALUE_NULL);
+        if (!literal && !pseudo_object_literal(value, depth + 1)) return false;
+    }
+    return true;
+}
+
+static u32 pseudo_object_length(Expr const* expr) {
+    u32 ret = 0;
+    for_each (i, vec_object_expr_item, &expr->object) {
+        char const* start = i->name_span.sv.buf;
+        char const* contents = i->name_span.source ? cstr_str(&i->name_span.source->contents) : start;
+        while (start > contents && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
+        ret += (u32)(i->name_span.sv.buf - start + i->name_span.sv.size);
+        if (i->value.tag == EXPR_OBJECT) ret += pseudo_object_length(&i->value);
+    }
+    return ret;
+}
+
+// What tsc's typeToTypeNode counts for a keyword type: its length, but none for `unknown`
+static u32 intrinsic_length(Ty const* ty) {
+    if (ty->flags & TYF_UNKNOWN) return 0;
+    csview name = ty->intrinsic.name;
+    return name.size == 9 && name.buf[0] == 'i' ? 3 : (u32)name.size; // (`intrinsic` is any's three)
+}
+
 static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
     isize_t start = cstr_size(d.target);
     d.cut_off = true;
+    u32 approximate_length = 0; // (tsc's context.approximateLength: one per typeToString)
+    d.approx = &approximate_length;
     ty_display(me, d, ty);
     isize_t max_length = DEFAULT_MAXIMUM_TRUNCATION_LENGTH * 2;
     if (cstr_size(d.target) - start >= max_length) {
@@ -3564,7 +3696,6 @@ static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (!d.depth) {
-        approximate_scan = (ApproximateScan){0}; // (A new text: a freed one's buffer may be reused)
         if (!d.cut_off && truncating(d)) {
             display_cut_off(me, d, ty);
             return;
@@ -3587,8 +3718,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     // (A union or intersection prints reduced: tsc's typeToTypeNodeHelper without NoTypeReduction)
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
+    bool literal_value = d.literal_value;
+    d.literal_value = false; // (Only the property's type itself)
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     if (d.depth > (truncating(d) ? MAX_DISPLAY_DEPTH * 4 : 8 * 16)) { // (Declaration emit: unchanged, see hacks.md TS7056)
+        approx_add(d, 3);
         out_lit(d, "...");
         return;
     }
@@ -3598,17 +3732,23 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
     if (shows_alias(d, ty)) {
-        out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
+        // (tsc counts the name after the type arguments, which it makes first)
+        u32 name_length = 0;
+        TyDisplay name_d = d;
+        if (d.approx) name_d.approx = &name_length;
+        out_symbol_name(me, name_d, ty->alias, SYMBOL_TYPE);
         if (ty->alias_args.len) {
             out_lit(d, "<");
             display_list(me, d, ty->alias_args);
             out_lit(d, ">");
         }
+        approx_add(d, name_length);
         return;
     }
 
     switch ((TyKind)ty->kind) {
         case TY_INTRINSIC:
+            approx_add(d, intrinsic_length(ty));
             out(d, ty->intrinsic.name);
             if (ty->intrinsic.unresolved_args.len) {
                 out_lit(d, "<");
@@ -3637,8 +3777,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         out_lit(d, "unique symbol");
                     }
                 } else if (!d.typeof_unique_symbols && !d.reused) {
+                    approx_add(d, 13);
                     out_lit(d, "unique symbol");
                 } else {
+                    approx_add(d, 6);
                     out_lit(d, "typeof ");
                     out_unique_symbol_name(me, d, ty->literal.unique);
                 }
@@ -3675,12 +3817,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out(d, member_name);
                 }
             } else if (ty->literal.string) {
+                approx_add(d, (u32)atom_sv(ty->literal.string).size + 2);
                 display_string_literal(d, atom_sv(ty->literal.string));
             } else if (ty->flags & TYF_BOOLEAN_LITERAL) {
+                approx_add(d, ty->literal.value.boolean ? 4 : 5);
                 out(d, ty->literal.value.boolean ? c_sv("true") : c_sv("false"));
             } else {
+                // (A number's text, a bigint's digits and one)
+                isize_t start = cstr_size(d.target);
                 cstr_append_value_js(d.target, &ty->literal.value);
                 if (ty->flags & TYF_BIGINT_LITERAL) out_lit(d, "n");
+                approx_add(d, (u32)(cstr_size(d.target) - start));
             }
             break;
 
@@ -3691,9 +3838,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");
+            // (tsc counts `this` as four, a name like any (entity_name_length()), `infer N` as the name and six)
+            isize_t name_start = cstr_size(d.target);
             // (Declared here, the name gets its declaration's range: tsc's typeParameterToName, reused)
             out_type_param_name(me, declared_here ? reused_if(d, true) : d, ty, false);
+            u32 name_length = (u32)(cstr_size(d.target) - name_start);
+            approx_add(d, ty->param.state->is_this ? 4 : declared_here ? name_length + 6 : 2 * (name_length + 1));
             if (declared_here && ty->param.state->constraint_node) {
+                approx_add(d, 9);
                 out_lit(d, " extends ");
                 TyDisplay inner = d;
                 inner.infer_params = (TyList){0};
@@ -3774,6 +3926,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             // (Past the truncation length: tsc's visitAndTransformType of an array or tuple)
             if (container && display_over(d)) {
+                approx_add(d, 3);
                 out_lit(d, "...");
                 break;
             }
@@ -3812,12 +3965,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     args.data += outer;
                     args.len -= outer;
                 }
-                out_declared_name(me, d, target, SYMBOL_TYPE);
+                // (tsc counts the name after the type arguments, which it makes first)
+                u32 name_length = 0;
+                TyDisplay name_d = d;
+                if (d.approx) name_d.approx = &name_length;
+                out_declared_name(me, name_d, target, SYMBOL_TYPE);
                 if (args.len) { // (None: a class or interface with only a this-argument)
                     out_lit(d, "<");
                     display_list(me, d, args);
                     out_lit(d, ">");
                 }
+                approx_add(d, name_length);
             }
         }   break;
 
@@ -3904,11 +4062,27 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
             // without truncation (the types baseline, declaration emit), `...` in messages
             if (anonymous_elided(d, ty)) {
+                approx_add(d, 3);
                 out(d, truncating(d) ? c_sv("...") : c_sv("any"));
                 break;
             }
-            // (Past the truncation length: tsc's visitAndTransformType)
-            if (display_over(d)) {
+            // (Past the truncation length: tsc's visitAndTransformType. Not a function expression typed syntactically,
+            // an object literal's property value: tsgo's pseudo type of the declaration builds that node itself)
+            if (literal_value && ty->anonymous.object_literal && ty->anonymous.literal_expr &&
+                pseudo_object_literal(ty->anonymous.literal_expr, 0)
+            ) {
+                u32* approx = d.approx;
+                d.approx = nullptr;
+                TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+                d.visiting = &visit;
+                display_structure(me, d, ty);
+                if (approx) *approx += pseudo_object_length(ty->anonymous.literal_expr);
+                break;
+            }
+            bool syntactic = ty->anonymous.function && !ty->anonymous.target && (d.syntactic_function == ty->anonymous.function ||
+                (literal_value && ty->anonymous.function->is_expression && params_annotated(ty->anonymous.function)));
+            if (display_over(d) && !syntactic) {
+                approx_add(d, 3);
                 out_lit(d, "...");
                 break;
             }
@@ -3930,9 +4104,26 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_INTERSECTION: {
             bool* collisions = name_collisions(me, d, ty->composite.types);
-            for (u32 i = 0; i < ty->composite.types.len; i++) {
+            u32 count = ty->composite.types.len;
+            for (u32 i = 0; i < count; i++) {
+                // (Past the truncation length: tsc's mapToTypeNodes of a bare list, the first, how many more and the
+                // last, or from where it went past)
+                if (display_over(d) && count > 2 && (i == 0 || i + 3 < count - 1)) {
+                    if (i == 0) {
+                        approx_add(d, 2);
+                        ty_display(me, d, ty->composite.types.data[0]);
+                        out_lit(d, " & ");
+                    }
+                    char more[48];
+                    snprintf(more, sizeof more, "... %u more ... & ", i == 0 ? count - 2 : count - (i + 1));
+                    out(d, csview_from(more));
+                    approx_add(d, 2);
+                    ty_display(me, d, ty->composite.types.data[count - 1]);
+                    break;
+                }
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
+                approx_add(d, 2);
                 // (A union that prints as the `keyof X` it was made from is a type operator, which needs none)
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
                 display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
@@ -3949,6 +4140,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool parens = needs_parens_in_array(me, d, operand) && !shows_alias(d, operand) &&
                 (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION ||
                     (operand->kind == TY_CONDITIONAL && !conditional_elided(d, operand)) || is_function_like(me, d, operand));
+            approx_add(d, 6);
             out_lit(d, "keyof ");
             display_parenthesized_if(me, d, operand, parens);
         }   break;
@@ -3958,12 +4150,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             out_lit(d, "[");
             ty_display(me, d, ty->indexed.index);
             out_lit(d, "]");
+            approx_add(d, 2); // (After both)
             break;
 
         case TY_SUBSTITUTION: impossible;
 
         case TY_CONDITIONAL: {
             if (display_over(d)) { // (tsc's visitAndTransformType)
+                approx_add(d, 3);
                 out_lit(d, "...");
                 break;
             }
@@ -3989,11 +4183,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_template_text(d, atom_sv(ty->template_literal.texts[i]));
             }
             out_lit(d, "`");
+            approx_add(d, 2); // (After its types, not its texts)
             break;
 
         case TY_STRING_MAPPING: {
             static char const* const names[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize" };
             out(d, csview_from(names[ty->string_mapping.mapping]));
+            approx_add(d, (u32)strlen(names[ty->string_mapping.mapping]) + 1);
             out_lit(d, "<");
             ty_display(me, d, ty->string_mapping.type);
             out_lit(d, ">");
