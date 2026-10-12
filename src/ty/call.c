@@ -1025,7 +1025,8 @@ static void infer_from_annotated_params_of(Checker* me, Inference* inf, Function
 }
 
 static bool is_literal_arg(Arg const* arg) {
-    return !arg->spread && !arg->part_of_spread && (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY);
+    return !arg->spread && !arg->part_of_spread &&
+        (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY || arg->expr->tag == EXPR_TERNARY);
 }
 
 // The contextual type of a literal argument in the first pass: what the return type says about the type parameters

@@ -314,7 +314,9 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     }
     if (ctx.generic_mode) {
         // Literals pass it on, and aren't remembered like this; anything else is a member it may apply to
-        if (expr->tag == EXPR_ARRAY) return compute(me, expr, ctx);
+        // (A conditional expression's branches are what it is: tsc skips a generic call in either under
+        // SkipGenericFunctions like at the top, `cond ? share() : shareReplay(...)`)
+        if (expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY) return compute(me, expr, ctx);
         if (expr->tag == EXPR_OBJECT) {
             // (Nor is the contextual type its methods' `this` goes by: the check against the call's chosen candidate,
             // which a remembered type may answer without checking again, is what tsc's resolved signature says)
@@ -380,7 +382,7 @@ Ty const* ty_check_literal_argument(
 ) {
     return check_with(me, expr, (ExprCtx){
         .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
-        .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY ? mode : nullptr,
+        .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY ? mode : nullptr,
     });
 }
 
