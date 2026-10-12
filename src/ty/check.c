@@ -1152,7 +1152,8 @@ void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes,
         props[i_index] = (ObjectLiteralProp){
             .name = checker_atom(me, name),
             .type = ty_regular(me, ty_check_expr(me, &i->value, nullptr)),
-            .name_span = i->name,
+            // (No declaration: tsgo's members are new symbols, named as their text says)
+            .name_form = PROP_NAME_KNOWN | PROP_NAME_STRING | PROP_NAME_RAW,
             .own = true,
         };
     }

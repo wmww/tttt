@@ -35,3 +35,5 @@ typedef enum ImportResolutionOverride {
 // tsc's getResolutionModeOverride(): the resolution mode a type-only import or an import type asks for, reporting what's
 // wrong with the attributes of one if errs isn't null (TS1453/1455/1456/1463/1464)
 ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes const* me, ErrorCtx* errs);
+// A value tsc's isStringLiteral takes: a string literal, not a template
+bool import_attribute_value_is_string_literal(Expr const* value);

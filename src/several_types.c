@@ -275,6 +275,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         // (tsc's checkImportType doesn't check the type arguments: they are only evaluated when the module is there.
         // Their names still resolve, silently, for whoever asks)
         bool found = import_type_lookup_names(me, names, errs);
+        // (The attributes' values are expressions: tsgo's checkImportAttributes checks them)
+        if (my rare->import_attributes) {
+            for_each (i, vec_import_attribute, &my rare->import_attributes->elements) expr_lookup_names(&i->value, names, errs);
+        }
         ErrorCtx silent = errs ? error_ctx_scratch(errs) : (ErrorCtx){0};
         // (Type arguments of `import("./m")<T>` whose target takes none aren't resolved at all in tsc, TS2315: no uses)
         // (Nor of one whose `export=` its typedefs made a namespace: TS2315 "Type 'export=' is not generic")
@@ -686,11 +690,23 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(me));
     identifier_type_typecheck_inner(me, errs);
     ty_leave_node(current_checker, saved);
+    // (tsgo's checkImportType ends with checkImportAttributes: the attributes against the global ImportAttributes,
+    // and nothing more for an import type)
+    if (my rare && my rare->import_attributes) {
+        ty_check_import_attributes(current_checker, my rare->import_attributes, errs);
+        for_each (i, vec_import_attribute, &my rare->import_attributes->elements) expr_typecheck(&i->value, errs);
+    }
 }
 
 static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
     IdentifierTypeRare const* rare = my rare;
     if (rare && rare->import_attributes) { // tsc's checkImportType
+        // (tsgo's checkGrammarImportAttributeValues: only a string literal, not a template)
+        for_each (i, vec_import_attribute, &rare->import_attributes->elements) {
+            if (!import_attribute_value_is_string_literal(&i->value)) {
+                error_ctx_error_d(errs, expr_outer_span(&i->value), 2858, "Import attribute values must be string literal expressions.");
+            }
+        }
         // (`assert` is the parser's TS2880)
         import_attributes_resolution_mode(rare->import_attributes, errs);
     }

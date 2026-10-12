@@ -528,6 +528,9 @@ typedef enum PropNameForm {
     PROP_NAME_SINGLE_QUOTED = 1 << 2, // Every declaration names it with a 'single-quoted' string literal
     PROP_NAME_TYPED = 1 << 3, // tsc's nameType: a computed name's literal type (not a literal written in a class or
                               // interface, which the binder names), a mapped type's key: `-1` prints as `[-1]`
+    // A new symbol named by its text, without declaration or nameType (an import attribute): symbolToString prints the
+    // text as it is (`Property 'resolution-mode'`), unlike a type, which quotes it
+    PROP_NAME_RAW = 1 << 4,
 } PropNameForm;
 // The form of one declaration's name: `written` as written, or the type of its computed name (`literal_key`: an
 // object literal's, whose literal type is always its nameType)

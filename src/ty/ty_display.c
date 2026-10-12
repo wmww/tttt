@@ -928,6 +928,7 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
         return cstr_from_sv(span_sv(name));
     }
     if (span_valid(name) && name.size && name.buf[0] >= '0' && name.buf[0] <= '9') return cstr_from_sv(span_sv(name));
+    if (ty_prop_name_form_of(root) & PROP_NAME_RAW) return cstr_from_sv(atom_sv(prop->name));
     return ty_prop_name_cstr(me, prop->name);
 }
 

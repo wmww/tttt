@@ -50331,7 +50331,7 @@ const baselines = {
         types: true,
     },
     'importAttributes12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
