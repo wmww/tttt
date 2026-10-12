@@ -53176,7 +53176,7 @@ const baselines = {
         types: true,
     },
     'typedefTagWrapping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
