@@ -1,26 +1,18 @@
 # JavaScript and JSDoc: open divergences
-`scripts/jsstats.py` (after `scripts/failstats.py`) lists the failing JS tests by feature; 79 of 1165 failed after the
-JS rework (todo entry 8 of the thirteenth window, 2026-10-09), which deleted what tsgo 7 removed (constructor
-functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases). documentation.md "JSDoc" / "CommonJS" describe
-what exists; plan 26 (the 6.0-era design and its leftovers) was retired 2026-10-09 (git has it). Pruned 2026-10-09
-against the tsgo 7.1 suite.
+`scripts/jsstats.py` (after `scripts/failstats.py`) lists the failing JS tests by feature. documentation.md "JSDoc" /
+"CommonJS" describe what exists. The suite/JS tail fan-out of 2026-10-12 (agent D) fixed 41 of the 63 JS tests left (with agent A's duplicate diagnostics);
+what remains is below, each with what was found.
 
 ## Binding and merging
-- A JSDoc `@typedef T` and a same-named class/variable in a JS module (ES or CommonJS) is TS2300 in tsgo (the typedef
-  gets a local twin, declareModuleMember), none in tttt (typedefCrossModule2's Foo, probe `/** @typedef {number} Foo */
-  class Foo {}`). tsgo also binds top-level typedefs after every other statement: declaration lists put them last
-  (jsTypedefMergedWithModuleExportProperty's symbols: a `@typedef T` merged with `const T` exported through
-  `module.exports.T = T` lists the const first in tsgo; symbol_add_decl's reordering doesn't reach this merge).
-- `Object.defineProperty(o, "name", ...)` on a non-exports object names the member as written, `"name"` with quotes
-  (checkObjectDefineProperty); exports already do (add_define_property_export()). Needs a display span separate from
-  the lookup name in add_expando_member().
 - `obj.y = Object.values(obj)` of a JS `{}` container (expandoNoInferredIndex, expandoObjectIndexSignatures): tsgo
   reports TS7022 for the cycle through the container's type inside the call's inference (y any); tttt's
   guarded_assignment_symbol_type() is entered for y, but resolving `Object.values(obj)` never asks for y's type again
   (past the call's resolving barrier, Checker.resolving_start? overload 2 `values(o: {}): any[]` chosen? check
-  whether infer.c's index-signature inference from the expando namespace type reads the props).
-- typeFromContextualThisType symbols: `this` in a method of a literal typed by `@type {{...}}` on `const o1` is
-  `Symbol(o1, Decl(type literal))` in tsgo (the reparsed type literal is named by the variable).
+  whether infer.c's index-signature inference from the expando namespace type reads the props: tsgo's
+  getImplicitIndexTypeOfType reads every property's type, y's included).
+- jsContainerMergeTsDeclaration3 (TYP): `declare class A {}` in a.d.ts and `const A = {}; A.d = {}` in b.js (TS2451
+  between them): tsgo's binder makes d a member of the `{}` literal's symbol (b.js's own local, before the global
+  merge), so the literal prints `{ d: {}; }`; tttt's host is the merged global, the literal prints `{}`. Conflict-only.
 - `exports.fn2 = Math.min`: tsgo's symbols baseline names `Math.min` `Symbol(fn2, Decl(lib.es5.d.ts...))` (an alias
   declaration's entity name shows the alias's name with the target's declarations: moduleExportsAliasLoop1/2). Quirk.
 - A module augmentation's module in the types baseline (`declare module "./test"` of a JS module): tsgo prints
@@ -28,8 +20,19 @@ against the tsgo 7.1 suite.
   (jsExportMemberMergedWithModuleAugmentation2); naming it from outside the augmentation lost two TS tests.
 - numericExportNameDeclaration (TYP): JS `module.exports[1] = 2` is `error` to tsgo's types baseline (any in tttt);
   `exports[1]` is any.
-- Mutant one-offs (JS mutants 2026-10-09): TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge),
-  moduleExportAlias5 TS2339, jsDeclarationsFunctions TS2323 (`export { j }` twice).
+- jsDeclarationsImportAliasExposedWithinNamespace (SYM): the declarations of `myTypes` through `export {myTypes}`
+  (a const merged with `@typedef myTypes.x` namespaces): tsgo lists the namespace declarations first and the export
+  specifier last; tttt's baseline_symbol_declaration_spans() puts the specifier first.
+- jsDeclarationsExportAssignedConstructorFunctionWithSub (SYM only): `this` in `module.exports.Sub = function () {
+  this }` where `module.exports = function (p) {}`: tsgo names it `Symbol(exports, Decl(..., 3, 16))` (the function
+  expression's symbol, named after the assignment?). Quirk.
+- lateBoundAssignmentDeclarationSupport5/7: a unique-symbol key printed from another file is `[_sym]` in tsgo (the
+  declaration's name, not accessible there), `[x.S]` in tttt (an accessible chain through the require alias), and
+  the symbol `x.F[F[_str]]` vs `x.F[_str]`. Not reduced further.
+- plainJSGrammarErrors (TYP): `function nestedExports() { export default 12 }` in a file full of grammar errors is
+  `() => void` to tsgo; tttt `{ (): void; default: 12; }`. But in small probes (a module or a script, checkJs or not)
+  tsgo gives the function the `default` member (bindExportAssignment declares into the function's exports) and tttt
+  doesn't: two opposite divergences, neither understood. Probe: `/tmp`-style `function f() { export default 12 } f;`.
 
 ## Types
 - Returned object literals aren't widened in tsgo: `function f() { return { x: [] } }` is `() => { x: undefined[] }`
@@ -39,38 +42,52 @@ against the tsgo 7.1 suite.
 - A JS variable with both a TS annotation (TS8010) and a JSDoc `@type` on a function initializer: tsgo's reparser
   makes the `@type` the function's FullSignature, so the function prints as the tag's signature (`(this: Foo) =>
   void`); tttt keeps the contextual typing. Artificial.
-- jsdocTypedefBeforeParenthesizedExpression: `@param a {NotADuplicateIdentifier}` with the typedef in a comment before
-  a parenthesized expression statement prints `number` in tsgo, the alias name in tttt.
+- exportDefaultWithJSDoc1 (TYP): `/** @type {NumberLike[]} */export default ([ ]);` prints `([ ]) : NumberLike[]`
+  in the test (with a b.ts importing the default) but `never[]` in probes without b.ts (tsgo, checkJs or not): the
+  import's resolution changes the cached type of the parenthesized expression. Check order / tsgo artifact, left.
+- errorOnFunctionReturnType(target=es2015): (1) `/** @type {F} */ async function f()` where F returns never: tsgo has
+  no TS1065 (the FullSignature's return isn't the function's own annotation; ty_check_async_return_annotation() looks
+  at the moved-in return type); (2) `var v = /** @type {F} */ function () {}` prints v as `() => Promise<number>` in
+  tsgo (the function's type), the alias `F` in tttt: the variable seems to take the tag type itself.
+- importTypeInJSDoc (TYP): `constructor(x: MyClass.Bar)` in a .d.ts with `export = MyClass` (class + namespace) prints
+  `import("./externs").Bar` in tttt, `MyClass.Bar` as written in tsgo.
+- jsFunctionWithPrototypeNoErrorTruncationNoCrash (TYP): `Color.prototype = { negate: function () { return this }, ...}`:
+  the `this` of each method is the literal's type, whose printing nests one level more in tsgo (each method's return
+  shows the literal again with itself as `any`): tttt prints `negate: () => any` where tsgo expands it once.
+- requireOfJsonFileWithoutResolveJsonModule: a `.json` file reached by `require` without resolveJsonModule is parsed
+  as JSON by tttt (TS1328/TS1012) and as a TS source by tsgo (TS1005/TS1136, an object literal with `contents: any`
+  ...); tsgo's types follow from that parse.
 
 ## JSDoc diagnostics
 - An earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every
   comment). No test.
-- tsgo quirks, port only if cheap: typedefTagWrapping (a `@typedef` whose type fails to parse has a missing name,
-  declared globally as '(Missing)': TS2300 "Duplicate identifier '(Missing)'" across three scripts); callbackTag4 (a
-  `@this` tag's synthetic `this` parameter is named by the tag's whole text in the symbols baseline).
+- jsEnumCrossFileExport: `@enum` is gone in 7 (TS2749 where a namespace-typed expando is used as a type), and the
+  enum objects' `Host.UserMetrics = {}` chain (TS2339 in tttt, an expando of an expando of a `var Host = {}`) isn't
+  bound like tsgo's; also a TS1003 at a `@typedef` with a missing name before `*/` on the next line. Several causes.
 
 ## Declaration diagnostics in JS
-Only TS6424 is ported (`js_declaration_diagnostics_check()`); the declaration walk skips JS entirely
-(`declaration_diagnostics_wanted()`): TS4023 (jsDeclarationsTypeReassignmentFromDeclaration2,
-cjsObjectDefinePropertyPrivateModuleDeclarationEmit: `Object.defineProperty(exports, "api", { value: require("pkg") })`
-whose type uses a non-exported interface of an `export =` module, name `'"api"'`), TS9013 for `this.x = foo()` in a
-JS constructor under isolatedDeclarations (isolatedDeclarationsJsThisPropertyAssignmentInference).
+Only TS6424 and isolatedDeclarations are ported for JS (`js_declaration_diagnostics_check()`,
+`declaration_diagnostics_wanted()`): tsgo's declaration transformer runs on JS too (transform.go: CommonJS exports,
+this-property assignments collected into class members, `collectThisPropertyAssignments`). Missing: TS4023
+(jsDeclarationsTypeReassignmentFromDeclaration2, cjsObjectDefinePropertyPrivateModuleDeclarationEmit:
+`Object.defineProperty(exports, "api", { value: require("pkg") })` whose type uses a non-exported interface of an
+`export =` module, name `'"api"'`), TS5088 (commonJSImportNestedClassTypeReference: `exports.K = NS.K` of a class
+expression expando whose method returns `new NS.K()`), TS9013 for `this.x = foo()` in a JS constructor under
+isolatedDeclarations (isolatedDeclarationsJsThisPropertyAssignmentInference: tsgo's visitThisPropertyAssignments ->
+ensureType(binary expression), reported over the whole assignment; check_class() would collect the first `this.x =`
+per name in constructors, methods and static blocks of a JS class, skipping names the class declares). Plan-sized as a
+whole (JS declaration emit's walk); the TS9013 part alone is ~60 lines.
 
 ## Older binder gaps (written against tsc 6, before the JS rework: recheck against tsgo before working on one)
-Binder gaps (spurious TS2339 and friends):
-- `exports.x =` next to `module.exports = {...}` (typedefCrossModule2: tsc merges them).
+- `exports.x =` next to `module.exports = {...}`.
 - **CommonJS exports inside functions**: tsc binds `exports.x = v` / `module.exports = v` from any container
   (bindExportsPropertyAssignment has no container check); `add_nested_commonjs_exports()` only walks top-level
   statement lists. Needs a declare-step walk into function bodies (the link step must see them).
 - **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment,
   SourceFile container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
-Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (symbols; a `@typedef ns.x` namespace merged with an
-exported const), fixSignatureCaching (types; an expando-heavy JS-like file). Declaration emit (plan 40):
-jsDeclarationsExportAssignedConstructorFunctionWithSub(target=es2015) (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
-(TS9006).
 - CommonJS leftovers: `exports.Date = Date; exports.Date = 1` also gets TS2322; `function f() { var z = 1; exports.z =
   z; }` gets TS2339 (exports inside functions).
 - TS2417 (class static side) doesn't see a JS class's expando members; `export as namespace` in a JS file isn't bound
   (`scope_add_port()`). (From hacks.md, 2026-10-08)
-- importTag13: `@import x = require("m")` is TS1005 'from' expected in tsgo, which then parses the module specifier as
-  an expression and says TS1141 over `= require("types")`; tttt's JSDoc @import parser stops.
+- Mutant one-offs (JS mutants 2026-10-09): TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge),
+  moduleExportAlias5 TS2339, jsDeclarationsFunctions TS2323 (`export { j }` twice).
