@@ -99,6 +99,7 @@ static bool is_param_at_top_level(Checker* me, Ty const* type, Ty const* param) 
 }
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target);
+static inline void infer_from_reduced(Checker* me, Inference* inf, Ty const* source, Ty const* target);
 
 static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority) {
     u32 saved = inf->priority;
@@ -1387,7 +1388,9 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         Ty const* rest_source = ty_union(me, left, len, nullptr, (TyList){0});
         free(left);
         free(source_done);
-        infer_from(me, inf, rest_source, rest_target);
+        // (Not as a new pair: no alias match, no intersection target reduction, tsc's inferFromTypes goes on with
+        // both reduced in the same call)
+        if (rest_target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) infer_from_reduced(me, inf, rest_source, rest_target);
         return;
     }
 
@@ -1590,6 +1593,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         return;
     }
     if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
+    infer_from_reduced(me, inf, source, target);
+}
+
+// The rest of tsc's inferFromTypes, once the matching members of a union or an intersection target are taken out: a
+// union target's rest goes on here, without the intersection target's (an else branch in tsc)
+[[gnu::always_inline]] static inline void infer_from_reduced(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
