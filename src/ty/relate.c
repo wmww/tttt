@@ -6005,6 +6005,17 @@ static Ternary structured_related_members(
     if (source->kind == TY_INTERSECTION && (target->flags & TYF_OBJECT) && intersection_apparent_is_union(me, source)) {
         return TERNARY_FALSE;
     }
+    // Nor one with a null or undefined member: its apparent type (the members' apparent types intersected, tsc's
+    // getApparentTypeOfIntersectionType) is null, undefined or never, not an object: `T & null` (an unconstrained T)
+    // isn't assignable to `{ [k: string]: any }` (vitepress' `deepMerge(result[key], value)`)
+    if (source->kind == TY_INTERSECTION && (target->flags & TYF_OBJECT)) {
+        bool nullable = false, any = false;
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            nullable |= (source->composite.types.data[i]->flags & (TYF_NULL | TYF_UNDEFINED)) != 0;
+            any |= (source->composite.types.data[i]->flags & TYF_ANY) != 0;
+        }
+        if (nullable && !any) return TERNARY_FALSE;
+    }
     Ty const* apparent = source->kind == TY_INTERSECTION ? source : apparent_type(me, source);
     if (apparent != source && apparent->kind == TY_UNION && target->kind == TY_REFERENCE &&
         is_array_target(me, target->reference.target)
