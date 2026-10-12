@@ -1669,7 +1669,7 @@ static Atom const* class_member_name(ClassItem const* item, bool* late, u32* fla
     if (item->tag == CLASS_ITEM_FIELD) {
         key = item->field.computed_key;
         name_string = &item->field.name_string;
-        *flags = 1;
+        *flags = item->field.is_auto_accessor ? 4 | 8 : 1;
     } else if (item->tag == CLASS_ITEM_METHOD) {
         key = item->method.computed_key;
         name_string = &item->method.name_string;
@@ -1693,7 +1693,8 @@ static Atom const* class_member_name(ClassItem const* item, bool* late, u32* fla
 
 // The members whose declarations one with a computed name shares a symbol with. A literal name is the binder's (like
 // a written name: joins the first member of the name unless that one has a meaning it excludes); any other is late
-// bound (tsc's lateBindMember), and in a class every late bound member of a name is one symbol, conflicts or not
+// bound (tsgo's lateBindMember), which does the same among the late bound members of the name: a conflicting one is
+// a symbol of its own, and an accessor conflicting with what isn't its other half makes the first symbol both
 static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
     bool late;
     u32 flags;
@@ -1701,17 +1702,7 @@ static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const*
     if (!name) return 0;
     bool is_static = class_item_is_static((ClassItem*)me);
     u32 len = 0;
-    if (late) {
-        for (ClassItem const* j = items->data; j < items->data + items->size; j++) {
-            bool other_late;
-            u32 other_flags;
-            if (class_item_is_static((ClassItem*)j) != is_static) continue;
-            if (class_member_name(j, &other_late, &other_flags) != name || !other_late) continue;
-            if (len < cap) out[len++] = j;
-        }
-        return len;
-    }
-    // (The binder, in order: each member's symbol is the first of its name or itself)
+    // (In order: each member's symbol is the first of its name or itself)
     ClassItem const* firsts[64];
     u32 count = 0;
     ClassItem const* first = nullptr;
@@ -1721,8 +1712,10 @@ static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const*
         bool other_late;
         u32 other_flags;
         if (class_item_is_static((ClassItem*)j) != is_static) continue;
-        if (class_member_name(j, &other_late, &other_flags) != name || other_late) continue;
-        u32 excludes = other_flags == 1 ? 0 : other_flags == 2 ? ~2u : other_flags == 4 ? ~8u : ~4u;
+        if (class_member_name(j, &other_late, &other_flags) != name || other_late != late) continue;
+        // (PropertyExcludes, MethodExcludes, Get/SetAccessorExcludes, AccessorExcludes)
+        u32 excludes = other_flags == 1 ? 2u : other_flags == 2 ? 1u | 4u | 8u : other_flags == 4 ? 2u | 4u :
+            other_flags == 8 ? 2u | 8u : 2u | 4u | 8u;
         ClassItem const* symbol = j;
         if (!first) {
             first = j;
@@ -1730,6 +1723,8 @@ static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const*
         } else if (!(existing & excludes)) {
             symbol = first;
             existing |= other_flags;
+        } else if ((existing & 12u) && (existing & 12u) != (other_flags & 12u)) {
+            existing |= 12u;
         }
         firsts[count] = symbol;
         out[count < cap ? count : cap - 1] = j;

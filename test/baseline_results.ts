@@ -40682,7 +40682,7 @@ const baselines = {
     },
     'symbolDeclarationEmit12': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit13': {
@@ -40927,7 +40927,7 @@ const baselines = {
     },
     'symbolProperty44': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty45': {
