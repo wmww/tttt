@@ -67,12 +67,12 @@ names, D the missing direction) on the checker keys, two rounds each. **2251 -> 
 
 Left at the config level: tsc's include-pattern order of root files (agents/bugs/include_order.md, blocked by an
 order-dependent union reduction in vue); the rest is in agents/bugs/harness.md (config diagnostics). Checker leftovers are in the agents' bug files (agents/bugs/sourcesweep_checker.md,
-conditional-walk-infers-returns.md, suggestion-count-check-order.md and others) and triage.md.
+sourcesweep_checker.md, type_core.md) and triage.md.
 
 Where a second drain would start (end of stage 2, by repos / projects / diagnostics): +TS2322 31/51/165, +TS2345
 27/74/277, +TS7006 26/52/215, +TS2339 21/39/196, +TS2578 15/24/52, +TS2769 11/17/21, +TS2344 10/13/54 (many are
 `expectTypeOf` assertions failing on other wrong types), +TS2352 7/52/53, +TS2589 6/10/20; missing -TS2339 5/11/43,
--TS2552 5/10/16 (suggestion order, bugs/suggestion-count-check-order.md). The per-key returns are falling (a round of
+-TS2552 5/10/16 (suggestion order, bugs/sourcesweep_checker.md "Spelling suggestions"). The per-key returns are falling (a round of
 four agents moved ~70 projects in its second round against ~200 in the first): worth another fan-out only together
 with stage 3's flag flips, or one agent alongside other work.
 

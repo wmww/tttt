@@ -79,7 +79,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - Escaped identifiers (`a`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names
   behind a mutex, keyed by where the raw name sits in a file with a `\u`, each lookup a linear scan of that file's
   cooked names (quadratic for a file with thousands). Symbol tables cook at every lookup (a `memchr` for normal
-  names). Comparisons against literals (`span_equals(name, "constructor")`) stay raw (`bugs/escaped_identifiers.md`).
+  names). Comparisons against literals (`span_equals(name, "constructor")`) stay raw (`bugs/binder_modules.md` "Escaped identifiers").
   `EnumCase.name` of a string member is the raw text. Escaped keywords (`hop_escaped_keyword()`) report TS1260
   wherever the probe matches, even speculatively.
 - Two notions of "reserved": `parse_identifier()` refuses only `is_reserved_identifier()` (plus `var` in JS) because it

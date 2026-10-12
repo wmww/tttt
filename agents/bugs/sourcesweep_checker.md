@@ -243,3 +243,111 @@ string config options), tsx cache.ts (no flow narrowing of a non-variable module
   not reduced.
 - pixijs (+TS2451 in @webgpu/types) and feathers matched in some runs and not in others of this round: check
   whether the result depends on the checker count or file order before chasing them.
+
+## Source sweep checker leftovers of agent ss-b (round 2)
+Unreduced or order-dependent findings on the +TS2339/+TS7006/+TS2349/+TS2698 keys, for a future session.
+
+- **+TS2698 `{ ...where }` with `where: FilterQuery<Entity>`** (mikro-orm: 7 in each of ~20 projects, trpc's heyapi
+  `client.gen.ts:248` `{ ..._config, ...options }` in 12). tsc's isValidSpreadType takes the base constraint of each
+  union member; mikro-orm's `FilterQuery<T> = ObjectQuery<T> | NonNullable<ExpandScalar<Primary<T>>> | ...`. A cut-down
+  copy of those aliases (`/tmp` probe sp1.ts in the session) is clean in both, so it depends on the real
+  ObjectQuery/Primary. Reduce from `mikro-orm/packages/core/src/EntityManager.ts:287`.
+- **react-navigation `example/__typechecks__/common.check.tsx:1501` TS2349** (`expectTypeOf(navigation.setParams)
+  .parameter(0).toBeUndefined()` not callable) only in the root project: checking common.check.tsx alone (a mirror
+  project with only that file) matches tsc, so it depends on what's checked before it.
+- **discord.js root `REST.ts:128` and `structures/__tests__/types/channels.test-d.ts:8`**: only in the broken root
+  project (no jsx setting, everything included).
+- **redux-toolkit `combineSlices.ts:120` +TS2344 `Sl` vs `AnySliceLike`** (relations, agent A's key).
+- Display: a method's instantiated type parameter defaults print uninstantiated (`<EO = O>` for `<EO = any>`), a
+  default type argument is left out (`E<EO>` for `E<EO, Cfg<EO>>`), and `PayloadAction<..., never>` prints a defaulted
+  `never` argument tsc leaves out.
+
+## Two missing-diagnostic quirks from the source sweep (plan 52 drain, ss-d round 2)
+### `import * as X` of an `export =` module under esModuleInterop is a *clone* of the target (docmost, -TS2322)
+tsc's resolveESModuleSymbol: a namespace import (or `import()`) of an `export =` whose type has call/construct
+signatures (or a `default`) under esModuleInterop resolves to `cloneTypeAsModuleType(symbol, ...)`: a new transient
+symbol with the same flags and declarations. Its value type is the synthetic module type (no signatures: `new X()` is
+TS2351, tttt has that), and its *type* meaning is the clone's own declared interface type, a distinct type from the
+original interface with its own `this` type, printed `import("<path>")`. So the original and the clone don't relate
+when the interface returns `this` somewhere. Repro (`/tmp/ss-d-probes/p14` shape):
+
+```ts
+// node_modules/jz/index.d.ts
+interface JSZip { file(path: string): JSZip.JSZipObject | null; file(path: string, data: string): this;
+  folder(name: string): JSZip | null; new (): this; (): JSZip; prototype: JSZip; }
+declare namespace JSZip { interface JSZipObject { name: string } }
+declare var JSZip: JSZip;
+export = JSZip;
+// a.ts, module commonjs (esModuleInterop is on by default in 6.0), strict false
+import * as JSZip from 'jz';
+export function f(zip: JSZip) {
+  const stack: { folder: JSZip }[] = [{ folder: zip }];
+  const { folder } = stack.pop();
+  stack.push({ folder: folder.folder("x") });   // tsc: TS2322 Type 'import(".../jz/index")' is not assignable to type 'JSZip'
+}
+```
+Fixing it means a second declared type for the same declarations, keyed by the import (tttt keys declared types by
+symbol): plan-sized for one repo; only worth it if more show up.
+
+### Property access on a union member `E & null` with E constrained to the error type (react-navigation, -TS2339)
+`T extends Unresolved` narrowed by `=== undefined` is `T & ({} | null)`; tsc reports TS2339 on it ("does not exist on
+type 'T & null'"). Probing tsc (`function f<E extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3 },
+d: (E & {}) | (E & null))`): only `d.x` is an error, `a.x`, `b.x`, `c.x` alone are not. So a lone intersection with
+an error-constrained member is any-like but a union of them isn't (getUnionOrIntersectionProperty skips members whose
+apparent type is the error type, and the union's property needs every member). tttt's check_access treats any union
+member with a type parameter as opaque. Needs reading tsc's getPropertyOfType for unions of intersections first; the
+lone-intersection case must stay silent.
+
+## `OmitConstructors<typeof Model>` is any in sequelize (imported alias), fine as a local copy
+Source sweep, sequelize (`-TS2488`, `-TS2339` in `packages/core`): `target.sequelize` with `target: ModelStatic` is
+`any` in tttt, `Sequelize<AbstractDialect<object, object>>` in tsc, so `for (const model of sequelize.models)` and
+friends lose their errors. `ModelStatic<M> = OmitConstructors<typeof Model> & { new (): M }` (`src/model.d.ts`),
+`OmitConstructors<T> = Pick<T, NonConstructorKeys<T>>` with
+`NonConstructorKeys<T> = { [P in keyof T]: T[P] extends new () => any ? never : P }[keyof T]` (`src/utils/types.ts`).
+
+Repro (a project under /tmp whose tsconfig extends `sequelize/packages/core/tsconfig.json`, `files: ["probe2.ts"]`,
+`rootDir: "/"`):
+
+```ts
+import type { Model } from "<abs>/sequelize/packages/core/src/model";
+import type { OmitConstructors } from "<abs>/sequelize/packages/core/src/utils/types.js";
+declare const o: OmitConstructors<typeof Model>;
+export const s3 = o.sequelize;   // tsc: Sequelize<AbstractDialect<object, object>>, tttt: any
+```
+
+Checked so far: `Pick<typeof Model, NCK>` written out in the probe file, and a local
+`type OC<T> = Pick<T, NCK2<T>>` (same definition) both give the right type; `(typeof Model)["sequelize"]`,
+`keyof typeof Model` (110 keys) and the mapped type's members match tsc. Only the imported alias is any, which smells
+like an instantiation cached while `typeof Model`'s static side was still being resolved (model.d.ts uses
+`ModelStatic` inside `Model` itself), or an alias-instantiation key collision. `TTTT_DEBUG_CYCLE=1` prints nothing.
+utils/types.ts also has an unresolved import (`@sequelize/utils`, NonUndefined/PartialBy), possibly relevant.
+
+Narrowed further: importing the same two aliases from a fresh file (`t2.ts`, copied definitions) gives the right
+type, importing them from sequelize's `utils/types.ts` gives any. So it's the *shared* instantiation
+`OmitConstructors<typeof Model>` that model.d.ts itself creates (through `ModelStatic`, used inside `Model`'s
+statics) that is wrong: most likely computed while `typeof Model` was in flight and cached as any. Circularity
+handling (agent C's area during the plan-52 fan-out).
+
+## Spelling suggestions counted in check order: the deferred bodies are done, lazy type resolution isn't
+tsc gives at most 10 "Did you mean" suggestions per checker (`suggestionCount` / `maximumSuggestionCount` in
+`resolveNameHelper`'s lazy diagnostic), and the count increases for every name it fails to resolve, suggestion or not,
+in the order the *checker* resolves names. tttt counts at the resolve shards' merge (`resolve_shard_merge`): since
+the plan-52 drain it counts the top level first and then the bodies tsc defers (`checkNodeDeferred`: function
+expressions, arrows, object literal methods and accessors, class expressions) breadth first (`ResolveShard.body_parent`,
+`suggestion_count_order()`), which fixed jest's test files (`test(...)` calls at the top level get "Did you mean
+'Test'?" before the `expect`s in their callbacks spend the budget).
+
+Still different (angular-components `src/cdk/testing/testbed/task-state-zone-interceptor.ts`, -TS2552 in 3 projects):
+tsc resolves type references lazily, when a type is first needed. There, line 36's initializer calls
+`this._getTaskStateFromInternalZoneState(...)`, whose signature's parameter type `HasTaskState` (line 55) is resolved
+then, before the method at line 48 is checked: tsc suggests 'TaskState' at 33, 43 and 55 but not at 48. A binder-side
+order can't know that; it would need counting at the checker's first resolution of each name (tsc's actual model).
+Also not covered: arrow bodies whose return expressions inference checks early (getReturnTypeFromBody of a
+context-sensitive argument), and JavaScript files (resolved serially, counted in walk order).
+
+Since 4e156fbf: only the *body* is deferred (signatures count in place), and a syntactically contextual function
+expression without a return annotation counts its return expressions and call-statement callees early (tsc infers
+its return type on the spot). Contextual is a syntactic guess; arguments of a call to an unresolved name are not
+contextual. Still off: jest-reporters' GitHubActionsReporter.test.ts, where tsc's order mixes nested `describe`
+bodies in an order this model doesn't produce. `/tmp/ss-d-tsc` had a tsc copy logging `COUNT n name file:line` at
+the suggestion site in resolveNameHelper: the quickest way to see tsc's real order.
