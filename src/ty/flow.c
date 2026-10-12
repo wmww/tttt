@@ -3517,6 +3517,11 @@ Ty const* ty_destructured_narrowed_type(Checker* me, Binding const* binding, Flo
     Ty const* narrowed = result.type;
     if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return nullptr;
     if (narrowed->flags & TYF_NEVER) return ty_intrinsic(me, TY_NEVER);
+    // (tsgo's getBindingElementTypeFromParentType checks that the narrowed parent iterates, at the pattern: a
+    // generic's constraint that doesn't is TS2488 there next to the declared type's, `[number, number] | undefined`)
+    if (pattern->tag == BINDING_ARRAY && my errs && my errs->phase == ERROR_PHASE_TYPECHECK) {
+        ty_iterated_type(me, ITERATION_DESTRUCTURING, narrowed, pattern->content_span, my errs);
+    }
     return ty_binding_element_type_from(me, binding, narrowed);
 }
 
