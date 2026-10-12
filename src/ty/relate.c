@@ -2040,6 +2040,56 @@ static unsigned signature_return_code(Signature const* source, Signature const* 
 
 // tsc's getErasedSignature: every type parameter is any
 Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
+    // An instantiation not resolved yet is erased in one step from its target, its mapper with the target's type
+    // parameters any (tsc's getErasedSignature of an instantiated signature, whose parameters are lazily typed): resolving
+    // it first instantiates every parameter type with clones of the type parameters, evaluating the conditional types in
+    // them (typesaurus's 10 overloads of `field` per Builder<Def, X>, in every variance measurement of the update API)
+    Signature const* target = sig->target;
+    if (sig->state == LAZY_STATE_NOT_STARTED && target && sig->mapper && !sig->function && !sig->instantiates_own_params &&
+        !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT)
+    ) {
+        signature_resolve(me, target);
+        u32 own = target->type_params.len;
+        if (own) {
+            u64 stack_key[18];
+            u32 key_len = 2 + own;
+            u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
+            panic_if(!key, "out of memory");
+            key[0] = KEY_SIGNATURE_INSTANCE;
+            key[1] = (u64)(uintptr_t)sig;
+            Ty const* any = ty_intrinsic(me, TY_ANY);
+            for (u32 i = 0; i < own; i++) key[2 + i] = any->id;
+            void const** slot = intern_slot(me, &my links, key, key_len);
+            if (key != stack_key) free(key);
+            if (*slot) return *slot;
+            TyMapper const* outer = sig->mapper;
+            Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + own);
+            Ty const** targets = arena_new_n(&my arena, Ty const*, outer->len + own);
+            u32 len = 0;
+            for (u32 j = 0; j < outer->len; j++) {
+                bool is_own = false;
+                for (u32 i = 0; i < own && !is_own; i++) is_own = outer->sources[j] == target->type_params.data[i];
+                if (is_own) continue;
+                sources[len] = outer->sources[j];
+                targets[len++] = outer->targets[j];
+            }
+            for (u32 i = 0; i < own; i++) {
+                sources[len] = target->type_params.data[i];
+                targets[len++] = any;
+            }
+            Signature* ret = arena_new(&my arena, Signature);
+            *ret = (Signature){
+                .flags = sig->flags,
+                .target = target,
+                .mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }),
+                .instantiates_own_params = true,
+            };
+            *slot = ret;
+            signature_resolve(me, ret);
+            ret->type_params = (TyList){0};
+            return ret;
+        }
+    }
     signature_resolve(me, sig);
     if (!sig->type_params.len) return sig;
     Ty const* stack_anys[16];
