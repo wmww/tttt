@@ -328,33 +328,65 @@ typedef struct CheckCounts {
     intptr_t errors;
 } CheckCounts;
 
-// tsc's verifyProjectReferences, for the references of the program's own config: on the reference
-static void verify_references(Program* program, ProjectSet const* projects, u32 project, bool has_inputs) {
-    Project const* p = project_set_at(projects, project);
+// A diagnostic on a reference written in a config of the program's reference graph: the program's own config, or one
+// it references (by its own JSON file, like tsc's CreateDiagnosticAtReferenceSyntax)
+static Error* reference_error(Program* program, ProjectSet const* projects, u32 root, u32 parent,
+    TsconfigReference const* reference, unsigned code, cstr message
+) {
+    if (parent == root) return program_config_error(program, reference->start, reference->end, code, message);
+    cstr cwd = cstr_null;
+    if (fs_get_cwd(fs, &cwd).error) cstr_clear(&cwd);
+    cstr relative = relative_path_of(cstr_sv(&cwd), cstr_sv(&project_set_at(projects, parent)->config));
+    Error* error = program_extended_config_error(program, cstr_sv(&relative), reference->start, reference->end, code, message);
+    c_drop(cstr, &relative, &cwd);
+    return error;
+}
+
+// tsc's verifyProjectReferences: every reference of the graph the program's config references (rangeResolvedProject
+// Reference: depth-first in written order, each project once, the root not again), on the reference that first
+// reaches it, about what it references when the config the reference is in has files of its own (has_inputs for
+// the program's own: a container may reference anything)
+static void verify_references_from(Program* program, ProjectSet* projects, u32 root, u32 parent, bool has_inputs,
+    u32** seen, u32* seen_count
+) {
+    Project const* p = project_set_at(projects, parent);
     for (u32 i = 0; i < p->reference_count; i++) {
         TsconfigReference const* reference = &p->references[i];
-        Project const* referenced = project_set_at(projects, p->referenced[i]);
-        // (tsc's verifyDeprecatedProjectReference)
-        if (reference->prepend) {
-            program_config_error(program, reference->start, reference->end, 5102,
+        u32 index = p->referenced[i];
+        bool already = false;
+        for (u32 j = 0; j < *seen_count && !already; j++) already = (*seen)[j] == index;
+        if (already) continue;
+        *seen = realloc(*seen, sizeof(u32) * (*seen_count + 1));
+        (*seen)[(*seen_count)++] = index;
+        Project const* referenced = project_set_at(projects, index);
+        // (tsc's verifyDeprecatedProjectReference, of the program's own config)
+        if (reference->prepend && parent == root) {
+            reference_error(program, projects, root, parent, reference, 5102,
                 cstr_from("Option 'prepend' has been removed. Please remove it from your configuration."));
         }
         if (!referenced->readable) {
-            program_config_error(program, reference->start, reference->end, 6053,
-                cstr_d("File '", reference->written, "' not found."));
+            reference_error(program, projects, root, parent, reference, 6053, cstr_d("File '", reference->written, "' not found."));
             continue;
         }
-        // (A program without files of its own, a container, may reference anything)
-        if (!has_inputs) continue;
-        if (!referenced->options.composite) {
-            program_config_error(program, reference->start, reference->end, 6306,
+        if (has_inputs && !referenced->options.composite) {
+            reference_error(program, projects, root, parent, reference, 6306,
                 cstr_d("Referenced project '", reference->written, "' must have setting \"composite\": true."));
         }
-        if (referenced->options.no_emit) {
-            program_config_error(program, reference->start, reference->end, 6310,
+        if (has_inputs && referenced->options.no_emit) {
+            reference_error(program, projects, root, parent, reference, 6310,
                 cstr_d("Referenced project '", reference->written, "' may not disable emit."));
         }
+        bool referenced_inputs = referenced->reference_count && project_set_root_files(projects, index)->count > 0;
+        verify_references_from(program, projects, root, index, referenced_inputs, seen, seen_count);
     }
+}
+
+static void verify_references(Program* program, ProjectSet* projects, u32 project, bool has_inputs) {
+    u32* seen = malloc(sizeof(u32));
+    seen[0] = project;
+    u32 seen_count = 1;
+    verify_references_from(program, projects, project, project, has_inputs, &seen, &seen_count);
+    free(seen);
 }
 
 // Checks one program, logically returning the exit code to leave with: the files on the command line (with the
