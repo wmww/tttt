@@ -19,10 +19,14 @@
 // - same-target references compare their type arguments by the measured variance of the type parameters
 // Explaining a failure is a second run with `reporting` set, which skips cached failures to get at the reasons.
 
+// (Combined with `&`: the weakest wins)
 typedef enum Ternary {
     TERNARY_FALSE = 0,
-    TERNARY_MAYBE = 1,
-    TERNARY_TRUE = 3,
+    // Related as far as can be told while variances it needs are being measured (tsgo's Ternary.Unknown): unlike
+    // MAYBE, never cached, even at the top
+    TERNARY_UNKNOWN = 1,
+    TERNARY_MAYBE = 3,
+    TERNARY_TRUE = 7,
 } Ternary;
 
 enum {
@@ -3117,6 +3121,8 @@ static Ternary tuple_shapes_related(
 
 typedef struct Variances {
     LazyState state;
+    // Met again while being measured (tsgo's empty variances): Ternary Unknown from then on, no more restarts
+    bool circular;
     u32 len;
     unsigned char data[];
 } Variances;
@@ -3257,15 +3263,33 @@ static unsigned subject_variance_modifiers(VarianceSubject subject, u32 index) {
     return item ? (item->is_in ? VARIANCE_MODIFIER_IN : 0) | (item->is_out ? VARIANCE_MODIFIER_OUT : 0) : 0;
 }
 
+static Symbol const* subject_symbol(VarianceSubject subject) {
+    return subject.declared ? subject.declared->declared.symbol : subject.alias;
+}
+
+static VarianceSubject subject_of_frame(Checker* me, u32 i) {
+    Ty const* declared = my variance_stack[i].declared;
+    if (declared) return (VarianceSubject){ .declared = declared, .params = declared->declared.type_params };
+    Symbol const* alias = my variance_stack[i].alias;
+    return (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) };
+}
+
+// Measures into `variances` (tsgo's getVariancesWorker), unless a restart (see measured_variances()) gets there first
 static void measure_variances(Checker* me, VarianceSubject subject, Variances* variances) {
     unsigned char saved_reports = my variance_reports;
     my variance_depth++;
+    bool pushed = my variance_stack_len < c_arraylen(my variance_stack);
+    if (pushed) {
+        my variance_stack[my variance_stack_len++] =
+            (typeof(my variance_stack[0])){ .declared = subject.declared, .alias = subject.alias, .variances = variances };
+    }
+    unsigned char measured[variances->len ? variances->len : 1];
     for (u32 i = 0; i < variances->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
         // every declaration of a merged interface together
         unsigned modifiers = subject_variance_modifiers(subject, i);
         if (modifiers) {
-            variances->data[i] = (unsigned char)(modifiers == (VARIANCE_MODIFIER_IN | VARIANCE_MODIFIER_OUT) ?
+            measured[i] = (unsigned char)(modifiers == (VARIANCE_MODIFIER_IN | VARIANCE_MODIFIER_OUT) ?
                 VARIANCE_INVARIANT : modifiers == VARIANCE_MODIFIER_OUT ? VARIANCE_COVARIANT : VARIANCE_CONTRAVARIANT);
             continue;
         }
@@ -3280,10 +3304,15 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
             if (ty_is_related(me, with_other, with_super, TY_RELATION_ASSIGNABLE)) variance = VARIANCE_INDEPENDENT;
         }
         variance |= my variance_reports;
-        variances->data[i] = (unsigned char)variance;
+        measured[i] = (unsigned char)variance;
+        // (A computation restarted from a circularity measured them already: tsgo exits early)
+        if (variances->state == LAZY_STATE_DONE) break;
     }
+    if (pushed) my variance_stack_len--;
     my variance_depth--;
     my variance_reports = saved_reports;
+    if (variances->state == LAZY_STATE_DONE) return;
+    memcpy(variances->data, measured, variances->len);
     variances->state = LAZY_STATE_DONE;
     if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
@@ -3292,10 +3321,51 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
     }
 }
 
+// Variances asked for while being measured (tsgo's getVariancesWorker): what's being measured gives Ternary Unknown
+// (null). Since the result depends on where a circularity is entered, it is measured again from the circular region's
+// smallest symbol (by declaration order) when that isn't the one entered first, so circular generic types get the same
+// variances whichever is asked for first; what that restart measured is then known here too
+static Variances const* measured_variances(Checker* me, VarianceSubject subject, Variances* variances) {
+    if (variances->state == LAZY_STATE_DONE) return variances;
+    if (variances->circular) return nullptr;
+    i32 index = -1;
+    for (u32 i = 0; i < my variance_stack_len && index < 0; i++) {
+        if (my variance_stack[i].variances == variances) index = (i32)i;
+    }
+    if (index < 0) {
+        // (In flight outside the current stack, which a restart set aside: measured afresh, like tsgo)
+        measure_variances(me, subject, variances);
+        return variances;
+    }
+    u32 min = (u32)index;
+    for (u32 i = (u32)index + 1; i < my variance_stack_len; i++) {
+        if (ty_compare_symbols(subject_symbol(subject_of_frame(me, i)), subject_symbol(subject_of_frame(me, min))) < 0) min = i;
+    }
+    if (min > (u32)index) {
+        u32 saved_len = my variance_stack_len;
+        typeof(my variance_stack) saved;
+        memcpy(saved, my variance_stack, sizeof(saved[0]) * saved_len);
+        my variance_stack_len = 0;
+        Variances* restarted = saved[min].variances;
+        if (restarted->state != LAZY_STATE_DONE) {
+            VarianceSubject restart = saved[min].declared ?
+                (VarianceSubject){ .declared = saved[min].declared, .params = saved[min].declared->declared.type_params } :
+                (VarianceSubject){ .alias = saved[min].alias, .params = ty_alias_type_params(me, saved[min].alias) };
+            measure_variances(me, restart, restarted);
+        }
+        memcpy(my variance_stack, saved, sizeof(saved[0]) * saved_len);
+        my variance_stack_len = saved_len;
+    }
+    if (variances->state == LAZY_STATE_DONE) return variances;
+    variances->circular = true;
+    return nullptr;
+}
+
 static Variances* new_variances(Checker* me, u64 const* key, u32 len) {
     Variances* variances = arena_alloc(&my arena, sizeof(Variances) + len);
     variances->len = len;
     variances->state = LAZY_STATE_IN_FLIGHT;
+    variances->circular = false;
     *intern_slot(me, &my links, key, 2) = variances;
     return variances;
 }
@@ -3304,7 +3374,9 @@ static Variances* new_variances(Checker* me, u64 const* key, u32 len) {
 static Variances const* get_variances(Checker* me, Ty const* target) {
     u64 key[2] = { KEY_VARIANCES, target->id };
     Variances* variances = (Variances*)intern_get(&my links, key, 2);
-    if (variances) return variances->state == LAZY_STATE_DONE ? variances : nullptr;
+    if (variances && variances->state == LAZY_STATE_DONE) return variances;
+    VarianceSubject subject = { .declared = target, .params = target->declared.type_params };
+    if (variances) return measured_variances(me, subject, variances);
 
     variances = new_variances(me, key, target->declared.type_params.len);
     if (is_array_target(me, target) || target->declared.kind == TY_DECLARED_TUPLE_TARGET ||
@@ -3314,7 +3386,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         variances->state = LAZY_STATE_DONE;
         return variances;
     }
-    measure_variances(me, (VarianceSubject){ .declared = target, .params = target->declared.type_params }, variances);
+    measure_variances(me, subject, variances);
     return variances;
 }
 
@@ -3322,7 +3394,8 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
 static Variances const* get_alias_variances(Checker* me, Symbol const* alias) {
     u64 key[2] = { KEY_ALIAS_VARIANCES, (u64)(uintptr_t)alias };
     Variances* variances = (Variances*)intern_get(&my links, key, 2);
-    if (variances) return variances->state == LAZY_STATE_DONE ? variances : nullptr;
+    if (variances && variances->state == LAZY_STATE_DONE) return variances;
+    if (variances) return measured_variances(me, (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) }, variances);
 
     TyList params = ty_alias_type_params(me, alias);
     variances = new_variances(me, key, params.len);
@@ -4881,7 +4954,7 @@ static Ternary objects_identical(Checker* me, RelationState* st, Ty const* sourc
         Ty const* declared = source->reference.target;
         bool list = is_array_target(me, declared) || declared->declared.kind == TY_DECLARED_TUPLE_TARGET;
         Variances const* variances = list ? nullptr : get_variances(me, declared);
-        if (!list && !variances && !is_marker_reference(me, source) && !is_marker_reference(me, target)) return TERNARY_MAYBE;
+        if (!list && !variances && !is_marker_reference(me, source) && !is_marker_reference(me, target)) return TERNARY_UNKNOWN;
         Ternary result = TERNARY_TRUE;
         if (variances) {
             bool unreliable = false;
@@ -5304,7 +5377,7 @@ static Ternary structured_related_members(
         if (!related && alias_variance_applies(me, st, source, target, use_variances)) {
             Variances const* variances = get_alias_variances(me, source->alias);
             bool unreliable;
-            if (!variances) return TERNARY_MAYBE;
+            if (!variances) return TERNARY_UNKNOWN;
             Ty const* source_buf[MAX_TYPE_ARGS], *target_buf[MAX_TYPE_ARGS];
             TyList source_args = ty_alias_args_filled(me, source, source_buf);
             TyList target_args = ty_alias_args_filled(me, target, target_buf);
@@ -5423,7 +5496,7 @@ static Ternary structured_related_members(
     // (`type A<T> = Box<T extends string ? C<T> : never>`: A<symbol | string> is Box<C<string>>, which A<string> is too)
     if (alias_variance_applies(me, st, source, target, use_variances)) {
         Variances const* variances = get_alias_variances(me, source->alias);
-        if (!variances) return TERNARY_MAYBE;
+        if (!variances) return TERNARY_UNKNOWN;
         Ty const* source_buf[MAX_TYPE_ARGS], *target_buf[MAX_TYPE_ARGS];
         TyList source_args = ty_alias_args_filled(me, source, source_buf);
         TyList target_args = ty_alias_args_filled(me, target, target_buf);
@@ -5941,7 +6014,14 @@ static Ternary structured_related_members(
     if ((source->kind == TY_REFERENCE || source_self) && (target->kind == TY_REFERENCE || target_self)) {
         Ty const* source_target = source_self ? source : source->reference.target;
         Ty const* target_target = target_self ? target : target->reference.target;
-        if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target)) {
+        // (A marker instantiation of a generic whose variances are measured, or being measured, is compared
+        // structurally: tsgo's isMarkerType, the instantiations createMarkerType made)
+        // (Not arrays and tuples, whose variances aren't measured: tsgo's getVariances answers them without markers)
+        bool marker = !source_self && !target_self && (is_marker_reference(me, source) || is_marker_reference(me, target)) &&
+            !is_array_target(me, source_target) && source_target->declared.kind != TY_DECLARED_TUPLE_TARGET &&
+            source_target->declared.kind != TY_DECLARED_SYNTHETIC &&
+            intern_get(&my links, (u64[]){ KEY_VARIANCES, source_target->id }, 2);
+        if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target) && !marker) {
             // `[]` to `never[]` without strictNullChecks (tsc's isEmptyArrayLiteralType)
             if (!source_self && is_array_target(me, source_target) && !compiler_options()->strict_null_checks &&
                 ty_reference_args(me, source).len == 1 && ty_reference_args(me, source).data[0] == ty_intrinsic(me, TY_UNDEFINED_WIDENING)
@@ -6376,11 +6456,14 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 
     if (result) {
         if (result == TERNARY_TRUE || st->depth == 0) {
-            // Everything assumed along the way held up
-            for (u32 i = maybe_start; i < st->maybe_count; i++) {
-                relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable);
+            // Everything assumed along the way held up (but nothing that depended on variances being measured:
+            // tsgo's resetMaybeStack never records Ternary.Unknown)
+            if (result != TERNARY_UNKNOWN) {
+                for (u32 i = maybe_start; i < st->maybe_count; i++) {
+                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable);
+                }
+                st->relation_count -= st->maybe_count - maybe_start;
             }
-            st->relation_count -= st->maybe_count - maybe_start;
             maybe_truncate(st, maybe_start);
         }
     } else {

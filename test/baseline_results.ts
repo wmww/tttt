@@ -3406,7 +3406,7 @@ const baselines = {
         types: true,
     },
     'circularVariance1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4041,9 +4041,9 @@ const baselines = {
         types: true,
     },
     'classVarianceResolveCircularity2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classWithDuplicateIdentifier': {
         errors: true,

@@ -1107,6 +1107,10 @@ struct Checker {
     bool flow_analysis_disabled;
     u32 flow_shared_cap;
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
+    // The declared types and aliases whose variances are being measured, outermost first (tsgo's varianceStack): a
+    // circularity restarts from its smallest symbol (relate.c, measured_variances())
+    struct { struct Ty const* declared; struct Symbol const* alias; void* variances; } variance_stack[64];
+    u32 variance_stack_len;
     unsigned char variance_reports; // VARIANCE_UNRELIABLE/UNMEASURABLE of what the measurement went through (relate.c)
     struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
     // `Disposable | null | undefined` and `AsyncDisposable | Disposable | null | undefined`, what a `using` / `await
