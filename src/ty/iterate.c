@@ -153,6 +153,9 @@ static Ty const* property_type(Checker* me, Ty const* ty, Atom const* name, bool
         if (prop_out) *prop_out = prop;
         return prop_type(me, prop);
     }
+    // (Only objects, unions and intersections have properties: an apparent type that is any, like a `T[string]` whose
+    // T is constrained by an unresolved type, has none, so it isn't iterable though it isn't any itself)
+    if (!(apparent->flags & (TYF_UNION | TYF_INTERSECTION))) return nullptr;
     return ty_access(me, apparent, ty_prop_name_literal(me, name));
 }
 
@@ -217,6 +220,9 @@ static Ty const* value_of(Checker* me, TyList members, bool yield) {
     Atom const* value = checker_atom(me, c_sv("value"));
     bool missing = false;
     for (u32 i = 0; i < members.len; i++) {
+        // (tsc reads `value` off the union, whose reduced type drops a member like the `IteratorYieldResult<X> &
+        // IteratorReturnResult<Y>` of an intersection of iterators)
+        if (members.data[i]->kind == TY_INTERSECTION && (ty_reduced(me, members.data[i])->flags & TYF_NEVER)) continue;
         if (!is_iterator_result(me, members.data[i], yield)) continue;
         bool optional;
         Ty const* type = property_type(me, members.data[i], value, &optional, nullptr);
