@@ -18626,9 +18626,9 @@ const baselines = {
         types: true,
     },
     'interfaceMergeWithNonGenericTypeArguments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder': {
         errors: true,
@@ -19166,7 +19166,7 @@ const baselines = {
         types: true,
     },
     'invariantGenericErrorElaboration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28161,7 +28161,7 @@ const baselines = {
         types: true,
     },
     'regularExpressionCharacterClassRangeOrder': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30871,9 +30871,9 @@ const baselines = {
         types: true,
     },
     'symbolToNodeBoundaryNoStackOverflow': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symlinkedPackageReachedRelativelyIsNotExternalLibrary': {
         errors: true,
@@ -30901,7 +30901,7 @@ const baselines = {
         types: true,
     },
     'syntheticProtectedProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -43746,7 +43746,7 @@ const baselines = {
         types: true,
     },
     'multipleDefaultExports05(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49941,7 +49941,7 @@ const baselines = {
         types: true,
     },
     'typeOnlyMerge3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56301,22 +56301,22 @@ const baselines = {
         types: true,
     },
     'nodeModulesTripleSlashReferenceModeOverrideModeError(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesTripleSlashReferenceModeOverrideModeError(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesTripleSlashReferenceModeOverrideModeError(module=node20)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesTripleSlashReferenceModeOverrideModeError(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64316,7 +64316,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67826,7 +67826,7 @@ const baselines = {
         types: true,
     },
     'typingsLookup3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
