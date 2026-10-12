@@ -33,7 +33,10 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (closed ? 0 : TYF_COULD_CONTAIN_TYPE_VARIABLES));
     ret->anonymous.function = function;
     ret->anonymous.ctx = function_lower_ctx;
-    ret->anonymous.ctx.method = function->is_method;
+    // (An object literal's method too: a MethodDeclaration, whose parameters tsc's strictVariance compares bivariantly;
+    // FunctionImpl.is_method is only a class's)
+    ret->anonymous.ctx.method = function->is_method ||
+        (!function->accessor && !function->is_constructor && span_valid(function_impl_member_name(function)));
     ret->anonymous.free_params_unknown = !closed;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
     ty_link_set(me, KEY_FUNCTION, function, ret);
