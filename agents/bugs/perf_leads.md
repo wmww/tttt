@@ -17,6 +17,31 @@ vitest ~1.6. By time: linkwarden/apps/mobile (1.6x tsgo's check time with fewer 
 mcp-sdk/packages/core-internal and arktype/ark/docs (~0.9). Recipe: `scripts/perfsweep.py -f '^PROJECT$'` reruns one,
 `TTTT_FILE_TIMES=1` finds the file, then which type kinds grow (`scripts/arenasites.sh`).
 
+## Plan 59 stage 2 leftovers (agent D)
+Fixed (2026-10-12): dokploy x4 (`typeof f<T>` / `typeof ns.x` free params, 2.3 -> 0.69), arktype/ark/docs (this-only
+references share thisless base signatures, 1.51 -> 0.92), linkwarden/apps/mobile (union flattening skips repeated
+types: IconSymbol.tsx 1.54 s -> 0.14 s, RSS 517 -> 239 MB), mcp-sdk/packages/core-internal (declaration printing
+memoizes module specifiers and accessible chains: 9.5 -> 1.3 G instructions on a schemas.ts probe). Left:
+- **`ty_instantiation_limit_reached()` is quadratic per hit**: its getCircularTypeNames scan compares every stack
+  entry with every earlier one (~25k instructions at depth 100). arktype hit it 300k times (7.7 G, half the project)
+  before its cause was fixed; a project that legitimately hits a limit inside speculative checks (overload rounds,
+  variance probes) pays it per hit. Count per type with a small hash table, or compute the names only when the
+  diagnostic is kept.
+- **Intersection property types are eager**: find_prop_in() intersects every member's property type when the
+  property is looked up (tsc makes a synthetic symbol whose type resolves on first getTypeOfSymbol). Since
+  91d6a206 (no 16-part cap) tiptap's generic `<Tag {...rest} ref=...>` (a 187-member intersection of JSX intrinsic
+  props) intersects 119 `Ref<X> | undefined` unions (TS2590, under a `// @ts-ignore`, as tsgo would) during a relation
+  that may only need the property's existence. A lazy FoundProp.type would match tsc; measure tiptap/demos first.
+- **Single-file probes are order-dependent**: a probe of dokploy/packages/server/src/lib/auth.ts alone gets TS2589 at
+  (513,23) from tsgo (not from the whole project, where neither reports it); tttt reported it too before 892750cc and
+  doesn't now. Not chased: tsgo's instantiation count depends on what was checked before.
+- **Worktrees load symlinked sources twice** (the "Pathologies" entry below): arktype and arktype/ark/docs show ~40
+  spurious TS2339/TS2300/TS7006 in a worktree (files under both `thirdparty/sources/...` and `../../home/...`), none in
+  the main tree. Compare source sweep runs of the same worktree only.
+- Wall times of this session are meaningless (load 20+ on 4 cores): remeasure linkwarden/apps/mobile and
+  mcp-sdk/packages/core-internal check-time ratios on a quiet machine (`scripts/perfsweep.py -f`); their types ratios
+  (0.87, 0.83) were never the problem.
+
 ## Compare relation counts with tsc first (2026-10-06 perf session)
 `tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints
 tsc's (Assignability / Subtype / Strict subtype / Identity cache size, both count failures and nested pairs). A
