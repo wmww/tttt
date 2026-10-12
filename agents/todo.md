@@ -28,10 +28,10 @@ instructions are the stable numbers.
 4. ~~Plan 60 stage 1~~ done: LazyMemo 24 -> 12 bytes (type ids), node links (two-word keys inline), CallResolution,
    PropDecl, Members rare parts, interned lists without copies. vscode K1 5189 -> 4839 MB, K4 5966 -> 5438 (targets 4.7
    / 5.3 not quite), every corpus -1..-11%, instructions flat. Leftovers with reasons in plan 60.
-5. **Plan 60 stage 2** (the AST: Span 16 bytes, Expr 64), or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
-   (drop the tsc 6 / tsgo 7.0.2 columns), measurements.md's perf section rewritten (wall and RSS at K1 and K4 against
-   tsgo 7.1 `--singleThreaded` and default), the corpora's instructions; the user asks why threads are capped at 4
-   (triage.md "From human").
+5. ~~Plan 60 stage 2 + perf session~~ done: Span 24 -> 16 (file table), Expr 88 -> 72; vscode K1 4839 -> 4387 MB, K4
+   5438 -> 4992 (plan 60 total -15%/-16%), every corpus -2..-9%; load+parse target (1750) not reached, leftovers in plan
+   60. Threads uncapped (checkers stay 4, vision.md). bench.sh re-baselined: tttt 2.6-10.6x tsgo at defaults, 2.0-6.1x
+   single-threaded, 0.4-0.8x its RSS (measurements.md "Bench on tsgo 7.1").
 6. **Source sweep fan-out**: four Opus sub-agents on `scripts/sourcesweep.py`'s root causes (244 mismatching projects:
    +TS2322/+TS2345 across ~20 repos each first, the TS1434 parse errors in postiz-app's `@copilotkit` `.d.mts`,
    bugs/sourcesweep_checker.md's TS2589/TS7022/TS7023 items), one root-cause key set per agent.

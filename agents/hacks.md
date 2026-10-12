@@ -7,6 +7,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `reexec_with_huge_pages` (`main.c`) (permanent: 5-20% wall time until the AST has arenas that madvise like the
   checker's, `bugs/perf_leads.md`): glibc reads `GLIBC_TUNABLES` only at startup, so tttt re-execs itself with
   `glibc.malloc.hugetlb=1` (not under valgrind or `TTTT_NO_REEXEC`).
+- `source_file_id()` (`span.h`) / `span_files` (`span.c`) (permanent, plan 60 stage 2: Span is 16 bytes): spans hold a
+  file index into a process-wide table that is never shrunk (indexes aren't reused; a dropped file's entry is null,
+  chunks are mmapped so leak checks ignore them). `source_file_id()` reads SourceFile's first word because span.h only
+  sees the incomplete type (static_assert in source_file.c). Expr's parenthesis offsets are 24-bit (`expr_set_outer_span()`
+  panics past 16 MB of parentheses and trivia).
 - `shrink_list()`/`list_push()` (`parser.c`) (permanent: memory for ~0.7% of nest's instructions, free once lists are
   built in a scratch stack and copied out exact, perf_leads.md "Memory"): finished parser lists realloc away their
   slack; the first push reserves one element, not the vec's 4.

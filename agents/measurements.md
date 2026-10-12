@@ -4,12 +4,10 @@ append history, git has it (this file before the 2026-09-27 triage holds every e
 
 ## Machine and caveats
 AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
-is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). The perf sections below
-the oracle stage ones still compare against tsc 6 (4d4f005c, node) and tsgo `7.0.2`: `scripts/bench.sh` now runs the
-pinned tsgo only (re-baseline in the next perf session). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
+is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
--q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
-effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
+-q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
+vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
 ## Perf at breadth after plan 59 stage 2 (2026-10-12, the fan-out's merges up to a43aaa00)
 `scripts/perfsweep.py -j 3` with agents running (types and RSS ratios are exact; time from the end-of-session run
@@ -32,25 +30,46 @@ check 153 s vs tsgo's 1159 s (0.13). Its *wall* column was inflated in the load/
 renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py`'s other oracles. tsgo's side is cached in
 `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
 
-## Plan 60 stage 1 (2026-10-12, checker side tables and structs)
-Peak RSS MB (`/usr/bin/time`, best of one run; session start 6a2baa7f -> after):
+## Bench on tsgo 7.1, and plan 60 stage 2 (2026-10-12, todo entry 5)
+`scripts/bench.sh --runs 3` (best wall s / peak RSS MB), nothing else running. tttt default = 4 checkers on every core
+(4 here), tsgo default = its 4 checkers on every core; single = tttt `--singleThreaded`, tsgo `--singleThreaded`:
+| corpus | tttt | tsgo | tttt single | tsgo single |
+|---|---|---|---|---|
+| TypeScript6 compiler | 0.31 / 276 | 0.98 / 522 | 0.57 / 224 | 1.38 / 405 |
+| type-fest | 0.69 / 818 | 7.34 / 5403 | 1.33 / 704 | 8.11 / 4204 |
+| valibot | 0.23 / 310 | 1.27 / 829 | 0.44 / 260 | 1.88 / 651 |
+| react | 0.11 / 195 | 0.68 / 449 | 0.18 / 146 | 0.64 / 283 |
+| nest | 0.09 / 146 | 0.25 / 232 | 0.17 / 128 | 0.34 / 192 |
+| webpack | 0.71 / 611 | 2.09 / 1163 | 1.31 / 527 | 3.15 / 963 |
+| zod | 0.35 / 516 | 2.01 / 1388 | 0.65 / 426 | 2.64 / 958 |
+| xstate | 0.18 / 265 | 0.68 / 472 | 0.34 / 211 | 0.99 / 338 |
+| drizzle | 0.48 / 636 | 2.74 / 1688 | 0.76 / 448 | 2.73 / 900 |
+| vue | 0.40 / 387 | 1.47 / 826 | 0.73 / 340 | 2.22 / 660 |
+| effect | 0.71 / 790 | 2.57 / 1614 | 1.43 / 699 | 4.14 / 1237 |
+| vscode | 5.87 / 5000 | 15.02 / 7962 | 12.98 / 4381 | 26.37 / 6500 |
+| excalidraw | 0.48 / 470 | 2.91 / 2026 | 0.91 / 374 | 2.69 / 865 |
+| tanstack-router | 0.32 / 378 | 1.97 / 964 | 0.63 / 328 | 2.52 / 681 |
+| TypeScript6 `-b` | 1.09 / 477 | 1.96 / 749 | - | 2.97 / 483 |
+tttt is 2.6-10.6x faster than tsgo at defaults (vscode 2.6x, type-fest 10.6x) and 2.0-6.1x single-threaded, at
+0.4-0.8x its RSS (type-fest 0.15x). The thread cap is gone (`--threads` = cores; vision.md "Thread defaults").
+Plan 60 stage 2 (Span 24 -> 16, Expr 88 -> 72), peak RSS MB `/usr/bin/time` at `--threads 4`, stage 1's end -> now:
 | corpus | K1 | K4 |
 |---|---|---|
-| tsc | 256 -> 244 | 323 -> 293 |
-| type-fest | 800 -> 711 | 921 -> 823 |
-| valibot | 283 -> 276 | 334 -> 321 |
-| webpack | 604 -> 573 | 685 -> 647 |
-| zod | 464 -> 446 | 551 -> 531 |
-| drizzle | 473 -> 468 | 664 -> 650 |
-| vue | 370 -> 357 | 430 -> 406 |
-| effect | 771 -> 743 | 891 -> 828 |
-| excalidraw | 421 -> 400 | 529 -> 494 |
-| vscode | 5189 -> 4839 | 5966 -> 5438 |
-vscode K1 arena 1780 -> 1660 MB; its links table 5.58M -> 2.63M entries plus 3.26M node links. Peak RSS moves by
-+-30 MB with where a table's last grow lands: compare the set. Instructions (callgrind, flat: -0.2..+0.6%): tsc 4.663,
-type-fest 18.583, valibot 3.492, react 1.497, nest 1.160, webpack 10.358, zod 4.940, xstate 2.661, drizzle 5.934, vue
-6.544, effect 10.009, vscode 90.283, excalidraw 7.916, tanstack-router 5.297 G. Every oracle unchanged, threadcheck
-identical.
+| tsc | 244 -> 226 | 293 -> 275 |
+| type-fest | 711 -> 702 | 823 -> 817 |
+| valibot | 276 -> 268 | 321 -> 311 |
+| webpack | 573 -> 533 | 647 -> 611 |
+| zod | 446 -> 430 | 531 -> 517 |
+| drizzle | 468 -> 452 | 650 -> 637 |
+| vue | 357 -> 337 | 406 -> 387 |
+| effect | 743 -> 702 | 828 -> 789 |
+| excalidraw | 400 -> 379 | 494 -> 470 |
+| vscode | 4839 -> 4387 | 5438 -> 4992 |
+Plan 60 from its start (e043e9e2): vscode K1 5189 -> 4387 (-15%), K4 5966 -> 4992 (-16%). vscode load+parse resident
+2181 -> 1918 MB, checker arena 1660 -> 1524. Instructions (callgrind, flat: -0.1..+0.4% from span_source()'s table
+lookup): tsc 4.680, type-fest 18.595, valibot 3.498, react 1.498, nest 1.159, webpack 10.385, zod 4.949, xstate 2.668,
+drizzle 5.944, vue 6.545, effect 10.051, vscode 90.546, excalidraw 7.930, tanstack-router 5.305 G. Every oracle
+unchanged.
 
 ## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
 Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
