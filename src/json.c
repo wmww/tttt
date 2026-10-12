@@ -112,6 +112,7 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
     my at++;
     bool after_element = false; // (An element not followed by a comma yet)
     while (true) {
+        u32 full_start = (u32)(my at - my text); // (Before the trivia: where tsc's node for an element starts)
         skip_trivia(me);
         if (my at >= my end) {
             my dirty = true;
@@ -126,7 +127,17 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
             return true;
         }
         if (*my at == ',') { // Also forgives `[,]`, which nobody writes
-            if (!after_element) my dirty = true;
+            if (!after_element) {
+                my dirty = true;
+                // An omitted array element is one that isn't a value
+                if (!is_object) {
+                    if (out->count == cap) {
+                        cap = cap ? cap * 2 : 4;
+                        out->items = realloc(out->items, sizeof(JsonValue) * (size_t)cap);
+                    }
+                    out->items[out->count++] = (JsonValue){ .tag = JSON_INVALID, .start = full_start, .end = full_start };
+                }
+            }
             after_element = false;
             my at++;
             continue;
@@ -162,20 +173,30 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
             skip_trivia(me);
             if (my at < my end && *my at == ':') my at++;
             else my dirty = true;
+            u32 value_full_start = (u32)(my at - my text);
             if (!parse_value(me, &member->value)) {
                 my dirty = true;
-                // A property without a value isn't one
-                out->count--;
-                cstr_drop(&member->key);
+                // A property whose value isn't one is kept with an invalid value (tsc reports it converting the config)
+                // (Nothing but trivia: a missing value, empty where tsc's missing node is)
+                u32 end = member->value.end > member->value.start ? member->value.end : value_full_start;
                 json_drop(&member->value);
+                member->value = (JsonValue){ .tag = JSON_INVALID, .start = value_full_start, .end = end };
                 if (my at == before) my at++;
             }
         } else {
             out->items[out->count] = (JsonValue){0};
             out->count++;
-            if (!parse_value(me, &out->items[out->count - 1])) {
+            JsonValue* item = &out->items[out->count - 1];
+            if (!parse_value(me, item)) {
                 my dirty = true;
-                json_drop(&out->items[--out->count]);
+                if (item->end > item->start) {
+                    // A word: an element that isn't a value (an invalid one, like tsc's)
+                    u32 end = item->end;
+                    json_drop(item);
+                    *item = (JsonValue){ .tag = JSON_INVALID, .start = full_start, .end = end };
+                } else {
+                    json_drop(&out->items[--out->count]);
+                }
                 if (my at == before) my at++;
             }
         }

@@ -14192,6 +14192,14 @@ static void json_check_value(Parser* p, Expr const* value) {
         for_each (i, vec_expr, &value->array) json_check_value(p, i);
         return;
     }
+    // (tsc's getErrorSpanForNode: a missing value, or an omitted array element, is at its node's full start, the end of
+    // what comes before it: back over the whitespace)
+    if (!span.size || (value->tag == EXPR_IMPLICIT_ANY && value->missing)) {
+        char const* at = span_start_ptr(span);
+        char const* file_start = source_file_start(p->shared->source);
+        while (at > file_start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+        span = span_make_in(span, at, at);
+    }
     parse_error(p, span, 1328,
         "Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.");
 }

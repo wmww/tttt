@@ -102,6 +102,19 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
                 compiler_options->members[i].key_end);
             continue;
         }
+        // tsgo's convertPropertyValueToJson and convertJsonOption: a value of another type (or none: TS1328 too, from
+        // the parser) is TS5024 at it, and the option stays as it was; so is a list's element, which is left out
+        cstr type_message = cstr_null;
+        if (compiler_option_check_json_type(csview_from(name), (int)value->tag, false, &type_message)) {
+            config_diagnostic(me, 5024, type_message, config, value->start, value->end);
+            continue;
+        }
+        for (isize j = 0; value->tag == JSON_ARRAY && j < value->count; j++) {
+            JsonValue const* item = &value->items[j];
+            if (compiler_option_check_json_type(csview_from(name), (int)item->tag, item->tag != JSON_INVALID, &type_message)) {
+                config_diagnostic(me, 5024, type_message, config, item->start, item->end);
+            }
+        }
         if (value->tag == JSON_NULL) {
             // null takes back what an extended config gave (tsc: the option is undefined again), e.g. a config
             // extending one with the 6.0-deprecated baseUrl. Only the options that tell "unset" from a value here
@@ -461,6 +474,23 @@ static_failable load_config(ConfigLoad* me, csview path) {
             cstr_equals(&member->key, "exclude") || cstr_equals(&member->key, "references");
         if (list && member->value.tag != JSON_ARRAY && member->value.tag != JSON_NULL) {
             config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type Array."), path,
+                member->value.start, member->value.end);
+        }
+        // (Their elements: strings, an invalid one is about the list; and the object options)
+        for (isize j = 0; list && member->value.tag == JSON_ARRAY && j < member->value.count; j++) {
+            JsonValue const* item = &member->value.items[j];
+            if (item->tag == JSON_INVALID) {
+                config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type Array."), path,
+                    item->start, item->end);
+            } else if (item->tag != JSON_STRING && item->tag != JSON_NULL && !cstr_equals(&member->key, "references")) {
+                config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type string."), path,
+                    item->start, item->end);
+            }
+        }
+        if ((cstr_equals(&member->key, "compilerOptions") || cstr_equals(&member->key, "watchOptions") ||
+            cstr_equals(&member->key, "typeAcquisition")) && member->value.tag != JSON_OBJECT && member->value.tag != JSON_NULL
+        ) {
+            config_diagnostic(me, 5024, cstr_d("Compiler option '", member->key, "' requires a value of type object."), path,
                 member->value.start, member->value.end);
         }
         // (tsc's convertJsonOption of each reference against its declarations: `path` a non-empty string, `circular` a

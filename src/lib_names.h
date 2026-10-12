@@ -17,3 +17,9 @@ extern u32 const tsc_common_options_with_build;
 // `build` and what tsc's optionsForBuild adds to commonOptionsWithBuild
 extern char const* const tsc_build_only_option_names[];
 extern u32 const tsc_build_only_option_names_count;
+// Each option's kind, one letter per tsc_option_names entry (tsgo's CommandLineOptionType: b boolean, s string,
+// n number, e enum, l list, L listOrElement, o object), and the kind of the elements of the list options:
+// { name, letter } (commandLineOptionElements)
+extern char const tsc_option_kinds[];
+extern char const* const tsc_option_elements[][2];
+extern u32 const tsc_option_elements_count;

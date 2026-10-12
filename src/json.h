@@ -13,6 +13,10 @@ typedef enum JsonTag {
     JSON_STRING,
     JSON_ARRAY,
     JSON_OBJECT,
+    // Something that isn't a value where one is expected: a missing one (`"a": }`), a word, an omitted array element
+    // (`[, 1]`). tsc keeps the property and reports it when converting (TS1328, TS5024 for an option); at the end of
+    // what comes before it, as tsc's node position (its leading trivia included), to the end of the word if any
+    JSON_INVALID,
 } JsonTag;
 
 typedef struct JsonValue JsonValue;

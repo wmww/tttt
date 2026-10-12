@@ -394,6 +394,57 @@ bool compiler_option_is_boolean(csview name) {
     return false;
 }
 
+#include "json.h"
+
+// The kind letter of an option (lib_names.h's tsc_option_kinds), 0 for none; element: of a list option's elements
+static char option_kind(csview name, bool element) {
+    if (element) {
+        for (u32 i = 0; i < tsc_option_elements_count; i++) {
+            if (csview_equals(name, tsc_option_elements[i][0])) return tsc_option_elements[i][1][0];
+        }
+        return 0;
+    }
+    for (u32 i = 0; i < tsc_option_names_count; i++) {
+        if (csview_equals(name, tsc_option_names[i])) return tsc_option_kinds[i];
+    }
+    return 0;
+}
+
+static bool kind_takes(char kind, csview name, int tag) {
+    switch (kind) {
+        case 'b': return tag == JSON_BOOL;
+        case 's': case 'e': return tag == JSON_STRING;
+        case 'n': return tag == JSON_NUMBER;
+        case 'o': return tag == JSON_OBJECT;
+        case 'l': return tag == JSON_ARRAY;
+        case 'L': return tag == JSON_ARRAY || kind_takes(option_kind(name, true), name, tag);
+        default: return true;
+    }
+}
+
+// tsgo's getCompilerOptionValueTypeString
+static const char* kind_name(char kind) {
+    switch (kind) {
+        case 'b': return "boolean";
+        case 's': return "string";
+        case 'n': return "number";
+        case 'e': return "enum";
+        case 'o': return "object";
+        default: return "Array";
+    }
+}
+
+unsigned compiler_option_check_json_type(csview name, int json_tag, bool element, cstr* message) {
+    char kind = option_kind(name, element);
+    if (!kind || json_tag == JSON_NULL || kind_takes(kind, name, json_tag)) return 0;
+    if (kind == 'L') {
+        *message = cstr_d("Compiler option '", name, "' requires a value of type ", kind_name(option_kind(name, true)), " or Array.");
+    } else {
+        *message = cstr_d("Compiler option '", name, "' requires a value of type ", kind_name(kind), ".");
+    }
+    return 5024;
+}
+
 static bool option_name_equals(csview a, const char* b, bool ignore_case) {
     isize len = (isize)strlen(b);
     if (a.size != len) return false;

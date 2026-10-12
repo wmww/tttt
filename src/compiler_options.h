@@ -250,6 +250,10 @@ void compiler_options_enable_strict(CompilerOptions* me);
 cstr compiler_options_lib_files(CompilerOptions const* me);
 
 bool compiler_option_is_boolean(csview name);
+// tsgo's convertJsonOption type check of a config value (isCompilerOptionsValue): 0 if the option (exact case, as
+// written in a config) takes a JSON value of this tag (null always), else the 5024 message "Compiler option 'NAME'
+// requires a value of type T." in *message. element: the check of one element of a list option instead
+unsigned compiler_option_check_json_type(csview name, int json_tag, bool element, cstr* message);
 
 // tsc's createUnknownOptionError with compilerOptionsDidYouMeanDiagnostics: 0 if name is one of tsc's compiler options
 // (its optionDeclarations; exact case in a config's compilerOptions, ignore_case for the command line), else the code

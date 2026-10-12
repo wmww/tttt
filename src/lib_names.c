@@ -174,3 +174,23 @@ char const* const tsc_build_only_option_names[] = {
     "build", "verbose", "dry", "force", "clean", "builders", "stopBuildOnErrors",
 };
 u32 const tsc_build_only_option_names_count = 7;
+
+char const tsc_option_kinds[] = "bbbbbbbbbbbssbbbbbbbbbbsbbsnbbbbsbbbeelbbesssbsbbbbbbbbbbbbbbbbbbbbbbbbbbbesolllbbbblbbbblbssbbbsssbbsbbebbbbbbbbbbbsbbbbnbles";
+
+char const* const tsc_option_elements[][2] = {
+    { "lib", "e" },
+    { "rootDirs", "s" },
+    { "typeRoots", "s" },
+    { "types", "s" },
+    { "moduleSuffixes", "s" },
+    { "customConditions", "s" },
+    { "plugins", "o" },
+    { "references", "o" },
+    { "contentMappers", "o" },
+    { "files", "s" },
+    { "include", "s" },
+    { "exclude", "s" },
+    { "extends", "s" },
+    { "libFiles", "s" },
+};
+u32 const tsc_option_elements_count = 14;
