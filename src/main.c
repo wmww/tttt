@@ -893,12 +893,14 @@ static void print_help(void) {
         "  --listFiles   print the program's files after its diagnostics\n"
         "  --listFilesOnly  print the program's files and stop\n"
         "  -v, --version print the version of TypeScript tttt checks like\n"
-        "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
-        "                order of union members in messages depends on K\n"
+        "  --checkers K  check with K checkers (default 4, whatever the cores: the order of union members in\n"
+        "                messages depends on K, so the output doesn't depend on the machine). Each gets\n"
+        "                contiguous runs of the files\n"
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
-        "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
+        "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
+        "                most K of them)\n"
         "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
         "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n"
         "tttt's own (debugging and oracles):\n"
@@ -912,7 +914,9 @@ static void print_help(void) {
 
 static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
-    Options opts = { .paths = argv, .pretty = -1, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
+    // Every core parses and binds; checking uses at most `checkers` of them (a fixed 4 by default: K changes the order of
+    // union members in messages, so a machine-dependent K would make the output machine-dependent)
+    Options opts = { .paths = argv, .pretty = -1, .checkers = 4, .threads = cores < 1 ? 1 : (u32)cores };
     bool single_threaded = false;
     // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it
     // (TS5093): every such error is reported, then nothing is done

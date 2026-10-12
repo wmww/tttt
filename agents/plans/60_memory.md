@@ -89,19 +89,24 @@ Not done, with why:
 - Unexplained: `/proc` VmRSS sampled at the end of typecheck reads ~116 MB below `/usr/bin/time`'s peak on vscode, and
   strace shows no allocation after typecheck. Probably the kernel's per-CPU RSS counters lagging; use `/usr/bin/time`.
 
-## Stage 2: the AST (one session, sub-agents for the mechanical parts)
-1. Count Exprs and Spans per corpus first (a counter in a debug build, or memtrack's scan by struct size) to confirm
-   the estimates below.
-2. **Span 24 -> 16**: `{ char const* buf; u32 size; u32 file; }` with files indexed (the program's file vector)
-   instead of `SourceFile*`, `.sv` reads through `span_sv()`. ~650 `.sv` uses and every `.source` use: mechanical,
-   one sub-agent, then the suite. 19% of AST bytes are non-null Spans: vscode -140 MB direct, more in null ones.
-3. **Expr 88 -> 64**: Span 16, `paren_before/after` out of the node (a `parenthesized` bit + a per-file side table:
-   parentheses are rare), IdentifierExpr 40 -> 32. Expr is most of the expression bytes (two inline in every
-   PropertyExpr and BinaryOpExpr): estimated vscode -250 MB.
-4. The `span_make` 144-byte boxes from `parse_expr` (1.09M on vscode): find what they are (CallExpr is 144) and whether
-   CallExpr's fields are mostly zero (memtrack's zero-word scan per size).
-Validation: vscode "load+parse files" resident 2174 -> <= 1750 MB, webpack bound 357 -> <= 300; suite, every corpus
-byte-identical, parser instructions flat or better (nest is half parser).
+## Stage 2: done in part (2026-10-12, todo entry 5)
+vscode K1 (`--time` resident / `/usr/bin/time` peak): load+parse 2181 -> 1918 MB, after names 2811 -> 2509, peak
+4840 -> 4493 (target <= 1750 for load+parse: not reached). webpack bound 358 -> ~325. What landed:
+- **Span 24 -> 16** (`{ buf, i32 size, u32 file }`): files are indexed in a process-wide table (`source_file_register()`,
+  `span_source()`, `span_sv()`; SourceFile starts with its index). The rewrite was scripted from GCC's "no member"
+  errors. Also shrank Signature 176 -> 160 and every checker struct holding a Span: vscode arena 1660 -> 1524 MB.
+- **Expr 80 -> 72**: tag (`enum : uint8_t`), the seven flags and the 24-bit parenthesis offsets in one word. Fixed
+  parse_expr resetting only 3 of the 7 flags (uninitialised reads, valgrind).
+Leftovers, by size on vscode after parsing (memtrack `--by sizef`; its Span column no longer recognises the new
+layout):
+- **IdentifierExpr 40 -> 32** would make Expr 64 (~8M Exprs: ~-65 MB). It holds four pointers (target, symbol, flow,
+  the per-kind union): one has to go: `target` only differs from `symbol` for aliases (a side lookup?), or `flow`
+  shares the union where no union member needs a flow node (`this` does). Needs a look at the readers.
+- **PropertyExpr 184** (1.68M, 322 MB): `declares` (JS) and the private-class/for-in union are rare (~-27 MB behind a
+  rare pointer; 272 `declares` readers across structs). The `prop` Expr of a dot access is a whole identifier Expr.
+- **CallExpr 128** (1.09M, 158 MB): `enclosing_class`, `unique_symbol`, `declares` rare (-16 B each, ~-17 MB).
+- InitializedBinding 200 B (341k, 71 MB), `parse_import_export_statement` 400 B boxes (123k, 51 MB).
+- Half the AST's words are still zero (memtrack's zero scan): the compact-AST lever, still not worth it (see below).
 
 ## Stage 3 (after the next insights, optional): the binder
 Scope 136 B (vscode 1.28M: 174 MB), Symbol 160 B (~1M: 151 MB), SymbolDecl 88 B: plan 43's pattern (rare fields

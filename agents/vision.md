@@ -53,10 +53,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   "tttt as slow as tsc" line was measured while four agents ran). tsgo's `--extendedDiagnostics` `Types` and
   `Instantiations` are machine-independent and directly comparable with tttt's (type-fest 4.78M vs 5.10M), so a
   ratio far above 1 is a missing cache or a runaway, found without timing anything.
-- **Thread defaults are a product decision we can't measure here.** tttt caps at 4 checkers/threads (like tsgo's
-  default 4 checkers); bun uses every core. At 12 threads tttt beats bun everywhere, at a memory cost. This box has 4
-  vCPUs, so scaling past 4 can't be measured by agents: memory per checker first (plan 60), then raise the cap with
-  numbers from a many-core machine (asked of the human in report.md).
+- **Thread defaults** (decided 2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and
+  name resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4. K is part of the
+  output: which checker makes a type decides union order in messages, so a core-dependent K would make output
+  machine-dependent, and each checker duplicates lib types (memory). Raising the fixed K, or making checking scale
+  past K without changing output, needs numbers from a many-core machine (agents can't measure past 4 vCPUs here).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint

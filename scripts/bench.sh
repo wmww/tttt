@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Perf benchmark: tttt vs tsgo (the pinned TypeScript 7.1 oracle, thirdparty/typescript/built/tsc), multi- and
-# single-threaded.
+# Perf benchmark: tttt vs tsgo (the pinned TypeScript 7.1 oracle, thirdparty/typescript/built/tsc), both at their
+# defaults (every core; 4 checkers) and single-threaded.
 # Wall time and peak RSS, best and median of RUNS runs, plus tttt's phase split, on the pinned corpora. See
 # agents/measurements.md for recorded numbers and caveats.
 #
@@ -51,6 +51,7 @@ REAL_ARGS="--noEmit --composite false --incremental false --emitDeclarationOnly 
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
 measure "tttt" ./release/tttt -q --keep-going -p $REAL
+measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $REAL
 measure "tsgo" $TSGO $REAL_ARGS -p $REAL
 measure "tsgo single-threaded" $TSGO $REAL_ARGS --singleThreaded -p $REAL
 echo "tttt phases (one run):"
@@ -68,6 +69,7 @@ for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpac
     echo
     echo "corpus $CORPUS: $($TSGO -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
+    measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $DIR
     measure "tsgo" $TSGO --noEmit $TSGO_ARGS
     measure "tsgo single-threaded" $TSGO --noEmit --singleThreaded $TSGO_ARGS
     echo "tttt phases (one run):"
