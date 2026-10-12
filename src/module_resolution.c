@@ -1492,7 +1492,9 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.ts_extension_from_star = found.ts_extension_from_star;
         ret.arbitrary_extension = found.arbitrary_extension;
         ret.package_id = package_id_of(&state, cstr_sv(&ret.path), &ret.package_name);
-        apply_realpath(me, &ret);
+        // (Not for a relative name, external or not: tsgo's relative branch is createResolvedModule, without
+        // createResolvedModuleHandlingSymlink's realpath)
+        if (!module_name_is_relative(specifier)) apply_realpath(me, &ret);
     } else {
         ret.json_without_option = state.json_without_option;
         bool dot_relative = specifier.buf[0] == '.' && module_name_is_relative(specifier);
