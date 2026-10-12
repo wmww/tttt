@@ -1679,7 +1679,11 @@ bool ty_signature_has_rest(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
     TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
     if (!shape) return true;
-    return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+    // (Any rest or variadic element, `[...T, ctx: C]` too: tsc's hasEffectiveRestParameter, target.hasRestElement)
+    for (u32 i = shape->arity; i-- > 0;) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) return true;
+    }
+    return false;
 }
 
 // tsc's SignatureCheckMode.StrictCallback / BivariantCallback: comparing the signatures of two callback parameters

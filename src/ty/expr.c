@@ -1074,10 +1074,10 @@ static bool is_arity_smaller(Checker* me, Signature const* sig, FunctionImpl con
         if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) break;
         required = index;
     }
-    for (u32 i = 0; i < sig->param_count; i++) {
-        if (sig->params[i].rest) return false;
-    }
-    return sig->param_count < required;
+    // (A rest tuple of fixed length is that many parameters, not an effective rest: tsc's hasEffectiveRestParameter and
+    // getParameterCount, `(...args: Parameters<F>)` with F's two parameters doesn't type `(a, b, c) =>`)
+    if (ty_signature_has_rest(sig)) return false;
+    return ty_signature_param_count(sig) < required;
 }
 
 // tsc's getContextualCallSignature: the call signatures that don't take fewer parameters than the function has
