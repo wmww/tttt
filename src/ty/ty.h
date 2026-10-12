@@ -585,6 +585,8 @@ static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
 }
 
 extern PropDecl const ty_prop_decl_none;
+// What a tuple element property shares: only name_is_value, read-only like ty_prop_decl_none
+extern PropDecl const ty_prop_decl_value_name;
 
 struct Prop {
     Atom const* name;
@@ -971,6 +973,9 @@ struct Checker {
     uint16_t walk_merged_owner; // The LowerCtx.merged_owner of the class or interface declaration being walked (ty_of_node())
     Ty const* array_target;
     Ty const* auto_array; // ty_auto_array(), made with array_target
+    // The element type parameters every tuple target shares (a target of arity n has the first n): replaced by a
+    // longer copy when a longer tuple needs more, so a target's list stays valid
+    TyList tuple_params;
     Ty const* readonly_array_target;
     struct Signature** unknown_signature; // tsc's unknownSignature (no parameters, returning errorType) as a list of one
     Ty const* global_types[14]; // GlobalType in relate.c: String, Number... looked up on first use

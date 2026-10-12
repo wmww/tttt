@@ -45,10 +45,16 @@ static bool adjacent_methods(ClassItem const* before, ClassItem const* after) {
 static const Members empty_members = {0};
 
 PropDecl const ty_prop_decl_none = {0};
+PropDecl const ty_prop_decl_value_name = { .name_is_value = true };
 
 // What an instantiation or a synthetic property says about its declaration: nothing (read-only: writing to it faults)
 static PropDecl* prop_decl_none(void) {
     return (PropDecl*)&ty_prop_decl_none;
+}
+
+// Whether decl is one of the shared read-only declarations (to write, a prop needs one of its own)
+static bool prop_decl_shared(PropDecl const* decl) {
+    return decl == &ty_prop_decl_none || decl == &ty_prop_decl_value_name;
 }
 
 // A property without a declaration of its own
@@ -74,7 +80,7 @@ static PropDeclRare* prop_decl_rare_mut(Checker* me, PropDecl* decl) {
 // `*to = *from`, with a declaration of its own to add to
 static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
     *to = *from;
-    if (from->decl == prop_decl_none()) return;
+    if (prop_decl_shared(from->decl)) return;
     to->decl = arena_new(&my arena, PropDecl);
     *to->decl = *from->decl;
     if (from->decl->rare) {
@@ -327,7 +333,11 @@ static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Fun
 
 static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
     if (!count) return;
-    if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
+    if (prop_decl_shared(prop->decl)) {
+        PropDecl* own = arena_new(&my arena, PropDecl);
+        *own = *prop->decl;
+        prop->decl = own;
+    }
     // (A prop's span lists are never written once made, and are replaced to add to them)
     Span* all = arena_new_n(&my arena, Span, prop->decl->decl_span_count + count);
     if (prop->decl->decl_span_count) memcpy(all, prop->decl->decl_spans, sizeof(Span) * prop->decl->decl_span_count);
@@ -339,7 +349,7 @@ static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 
 // prop_add_decl_spans() of spans that live as long as the checker (the AST's, or another prop's list): a prop without
 // any takes them as they are
 static void prop_add_shared_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
-    if (count && prop->decl != prop_decl_none() && !prop->decl->decl_span_count) {
+    if (count && !prop_decl_shared(prop->decl) && !prop->decl->decl_span_count) {
         prop->decl->decl_spans = spans;
         prop->decl->decl_span_count = count;
         return;
@@ -3486,13 +3496,13 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         bool optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0;
         if (!optional) min_length = i + 1;
         cstr name = cstr_d(i);
-        Prop* prop = prop_new_declared(me);
+        Prop* prop = arena_new(&my arena, Prop);
+        prop->decl = (PropDecl*)&ty_prop_decl_value_name; // (Named by a number, nothing else to say: shared)
         prop->name = checker_atom(me, cstr_sv(&name));
         cstr_drop(&name);
         prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
         prop->type = elements.data[i];
         prop->type_state = LAZY_STATE_DONE;
-        prop->decl->name_is_value = true;
         builder_push(&builder, props, prop);
     }
     Ty const* length;

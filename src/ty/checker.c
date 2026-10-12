@@ -2323,13 +2323,18 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
-        Ty const** params = arena_new_n(&my arena, Ty const*, shape->arity);
+        if (my tuple_params.len < shape->arity) {
+            u32 len = my tuple_params.len * 2 > shape->arity ? my tuple_params.len * 2 : shape->arity;
+            Ty const** params = arena_new_n(&my arena, Ty const*, len);
+            if (my tuple_params.len) memcpy(params, my tuple_params.data, sizeof(Ty const*) * my tuple_params.len);
+            for (u32 i = my tuple_params.len; i < len; i++) params[i] = ty_synthetic_type_param(me, c_sv("T"));
+            my tuple_params = (TyList){ .data = params, .len = len };
+        }
         unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
         Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
         void const** target_labels = labels ? arena_new_n(&my arena, void const*, shape->arity) : nullptr;
         bool variable = false;
         for (u32 i = 0; i < shape->arity; i++) {
-            params[i] = ty_synthetic_type_param(me, c_sv("T"));
             flags[i] = shape->flags[i];
             if (names) names[i] = shape->names[i];
             if (target_labels) target_labels[i] = shape->names[i] ? shape->labels[i] : nullptr;
@@ -2345,7 +2350,7 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         copy->names = names;
         copy->labels = target_labels;
         ret->declared.tuple = copy;
-        ret->declared.type_params = (TyList){ .data = params, .len = shape->arity };
+        ret->declared.type_params = (TyList){ .data = my tuple_params.data, .len = shape->arity };
         *slot = ret;
     }
     return *slot;

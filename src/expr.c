@@ -2794,7 +2794,8 @@ static void const* location_symbol(Expr const* me) {
     while (prop->target) prop = prop->target;
     if (prop->decl->symbol) return prop->decl->symbol;
     if (prop->decl->decl_span_count) return prop->decl->decl_spans[0].sv.buf;
-    return prop->decl != &ty_prop_decl_none ? (void const*)prop->decl : (void const*)prop;
+    return prop->decl != &ty_prop_decl_none && prop->decl != &ty_prop_decl_value_name ? (void const*)prop->decl :
+        (void const*)prop;
 }
 
 typedef struct TruthyUseSearch {
