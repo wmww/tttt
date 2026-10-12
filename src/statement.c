@@ -1676,7 +1676,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (!flow_is_unreachable(flow->current)) flow_set_current(flow, pre_loop);
             expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_body, post);
             flow_set_current(flow, flow_finish_label(pre_body));
-            statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_incrementor);
+            // (tsgo's bindWhileStatement: `continue` is another way back into the loop label, no incrementor between)
+            statement_resolve_names_body(&loop->body, loop_scope, errs, post, loop->is_while ? pre_loop : pre_incrementor);
             flow_add_antecedent(flow, pre_incrementor, flow->current);
             flow_set_current(flow, flow_finish_label(pre_incrementor));
             expr_mark_result_unused(&loop->afterthought);

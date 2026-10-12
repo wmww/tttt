@@ -3321,9 +3321,9 @@ const baselines = {
         types: true,
     },
     'circularControlFlowNarrowingWithCurrentElement01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'circularDestructuring': {
         errors: true,

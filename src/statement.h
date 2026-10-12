@@ -294,6 +294,7 @@ typedef struct ForLoopStatement {
     Expr afterthought;
     Statement body;
     bool is_do_while; // The body comes before the condition in the source
+    bool is_while; // `while (c)`: a `continue` goes straight back to the condition (no incrementor label)
 } ForLoopStatement;
 
 typedef struct ForEachLoopStatement {

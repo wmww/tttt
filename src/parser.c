@@ -12746,6 +12746,7 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
             .condition = condition,
             .afterthought = expr_undefined(span_from_pos(&p)),
             .body = body,
+            .is_while = true,
         }),
     };
     return parse_success(&p);
