@@ -1015,19 +1015,51 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
 
 // tsc's getUnmatchedProperty, optional properties not required: a required property of `target` that `source` doesn't
 // have, or with `discriminants` one of a unit type that `source` has another type for
+// The type of `source`'s property `name` as tsc's getPropertyOfType finds it (an intersection's is its members'
+// combined), or null
+static Ty const* unmatched_source_prop(Checker* me, Ty const* source, Atom const* name) {
+    if (source->kind == TY_INTERSECTION) {
+        FoundProp found = ty_find_prop(me, source, name);
+        return found.found ? found.type : nullptr;
+    }
+    Prop const* prop = ty_get_object_prop(me, source, name);
+    return prop ? prop_type(me, prop) : nullptr;
+}
+
+// Whether `target` has a required property `source` lacks (or, with `discriminants`, a unit-typed one whose type the
+// source's doesn't have): tsc's getUnmatchedProperty
+static bool unmatched_prop_of(Checker* me, Ty const* source, Atom const* name, Ty const* target_type, bool discriminants) {
+    Ty const* source_type = unmatched_source_prop(me, source, name);
+    if (!source_type) return true;
+    if (!discriminants) return false;
+    bool unit = (target_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE)) && target_type->kind != TY_UNION;
+    return unit && !(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type);
+}
+
 static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, bool discriminants) {
+    if (target->kind == TY_INTERSECTION) {
+        // (An intersection's properties are all of its members', optional only where every member's is: tsc's
+        // getPropertiesOfType. `{ id: number } & Reference<E>` has the `id` ScalarReference lacks)
+        for (u32 m = 0; m < target->composite.types.len; m++) {
+            Ty const* part = ty_apparent_type(me, target->composite.types.data[m]);
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Members const* members = ty_members(me, part);
+            for (u32 i = 0; i < members->prop_count; i++) {
+                // (Required in one member is required in the intersection: its other members' copies are seen too)
+                Prop const* prop = members->props[i];
+                if (prop->flags & PROP_OPTIONAL) continue;
+                Ty const* target_type = discriminants ? ty_find_prop(me, target, prop->name).type : nullptr;
+                if (unmatched_prop_of(me, source, prop->name, target_type, discriminants)) return true;
+            }
+        }
+        return false;
+    }
     Members const* members = ty_members(me, target);
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* target_prop = members->props[i];
         if (target_prop->flags & PROP_OPTIONAL) continue;
-        Prop const* source_prop = ty_get_object_prop(me, source, target_prop->name);
-        if (!source_prop) return true;
-        if (!discriminants) continue;
-        Ty const* target_type = prop_type(me, target_prop);
-        bool unit = (target_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE)) && target_type->kind != TY_UNION;
-        if (!unit) continue;
-        Ty const* source_type = prop_type(me, source_prop);
-        if (!(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type)) return true;
+        Ty const* target_type = discriminants ? prop_type(me, target_prop) : nullptr;
+        if (unmatched_prop_of(me, source, target_prop->name, target_type, discriminants)) return true;
     }
     return false;
 }

@@ -54246,7 +54246,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentsWithTypeArguments4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
