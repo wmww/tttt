@@ -309,7 +309,10 @@ static bool check_element_type(Checker* me, JsxElement const* element, Ty const*
     Symbol const* ns = ty_jsx_namespace(me, element);
     Symbol const* symbol = ns ? export_with_meaning(ns, c_sv("ElementType"), SYMBOL_TYPE) : nullptr;
     Ty const* constraint = symbol ? instantiate_with_defaults(me, symbol, nullptr, 0) : nullptr;
-    if (!constraint || (constraint->flags & TYF_ANY)) return false;
+    // (Only an unresolved one is none: a written `type ElementType = any` takes every tag, and no return type is
+    // checked then, tsc's getJsxElementTypeTypeAt with isErrorType. octane's JSX namespace)
+    if (!constraint || (constraint->flags & TYF_ERROR)) return false;
+    if (constraint->flags & TYF_ANY) return true;
     ty_check_jsx_component(me, tag_type, constraint, element->tag_name.inner_span, JSX_COMPONENT_TYPE, errs);
     return true;
 }
