@@ -239,7 +239,42 @@ static bool resolve_extends_exports(ConfigLoad* me, JsonValue const* package_jso
 
 // What `"extends": "name"` names: a path, or a package (its `tsconfig` field, a file in it, or its tsconfig.json)
 static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) {
-    bool is_path = name.size && (name.buf[0] == '/' || name.buf[0] == '.');
+    // (tsgo's getExtendsConfigPath: rooted, `./` or `../`; anything else is resolved like a module)
+    bool is_path = name.size && (name.buf[0] == '/' || csview_starts_with(name, "./") || csview_starts_with(name, "../"));
+    if (csview_equals(name, ".") || csview_equals(name, "..")) {
+        // A relative module name (tsgo's ResolveConfig): the file with `.json`, else the directory's package.json
+        // `tsconfig`, else its tsconfig.json
+        cstr base = path_join(dir, name);
+        cstr candidates[3] = { cstr_d(base, ".json"), cstr_null, cstr_d(base, "/tsconfig.json") };
+        cstr package_json_path = cstr_d(base, "/package.json");
+        if (fs_is_reg_file(my fs, cstr_sv(&package_json_path))) {
+            cstr text = cstr_null;
+            bool readable = true;
+            try (fs_read_file(my fs, cstr_sv(&package_json_path), &text)) if_err (e) {
+                ignore e;
+                current_error_destroy();
+                readable = false;
+            }
+            JsonValue json = {0};
+            if (readable && json_parse(cstr_sv(&text), &json)) {
+                JsonValue const* field = json_get_tagged(&json, "tsconfig", JSON_STRING);
+                if (field) candidates[1] = path_join(cstr_sv(&base), cstr_sv(&field->string));
+            }
+            json_drop(&json);
+            if (readable) cstr_drop(&text);
+        }
+        bool found = false;
+        for (u32 i = 0; i < c_arraylen(candidates); i++) {
+            if (!found && cstr_size(&candidates[i]) && fs_is_reg_file(my fs, cstr_sv(&candidates[i]))) {
+                *out = candidates[i];
+                candidates[i] = cstr_null;
+                found = true;
+            }
+            cstr_drop(&candidates[i]);
+        }
+        c_drop(cstr, &package_json_path, &base);
+        return found;
+    }
     if (is_path) {
         cstr base = path_join(dir, name);
         // (A `.json` is what's read whether it's there or not: TS5083 then, like tsc's getExtendsConfigPath)
