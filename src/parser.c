@@ -44,6 +44,11 @@ typedef enum WhitespaceType {
     WHITESPACE_NEWLINE,
 } WhitespaceType;
 
+typedef struct FirstPassStatement {
+    const char* start;
+    bool await;
+} FirstPassStatement;
+
 typedef struct ParserShared {
     SourceFile const* source;
     // A `/*` without its `*/` was hopped (the comment goes to the end of the file): TS1010 at the end, once
@@ -75,11 +80,15 @@ typedef struct ParserShared {
     // again with the top level an await context, `top_level_await` (tsc's reparseTopLevelAwait)
     bool saw_top_level_await;
     bool top_level_await;
-    // The file's statements with an `await` identifier, [start, end) pairs (malloc'd): the first pass records them,
-    // the second makes them await contexts (tsc reparses just these)
-    const char** await_statements;
-    u32 await_statement_count;
-    u32 await_statement_cursor;
+    // The file's statements from the first one with an `await` identifier on (malloc'd), each with whether it has one:
+    // the first pass records them, the second parses each run of statements with one as an await context, and on
+    // until a statement ends where the next statement without one started (tsc's reparseTopLevelAwait)
+    struct FirstPassStatement* await_statements;
+    u32 await_statement_count; // Of those, the ones with an `await` identifier
+    u32 first_pass_count;
+    u32 await_statement_cursor; // The second pass: the first recorded statement that may still start a section
+    bool in_await_section;
+    i32 await_section_next; // In a section: the recorded statement without an `await` it ends at, -1 for the file's end
     // in_async around the function being parsed: its parameters' decorators are in that await context (tsc's
     // parseParameterWorker, inOuterAwaitContext)
     bool outer_in_async;
@@ -11003,6 +11012,7 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
     bool reference_preserve = false;
     ImportResolutionOverride reference_resolution = IMPORT_RESOLUTION_DEFAULT;
     bool invalid_resolution = false;
+    Span resolution_span = {0};
     while (true) {
         if (hop_start(&p, "/>")) {
             break;
@@ -11067,7 +11077,14 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
             if (span_equals(attr, "resolution-mode")) {
                 if (cstr_equals(&value, "import")) reference_resolution = IMPORT_RESOLUTION_IMPORT;
                 else if (cstr_equals(&value, "require")) reference_resolution = IMPORT_RESOLUTION_REQUIRE;
-                else invalid_resolution = true;
+                else {
+                    invalid_resolution = true;
+                    // (tsgo's parseResolutionMode reports at the value, without its quotes)
+                    resolution_span = span_from(value_a);
+                    if (resolution_span.size >= 2 && (*resolution_span.buf == '"' || *resolution_span.buf == '\'')) {
+                        span_set_sv(&resolution_span, csview_slice(span_sv(resolution_span), 1, resolution_span.size - 1));
+                    }
+                }
             }
         }
 
@@ -11077,12 +11094,7 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
 
     if (found_reference_attr) {
         if (invalid_resolution && reference_attr == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
-            // tsc's processPragmasIntoFields, on the name without its quotes
-            Span name = reference_path_span;
-            if (name.size >= 2 && (*name.buf == '"' || *name.buf == '\'')) {
-                span_set_sv(&name, csview_slice(span_sv(name), 1, name.size - 1));
-            }
-            parse_error(&p, name, 1453, "`resolution-mode` should be either `require` or `import`.");
+            parse_error(&p, resolution_span, 1453, "`resolution-mode` should be either `require` or `import`.");
         }
         *ret = (SourceDirectiveStatement){
             .tag = reference_attr,
@@ -13003,15 +13015,22 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         bool outer_saw_await = p.shared->saw_top_level_await;
         if (file_level) {
             if (p.shared->top_level_await) {
-                // (In one of the first pass's statements with an `await` identifier)
+                // (A run of the first pass's statements with an `await` identifier starts a section)
                 ParserShared* sh = p.shared;
-                while (sh->await_statement_cursor < sh->await_statement_count &&
-                    sh->await_statements[2 * sh->await_statement_cursor + 1] <= p.pos
+                while (!sh->in_await_section && sh->await_statement_cursor < sh->first_pass_count &&
+                    sh->await_statements[sh->await_statement_cursor].start < p.pos
                 ) {
                     sh->await_statement_cursor++;
                 }
-                sh->in_async = sh->await_statement_cursor < sh->await_statement_count &&
-                    sh->await_statements[2 * sh->await_statement_cursor] <= p.pos;
+                if (!sh->in_await_section && sh->await_statement_cursor < sh->first_pass_count &&
+                    sh->await_statements[sh->await_statement_cursor].start == p.pos && sh->await_statements[sh->await_statement_cursor].await
+                ) {
+                    u32 next = sh->await_statement_cursor;
+                    while (next < sh->first_pass_count && sh->await_statements[next].await) next++;
+                    sh->in_await_section = true;
+                    sh->await_section_next = next < sh->first_pass_count ? (i32)next : -1;
+                }
+                sh->in_async = sh->in_await_section;
                 // (tsc's reparseTopLevelAwait parses those one by one, outside the statement list: nothing inside
                 // aborts at a token that could start a statement)
                 sh->parsing_context = sh->in_async ? saved_context : saved_context | (1u << ctx);
@@ -13026,7 +13045,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             list_push(vec_statement, ret, statement);
             p.pos++;
         } else if (
-            (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
+            (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p)) || (file_level && p.shared->in_await_section)) &&
             parse_statement(&p, toplevel, &statement)
         ) {
             // (Its index: the JSDoc declarations that follow it are pushed after it)
@@ -13040,6 +13059,12 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 // where the class is, without its `@template`s)
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
+        } else if (file_level && p.shared->in_await_section && *p.pos != '\\') {
+            // (tsc's reparseTopLevelAwait calls parseStatement itself: what starts no statement is an expression
+            // statement of a missing identifier, `}` too, and a token nothing took is skipped)
+            expect_statement(&p, toplevel, &statement);
+            list_push(vec_statement, ret, statement);
+            if (p.pos == statement_start) hop_token(&p);
         } else if (*p.pos == '\\') {
             parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1127, "Invalid character.");
             p.pos++;
@@ -13048,14 +13073,28 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         }
         if (file_level && !p.shared->top_level_await) {
             ParserShared* sh = p.shared;
-            if (sh->saw_top_level_await && p.pos > statement_start) {
-                sh->await_statements = realloc(sh->await_statements, sizeof(char*) * 2 * (sh->await_statement_count + 1));
+            bool await = sh->saw_top_level_await && p.pos > statement_start;
+            if ((await || sh->await_statement_count) && p.pos > statement_start) {
+                sh->await_statements = realloc(sh->await_statements, sizeof(FirstPassStatement) * (sh->first_pass_count + 1));
                 panic_if(!sh->await_statements, "out of memory");
-                sh->await_statements[2 * sh->await_statement_count] = statement_start;
-                sh->await_statements[2 * sh->await_statement_count + 1] = p.pos;
-                sh->await_statement_count++;
+                sh->await_statements[sh->first_pass_count++] = (FirstPassStatement){ .start = statement_start, .await = await };
+                sh->await_statement_count += await;
             }
             sh->saw_top_level_await |= outer_saw_await;
+        } else if (file_level && p.shared->in_await_section && p.shared->await_section_next >= 0) {
+            // (Done where a statement ends at the next statement without one, else on past it: tsc compares the
+            // statement's end with that one's full start)
+            ParserShared* sh = p.shared;
+            char const* end = p.pos;
+            hop_whitespace(&p);
+            char const* next = sh->await_statements[sh->await_section_next].start;
+            if (p.pos == next) {
+                sh->in_await_section = false;
+            } else if (end > next || p.pos > next) {
+                i32 later = sh->await_section_next + 1;
+                while (later < (i32)sh->first_pass_count && sh->await_statements[later].await) later++;
+                sh->await_section_next = later < (i32)sh->first_pass_count ? later : -1;
+            }
         }
         hop_whitespace(&p); // TODO: is this needed?
     }
@@ -14301,10 +14340,10 @@ static bool parsed_file_is_module(SourceFile const* source, ParserShared const* 
         (shared->saw_jsx && (options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV));
 }
 
-static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, const char*** await_statements, u32* await_count);
+static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count);
 
 void parse_file(SourceFile* source, ErrorCtx* errs) {
-    const char** await_statements = nullptr;
+    FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
@@ -14314,7 +14353,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
 
 // False if the file has to be parsed again with top_level_await (nothing of this pass is kept then, but the
 // statements to parse as await contexts)
-static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, const char*** await_statements, u32* await_count) {
+static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count) {
     u32 module_refs_before = source->module_ref_count;
     ParserShared shared = {
         .source = source,
@@ -14323,7 +14362,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         .in_ambient = source->is_declaration,
         .top_level_await = top_level_await,
         .await_statements = top_level_await ? *await_statements : nullptr,
-        .await_statement_count = top_level_await ? *await_count : 0,
+        .first_pass_count = top_level_await ? *await_count : 0,
     };
 
     Parser p = {
@@ -14391,7 +14430,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         parsed_file_is_module(source, &shared)
     ) {
         *await_statements = shared.await_statements;
-        *await_count = shared.await_statement_count;
+        *await_count = shared.first_pass_count;
         shared.await_statements = nullptr;
         vec_statement_drop(&source->ast.statements);
         source->ast.statements = vec_statement_init();
