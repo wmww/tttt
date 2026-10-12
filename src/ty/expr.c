@@ -2987,7 +2987,10 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // (The operands' contextual type is the expression's as written, see passed_on_context())
             Ty const* passed = passed_on_context(ctx).contextual;
             left = ty_check_expr(me, &binary->left, passed);
-            right = ty_check_expr(me, &binary->right, ctx.contextual ? passed : left);
+            // (The left operand's type when there is no contextual type, or when it is a binding pattern's: tsc's
+            // getContextualTypeForBinaryOperand, `let { a, b } = opts ?? { a: new Set(), b: new Set() }`)
+            bool from_pattern = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN);
+            right = ty_check_expr(me, &binary->right, ctx.contextual && !from_pattern ? passed : left);
             break;
         }
         case BINARY_OP_AND_AND:
