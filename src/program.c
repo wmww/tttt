@@ -1488,7 +1488,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // Resolved like the import the emitter writes: a `require()` in CommonJS output
         if (ty_emits_commonjs_like(source_file)) source_file->helpers_ref->syntax = MODULE_REF_REQUIRE;
     }
-    cstr jsx_runtime = my loading_stdlib ? cstr_null : source_file_jsx_runtime_import(source_file);
+    // (Only a .tsx or JavaScript file's: tsgo's fileloader, not tsc 6's every module)
+    cstr jsx_runtime = my loading_stdlib || !source_file->is_jsx ? cstr_null : source_file_jsx_runtime_import(source_file);
     if (cstr_size(&jsx_runtime)) {
         Span at = span_from_sv(source_file, csview_from_n(source_file_start(source_file), 0));
         ModuleRef* ref = source_file_add_module_ref(source_file, jsx_runtime, at);
