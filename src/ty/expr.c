@@ -3430,7 +3430,13 @@ static void spread_alt_object(Checker* me, SpreadAlt* alt, LiteralBuilder const*
     // After a generic intersection whose last member is a non-generic object, `T & { a }`, that member takes the
     // object spread: `T & { a, b }` (tsc's getSpreadType: lastLeft)
     Ty const* last_generic = alt->part_count ? alt->parts[alt->part_count - 1].generic : nullptr;
-    if (last_generic && last_generic->kind == TY_INTERSECTION) {
+    // (Or an object type spread whole after a generic one, see spread_alt_type(): spread into a new object now)
+    if (last_generic && (last_generic->flags & TYF_OBJECT) && !ty_is_generic_object(me, last_generic)) {
+        alt->part_count--;
+        LiteralBuilder left = { .empty_object = false };
+        spread_props_of(me, last_generic, false, readonly, &left);
+        spread_alt_push(alt, (SpreadPart){ .object = left });
+    } else if (last_generic && last_generic->kind == TY_INTERSECTION) {
         TyList members = last_generic->composite.types;
         Ty const* last = members.data[members.len - 1];
         if ((last->flags & TYF_OBJECT) && !ty_is_generic_object(me, last)) {
@@ -3494,6 +3500,15 @@ static bool spread_alt_type(Checker* me, SpreadAlt* alt, Ty const* member, bool 
         return true;
     }
     if (!partial && spreads_into_nothing(me, member) && !(member->flags & TYF_OBJECT)) return true;
+    // An object type spread right after a generic one is intersected as it is, `T & Record<string, any>` (tsc's
+    // getSpreadType: getIntersectionType([left, right]) once left is generic); what is spread after it merges with it
+    if (!partial && alt->part_count && alt->parts[alt->part_count - 1].generic && (member->flags & TYF_OBJECT) &&
+        alt->parts[alt->part_count - 1].generic->kind != TY_INTERSECTION &&
+        ty_is_generic_object(me, alt->parts[alt->part_count - 1].generic)
+    ) {
+        spread_alt_push(alt, (SpreadPart){ .generic = member });
+        return true;
+    }
     Ty const* apparent = ty_apparent_type(me, member);
     if (apparent->flags & TYF_ANY) return false;
     if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return true;
