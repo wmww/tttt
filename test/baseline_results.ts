@@ -51666,7 +51666,7 @@ const baselines = {
         types: true,
     },
     'checkJsdocTypedefOnlySourceFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52271,7 +52271,7 @@ const baselines = {
         types: true,
     },
     'importTag14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52911,7 +52911,7 @@ const baselines = {
         types: true,
     },
     'noAssertForUnparseableTypedefs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61011,7 +61011,7 @@ const baselines = {
         types: true,
     },
     'importingExportingTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

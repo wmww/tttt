@@ -3817,17 +3817,49 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
         case JSDOC_TAG_CALLBACK:
             c = jsdoc_skip_space(c, end);
             const char* type_end = nullptr;
+            bool unclosed = false;
             if (tag.kind != JSDOC_TAG_CALLBACK && c < end && *c == '{') {
                 parse_jsdoc_type_expression(parent, &c, end, &tag);
                 type_end = c;
+                // (Its `}` missing, TS1005 there: tsgo takes no name after it)
+                unclosed = tag.has_type && c > tag.tag_name.buf && c[-1] != '}';
                 c = jsdoc_skip_space(c, end);
             }
-            c = jsdoc_parse_name(c, end, &tag.name, source);
-            if (type_end && !span_valid(tag.name)) {
+            // (A name is an identifier token: `{T} 1` has none)
+            if (!unclosed && !(c < end && *c >= '0' && *c <= '9')) c = jsdoc_parse_name(c, end, &tag.name, source);
+            if (type_end && !span_valid(tag.name) && tag.kind == JSDOC_TAG_TYPEDEF && tag.has_type) {
+                // A typedef without a name still declares one, missing (tsgo's parseJSDocIdentifierName: `(Missing)`,
+                // where the next token starts, TS1003 at that token unless the `}` was missing there already).
+                // skipWhitespaceOrAsterisk keeps the whitespace before the comment's end: that is the token then
+                const char* at = unclosed ? type_end : c;
+                if (!unclosed) {
+                    const char* token_end = at;
+                    if (at >= end) {
+                        at = type_end;
+                        token_end = at;
+                        if (at < end && *at == '\n') token_end++;
+                        else if (at + 1 < end && at[0] == '\r' && at[1] == '\n') token_end += 2;
+                        else while (token_end < end && (*token_end == ' ' || *token_end == '\t')) token_end++;
+                    } else {
+                        token_end++;
+                    }
+                    // (None at the comment's end: `{T}*/`)
+                    if (source->is_js && token_end > at) {
+                        vec_error_push(&parent->shared->jsdoc_errors, (Error){
+                            .message = cstr_lit("Identifier expected."), .span = span_make(source, at, token_end),
+                            .ts_code = 1003, .phase = ERROR_PHASE_RESOLVE_NAMES, .jsdoc = true, // (a JSDoc diagnostic)
+                        });
+                    }
+                }
+                tag.name = span_make(source, at, at);
+            }
+            if (type_end && (!span_valid(tag.name) || !tag.name.size)) {
                 // A typedef needs a name (tsgo's parseTypedefTag: no Closure identifier-named typedefs). tsgo says it
-                // at the last character the type expression took: its `}`, else the type's end
+                // at the character before where the missing name is, else the last one the type expression took: its
+                // `}`, else the type's end
                 const char* last = type_end;
                 if (last[-1] != '}' && tag.has_type && span_valid(tag.type_span)) last = span_end_ptr(tag.type_span);
+                if (span_valid(tag.name)) last = tag.name.buf;
                 // (A syntactic error of the file in tsgo, not one of its jsdocDiagnostics: unchecked files have it too)
                 if (source->is_js) {
                     vec_error_push(&parent->shared->jsdoc_errors, (Error){

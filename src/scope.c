@@ -823,6 +823,8 @@ void add_duplicate_related_named(Error* error, Span at, Span other, csview name)
         if (span_eq(i->span, other)) return;
         count++;
     }
+    // (A missing name is tsc's "__missing", shown as "(Missing)")
+    if (!name.size) name = c_sv("(Missing)");
     if (count >= 5) return;
     if (count) {
         error_add_related_d(error, other, 6204, "and here.");
@@ -3254,9 +3256,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC && item->tag != PORT_EXPORT_AS_NAMESPACE) {
         module = binder_module_of_ref(my binder, item->module_ref);
         if (!module) {
-            // No file: TS2307 comes from the statement. (An `@import` tag's is only reported by a use of its names in
-            // tsc, whose checkJSDocImportTag doesn't resolve them: not at all here)
-            if (item->module_ref->file && !item->jsdoc) {
+            // No file: TS2307 comes from the statement. (An `@import` tag too: tsgo's reparser makes it an import
+            // declaration, whose checkImportBinding resolves it)
+            if (item->module_ref->file) {
                 cstr shown = module_ref_file_message_path(item->module_ref);
                 error_ctx_error_d(errs, item->module_ref->span, 2306, "File '", shown, "' is not a module.");
                 cstr_drop(&shown);
@@ -3351,7 +3353,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                         "Types cannot appear in export declarations in JavaScript files.");
                     for (u32 i = 0; i < my decl_count; i++) {
                         if (my decls[i].kind != SYMBOL_DECL_TYPE_ALIAS || !((TypeDecl const*)my decls[i].node)->jsdoc) continue;
-                        error_add_related_d(error, my decls[i].full, 18044, "'", item->source_name, "' is automatically exported here.");
+                        error_add_related_d(error, span_valid(my decls[i].name) ? my decls[i].name : my decls[i].full, 18044, "'", item->source_name, "' is automatically exported here.");
                         break;
                     }
                     return nullptr;

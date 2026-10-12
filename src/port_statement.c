@@ -284,7 +284,7 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
             SymbolDecl const* decl = &target->decls[i];
             if (decl->kind != SYMBOL_DECL_TYPE_ALIAS || !((TypeDecl const*)decl->node)->jsdoc) continue;
             if (span_source(decl->full) != span_source(at)) continue;
-            error_add_related_d(error, decl->full, 18044, "'", target->name, "' is automatically exported here.");
+            error_add_related_d(error, span_valid(decl->name) ? decl->name : decl->full, 18044, "'", target->name, "' is automatically exported here.");
             break;
         }
     } else {
