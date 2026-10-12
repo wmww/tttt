@@ -58,28 +58,47 @@ found: `A_VAR`-style logging of the types each variance measurement makes (next_
 measure_variances(), and the same in a patched tsgo's getVariancesWorker built with `go build -overlay` into /tmp, not
 through ensure-typescript.sh, whose built/ is shared), then a probe of the costliest measurement with a log of the
 same-named property pairs that relate as distinct types (`sourceProp != targetProp` in tsgo).
-- **date-fns/pkgs/docs still 1.6x** (33k vs 21k types): typesaurus's variance measurements are still costlier than
-  tsgo's: update.d.ts `Builder<Def, Props>` #1 9.9k types vs 1.6k, `CollectionFunction` #0 9.9k vs 1.7k, `DB` #1 20k vs
-  12k. Not the inherited-member sharing (that one is fixed); not looked into further.
-- **A getter resolved inside its own circularity** (found by the object literal fix, 56a730f2): zod's
-  recursive-types.test.ts `z.strictObject({ type: ..., get content() { return z.array(z.tuple([Self, ...])) } })`.
-  Object literals with a getter are still instantiated by the whole mapper, because making their identity instance the
-  literal itself (what tsgo does: the literal has no outer type parameters) gave a spurious TS2344 there: the literal's
-  own getter type is wrong (resolved while circular) and only a later instance's re-resolution gets it right. tsgo has
-  one type and gets it right, so the getter's type (or its circularity marker) is the bug.
+- **date-fns/pkgs/docs** fixed in round 2 (1.56 -> 0.94): erasing an unresolved instantiated signature resolved it first.
+- **A getter resolved inside its own circularity**: a correctness bug, not only perf. Object literals with a getter are
+  still instantiated by the whole mapper (56a730f2): with the identity instance (what tsgo does) zod's
+  recursive-types.test.ts gets a spurious TS2344. Round 2 found it isn't about the circularity marker (no
+  ty_resolving_cycle() is hit there): the literal's mentions are first asked while its getter is lazy (unknown, keyed
+  by the whole mapper) and later answered (identity), so the same literal has instances of both kinds, and which ones
+  meet in a relation decides the verdict. Making the early "unknown" permanent passes the corpus test but not this
+  probe, which **fails on ai-main already** (tsgo is clean): `/tmp/a-probes/zod-getter-probe.ts` content, a function
+  with `const TaskListNodeSchema = z.strictObject({ type: z.literal("taskList"), get content() { return
+  z.array(z.tuple([TaskListNodeSchema, z.union([TaskListNodeSchema])])).min(1); } })`, `type T = z.infer<typeof
+  TaskListNodeSchema>`, a recursive `_T = { type: "taskList"; content: [_T, _T][] }` and `const y: _T = x as T` (spurious
+  TS2322 "Target requires 2 element(s) but source may have fewer"; run it with a tsconfig whose `paths` maps "zod/v4"
+  to the zod corpus's src/v4/index.ts). tsgo never asks the getter's type during the strictObject call, nor while the
+  variable is in flight; tttt resolves the inner `TaskListNodeSchema` inside the getter to a type whose content is
+  `ZodObject<any, $strict>`-like at the second level. Next step: find where the `any` comes from (it isn't a
+  declaration cycle; maybe the reentrant "evaluate again below the call's barrier" in lazy_type_evaluate_inner()).
 - **angular-components/tools/extract-tokens 1.62** (1.01M vs 627k): all of it is checking immutable@5's immutable.d.ts,
   the immutable-js/type-definitions cause (agent B's).
-- **karakeep/packages/plugins 1.43** (83k vs 58k after these fixes): all in ratelimit-redis/src/index.ts, and all of
-  that in `const r: RedisClientType = createClient(...)` (66.6k types vs tsgo's 39k for that line alone). tsgo
-  measures the variances of the class RedisClient (`default`, 25k types); tttt measures those of the alias
-  RedisClientType (@redis/client's `RedisClient<...> & RedisClientExtensions<...>`, #3 RESP alone 26k types) and
-  RedisClientPoolType, from infer_from()'s alias shortcut (ty_alias_param_is_contravariant()) while inferring from the
-  client's method signatures (`duplicate(): RedisClientType<...>`) in the return type inference. tsgo's inferFromTypes
-  has the same alias shortcut, so find why it never gets there with these two (redis's own `RedisClientType` alias
-  wraps @redis/client's, so the contextual type's alias differs from the return type's in tsgo: does tttt give the
-  wrapper's instantiation the inner alias?). Also: alias_variance_applies() (relate.c) tests TYF_OBJECT where tsgo
-  tests TypeFlagsObject|Conditional, which no intersection or union has: check whether tttt's intersections carry
-  TYF_OBJECT (excluding them didn't change this case).
+- **karakeep/packages/plugins 1.43, found but not committed** (round 2): the RedisClientType alias variances (26k types)
+  come from infer_from()'s alias shortcut, which tsgo runs through invokeOnce (inferFromAliasTypeArguments): there the
+  pair `RedisClientType<_M...>` (node-redis's `duplicate()` return, reached through the client's methods during the
+  return-type inference of `createClient()`) is cut short by isDeeplyNestedType on both sides, so tsgo never measures
+  that alias. Routing tttt's alias branch through the same invokeOnce (visited, deeply nested on both stacks, pushed on
+  the object stack) takes karakeep 83.4k -> 71.9k types (1.43 -> 1.23). But: (1) tttt's `visited` is keyed by the pair
+  alone where tsgo's InferenceKey also has priority, contravariant and bivariant: with alias pairs in it, excalidraw's
+  delta.ts gets a spurious TS2345 (`(partial: Partial<X>) => Partial<X>` to `(partial: Partial<T>) => Partial<T>` infers
+  from the parameter and then skips the return); keying alias pairs (or all pairs) like tsgo fixes that. (2) It costs
+  instructions: everything keyed like tsgo effect +0.4%, valibot +0.6%, zod +0.4%; a separate tsgo-keyed table for alias
+  pairs effect +0.3%; only the deeply-nested check on both stacks (no visited, no push) still effect +0.18% (the
+  recursion identities of every alias pair at depth >= 1: ty_is_deeply_nested + ty_recursion_entry ~13M). Not
+  committed for that; a cheaper recursion-identity check (memoized per type?) would make it pay. A patch is easy to redo:
+  wrap the alias loop of infer_from() in the conditional branch's visited/deeply-nested/object-stack code.
+  What's left after that: RedisClientPoolType's RESP (#3) variance measurement costs tttt 26k types and tsgo 300.
+  Inside it tttt relates RedisClientPool<..sub..> to RedisClientPool<..super..> structurally (RedisClientPool #3 is "in
+  out (unreliable)" on both sides, so both fall back to members), and its `multi()` returns RedisClientMultiCommandType
+  intersections whose members are related pairwise (`RedisClientMultiCommand<[]>` to `WithCommands<[], ..., super-T,
+  any>`, WithCommands to WithModules/WithFunctions/WithScripts...), instantiating CommandSignature over ~750 commands per
+  marker. tsgo makes 300 types there: compare the nested relations of that one measurement with an instrumented tsgo.
+  Also: alias_variance_applies() (relate.c) tests TYF_OBJECT where tsgo tests TypeFlagsObject|Conditional, which no
+  intersection or union has: check whether tttt's intersections carry TYF_OBJECT (excluding them didn't change this
+  case).
 
 ## Compare relation counts with tsc first (2026-10-06 perf session)
 `tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints

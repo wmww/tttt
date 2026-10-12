@@ -251,6 +251,10 @@ src` finds the code-side markers; every significant one has an entry here.
   computed contextual type would decide it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `visited_add()` (infer.c) keys an inference's visited pairs by (source, target) alone; tsgo's invokeOnce key also has
+  the priority, contravariant and bivariant, and it routes alias-to-alias inference (inferFromAliasTypeArguments)
+  through invokeOnce too, where tttt's alias branch of `infer_from()` recurses unguarded. Keying like tsgo walks more
+  (effect +0.4%); guarding aliases makes karakeep measure fewer alias variances (perf_leads.md, agent A's leftovers).
 - TS7023/TS7024's own-context circularity (`ty_function_context_is_self`) and TS7011/TS7018 reportability are
   decided where the return type is inferred (`ty_function_decide_widening_reportable()`, tsc's getReturnTypeFromBody):
   through the anchor once the call is resolved, else the first contextual signature (`KEY_CONTEXT_RETURN`), not the
@@ -458,8 +462,9 @@ src` finds the code-side markers; every significant one has an entry here.
   is resolved and the return type inferred (or when the walk is unsure, or two function types mention each other),
   it falls back to keying by the whole mapper, which made docmost 2.2M types. Object literal types go the same way
   (`object_literal_type_mentions()`, conditional.c), once every property type is known, except a literal with a
-  getter: zod's recursive-types.test.ts needs an instance to resolve a recursive getter again (perf_leads.md, agent A's
-  leftovers).
+  getter: whether its mentions are known changes when the getter resolves, so one literal has instances of both kinds
+  and zod's recursive-types.test.ts depends on which meet (a related probe fails on ai-main already: perf_leads.md,
+  agent A's leftovers).
 - `name_type_filters()`/`peek_cond_branch()` (`ty/members.c`): whether a mapped type's `as` clause filters or remaps
   (tsc's getMappedTypeNameTypeKind, deciding whether properties keep their declarations and stable order) is told by
   the clause's shape (each union member / conditional branch is the key, never, or an intersection with it), not by
