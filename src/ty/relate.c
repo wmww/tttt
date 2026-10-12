@@ -3966,6 +3966,9 @@ static Ternary generic_mapped_target_related(
     ) {
         return TERNARY_TRUE;
     }
+    // (A `?` mapped type's template has the optionality: tsc's getTemplateTypeFromMappedType. `P[keyof P & K]` with P's
+    // values `string | undefined` fits `{ [K in keyof P]?: string }`, react-router's RouteProps)
+    if (mapped->optional > 0) template = ty_optional_prop_type(me, template);
     Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
     // (The source's property names: its index signatures don't make it have every key, IndexFlags.NoIndexSignatures)
     Ty const* source_keys = ty_keyof_without_index_signatures(me, source);
