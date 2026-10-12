@@ -7267,6 +7267,15 @@ static bool check_related(
         Ty const* widened = ty_base_type_of_literal(me, target);
         return widened != target && widened == source;
     }
+    // (Comparable either way round, before normalization: anything is comparable to unknown, and a generic target
+    // simplified for writing can be too complex to represent, `FilterQuery<T>[keyof FilterQuery<T>]`: tsc's
+    // isTypeRelatedTo. Only where normalization would change the target: is_related_to() asks it again after)
+    if (relation == TY_RELATION_COMPARABLE && !st->reporting &&
+        (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION) &&
+        is_simple_related(me, st, target, source)
+    ) {
+        return true;
+    }
     my relating = st;
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
