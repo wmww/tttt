@@ -1411,15 +1411,21 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         u64 key[2] = { ty->id << 1 | skip_augment, (u64)(uintptr_t)name };
         FoundProp const* cached = intern_get(&my intersection_props, key, 2);
         if (cached) return *cached;
+        // (Every member's: an intersection of many objects that all have the property, UnionToIntersection of a big
+        // union, has as many parts)
         Ty const* stack_buf[16];
+        bool stack_optional[16];
+        Ty const** parts = stack_buf;
+        bool* optional_part = stack_optional;
+        u32 cap = c_arraylen(stack_buf);
         u32 len = 0;
         bool all_optional = true, any_member = false, any_non_member = false, all_readonly = true, any_public = false;
         u32 flags = 0;
-        u32 optional_parts = 0; // (bit i: stack_buf[i] came from an optional property)
+        bool optional_parts = false; // (Some part came from an optional property: optional_part[i])
         // (The members' own properties first, Object's and Function's only if none has one)
         bool own_only = true;
         again:
-        for (u32 i = 0; i < ty->composite.types.len && len < c_arraylen(stack_buf); i++) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
             // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
             // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
             Ty const* member = ty->composite.types.data[i];
@@ -1431,8 +1437,24 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
-            if (part.flags & PROP_OPTIONAL) optional_parts |= 1u << len;
-            stack_buf[len++] = part.type;
+            if (len == cap) {
+                u32 grown = cap * 2;
+                Ty const** more = malloc(sizeof(Ty const*) * grown);
+                bool* more_optional = malloc(sizeof(bool) * grown);
+                panic_if(!more || !more_optional, "out of memory");
+                memcpy(more, parts, sizeof(Ty const*) * len);
+                memcpy(more_optional, optional_part, sizeof(bool) * len);
+                if (parts != stack_buf) {
+                    free(parts);
+                    free(optional_part);
+                }
+                parts = more;
+                optional_part = more_optional;
+                cap = grown;
+            }
+            optional_part[len] = (part.flags & PROP_OPTIONAL) != 0;
+            optional_parts |= optional_part[len];
+            parts[len++] = part.type;
             // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
             // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
             bool class_member = !part.prop || !part.prop->decl->symbol;
@@ -1462,10 +1484,10 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             // required x of `X | missing`, which an optional target property doesn't take)
             if (optional_parts && !optional_result && compiler_options()->strict_null_checks) {
                 for (u32 i = 0; i < len; i++) {
-                    if (optional_parts & (1u << i)) stack_buf[i] = ty_optional_prop_type(me, stack_buf[i]);
+                    if (optional_part[i]) parts[i] = ty_optional_prop_type(me, parts[i]);
                 }
             }
-            ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
+            ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
             ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
             // An optional member's property next to one that isn't a member's (a namespace's function: `typeof f &
             // { m?: X }`) is optional, but its type is `F & (X | undefined)`, without undefined: as readers add it to
@@ -1474,8 +1496,8 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
                 Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
                 bool keeps_undefined = true;
                 for (u32 i = 0; i < len && keeps_undefined; i++) {
-                    Ty const* part = stack_buf[i];
-                    keeps_undefined = (optional_parts & (1u << i)) ||
+                    Ty const* part = parts[i];
+                    keeps_undefined = optional_part[i] ||
                         (part->flags & (TYF_ANY | TYF_UNKNOWN | TYF_UNDEFINED | TYF_VOID | TYF_TYPE_PARAM | TYF_DEFERRED));
                     for (u32 j = 0; part->kind == TY_UNION && j < part->composite.types.len && !keeps_undefined; j++) {
                         keeps_undefined = part->composite.types.data[j] == undefined;
@@ -1483,6 +1505,10 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
                 }
                 if (!keeps_undefined) ret.flags &= ~(u32)PROP_OPTIONAL;
             }
+        }
+        if (parts != stack_buf) {
+            free(parts);
+            free(optional_part);
         }
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;
