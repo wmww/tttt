@@ -4344,7 +4344,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             // `T extends string ? T : any` with T unconstrained has no base constraint, it's apparently unknown)
             Ty const* parts[2];
             u32 count = 2;
-            Ty const* branches[2] = { ty_conditional_branch(me, ty, 0), ty_conditional_branch(me, ty, 1) };
+            // (The true branch with its `infer` types inferred, unknown where nothing is: tsc's
+            // getInferredTrueTypeFromConditionalType in getDefaultConstraintOfConditionalType)
+            Ty const* branches[2] = { ty_conditional_branch(me, ty, false), inferred_true_branch(me, ty) };
             if ((branches[0]->flags & TYF_ANY) != (branches[1]->flags & TYF_ANY)) {
                 branches[0] = branches[0]->flags & TYF_ANY ? branches[1] : branches[0];
                 count = 1;
@@ -5785,7 +5787,10 @@ static Ternary structured_related_members(
             Ternary related = is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, false);
             if (related) return related;
             Ty const* keys = mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type ?
-                apparent_mapped_type_keys(me, mapped) : mapped->name_type ? mapped->name_type : mapped->constraint;
+                apparent_mapped_type_keys(me, mapped) : mapped->name_type ?
+                // (Its key a fresh parameter constrained to the instantiated constraint: tsc's instantiateMappedType
+                // clones it, in `keyof { [K in keyof B & {} as F<K>]: X }` with B unknown K is at most never)
+                ty_instantiate(me, mapped->name_type, mapped_key_param_mapper(me, mapped)) : mapped->constraint;
             return is_related_to(me, st, keys, target, report);
         }
 
