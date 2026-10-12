@@ -3844,6 +3844,9 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
         Ty const* ret = indexed_or_null_flagged(me, object_constraint, index, include_undefined);
         if (ret != indexed) return ret;
     }
+    // (A conditional object always has a constraint to tsc, its default one, and whatever it is, indexed by never it is
+    // never: `UnionToIntersection<X>[never]`, react-hook-form's NumericKeys, whose infer-only constraint tttt lacks)
+    if (!object_constraint && (index->flags & TYF_NEVER) && object->kind == TY_CONDITIONAL) return index;
     return nullptr;
 }
 
