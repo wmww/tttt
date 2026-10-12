@@ -279,9 +279,22 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     SourceFile const* context = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
     bool resolution_mode = (resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) &&
         target && context && target->has_format && target->is_esm && !(context->has_format && context->is_esm);
-    cstr module_name = program_module_display_name(my program, module, context,
-        resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE, d.usage_ref);
-    csview name = cstr_sv(&module_name);
+    // (Remembered: computing a module specifier walks the package's exports, paths and symlinks, and a printed
+    // declaration type can name the same module hundreds of times)
+    SpecifierMode override = resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE;
+    u64 key[5] = { KEY_MODULE_DISPLAY_NAME, (u64)(uintptr_t)module, (u64)(uintptr_t)context, override, (u64)(uintptr_t)d.usage_ref };
+    csview const* cached = intern_get(&my links, key, 5);
+    if (!cached) {
+        cstr computed = program_module_display_name(my program, module, context, override, d.usage_ref);
+        csview* copy = arena_new(&my arena, csview);
+        char* chars = arena_new_n(&my arena, char, cstr_size(&computed) + 1);
+        memcpy(chars, cstr_str(&computed), (size_t)cstr_size(&computed));
+        *copy = (csview){ .buf = chars, .size = cstr_size(&computed) };
+        cstr_drop(&computed);
+        *intern_slot(me, &my links, key, 5) = copy;
+        cached = copy;
+    }
+    csview name = *cached;
     out_lit(d, "import(");
     if (name.size >= 2 && name.buf[0] == '\'') {
         // (a string literal the printer makes: double quotes)
@@ -327,7 +340,6 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
         out_lit(d, " } }");
     }
     out_lit(d, ")");
-    cstr_drop(&module_name);
 }
 
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {

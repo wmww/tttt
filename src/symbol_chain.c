@@ -5,6 +5,7 @@
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
+#include "ty/ty_internal.h"
 #include "statement.h"
 #include "program.h"
 
@@ -476,9 +477,7 @@ static bool accessible_chain_from_table(
     return ret;
 }
 
-// tsc's getAccessibleSymbolChain (members of classes and interfaces aren't Symbols here: they never get here)
-static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, SymbolChain* out) {
-    if (!symbol) return false;
+static bool accessible_chain_uncached(ChainCtx* me, Symbol const* symbol, u32 meaning, SymbolChain* out) {
     for (u32 i = 0; i < my table_count; i++) {
         ScopeTable const* table = &my tables[i];
         if (table->exports) {
@@ -490,6 +489,39 @@ static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, Sy
         }
     }
     return false;
+}
+
+typedef struct ChainMemo {
+    bool found;
+    SymbolChain chain;
+} ChainMemo;
+
+// tsc's getAccessibleSymbolChain (members of classes and interfaces aren't Symbols here: they never get here).
+// Remembered per (symbol, location, meaning) like tsc's accessibleChainCache, unless it's asked in the middle of a
+// search (visited tables, globalThis), whose answer depends on the search. Out is only written when found
+static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, SymbolChain* out) {
+    if (!symbol) return false;
+    Checker* checker = current_checker;
+    bool cacheable = checker && !my visited_count && !my in_global_this;
+    u64 key[4] = { KEY_ACCESSIBLE_CHAIN, (u64)(uintptr_t)my enclosing, (u64)(uintptr_t)symbol,
+        (u64)meaning | (u64)my container_lookup << 32 | (u64)my only_external_aliasing << 33 };
+    if (cacheable) {
+        ChainMemo const* memo = intern_get(&checker->links, key, 4);
+        if (memo) {
+            if (memo->found) *out = memo->chain;
+            return memo->found;
+        }
+    }
+    SymbolChain chain = {0};
+    bool found = accessible_chain_uncached(me, symbol, meaning, &chain);
+    if (found) *out = chain;
+    if (cacheable) {
+        ChainMemo* memo = arena_new(&checker->arena, ChainMemo);
+        memo->found = found;
+        memo->chain = chain;
+        *intern_slot(checker, &checker->links, key, 4) = memo;
+    }
+    return found;
 }
 
 // tsc's needsQualification

@@ -139,6 +139,8 @@ enum {
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
     KEY_NAMESPACE_IMPORT, // namespace import alias Symbol -> its module type (or the alias itself: none), see namespace_import_type()
     KEY_MODULE_CLONE,   // that module type -> the alias Symbol it was made for (TyAnonymous.module_clone)
+    KEY_ACCESSIBLE_CHAIN, // (location Scope, Symbol, meaning and lookup flags) -> its accessible chain (symbol_chain.c)
+    KEY_MODULE_DISPLAY_NAME, // (module Symbol, file printed from, override mode, usage ModuleRef) -> its name in `import()` (csview)
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
