@@ -173,7 +173,7 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
     free(moved);
 }
 
-// tsc 6's getNamedMembers (stableTypeOrdering): properties in the order of their first declarations (file order, then
+// tsgo's getNamedMembers (sortSymbols): properties in the order of their first declarations (file order, then
 // position), those without one last by name (compareSymbols)
 static bool prop_order_pos(Prop const* prop, u32* file, u32* offset) {
     while (prop && !prop->decl->decl_span_count && !span_valid(prop->decl->name_span)) prop = prop->target;
@@ -195,6 +195,10 @@ static int prop_order_cmp(PropOrder const* a, PropOrder const* b) {
     if (a->pos != b->pos) return a->pos < b->pos ? -1 : 1;
     if (a->pos == UINT64_MAX) {
         csview na = atom_sv(a->prop->name), nb = atom_sv(b->prop->name);
+        // (A unique symbol's name sorts after every other: tsgo's is `\xFE@name@id`, tsc 6's `__@name@id` here)
+        bool ua = na.size > 3 && na.buf[0] == '_' && memcmp(na.buf, "__@", 3) == 0;
+        bool ub = nb.size > 3 && nb.buf[0] == '_' && memcmp(nb.buf, "__@", 3) == 0;
+        if (ua != ub) return ua ? 1 : -1;
         isize n = na.size < nb.size ? na.size : nb.size;
         int c = n > 0 ? memcmp(na.buf, nb.buf, (size_t)n) : 0;
         if (c) return c;
