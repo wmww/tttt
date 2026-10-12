@@ -4299,6 +4299,26 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
     sig->state = LAZY_STATE_DONE;
 }
 
+// Whether the signature has a `this` type (Signature.this_type), read off its declaration while it isn't resolved: an
+// overloaded call asks of every candidate before trying them, and resolving all of a big overload set (hono's
+// HandlerInterface: ~20 signatures of ~10 type parameters with defaults each) instantiates every parameter type tsgo,
+// whose instantiated signatures have lazily typed parameters, never looks at
+bool ty_signature_has_this(Checker* me, Signature const* sig) {
+    Signature const* root = sig;
+    while (root->state != LAZY_STATE_DONE && root->target) root = root->target;
+    if (root->state == LAZY_STATE_DONE) return root->this_type != nullptr;
+    // (A function expression can take its contextual signature's, a JavaScript one its `@type` tag's)
+    FunctionImpl const* function = root->function;
+    if (!function || function->is_expression || !function->full_span.source || function->full_span.source->is_js) {
+        signature_resolve(me, sig);
+        return sig->this_type != nullptr;
+    }
+    if (!vec_function_arg_size(&function->args)) return false;
+    // (The name as written, like signature_resolve()'s atom of it)
+    csview name = vec_function_arg_at(&function->args, 0)->initializer.binding.content_span.sv;
+    return name.size == 4 && memcmp(name.buf, "this", 4) == 0;
+}
+
 Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     signature_resolve(me, sig);

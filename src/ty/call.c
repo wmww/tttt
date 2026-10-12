@@ -2318,6 +2318,7 @@ static Resolution resolve_with_signatures_inner(
     // With a choice to make, candidates are first tried without their context-sensitive arguments, which are only
     // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
     bool skip_sensitive = false;
+    if (count == 1) signature_resolve(me, signatures[0]);
     if (count > 1 || (count == 1 && signatures[0]->type_params.len)) {
         for (u32 i = 0; i < args->len; i++) skip_sensitive |= args->data[i].context_sensitive;
     }
@@ -2991,8 +2992,8 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     if (!construct && !info->new_as_call) {
         bool any_this = false;
         for (u32 i = 0; i < count && !any_this; i++) {
-            signature_resolve(me, signatures[i]);
-            any_this = signatures[i]->this_type != nullptr;
+            Signature const* sig = signatures[i];
+            any_this = sig->state == LAZY_STATE_DONE ? sig->this_type != nullptr : ty_signature_has_this(me, sig);
         }
         if (any_this) {
             with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
