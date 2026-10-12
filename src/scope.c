@@ -3548,8 +3548,9 @@ PortItem const* symbol_type_only_declaration(Symbol const* me) {
     return type_only_declaration_at(me, 0, nullptr);
 }
 
-// tsc's getTypeOnlyAliasDeclaration: each alias of the chain is marked by its immediate target's, merged with a value
-// or not
+// tsc's getTypeOnlyAliasDeclaration, also saying what the declaration names: each alias of the chain is marked by its
+// immediate target's while that is a pure alias (tsgo 7.1's resolveIndirectionAlias); one merged with a value ends it
+// (typeOnlyMerge3)
 PortItem const* symbol_type_only_declaration_naming(Symbol const* me, Symbol const** named) {
     *named = nullptr;
     return type_only_declaration_at(me, 0, named);
@@ -3595,7 +3596,7 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Sym
             next = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
         }
         me = next;
-        if (!named && me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
+        if (me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
     }
     return nullptr;
 }
