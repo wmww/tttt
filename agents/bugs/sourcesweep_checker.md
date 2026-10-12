@@ -85,10 +85,6 @@ Fixed that session: chai's assert via an export= property (TS2775), discriminant
 TS2875's position, union signature return reduction (Promise | PromiseLike `then`), free type parameter limits
 (Playwright's Unboxed), TS2862 with a generic union index, `import x = require` resolving module members (mongoose
 TS2303), TS2348 for unions with construct signatures only, destructuring typeof globalThis (TS2339). Left, by key:
-- +TS2590 mikro-orm `QueryHelper.ts:372` (24 projects): `where[key as keyof typeof where]` of FilterQuery<T> builds a
-  union over the 100k limit where tsc doesn't; not reduced.
-- +TS2345 mikro-orm `EntityManager.ts:382` (24 projects): `ObjectQuery<Entity>` not assignable to
-  `ObjectQuery<NoInfer<Entity>>` (relation through a NoInfer substitution inside an alias: variance?).
 - +TS2339 tiptap `Extendable.test.ts` (11): `this.parent` in an object literal method passed to `.extend()` of a union
   of classes (`[Extension, Node, Mark].forEach(E => E.create(...).extend({...}))`): the `this` type from a union
   signature's contextual type.
@@ -100,10 +96,6 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 
 ## Left by the 2026-10-09 triage's real-world agent (cut off before it reported)
-- mikro-orm (120+ diagnostics): `NativeInsertUpdateOptions<T> & UpsertOptions<T, never>` not assignable to
-  `UpsertOptions<T, never>` for `getOnConflictReturningFields(meta, data, uniqueFields, options, platform)`: the
-  inferred T prints as T but isn't the caller's (TS2719-style "two different types" deep in the chain). Inference.
-  Recheck after 126c3296 (homomorphic mapped type apparent type): it may have moved.
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
   fine: the difference is in how `spans` becomes unknown).
@@ -147,3 +139,39 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - Perf: knip/packages/knip/test (3.4 s at the session start), postiz-app (36 s) and tabby (1.5 s) were checking that tsc
   gates (options diagnostics hidden by spurious syntax errors) or load noise; now 0.46 s, 5.4 s and 0.27 s (tsc 0.41,
   25.8, 0.46).
+
+## Source sweep fan-out 2026-10-12 leftovers (agent B)
+Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union target's leftover, reverse comparable
+check before normalization, intersection typesDefinitelyUnrelated), crawlee (Partial<C> over `C extends X<P>`, vi.fn
+reverse mapping of callables), base-ui TS2740 (Pick<T, K | "a"> keys), folo (untyped call args contextual any),
+msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctions in conditional args), super-productivity (TS2347 on tagged templates). Left:
+- mikro-orm/tests +TS2345 x13 and GHx6 +TS2322 x3: `raw()` (`<R = RawQueryFragment & symbol>`) as `$in` inside
+  `em.find(Author2, { books: { $in: raw(qb) } })`: its return-type inference sees extra members `readonly unknown[] |
+  readonly ExpandScalar<{}>[]`. Reduced (self-contained): `type EP<T> = T extends (infer U)[] ? NonNullable<U> :
+  NonNullable<T>; type EQ<T> = T extends object ? { $in?: readonly T[] } : number; type MU<T> = [T] extends [object] ?
+  T extends string ? T : { [K in keyof T]: T[K] } : T; declare function g<E extends object>(w: { b?:
+  EQ<EP<MU<E>["books"]>> }): void; g({ b: { $in: r() } })` with `declare function r<R = "dflt">(): R`: tsc's
+  contextual type for `$in` is `readonly {}[] | readonly NonNullable<E["books"]>[]` (still mentioning E, so the outer
+  silent-never mapper makes it non-inferrable: R = "dflt"), tttt's `readonly {}[]`. Cause: base_constraint()'s
+  distributive constraint uses the check type's *base* constraint (hacks.md "Constraint functions are
+  approximations"); switching that call to the immediate constraint (`distributive_constraint_as(.., true)`) fixes the
+  probe but makes the suite runaway-recurse (segfault). Needs the constraint-function rewrite hacks.md describes.
+- mikro-orm/tests +TS2615 x3 (`toJSON` circular in a mapped type, EntityFactory.test.ts:52), +TS2769
+  EntityManager.mongo.test.ts:1268, -TS5088 x9 / -TS2883 x2 (declaration diagnostics): not looked at.
+- better-auth get-migration-schema.test.ts:293 +TS2339 x4: `auth.api` is `InferAPI<Prettify<{ [x: string]: any }>>`
+  where tsc keeps `signUpEmail`; `Auth<BetterAuthOptions>.api = InferAPI<ReturnType<typeof router<Options>>["endpoints"]>`
+  through `OverrideMerge<typeof endpoints, PluginEndpoint>` (`{ [K in keyof Base as K extends keyof Override ? never :
+  K]: Base[K] } & Override`) with a `{ ...baseEndpoints, ...pluginEndpoints }` that spreads a Record<string, Endpoint>.
+  Not reduced; better-auth lynx-store.ts:65 -TS2345 x2 not looked at.
+- apollo-client: ObservableQuery.ts:2237 +TS2684 (`this` of a WatchQueryOptions method), LocalState.ts:501 +TS2352
+  (`DeepOmit<Partial<NoInfer<TVariables>> & {...}>`), +TS2865/+TS2694/-TS2749 in node_modules (ast-types, @types/react
+  `React.React`): not looked at.
+- sequelize model-hooks.ts:185 +TS2345 (`[...HookParameters<ModelHooks<...>[HookName]>]` to a union of tuples), +TS2578
+  model-definition.ts:747, -TS2339 connection-options.ts:50: not looked at.
+- msw body-stream.node.test.ts:11 and qwik slot.e2e.tsx:19 -TS2428 (a `declare module 'vitest' { interface
+  Matchers<T = any> }` augmentation of an interface vitest re-exports from a chunk): a standalone copy of the
+  re-export chain (even the `config.d.CU_b-wJj.js` chunk name) reports TS2428 like tsc; something about the real
+  setup (types: vitest/globals?) differs. Not found.
+- folo renderer +TS2883 x7: declaration diagnostics tsc doesn't report, hidden until the TS2345s there were fixed
+  (tttt's CLI drops them while other errors exist).
+
