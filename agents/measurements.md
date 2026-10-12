@@ -11,6 +11,30 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Perf at breadth: tttt vs tsgo 7.1 on the source sweep (2026-10-11, plan 59 stage 1, after the gate fix)
+`scripts/perfsweep.py -j 4` (both sides at -j 4 on this box: times inflated alike, types and RSS exact): tttt
+`--checkers 1 --threads 1` against tsgo `--singleThreaded --extendedDiagnostics`, every source sweep project tsgo
+checks (Types >= 1000: **1786 of 3363**; the rest are gated by options errors or have no inputs). tsgo's side is cached
+in `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile` in /tmp: tsc
+--noEmit otherwise reads the checkout's .tsbuildinfo and skips checking, which hid ~300 projects in a first pass).
+| ratio tttt / tsgo (1779 projects) | median | p90 | worst | > 1 |
+|---|---|---|---|---|
+| check time | 0.21 | 0.35 | 11.07 | 5 |
+| wall (whole process) | 0.27 | 0.32 | 1.26 | 1 |
+| types | 0.76 | 1.07 | 16.40 | 322 |
+| peak RSS | 0.71 | 0.81 | 2.48 | 28 |
+Total check 238 s vs 1159 s, wall 488 s vs 2131 s, 96.0M vs 127.9M types. The gate fix: tiptap (TS5090) 3.9 s -> 0.2 s,
+like tsgo's `Types: 89`. 7 projects where tttt checks nothing and tsgo does are tttt's spurious TS6305/TS5069 (source
+sweep root causes). Worst types ratios (tttt / tsgo types, check s tttt / tsgo, tttt RSS MB):
+date-fns/pkgs/docs 16.4 (348k / 21k, 0.85 / 0.08 s, 305), feathers/packages/typebox 7.0 (22k / 3k), nitro 5.2
+(600k / 116k), rxjs/packages/rxjs 2.6 (1.83M / 0.70M, 4.2 / 4.2 s, 1943 MB: RSS 2.5x), nuxt 2.6 (756k / 294k),
+lit/packages/labs/ssr-react 2.4, dokploy/{apps/api,apps/schedules,packages/server} 2.3 (560k / 240k), mcp-sdk/packages/codemod
+2.2, quill/packages/quill 1.8, immutable-js/type-definitions 1.8 (997k / 564k), vitest/examples/lit 1.6, vite's
+module-runner and __tests_dts__ 1.6, soybean-admin 1.3, lucide/packages/solid 1.3. Worst check time ratios (tsgo > 0.2
+s): linkwarden/apps/mobile 1.62 (types 0.87, RSS 1.49), rxjs 1.00, mcp-sdk/packages/core-internal 0.95, arktype/ark/docs
+0.87 (types 1.51), tanstack-table hero-ui examples 0.55-0.63. Slowest in tttt: mikro-orm 9.8 s (tsgo 41.9 s, 3.3M
+types each), mikro-orm/tests 7.6 s, folo renderer 4.3 s, rxjs 4.2 s, renovate 3.3 s.
+
 ## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
 **Other machine**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, GCC 16.2, load ~2 (an idle desktop). Best of 3 wall
 s / peak RSS MB, `/usr/bin/time`. tttt default = 4 checkers / 4 threads (its cap), tttt-12 = `--checkers 12 --threads 12`;

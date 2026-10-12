@@ -14,11 +14,11 @@ sweep 3119 / 3363. Instructions: measurements.md "Triage (2026-10-09..11)".
 this 4-vCPU box are only comparable within one session with nothing else running; type counts and callgrind
 instructions are the stable numbers.
 
-1. **Plan 59 stage 1**: the gate (no type checking when tsc wouldn't check: tiptap 3.9 s -> ~0.5 s) and
-   `scripts/perfsweep.py` (tttt vs tsgo `--singleThreaded --extendedDiagnostics` on every source sweep project tsgo
-   checks: time ratio distribution, projects ranked by type-count ratio). Baseline into measurements.md.
+1. ~~Plan 59 stage 1~~ done: the gate (tiptap 3.9 -> 0.2 s), `scripts/perfsweep.py` (1779 projects tsgo checks:
+   tttt K1's median check time 0.21x tsgo's, types 0.76x, RSS 0.71x; worst types ratios date-fns/pkgs/docs 16.4,
+   feathers typebox 7.0, nitro 5.2, rxjs 2.6). measurements.md "Perf at breadth".
 2. **Plan 59 stage 2**: fan-out (four Opus sub-agents, disjoint outlier projects) on the worst type-count and time
-   ratios (rxjs 2.6x types first). Rerun perfsweep; leftovers into bugs/perf_leads.md.
+   ratios (plan 59's stage 2 list: date-fns docs 16x, typebox, nitro/nuxt, rxjs, dokploy). Rerun perfsweep; leftovers into bugs/perf_leads.md.
 3. **Planning: plan 60, memory.** Bun's `bun check` uses 2.1 GB on vscode against tttt's 6.0 GB (type-fest 0.8 vs
    2.4 GB; measurements.md). Find where tttt's peak goes per corpus at K1 and K4 (`scripts/arenasites.sh`,
    `scripts/memtrack.sh`: AST, binder, checker arena by kind, relation caches, interned keys; what is duplicated per

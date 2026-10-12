@@ -10,7 +10,9 @@ timing anything. Times are per machine and noisy under load: tsgo's cached side 
 measured at; compare time ratios only with nothing else running and the same -j on both sides.
 
 tsgo's side is cached in test/perfsweep/tsgo.jsonl.gz (one line per project: types, instantiations, check/total s,
-memory used, RSS, machine); projects without an entry are measured on the way (all of them: ~15 min at -j 4).
+memory used, RSS, machine); projects without an entry are measured on the way (all of them: ~10 min at -j 4). tsc
+--noEmit reads and writes the .tsbuildinfo of an incremental project, and skips checking what it says is unchanged: tsgo
+gets a build info file of its own in /tmp each run (a cold check, nothing written into the checkouts).
 
   scripts/perfsweep.py                    # every project tsgo checks
   scripts/perfsweep.py --sample 4         # a fixed quarter (scripts/sourcesweep.py's hash)
@@ -19,7 +21,7 @@ memory used, RSS, machine); projects without an entry are measured on the way (a
   scripts/perfsweep.py --last             # reprint the last run's tables
   scripts/perfsweep.py --tsgo [-f ...]    # remeasure tsgo's side (after a machine or pin change)
 """
-import argparse, concurrent.futures, gzip, json, os, re, resource, signal, socket, statistics, subprocess, sys, time, zlib
+import argparse, concurrent.futures, gzip, json, os, re, resource, signal, socket, statistics, subprocess, sys, tempfile, time, zlib
 
 import sourcesweep
 from realworld import CORPORA, BUILD_CORPORA
@@ -66,10 +68,24 @@ def project_args(project):
     return SOURCES, project
 
 
+def incremental(cwd, p):
+    """Whether the project is incremental (composite implies it): tsc --noEmit then reads and writes its .tsbuildinfo,
+    and skips checking what an earlier run's build info says is unchanged"""
+    out = subprocess.run([TSGO, '-p', p, '--showConfig'], cwd=cwd, capture_output=True, text=True).stdout
+    try:
+        options = json.loads(out).get('compilerOptions', {})
+    except ValueError:
+        return False
+    return options.get('incremental') is True or options.get('composite') is True
+
+
 def run_tsgo(project, timeout, mem_gb, jobs):
     cwd, p = project_args(project)
-    text, status, wall, rss = run([TSGO, '-p', p, '--noEmit', '--singleThreaded', '--extendedDiagnostics',
-                                   '--pretty', 'false'], cwd, timeout, mem_gb)
+    # (A cold check, the build info out of the checkout: a fresh file of our own)
+    with tempfile.TemporaryDirectory(prefix='perfsweep-') as tmp:
+        build_info = ['--tsBuildInfoFile', os.path.join(tmp, 'x.tsbuildinfo')] if incremental(cwd, p) else []
+        text, status, wall, rss = run([TSGO, '-p', p, '--noEmit', '--singleThreaded', '--extendedDiagnostics',
+                                       '--pretty', 'false', *build_info], cwd, timeout, mem_gb)
     stat = lambda name, conv=int: conv(m.group(1)) if (m := re.search(rf'^{name}:\s+([\d.]+)', text, re.M)) else None
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status), 'types': stat('Types'),
             'instantiations': stat('Instantiations'), 'memory_kb': stat('Memory used'),
@@ -200,12 +216,19 @@ def main():
     if todo:
         subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True, stdout=subprocess.DEVNULL)
         start = time.time()
+        marker = tempfile.NamedTemporaryFile(prefix='perfsweep-marker-', delete=False).name
         # (The biggest first by the source sweep's tsc time, so they don't end up alone at the end)
         oracle = {r['project']: r['ms'] for r in map(json.loads, gzip.open(sourcesweep.ORACLE, 'rt'))}
         todo.sort(key=lambda p: -oracle.get(p, 1e9))
         for r in parallel(lambda p: run_tsgo(p, args.timeout, args.mem_gb, args.jobs), todo, args.jobs, 'tsgo'):
             cache[r['project']] = r
         save_cache(cache)
+        # (Whatever build info got past incremental() anyway)
+        stray = subprocess.run(['find', SOURCES + '/', '-name', 'node_modules', '-prune', '-o', '-name', '*.tsbuildinfo',
+                                '-newer', marker, '-print', '-delete'], capture_output=True, text=True).stdout.split()
+        os.unlink(marker)
+        if stray:
+            print(f'deleted {len(stray)} .tsbuildinfo files tsgo wrote: {" ".join(stray[:3])}', file=sys.stderr)
         if not args.summary:
             print(f'tsgo on {len(todo)} projects in {time.time() - start:.0f}s, cached in {CACHE}', file=sys.stderr)
 

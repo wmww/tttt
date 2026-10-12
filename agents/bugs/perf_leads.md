@@ -8,6 +8,15 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Perf at breadth (plan 59): `scripts/perfsweep.py` ranks the outliers
+Stage 1's baseline (measurements.md "Perf at breadth") ranks every source sweep project by tttt/tsgo **types ratio**,
+machine-independent (median 0.76: tttt is lazier than tsgo). Above ~1.5 is a missing cache or a runaway: date-fns/pkgs/docs
+16.4, feathers/packages/typebox 7.0, nitro 5.2, rxjs 2.6 (and RSS 2.5x), nuxt 2.6, lit ssr-react 2.4, dokploy x3 2.3
+(one shared cause, likely), mcp-sdk/packages/codemod 2.2, quill 1.8, immutable-js 1.8 (the section below), vite and
+vitest ~1.6. By time: linkwarden/apps/mobile (1.6x tsgo's check time with fewer types: a slow path, not a blowup),
+mcp-sdk/packages/core-internal and arktype/ark/docs (~0.9). Recipe: `scripts/perfsweep.py -f '^PROJECT$'` reruns one,
+`TTTT_FILE_TIMES=1` finds the file, then which type kinds grow (`scripts/arenasites.sh`).
+
 ## Compare relation counts with tsc first (2026-10-06 perf session)
 `tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints
 tsc's (Assignability / Subtype / Strict subtype / Identity cache size, both count failures and nested pairs). A
@@ -34,7 +43,7 @@ Fixed that session: `typeof` of a top-level name made a literal generic (karakee
 quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types); later (agent ta) function expression
 types keyed by the whole mapper (docmost/apps/server 2.19M types -> 153k, typecheck 2.7 s -> 0.4 s: now by what the
 resolved signature mentions, `ty_function_type_mentions()`). Open:
-- **immutable-js/type-definitions**: 997k types vs tsc's 203k; ~600k anonymous instances spread over hundreds of
+- **immutable-js/type-definitions**: 997k types vs tsc 6's 203k (tsgo 7.1: 564k); ~600k anonymous instances spread over hundreds of
   member types (4-parameter mappers, ~8.9k instances each). Member types are lazy (`instantiate_members`), so
   something reads every member of many distinct instantiations: probably structural relations of `this`-returning
   interface instantiations where tsc goes by variance. It's all the check of the one `immutable.d.ts` (merged

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
-every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip and the source sweep.
+every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep and perf at breadth
+(scripts/perfsweep.py: check time and type count ratios against tsgo).
 
   scripts/oracles.py                  # everything (~7 min)
   scripts/oracles.py --quick          # suite and corpora only (~1 min)
@@ -65,7 +66,13 @@ def sources():
     m = re.search(r'\d+ / \d+ projects match.*', out)
     print('sourcesweep (sample 4): ' + (m.group(0) if m else '?'), flush=True)
 
-ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources}
+def perf():
+    # (tttt only, tsgo's side is cached; -j 4 inflates the times of both sides alike, types are exact)
+    out = run(['scripts/perfsweep.py', '--no-build', '-j', '4', '--summary'])
+    print('perfsweep (tttt/tsgo): ' + (out.strip().splitlines() or ['?'])[-1], flush=True)
+
+ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
+           'perf': perf}
 
 def main():
     ap = argparse.ArgumentParser()
