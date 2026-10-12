@@ -21,17 +21,24 @@ mcp-sdk/packages/core-internal and arktype/ark/docs (~0.9). Recipe: `scripts/per
 Fixed (2026-10-12): dokploy x4 (`typeof f<T>` / `typeof ns.x` free params, 2.3 -> 0.69), arktype/ark/docs (this-only
 references share thisless base signatures, 1.51 -> 0.92), linkwarden/apps/mobile (union flattening skips repeated
 types: IconSymbol.tsx 1.54 s -> 0.14 s, RSS 517 -> 239 MB), mcp-sdk/packages/core-internal (declaration printing
-memoizes module specifiers and accessible chains: 9.5 -> 1.3 G instructions on a schemas.ts probe). Left:
-- **`ty_instantiation_limit_reached()` is quadratic per hit**: its getCircularTypeNames scan compares every stack
-  entry with every earlier one (~25k instructions at depth 100). arktype hit it 300k times (7.7 G, half the project)
-  before its cause was fixed; a project that legitimately hits a limit inside speculative checks (overload rounds,
-  variance probes) pays it per hit. Count per type with a small hash table, or compute the names only when the
-  diagnostic is kept.
-- **Intersection property types are eager**: find_prop_in() intersects every member's property type when the
-  property is looked up (tsc makes a synthetic symbol whose type resolves on first getTypeOfSymbol). Since
-  91d6a206 (no 16-part cap) tiptap's generic `<Tag {...rest} ref=...>` (a 187-member intersection of JSX intrinsic
-  props) intersects 119 `Ref<X> | undefined` unions (TS2590, under a `// @ts-ignore`, as tsgo would) during a relation
-  that may only need the property's existence. A lazy FoundProp.type would match tsc; measure tiptap/demos first.
+memoizes module specifiers and accessible chains: 9.5 -> 1.3 G instructions on a schemas.ts probe). Round 2
+(full `perfsweep.py -j 2` at 8ba67cad, /tmp/perfsweep-d-round2.json): types median 0.70, p90 0.98, 155 projects
+above 1; the worst are rxjs 2.58, quill 1.81, immutable-js 1.77, nitro/examples/hono 1.71, date-fns docs 1.65 and
+then sass's immutable.d.ts (vitest/examples/lit, angular-components/tools/extract-tokens, vitest/test/browser, vite's
+two, all ~1.6: owned by agents A-C); below them karakeep/packages/plugins 1.43 and projects of 1-15k types whose
+excess is a few hundred to a few thousand types (lightweight-charts plugins, solid-table-devtools, apollo codegen,
+repomix/website/server: hono's MiddlewareHandler like nitro/examples/hono). Left:
+- **Intersection property types are eager in find_prop_in()** (tsc's synthetic property type resolves on first
+  getTypeOfSymbol; intersection_props_related() is lazy for >2 parts since bc73dda3). Not a tsgo gap where it was
+  found: tiptap's generic `<Tag {...rest} ref=...>` intersects 119 `Ref<X> | undefined` unions (TS2590 under a
+  `// @ts-ignore`), and a probe of packages/react/src/ReactMarkViewRenderer.tsx costs tsgo the same (511k types,
+  5.7 s check; tttt 518k, 5.3 s). Only worth doing if a project shows find_prop making intersections tsgo doesn't.
+- **karakeep/packages/plugins** (types ratio 1.43, round-2 perfsweep): ratelimit-redis/src/index.ts, node-redis v5's
+  multi-command types. 19.6k `CommandSignature` instances, all from variance probes of WithCommands/WithModules/...
+  (sub-T/super-T for each of the 6-7 parameters, times ~750 commands: the mapped type's keys are concrete, so every
+  property's template is instantiated per marker). tsgo: 44k types for the probe vs tttt's 71k, but tttt checks it in
+  0.39 s vs 1.37 s. Whether tsgo relates those instantiations by the alias's variance without instantiating the
+  property types needs an instrumented tsgo; low priority.
 - **Single-file probes are order-dependent**: a probe of dokploy/packages/server/src/lib/auth.ts alone gets TS2589 at
   (513,23) from tsgo (not from the whole project, where neither reports it); tttt reported it too before 892750cc and
   doesn't now. Not chased: tsgo's instantiation count depends on what was checked before.
