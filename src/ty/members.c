@@ -3020,8 +3020,35 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             }
             builder_push(&builder, props, prop);
         }
+        // A generic homomorphic mapped part's index signatures too, the template at their keys (tsc's
+        // resolveMappedTypeMembers, forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type):
+        // `Nullable<Vals<K>>` with `Vals<K>` mapped over `keyof K`, K's constraint `Record<string, X>`, has a string
+        // index signature of `Vals<K>[string] | null`. (Only those: the other parts' would be tsc's too, but inferring
+        // from them changes localTypeParameterInferencePriority's candidates, unexplained)
+        bool homomorphic_part = source->mapped && source->mapped->keyof_constraint && !source->mapped->name_type;
+        for (u32 j = 0; !whole && homomorphic_part && j < source->index_count; j++) {
+            IndexInfo const* from = &source->index[j];
+            bool seen = false;
+            for (u32 k = 0; k < builder.index_count && !seen; k++) seen = builder.index[k].key == from->key;
+            if (seen) continue;
+            TyMapper const* mapper = ty_mapper_new(
+                me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &from->key, .len = 1 }
+            );
+            Ty const* value = ty_mapped_template_instantiated(me, mapped, mapper);
+            if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+                Ty const* both[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
+                value = ty_union(me, both, 2, nullptr, (TyList){0});
+            }
+            IndexInfo info = {
+                .key = from->key,
+                .value = value,
+                .param_name = checker_atom(me, c_sv("x")),
+                .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
+            };
+            builder_push(&builder, index, info);
+        }
     }
-    return builder.props_count ? builder_finish(me, &builder) : members;
+    return builder.props_count || builder.index_count ? builder_finish(me, &builder) : members;
 }
 
 bool ty_is_valid_index_key(Ty const* ty) {

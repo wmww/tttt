@@ -737,3 +737,8 @@ src` finds the code-side markers; every significant one has an entry here.
   target's parameters only appear in its own generic members, mapped by that target's arguments: a type mentioning two
   targets' raw parameters at once would conflate them. Element props share the read-only `ty_prop_decl_value_name`
   (writing to it faults: `prop_decl_shared()` is the check before giving a prop a declaration of its own).
+- `expand_generic_intersection_homomorphic` (members.c) only carries index signatures over from a part that is itself
+  a generic homomorphic mapped type (`Nullable<Vals<K>>`, nuqs). tsc's resolveMappedTypeMembers takes every part's
+  (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type: `S & object` of a conditional's true
+  branch, `Pick<X, keyof X>` too), but doing so changed localTypeParameterInferencePriority's inference candidates
+  (an extra `Pick<UnrollOnHover<S>, ...>` candidate): something downstream treats the extra index signature differently.
