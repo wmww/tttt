@@ -139,7 +139,7 @@ static bool has_generic_with_union_constraint(Checker* me, Ty const* ty);
 
 // A reference whose type has a type variable with a union constraint is narrowed as the constraint where the
 // contextual type isn't generic (see narrowable_type())
-static bool identifier_uses_context(Checker* me, Expr const* expr) {
+bool ty_reference_uses_context(Checker* me, Expr const* expr) {
     // (A property access says so once it has been computed: access_flow_type())
     if (expr->tag == EXPR_PROPERTY) return intern_get(&my links, (u64[]){ KEY_ACCESS_USES_CONTEXT, (u64)(uintptr_t)expr }, 2) != nullptr;
     if (expr->tag != EXPR_IDENTIFIER || expr->identifier.keyword || !expr->identifier.target) return false;
@@ -353,7 +353,7 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
     if (memo && memo->done && !ctx.is_const && !ctx.template_context) {
-        if (!ctx.contextual || memo->context == ctx.contextual->id || !(kind_uses_context(expr) || identifier_uses_context(me, expr))) {
+        if (!ctx.contextual || memo->context == ctx.contextual->id || !(kind_uses_context(expr) || ty_reference_uses_context(me, expr))) {
             return lazy_memo_evaluated(memo);
         }
     }
@@ -361,7 +361,7 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* ret = compute(me, expr, ctx);
     if (my flow_uncached) return ret;
     // (What such a reference is while type arguments are inferred isn't what it is once they are)
-    if (my inferential_depth && identifier_uses_context(me, expr)) return ret;
+    if (my inferential_depth && ty_reference_uses_context(me, expr)) return ret;
     lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
@@ -5611,6 +5611,6 @@ Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr) {
 Ty const* ty_rest_binding_initializer_type(Checker* me, Expr const* expr) {
     if (expr->tag != EXPR_IDENTIFIER && expr->tag != EXPR_PROPERTY) return nullptr;
     (void)ty_expr_type(me, expr); // (A property access says whether it depends on the context once computed)
-    if (!identifier_uses_context(me, expr)) return nullptr;
+    if (!ty_reference_uses_context(me, expr)) return nullptr;
     return compute(me, expr, (ExprCtx){0});
 }

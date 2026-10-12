@@ -808,13 +808,15 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
 }
 
 // A reference doesn't ask for its contextual type (tsc's checkIdentifier and checkPropertyAccessExpression, but for
-// getNarrowableTypeForReference's hasContextualTypeWithNoGenericTypes when its type is generic): the type a pattern
+// getNarrowableTypeForReference's hasContextualTypeWithNoGenericTypes when its type has a type variable with a union
+// constraint, not any generic one: `Opts<T>` doesn't): the type a pattern
 // implies isn't made then, nor are its defaults checked without a context (`const { f = (d) => d } = o` takes f's
 // contextual type from o's property, not from an any of the pattern's)
 static bool initializer_ignores_context(Checker* checker, Expr const* value) {
     if (value->tag != EXPR_IDENTIFIER && value->tag != EXPR_PROPERTY) return false;
     if (value->tag == EXPR_PROPERTY && value->property->form == PROPERTY_EXPR_BRACKET) return false;
-    return !(ty_expr_type(checker, (Expr*)value)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    Ty const* type = ty_expr_type(checker, (Expr*)value);
+    return !(type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_reference_uses_context(checker, value);
 }
 
 // The initializer, checked with the type annotation (if any) as its contextual type

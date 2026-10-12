@@ -1989,6 +1989,9 @@ Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty);
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
 Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string, `true` -> boolean
 Ty const* ty_substitute_constraints(Checker* me, Ty const* type); // expr.c, see narrowable_type()
+// Whether a reference (a name, a property access once computed) asks for its contextual type: its type has a type
+// variable with a union constraint (tsc's getNarrowableTypeForReference, hasContextualTypeWithNoGenericTypes)
+bool ty_reference_uses_context(Checker* me, Expr const* expr); // expr.c
 bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);
