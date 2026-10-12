@@ -291,7 +291,7 @@ typedef enum DiagnosticKind {
 } DiagnosticKind;
 
 static DiagnosticKind diagnostic_kind(Error const* error) {
-    bool in_config = !span_valid(error->span) || (error->span.source && error->span.source->is_config);
+    bool in_config = !span_valid(error->span) || (span_source(error->span) && span_source(error->span)->is_config);
     if (in_config) return error->phase == ERROR_PHASE_PARSE ? DIAGNOSTIC_CONFIG_PARSING : DIAGNOSTIC_OPTIONS;
     if (error->phase == ERROR_PHASE_PARSE && !error->grammar) return DIAGNOSTIC_SYNTACTIC;
     return error->declaration ? DIAGNOSTIC_DECLARATION : DIAGNOSTIC_SEMANTIC;

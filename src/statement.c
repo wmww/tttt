@@ -100,7 +100,7 @@ static void binding_check_let_name(Binding const* me, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_NOOP: break;
         case BINDING_IDENTIFIER:
-            if (csview_equals(my content_span.sv, "let")) {
+            if (csview_equals(span_sv(my content_span), "let")) {
                 error_ctx_grammar_error_d(errs, my content_span, 2480,
                     "'let' is not allowed to be used as a name in 'let' or 'const' declarations.");
             }
@@ -126,7 +126,7 @@ static void variable_statement_check_let_names(VariableStatement const* me, Init
 static void binding_check_es_module_marker(Binding const* me, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_IDENTIFIER:
-            if (csview_equals(my content_span.sv, "__esModule")) {
+            if (csview_equals(span_sv(my content_span), "__esModule")) {
                 error_ctx_grammar_error_d(errs, my content_span, 1216,
                     "Identifier expected. '__esModule' is reserved as an exported marker when transforming ECMAScript modules.");
             }
@@ -153,7 +153,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
     variable_statement_check_using(me, false, case_clause, ambient_using, errs);
     // An export of a module emitted as CommonJS (or AMD, UMD) can't be named like the marker the emit adds
     bool check_marker = exported && !declared && !compiler_options()->no_emit && !vec_initialized_binding_is_empty(&my initializers) &&
-        source_file_emit_module_kind(my initializers.data[0].binding.content_span.source) < MODULE_KIND_SYSTEM;
+        source_file_emit_module_kind(span_source(my initializers.data[0].binding.content_span)) < MODULE_KIND_SYSTEM;
     for_each (i, vec_initialized_binding, &my initializers) {
         if (check_marker) binding_check_es_module_marker(&i->binding, errs);
         // An ambient, exported or const variable without a type has nothing for control flow to type it by (tsc's
@@ -281,9 +281,9 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     if (my type.tag == TYPE_IDENTIFIER && my type.identifier->intrinsic_keyword) {
         static char const* const kinds[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize", "NoInfer" };
         bool known = false;
-        for (u32 i = 0; i < c_arraylen(kinds) && !known; i++) known = csview_equals(my name.sv, kinds[i]);
+        for (u32 i = 0; i < c_arraylen(kinds) && !known; i++) known = csview_equals(span_sv(my name), kinds[i]);
         isize count = vec_generic_item_size(&my generic.items);
-        if (count == 0 ? !csview_equals(my name.sv, "BuiltinIteratorReturn") : count != 1 || !known) {
+        if (count == 0 ? !csview_equals(span_sv(my name), "BuiltinIteratorReturn") : count != 1 || !known) {
             error_ctx_error_d(errs, my type.identifier->name, 2795,
                 "The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.");
         }
@@ -317,27 +317,27 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
     *found = false;
     switch (my tag) {
         case STATEMENT_DECL_TYPE:
-            *found = csview_equals_sv(my decl.type->name.sv, name);
+            *found = csview_equals_sv(span_sv(my decl.type->name), name);
             return NON_INSTANTIATED;
         case STATEMENT_DECL_INTERFACE:
-            *found = csview_equals_sv(my decl.interface->name.sv, name);
+            *found = csview_equals_sv(span_sv(my decl.interface->name), name);
             return NON_INSTANTIATED;
         case STATEMENT_DECL_ENUM:
-            *found = csview_equals_sv(my decl.enum_->name.sv, name);
+            *found = csview_equals_sv(span_sv(my decl.enum_->name), name);
             return my decl.enum_->is_const ? CONST_ENUM_ONLY : INSTANTIATED;
         case STATEMENT_DECL_FUNCTION:
-            *found = csview_equals_sv(my decl.function.impl->name.sv, name);
+            *found = csview_equals_sv(span_sv(my decl.function.impl->name), name);
             return INSTANTIATED;
         case STATEMENT_DECL_CLASS:
-            *found = csview_equals_sv(my decl.class->name.sv, name);
+            *found = csview_equals_sv(span_sv(my decl.class->name), name);
             return INSTANTIATED;
         case STATEMENT_DECL_VARIABLE:
             for_each (i, vec_initialized_binding, &my decl.variable.initializers) {
-                if (i->binding.tag == BINDING_IDENTIFIER && csview_equals_sv(i->binding.content_span.sv, name)) *found = true;
+                if (i->binding.tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(i->binding.content_span), name)) *found = true;
             }
             return INSTANTIATED;
         case STATEMENT_DECL_NAMESPACE:
-            *found = !my decl.namespace->is_ambient_module && csview_equals_sv(my decl.namespace->name.sv, name);
+            *found = !my decl.namespace->is_ambient_module && csview_equals_sv(span_sv(my decl.namespace->name), name);
             if (!*found) return NON_INSTANTIATED;
             return block_is_instantiated(&my decl.namespace->contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
         case STATEMENT_IMPORT_EXPORT: {
@@ -393,7 +393,7 @@ static bool block_is_instantiated_in(Block const* me, bool const_enums, Scope co
             case STATEMENT_NOOP:
                 // `;` and `debugger` are statements like any other to tsc's getModuleInstanceState, what the parser
                 // made of an error isn't there
-                if (span_valid(i->span) && i->span.sv.size && (i->span.sv.buf[0] == ';' || i->span.sv.buf[0] == 'd')) return true;
+                if (span_valid(i->span) && i->span.size && (i->span.buf[0] == ';' || i->span.buf[0] == 'd')) return true;
                 break;
             case STATEMENT_DECL_TYPE:
             case STATEMENT_DECL_INTERFACE:
@@ -439,7 +439,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     bool misplaced = !my jsdoc && (my labeled || !(scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_MODULE ||
         scope->kind == SCOPE_NAMESPACE || scope->kind == SCOPE_GLOBAL_AUGMENTATION));
     // (Exported from an ES module, a local of a CommonJS one: tsc's declareSourceFileMember with isExternalModule)
-    if (my jsdoc && scope->kind == SCOPE_MODULE && !(my full_span.source && my full_span.source->is_commonjs)) {
+    if (my jsdoc && scope->kind == SCOPE_MODULE && !(span_source(my full_span) && span_source(my full_span)->is_commonjs)) {
         props.exported = DECL_EXPORTED_YES;
     }
     my misplaced = misplaced;
@@ -449,8 +449,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     if (misplaced && checked) {
         Span first = my full_span;
         isize len = 0;
-        while (len < first.sv.size && (isalnum((unsigned char)first.sv.buf[len]) || first.sv.buf[len] == '_')) len++;
-        first.sv.size = len;
+        while (len < first.size && (isalnum((unsigned char)first.buf[len]) || first.buf[len] == '_')) len++;
+        first.size = len;
         error_ctx_grammar_error_d(binder_errs(scope->binder), first, (my is_global || my is_ambient_module) ? 1234 : 1235,
             (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
             "A namespace declaration is only allowed at the top level of a namespace or module.");
@@ -512,7 +512,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             // (Directly in an ambient module of a script too: tsc's isModuleAugmentationExternal)
             bool augmentation = scope->kind == SCOPE_MODULE || in_script_ambient_module;
             if (augmentation && !my is_shorthand) {
-                module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
+                module = binder_new_symbol(scope->binder, span_sv(my name), SYMBOL_VALUE_MODULE);
                 module->name_span = my name;
                 module->exports = arena_new(binder_arena(scope->binder), SymbolTable);
                 module->is_augmentation = true;
@@ -520,7 +520,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             } else if (nested_ambient_module && !scope_in_script_block(scope)) {
                 // In a namespace it is a member of the namespace to tsc's binder (declareSymbolAndAddToSymbolTable),
                 // which no module name finds: a module of its own
-                module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
+                module = binder_new_symbol(scope->binder, span_sv(my name), SYMBOL_VALUE_MODULE);
                 module->name_span = my name;
                 module->is_module = true;
                 module->module = arena_new(binder_arena(scope->binder), SymbolModule);
@@ -621,7 +621,7 @@ static bool module_attributes_check_grammar(Interface const* attributes, ErrorCt
         }
         if (i->readonly) {
             Span modifier = decl;
-            if (csview_starts_with(decl.sv, "readonly")) modifier.sv.size = 8;
+            if (csview_starts_with(span_sv(decl), "readonly")) modifier.size = 8;
             error_ctx_grammar_error_d(errs, modifier, 1558, "An import attributes property cannot have a 'readonly' modifier.");
             return true;
         }
@@ -633,7 +633,7 @@ static bool module_attributes_check_grammar(Interface const* attributes, ErrorCt
             error_ctx_grammar_error_d(errs, decl, 1556, "An import attributes property cannot be optional.");
             return true;
         }
-        csview key = i->key.span.sv;
+        csview key = span_sv(i->key.span);
         if (i->key.tag != INTERFACE_KEY_NAME || (key.size && (isdigit((unsigned char)*key.buf) || *key.buf == '.'))) {
             error_ctx_grammar_error_d(errs, i->key.span, 1554, "An import attributes property must have a string literal or identifier name.");
             return true;
@@ -650,7 +650,7 @@ static bool module_attributes_check_grammar(Interface const* attributes, ErrorCt
         if (i->type.tag != TYPE_VALUE || i->type.value.tag != VALUE_STRING || i->type.parenthesized || start == end ||
             (*start != '"' && *start != '\'')
         ) {
-            error_ctx_grammar_error_d(errs, span_make(decl.source, start, end), 1555,
+            error_ctx_grammar_error_d(errs, span_make_in(decl, start, end), 1555,
                 "An import attributes property must have a string literal type annotation.");
             return true;
         }
@@ -685,13 +685,13 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
     }
     CompilerOptions const* options = compiler_options();
     bool isolated = options->isolated_modules || options->verbatim_module_syntax;
-    if (!declared && !my is_global && (options->erasable_syntax_only || (isolated && !my full_span.source->is_module)) &&
+    if (!declared && !my is_global && (options->erasable_syntax_only || (isolated && !span_source(my full_span)->is_module)) &&
         namespace_decl_is_instantiated(me)
     ) {
         if (options->erasable_syntax_only) {
             error_ctx_error_d(errs, my name, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
         }
-        if (isolated && !my full_span.source->is_module) {
+        if (isolated && !span_source(my full_span)->is_module) {
             error_ctx_error_d(errs, my name, 1280, "Namespaces are not allowed in global script files when '",
                 options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules", "' is enabled. If this "
                 "file is not intended to be a global script, set 'moduleDetection' to 'force' or add an empty 'export {}' "
@@ -707,7 +707,7 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
         if (other && other->block == own->block && (!first || span_start_ptr(other->full) < span_start_ptr(first->full))) {
             first = other;
         }
-        if (first && first->full.source != my full_span.source) {
+        if (first && span_source(first->full) != span_source(my full_span)) {
             error_ctx_error_d(errs, my name, 2433,
                 "A namespace declaration cannot be in a different file from a class or function with which it is merged.");
         } else if (first && span_start_ptr(my full_span) < span_start_ptr(first->full)) {
@@ -723,7 +723,7 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
         bool is_import = false;
         if (i->tag == STATEMENT_IMPORT_EXPORT) {
             PortStatement const* port = i->import_export;
-            if (csview_equals(port->keyword_span.sv, "export")) {
+            if (csview_equals(span_sv(port->keyword_span), "export")) {
                 is_export = port->main.tag != PORT_IMPORT_ALIAS && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
                     !port->is_import_require && port->main.tag != PORT_IMPORT_GATHER;
                 is_import = port->is_import_require;
@@ -957,7 +957,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         Binding const* second = &vec_initialized_binding_at(initializers, 1)->binding;
         Span span = second->content_span;
         if (second->tag == BINDING_ARRAY || second->tag == BINDING_OBJECT) {
-            span = span_make(span.source, span_start_ptr(span), span_start_ptr(span) + 1);
+            span = span_make_in(span, span_start_ptr(span), span_start_ptr(span) + 1);
         }
         error_ctx_error_d(
             binder_errs(scope->binder),
@@ -1554,7 +1554,7 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
 // doesn't allow, and that statement's own checks stop there (checkReturnStatement)
 static bool ambient_reported_at(Statement const* me, Scope const* names) {
     VecStatement const* list = names->ambient && names->flow ? names->flow->lookup_statements : nullptr;
-    if (!list || !me->span.source || me->span.source->has_parse_errors) return false;
+    if (!list || !span_source(me->span) || span_source(me->span)->has_parse_errors) return false;
     for_each (i, vec_statement, list) {
         if (block_statement_is_ambient_disallowed(i)) return i == me;
     }
@@ -1569,8 +1569,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
     switch (my tag) {
         case STATEMENT_LABELED: {
             for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
-                if (!name_equals(i->name.sv, my labeled.name.sv)) continue;
-                error_ctx_grammar_error_d(errs, my labeled.name, 1114, "Duplicate label '", my labeled.name.sv, "'.");
+                if (!name_equals(span_sv(i->name), span_sv(my labeled.name))) continue;
+                error_ctx_grammar_error_d(errs, my labeled.name, 1114, "Duplicate label '", span_sv(my labeled.name), "'.");
                 break;
             }
             // tsc's binder (checkStrictModeLabeledStatement): no label on a declaration in strict mode code from ES2015 on
@@ -1607,7 +1607,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_WITH: {
             WithStatement* with = my with;
-            Span keyword = span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 4);
+            Span keyword = span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 4);
             // A binder error in tsc (checkStrictModeWithStatement), reported in the body of another `with` too (errs is
             // null there, flow->errs is not). The rest are the checker's
             if (names->strict) {
@@ -1796,7 +1796,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (span_valid(my jump_label)) {
                 target = nullptr;
                 for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
-                    if (!name_equals(i->name.sv, my jump_label.sv)) continue;
+                    if (!name_equals(span_sv(i->name), span_sv(my jump_label))) continue;
                     i->referenced = true;
                     target = is_break ? i->break_target : i->continue_target;
                     break;
@@ -1864,15 +1864,15 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         case STATEMENT_SOURCE_DIRECTIVE:
             if (my source_directive->self_reference) {
                 Span span = my source_directive->path_span;
-                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
-                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                if (span.size >= 2 && (*span.buf == '"' || *span.buf == '\'')) {
+                    span_set_sv(&span, csview_slice(span_sv(span), 1, span.size - 1));
                 }
                 error_ctx_error_d(errs, span, 1006, "A file cannot have a reference to itself.");
             }
             if (cstr_size(&my source_directive->unbuilt_output)) {
                 Span span = my source_directive->path_span;
-                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
-                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                if (span.size >= 2 && (*span.buf == '"' || *span.buf == '\'')) {
+                    span_set_sv(&span, csview_slice(span_sv(span), 1, span.size - 1));
                 }
                 error_ctx_error_d(errs, span, 6305, "Output file '", my source_directive->unbuilt_output,
                     "' has not been built from source file '", my source_directive->unbuilt_source, "'.");
@@ -1880,8 +1880,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (cstr_size(&my source_directive->not_found)) {
                 // Without the quotes
                 Span span = my source_directive->path_span;
-                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
-                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                if (span.size >= 2 && (*span.buf == '"' || *span.buf == '\'')) {
+                    span_set_sv(&span, csview_slice(span_sv(span), 1, span.size - 1));
                 }
                 if (my source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
                     error_ctx_error_d(errs, span, 2688,
@@ -2080,7 +2080,7 @@ static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, Err
     bool labeled = span_valid(my jump_label);
     if (labeled) {
         for (TypecheckLabel const* i = ctx.labels; i; i = i->outer) {
-            if (!name_equals(i->name.sv, my jump_label.sv)) continue;
+            if (!name_equals(span_sv(i->name), span_sv(my jump_label))) continue;
             if (!is_break && !i->is_iteration) {
                 error_ctx_grammar_error_d(errs, my span, 1115,
                     "A 'continue' statement can only jump to a label of an enclosing iteration statement.");
@@ -2127,7 +2127,7 @@ static bool return_typecheck(
     Expr const* effective = expr_effective_check_node(expr);
     Span span = expr_error_span_skip_parens(effective); // (tsc's getErrorSpanForNode: a class expression's `class`)
     if (!in_conditional && span_valid(statement->span)) {
-        span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
+        span = span_make_in(statement->span, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
     }
     Ty const* source = ty_expr_type(checker, expr);
     if (awaited) {
@@ -2151,16 +2151,16 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     isize count = vec_statement_size(statements);
     for (isize i = 0; i < count; i++) {
         FunctionImpl const* overload = function_declaration(vec_statement_at(statements, i));
-        if (!overload || !span_valid(overload->name) || !overload->name.sv.size) continue;
+        if (!overload || !span_valid(overload->name) || !overload->name.size) continue;
         // A declaration file is ambient
-        SourceFile const* file = overload->name.source;
+        SourceFile const* file = span_source(overload->name);
         if (file->is_declaration) return;
         FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
         // An ambient declaration next starts over (tsc's checkFunctionOrConstructorSymbol forgets previousDeclaration
         // at one)
         Statement const* after_statement = i + 1 < count ? vec_statement_at(statements, i + 1) : nullptr;
         if (!next && after_statement && after_statement->tag == STATEMENT_DECL_FUNCTION && after_statement->decl.props.declared &&
-            name_equals(after_statement->decl.function.impl->name.sv, overload->name.sv)
+            name_equals(span_sv(after_statement->decl.function.impl->name), span_sv(overload->name))
         ) {
             continue;
         }
@@ -2168,19 +2168,19 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
         // statement, `function f() {};`, counts too)
         isize next_at = i + 1;
         // (Only for a function declared more than once: the scan is quadratic in a block of many functions)
-        if (!(next && name_equals(next->name.sv, overload->name.sv)) && (overload->has_body || overload->body_missing) &&
+        if (!(next && name_equals(span_sv(next->name), span_sv(overload->name))) && (overload->has_body || overload->body_missing) &&
             overload->symbol && overload->symbol->decl_count > 1
         ) {
             for (isize j = i + 1; j < count; j++) {
                 FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
-                if (other && name_equals(other->name.sv, overload->name.sv)) {
+                if (other && name_equals(span_sv(other->name), span_sv(overload->name))) {
                     next = other;
                     next_at = j;
                     break;
                 }
             }
         }
-        if (next && name_equals(next->name.sv, overload->name.sv)) {
+        if (next && name_equals(span_sv(next->name), span_sv(overload->name))) {
             // A declaration the next one of the function doesn't directly follow (a token was skipped in between) is
             // missing its implementation, body or not, unless the next is a second implementation (tsc's
             // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
@@ -2191,7 +2191,7 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
             bool some_body = false;
             for (isize j = 0; j <= i && next->has_body && !some_body; j++) {
                 FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
-                some_body = other && other->has_body && name_equals(other->name.sv, overload->name.sv);
+                some_body = other && other->has_body && name_equals(span_sv(other->name), span_sv(overload->name));
             }
             if (!adjacent && !(next->has_body && some_body)) {
                 error_ctx_error_d(errs, overload->name, 2391,
@@ -2200,13 +2200,13 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
             }
         }
         if (overload->has_body || overload->body_missing) continue;
-        if (next && name_equals(next->name.sv, overload->name.sv)) continue; // It goes on
+        if (next && name_equals(span_sv(next->name), span_sv(overload->name))) continue; // It goes on
         // Not followed by its implementation. An error if the list declares more of it later (tsc's consecutive
         // declarations), or if nothing declares more of it (the last declaration has no body)
         bool later_here = false;
         for (isize j = i + 1; j < count && !later_here; j++) {
             FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
-            later_here = other && name_equals(other->name.sv, overload->name.sv);
+            later_here = other && name_equals(span_sv(other->name), span_sv(overload->name));
         }
         // (Only a global merges across blocks: tsc checks a namespace's exported functions by the local symbol of
         // each block)
@@ -2268,7 +2268,7 @@ static u32 function_local_symbol_decls(Symbol const* symbol, SymbolDecl const** 
             if (also_exported) continue;
             // (insertion into source order)
             u32 at = count;
-            while (at > 0 && out[at - 1]->full.source == decl->full.source &&
+            while (at > 0 && span_source(out[at - 1]->full) == span_source(decl->full) &&
                 span_start_ptr(out[at - 1]->full) > span_start_ptr(decl->full)
             ) {
                 out[at] = out[at - 1];
@@ -2311,10 +2311,10 @@ static u32 function_check_flag_agreement(
         bool skipped = false;
         for (u32 j = 0; j < skip_count; j++) skipped |= skip[j] == decl;
         if (skipped) continue;
-        SourceFile const* file = decl->name.source ? decl->name.source : decl->full.source;
+        SourceFile const* file = span_source(decl->name) ? span_source(decl->name) : span_source(decl->full);
         // The canonical declaration of its file
         u32 file_first = 0;
-        while ((decls[file_first]->name.source ? decls[file_first]->name.source : decls[file_first]->full.source) != file) file_first++;
+        while ((span_source(decls[file_first]->name) ? span_source(decls[file_first]->name) : span_source(decls[file_first]->full)) != file) file_first++;
         u32 canonical = file_first;
         for (u32 j = 0; implementation_decl && j < count; j++) {
             if (decls[j] == implementation_decl && implementation_decl->block == decls[file_first]->block) canonical = j;
@@ -2385,12 +2385,12 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
         FunctionImpl const* function = symbol->decls[i].node;
-        SourceFile const* file = function->full_span.source;
+        SourceFile const* file = span_source(function->full_span);
         if (!symbol->parent && file && file->is_js) continue;
         if (function != me) return;
         break;
     }
-    if (!symbol->parent && my full_span.source && my full_span.source->is_js) return;
+    if (!symbol->parent && span_source(my full_span) && span_source(my full_span)->is_js) return;
     FunctionImpl const* implementation = nullptr;
     FunctionImpl const* overloads[32];
     Span names[32];
@@ -2448,7 +2448,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 static bool binding_declares_name(Binding const* me, csview name) {
     switch (my tag) {
         case BINDING_NOOP: return false;
-        case BINDING_IDENTIFIER: return csview_equals_sv(my content_span.sv, name);
+        case BINDING_IDENTIFIER: return csview_equals_sv(span_sv(my content_span), name);
         case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) if (binding_declares_name(i, name)) return true;
             return false;
@@ -2463,7 +2463,7 @@ static void catch_check_block_names(Binding const* catch_var, Binding const* dec
     switch (declared->tag) {
         case BINDING_NOOP: break;
         case BINDING_IDENTIFIER:
-            if (binding_declares_name(catch_var, declared->content_span.sv)) {
+            if (binding_declares_name(catch_var, span_sv(declared->content_span))) {
                 error_ctx_grammar_error_d(errs, declared->content_span, 2492, "Cannot redeclare identifier '",
                     declared->content_span, "' in catch clause.");
             }
@@ -2580,7 +2580,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 Statement const* then = vec_statement_at(&my if_else.statements, i);
                 if (then->tag == STATEMENT_NOOP && span_valid(then->span) && *span_start_ptr(then->span) == ';') { // (tsc's checkIfStatement)
                     char const* at = span_start_ptr(then->span);
-                    error_ctx_error_d(errs, span_make(then->span.source, at, at + 1), 1313, "The body of an 'if' statement cannot be the empty statement.");
+                    error_ctx_error_d(errs, span_make_in(then->span, at, at + 1), 1313, "The body of an 'if' statement cannot be the empty statement.");
                 }
             }
             ctx.body = true;
@@ -2797,13 +2797,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_THROW_EXPR:
-            if (my expr.tag == EXPR_IMPLICIT_ANY && span_valid(my expr.inner_span) && !my expr.inner_span.sv.size &&
+            if (my expr.tag == EXPR_IMPLICIT_ANY && span_valid(my expr.inner_span) && !my expr.inner_span.size &&
                 span_valid(my span)
             ) {
                 // tsc's checkThrowStatement: `throw` then a line break (the parser's missing expression), right after
                 // the keyword
                 char const* at = span_start_ptr(my span) + strlen("throw");
-                error_ctx_grammar_error_d(errs, span_make(my span.source, at, at), 1142, "Line break not permitted here.");
+                error_ctx_grammar_error_d(errs, span_make_in(my span, at, at), 1142, "Line break not permitted here.");
             }
             expr_typecheck(&my expr, errs);
             break;
@@ -2859,20 +2859,20 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 !ctx.constructed_class && !ctx.in_setter && returns_thenable(&my expr)
             ) {
                 // (An arrow's expression body: at the expression)
-                Span at = span_valid(my span) ? span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6) :
+                Span at = span_valid(my span) ? span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 6) :
                     expr_outer_span(&my expr);
                 error_ctx_error_d(errs, at, 1058,
                     "The return type of an async function must either be a valid promise or must not contain a callable 'then' member.");
             }
             if (ctx.in_setter) {
                 if (!statement_is_bare_return(me)) {
-                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2408,
+                    error_ctx_error_d(errs, span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 6), 2408,
                         "Setters cannot return a value.");
                 }
             } else if (ctx.constructed_class && !statement_is_bare_return(me)) {
                 // What a constructor returns replaces the instance (tsc's checkReturnStatement)
                 if (!return_typecheck(me, &my expr, ty_instance_type_of_class(current_checker, ctx.constructed_class), false, false, errs)) {
-                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2409,
+                    error_ctx_error_d(errs, span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 6), 2409,
                         "Return type of constructor signature must be assignable to the instance type of the class.");
                 }
             } else if (ctx.unwrapped_return) {
@@ -2891,7 +2891,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             ) {
                 Ty const* returned = ty_function_return_type(current_checker, ctx.function);
                 if (!(returned->flags & TYF_NEVER) && !function_impl_return_void_any_or_undefined(ctx.function, returned)) {
-                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 7030,
+                    error_ctx_error_d(errs, span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 6), 7030,
                         "Not all code paths return a value.");
                 }
             }
@@ -2997,7 +2997,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     }
     if (my expr.tag != EXPR_IDENTIFIER || my expr.identifier.keyword || expr_is_perenthisized(&my expr)) return;
     Span id = my expr.inner_span;
-    Symbol* symbol = scope_resolve(names, id.sv, SYMBOL_ANY_MEANING);
+    Symbol* symbol = scope_resolve(names, span_sv(id), SYMBOL_ANY_MEANING);
     if (!symbol || symbol->is_placeholder) return;
     // (tsc's getTypeOnlyAliasDeclaration(symbol, Value): only when what it names is a value)
     Symbol const* named_by = nullptr;
@@ -3021,7 +3021,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
     Symbol const* target = symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias(symbol) : nullptr;
     u32 non_local = target && !target->is_placeholder ? symbol_resolved_flags(target) : 0;
-    SourceFile const* type_only_file = type_only ? type_only->decl_name.source : nullptr;
+    SourceFile const* type_only_file = type_only ? span_source(type_only->decl_name) : nullptr;
     bool elsewhere = type_only && type_only_file != file;
     if (non_local & SYMBOL_TYPE && !(non_local & SYMBOL_VALUE) && (!type_only || elsewhere)) {
         if (export_equals) {
@@ -3039,7 +3039,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
             error_ctx_error_d(errs, id, 1290, "'", id, "' resolves to a type-only declaration and must be marked "
                 "type-only in this file before re-exporting when '", flag, "' is enabled. Consider using "
                 "'export type { ", id, " as default }'.");
-        port_item_add_type_only_related(error, type_only, id.sv);
+        port_item_add_type_only_related(error, type_only, span_sv(id));
     }
 }
 
@@ -3051,7 +3051,7 @@ static Span export_keyword_of(Span statement) {
         if (memcmp(p, "export", 6) != 0) continue;
         bool before = p > start && (isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$');
         bool after = p + 6 < end && (isalnum((unsigned char)p[6]) || p[6] == '_' || p[6] == '$');
-        if (!before && !after) return span_make(statement.source, p, p + 6);
+        if (!before && !after) return span_make_in(statement, p, p + 6);
     }
     return span_null;
 }

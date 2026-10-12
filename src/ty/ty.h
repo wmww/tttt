@@ -695,7 +695,7 @@ struct Signature {
     Ty const* ret;
     TyPredicate const* predicate; // Use signature_predicate()
 };
-static_assert(sizeof(Signature) == 176);
+static_assert(sizeof(Signature) == 160);
 
 // A member with a computed name that an object literal's index signature was made of (`[a]: 1`)
 typedef struct IndexComponent {

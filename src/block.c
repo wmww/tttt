@@ -126,8 +126,8 @@ Span block_span(Block const* me) {
     if (!count) return span_null;
     Span first = vec_statement_at(&my statements, 0)->span;
     Span last = vec_statement_at(&my statements, count - 1)->span;
-    if (!span_valid(first) || !span_valid(last) || first.source != last.source) return span_null;
-    return span_make(first.source, span_start_ptr(first), span_end_ptr(last));
+    if (!span_valid(first) || !span_valid(last) || span_source(first) != span_source(last)) return span_null;
+    return span_make_in(first, span_start_ptr(first), span_end_ptr(last));
 }
 
 // The length of the non-ASCII identifier character at c (UTF-8), 0 if it's something else (a unicode space: U+0085)
@@ -143,9 +143,9 @@ static int unicode_identifier_part_size(char const* c, char const* limit) {
 }
 
 Span block_first_token(Span at) {
-    if (!span_valid(at) || !at.sv.size) return span_null;
-    char const* start = at.sv.buf;
-    char const* limit = start + at.sv.size;
+    if (!span_valid(at) || !at.size) return span_null;
+    char const* start = at.buf;
+    char const* limit = start + at.size;
     char const* end = start + 1;
     unsigned char c = (unsigned char)*start;
     if (isalnum(c) || c == '_' || c == '$' || c >= 0x80) {
@@ -163,7 +163,7 @@ Span block_first_token(Span at) {
     } else if (c == '.' && limit - start >= 3 && start[1] == '.' && start[2] == '.') {
         end += 2;
     }
-    return span_make(at.source, start, end < limit ? end : limit);
+    return span_make_in(at, start, end < limit ? end : limit);
 }
 
 // tsc's checkGrammarStatementInAmbientContext: in an ambient context only declarations can be statements, which is
@@ -185,7 +185,7 @@ bool block_statement_is_ambient_disallowed(Statement const* me) {
         case STATEMENT_THROW_EXPR:
             return true;
         case STATEMENT_NOOP: // (`;` or `debugger`, not what the parser made of an error)
-            return span_valid(my span) && my span.sv.size && (my span.sv.buf[0] == ';' || my span.sv.buf[0] == 'd');
+            return span_valid(my span) && my span.size && (my span.buf[0] == ';' || my span.buf[0] == 'd');
         default:
             return false;
     }
@@ -207,7 +207,7 @@ void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     if (ctx.ambient && !ctx.ambient_reported) {
         for_each (i, vec_statement, &my statements) {
             // (A grammar error: not in a file with parse errors, like tsc's grammarErrorOnFirstToken)
-            if (!block_statement_is_ambient_disallowed(i) || !i->span.source || i->span.source->has_parse_errors) continue;
+            if (!block_statement_is_ambient_disallowed(i) || !span_source(i->span) || span_source(i->span)->has_parse_errors) continue;
             error_ctx_error_d(errs, block_first_token(i->span), 1036, "Statements are not allowed in ambient contexts.");
             ctx.ambient_error_statement = i;
             break;

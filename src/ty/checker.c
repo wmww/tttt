@@ -645,7 +645,7 @@ Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl) {
         Ty* ret = ty_alloc(me, TY_LITERAL, TYF_UNIQUE_ES_SYMBOL);
         ret->literal.value = (Value){ .tag = VALUE_UNDEFINED };
         ret->literal.unique = decl;
-        csview name = span_valid(decl->member) ? decl->member.sv : decl->owner ? decl->owner->name : c_sv("");
+        csview name = span_valid(decl->member) ? span_sv(decl->member) : decl->owner ? decl->owner->name : c_sv("");
         cstr escaped = cstr_d("__@", name, "@", ret->id);
         ret->literal.string = checker_atom(me, cstr_sv(&escaped));
         cstr_drop(&escaped);
@@ -1933,7 +1933,7 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
     u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)decl };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) {
-        Ty const* ret = make_type_param(me, decl, checker_atom(me, decl->name_span.sv));
+        Ty const* ret = make_type_param(me, decl, checker_atom(me, span_sv(decl->name_span)));
         // `infer U extends X`. Declared type parameters read their GenericItem (TyParamState.item), mapped type keys
         // get their constraint from whoever lowers the mapped type
         InferredType const* inferred = symbol_find_node(decl, SYMBOL_DECL_INFER);
@@ -2452,7 +2452,7 @@ Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     Prop const* declared = prop;
     while (declared->target && !declared->decl->decl_span_count && !prop_decl_rare(declared->decl)->name_type) declared = declared->target;
     if (prop_decl_rare(declared->decl)->name_type) return prop_decl_rare(declared->decl)->name_type; // (tsc's nameType, fresh if it was)
-    csview text = declared->decl->name_span.sv;
+    csview text = span_sv(declared->decl->name_span);
     if (declared->decl->name_is_value && span_valid(declared->decl->name_span) && text.size &&
         ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.' || text.buf[0] == '[')
     ) {
@@ -2496,13 +2496,13 @@ Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
 }
 
 bool ty_member_is_referenced(Checker* me, Span declaration) {
-    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.sv.buf };
+    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.buf };
     return intern_get(&my links, key, 2) != nullptr;
 }
 
 void ty_mark_member_referenced(Checker* me, Span declaration) {
     if (!span_valid(declaration)) return;
-    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.sv.buf };
+    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.buf };
     *intern_slot(me, &my links, key, 2) = me;
 }
 

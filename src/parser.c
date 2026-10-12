@@ -483,13 +483,13 @@ static void mark_named_evaluation(Expr* value, bool computed_key) {
 // variable, property assignment, binding element or the right operand of a binary expression is called by that name
 static void mark_assigned_name(Expr* value, Span name) {
     if (value->tag == EXPR_FUNCTION && !span_valid(value->function->name) && !function_impl_is_arrow(value->function) &&
-        expr_outer_span(value).sv.size == value->inner_span.sv.size
+        expr_outer_span(value).size == value->inner_span.size
     ) {
         function_impl_rare_mut(value->function)->assigned_name = name;
         return;
     }
     if (value->tag != EXPR_CLASS_DECL || span_valid(value->class_decl->name)) return;
-    if (expr_outer_span(value).sv.size != value->inner_span.sv.size) return;
+    if (expr_outer_span(value).size != value->inner_span.size) return;
     value->class_decl->assigned_name = name;
 }
 
@@ -595,7 +595,7 @@ static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
 static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr message, bool in_literal) {
     my shared->errors_attempted++;
-    int invalid = span.source && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
+    int invalid = span_source(span) && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
         return parse_error_inner(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
@@ -603,7 +603,7 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
     }
     // Likewise a `#!` anywhere but at the start of the file (the scanner's TS18026 comes first)
     const char* at = span_start_ptr(span);
-    if (span.source && !in_literal && ts_code != 18026 && at && at[0] == '#' && at[1] == '!' &&
+    if (span_source(span) && !in_literal && ts_code != 18026 && at && at[0] == '#' && at[1] == '!' &&
         at != cstr_str(&my shared->source->contents)
     ) {
         cstr_drop(&message);
@@ -794,7 +794,7 @@ static void report_escape_errors(Parser* me, EscapeErrors const* errors) {
                 snprintf(hex, sizeof(hex), "\\x%02x", errors->errors[i].value);
                 parse_error_in_literal(me, at, 1487, "Octal escape sequences are not allowed. Use the syntax '", hex, "'.");
             }   break;
-            case 1488: parse_error_in_literal(me, at, 1488, "Escape sequence '", at.sv, "' is not allowed."); break;
+            case 1488: parse_error_in_literal(me, at, 1488, "Escape sequence '", span_sv(at), "' is not allowed."); break;
             default: impossible;
         }
     }
@@ -1311,7 +1311,7 @@ static bool expect_closing(Parser* parent, char close, const char* open) {
 static void relate_last_expected_to_open(Parser* parent, const char* open, char open_char, char close) {
     if (!vec_error_size(&parent->shared->errors)) return;
     Error* last = vec_error_back_mut(&parent->shared->errors);
-    if (last->ts_code != 1005 || last->span.source != parent->shared->source) return;
+    if (last->ts_code != 1005 || span_source(last->span) != parent->shared->source) return;
     error_add_related_d(last, span_make(parent->shared->source, open, open + 1), 1007,
         "The parser expected to find a '", close, "' to match the '", open_char, "' token here.");
 }
@@ -1360,11 +1360,11 @@ static cstr identifier_name_value(csview name);
 static bool hop_escaped_keyword(Parser* parent, const char* keyword) {
     const char* start = parent->pos;
     Span word;
-    if (!parse_identifier_or_keyword(parent, &word) || !memchr(word.sv.buf, '\\', (size_t)word.sv.size)) {
+    if (!parse_identifier_or_keyword(parent, &word) || !memchr(word.buf, '\\', (size_t)word.size)) {
         parent->pos = start;
         return false;
     }
-    cstr cooked = identifier_name_value(word.sv);
+    cstr cooked = identifier_name_value(span_sv(word));
     bool equal = strcmp(cstr_str(&cooked), keyword) == 0;
     cstr_drop(&cooked);
     if (!equal) {
@@ -2332,7 +2332,7 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         bool is_modifier = parse_identifier_or_keyword(&modifier_p, &word);
         if (is_modifier) {
             is_modifier = false;
-            for (const char* const* w = words; *w && !is_modifier; w++) is_modifier = csview_equals(word.sv, *w);
+            for (const char* const* w = words; *w && !is_modifier; w++) is_modifier = csview_equals(span_sv(word), *w);
         }
         if (is_modifier) {
             hop_whitespace(&modifier_p);
@@ -3208,7 +3208,7 @@ static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
         Span path_span = span_from(path_anchor);
         hop_whitespace(&ahead);
         // (a template with substitutions isn't a module name anyone can resolve)
-        bool is_constant = csview_find_sv(path_span.sv, c_sv("${")) == c_NPOS || *path_span.sv.buf != '`';
+        bool is_constant = csview_find_sv(span_sv(path_span), c_sv("${")) == c_NPOS || *path_span.buf != '`';
         if (is_constant && (*ahead.pos == ')' || *ahead.pos == ',')) {
             ret->identifier.module_ref_ = add_module_ref(&p, path, path_span);
             ret->identifier.module_ref_->syntax = MODULE_REF_DYNAMIC;
@@ -3292,8 +3292,8 @@ static bool parse_misplaced_type_predicate(Parser* parent, TypeNode* ret) {
     f.predicate = nullptr;
     function_impl_drop(&f);
     predicate->span = span_from(a);
-    while (predicate->span.sv.size && is_js_ascii_space(predicate->span.sv.buf[predicate->span.sv.size - 1])) {
-        predicate->span.sv.size--;
+    while (predicate->span.size && is_js_ascii_space(predicate->span.buf[predicate->span.size - 1])) {
+        predicate->span.size--;
     }
     *ret = (TypeNode){ .tag = TYPE_PREDICATE, .predicate = predicate };
     return parse_success(&p);
@@ -3643,7 +3643,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         // tsc's parseJSDocType is parseTypeOrTypePredicate: `@type {x is T}` is a misplaced predicate (TS1228)
         TypePredicateNode* node = predicate.predicate;
         node->span = span_from(a);
-        while (node->span.sv.size && is_js_ascii_space(node->span.sv.buf[node->span.sv.size - 1])) node->span.sv.size--;
+        while (node->span.size && is_js_ascii_space(node->span.buf[node->span.size - 1])) node->span.size--;
         type = (TypeNode){ .tag = TYPE_PREDICATE, .predicate = node };
         predicate.predicate = nullptr;
         goto parsed;
@@ -3994,7 +3994,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     tag.has_type = true;
                     tag.type = type;
                     tag.type_span = span_make(source, type_start, after);
-                    while (tag.type_span.sv.size && is_jsdoc_space(tag.type_span.sv.buf[tag.type_span.sv.size - 1])) tag.type_span.sv.size--;
+                    while (tag.type_span.size && is_jsdoc_space(tag.type_span.buf[tag.type_span.size - 1])) tag.type_span.size--;
                     c = after;
                 }
             }
@@ -4348,7 +4348,7 @@ static JsDocTag* jsdoc_param_tag_at(VecJsDocTag* tags, isize index) {
     JsDocTag const* parent = nullptr;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
-        if (parent && span_valid(i->name) && jsdoc_name_is_under(i->name.sv, parent->name.sv)) continue;
+        if (parent && span_valid(i->name) && jsdoc_name_is_under(span_sv(i->name), span_sv(parent->name))) continue;
         bool array;
         parent = span_valid(i->name) && (jsdoc_is_object_type(i, &array) || i->type.tag == TYPE_INTERFACE) ? i : nullptr;
         if (!index--) return i;
@@ -4365,7 +4365,7 @@ static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* func
     JsDocTag* positional = jsdoc_param_tag_at(tags, index);
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
-        if (span_valid(i->name) ? jsdoc_name_is(i->name.sv, binding->content_span.sv) : i == positional) return i;
+        if (span_valid(i->name) ? jsdoc_name_is(span_sv(i->name), span_sv(binding->content_span)) : i == positional) return i;
     }
     return nullptr;
 }
@@ -4382,11 +4382,11 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
 static FunctionImpl* jsdoc_function_of(Expr* expr) {
     // (Through the `satisfies` a JSDoc `@satisfies` made: tsgo's getFunctionLikeHost skips them)
     while (expr->tag == EXPR_AS_TYPE && expr->as_type->is_jsdoc && expr->as_type->is_satisfies &&
-        expr_outer_span(expr).sv.size == expr->inner_span.sv.size
+        expr_outer_span(expr).size == expr->inner_span.size
     ) {
         expr = &expr->as_type->expr;
     }
-    if (expr->tag != EXPR_FUNCTION || expr_outer_span(expr).sv.size != expr->inner_span.sv.size) return nullptr;
+    if (expr->tag != EXPR_FUNCTION || expr_outer_span(expr).size != expr->inner_span.size) return nullptr;
     return expr->function;
 }
 
@@ -4509,23 +4509,23 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
 
 // `@` to the end of the tag's name: where tsc's declarations made by tags are
 static Span jsdoc_tag_decl_span(JsDocTag const* tag) {
-    const char* end = span_valid(tag->name) ? tag->name.sv.buf + tag->name.sv.size : tag->tag_name.sv.buf + tag->tag_name.sv.size;
-    return span_make(tag->tag_name.source, tag->tag_name.sv.buf - 1, end);
+    const char* end = span_valid(tag->name) ? tag->name.buf + tag->name.size : tag->tag_name.buf + tag->tag_name.size;
+    return span_make_in(tag->tag_name, tag->tag_name.buf - 1, end);
 }
 
 // A tag's node (tsgo's JSDoc tag Loc): from its `@` to the next tag's `@` (the line breaks and `*`s before it included)
 // or the comment's `*/`
 static Span jsdoc_tag_node_span(JsDocTag const* tag) {
-    const char* at = tag->tag_name.sv.buf - 1;
-    const char* c = tag->tag_name.sv.buf + tag->tag_name.sv.size;
-    if (span_valid(tag->name) && tag->name.sv.buf + tag->name.sv.size > c) c = tag->name.sv.buf + tag->name.sv.size;
+    const char* at = tag->tag_name.buf - 1;
+    const char* c = tag->tag_name.buf + tag->tag_name.size;
+    if (span_valid(tag->name) && tag->name.buf + tag->name.size > c) c = tag->name.buf + tag->name.size;
     bool line_start = false;
     for (; *c && !(c[0] == '*' && c[1] == '/'); c++) {
         if (*c == '\n') line_start = true;
         else if (line_start && *c == '@') break;
         else if (*c != ' ' && *c != '\t' && *c != '\r' && *c != '*') line_start = false;
     }
-    return span_make(tag->tag_name.source, at, c);
+    return span_make_in(tag->tag_name, at, c);
 }
 
 // `{Object}`, `{object}`, `{Object[]}`: a type a tag's nested `@property`/`@param` tags replace with a literal (tsc's
@@ -4583,17 +4583,17 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
     for (isize i = 0; i < count; i++) {
         JsDocTag* tag = &props[i];
         if (!span_valid(tag->name)) continue;
-        csview name = tag->name.sv;
+        csview name = span_sv(tag->name);
         if (prefix.size && !jsdoc_name_rest(name, prefix, &name)) continue;
         if (memchr(name.buf, '.', (size_t)name.size) || memchr(name.buf, '[', (size_t)name.size)) continue;
         bool has_children = false;
         for (isize j = i + 1; j < count && !has_children; j++) {
-            has_children = span_valid(props[j].name) && jsdoc_name_is_under(props[j].name.sv, tag->name.sv);
+            has_children = span_valid(props[j].name) && jsdoc_name_is_under(span_sv(props[j].name), span_sv(tag->name));
         }
         bool array;
         TypeNode type;
         if (has_children && jsdoc_is_object_type(tag, &array)) {
-            type = jsdoc_type_literal(props + i + 1, count - i - 1, tag->name.sv, jsdoc_tag_decl_span(tag));
+            type = jsdoc_type_literal(props + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
@@ -4603,7 +4603,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         }
         // (A bracketed property is `foo?: T`: tsgo's reparser gives the property signature a question token)
         bool optional = tag->bracketed || type.jsdoc_optional;
-        Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
+        Span name_span = span_make_in(tag->name, name.buf, name.buf + name.size);
         list_push(vec_interface_member, &members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
         ));
@@ -4662,12 +4662,12 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
     if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
-        !name_equals(augments->type.identifier->name.sv, extends_name.sv)
+        !name_equals(span_sv(augments->type.identifier->name), span_sv(extends_name))
     ) {
         class_decl->jsdoc_augments_name = augments->type.identifier->name;
         class_decl->jsdoc_augments_tag = augments->tag_name;
         class_decl->jsdoc_extends_name = extends_name;
-        if (augments->type.identifier->name.sv.size) {
+        if (augments->type.identifier->name.size) {
             class_decl->jsdoc_augments = c_new(TypeNode, jsdoc_take_type(augments, nullptr));
             // (Its arity is checked, not its constraints: getTypeFromTypeNode, not checkSourceElement)
             class_decl->jsdoc_augments->identifier->jsdoc_unchecked = true;
@@ -4684,7 +4684,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     // (Only a tag naming the clause's class gives it its type arguments: tsgo's reparser, HasSamePropertyAccessName)
     if (!tag || tag->type.tag != TYPE_IDENTIFIER || !span_valid(extends_name) ||
-        !name_equals(tag->type.identifier->name.sv, extends_name.sv)
+        !name_equals(span_sv(tag->type.identifier->name), span_sv(extends_name))
     ) {
         return;
     }
@@ -4729,14 +4729,14 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
             }
             continue;
         }
-        csview name = i->name.sv;
+        csview name = span_sv(i->name);
         char const* dot = nullptr;
         for (isize k = name.size; k-- > 0 && !dot;) if (name.buf[k] == '.') dot = name.buf + k;
         bool array;
         bool object = i->has_type && jsdoc_is_object_type(i, &array);
         if (dot) {
             csview left = csview_from_range(name.buf, dot);
-            while (depth && !jsdoc_names_equal(objects[depth - 1].sv, left)) depth--;
+            while (depth && !jsdoc_names_equal(span_sv(objects[depth - 1]), left)) depth--;
             if (depth) {
                 if (object && depth < c_arraylen(objects)) objects[depth++] = i->name;
                 continue;
@@ -4749,17 +4749,17 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
         if (at < vec_function_arg_size(&function->args) && function->args.data[at].initializer.binding.tag != BINDING_IDENTIFIER) continue;
         Span left = span_null;
         if (dot) {
-            left = span_make(i->name.source, name.buf, dot);
+            left = span_make_in(i->name, name.buf, dot);
         } else {
             // (An object tag with children is name-first to tsc: parseNestedTypeLiteral sets isNameFirst)
             JsDocTag const* next = i + 1 < tags->data + tags->size ? i + 1 : nullptr;
             bool has_children = object && next && next->kind == JSDOC_TAG_PARAM && span_valid(next->name) &&
-                next->name.sv.size > name.size && next->name.sv.buf[name.size] == '.' &&
-                csview_equals_sv(csview_from_n(next->name.sv.buf, name.size), name);
+                next->name.size > name.size && next->name.buf[name.size] == '.' &&
+                csview_equals_sv(csview_from_n(next->name.buf, name.size), name);
             bool found = i->name_first || has_children;
             for_each (a, vec_function_arg, &function->args) {
                 Binding const* binding = &a->initializer.binding;
-                found |= binding->tag == BINDING_IDENTIFIER && jsdoc_name_is(name, binding->content_span.sv);
+                found |= binding->tag == BINDING_IDENTIFIER && jsdoc_name_is(name, span_sv(binding->content_span));
             }
             if (found) continue;
         }
@@ -4920,20 +4920,20 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         // `@param {Object} o` + `@param {string} o.a`: a literal of the nested ones
         isize children = 0;
         while (tag + 1 + children < tags->data + tags->size && tag[1 + children].kind == JSDOC_TAG_PARAM &&
-            span_valid(tag[1 + children].name) && jsdoc_name_is_under(tag[1 + children].name.sv, tag->name.sv)
+            span_valid(tag[1 + children].name) && jsdoc_name_is_under(span_sv(tag[1 + children].name), span_sv(tag->name))
         ) {
             children++;
         }
         bool direct = false; // (`o.a.b` without `o.a` is TS8032, which isn't reported: o keeps its type)
         for (isize j = 1; j <= children && !direct; j++) {
             csview rest = {0};
-            jsdoc_name_rest(tag[j].name.sv, tag->name.sv, &rest);
+            jsdoc_name_rest(span_sv(tag[j].name), span_sv(tag->name), &rest);
             direct = rest.size && !memchr(rest.buf, '.', (size_t)rest.size);
         }
         bool array;
         if (direct && jsdoc_is_object_type(tag, &array)) {
             Span type_span = tag->type_span;
-            TypeNode literal = jsdoc_type_literal(tag + 1, children, tag->name.sv, jsdoc_tag_decl_span(tag));
+            TypeNode literal = jsdoc_type_literal(tag + 1, children, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) literal = type_array(c_new(TypeNode, literal), false), literal.parsed = true;
             type_drop(&tag->type);
             tag->type = literal;
@@ -4957,8 +4957,8 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         // `{...T=}` on a rest parameter makes it optional, which it can't be (tsgo's reparser gives it a question
         // token: checkGrammarParameterList's TS1047 at the whole tag)
         if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {
-            const char* at = tag->tag_name.sv.buf - 1;
-            const char* end = tag + 1 < tags->data + tags->size && tag[1].comment == tag->comment ? tag[1].tag_name.sv.buf - 1 :
+            const char* at = tag->tag_name.buf - 1;
+            const char* end = tag + 1 < tags->data + tags->size && tag[1].comment == tag->comment ? tag[1].tag_name.buf - 1 :
                 strstr(at, "*/");
             if (end) jsdoc_error(p, span_make(p->shared->source, at, end), 1047, "A rest parameter cannot be optional.");
         }
@@ -5046,17 +5046,17 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             vec_function_arg_insert_n(&function.args, 0, &arg, 1);
             continue;
         }
-        if (tag->kind != JSDOC_TAG_PARAM || !span_valid(tag->name) || memchr(tag->name.sv.buf, '.', (size_t)tag->name.sv.size)) continue;
+        if (tag->kind != JSDOC_TAG_PARAM || !span_valid(tag->name) || memchr(tag->name.buf, '.', (size_t)tag->name.size)) continue;
         FunctionArg arg = { .span = jsdoc_tag_node_span(tag) }; // (The whole tag: tsgo's reparsed parameter)
         bool array;
         TypeNode type;
         bool has_children = false;
         for (isize j = i + 1; j < count && !has_children; j++) {
             has_children = children[j].kind == JSDOC_TAG_PARAM && span_valid(children[j].name) &&
-                jsdoc_name_is_under(children[j].name.sv, tag->name.sv);
+                jsdoc_name_is_under(span_sv(children[j].name), span_sv(tag->name));
         }
         if (has_children && jsdoc_is_object_type(tag, &array)) {
-            type = jsdoc_type_literal(children + i + 1, count - i - 1, tag->name.sv, jsdoc_tag_decl_span(tag));
+            type = jsdoc_type_literal(children + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
@@ -5097,15 +5097,15 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
         if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
         if (comment ? i->comment != comment : i->earlier) continue;
         // The tag: from its `@` to the next tag's `@` (the line breaks and `*`s before it included) or the comment's end
-        const char* at = i->tag_name.sv.buf - 1;
+        const char* at = i->tag_name.buf - 1;
         const char* tag_end = nullptr;
         for (JsDocTag const* j = i + 1; j < tags->data + tags->size && !tag_end; j++) {
-            if (j->comment == i->comment && j->tag_name.sv.buf != i->tag_name.sv.buf) tag_end = j->tag_name.sv.buf - 1;
+            if (j->comment == i->comment && j->tag_name.buf != i->tag_name.buf) tag_end = j->tag_name.buf - 1;
         }
         if (!tag_end) tag_end = strstr(at, "*/");
         GenericItem item = {
             .name = i->name, .full_span = i->name, .jsdoc = true, .is_const = i->is_const, .is_in = i->is_in,
-            .is_out = i->is_out, .jsdoc_tag = tag_end ? span_make(i->name.source, at, tag_end) : span_null,
+            .is_out = i->is_out, .jsdoc_tag = tag_end ? span_make_in(i->name, at, tag_end) : span_null,
         };
         if (i->has_type) {
             item.extends = jsdoc_take_type(i, nullptr);
@@ -5131,7 +5131,7 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
     SourceFile const* source = p.shared->source;
     // The statement parser doesn't stop at the `*/`: what tsc's parseImportTag says about a clause, `from` or module
     // specifier that is missing comes first
-    const char* last = tag->tag_name.sv.buf + tag->tag_name.sv.size; // Past the last token
+    const char* last = tag->tag_name.buf + tag->tag_name.size; // Past the last token
     const char* c = jsdoc_skip_space(last, end);
     bool clause = false;
     const char* word_end = c;
@@ -5193,7 +5193,7 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
         parse_fail(&p);
         return;
     }
-    p.pos = tag->tag_name.sv.buf;
+    p.pos = tag->tag_name.buf;
     p.whitespace_end = nullptr;
     bool outer_in_jsdoc = p.shared->in_jsdoc;
     const char* outer_end = p.shared->jsdoc_end;
@@ -5213,7 +5213,7 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             statement.import_export->jsdoc = true;
             statement.import_export->main.jsdoc = true;
             for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;
-            statement.span = span_make(p.shared->source, tag->tag_name.sv.buf - 1, p.pos);
+            statement.span = span_make(p.shared->source, tag->tag_name.buf - 1, p.pos);
             statement.flow = nullptr;
             vec_statement_push(out, statement);
         } else {
@@ -5237,8 +5237,8 @@ static Statement jsdoc_wrap_in_namespaces(Statement alias, Span full_name, Span 
         vec_statement_push(&contents.statements, alias);
         // (The declaration starts at its part of the name: tsc's JSDocNamespaceDeclaration)
         NamespaceDecl inner = {
-            .name = span_make(full_name.source, start, end), .contents = contents, .jsdoc = true,
-            .full_span = span_make(full_name.source, start, span_end_ptr(span)),
+            .name = span_make_in(full_name, start, end), .contents = contents, .jsdoc = true,
+            .full_span = span_make_in(full_name, start, span_end_ptr(span)),
         };
         alias = (Statement){ .tag = STATEMENT_DECL_NAMESPACE, .decl.namespace = c_new(NamespaceDecl, inner), .span = span };
         end = start - 1;
@@ -5311,11 +5311,11 @@ static void jsdoc_bind_comments(
             if (!span_valid(i->name)) continue;
             // `@typedef {T} A.B.C` declares C in namespace A.B (tsc's JSDocNamespaceDeclaration)
             Span full_name = i->name;
-            if (memchr(i->name.sv.buf, '.', (size_t)i->name.sv.size)) {
-                char const* last_dot = i->name.sv.buf + i->name.sv.size;
+            if (memchr(i->name.buf, '.', (size_t)i->name.size)) {
+                char const* last_dot = i->name.buf + i->name.size;
                 while (last_dot[-1] != '.') last_dot--;
-                i->name = span_make(i->name.source, last_dot, span_end_ptr(full_name));
-                if (!i->name.sv.size) continue;
+                i->name = span_make_in(i->name, last_dot, span_end_ptr(full_name));
+                if (!i->name.size) continue;
             }
             isize children = 0;
             while (i + 1 + children < tags.data + tags.size && i[1 + children].nested) children++;
@@ -5631,7 +5631,7 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
 
     // (tsc's nextTokenIsIdentifierOnSameLine: `type void = I` is the expression statement `type`, then `void = I`)
     Span name;
-    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
+    if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -5930,7 +5930,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     Span name;
     Span word;
     Parser probe = parser(&p);
-    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(word.sv);
+    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(span_sv(word));
     parse_fail(&probe);
     if (reserved) {
         // tsc's parseIdentifier: TS1359, and a missing name (the word stays for what follows to trip over)
@@ -5964,19 +5964,19 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         if ((*p.pos == '"' || *p.pos == '\'') && parse_string(&p, &string_name)) {
             enum_case.full_name = span_from(name_anchor);
             enum_case.name = span_make(
-                enum_case.full_name.source,
+                span_source(enum_case.full_name),
                 span_start_ptr(enum_case.full_name) + 1,
                 span_end_ptr(enum_case.full_name) - 1
             );
             enum_case.name_is_value = true;
             // (The symbol's name is the cooked value, where an escape makes it differ)
-            if (!csview_equals_sv(cstr_sv(&string_name), enum_case.name.sv)) enum_case.canonical_name = string_name;
+            if (!csview_equals_sv(cstr_sv(&string_name), span_sv(enum_case.name))) enum_case.canonical_name = string_name;
             else cstr_drop(&string_name);
         } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
             enum_case.full_name = enum_case.name;
             // `\u0041` names the member `A`
-            if (memchr(enum_case.name.sv.buf, '\\', (size_t)enum_case.name.sv.size)) {
-                enum_case.canonical_name = identifier_name_value(enum_case.name.sv);
+            if (memchr(enum_case.name.buf, '\\', (size_t)enum_case.name.size)) {
+                enum_case.canonical_name = identifier_name_value(span_sv(enum_case.name));
             }
         } else if (isdigit((unsigned char)*p.pos) || (*p.pos == '.' && isdigit((unsigned char)p.pos[1]))) {
             // A numeric name (tsc's parsePropertyName): TS2452 from the checker
@@ -5991,7 +5991,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 value_drop(&value);
             }
             enum_case.name = enum_case.full_name = span_from(name_anchor);
-            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), enum_case.name.sv)) {
+            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), span_sv(enum_case.name))) {
                 cstr_clear(&enum_case.canonical_name);
             }
         } else if (*p.pos == '[') {
@@ -6013,7 +6013,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             expect_char(&p, ']');
             enum_case.full_name = span_from(name_anchor);
             if (literal && strchr("\"'`", *span_start_ptr(key_span))) {
-                enum_case.name = span_make(key_span.source, span_start_ptr(key_span) + 1, span_end_ptr(key_span) - 1);
+                enum_case.name = span_make_in(key_span, span_start_ptr(key_span) + 1, span_end_ptr(key_span) - 1);
                 enum_case.name_is_value = true;
             } else if (literal) {
                 enum_case.name = key_span;
@@ -6023,7 +6023,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 enum_case.computed_name = true;
                 enum_case.computed_key = kept_key;
             }
-            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), enum_case.name.sv)) {
+            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), span_sv(enum_case.name))) {
                 cstr_clear(&enum_case.canonical_name);
             }
         } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
@@ -6098,8 +6098,8 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
         expect_type(&p, TYPE_PRECEDENCE_NULL, &predicate.type);
         predicate.type_span = span_from(a);
         // (`arg is infer R ? ...`: the `infer` looked past the space for an `extends`)
-        while (predicate.type_span.sv.size && is_js_ascii_space(predicate.type_span.sv.buf[predicate.type_span.sv.size - 1])) {
-            predicate.type_span.sv.size--;
+        while (predicate.type_span.size && is_js_ascii_space(predicate.type_span.buf[predicate.type_span.size - 1])) {
+            predicate.type_span.size--;
         }
         predicate.has_type = true;
     } else if (!asserts) {
@@ -6108,8 +6108,8 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
 
     ret->ret = asserts ? type_void : type_boolean;
     predicate.span = span_from(a_start);
-    while (predicate.span.sv.size && is_js_ascii_space(predicate.span.sv.buf[predicate.span.sv.size - 1])) {
-        predicate.span.sv.size--;
+    while (predicate.span.size && is_js_ascii_space(predicate.span.buf[predicate.span.size - 1])) {
+        predicate.span.size--;
     }
     ret->predicate = c_new(TypePredicateNode, predicate);
     return parse_success(&p);
@@ -6348,16 +6348,16 @@ static bool parse_function_args_inner(
                 Span arg_span = span_from(arg_start);
                 // (A parameter the list's recovery ends at its next token doesn't take the whitespace before it:
                 // `(a {`)
-                while (arg_span.sv.size && strchr(" \t\r\n", arg_span.sv.buf[arg_span.sv.size - 1])) arg_span.sv.size--;
+                while (arg_span.size && strchr(" \t\r\n", arg_span.buf[arg_span.size - 1])) arg_span.size--;
                 VecExpr* boxed_decorators = nullptr;
                 if (vec_expr_size(&decorators)) boxed_decorators = c_new(VecExpr, decorators);
                 else vec_expr_drop(&decorators);
                 list_push(vec_function_arg, &ret->args, (FunctionArg){
                     .span = arg_span,
-                    .rest_length = rest ? (u32)rest_span.sv.size : 0,
+                    .rest_length = rest ? (u32)rest_span.size : 0,
                     .initializer = initializer,
                     .explicit_optional = explicit_optional,
-                    .question_offset = span_valid(question_span) ? (u32)(question_span.sv.buf - arg_span.sv.buf) : 0,
+                    .question_offset = span_valid(question_span) ? (u32)(question_span.buf - arg_span.buf) : 0,
                     .rest = rest,
                     .decorators = boxed_decorators,
                     .is_parameter_property = is_parameter_property,
@@ -6384,7 +6384,7 @@ static bool parse_function_args_inner(
                     parse_fail(&after);
                     // tsc's checkGrammarParameterList: checkGrammarForDisallowedTrailingComma after a rest parameter
                     // (Allowed in ambient declarations, GH#23070)
-                    if (rest && closes && *comma.sv.buf == ',' && !p.shared->in_ambient) {
+                    if (rest && closes && *comma.buf == ',' && !p.shared->in_ambient) {
                         grammar_error(&p, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
                     }
                 }
@@ -6641,7 +6641,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     hop_whitespace(&p);
 
     Tok body_start = tok_peek(&p);
-    if (function_impl_arrow_span(ret).sv.size == 0 && *p.pos != '{') {
+    if (function_impl_arrow_span(ret).size == 0 && *p.pos != '{') {
         // No `=>`: the body is a missing identifier (tsc's parseParenthesizedArrowFunctionExpression), what follows
         // continues the arrow function (`(x: any).props`)
         parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
@@ -6973,7 +6973,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     Span name;
     char const* name_start = p.pos;
     bool named = parse_identifier(&p, &name);
-    if (named && is_reserved_word(name.sv)) {
+    if (named && is_reserved_word(span_sv(name))) {
         // (tsc's parseBindingIdentifier: a reserved word is no name, it stays for what follows)
         p.pos = name_start;
         named = false;
@@ -7002,7 +7002,7 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
     Value value;
     Anchor a = anchor(parent);
     if (parse_identifier_or_keyword(parent, span_ret)) {
-        *name_ret = identifier_name_value(span_ret->sv);
+        *name_ret = identifier_name_value(span_sv(*span_ret));
         *name_is_value_ret = false;
         return true;
     } else if (*parent->pos != '`' && parse_literal(parent, &value)) { // (a template is no property name)
@@ -7126,7 +7126,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         p.pos++;
         parse_identifier_or_keyword(&p, nullptr);
         item.name_span = span_from(name_anchor);
-        item.name_string = identifier_name_value(item.name_span.sv);
+        item.name_string = identifier_name_value(span_sv(item.name_span));
     } else {
         const char* name_start = p.pos;
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
@@ -7146,7 +7146,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             probe.pos = name_start;
             Span ignored;
             name_is_identifier = !yield_await_is_keyword_here(&probe) && parse_identifier(&probe, &ignored) &&
-                !is_reserved_word(ignored.sv);
+                !is_reserved_word(span_sv(ignored));
             parse_fail(&probe);
         }
     }
@@ -7259,7 +7259,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     item.span = span_from(a);
     // (A shorthand property ends with its name, not with the whitespace looked past for a `:`)
     if (item.tag == OBJECT_ITEM_SHORTHAND && !item.shorthand_default) {
-        item.span = span_make(item.span.source, span_start_ptr(item.span), span_end_ptr(item.name_span));
+        item.span = span_make_in(item.span, span_start_ptr(item.span), span_end_ptr(item.name_span));
     }
     if (p.shared->source->is_js) {
         // The tags of a method, or of a property whose value is a function, are the function's
@@ -7768,8 +7768,8 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
         // (tsc's checkJSDocAccessibilityModifiers: the whole tag, up to the next one or the end of the comment)
         for_each (i, vec_jsdoc_tag, &tags) {
             if (i->earlier || (i->kind != JSDOC_TAG_PUBLIC && i->kind != JSDOC_TAG_PRIVATE && i->kind != JSDOC_TAG_PROTECTED)) continue;
-            const char* at = i->tag_name.sv.buf - 1;
-            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.sv.buf - 1 : strstr(at, "*/");
+            const char* at = i->tag_name.buf - 1;
+            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.buf - 1 : strstr(at, "*/");
             if (!end) continue;
             jsdoc_error(p, span_make(p->shared->source, at, end), 18010,
                 "An accessibility modifier cannot be used with a private identifier.");
@@ -7779,8 +7779,8 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
         // (tsgo's reparser makes the tag a modifier, checkGrammarModifiers' TS1024 is at it: the whole tag)
         for_each (i, vec_jsdoc_tag, &tags) {
             if (i->earlier || i->kind != JSDOC_TAG_READONLY) continue;
-            const char* at = i->tag_name.sv.buf - 1;
-            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.sv.buf - 1 : strstr(at, "*/");
+            const char* at = i->tag_name.buf - 1;
+            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.buf - 1 : strstr(at, "*/");
             if (!end) continue;
             jsdoc_error(p, span_make(p->shared->source, at, end), 1024,
                 "'readonly' modifier can only appear on a property declaration or index signature.");
@@ -7875,7 +7875,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     if (hop_private_name(&p)) {
         // Private name, the `#` is part of the name (in a type too, TS18016 from the checker)
         name_span = span_from(name_anchor);
-        name_string = identifier_name_value(name_span.sv);
+        name_string = identifier_name_value(span_sv(name_span));
         name_is_value = false;
     } else if (is_type && is_construct_signature_start(p.pos)) {
         // `new (...): T` / `new <T>(...): T` is a construct signature, not a method called `new`
@@ -7959,8 +7959,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             .name = name_span,
         };
         // (`"constructor"()` is one too: tsc's tryParseConstructorDeclaration takes a string literal followed by `(`)
-        bool quoted_constructor = !is_type && name_is_value && name_span.sv.size &&
-            (name_span.sv.buf[0] == '"' || name_span.sv.buf[0] == '\'') && cstr_equals(&name_string, "constructor") &&
+        bool quoted_constructor = !is_type && name_is_value && name_span.size &&
+            (name_span.buf[0] == '"' || name_span.buf[0] == '\'') && cstr_equals(&name_string, "constructor") &&
             !optional && !span_valid(definite) && *p.pos == '(';
         // (Not `*constructor()` nor `get constructor()`: tsc's parseClassElement looks for accessors first and the
         // `*` belongs to a method, TS1368/TS1341)
@@ -7972,7 +7972,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             // From the modifiers to the keyword (tsc's getErrorSpanForNode of a constructor)
             name_span = span_from(a);
             if (span_valid(keyword) && span_end_ptr(keyword) >= span_start_ptr(name_span)) {
-                name_span = span_make(name_span.source, span_start_ptr(name_span), span_end_ptr(keyword));
+                name_span = span_make_in(name_span, span_start_ptr(name_span), span_end_ptr(keyword));
             }
             if (!parse_function_fn(&p, (FunctionFlags){ .committed = true }, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
@@ -8034,8 +8034,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 grammar_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
             }
             // (tsc's checkGrammarProperty: a class field named by the string "constructor")
-            if (!is_type && !computed_key && name_span.sv.size == 13 && (name_span.sv.buf[0] == '"' || name_span.sv.buf[0] == '\'') &&
-                !memcmp(name_span.sv.buf + 1, "constructor", 11)
+            if (!is_type && !computed_key && name_span.size == 13 && (name_span.buf[0] == '"' || name_span.buf[0] == '\'') &&
+                !memcmp(name_span.buf + 1, "constructor", 11)
             ) {
                 grammar_error(&p, name_span, 18006, "Classes may not have a field named 'constructor'.");
             }
@@ -8487,7 +8487,7 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         p.whitespace_end = at_dot.whitespace_end;
     }
 
-    *ret = expr_literal(prop, value_string(identifier_name_value(prop.sv)));
+    *ret = expr_literal(prop, value_string(identifier_name_value(span_sv(prop))));
     *optional_chain_ret = optional_chain;
     return parse_success(&p);
 }
@@ -8702,7 +8702,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     // Only a left-hand side expression is assigned to (tsc's parseAssignmentExpressionOrHigher: isLeftHandSideExpression);
     // `await x = 1`, `a + b = c`, `x as T = y` end before the `=`
     if (precedence == binary_op_get_precedence(BINARY_OP_EQUAL) &&
-        expr_outer_span(left_and_ret).sv.size == left_and_ret->inner_span.sv.size &&
+        expr_outer_span(left_and_ret).size == left_and_ret->inner_span.size &&
         ((left_and_ret->tag == EXPR_UNARY_OP && left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) ||
             left_and_ret->tag == EXPR_BINARY_OP ||
             // (A JSDoc `/** @type {T} */ (x)` is tsc's ParenthesizedExpression: its type comes before the expression)
@@ -8721,7 +8721,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     bool logical_or_plain = op == BINARY_OP_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL ||
         op == BINARY_OP_EH_EH_EQUAL;
     if (logical_or_plain && left_and_ret->tag == EXPR_IDENTIFIER) mark_named_evaluation(&right, false);
-    bool left_parenthesized = expr_outer_span(left_and_ret).sv.size != left_and_ret->inner_span.sv.size;
+    bool left_parenthesized = expr_outer_span(left_and_ret).size != left_and_ret->inner_span.size;
     if (left_and_ret->tag == EXPR_IDENTIFIER && !left_parenthesized) {
         mark_assigned_name(&right, left_and_ret->inner_span);
     } else if (left_and_ret->tag == EXPR_PROPERTY && !left_parenthesized) {
@@ -8860,12 +8860,12 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (in_parameters && (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR)) {
         // (tsc's error span for a yield expression is its keyword, without the `*`)
         Span keyword = op_span;
-        keyword.sv.size = 5;
+        keyword.size = 5;
         parse_error(&p, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
     } else if (in_parameters && op == UNARY_OP_AWAIT) {
         // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node before the
         // trivia)
-        bool operand = span_valid(expr_outer_span(&expr)) && expr_outer_span(&expr).sv.size;
+        bool operand = span_valid(expr_outer_span(&expr)) && expr_outer_span(&expr).size;
         parse_error(&p, operand ? span_between(op_span, expr_outer_span(&expr)) : op_span, 2524,
             "'await' expressions cannot be used in a parameter initializer.");
     }
@@ -9523,7 +9523,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             })
         );
         Span prop_name = parsed.expr_a.inner_span;
-        if (prop_name.sv.size && prop_name.sv.buf[0] == '#' && expr_is_optional_chain(left_and_ret)) {
+        if (prop_name.size && prop_name.buf[0] == '#' && expr_is_optional_chain(left_and_ret)) {
             // tsc's parsePropertyAccessExpressionRest
             parse_error(&p, prop_name, 18030, "An optional chain cannot contain private identifiers.");
         }
@@ -9938,10 +9938,10 @@ static bool parse_identifier_expr(Parser* parent, Expr* ret) {
     Span name;
     // (A reserved word is no identifier: where no other expression starts with it, the expression is missing, tsc's
     // parsePrimaryExpression)
-    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
+    if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
-    note_top_level_await_identifier(&p, name.sv);
+    note_top_level_await_identifier(&p, span_sv(name));
     *ret = expr_identifier(name, (IdentifierExpr){0});
 
     return parse_success(&p);
@@ -9961,13 +9961,13 @@ static bool last_error_starts_at(Parser* me, Span span) {
                 Error const* before = vec_error_at(&my shared->errors, j);
                 if (is_js_syntax_code(before->ts_code) || before->grammar ||
                     is_semantic_code(before->ts_code)) continue;
-                if (before->span.source == last->span.source && span_start_ptr(before->span) >= my shared->scanner_error_token) {
+                if (span_source(before->span) == span_source(last->span) && span_start_ptr(before->span) >= my shared->scanner_error_token) {
                     last = before;
                 }
                 break;
             }
         }
-        return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
+        return span_source(last->span) == span_source(span) && span_start_ptr(last->span) == span_start_ptr(span);
     }
     return false;
 }
@@ -10003,7 +10003,7 @@ static bool parse_jsx_identifier_hyphens(Parser* parent, bool hyphens, Span* ret
         parent->pos += size;
     }
     *ret = span_from(a);
-    if (memchr(ret->sv.buf, '\\', ret->sv.size)) {
+    if (memchr(ret->buf, '\\', ret->size)) {
         parse_error(parent, *ret, 17021, "Unicode escape sequence cannot appear here.");
     }
     return true;
@@ -10088,7 +10088,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
         parse_success(&dot);
         *ret = expr_property(span_from(a), c_new(PropertyExpr, {
             .expr = *ret,
-            .prop = expr_literal(prop, value_string(identifier_name_value(prop.sv))),
+            .prop = expr_literal(prop, value_string(identifier_name_value(span_sv(prop)))),
             .form = PROPERTY_EXPR_DOT,
         }));
     }
@@ -10123,7 +10123,7 @@ static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
     switch (a->tag) {
         case EXPR_IDENTIFIER: {
             if (a->identifier.keyword != b->identifier.keyword) return false;
-            csview x = a->inner_span.sv, y = b->inner_span.sv;
+            csview x = span_sv(a->inner_span), y = span_sv(b->inner_span);
             if (!csview_contains(x, "\\") && !csview_contains(y, "\\")) return csview_equals_sv(x, y);
             // (by the names' values: `<\u0061></a>` is fine)
             cstr cx = identifier_name_value(x), cy = identifier_name_value(y);
@@ -10133,7 +10133,7 @@ static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
             return ret;
         }
         case EXPR_PROPERTY:
-            return csview_equals_sv((a->property->prop.inner_span).sv, (b->property->prop.inner_span).sv) &&
+            return csview_equals_sv(span_sv((a->property->prop.inner_span)), span_sv((b->property->prop.inner_span))) &&
                 jsx_tag_names_equal(&a->property->expr, &b->property->expr);
         default:
             return false;
@@ -10398,7 +10398,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     if (!is_fragment) {
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
         const char* name_end = p.pos;
-        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.sv.size) {
+        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.size) {
             // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
             el->tag_name = expr_identifier(span_make(p.shared->source, name_full_start, name_full_start), (IdentifierExpr){0});
             name_end = name_full_start;
@@ -10806,7 +10806,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         Expr e;
         ExprCtx operand_ctx = ctx;
         operand_ctx.min_precedence = unary_op_get_precedence(UNARY_OP_LEFT_BANG);
-        if (!expect_expr(&p, operand_ctx, &e) && expr_outer_span(&e).sv.size == 0 && p.pos == span_start_ptr(expr_outer_span(&e))) {
+        if (!expect_expr(&p, operand_ctx, &e) && expr_outer_span(&e).size == 0 && p.pos == span_start_ptr(expr_outer_span(&e))) {
             p.pos = after_gt; // A missing operand ends the assertion at its `>` (tsc's missing node)
         }
         *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
@@ -11006,8 +11006,8 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
         if (invalid_resolution && reference_attr == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
             // tsc's processPragmasIntoFields, on the name without its quotes
             Span name = reference_path_span;
-            if (name.sv.size >= 2 && (*name.sv.buf == '"' || *name.sv.buf == '\'')) {
-                name.sv = csview_slice(name.sv, 1, name.sv.size - 1);
+            if (name.size >= 2 && (*name.buf == '"' || *name.buf == '\'')) {
+                span_set_sv(&name, csview_slice(span_sv(name), 1, name.size - 1));
             }
             parse_error(&p, name, 1453, "`resolution-mode` should be either `require` or `import`.");
         }
@@ -11193,12 +11193,12 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
             }
             // tsc's parseImportOrExportSpecifier: an import binds an identifier, not a string or a reserved word
             if (is_import && span_valid(item.decl_name)) {
-                if (*item.decl_name.sv.buf == '"' || *item.decl_name.sv.buf == '\'') {
+                if (*item.decl_name.buf == '"' || *item.decl_name.buf == '\'') {
                     parse_error(&p, item.decl_name, 1003, "Identifier expected.");
-                    bool renamed = item.source_name.sv.buf != item.decl_name.sv.buf;
-                    item.decl_name = span_make(p.shared->source, item.decl_name.sv.buf, item.decl_name.sv.buf);
+                    bool renamed = item.source_name.buf != item.decl_name.buf;
+                    item.decl_name = span_make(p.shared->source, item.decl_name.buf, item.decl_name.buf);
                     if (!renamed) item.source_name = item.decl_name; // (a missing name imports nothing)
-                } else if (is_reserved_word(item.decl_name.sv)) {
+                } else if (is_reserved_word(span_sv(item.decl_name))) {
                     parse_error(&p, item.decl_name, 1003, "Identifier expected.");
                 }
             }
@@ -11231,7 +11231,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     bool type_only = false;
     Span name;
     // (tsc's isIdentifier: a reserved word is no name, `import while = x` is an import of a missing specifier)
-    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
+    if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -11317,7 +11317,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
             bool first = vec_span_is_empty(&statement->main.alias_path);
             bool reserved = false;
-            if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(part.sv)) && (p.pos = span_start_ptr(part), true)))
+            if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true)))
                 : !parse_identifier_or_keyword(&p, &part)
             ) {
                 if (reserved) {
@@ -11610,12 +11610,12 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     if (statement.main.tag == PORT_IMPORT_DEFAULT) {
         char const* end = p.pos;
         while (end > span_start_ptr(statement.main.decl_name) && isspace((unsigned char)end[-1])) end--;
-        statement.main.clause = span_make(statement.main.decl_name.source, span_start_ptr(statement.main.decl_name), end);
+        statement.main.clause = span_make_in(statement.main.decl_name, span_start_ptr(statement.main.decl_name), end);
     }
     if (span_valid(statement.phase_clause)) {
         char const* end = p.pos;
         while (end > span_start_ptr(statement.phase_clause) && isspace((unsigned char)end[-1])) end--;
-        statement.phase_clause = span_make(statement.phase_clause.source, span_start_ptr(statement.phase_clause), end);
+        statement.phase_clause = span_make_in(statement.phase_clause, span_start_ptr(statement.phase_clause), end);
     }
     hop_whitespace(&p);
 
@@ -11665,7 +11665,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         if (i->tag != PORT_IMPORT_GATHER) i->tag = item_tag;
         // tsc's checkModuleExportName: a local export names an identifier, not a string
         if (item_tag == PORT_EXPORT_SPECIFIC && span_valid(i->source_name) &&
-            (*i->source_name.sv.buf == '"' || *i->source_name.sv.buf == '\'')
+            (*i->source_name.buf == '"' || *i->source_name.buf == '\'')
         ) {
             grammar_error(&p, i->source_name, 1003, "Identifier expected.");
         }
@@ -11865,7 +11865,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         Span key_name = binding.content_span;
                         binding_drop(&binding);
                         vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                            .source = value_string(identifier_name_value(key_name.sv)),
+                            .source = value_string(identifier_name_value(span_sv(key_name))),
                             .source_span = key_name,
                             .target = target,
                         });
@@ -11879,8 +11879,8 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 });
                 goto object_item_done;
             } else if (parse_identifier_or_keyword(&p, &name)) {
-                key = value_string(identifier_name_value(name.sv));
-                shorthand_allowed = !is_reserved_word(name.sv);
+                key = value_string(identifier_name_value(span_sv(name)));
+                shorthand_allowed = !is_reserved_word(span_sv(name));
             } else if (*p.pos == '[') {
                 p.pos++;
                 hop_whitespace(&p);
@@ -11911,7 +11911,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 if (!parse_binding_element(&p, &binding)) {
                     Span word;
                     Parser probe = parser(&p);
-                    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(word.sv);
+                    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(span_sv(word));
                     parse_fail(&probe);
                     if (reserved) {
                         // tsc's createIdentifier: a missing identifier, the word is left for the list to trip over
@@ -11979,7 +11979,7 @@ static bool object_binding_name_follows(Parser* parent) {
     if (*parent->pos == '{' || *parent->pos == '[') return true;
     Parser probe = parser(parent);
     Span word;
-    bool ret = parse_identifier_or_keyword(&probe, &word) && !is_reserved_word(word.sv);
+    bool ret = parse_identifier_or_keyword(&probe, &word) && !is_reserved_word(span_sv(word));
     parse_fail(&probe);
     return ret;
 }
@@ -12127,7 +12127,7 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
             hop_whitespace(&p);
             ret = *p.pos == ';' || *p.pos == ':' || (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>');
         } else {
-            ret = !is_reserved_word(word.sv);
+            ret = !is_reserved_word(span_sv(word));
         }
     }
     parse_fail(&p);
@@ -12205,7 +12205,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             return parse_fail(&p);
         }
         ret->keyword = VAR_INIT_AWAIT_USING;
-        ret->await_span = (Span){ .source = p.shared->source, .sv = csview_from_n(start.start, 5) };
+        ret->await_span = span_from_sv(p.shared->source, csview_from_n(start.start, 5));
         ret->at_top_level = p.shared->function_depth == 0;
         ret->in_static_block = p.shared->in_static_block;
         ret->in_sync_function = !p.shared->in_async && p.shared->function_depth > 0;
@@ -12263,7 +12263,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     if (!list_abort_or_skip(&p, PARSING_VARIABLE_DECLARATIONS)) continue;
                 } else {
                     Span s = span_from(end_of_keyword);
-                    s.sv.size = 0;
+                    s.size = 0;
                     grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
             } else if (list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
@@ -12376,7 +12376,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     shrink_list(vec_initialized_binding, &ret->initializers);
 
     ret->span = span_from(start);
-    while (ret->span.sv.size && is_js_ascii_space(ret->span.sv.buf[ret->span.sv.size - 1])) ret->span.sv.size--;
+    while (ret->span.size && is_js_ascii_space(ret->span.buf[ret->span.size - 1])) ret->span.size--;
     return parse_success(&p);
 }
 
@@ -12460,7 +12460,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
     // `for await (x of y)`
-    Span await_span = { .source = p.shared->source, .sv = csview_from_n(p.pos, 5) };
+    Span await_span = span_from_sv(p.shared->source, csview_from_n(p.pos, 5));
     bool is_await = hop_start_if_ends_on_word_break(&p, "await");
     if (is_await) hop_whitespace(&p);
 
@@ -12508,7 +12508,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         }
         if (is_await && keyword_is_in) {
             // `for await (x in y)`: still a for-in loop
-            Span in = { .source = p.shared->source, .sv = csview_from_n(p.pos - 2, 2) };
+            Span in = span_from_sv(p.shared->source, csview_from_n(p.pos - 2, 2));
             parse_error(&p, in, 1005, "'of' expected.");
         }
 
@@ -12719,7 +12719,7 @@ static bool parse_label(Parser* parent, Span* ret) {
     Parser p = parser(parent);
     Span label;
     // (a reserved word is no label: `while : x` is a while statement missing its '(')
-    if (yield_await_is_keyword_here(&p) || !parse_identifier(&p, &label) || is_reserved_word(label.sv)) {
+    if (yield_await_is_keyword_here(&p) || !parse_identifier(&p, &label) || is_reserved_word(span_sv(label))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -12787,14 +12787,14 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
         for (const char* const* k = all_keywords; *k; k++) {
             if (strlen(*k) > 2) keywords[count++] = c_sv(*k, strlen(*k));
         }
-        isize best = spelling_suggestion_ex(name.sv, keywords, count, spelling_compare_strings, keywords);
+        isize best = spelling_suggestion_ex(span_sv(name), keywords, count, spelling_compare_strings, keywords);
         if (best >= 0) {
             parse_error(p, name, 1435, "Unknown keyword or identifier. Did you mean '", keywords[best], "'?");
             return;
         }
         for (isize i = 0; i < count; i++) {
-            if (name.sv.size > keywords[i].size + 2 && memcmp(name.sv.buf, keywords[i].buf, keywords[i].size) == 0) {
-                csview rest = { name.sv.buf + keywords[i].size, name.sv.size - keywords[i].size };
+            if (name.size > keywords[i].size + 2 && memcmp(name.buf, keywords[i].buf, keywords[i].size) == 0) {
+                csview rest = { name.buf + keywords[i].size, name.size - keywords[i].size };
                 parse_error(p, name, 1435, "Unknown keyword or identifier. Did you mean '", keywords[i], " ", rest, "'?");
                 return;
             }
@@ -12814,7 +12814,7 @@ static bool statement_takes_semicolon(Statement const* me) {
         case STATEMENT_BREAK: case STATEMENT_CONTINUE: case STATEMENT_IMPORT_EXPORT: case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_TYPE:
             return true;
-        case STATEMENT_NOOP: return span_valid(my span) && my span.sv.size && my span.sv.buf[0] == 'd'; // `debugger`
+        case STATEMENT_NOOP: return span_valid(my span) && my span.size && my span.buf[0] == 'd'; // `debugger`
         case STATEMENT_DECL_FUNCTION: return !my decl.function.impl->has_body;
         case STATEMENT_DECL_NAMESPACE: return my decl.namespace->is_shorthand;
         case STATEMENT_FOR_LOOP: return my for_loop->is_do_while;
@@ -13254,7 +13254,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     VecSpan names = vec_span_init();
     Span name;
     if (parse_identifier(&p, &name)) {
-        if (is_reserved_word(name.sv)) {
+        if (is_reserved_word(span_sv(name))) {
             // tsc's nextTokenIsIdentifierOrStringLiteralOnSameLine: `module debugger {}` is an expression statement
             // `module` (TS2819, report_missing_semicolon_after_identifier())
             vec_span_drop(&names);
@@ -13432,8 +13432,8 @@ static void js_syntax_declaration(Parser* p, intptr_t mark, const char* start, c
             if (ns->is_ambient_module || ns->is_global || ns->is_invalid_global || !span_valid(ns->name)) return;
             name = ns->name;
             // (The first name of `namespace A.B`)
-            const char* dot = memchr(name.sv.buf, '.', (size_t)name.sv.size);
-            if (dot) name = span_make(name.source, name.sv.buf, dot);
+            const char* dot = memchr(name.buf, '.', (size_t)name.size);
+            if (dot) name = span_make_in(name, name.buf, dot);
             js_syntax_error(p, name, 8006, "'", strncmp(keyword, "namespace", 9) == 0 ? "namespace" : "module",
                 "' declarations can only be used in TypeScript files.");
             return;
@@ -13689,7 +13689,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         p.shared->in_ambient = outer_ambient;
         // (tsc's checkGrammarModifiers: decorators first, at their first token)
         if (!vec_expr_is_empty(&decorators)) {
-            grammar_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
+            grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (ret->tag == STATEMENT_IMPORT_EXPORT) {
                 ret->import_export->decorators = decorators;
@@ -13737,7 +13737,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                         .ts_code = 8038, .phase = ERROR_PHASE_PARSE }) : (cstr_drop(&message), nullptr);
                 if (error) {
                     Span leading = expr_outer_span(vec_expr_at(&decorators, 0));
-                    error_add_related_d(error, span_make(p.shared->source, decorators_span.sv.buf, span_end_ptr(leading)),
+                    error_add_related_d(error, span_make(p.shared->source, decorators_span.buf, span_end_ptr(leading)),
                         1486, "Decorator used before 'export' here.");
                 }
             }
@@ -13750,7 +13750,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             ret->decl.class->decorators = decorators;
         } else {
             // (tsc's grammarErrorOnFirstToken: the `@`)
-            grammar_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
+            grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (statement_declares_name(ret->tag) && !ret->decl.props.invalid_decorators) {
                 ret->decl.props.invalid_decorators = c_new(VecExpr, decorators);
@@ -13809,8 +13809,8 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
 // `module.exports`, a property of an entity name (`a.b.c`, `this.x`, `exports.x`), by name or element access
 static bool jsdoc_assignment_declares(Expr const* left) {
     if (left->tag != EXPR_PROPERTY || expr_is_perenthisized(left)) return false;
-    if (left->property->form == PROPERTY_EXPR_DOT && left->property->prop.inner_span.sv.size &&
-        left->property->prop.inner_span.sv.buf[0] == '#'
+    if (left->property->form == PROPERTY_EXPR_DOT && left->property->prop.inner_span.size &&
+        left->property->prop.inner_span.buf[0] == '#'
     ) {
         return false;
     }
@@ -14158,9 +14158,9 @@ static void json_check_value(Parser* p, Expr const* value) {
             case VALUE_NUMBER:
                 return;
             case VALUE_STRING:
-                if (!span.sv.size || span.sv.buf[0] != '"') {
+                if (!span.size || span.buf[0] != '"') {
                     // (A template isn't a string literal)
-                    if (span.sv.size && span.sv.buf[0] == '`') break;
+                    if (span.size && span.buf[0] == '`') break;
                     parse_error(p, span, 1327, "String literal with double quotes expected.");
                 }
                 return;
@@ -14178,7 +14178,7 @@ static void json_check_value(Parser* p, Expr const* value) {
                 parse_error(p, i->span, 1136, "Property assignment expected.");
                 continue;
             }
-            if (i->computed_key || !i->name_span.sv.size || i->name_span.sv.buf[0] != '"') {
+            if (i->computed_key || !i->name_span.size || i->name_span.buf[0] != '"') {
                 parse_error(p, i->name_span, 1327, "String literal with double quotes expected.");
             }
             json_check_value(p, &i->value);
@@ -14354,8 +14354,8 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         bool seen = false;
         for (isize j = 0; j < i && !seen; j++) {
             Error const* other = &shared.jsdoc_errors.data[j];
-            seen = other->ts_code == error->ts_code && other->span.sv.buf == error->span.sv.buf &&
-                other->span.sv.size == error->span.sv.size;
+            seen = other->ts_code == error->ts_code && other->span.buf == error->span.buf &&
+                other->span.size == error->span.size;
         }
         if (seen) continue;
         if (!span_valid(error->span)) {

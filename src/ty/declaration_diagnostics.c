@@ -369,7 +369,7 @@ static void report_access(Walk* me, SymbolAccessibility kind, csview symbol_name
     if (!code) return;
     csview args[3];
     u32 count = 0;
-    if (access_has_type_name(e)) args[count++] = e->name.sv;
+    if (access_has_type_name(e)) args[count++] = span_sv(e->name);
     args[count++] = symbol_name;
     args[count++] = module_name;
     cstr message = cstr_init();
@@ -416,7 +416,7 @@ static void print_inferred(Walk* me, Ty const* type) {
         .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
     }, type);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
-        fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.sv.size, my emitting.name.sv.buf, cstr_str(&text));
+        fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.size, my emitting.name.buf, cstr_str(&text));
     }
     cstr_drop(&text);
 }
@@ -441,7 +441,7 @@ static bool fallback_end(Walk* me, bool outer, Ty const* type) {
 static void paint(Walk* me, Symbol const* symbol) {
     if (!symbol || symbol->exported || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return;
     bool here = false;
-    for (u32 i = 0; i < symbol->decl_count && !here; i++) here = symbol->decls[i].name.source == my file;
+    for (u32 i = 0; i < symbol->decl_count && !here; i++) here = span_source(symbol->decls[i].name) == my file;
     if (!here) return;
     for (u32 i = 0; i < my painted_count; i++) {
         if (my painted[i] == symbol) return;
@@ -476,7 +476,7 @@ static bool is_painted_pending(Walk* me, Symbol const* symbol) {
 static Span error_name_node(Walk* me, csview* name) {
     Emitting const* e = &my emitting;
     if (span_valid(e->name)) {
-        *name = e->name.sv;
+        *name = span_sv(e->name);
         return e->name;
     }
     *name = e->kind == EMIT_DEFAULT_EXPORT ? c_sv("default") : c_sv("(Missing)");
@@ -668,7 +668,7 @@ static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 me
         paint(me, symbol);
         return;
     }
-    report_access(me, SYMBOL_NOT_ACCESSIBLE, first.sv, c_sv(""), false, first);
+    report_access(me, SYMBOL_NOT_ACCESSIBLE, span_sv(first), c_sv(""), false, first);
 }
 
 static Expr const* entity_leftmost(Expr const* expr) {
@@ -853,9 +853,9 @@ static bool is_global_symbol_reference(Walk* me, Expr const* expr) {
         bool symbol = prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_STRING &&
             cstr_equals(&prop->literal.string, "Symbol");
         IdentifierExpr const* global = &object->property->expr.identifier;
-        return symbol && csview_equals(identifier_expr_name(global).sv, "globalThis") && global->target && global->target->is_global_this;
+        return symbol && csview_equals(span_sv(identifier_expr_name(global)), "globalThis") && global->target && global->target->is_global_this;
     }
-    if (object->tag != EXPR_IDENTIFIER || !csview_equals(object->inner_span.sv, "Symbol")) return false;
+    if (object->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(object->inner_span), "Symbol")) return false;
     Symbol const* global = program_get_global(my checker->program, c_sv("Symbol"), SYMBOL_VALUE);
     return !object->identifier.target || object->identifier.target == global;
 }
@@ -919,7 +919,7 @@ static Span assertion_type_span(Expr const* expr) {
     }
     while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;
     while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
-    return span_make(expr->inner_span.source, start, end);
+    return span_make_in(expr->inner_span, start, end);
 }
 
 // The syntactic builder
@@ -1149,12 +1149,12 @@ static bool requires_adding_undefined(Walk* me, FunctionImpl const* fn, Function
 }
 
 static Near parameter_near(FunctionArg const* arg) {
-    return (Near){ .kind = NEAR_PARAMETER, .span = arg->span, .name = arg->initializer.binding.content_span.sv };
+    return (Near){ .kind = NEAR_PARAMETER, .span = arg->span, .name = span_sv(arg->initializer.binding.content_span) };
 }
 
 // typeFromParameter, and createParameterError where it falls back. `place`: where the function is
 static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, Place place, bool in_function) {
-    if (arg->initializer.binding.tag == BINDING_IDENTIFIER && csview_equals(arg->initializer.binding.content_span.sv, "this")) {
+    if (arg->initializer.binding.tag == BINDING_IDENTIFIER && csview_equals(span_sv(arg->initializer.binding.content_span), "this")) {
         return; // (getThisParameter: not part of the parameter list)
     }
     Binding const* binding = &arg->initializer.binding;
@@ -1471,8 +1471,8 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
         // (the access `f.x` is the declaration, `x` its name)
         Span at = member->decls[0].name;
         Span name = at;
-        if (name.sv.size > member->name.size && csview_equals_sv(csview_slice(name.sv, name.sv.size - member->name.size, name.sv.size), member->name)) {
-            name = span_make(at.source, span_end_ptr(at) - member->name.size, span_end_ptr(at));
+        if (name.size > member->name.size && csview_equals_sv(csview_slice(span_sv(name), name.size - member->name.size, name.size), member->name)) {
+            name = span_make_in(at, span_end_ptr(at) - member->name.size, span_end_ptr(at));
         }
         Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, name, at);
         bool outer = fallback_begin(me);
@@ -1495,11 +1495,11 @@ static void report_variable(Walk* me, Binding const* binding, Expr const* init) 
         check_expandos(me, binding->symbol, true);
         // The checker's type is written instead, and its signature's return type and parameters go through the
         // builder again (the node builder's serializeReturnTypeForSignature)
-        Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = binding->content_span.sv };
+        Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) };
         if (init->tag == EXPR_FUNCTION) type_of_function_expression(me, init->function, place_at(near, false));
         return;
     }
-    report_declaration(me, (Near){ .kind = NEAR_VARIABLE, .span = binding->content_span, .name = binding->content_span.sv });
+    report_declaration(me, (Near){ .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) });
 }
 
 // tsc's isLiteralConstDeclaration: a const (or readonly) declaration of a fresh literal type, which declaration emit
@@ -1589,7 +1589,7 @@ static void check_variable_type(Walk* me, InitializedBinding const* decl, bool i
         check_written_type(me, &binding->explicit_type);
         return;
     }
-    Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = binding->content_span.sv };
+    Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = span_sv(binding->content_span) };
     bool failed = true;
     if (initialized && symbol_declared_once(binding->symbol) && !is_expando_variable(me, binding, init)) {
         failed = type_of_expression(me, init, place_at(near, true), false, false, is_const);
@@ -1673,7 +1673,7 @@ static void check_field(Walk* me, ClassItem const* item) {
 static void check_field_type(Walk* me, ClassItem const* item) {
     Expr const* init = &item->field.value;
     bool initialized = init->tag != EXPR_IMPLICIT_ANY;
-    Near near = { .kind = NEAR_PROPERTY, .span = item->field.name_span, .name = item->field.name_span.sv };
+    Near near = { .kind = NEAR_PROPERTY, .span = item->field.name_span, .name = span_sv(item->field.name_span) };
     if (item->field.is_readonly && initialized && is_literal_const_field(item)) {
         if (!is_primitive_literal_value(init, true)) report_declaration(me, near);
         return;
@@ -1870,7 +1870,7 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
         if (i->key.tag == INTERFACE_KEY_CALLABLE && span_valid(i->declaration)) {
             // (A signature's node ends after its `;` or `,`)
             at = i->declaration;
-            if (span_valid(at) && (span_end_ptr(at)[0] == ';' || span_end_ptr(at)[0] == ',')) at.sv.size++;
+            if (span_valid(at) && (span_end_ptr(at)[0] == ';' || span_end_ptr(at)[0] == ',')) at.size++;
         }
         if (i->key.tag == INTERFACE_KEY_MAPPED) {
             Emitting saved = emit_enter_nested(me, EMIT_TYPE_PARAMETER, SIG_MAPPED, i->key.span, i->key.span);
@@ -1974,7 +1974,7 @@ static void check_written_type(Walk* me, TypeNode const* type) {
                 // `typeof this.#a`: the emitted declaration can't name a private member (tsgo's declaration transform of
                 // a QualifiedName whose right is a PrivateIdentifier, TS7080 at the qualified name)
                 for (Expr const* e = type->typeof_->expr; e->tag == EXPR_PROPERTY; e = &e->property->expr) {
-                    csview name = e->property->prop.inner_span.sv;
+                    csview name = span_sv(e->property->prop.inner_span);
                     if (!name.size || name.buf[0] != '#') continue;
                     error_ctx_error_d(my errs, expr_outer_span(e), 7080, "Declaration emit elides private members, but '",
                         name, "' refers to a private member. Write an explicit type here.");
@@ -2138,7 +2138,7 @@ static bool import_required_by_augmentation(Walk* me, SourceFile const* target) 
     for (u32 i = 0; exports && i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
         for (u32 j = 0; symbol && j < symbol->decl_count; j++) {
-            if (symbol->decls[j].name.source == target) return true;
+            if (span_source(symbol->decls[j].name) == target) return true;
         }
     }
     return false;

@@ -52,15 +52,15 @@ static bool is_string_literal(Expr const* expr) {
 
 // An attribute value tsc's isStringLiteral takes: not a template, which is a string EXPR_LITERAL too
 static bool is_string_literal_value(Expr const* value) {
-    return is_string_literal(value) && expr_outer_span(value).sv.size && expr_outer_span(value).sv.buf[0] != '`';
+    return is_string_literal(value) && expr_outer_span(value).size && expr_outer_span(value).buf[0] != '`';
 }
 
 ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes const* me, ErrorCtx* errs) {
     if (!me) return IMPORT_RESOLUTION_DEFAULT;
     // (tsgo's GetResolutionModeOverride: the first attribute of that name, whatever else there is)
     for_each (element, vec_import_attribute, &my elements) {
-        if (*element->name.sv.buf != '"' && *element->name.sv.buf != '\'') continue;
-        csview name = csview_slice(element->name.sv, 1, element->name.sv.size - 1);
+        if (*element->name.buf != '"' && *element->name.buf != '\'') continue;
+        csview name = csview_slice(span_sv(element->name), 1, element->name.size - 1);
         if (!csview_equals(name, "resolution-mode")) continue;
         if (!is_string_literal(&element->value)) return IMPORT_RESOLUTION_DEFAULT;
         csview value = cstr_sv(&element->value.literal.string);
@@ -76,7 +76,7 @@ ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes cons
 
 // An export declaration (`export { a }`, `export * from "m"`), not an exported declaration or `export =`/`export import`
 static bool port_statement_is_export_declaration(PortStatement const* me) {
-    if (!csview_equals(my keyword_span.sv, "export")) return false;
+    if (!csview_equals(span_sv(my keyword_span), "export")) return false;
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT: case PORT_IMPORT_GATHER: case PORT_IMPORT_SPECIFIC: case PORT_IMPORT_ALIAS:
         case PORT_EXPORT_AS_NAMESPACE:
@@ -96,14 +96,14 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     for_each (i, vec_port_item, &my items) i->in_namespace = my in_namespace;
     my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
         scope->parent && scope->parent->kind != SCOPE_MODULE;
-    bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(my keyword_span.sv, "import");
+    bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(span_sv(my keyword_span), "import");
     if (!my jsdoc && !top && !my in_namespace &&
         (my module_ref || span_valid(my non_string_specifier) || is_import_alias || port_statement_is_export_declaration(me))
     ) {
         my wrong_context = true;
-        bool is_export = csview_equals(my keyword_span.sv, "export");
+        bool is_export = csview_equals(span_sv(my keyword_span), "export");
         // (A JavaScript file has no namespaces to mention)
-        if (my keyword_span.source && my keyword_span.source->is_js) {
+        if (span_source(my keyword_span) && span_source(my keyword_span)->is_js) {
             error_ctx_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1474 : 1473, is_export ?
                 "An export declaration can only be used at the top level of a module." :
                 "An import declaration can only be used at the top level of a module.");
@@ -141,7 +141,7 @@ static unsigned phase_clause_error(PortStatement const* me) {
     bool name = my main.tag == PORT_IMPORT_DEFAULT;
     // (The clause is the modifier alone when there are no bindings: `import source "m"`)
     bool bindings = my main.tag == PORT_IMPORT_GATHER || vec_port_item_size(&my items) ||
-        my phase_clause.sv.size > (my source_phase ? 6 : 5);
+        my phase_clause.size > (my source_phase ? 6 : 5);
     bindings &= !(name && !vec_port_item_size(&my items));
     if (my source_phase) {
         if (bindings) return 18112;
@@ -149,7 +149,7 @@ static unsigned phase_clause_error(PortStatement const* me) {
         if (module == MODULE_KIND_ESNEXT || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE) {
             // (tsc's getEmitSyntaxForModuleSpecifierExpression, of a string literal specifier)
             bool string_specifier = span_valid(my target_path_span);
-            return string_specifier && source_file_emit_module_kind(my phase_clause.source) == MODULE_KIND_COMMONJS ? 18115 : 0;
+            return string_specifier && source_file_emit_module_kind(span_source(my phase_clause)) == MODULE_KIND_COMMONJS ? 18115 : 0;
         }
         return 18113;
     }
@@ -214,7 +214,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
 
 // The tslib helpers of CommonJS-like emit (tsc's checkImportDeclaration/checkExportDeclaration/checkImportBinding)
 static void port_statement_check_emit_helpers(PortStatement const* me, Span span, ErrorCtx* errs) {
-    if (!my module_ref || !ty_emits_commonjs_like(span.source)) return;
+    if (!my module_ref || !ty_emits_commonjs_like(span_source(span))) return;
     switch (my main.tag) {
         case PORT_IMPORT_GATHER:
             if (!my main.is_require) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
@@ -245,8 +245,8 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
         if (i->tag == PORT_IMPORT_SPECIFIC && !resolved) continue;
         if (csview_equals(port_item_name(i->source_name), "default")) {
             Span at = i->full_span; // (which may end in whitespace)
-            while (at.sv.size && (at.sv.buf[at.sv.size - 1] == ' ' || at.sv.buf[at.sv.size - 1] == '\n' ||
-                at.sv.buf[at.sv.size - 1] == '\t' || at.sv.buf[at.sv.size - 1] == '\r')) at.sv.size--;
+            while (at.size && (at.buf[at.size - 1] == ' ' || at.buf[at.size - 1] == '\n' ||
+                at.buf[at.size - 1] == '\t' || at.buf[at.size - 1] == '\r')) at.size--;
             ty_check_emit_helpers(current_checker, at, EMIT_HELPER_IMPORT_DEFAULT, errs);
         }
     }
@@ -283,7 +283,7 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
         for (u32 i = 0; i < target->decl_count; i++) {
             SymbolDecl const* decl = &target->decls[i];
             if (decl->kind != SYMBOL_DECL_TYPE_ALIAS || !((TypeDecl const*)decl->node)->jsdoc) continue;
-            if (decl->full.source != at.source) continue;
+            if (span_source(decl->full) != span_source(at)) continue;
             error_add_related_d(error, decl->full, 18044, "'", target->name, "' is automatically exported here.");
             break;
         }
@@ -310,7 +310,7 @@ void port_item_check_js_require_type(PortItem const* item, ErrorCtx* errs) {
 }
 
 static void report_string_export_name(Span name, ErrorCtx* errs) {
-    if (!span_valid(name) || !name.sv.size || (name.sv.buf[0] != '"' && name.sv.buf[0] != '\'')) return;
+    if (!span_valid(name) || !name.size || (name.buf[0] != '"' && name.buf[0] != '\'')) return;
     error_ctx_grammar_error_d(errs, name, 18057,
         "String literal import and export names are not supported when the '--module' flag is set to 'es2015' or 'es2020'.");
 }
@@ -325,7 +325,7 @@ static void report_string_export_names(PortItem const* item, ErrorCtx* errs) {
 static bool imports_json_as_esm(PortStatement const* me) {
     ModuleKind module = compiler_options()->module;
     if (module < MODULE_KIND_NODE16 || module > MODULE_KIND_NODENEXT || my is_import_require || !my module_ref) return false;
-    SourceFile const* from = my keyword_span.source;
+    SourceFile const* from = span_source(my keyword_span);
     SourceFile const* target = my module_ref->file;
     if (!from || !from->is_esm || !target) return false;
     return target->is_json || csview_ends_with(cstr_sv(&target->canonical_path), ".d.json.ts");
@@ -343,7 +343,7 @@ static void port_statement_check_json_import(PortStatement const* me, ErrorCtx* 
     if (is_import && !my main.type_only && module >= MODULE_KIND_NODE18) {
         bool type_json = false;
         for_each (i, vec_import_attribute, my attributes ? &my attributes->elements : &(VecImportAttribute){0}) {
-            csview name = i->name.sv;
+            csview name = span_sv(i->name);
             if (name.size >= 2 && (*name.buf == '"' || *name.buf == '\'')) name = csview_slice(name, 1, name.size - 1);
             Expr const* value = &i->value;
             type_json |= csview_equals(name, "type") && value->tag == EXPR_LITERAL && value->literal.tag == VALUE_STRING &&
@@ -399,7 +399,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         for_each (i, vec_port_item, &my items) {
             if (!i->type_modifier) continue;
             bool is_import = i->tag == PORT_IMPORT_SPECIFIC;
-            error_ctx_grammar_error_d(errs, span_make(i->full_span.source, i->full_span.sv.buf, i->full_span.sv.buf + 4),
+            error_ctx_grammar_error_d(errs, span_make_in(i->full_span, i->full_span.buf, i->full_span.buf + 4),
                 is_import ? 2206 : 2207, "The 'type' modifier cannot be used on a named ", is_import ? "import" : "export",
                 " when '", is_import ? "import" : "export", " type' is used on its ", is_import ? "import" : "export", " statement.");
             break;
@@ -422,7 +422,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (alias_type_only) {
         bool exported = port_item_is_export(alias_type_only);
         Span first = *vec_span_front(&my main.alias_path), last = *vec_span_back(&my main.alias_path);
-        Error* error = error_ctx_error_d(errs, span_make(first.source, span_start_ptr(first), span_end_ptr(last)),
+        Error* error = error_ctx_error_d(errs, span_make_in(first, span_start_ptr(first), span_end_ptr(last)),
             exported ? 1379 : 1380, "An import alias cannot reference a declaration that was ",
             exported ? "exported using 'export type'." : "imported using 'import type'.");
         port_item_add_type_only_related(error, alias_type_only, port_item_name(alias_type_only->decl_name));
@@ -474,13 +474,13 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         Symbol const* target = symbol_resolve_alias(alias->symbol);
         if (target && !target->is_placeholder && symbol_resolved_flags(target) & SYMBOL_VALUE) {
             Span first = *vec_span_at(&alias->alias_path, 0);
-            Symbol const* found = scope_resolve(alias->symbol->alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_NAMESPACE);
+            Symbol const* found = scope_resolve(alias->symbol->alias->scope, span_sv(first), SYMBOL_VALUE | SYMBOL_NAMESPACE);
             if (found && !(symbol_resolved_flags(found) & SYMBOL_NAMESPACE)) {
                 error_ctx_error_d(errs, first, 2437, "Module '", first, "' is hidden by a local declaration with the same name.");
             }
         }
         if (target && !target->is_placeholder && symbol_resolved_flags(target) & SYMBOL_TYPE &&
-            type_name_is_reserved(alias->decl_name.sv)
+            type_name_is_reserved(span_sv(alias->decl_name))
         ) {
             error_ctx_error_d(errs, alias->decl_name, 2438, "Import name cannot be '", alias->decl_name, "'.");
         }
@@ -496,8 +496,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         ) {
             Span first = *vec_span_at(&alias->alias_path, 0);
             Scope const* scope = alias->symbol->alias->scope;
-            Symbol const* value_found = scope_resolve(scope, first.sv, SYMBOL_VALUE);
-            if (!value_found && scope_resolve(scope, first.sv, SYMBOL_NAMESPACE)) {
+            Symbol const* value_found = scope_resolve(scope, span_sv(first), SYMBOL_VALUE);
+            if (!value_found && scope_resolve(scope, span_sv(first), SYMBOL_NAMESPACE)) {
                 error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
             } else if (!value_found) {
                 scope_report_value_not_found(scope, first, false, errs);
@@ -525,7 +525,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             while (*end && *end != '}') end++;
             if (*end) end++;
         }
-        error_ctx_grammar_error_d(errs, span_make(my keyword_span.source, start, end), 1363,
+        error_ctx_grammar_error_d(errs, span_make_in(my keyword_span, start, end), 1363,
             "A type-only import can specify a default import or named bindings, but not both.");
     }
     // tsc's checkGrammarImportClause: a deferred import is of a namespace, where the module format can defer it; a
@@ -562,7 +562,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     }
     port_item_check_export_equals_property(&my main, errs);
     for_each (i, vec_port_item, &my items) port_item_check_export_equals_property(i, errs);
-    if (span.source && span.source->is_js && !my jsdoc) {
+    if (span_source(span) && span_source(span)->is_js && !my jsdoc) {
         port_item_check_js_type(me, &my main, errs);
         for_each (i, vec_port_item, &my items) port_item_check_js_type(me, i, errs);
     }
@@ -586,7 +586,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         return;
     }
     bool emits_require = (module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT) &&
-        !node->span.source->is_esm;
+        !span_source(node->span)->is_esm;
     if (emits_require) {
         error_ctx_grammar_error_d(errs, node->span, 2856,
             "Import attributes are not allowed on statements that compile to CommonJS 'require' calls.");

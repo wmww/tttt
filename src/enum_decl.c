@@ -21,7 +21,7 @@ void enum_decl_drop(EnumDecl* me) {
 }
 
 void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclStatementProps props) {
-    my ambient = props.declared || scope->ambient || (my name.source && my name.source->is_declaration);
+    my ambient = props.declared || scope->ambient || (span_source(my name) && span_source(my name)->is_declaration);
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
@@ -102,7 +102,7 @@ static bool references_other_file(Expr const* expr, SourceFile const* file) {
             // (The evaluator knows Infinity and NaN itself)
             if (span_equals(expr->inner_span, "Infinity") || span_equals(expr->inner_span, "NaN")) return false;
             Symbol const* target = expr->identifier.target;
-            return target && target->decl_count && target->decls[0].full.source && target->decls[0].full.source != file;
+            return target && target->decl_count && span_source(target->decls[0].full) && span_source(target->decls[0].full) != file;
         }
         case EXPR_PROPERTY: return references_other_file(&expr->property->expr, file);
         case EXPR_BINARY_OP:
@@ -119,7 +119,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     bool previous_number = true; // (The first member's automatic value is 0)
     bool previous_other_file = false;
     for_each (i, vec_enum_case, &my cases) {
-        if (!i->name_is_value && i->name.sv.size && i->name.sv.buf[0] == '#') { // tsc's checkEnumMember
+        if (!i->name_is_value && i->name.size && i->name.buf[0] == '#') { // tsc's checkEnumMember
             error_ctx_error_d(errs, i->name, 18024, "An enum member cannot be named with a private identifier.");
         }
         // (tsc's computeEnumMemberValue: a member without initializer after one whose value isn't a number. Members
@@ -136,7 +136,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             }
             previous_number = auto_number;
         }
-        previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, my name.source);
+        previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, span_source(my name));
         if (i->computed_key) expr_typecheck(i->computed_key, errs);
         current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
@@ -146,8 +146,8 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             error_ctx_error_d(errs, i->full_name, 1164, "Computed property names are not allowed in enums.");
         }
         // (tsc's computeEnumMemberValue: the name's text is what a number prints as, and not Infinity or NaN)
-        bool numeric = i->computed_name ? false : i->numeric_name ? i->numeric_name == 1 : value_is_numeric_literal_name(i->name.sv) &&
-            !csview_equals(i->name.sv, "Infinity") && !csview_equals(i->name.sv, "-Infinity") && !csview_equals(i->name.sv, "NaN");
+        bool numeric = i->computed_name ? false : i->numeric_name ? i->numeric_name == 1 : value_is_numeric_literal_name(span_sv(i->name)) &&
+            !csview_equals(span_sv(i->name), "Infinity") && !csview_equals(span_sv(i->name), "-Infinity") && !csview_equals(span_sv(i->name), "NaN");
         if (numeric) {
             error_ctx_error_d(errs, i->full_name, 2452, "An enum member cannot have a numeric name.");
         }

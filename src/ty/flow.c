@@ -621,7 +621,7 @@ static bool is_constant_entity_name(Checker* me, Expr const* key) {
     if (!target || !(target->flags & (SYMBOL_VALUE_MODULE | SYMBOL_REGULAR_ENUM | SYMBOL_CONST_ENUM))) return false;
     Ty const* type = ty_flow_expr_type(me, key);
     if (type->kind == TY_LITERAL && (type->flags & TYF_ENUM_LITERAL)) return true;
-    Atom const* name = checker_atom(me, expr_static_property_name(key).sv);
+    Atom const* name = checker_atom(me, span_sv(expr_static_property_name(key)));
     Prop const* prop = ty_get_prop(me, ty_flow_expr_type(me, &key->property->expr), name);
     return prop && prop->decl->symbol && prop->decl->symbol->is_const;
 }
@@ -643,7 +643,7 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
         // (tsc's tryGetNameFromEntityNameExpression only reads the initializer of a declaration before the use: the
         // type of one after it may depend on this very reference, `bar[id]++; const id = foo.bar`)
         Span declared = symbol->name_span;
-        if (declared.source == key->inner_span.source && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
+        if (span_source(declared) == span_source(key->inner_span) && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
             return nullptr;
         }
         // An unannotated `const k = e` goes by e's type, not k's declared type (tsc's getTypeOfExpression(initializer)):
@@ -839,7 +839,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
         name_expr = &name_expr->property->expr;
     }
     if (name_expr->tag == EXPR_IDENTIFIER && !call->uses_new) {
-        csview name = name_expr->inner_span.sv;
+        csview name = span_sv(name_expr->inner_span);
         if (csview_equals(name, "Symbol") || (name_expr == &call->callable && csview_equals(name, "require"))) {
             return nullptr;
         }
@@ -1130,7 +1130,7 @@ static bool is_expando_function_declaration(Binding const* binding) {
     }
     Symbol const* symbol = binding->symbol;
     if (!symbol) return false;
-    bool js = binding->content_span.source && binding->content_span.source->is_js;
+    bool js = span_source(binding->content_span) && span_source(binding->content_span)->is_js;
     if (!js && !symbol->is_const) return false;
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
     return initialized_binding_value(initialized)->tag == EXPR_FUNCTION && !expr_is_perenthisized(initialized_binding_value(initialized));
@@ -1250,7 +1250,7 @@ static bool symbol_has_explicit_type(Symbol const* symbol) {
     if (binding->has_explicit_type) return true;
     // In JavaScript, a function initializer with a declared return type (JSDoc) counts (tsc's
     // isDeclarationWithExplicitTypeAnnotation)
-    if (binding->content_span.source && binding->content_span.source->is_js && binding->source &&
+    if (span_source(binding->content_span) && span_source(binding->content_span)->is_js && binding->source &&
         binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
     ) {
         Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
@@ -1408,7 +1408,7 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
     Span declaration = missing ? dotted_name_declaration(me, missing) : span_null;
     if (error && span_valid(declaration)) {
         Span name = missing->tag == EXPR_PROPERTY ? missing->property->prop.inner_span : missing->inner_span;
-        error_add_related_d(error, declaration, 2782, "'", name.sv, "' needs an explicit type annotation.");
+        error_add_related_d(error, declaration, 2782, "'", span_sv(name), "' needs an explicit type annotation.");
     }
 }
 
@@ -3316,8 +3316,8 @@ static void report_flow_control_error(Checker* me, Expr const* reference, FlowNo
     VecStatement const* statements = nullptr;
     if (function && function->has_body) {
         statements = &function->body.statements;
-    } else if (reference && expr_outer_span(reference).source) {
-        statements = &expr_outer_span(reference).source->ast.statements;
+    } else if (reference && span_source(expr_outer_span(reference))) {
+        statements = &span_source(expr_outer_span(reference))->ast.statements;
     }
     if (!statements || vec_statement_is_empty(statements)) return;
     ty_error_at(me, block_first_token(vec_statement_front(statements)->span), 2563,
@@ -3634,7 +3634,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
             ret = arena_new(&my arena, TyPredicate);
             *ret = (TyPredicate){
                 .param_index = (i32)at,
-                .param_name = checker_atom(me, binding->content_span.sv),
+                .param_name = checker_atom(me, span_sv(binding->content_span)),
                 .type = refined,
             };
             break;

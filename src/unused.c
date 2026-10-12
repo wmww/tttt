@@ -54,7 +54,7 @@ typedef struct Reporter {
 } Reporter;
 
 static bool starts_with_underscore(Span name) {
-    return name.sv.size && name.sv.buf[0] == '_';
+    return name.size && name.buf[0] == '_';
 }
 
 static bool is_unused(Symbol const* symbol) {
@@ -155,7 +155,7 @@ static void report_variables(Reporter const* r, VariableStatement const* me, Spa
 static Span type_parameters_range(Generic const* generic) {
     GenericItem const* first = vec_generic_item_front(&generic->items);
     Span last = vec_generic_item_back(&generic->items)->full_span;
-    char const* file_start = cstr_str(&first->full_span.source->contents);
+    char const* file_start = cstr_str(&span_source(first->full_span)->contents);
     char const* start = span_start_ptr(first->full_span);
     if (span_valid(first->jsdoc_tag)) {
         start = span_start_ptr(first->jsdoc_tag);
@@ -170,7 +170,7 @@ static Span type_parameters_range(Generic const* generic) {
         while (*end && *end != '>') end++;
     }
     if (*end) end++;
-    return span_make(first->full_span.source, start, end);
+    return span_make_in(first->full_span, start, end);
 }
 
 // The type parameters of a class or interface declaration
@@ -202,7 +202,7 @@ static void report_type_parameters(Reporter const* r, Generic const* generic, Sy
     if (generic_empty(generic)) return;
     // (Not when the declarations are in several files: tsc's allDeclarationsInSameSourceFile)
     for (u32 i = 1; owner && i < owner->decl_count; i++) {
-        if (owner->decls[i].full.source != owner->decls[0].full.source) return;
+        if (span_source(owner->decls[i].full) != span_source(owner->decls[0].full)) return;
     }
     u32 unused_count = 0;
     for_each (i, vec_generic_item, &generic->items) {
@@ -279,9 +279,9 @@ static void report_statement(Reporter const* r, Statement const* me) {
         case STATEMENT_DECL_VARIABLE: {
             // (At the declaration list, tsgo's reportUnusedVariables: the statement without its semicolon)
             Span list = span_valid(my span) ? my span : my decl.variable.span;
-            if (span_valid(list) && list.sv.size && list.sv.buf[list.sv.size - 1] == ';') {
-                list.sv.size--;
-                while (list.sv.size && (list.sv.buf[list.sv.size - 1] == ' ' || list.sv.buf[list.sv.size - 1] == '\t')) list.sv.size--;
+            if (span_valid(list) && list.size && list.buf[list.size - 1] == ';') {
+                list.size--;
+                while (list.size && (list.buf[list.size - 1] == ' ' || list.buf[list.size - 1] == '\t')) list.size--;
             }
             report_variables(r, &my decl.variable, list, false);
             break;

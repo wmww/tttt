@@ -56,12 +56,12 @@ void function_arg_drop(FunctionArg* me);
 // `?`, invalid when the parameter has none
 static inline Span function_arg_question_span(FunctionArg const* me) {
     if (!me->question_offset) return span_null;
-    return (Span){ .source = me->span.source, .sv = { me->span.sv.buf + me->question_offset, 1 } };
+    return span_in_sv(me->span, csview_from_n(me->span.buf + me->question_offset, 1));
 }
 // From the start of the parameter to the end of its `...`, invalid when it's not a rest parameter
 static inline Span function_arg_rest_span(FunctionArg const* me) {
     if (!me->rest_length) return span_null;
-    return (Span){ .source = me->span.source, .sv = { me->span.sv.buf, me->rest_length } };
+    return span_in_sv(me->span, csview_from_n(me->span.buf, me->rest_length));
 }
 extern const VecExpr function_arg_no_decorators;
 static inline VecExpr const* function_arg_decorators(FunctionArg const* me) {

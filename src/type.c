@@ -461,7 +461,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
 // tsc's checkJSDocTypeIsInJsFile for JSDocNullableType/JSDocNonNullableType: what the form should have been written as
 static void jsdoc_type_typecheck(TypeNode const* me, ErrorCtx* errs) {
     JsdocType const* jsdoc = my jsdoc;
-    if (!jsdoc->span.source || jsdoc->span.source->is_js) return;
+    if (!span_source(jsdoc->span) || span_source(jsdoc->span)->is_js) return;
     Checker* checker = current_checker;
     TypeNode const* inner = &jsdoc->type;
     if (!jsdoc->non_null) {

@@ -78,14 +78,14 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     if ((object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) return any_type(me);
     // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
     // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
-    SourceFile const* file = expr_outer_span(expr).source;
+    SourceFile const* file = span_source(expr_outer_span(expr));
     bool unchecked_js = file && file->is_js && file->unchecked;
     // (Not when what it's a property of was declared in another global file: approximated by the object's name)
     Expr const* object_expr = &expr->property->expr;
     if (unchecked_js && object_expr->tag == EXPR_IDENTIFIER && object_expr->identifier.target &&
         object_expr->identifier.target->decl_count
     ) {
-        SourceFile const* declared = object_expr->identifier.target->decls[0].full.source;
+        SourceFile const* declared = span_source(object_expr->identifier.target->decls[0].full);
         if (declared && declared != file && !declared->is_module) unchecked_js = false;
     }
     if (!unchecked_js && ty_is_js_literal_type(me, object)) return any_type(me);
@@ -1321,7 +1321,7 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     Ty const* from_signature = intern_get(&my links, this_key, 2);
     if (from_signature) return from_signature;
     // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
-    bool in_js = function->full_span.source && function->full_span.source->is_js;
+    bool in_js = span_source(function->full_span) && span_source(function->full_span)->is_js;
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
     if (function_impl_rare(function)->this_literal && !function_impl_rare(function)->this_literal_parenthesized) {
         Expr const* literal = function_impl_rare(function)->this_literal;
@@ -1351,7 +1351,7 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->this_assigned_object) {
         // Not `exports` in `exports.F = function () { this.x = 1 }` (tsgo's getContextualThisParameterType)
         Expr const* object = function_impl_rare(function)->this_assigned_object;
-        SourceFile const* file = object->inner_span.source;
+        SourceFile const* file = span_source(object->inner_span);
         Symbol const* target = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
         if (in_js && file && file->is_commonjs && expr_is_plain_identifier(object, "exports") &&
             (!target || symbol_find_decl(target, SYMBOL_DECL_COMMONJS_EXPORTS))
@@ -1985,7 +1985,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     // tsc's checkIdentifier: assigning to what isn't a variable, or to a constant, is an error of type errorType
     // (A JavaScript file's `exports = ...` is no error)
     if (identifier_is_invalid_assignment_target(identifier) &&
-        !(identifier_expr_name(identifier).source && identifier_expr_name(identifier).source->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
+        !(span_source(identifier_expr_name(identifier)) && span_source(identifier_expr_name(identifier))->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
     ) {
         return ty_intrinsic(me, TY_ERROR);
     }
@@ -2244,7 +2244,7 @@ static bool in_own_root_initializer(Binding const* binding, Expr const* referenc
     Expr const* value = initialized_binding_value(c_container_of(root->source, InitializedBinding, lazy_type));
     if (value->tag == EXPR_IMPLICIT_ANY) return false;
     Span span = expr_outer_span(value), at = reference->inner_span;
-    return at.source == span.source && span_start_ptr(at) >= span_start_ptr(span) && span_end_ptr(at) <= span_end_ptr(span);
+    return span_source(at) == span_source(span) && span_start_ptr(at) >= span_start_ptr(span) && span_end_ptr(at) <= span_end_ptr(span);
 }
 
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue, bool issue_only) {
@@ -2383,7 +2383,7 @@ bool ty_is_import_meta(Expr const* expr) {
 
 // The type of `import.x`: ImportMeta for `import.meta`, else the error type (TS17012, tsc's checkImportMetaProperty)
 Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr) {
-    return csview_equals(expr->property->prop.inner_span.sv, "meta") ? ty_import_meta_type(me) : ty_intrinsic(me, TY_ERROR);
+    return csview_equals(span_sv(expr->property->prop.inner_span), "meta") ? ty_import_meta_type(me) : ty_intrinsic(me, TY_ERROR);
 }
 
 // `import.meta`: the global ImportMeta interface (tsc's getGlobalImportMetaType, `{}` without one)
@@ -2500,7 +2500,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span)) return;
     ClassDecl const* class_decl = symbol_find_node(property_context(access)->in_constructor_of, SYMBOL_DECL_CLASS);
     if (!class_decl || class_decl->is_ambient) return;
-    ClassItem const* field = class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
+    ClassItem const* field = class_decl_find_member(class_decl, span_sv(access->prop.inner_span), false);
     if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
         field->field.is_declare || field->field.is_auto_accessor || field->field.is_definite
     ) {
@@ -2748,7 +2748,7 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
     if (binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE) return true;
     // `module.exports = v` of any JavaScript file, an ES module's too (tsc's getAssignmentDeclarationKind is syntactic:
     // AssignmentDeclarationKind.ModuleExports)
-    SourceFile const* file = expr_outer_span(&binary->left).source;
+    SourceFile const* file = span_source(expr_outer_span(&binary->left));
     if (!file || !file->is_js || binary->op != BINARY_OP_EQUAL || expr_is_perenthisized(&binary->left) ||
         !expr_is_module_exports(&binary->left)
     ) {
@@ -2763,7 +2763,7 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
 static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     Expr const* left = &binary->left;
     if (left->tag != EXPR_PROPERTY) return false;
-    SourceFile const* file = expr_outer_span(left).source;
+    SourceFile const* file = span_source(expr_outer_span(left));
     if (!file || !file->is_js) return false;
     Symbol const* symbol = left->property->declares;
     // (A CommonJS export: `module.exports.A = {}; module.exports.A.B = 1`)
@@ -2771,7 +2771,7 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     if (!symbol && file->scope && file->scope->container && file->scope->container->exports &&
         binary_commonjs_declaration(binary, &name) == COMMONJS_TARGET_EXPORTS_PROPERTY
     ) {
-        symbol = symbol_table_get(file->scope->container->exports, name.sv);
+        symbol = symbol_table_get(file->scope->container->exports, span_sv(name));
     }
     if (!symbol) return false;
     if (!symbol->exports || !symbol->exports->count) return false;
@@ -2787,12 +2787,12 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
 // the export's value declaration (the first assignment that declares it), else none
 static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
     if (binary->jsdoc_type) return ty_of_node(binary->jsdoc_type);
-    SourceFile const* file = expr_outer_span(&binary->left).source;
+    SourceFile const* file = span_source(expr_outer_span(&binary->left));
     Symbol const* module = file && file->scope ? file->scope->container : nullptr;
     if (!module || !module->exports) return nullptr;
     Span name = span_null;
     CommonJsTarget target = binary_commonjs_declaration(binary, &name);
-    Symbol const* symbol = target == COMMONJS_TARGET_EXPORTS_PROPERTY ? symbol_table_get(module->exports, name.sv) :
+    Symbol const* symbol = target == COMMONJS_TARGET_EXPORTS_PROPERTY ? symbol_table_get(module->exports, span_sv(name)) :
         target == COMMONJS_TARGET_MODULE_EXPORTS ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
     if (!symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) return nullptr;
     return symbol_decl_jsdoc_type(&symbol->decls[0]) ? ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[0])) : nullptr;
@@ -2858,7 +2858,7 @@ static bool is_literal_this_declaration(BinaryOpExpr const* binary) {
     Expr const* object = &binary->left.property->expr;
     IdentifierExpr const* this = expr_this_keyword(object);
     FunctionImpl const* function = this && this->this_kind == THIS_ANY ? identifier_this_function(this) : nullptr;
-    SourceFile const* file = object->inner_span.source;
+    SourceFile const* file = span_source(object->inner_span);
     return function && file && file->is_js && function_impl_rare(function)->this_literal && !function_impl_is_arrow(function) &&
         (span_valid(function_impl_member_name(function)) || function->accessor);
 }
@@ -2877,8 +2877,8 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     }
     // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
     // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
-    if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
-        binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL
+    if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && span_source(binary->right.inner_span) &&
+        span_source(binary->right.inner_span)->is_js && binary->op == BINARY_OP_EQUAL
     ) {
         assigned_context = left;
     }
@@ -3722,7 +3722,7 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
 static bool attributes_have(void const* literal, Checker* me, Atom const* name) {
     Expr const* attributes = literal;
     for_each (i, vec_jsx_attribute, &attributes->jsx_attributes) {
-        if (i->tag != JSX_ATTRIBUTE_SPREAD && checker_atom(me, i->name.sv) == name) return true;
+        if (i->tag != JSX_ATTRIBUTE_SPREAD && checker_atom(me, span_sv(i->name)) == name) return true;
     }
     return false;
 }
@@ -3735,7 +3735,7 @@ static Ty const* discriminate_by_jsx_attributes(Checker* me, Ty const* contextua
         if (i->tag == JSX_ATTRIBUTE_SPREAD) continue;
         bool has_value = i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR;
         if (has_value && !is_possibly_discriminant_value(&i->value)) continue;
-        Atom const* name = checker_atom(me, i->name.sv);
+        Atom const* name = checker_atom(me, span_sv(i->name));
         if (!ty_is_discriminant_property(me, contextual, name)) continue;
         items = realloc(items, sizeof(Discriminator) * (count + 1));
         panic_if(!items, "out of memory");
@@ -3861,7 +3861,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
     if (expr->expando_container) {
         // `var o = {}; o.x = 1`: the container's type (tsgo's object literal symbol has the expandos)
-        SourceFile const* file = expr->inner_span.source;
+        SourceFile const* file = span_source(expr->inner_span);
         for (u32 i = 0; i < file->expando_container_count; i++) {
             Symbol const* host = file->expando_containers[i].host;
             if (file->expando_containers[i].literal == expr && host->binder == my binder) return ty_namespace_type(me, host);
@@ -4038,7 +4038,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             existing->decl_spans = both;
             existing->decl_span_count = 2;
             existing->name_form = ty_prop_name_form_merge(existing->name_form,
-                ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true));
+                ty_prop_name_form(span_sv(i->name_span), i->computed_key, key_type, true));
             if (i->tag == OBJECT_ITEM_GETTER) {
                 existing->setter = existing->accessor;
                 existing->accessor = i->value.function;
@@ -4068,7 +4068,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 literal_const = true;
             }
             if (literal_const && literal->tag == EXPR_LITERAL && literal->literal.tag == VALUE_STRING &&
-                literal->inner_span.sv.size && (literal->inner_span.sv.buf[0] == '\'' || literal->inner_span.sv.buf[0] == '`')
+                literal->inner_span.size && (literal->inner_span.buf[0] == '\'' || literal->inner_span.buf[0] == '`')
             ) {
                 TypeNode* node = arena_new(&my arena, TypeNode);
                 node->tag = TYPE_VALUE;
@@ -4078,7 +4078,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 asserted = node;
             }
         }
-        uint8_t name_form = ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true);
+        uint8_t name_form = ty_prop_name_form(span_sv(i->name_span), i->computed_key, key_type, true);
         // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
         // conflict: its name is only its own)
         bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
@@ -4146,7 +4146,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
     free(members.items);
     // (An object literal with a contextual type isn't open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
-    SourceFile const* file = expr->inner_span.source;
+    SourceFile const* file = span_source(expr->inner_span);
     bool js = file && file->is_js && !ctx.contextual;
     Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (js ? OBJECT_JS : 0), expr);
     free(builder.props);
@@ -4172,7 +4172,7 @@ void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* er
         }
         if (name && ty_get_prop(me, contextual, name)) continue;
         // (tsc's symbolToString of the member: a name that isn't an identifier as written)
-        csview written = i->name_span.sv;
+        csview written = span_sv(i->name_span);
         bool as_written = !name || (written.size && (written.buf[0] == '"' || written.buf[0] == '\'' ||
             written.buf[0] == '[' || (written.buf[0] >= '0' && written.buf[0] <= '9')));
         cstr name_str = as_written ? cstr_from_sv(written) : ty_prop_name_cstr(me, name);
@@ -4317,7 +4317,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             continue;
         }
-        if (compiler_options()->exact_optional_property_types && i->tag == EXPR_LITERAL && expr_outer_span(i).sv.size == 0) {
+        if (compiler_options()->exact_optional_property_types && i->tag == EXPR_LITERAL && expr_outer_span(i).size == 0) {
             // A hole is an optional element that isn't there (tsc's checkArrayLiteral with an OmittedExpression)
             (void)ty_expr_type(me, i);
             has_omitted = true;
@@ -4427,7 +4427,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
             spread_acc_type(me, &spread, spread_type);
             continue;
         }
-        Atom const* name = checker_atom(me, i->name.sv);
+        Atom const* name = checker_atom(me, span_sv(i->name));
         Ty const* member_context = ctx.contextual ? contextual_named_prop_type(me, ctx.contextual, name) : nullptr;
         // (While a call infers, the view a contextual signature sees, like check_object()'s members)
         Ty const* member_sig_context = ctx.sig_contextual ? contextual_named_prop_type(me, ctx.sig_contextual, name) : nullptr;
@@ -4517,7 +4517,7 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribut
     if (attribute->tag == JSX_ATTRIBUTE_NO_VALUE) return ty_intrinsic(me, TY_TRUE);
     if (attribute->tag == JSX_ATTRIBUTE_EMPTY_EXPR) return any_type(me);
     Ty const* type = ty_expr_type(me, attributes);
-    Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, attribute->name.sv)) : nullptr;
+    Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, span_sv(attribute->name))) : nullptr;
     // (Unless a later spread replaced it)
     // (Not merged with a spread's optional property, which may have no declaration span of its own: `literal_own`)
     if (prop && prop->decl->decl_span_count == 1 && span_eq(prop->decl->decl_spans[0], attribute->span) &&
@@ -4739,7 +4739,7 @@ static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is
 static bool is_symbol_call(Checker* me, CallExpr const* call) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
-    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->inner_span.sv, "Symbol")) return false;
+    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(callee->inner_span), "Symbol")) return false;
     Symbol const* global = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
     return global && binder_redirect(my binder, callee->identifier.target) == global;
 }
@@ -5086,7 +5086,7 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
 // Null otherwise
 static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     // `this.x`, `this["x"]`
-    csview name = access->prop.inner_span.sv;
+    csview name = span_sv(access->prop.inner_span);
     if (access->form != PROPERTY_EXPR_DOT) {
         if (access->prop.tag != EXPR_LITERAL || access->prop.literal.tag != VALUE_STRING || name.size < 2) return nullptr;
         name = csview_slice(name, 1, name.size - 1);
@@ -5094,7 +5094,7 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     Expr const* object = &access->expr;
     IdentifierExpr const* this = expr_this_keyword(object);
     if (!this) return nullptr;
-    SourceFile const* file = object->inner_span.source;
+    SourceFile const* file = span_source(object->inner_span);
     if (!file || !file->is_js) return nullptr;
     if (this->this_kind != THIS_CLASS_INSTANCE || !property_context(access)->in_constructor_of) return nullptr;
     Symbol const* class_symbol = this->target;
@@ -5349,12 +5349,12 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // goes wrong inside it, TS2590 of `a as A & B`, is reported there)
             CurrentNode saved_node = {0};
             bool entered = !as_type->angle_bracket_syntax && !as_type->is_jsdoc && span_valid(as_type->keyword_span) &&
-                span_valid(expr->inner_span) && expr->inner_span.source == as_type->keyword_span.source;
+                span_valid(expr->inner_span) && span_source(expr->inner_span) == span_source(as_type->keyword_span);
             if (entered) {
                 char const* start = span_end_ptr(as_type->keyword_span);
                 char const* end = span_end_ptr(expr->inner_span);
                 while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;
-                saved_node = ty_enter_node(me, span_make(expr->inner_span.source, start, end));
+                saved_node = ty_enter_node(me, span_make_in(expr->inner_span, start, end));
             }
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
             if (entered) ty_leave_node(me, saved_node);
@@ -5392,7 +5392,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_FUNCTION: {
             // (Its body is checked after the file's statements, from now on if it is in the file being checked: tsc's
             // checkNodeDeferred. The walk does it where it meets it otherwise)
-            if (my defer_checks && expr->function->full_span.source == my checking_file && expr->function->has_body) {
+            if (my defer_checks && span_source(expr->function->full_span) == my checking_file && expr->function->has_body) {
                 checker_defer_function_body(me, expr->function);
             }
             // Its first check that doesn't skip it decides its contextual signature for good (tsc's ContextChecked, set
@@ -5570,15 +5570,15 @@ static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) 
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
     if (property_private_class(access) && property_private_class(access)->symbol) {
-        return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, access->prop.inner_span.sv));
+        return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, span_sv(access->prop.inner_span)));
     }
     // (A `#x` no class around declares names nothing, not even what an index signature has)
     Span name = access->prop.inner_span;
     // (A lone `#` is TS1127's, and the members named so are too)
-    if (access->form == PROPERTY_EXPR_DOT && access->prop.tag == EXPR_LITERAL && span_valid(name) && name.sv.size > 1 &&
-        name.sv.buf[0] == '#'
+    if (access->form == PROPERTY_EXPR_DOT && access->prop.tag == EXPR_LITERAL && span_valid(name) && name.size > 1 &&
+        name.buf[0] == '#'
     ) {
-        return ty_prop_name_literal(me, ty_private_name(me, nullptr, name.sv));
+        return ty_prop_name_literal(me, ty_private_name(me, nullptr, span_sv(name)));
     }
     if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, access)) return ty_intrinsic(me, TY_NUMBER);
     return ty_element_index_type(me, &access->prop);

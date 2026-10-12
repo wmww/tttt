@@ -157,8 +157,7 @@ static u32 flag_of(i32 ch) { // characterCodeToRegularExpressionFlag
 static Span rx_span(Rx const* me, i32 start, i32 len) {
     i32 a = start < 0 ? 0 : start > my n ? my n : start;
     i32 b = start + len < a ? a : start + len > my n ? my n : start + len;
-    return (Span){ .source = my literal.source,
-        .sv = csview_from_n(my literal.sv.buf + my offs[a], my offs[b] - my offs[a]) };
+    return span_in_sv(my literal, csview_from_n(my literal.buf + my offs[a], my offs[b] - my offs[a]));
 }
 
 // The onError of checkGrammarRegularExpressionLiteral: the first error at a position wins, and a message (TS1369 "Did
@@ -1023,7 +1022,7 @@ static bool scan_character_class_escape(Rx* me) {
                 i32 name_start = my pos;
                 while (is_word_character(cc(me, my pos))) my pos++;
                 // Word characters are ASCII, so the UTF-8 text is the value
-                csview name = rx_span(me, name_start, my pos - name_start).sv;
+                csview name = span_sv(rx_span(me, name_start, my pos - name_start));
                 if (cc(me, my pos) == '=') {
                     i32 property = -1; // 0 General_Category, 1 Script and Script_Extensions
                     for (i32 i = 0; i < (i32)c_arraylen(non_binary_properties); i++) {
@@ -1038,7 +1037,7 @@ static bool scan_character_class_escape(Rx* me) {
                     my pos++;
                     i32 value_start = my pos;
                     while (is_word_character(cc(me, my pos))) my pos++;
-                    csview value = rx_span(me, value_start, my pos - value_start).sv;
+                    csview value = span_sv(rx_span(me, value_start, my pos - value_start));
                     csview const* values = property == 0 ? regex_general_category_values : regex_script_values;
                     isize values_count = property == 0 ? regex_general_category_values_count : regex_script_values_count;
                     if (my pos == value_start) {
@@ -1374,17 +1373,17 @@ static void rescan_slash_token(Rx* me) {
 
 // (Not inlined: expr_typecheck() recurses as deep as expressions nest, see binderBinaryExpressionStress)
 __attribute__((noinline)) void regex_check_literal(Span literal, ErrorCtx* errs) {
-    if (!errs || !literal.source || literal.source->has_parse_errors || literal.sv.size < 2) return;
+    if (!errs || !span_source(literal) || span_source(literal)->has_parse_errors || literal.size < 2) return;
     // To UTF-16, keeping each unit's byte offset
     enum { INLINE = 256 };
     uint16_t text_inline[INLINE + 2];
     i32 offs_inline[INLINE + 1];
-    isize size = literal.sv.size;
+    isize size = literal.size;
     bool heap = size > INLINE; // A UTF-8 byte is at most one UTF-16 unit
     uint16_t* text = heap ? malloc(sizeof(uint16_t) * (size_t)(size + 2)) : text_inline;
     i32* offs = heap ? malloc(sizeof(i32) * (size_t)(size + 1)) : offs_inline;
     panic_if(!text || !offs, "out of memory");
-    unsigned char const* bytes = (unsigned char const*)literal.sv.buf;
+    unsigned char const* bytes = (unsigned char const*)literal.buf;
     i32 n = 0;
     for (isize i = 0; i < size;) {
         u32 b = bytes[i];

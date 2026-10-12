@@ -28,9 +28,9 @@ void display_error(Display d, Error const* me) {
     }
 
     display_s(d, prefix);
-    if (span_valid(my span) && my span.source) {
+    if (span_valid(my span) && span_source(my span)) {
         display_color(d, color_path);
-        display_str(d, cstr_str(&my span.source->canonical_path));
+        display_str(d, cstr_str(&span_source(my span)->canonical_path));
         display_color(d, color_line_number);
         display_lit(d, ":");
         display_i64(d, line);
@@ -64,7 +64,7 @@ void display_error(Display d, Error const* me) {
         display_repeated(d, c_sv(" "), col);
 
         display_color(d, color_error);
-        display_repeated(d, c_sv("-"), my span.sv.size ? my span.sv.size : 1);
+        display_repeated(d, c_sv("-"), my span.size ? my span.size : 1);
         display_color(d, color_normal);
     }
 
@@ -92,7 +92,7 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
 }
 
 void error_add_related_s(Error* me, Span span, unsigned ts_code, cstr message) {
-    if (!span_valid(span) || !span.source) {
+    if (!span_valid(span) || !span_source(span)) {
         cstr_drop(&message);
         return;
     }
@@ -123,7 +123,7 @@ void error_ctx_drop(ErrorCtx* me) {
 // tsc's formatLocation: file:line:column, 1-based
 static void pretty_location(cstr* out, Span span, ErrorFileNamer file_name) {
     cstr_append_d(out, DEFAULT_DISPLAY,
-        PRETTY_CYAN, file_name(span.source), PRETTY_RESET ":" PRETTY_YELLOW, span_line_index(span) + 1, PRETTY_RESET ":"
+        PRETTY_CYAN, file_name(span_source(span)), PRETTY_RESET ":" PRETTY_YELLOW, span_line_index(span) + 1, PRETTY_RESET ":"
         PRETTY_YELLOW, span_col_index(span) + 1, PRETTY_RESET);
 }
 
@@ -141,7 +141,7 @@ static char const* pretty_trim_end(char const* start, char const* end) {
 
 // tsc's formatCodeSpan: the lines of the span with a gutter of line numbers, squiggled (UTF-16 code units, like tsc)
 static void pretty_code_span(cstr* out, Span span, char const* indent, char const* squiggle, char const* newline) {
-    SourceFile const* source = span.source;
+    SourceFile const* source = span_source(span);
     char const* text = source_file_start(source);
     char const* text_end = text + cstr_size(&source->contents);
     unsigned first_line = span_line_index(span);
@@ -198,7 +198,7 @@ static void pretty_related(cstr* out, Error const* me, char const* newline, Erro
     for_each (i, vec_error, &my sub_errors) {
         if (i->detached) {
             cstr_append(out, newline);
-        } else if (span_valid(i->span) && i->span.source) {
+        } else if (span_valid(i->span) && span_source(i->span)) {
             cstr_append_d(out, DEFAULT_DISPLAY, newline, "  ");
             pretty_location(out, i->span, file_name);
             cstr_append_lit(out, " - ");
@@ -213,13 +213,13 @@ static void pretty_related(cstr* out, Error const* me, char const* newline, Erro
 
 static bool has_related(Error const* me) {
     for_each (i, vec_error, &my sub_errors) {
-        if (i->detached || (span_valid(i->span) && i->span.source) || has_related(i)) return true;
+        if (i->detached || (span_valid(i->span) && span_source(i->span)) || has_related(i)) return true;
     }
     return false;
 }
 
 void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
-    bool located = span_valid(my span) && my span.source;
+    bool located = span_valid(my span) && span_source(my span);
     if (located) {
         pretty_location(out, my span, file_name);
         cstr_append_lit(out, " - ");
@@ -238,8 +238,8 @@ void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorF
 
 // tsc's formatDiagnostic (`--pretty false`): file(line,column): error TSxxxx: the flattened message chain
 void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
-    if (span_valid(my span) && my span.source) {
-        cstr_append_d(out, DEFAULT_DISPLAY, file_name(my span.source), "(", span_line_index(my span) + 1, ",",
+    if (span_valid(my span) && span_source(my span)) {
+        cstr_append_d(out, DEFAULT_DISPLAY, file_name(span_source(my span)), "(", span_line_index(my span) + 1, ",",
             span_col_index(my span) + 1, "): ");
     }
     cstr_append_d(out, DEFAULT_DISPLAY, error_category_name(me), " TS", my ts_code, ": ");
@@ -250,7 +250,7 @@ void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFi
 void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer file_name) {
     for_each (i, vec_error, errors) {
         if (strcmp(error_category_name(i), "error")) continue;
-        SourceFile const* source = span_valid(i->span) ? i->span.source : nullptr;
+        SourceFile const* source = span_valid(i->span) ? span_source(i->span) : nullptr;
         if (!my errors) my first_has_file = source != nullptr;
         my errors++;
         if (!source) continue;
@@ -396,8 +396,8 @@ static bool is_related_info(Error const* sub) {
 static int related_info_cmp(void const* pa, void const* pb) {
     Error const* a = pa;
     Error const* b = pb;
-    char const* a_path = span_valid(a->span) && a->span.source ? cstr_str(&a->span.source->canonical_path) : "";
-    char const* b_path = span_valid(b->span) && b->span.source ? cstr_str(&b->span.source->canonical_path) : "";
+    char const* a_path = span_valid(a->span) && span_source(a->span) ? cstr_str(&span_source(a->span)->canonical_path) : "";
+    char const* b_path = span_valid(b->span) && span_source(b->span) ? cstr_str(&span_source(b->span)->canonical_path) : "";
     int ret = strcmp(a_path, b_path);
     if (ret) return ret;
     if (span_valid(a->span) && span_valid(b->span)) {
@@ -699,7 +699,7 @@ void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* 
     SortedError* sorted = c_new_n(SortedError, n);
     for (isize i = 0; i < n; i++) {
         Error* e = &errors->data[i];
-        sorted[i] = (SortedError){ *e, span_valid(e->span) && e->span.source ? path(e->span.source) : cstr_null, i };
+        sorted[i] = (SortedError){ *e, span_valid(e->span) && span_source(e->span) ? path(span_source(e->span)) : cstr_null, i };
     }
     qsort(sorted, (size_t)n, sizeof(SortedError), sorted_error_cmp);
     isize kept = 0;
@@ -782,7 +782,7 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
     intptr_t kept = 0;
     for (intptr_t i = 0; i < vec_error_size(&my errors); i++) {
         Error* error = vec_error_at_mut(&my errors, i);
-        SourceFile const* source = error->span.source;
+        SourceFile const* source = span_source(error->span);
         // (The parser's grammar errors are tsc's checker's: an unchecked file has none, like skipLibCheck's .d.ts)
         if (source && (source->from_reference || source->package_redirect ||
             (error->unchecked_js && !source->unchecked) ||
@@ -800,7 +800,7 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
 }
 
 Error* error_ctx_grammar_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
-    if (span.source && span.source->has_parse_errors) {
+    if (span_source(span) && span_source(span)->has_parse_errors) {
         cstr_drop(&message);
         return nullptr;
     }
@@ -815,17 +815,17 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
     }
     // Lib files aren't checked (the harness's skipDefaultLibCheck), but names in them still resolve lazily: with a
     // partial `@lib` some of them don't exist
-    if (span_valid(span) && span.source && span.source->is_stdlib) {
+    if (span_valid(span) && span_source(span) && span_source(span)->is_stdlib) {
         log_debug("Error in a lib file dropped: TS", ts_code, ": ", message);
         cstr_drop(&message);
         return nullptr;
     }
-    if (!span_valid(span) || !span.source) {
+    if (!span_valid(span) || !span_source(span)) {
         log_error("Error added with invalid span: TS", ts_code, ": ", message);
         cstr_drop(&message);
         return nullptr;
     }
-    check(span_valid(span) && span.source);
+    check(span_valid(span) && span_source(span));
     return error_ctx_append_error(me, (Error){
         .message = message,
         .span = span,
@@ -835,7 +835,7 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
 }
 
 Error* error_ctx_lib_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
-    if (!me || !span_valid(span) || !span.source) {
+    if (!me || !span_valid(span) || !span_source(span)) {
         cstr_drop(&message);
         return nullptr;
     }

@@ -26,7 +26,7 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
     for_each (i, vec_function_arg, &my function->args) {
         Binding const* binding = &i->initializer.binding;
         if (binding->tag != BINDING_IDENTIFIER || binding->has_explicit_type) continue;
-        csview name = binding->content_span.sv;
+        csview name = span_sv(binding->content_span);
         i->name_is_type = is_type_keyword(name) || scope_get_type(names, name, nullptr);
     }
 }

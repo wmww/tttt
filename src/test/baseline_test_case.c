@@ -718,11 +718,11 @@ static void format_error_tree(
     } else if (indent_level == 0) {
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
-        const char* filename = error->span.source ? error_file_name(error->span.source) : "(nil)";
+        const char* filename = span_source(error->span) ? error_file_name(span_source(error->span)) : "(nil)";
 
-        if (error->span.source && error->span.source->is_stdlib) {
+        if (span_source(error->span) && span_source(error->span)->is_stdlib) {
             // (tsc's harness: a lib file's errors without a position)
-            csview name = basename_of(cstr_sv(&error->span.source->canonical_path));
+            csview name = basename_of(cstr_sv(&span_source(error->span)->canonical_path));
             cstr_append_d(
                 global_target, DEFAULT_DISPLAY,
                 csview_starts_with(name, "lib.") ? "" : "lib.", name, "(--,--): ", error_category_name(error), " TS",
@@ -766,7 +766,7 @@ static void format_error_tree(
         remove_test_path_prefixes(file_target, from);
     } else {
         // Handle related errors (sub-errors that do have a valid span): in their own file, lib files without a position
-        SourceFile const* related_source = error->span.source ? error->span.source : current_source;
+        SourceFile const* related_source = span_source(error->span) ? span_source(error->span) : current_source;
         if (related_source->is_stdlib) {
             // (the default lib's files are named after their lib, a `@libFiles` one already is `lib.*.d.ts`)
             csview name = basename_of(cstr_sv(&related_source->canonical_path));
@@ -830,15 +830,15 @@ static void process_errors(BaselineTestCase* me) {
             format_error_tree(&my formatted_errors, &my formatted_global_errors, error, error, nullptr, 0);
             continue;
         }
-        if (error->span.source && error->span.source->is_stdlib) {
+        if (span_source(error->span) && span_source(error->span)->is_stdlib) {
             cstr discarded = cstr_null;
-            format_error_tree(&lib_errors, &discarded, error, error, error->span.source, 0);
+            format_error_tree(&lib_errors, &discarded, error, error, span_source(error->span), 0);
             cstr_drop(&discarded);
             continue;
         }
 
-        if (error->span.source != current_source) {
-            current_source = error->span.source;
+        if (span_source(error->span) != current_source) {
+            current_source = span_source(error->span);
             current_test_file = find_file(me, current_source);
         }
 
@@ -1535,29 +1535,29 @@ static u32 unicode_space_before(const char* file_start, const char* end) {
 
 
 static void append_decl(cstr* target, Span span) {
-    if (!span_valid(span) || !span.source) {
+    if (!span_valid(span) || !span_source(span)) {
         return;
     }
-    if (cstr_size(&span.source->decl_override)) {
+    if (cstr_size(&span_source(span)->decl_override)) {
         cstr_append_lit(target, ", Decl(");
-        cstr_append_s(target, span.source->decl_override);
+        cstr_append_s(target, span_source(span)->decl_override);
         cstr_append_lit(target, ")");
         return;
-    } else if (is_lib_file_name(basename_of(cstr_sv(&span.source->canonical_path)))) {
+    } else if (is_lib_file_name(basename_of(cstr_sv(&span_source(span)->canonical_path)))) {
         cstr_append_d(
             target, DEFAULT_DISPLAY,
-            ", Decl(", basename_of(cstr_sv(&span.source->canonical_path)), ", --, --)"
+            ", Decl(", basename_of(cstr_sv(&span_source(span)->canonical_path)), ", --, --)"
         );
         return;
     }
-    const char* file_start = source_file_start(span.source);
+    const char* file_start = source_file_start(span_source(span));
     const char* start = span_start_ptr(span);
     bool keep_going = true;
     // A JSDoc tag (`@typedef`, `@property`...) starts at its `@`: tsc's JSDoc nodes have no leading trivia
     if (span_is_jsdoc_tag(span)) keep_going = false;
     // Inside a JSDoc comment (a member of a type in a tag) a line's leading `*` is trivia too (tsc's JSDoc scanner)
     bool in_jsdoc = false;
-    if (keep_going && span.source->is_js) {
+    if (keep_going && span_source(span)->is_js) {
         for (const char* c = start; c - 1 > file_start; c--) {
             if (c[-2] == '*' && c[-1] == '/') break;
             if (c[-2] == '/' && c[-1] == '*' && *c == '*') {
@@ -1638,7 +1638,7 @@ static void append_decl(cstr* target, Span span) {
                 }
                 // A merge conflict marker line is trivia, and so is what `=======` (and diff3's `|||||||`) skip up to
                 // the next marker (tsc's scanConflictMarkerTrivia)
-                char marker = conflict_marker_at(line_start, cstr_str(&span.source->contents) + cstr_size(&span.source->contents));
+                char marker = conflict_marker_at(line_start, cstr_str(&span_source(span)->contents) + cstr_size(&span_source(span)->contents));
                 if (marker) {
                     keep_going = true;
                     start = line_start;
@@ -1667,21 +1667,21 @@ static void append_decl(cstr* target, Span span) {
             }   break;
         }
     }
-    span.sv = csview_from_n(start, 0);
+    span_set_sv(&span, csview_from_n(start, 0));
     unsigned format_line = span_line_index(span);
     unsigned format_col = span_col_index(span);
     cstr_append_d(
         target, DEFAULT_DISPLAY,
-        ", Decl(", basename_of(cstr_sv(&span.source->canonical_path)), ", ", format_line, ", ", format_col, ")"
+        ", Decl(", basename_of(cstr_sv(&span_source(span)->canonical_path)), ", ", format_line, ", ", format_col, ")"
     );
 }
 
 // The line tsc's typeWriter files a node under: skipTrivia(node.pos). Our spans start after the trivia, except a
 // missing node's (zero width, at the full start like tsc's)
 static unsigned placement_line(Span span) {
-    if (span.sv.size || !span.source) return span_line_index(span);
-    const char* c = span.sv.buf;
-    const char* end = cstr_str(&span.source->contents) + cstr_size(&span.source->contents);
+    if (span.size || !span_source(span)) return span_line_index(span);
+    const char* c = span.buf;
+    const char* end = cstr_str(&span_source(span)->contents) + cstr_size(&span_source(span)->contents);
     while (c < end) {
         if (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n') c++;
         else if (c + 1 < end && c[0] == '/' && c[1] == '/') { while (c < end && *c != '\n') c++; }
@@ -1691,7 +1691,7 @@ static unsigned placement_line(Span span) {
             c = c + 2 < end ? c + 2 : end;
         } else break;
     }
-    span.sv.buf = c;
+    span.buf = c;
     return span_line_index(span);
 }
 
@@ -1714,7 +1714,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     }
     unsigned line_for_placement = placement_line(data.span);
     for (u32 i = 0; i < my symbol_override_count; i++) {
-        if (my symbol_overrides[i].span.sv.buf != data.span.sv.buf || my symbol_overrides[i].span.sv.size != data.span.sv.size) continue;
+        if (my symbol_overrides[i].span.buf != data.span.buf || my symbol_overrides[i].span.size != data.span.size) continue;
         cstr_drop(&data.text);
         vec_span_drop(&data.declarations);
         if (my symbol_overrides[i].suppress) {
@@ -1731,7 +1731,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         Span first = *vec_span_at(&data.declarations, 0);
         bool member = false;
         for_each (j, vec_span, &my merged_declarations[i].declarations) {
-            member |= j->sv.buf == first.sv.buf && j->sv.size == first.sv.size;
+            member |= j->buf == first.buf && j->size == first.size;
         }
         if (!member) continue;
         vec_span_drop(&data.declarations);
@@ -1772,7 +1772,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
             cstr_append_lit(&text, ".");
         }
         Span name = span_valid(data.name) ? data.name : data.span;
-        if (name.sv.size) {
+        if (name.size) {
             cstr_append_span(&text, name);
         } else {
             cstr_append_lit(&text, "(Missing)"); // A name the parser recovered as missing (tsc's "__missing")
@@ -1815,7 +1815,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
             text = fixed;
         }
     }
-    BaselineTestFile* test_file = find_file(me, data.span.source);
+    BaselineTestFile* test_file = find_file(me, span_source(data.span));
     vec_line_numbered_str_push(&test_file->symbols, (LineNumberedStr){
         .line = line_for_placement,
         .str = text,
@@ -1828,7 +1828,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
 // One `>text : type` line per parenthesization level of the expression
 static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered) {
     for (u32 i = 0; i < my hidden_type_span_count; i++) {
-        if (my hidden_type_spans[i].sv.buf == inner_span.sv.buf && my hidden_type_spans[i].sv.size == inner_span.sv.size) {
+        if (my hidden_type_spans[i].buf == inner_span.buf && my hidden_type_spans[i].size == inner_span.size) {
             my any_keeps_rendering = false;
             return;
         }
@@ -1849,7 +1849,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
         outer_last = inner_last;
         base_case = true;
     }
-    outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
+    outer_span = span_make_in(inner_span, outer_start, outer_last + 1);
 
     intptr_t line = placement_line(outer_span);
     cstr target = cstr_lit(">");
@@ -1859,7 +1859,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     isize_t intrinsic_at = intrinsic ? cstr_size(&target) : 0;
     cstr_append_sv(&target, rendered);
     my any_keeps_rendering = false; // Only the node itself, not what's parenthesized in it
-    BaselineTestFile* test_file = find_file(me, outer_span.source);
+    BaselineTestFile* test_file = find_file(me, span_source(outer_span));
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
         .str = target,
@@ -1867,8 +1867,8 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
         .error_type = my error_type && intrinsic,
     });
     if (!base_case) {
-        outer_span.sv.buf++;
-        outer_span.sv.size -= unclosed ? 1 : 2;
+        outer_span.buf++;
+        outer_span.size -= unclosed ? 1 : 2;
         add_type_rendered(me, outer_span, inner_span, rendered);
     }
 }
@@ -2015,14 +2015,14 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
         log_error("baseline_test_case_add_declaration() called with null declaration");
         return;
     }
-    check(span.source);
+    check(span_source(span));
     VecSpan declarations = baseline_symbol_declaration_spans(declaration);
     // (A script's declaration merged into a UMD global, a file's module: declared by that file first, like tsc's
     // clone of the module symbol)
     if (declaration->is_module && declaration->module && declaration->module->file) {
         SourceFile const* file = declaration->module->file;
         VecSpan with_file = vec_span_init();
-        vec_span_push(&with_file, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+        vec_span_push(&with_file, span_from_sv(file, csview_from_n(source_file_start(file), 0)));
         for_each (i, vec_span, &declarations) vec_span_push(&with_file, *i);
         vec_span_drop(&declarations);
         declarations = with_file;

@@ -104,8 +104,8 @@ bool port_item_check_namespace_import_use(struct Symbol const* alias, struct Sco
 // The name an import/export specifier stands for: `a`, or the contents of `"a"` (ES2022's arbitrary module namespace
 // identifiers). Spans keep the quotes, which is how the baselines show them
 static inline csview port_item_name(Span name) {
-    if (name.sv.size >= 2 && (*name.sv.buf == '"' || *name.sv.buf == '\'')) return csview_slice(name.sv, 1, name.sv.size - 1);
-    return name.sv;
+    if (name.size >= 2 && (*name.buf == '"' || *name.buf == '\'')) return csview_slice(span_sv(name), 1, name.size - 1);
+    return span_sv(name);
 }
 
 #define g_class_key PortItem, port_item

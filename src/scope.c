@@ -324,7 +324,7 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span, TypeNode 
                 return existing;
             }
         }
-        Symbol* ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
+        Symbol* ret = binder_new_symbol(me, span_sv(name_span), SYMBOL_VALUE_MODULE);
         ret->is_module = true;
         ret->module = arena_new(binder_arena(me), SymbolModule);
         ret->module->attributes = attributes;
@@ -338,7 +338,7 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span, TypeNode 
     // TODO: one of the shared lib program would want an overlay like the globals (no lib declares any)
     Symbol* ret = symbol_table_lookup(&my ambient_modules, name, hash);
     if (ret) return ret;
-    ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
+    ret = binder_new_symbol(me, span_sv(name_span), SYMBOL_VALUE_MODULE);
     ret->is_module = true;
     ret->module = arena_new(binder_arena(me), SymbolModule);
     ret->module->attributes = attributes; // (Printed, TS1550: a name without `*` matches no attributes)
@@ -367,8 +367,8 @@ static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
     }
     // After the file's declarations of other kinds that tttt declares later than its JSDoc type aliases (expandos)
     u32 at = my decl_count;
-    if (at && decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1]) && !is_delayed_jsdoc_decl(&decl)) {
-        while (at && my decls[at - 1].full.source == decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1])) at--;
+    if (at && span_source(decl.full) && is_delayed_jsdoc_decl(&my decls[at - 1]) && !is_delayed_jsdoc_decl(&decl)) {
+        while (at && span_source(my decls[at - 1].full) == span_source(decl.full) && is_delayed_jsdoc_decl(&my decls[at - 1])) at--;
         memmove(&my decls[at + 1], &my decls[at], sizeof(SymbolDecl) * (my decl_count - at));
     }
     my decls[at] = decl;
@@ -378,7 +378,7 @@ static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
 // Stands for something that couldn't be resolved: has every meaning, and everything about it is any
 static Symbol* binder_new_placeholder(Binder* me, Span name, Span full) {
     Symbol* ret = binder_new_symbol(
-        me, name.sv, SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_TYPE_ALIAS | SYMBOL_NAMESPACE_MODULE
+        me, span_sv(name), SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_TYPE_ALIAS | SYMBOL_NAMESPACE_MODULE
     );
     ret->is_placeholder = true;
     ret->name_span = name;
@@ -399,7 +399,7 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
     if (!me) return ret;
     // In tsc's order: its binder binds the function declarations of a block before its other statements
     // (bindEachFunctionsFirst). Declarations of the same block are grouped (the file, without a block)
-    #define same_block(a, b) ((a).block && (b).block ? (a).block == (b).block : (a).full.source == (b).full.source)
+    #define same_block(a, b) ((a).block && (b).block ? (a).block == (b).block : span_source((a).full) == span_source((b).full))
     for (u32 i = 0; i < my decl_count; i++) {
         bool seen = false;
         for (u32 j = 0; j < i; j++) seen |= same_block(my decls[j], my decls[i]);
@@ -414,21 +414,21 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
                 if (is_delayed_jsdoc_decl(&my decls[j])) {
                     bool same_node = false;
                     for (u32 k = 0; k < my decl_count && !same_node; k++) {
-                        same_node = k != j && !is_delayed_jsdoc_decl(&my decls[k]) && my decls[k].full.source == my decls[j].full.source &&
+                        same_node = k != j && !is_delayed_jsdoc_decl(&my decls[k]) && span_source(my decls[k].full) == span_source(my decls[j].full) &&
                             span_start_ptr(my decls[k].full) == span_start_ptr(my decls[j].full);
                     }
                     if (same_node) continue;
                 }
                 // (tsgo's binder has no bindPotentiallyMissingNamespaces: outside JavaScript an expando assignment
                 // declares the member, not its host. PROTOTYPE: JavaScript keeps 6.0's until its rework, todo entry 8)
-                if (my decls[j].kind == SYMBOL_DECL_EXPANDO && !my decls[j].full.source->is_js) continue;
+                if (my decls[j].kind == SYMBOL_DECL_EXPANDO && !span_source(my decls[j].full)->is_js) continue;
                 if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) {
                     // (A JavaScript function's `@overload` tags are declarations of their own before it, at their tag
                     // names: tsgo's reparsed signatures)
                     FunctionImpl const* function = my decls[j].kind == SYMBOL_DECL_FUNCTION ? my decls[j].node : nullptr;
                     for (u32 o = 0; function && o < function_impl_rare(function)->jsdoc_overload_count; o++) {
                         Span at = function_impl_rare(function)->jsdoc_overloads[o].callable->function->full_span;
-                        if (span_valid(at) && at.sv.size > 1) vec_span_push(&ret, span_make(at.source, at.sv.buf + 1, at.sv.buf + at.sv.size));
+                        if (span_valid(at) && at.size > 1) vec_span_push(&ret, span_make_in(at, at.buf + 1, at.buf + at.size));
                     }
                     vec_span_push(&ret, my decls[j].full);
                     assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;
@@ -441,7 +441,7 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
             for (isize a = from + 1; a < vec_span_size(&ret); a++) {
                 Span moved = ret.data[a];
                 isize b = a;
-                while (b > from && ret.data[b - 1].source == moved.source && ret.data[b - 1].sv.buf > moved.sv.buf) {
+                while (b > from && span_source(ret.data[b - 1]) == span_source(moved) && ret.data[b - 1].buf > moved.buf) {
                     ret.data[b] = ret.data[b - 1];
                     b--;
                 }
@@ -529,7 +529,7 @@ bool block_has_use_strict(Block const* block) {
         ) {
             return false;
         }
-        csview text = i->expr.inner_span.sv;
+        csview text = span_sv(i->expr.inner_span);
         if (csview_equals(text, "\"use strict\"") || csview_equals(text, "'use strict'")) return true;
     }
     return false;
@@ -547,12 +547,12 @@ static int strict_reason(Scope const* me) {
 static bool is_future_reserved_word(Span name) {
     static char const* const reserved[] = { "implements", "interface", "let", "package", "private", "protected", "public",
         "static", "yield" };
-    for (u32 i = 0; i < c_arraylen(reserved); i++) if (csview_equals(name.sv, reserved[i])) return true;
+    for (u32 i = 0; i < c_arraylen(reserved); i++) if (csview_equals(span_sv(name), reserved[i])) return true;
     return false;
 }
 
 void scope_check_strict_class_name(Scope const* me, Span name) {
-    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+    if (my ambient || !span_valid(name) || !span_source(name) || span_source(name)->has_parse_errors) return;
     if (!is_future_reserved_word(name)) {
         scope_check_strict_identifier(me, name, false);
         return;
@@ -562,12 +562,12 @@ void scope_check_strict_class_name(Scope const* me, Span name) {
 }
 
 void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
-    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+    if (my ambient || !span_valid(name) || !span_source(name) || span_source(name)->has_parse_errors) return;
     bool is_reserved = is_future_reserved_word(name);
     if (!my strict || !is_reserved) {
         // (tsc's checkContextualIdentifier: `await` and `yield` where they are operators)
         // (Not in types: the parser has no await or yield context there)
-        bool await = !in_type && csview_equals(name.sv, "await"), yield = !in_type && csview_equals(name.sv, "yield");
+        bool await = !in_type && csview_equals(span_sv(name), "await"), yield = !in_type && csview_equals(span_sv(name), "yield");
         // The await/yield context: of the nearest function, a static block (await), nothing past a class boundary
         // (member initializers are an implicit function)
         // (A function expression's name is in its function's context as far as that is async or a generator, and in
@@ -612,7 +612,7 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
 }
 
 void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
-    if (!my strict || !span_valid(name) || (!csview_equals(name.sv, "eval") && !csview_equals(name.sv, "arguments"))) return;
+    if (!my strict || !span_valid(name) || (!csview_equals(span_sv(name), "eval") && !csview_equals(span_sv(name), "arguments"))) return;
     switch (strict_reason(me)) {
         case 2:
             error_ctx_error_d(binder_errs(my binder), name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
@@ -676,7 +676,7 @@ static Generic const* decl_generic(SymbolDecl const* decl) {
 bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file) {
     // (Not counting a builtin type the name merges with: a global `var string;`)
     u32 first = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN ? 1 : 0;
-    return symbol->decl_count > first && symbol->decls[first].full.source != file;
+    return symbol->decl_count > first && span_source(symbol->decls[first].full) != file;
 }
 
 // A file with a declaration of a merged class or interface whose type parameters may be an earlier declaration's of
@@ -688,10 +688,10 @@ void binder_mark_serial_resolves(Binder* me) {
         for (u32 i = 1; i < owner->decl_count; i++) {
             Generic const* generic = decl_generic(&owner->decls[i]);
             if (!generic || generic_empty((Generic*)generic)) continue;
-            SourceFile* file = (SourceFile*)owner->decls[i].full.source;
+            SourceFile* file = (SourceFile*)span_source(owner->decls[i].full);
             for (u32 j = 0; j < i && file && !file->resolve_serial; j++) {
                 Generic const* earlier = decl_generic(&owner->decls[j]);
-                if (earlier && !generic_empty((Generic*)earlier) && owner->decls[j].full.source != file) file->resolve_serial = true;
+                if (earlier && !generic_empty((Generic*)earlier) && span_source(owner->decls[j].full) != file) file->resolve_serial = true;
             }
         }
     }
@@ -712,21 +712,21 @@ Scope* scope_new_generic_merged(
             if (owner->decls[d].node == node) break;
             Generic const* earlier = decl_generic(&owner->decls[d]);
             for_each (j, vec_generic_item, earlier ? &earlier->items : &(VecGenericItem){0}) {
-                if (!j->owned_symbol || !name_equals(j->name.sv, i->name.sv)) continue;
+                if (!j->owned_symbol || !name_equals(span_sv(j->name), span_sv(i->name))) continue;
                 // (Not one of the shared lib program: nothing is written to its symbols)
                 if (j->owned_symbol->binder == ret->binder) shared = j->owned_symbol;
                 else shared_lib = j->owned_symbol;
                 break;
             }
         }
-        if (!shared || symbol_table_get(&ret->locals, i->name.sv)) {
-            if (shared_lib && !symbol_table_get(&ret->locals, i->name.sv)) {
+        if (!shared || symbol_table_get(&ret->locals, span_sv(i->name))) {
+            if (shared_lib && !symbol_table_get(&ret->locals, span_sv(i->name))) {
                 // Merged with a lib declaration (`interface Array<T>`): a symbol of our own that is declared by the
                 // lib's type parameter first, like tsc's merged symbol
-                Symbol* symbol = binder_new_symbol(ret->binder, i->name.sv, SYMBOL_TYPE_PARAMETER);
+                Symbol* symbol = binder_new_symbol(ret->binder, span_sv(i->name), SYMBOL_TYPE_PARAMETER);
                 symbol->name_span = shared_lib->name_span;
                 for (u32 k = 0; k < shared_lib->decl_count; k++) symbol_add_decl(symbol, shared_lib->decls[k]);
-                symbol_table_insert(&ret->locals, binder_arena(ret->binder), i->name.sv, symbol_name_hash(i->name.sv), symbol);
+                symbol_table_insert(&ret->locals, binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), symbol);
                 symbol_add_decl(symbol, (SymbolDecl){
                     .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
                 });
@@ -739,7 +739,7 @@ Scope* scope_new_generic_merged(
                 .name = i->name, .full = i->full_span, .kind = SYMBOL_DECL_TYPE_PARAMETER, .node = i,
             });
         } else {
-            symbol_table_insert(&ret->locals, binder_arena(ret->binder), i->name.sv, symbol_name_hash(i->name.sv), shared);
+            symbol_table_insert(&ret->locals, binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), shared);
             symbol_add_decl(shared, (SymbolDecl){
                 .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
             });
@@ -770,13 +770,13 @@ static bool symbol_declared_in_block(Symbol const* me, Scope const* block) {
 }
 
 static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display, bool lib_too) {
-    if (!span_valid(at) || !at.source || (at.source->is_stdlib && !lib_too)) return nullptr;
+    if (!span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_too)) return nullptr;
     // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
     Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
     if (existing) return existing;
     // (A missing name is tsc's "__missing", shown as "(Missing)")
-    csview name = display.size ? display : at.sv.size ? at.sv : c_sv("(Missing)");
-    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
+    csview name = display.size ? display : at.size ? span_sv(at) : c_sv("(Missing)");
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
     switch (code) {
         case 2567:
             return report(errs, at, 2567, cstr_d("Enum declarations can only merge with namespace or other enum declarations."));
@@ -794,11 +794,11 @@ static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
 // declarations, the binder's (within a file) don't
 void add_duplicate_related(Error* error, Span at, Span other) {
-    add_duplicate_related_named(error, at, other, at.sv);
+    add_duplicate_related_named(error, at, other, span_sv(at));
 }
 
 void add_duplicate_related_named(Error* error, Span at, Span other, csview name) {
-    if (!error || span_eq(at, other) || !span_valid(other) || !other.source) return;
+    if (!error || span_eq(at, other) || !span_valid(other) || !span_source(other)) return;
     u32 count = 0;
     for_each (i, vec_error, &error->sub_errors) {
         if (!span_valid(i->span)) continue;
@@ -827,13 +827,13 @@ static Span default_error_span(SymbolDecl const* decl) {
 static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Span name) {
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = default_error_span(&existing->decls[i]);
-        if (!span_valid(at) || !at.source || at.source->is_stdlib) continue;
+        if (!span_valid(at) || !span_source(at) || span_source(at)->is_stdlib) continue;
         Error* error = error_ctx_error_d(errs, at, 2528, "A module cannot have multiple default exports.");
         if (!span_valid(name)) continue;
         if (i == 0) error_add_related_d(error, name, 2753, "Another export default is here.");
         else error_add_related_d(error, name, 6204, "and here.");
     }
-    if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
+    if (!span_valid(name) || !span_source(name) || span_source(name)->is_stdlib) return;
     Error* error = error_ctx_error_d(errs, name, 2528, "A module cannot have multiple default exports.");
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = default_error_span(&existing->decls[i]);
@@ -847,15 +847,15 @@ static void report_conflicts(
     if (existing->is_global_this) {
         // tsc's mergeSymbol is silent about the built-in `globalThis`: what a script declares by that name is
         // initializeTypeChecker's error (a module's `declare global` declarations aren't)
-        if (span_valid(name) && name.source && !name.source->is_stdlib && !name.source->is_module) {
+        if (span_valid(name) && span_source(name) && !span_source(name)->is_stdlib && !span_source(name)->is_module) {
             error_ctx_error_d(errs, name, 2397, "Declaration name conflicts with built-in global identifier 'globalThis'.");
         }
         return;
     }
-    bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
+    bool same_file = existing->decl_count && span_source(existing->decls[0].name) == span_source(name);
     if (!same_file && existing->flags & SYMBOL_NAMESPACE_MODULE && !existing->is_global_this) {
         // Across files symbols are merged by the checker in tsc, whose mergeSymbol says this into a namespace
-        if (span_valid(name) && name.source && !name.source->is_stdlib) {
+        if (span_valid(name) && span_source(name) && !span_source(name)->is_stdlib) {
             error_ctx_error_d(errs, name, 2649, "Cannot augment module '", existing->name,
                 "' with value exports because it resolves to a non-module entity.");
         }
@@ -876,7 +876,7 @@ static void report_conflicts(
     // conflicts inside one file are)
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = existing->decls[i].name;
-        if (!same_file && at.source && at.source->plain_js) continue;
+        if (!same_file && span_source(at) && span_source(at)->plain_js) continue;
         // (tsc binds a file's JSDoc typedefs after everything else in it, delayedBindJSDocTypedefTag: a conflict
         // between other declarations doesn't count the typedef among them yet)
         SymbolDecl const* other = &existing->decls[i];
@@ -887,11 +887,11 @@ static void report_conflicts(
         }
         // (tsc reports both sides of a conflict, a lib file's too when lib files are checked: the harness lists those
         // without a position)
-        bool lib_too = name.source && !name.source->is_stdlib && lib_files_checked();
+        bool lib_too = span_source(name) && !span_source(name)->is_stdlib && lib_files_checked();
         Error* error = report_conflict_named(errs, at, code, display, lib_too);
         if (related) add_duplicate_related(error, at, name);
     }
-    if (!same_file && name.source && name.source->plain_js) return;
+    if (!same_file && span_source(name) && span_source(name)->plain_js) return;
     Error* error = report_conflict_named(errs, name, code, display, false);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
         add_duplicate_related(error, name, existing->decls[i].name);
@@ -969,7 +969,7 @@ static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKin
         case SYMBOL_DECL_TYPE_PARAMETER: what = "Type parameter"; code = 2368; break;
         default: return;
     }
-    if (!span_valid(name) || !name.source || name.source->is_stdlib || !type_name_is_reserved(name.sv)) return;
+    if (!span_valid(name) || !span_source(name) || span_source(name)->is_stdlib || !type_name_is_reserved(span_sv(name))) return;
     error_ctx_error_d(errs, name, code, what, " name cannot be '", name, "'.");
 }
 
@@ -978,8 +978,8 @@ static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKin
 // CommonJS (tsgo 7.1's checkCollisionWithGlobalObjectInGeneratedCode: the emit's `Object.defineProperty(exports, ...)`)
 static void check_require_exports_collision(Scope* me, Span name, bool is_class) {
     if (my kind != SCOPE_MODULE || my ambient || !my file || my file->unchecked || !span_valid(name)) return;
-    bool object = !is_class && csview_equals(name.sv, "Object");
-    if (!object && !csview_equals(name.sv, "require") && !csview_equals(name.sv, "exports")) return;
+    bool object = !is_class && csview_equals(span_sv(name), "Object");
+    if (!object && !csview_equals(span_sv(name), "require") && !csview_equals(span_sv(name), "exports")) return;
     // (tsc's errorSkippedOn("noEmit"))
     if (compiler_options()->no_emit) return;
     ModuleKind format = source_file_emit_module_kind(my file);
@@ -1005,7 +1005,7 @@ static bool umd_global_conflict(Scope* scope, Symbol const* existing, u32 includ
     if (!(existing->flags & (SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_BLOCK_SCOPED_VARIABLE))) return false;
     // (All of it from augmentations: a script's declaration wins silently)
     for (u32 i = 0; i < existing->decl_count; i++) {
-        SourceFile const* file = existing->decls[i].name.source;
+        SourceFile const* file = span_source(existing->decls[i].name);
         if (!file || !file->is_module) return false;
     }
     return true;
@@ -1216,7 +1216,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         props.default_export = false; // TODO: TS1319 and friends
     }
     SymbolTable* table;
-    csview name = props.symbol_name.buf ? props.symbol_name : props.name.sv;
+    csview name = props.symbol_name.buf ? props.symbol_name : span_sv(props.name);
     if (props.default_export) {
         symbol_ensure_exports(scope->container);
         table = scope->container->exports;
@@ -1251,14 +1251,14 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (!merged && props.default_export) {
         // Named like its (first) declaration (tsc's getNameOfSymbolAsWritten), and exported like the declarations
         // `export default x` refers to
-        symbol->name = span_valid(props.name) ? props.name.sv : c_sv("default");
+        symbol->name = span_valid(props.name) ? span_sv(props.name) : c_sv("default");
         symbol->name_span = props.name;
         symbol->is_default_export = true;
         symbol->referenced = SYMBOL_ANY_MEANING;
         symbol->parent = scope->container;
     } else if (props.default_export && !span_valid(symbol->name_span) && span_valid(props.name)) {
         // Named by its first named declaration
-        symbol->name = props.name.sv;
+        symbol->name = span_sv(props.name);
         symbol->name_span = props.name;
     } else if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
@@ -1304,7 +1304,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
 // default export, see symbol_default_export_local_name()
 static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes) {
     bool merged;
-    Symbol* local = declare_symbol(me, &my locals, name.sv, name, SYMBOL_NONE, excludes, false, &merged);
+    Symbol* local = declare_symbol(me, &my locals, span_sv(name), name, SYMBOL_NONE, excludes, false, &merged);
     if (!merged) {
         local->name_span = name;
         local->is_local = true;
@@ -1364,7 +1364,7 @@ static u32 declaration_spaces(Symbol* owner, SymbolDecl const* decl, bool resolv
 }
 
 static bool span_within(Span inner, Span outer) {
-    return inner.source == outer.source && span_start_ptr(inner) >= span_start_ptr(outer) &&
+    return span_source(inner) == span_source(outer) && span_start_ptr(inner) >= span_start_ptr(outer) &&
         span_end_ptr(inner) <= span_end_ptr(outer);
 }
 
@@ -1424,7 +1424,7 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
         u32 excludes = symbol_excludes(decl->flags), earlier = 0;
         for (u32 l = 0; l < local->decl_count; l++) {
             SymbolDecl const* other = &local->decls[l];
-            if (other->flags && other->full.source == decl->full.source &&
+            if (other->flags && span_source(other->full) == span_source(decl->full) &&
                 (span_start_ptr(other->full) < span_start_ptr(decl->full) || other->kind == SYMBOL_DECL_FUNCTION)
             ) {
                 earlier |= other->flags;
@@ -1434,7 +1434,7 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
         unsigned code = (earlier | decl->flags) & SYMBOL_ENUM ? 2567 : earlier & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
         for (u32 l = 0; l < local->decl_count; l++) {
             SymbolDecl const* other = &local->decls[l];
-            if (other->flags && other->full.source == decl->full.source &&
+            if (other->flags && span_source(other->full) == span_source(decl->full) &&
                 (span_start_ptr(other->full) < span_start_ptr(decl->full) || other->kind == SYMBOL_DECL_FUNCTION)
             ) {
                 report_conflict(binder_errs(my binder), other->name, code);
@@ -1534,8 +1534,8 @@ void scope_check_export_merges(Scope* me, Span block) {
 static Span first_token(Span full) {
     if (!span_valid(full)) return full;
     isize len = 0;
-    while (len < full.sv.size && (isalnum((unsigned char)full.sv.buf[len]) || full.sv.buf[len] == '_')) len++;
-    full.sv.size = len ? len : 1;
+    while (len < full.size && (isalnum((unsigned char)full.buf[len]) || full.buf[len] == '_')) len++;
+    full.size = len ? len : 1;
     return full;
 }
 
@@ -1641,7 +1641,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             if (span_valid(item->modifiers)) { // (at the whole declaration)
                 Span whole = span_with_semicolon(item->full_span);
                 if (span_start_ptr(item->modifiers) < span_start_ptr(whole)) {
-                    whole = span_make(whole.source, span_start_ptr(item->modifiers), span_end_ptr(whole));
+                    whole = span_make_in(whole, span_start_ptr(item->modifiers), span_end_ptr(whole));
                 }
                 error_ctx_error_d(binder_errs(my binder), whole, 1184, "Modifiers cannot appear here.");
             }
@@ -1790,8 +1790,8 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     bool top = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT || my kind == SCOPE_GLOBAL_AUGMENTATION ||
         my kind == SCOPE_NAMESPACE || (my container && my container->is_module && my kind != SCOPE_BLOCK &&
             my kind != SCOPE_FUNCTION && my kind != SCOPE_STATIC_BLOCK);
-    if (!top && span_valid(statement) && csview_starts_with(statement.sv, "export")) {
-        Span first = span_make(statement.source, statement.sv.buf, statement.sv.buf + 6);
+    if (!top && span_valid(statement) && csview_starts_with(span_sv(statement), "export")) {
+        Span first = span_make_in(statement, statement.buf, statement.buf + 6);
         if (export_equals) {
             error_ctx_grammar_error_d(binder_errs(my binder), first, 1231, "An export assignment must be at the top level of a file or module declaration.");
         } else {
@@ -1833,18 +1833,18 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         my container->module->has_export_assignment = true;
     }
     Span name = alias ? expr_outer_span(expr) : statement;
-    if (expr->tag == EXPR_IMPLICIT_ANY && span_valid(expr_outer_span(expr)) && !expr_outer_span(expr).sv.size) {
+    if (expr->tag == EXPR_IMPLICIT_ANY && span_valid(expr_outer_span(expr)) && !expr_outer_span(expr).size) {
         // A missing expression is a missing identifier to tsc, at its full start (the end of `default`)
         char const* at = span_start_ptr(expr_outer_span(expr));
         char const* file_start = span_start_ptr(statement);
         while (at > file_start && (at[-1] == ' ' || at[-1] == '\t')) at--;
-        name = span_make(expr_outer_span(expr).source, at, at);
+        name = span_make_in(expr_outer_span(expr), at, at);
     }
     Symbol* symbol = declare_symbol(
         me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged
     );
     if (!merged) {
-        symbol->name = alias ? expr->inner_span.sv : export_name;
+        symbol->name = alias ? span_sv(expr->inner_span) : export_name;
         symbol->name_span = alias ? expr->inner_span : statement;
         symbol->parent = my container;
         symbol->is_default_export = !export_equals;
@@ -1950,8 +1950,8 @@ static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
     // (Named as written: a string literal with its quotes, tsgo's getNameOfSymbolAsWritten)
     Expr const* key = vec_expr_at(&call->call->args, 1);
     Span shown = key->literal.tag == VALUE_STRING ? key->inner_span : name;
-    declare_commonjs_export(me, name.sv, shown, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level, false);
-    call->call->declares = symbol_table_get(my container->exports, name.sv);
+    declare_commonjs_export(me, span_sv(name), shown, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level, false);
+    call->call->declares = symbol_table_get(my container->exports, span_sv(name));
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
@@ -1969,11 +1969,11 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
             // (`exports["b"] = v` is named `"b"` where it's shown, like tsc's symbol of a string literal name)
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
                 op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
-            declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
+            declare_commonjs_export(me, span_sv(name), shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
             // (The property access is the declaration, which a read in its flow container finds undefined before it:
             // expr_link_assignment_declaration())
             if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !op->left.property->declares) {
-                Symbol* exported = symbol_table_get(my container->exports, name.sv);
+                Symbol* exported = symbol_table_get(my container->exports, span_sv(name));
                 if (exported && !(exported->flags & SYMBOL_ALIAS)) op->left.property->declares = exported;
             }
         }   break;
@@ -2028,7 +2028,7 @@ static void note_top_level_assignments(CommonJsWalk* walk, Expr const* expr) {
 static void declare_commonjs_variable(Scope* me, csview name, SymbolDeclKind kind) {
     if (symbol_table_get(&my locals, name)) return;
     SourceFile* file = my file;
-    Span at = { .source = file, .sv = csview_from_n(source_file_start(file), 0) };
+    Span at = span_from_sv(file, csview_from_n(source_file_start(file), 0));
     bool merged;
     Symbol* symbol = declare_symbol(me, &my locals, name, at, SYMBOL_FUNCTION_SCOPED_VARIABLE, 0, false, &merged);
     symbol->name = name;
@@ -2206,7 +2206,7 @@ static void ast_attributes(struct ImportAttributes const* attributes, CallExpr c
             if (ret->count == c_arraylen(ret->items)) break;
             bool known = i->value.tag == EXPR_LITERAL && i->value.literal.tag == VALUE_STRING;
             ret->items[ret->count++] = (ModuleAttr){
-                .name = unquoted(i->name.sv), .value = known ? cstr_sv(&i->value.literal.string) : c_sv(""), .known = known,
+                .name = unquoted(span_sv(i->name)), .value = known ? cstr_sv(&i->value.literal.string) : c_sv(""), .known = known,
             };
         }
         return;
@@ -2529,7 +2529,7 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
         for (u32 d = 0; d < dup_count; d++) {
             if (dups[d].entry != e || !span_valid(dups[d].star->full_span)) continue;
             Span at = span_with_semicolon(dups[d].star->full_span);
-            if (!at.source || at.source->is_stdlib) continue;
+            if (!span_source(at) || span_source(at)->is_stdlib) continue;
             error_ctx_error_d(walk->errs, at, 2308, "Module ", first_star[e]->module_ref->span,
                 " has already exported a member named '", symbol_entry_name(entry),
                 "'. Consider explicitly re-exporting to resolve the ambiguity.");
@@ -2639,19 +2639,19 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     ErrorCtx* errs = my alias->scope->binder->errs;
     if (vec_span_is_empty(&item->alias_path)) return nullptr;
     Span first = *vec_span_front(&item->alias_path);
-    if (!first.sv.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
+    if (!first.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
     Symbol* target;
     if (vec_span_size(&item->alias_path) == 1) {
         // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace)
-        target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
+        target = scope_resolve(my alias->scope, span_sv(first), SYMBOL_NAMESPACE);
         if (target == me) target = nullptr;
         if (!target) {
-            Symbol const* other = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_TYPE);
+            Symbol const* other = scope_resolve(my alias->scope, span_sv(first), SYMBOL_VALUE | SYMBOL_TYPE);
             if (other == me) other = nullptr;
             if (!other) {
                 // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace meaning, with a spelling suggestion,
                 // whose candidates' aliases are resolved: an alias in flight is TS2303 then)
-                report_misspelled_or(my alias->scope, first, first.sv, SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
+                report_misspelled_or(my alias->scope, first, span_sv(first), SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
             } else if (symbol_resolved_flags(other) & SYMBOL_TYPE) {
                 error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
             } else {
@@ -2664,7 +2664,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         return resolve_if_pure_alias(target);
     }
 
-    target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
+    target = scope_resolve(my alias->scope, span_sv(first), SYMBOL_NAMESPACE);
     if (target == me) target = nullptr;
     if (!target) {
         error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
@@ -2675,11 +2675,11 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     target = resolve_if_pure_alias(target);
     for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
         Span name = *vec_span_at(&item->alias_path, i);
-        if (!name.sv.size) return nullptr; // (A missing name)
+        if (!name.size) return nullptr; // (A missing name)
         bool last = i == vec_span_size(&item->alias_path) - 1;
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
-        Symbol* found = (Symbol*)symbol_namespace_member(container, name.sv);
+        Symbol* found = (Symbol*)symbol_namespace_member(container, span_sv(name));
         Symbol* next = resolve_if_pure_alias(found);
         // (An export that is an alias resolving to nothing, a circular one (TS2303 there): found, unknown, nothing more
         // to say, tsc's resolveEntityName gets unknownSymbol from resolveAlias)
@@ -2817,7 +2817,7 @@ static bool is_global_declaration(Binder const* binder, Symbol const* symbol) {
     if (!global || (global != symbol && global != binder_redirect(binder, symbol))) return false;
     // (`global {}` can also be in a script's `declare module "m" {}`: @types/node's buffer.buffer.d.ts)
     if (symbol->decls[0].block) return symbol->decls[0].block->kind == SCOPE_SCRIPT;
-    SourceFile const* file = symbol->decls[0].full.source ? symbol->decls[0].full.source : symbol->decls[0].name.source;
+    SourceFile const* file = span_source(symbol->decls[0].full) ? span_source(symbol->decls[0].full) : span_source(symbol->decls[0].name);
     return file && !file->is_module;
 }
 
@@ -2829,7 +2829,7 @@ static void report_non_local_export(ErrorCtx* errs, Span name) {
 // getEmitSyntaxForUsageLocation)
 // Whether the import is emitted as ES module syntax (tsc's getEmitSyntaxForModuleSpecifierExpression is ESNext)
 static bool esm_usage(PortItem const* item) {
-    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* importer = span_source(item->decl_name);
     if (!importer || item->is_require) return false;
     ModuleKind usage = source_file_emit_module_kind(importer);
     return usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
@@ -2914,7 +2914,7 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
 void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs) {
     Span name = item->source_name;
     // (tsc's errorNoModuleMemberSymbol: a close enough export (for an identifier), then a default export)
-    if (span_valid(name) && name.sv.size && name.sv.buf[0] != '"' && name.sv.buf[0] != '\'') {
+    if (span_valid(name) && name.size && name.buf[0] != '"' && name.buf[0] != '\'') {
         cstr module_name = module_name_for_error(module, item->module_ref, true);
         // (Among the exports of what `export =` names, tsc's targetSymbol)
         Symbol const* target = module_export_equals((Symbol*)module);
@@ -2939,7 +2939,7 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
         CompilerOptions const* options = compiler_options();
         if (options->module >= MODULE_KIND_ES2015) {
             error_ctx_error_d(errs, name, 2595, "'", name, "' can only be imported by using a default import.");
-        } else if (name.source && name.source->is_js) {
+        } else if (span_source(name) && span_source(name)->is_js) {
             error_ctx_error_d(errs, name, 2597, "'", name, "' can only be imported by using a 'require' call or by using a default import.");
         } else {
             error_ctx_error_d(errs, name, 2616, "'", name, "' can only be imported by using 'import ", name, " = require(",
@@ -3023,9 +3023,9 @@ static bool can_have_synthetic_default(PortItem const* item, Symbol* module, Sou
 // tsc's reportNonDefaultExport: TS2613 when the module exports what the import names, TS1192 otherwise
 static void report_non_default_export(PortItem const* item, Symbol* module, ErrorCtx* errs) {
     cstr module_name = module_name_for_error(module, item->module_ref, false);
-    if (symbol_get_export(module, item->decl_name.sv)) {
+    if (symbol_get_export(module, span_sv(item->decl_name))) {
         error_ctx_error_d(errs, item->decl_name, 2613, "Module '", module_name,
-            "' has no default export. Did you mean to use 'import { ", item->decl_name.sv, " } from ", module_name,
+            "' has no default export. Did you mean to use 'import { ", span_sv(item->decl_name), " } from ", module_name,
             "' instead?");
         cstr_drop(&module_name);
         return;
@@ -3053,7 +3053,7 @@ static Symbol* module_dot_exports(Symbol* module) {
 
 // A CommonJS import (by emit syntax: tsc's getEmitSyntaxForModuleSpecifierExpression) of an ES module file
 static bool cjs_imports_esm(PortItem const* item, Symbol const* module) {
-    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* importer = span_source(item->decl_name);
     SourceFile const* target = module->is_module ? module->module->file : nullptr;
     if (!importer || !target || item->is_require) return false;
     return source_file_emit_module_kind(importer) == MODULE_KIND_COMMONJS &&
@@ -3067,7 +3067,7 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     // In Node.js an ES module's import of JSON (a .json file or a .d.json.ts declaration) has only a default, the
     // module itself (tsc's isOnlyImportableAsDefault in getTargetOfImportClause)
     ModuleKind module_kind = compiler_options()->module;
-    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* importer = span_source(item->decl_name);
     // A CommonJS default import of an ES module with a `module.exports` export: `__importDefault(require())` with
     // esModuleInterop, broken without
     Symbol* dot_exports = cjs_imports_esm(item, module) ? module_dot_exports(module) : nullptr;
@@ -3129,11 +3129,11 @@ static Symbol* resolve_entity_alias(Symbol* me) {
     Expr const* e = my alias->entity;
     for (; e->tag == EXPR_PROPERTY && count < c_arraylen(names); e = &e->property->expr) names[count++] = e;
     if (e->tag != EXPR_IDENTIFIER) return entity_value_symbol(me);
-    Symbol* target = scope_resolve(my alias->scope, e->inner_span.sv, SYMBOL_NAMESPACE);
+    Symbol* target = scope_resolve(my alias->scope, span_sv(e->inner_span), SYMBOL_NAMESPACE);
     if (!target || target == me) return entity_value_symbol(me);
     target = resolve_if_pure_alias(target);
     for (u32 i = count; i-- > 0;) {
-        csview name = names[i]->property->prop.inner_span.sv;
+        csview name = span_sv(names[i]->property->prop.inner_span);
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return entity_value_symbol(me);
         Symbol* found = symbol_get_export(container, name);
@@ -3175,7 +3175,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
         // `export default x`, TS2304 comes from the expression
-        Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
+        Symbol* found = scope_resolve(my alias->scope, span_sv(my alias->name), SYMBOL_ANY_MEANING);
         // (A predefined type keyword isn't a symbol to tsc's resolveEntityName: `export = string` names nothing, the
         // unknown symbol, which has every meaning)
         if (symbol_is_builtin_type(found)) found = nullptr;
@@ -3186,9 +3186,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
         // `exports.y = y` or `module.exports = { parseInt }` with no local of the name is its own target in flight:
         // circular (TS2303), the global or TS2304 aside
         if (file && file->is_js && file->is_commonjs && file->scope && file->scope->container &&
-            file->scope->container->exports && (!found || found == symbol_table_get(&my binder->globals, my alias->name.sv))
+            file->scope->container->exports && (!found || found == symbol_table_get(&my binder->globals, span_sv(my alias->name)))
         ) {
-            Symbol* exported = symbol_table_get(file->scope->container->exports, my alias->name.sv);
+            Symbol* exported = symbol_table_get(file->scope->container->exports, span_sv(my alias->name));
             if (exported && (exported->flags & SYMBOL_ALIAS) && !(exported->flags & (SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE))) {
                 symbol_resolve_alias(exported);
                 if (my alias->state == ALIAS_CIRCULAR) return nullptr;
@@ -3199,7 +3199,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // aliases among the candidates: one that reaches this alias in flight makes it TS2303. The TS2304 itself
             // comes from the expression)
             Suggestion ignored = {0};
-            scope_suggest(my alias->scope, my alias->name.sv, SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE, &ignored);
+            scope_suggest(my alias->scope, span_sv(my alias->name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE, &ignored);
         }
         // A local type and an exported value of the name are one symbol in tsc, the local one, which has the exported
         // one as its exportSymbol: `interface F {}` + `export const F = ...` + `export default F` exports that local
@@ -3207,7 +3207,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
         // (getTypeOfAlias). A placeholder value_target (the error type) says so
         Symbol* container = my alias->scope->container;
         if (found && !(found->flags & SYMBOL_VALUE) && container && container->exports) {
-            Symbol* value = symbol_table_get(container->exports, my alias->name.sv);
+            Symbol* value = symbol_table_get(container->exports, span_sv(my alias->name));
             if (value && value != found && value != me && (value->flags & SYMBOL_VALUE)) {
                 Symbol* unknown = binder_new_placeholder(my binder, my alias->name, my alias->name);
                 unknown->is_unresolved = true;
@@ -3249,7 +3249,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
-            if (!item->source_name.sv.size) return nullptr; // A missing name (`import { "x" }`, the parser's TS1003)
+            if (!item->source_name.size) return nullptr; // A missing name (`import { "x" }`, the parser's TS1003)
             if (csview_equals(port_item_name(item->source_name), "default")) {
                 return resolve_default_target(item, module, assigned, errs);
             }
@@ -3311,14 +3311,14 @@ static Symbol* resolve_alias_target(Symbol* me) {
             return resolve_default_target(item, module, assigned, errs);
 
         case PORT_EXPORT_SPECIFIC: {
-            Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);
+            Symbol* found = scope_resolve(my alias->scope, span_sv(item->source_name), SYMBOL_ANY_MEANING);
             // (tsc's primitive types and `undefined` aren't symbols its resolveName finds)
             if (symbol_is_builtin_type(found)) found = nullptr;
             if (found == me && (my flags & SYMBOL_ANY_MEANING & ~(u32)SYMBOL_ALIAS)) {
                 // `export class F {}` + `export { F }`: one export symbol (TS2323), which tsc's resolveName finds for
                 // the specifier and is its own target, conflicting with itself in checkAliasSymbol. In a JavaScript
                 // file a type target (a JSDoc typedef the file exports by itself) is TS18043 there first
-                if (item->source_name.source && item->source_name.source->is_js && !(my flags & SYMBOL_VALUE) &&
+                if (span_source(item->source_name) && span_source(item->source_name)->is_js && !(my flags & SYMBOL_VALUE) &&
                     !item->type_only
                 ) {
                     Error* error = error_ctx_error_d(errs, item->source_name, 18043,
@@ -3336,9 +3336,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 return me;
             }
             if (!found || found == me) {
-                if (export_names_global_primitive(item->source_name.sv)) {
+                if (export_names_global_primitive(span_sv(item->source_name))) {
                     report_non_local_export(errs, item->source_name);
-                } else if (item->source_name.sv.size && (*item->source_name.sv.buf == '"' || *item->source_name.sv.buf == '\'')) {
+                } else if (item->source_name.size && (*item->source_name.buf == '"' || *item->source_name.buf == '\'')) {
                     // `export { "x" }` (tsc's checkExportSpecifier skips it: the parser's TS1003)
                 } else {
                     // (tsc's resolveName for the export specifier: with spelling suggestions)
@@ -3359,7 +3359,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 PortItem* alias_item = found->alias->item;
                 alias_item->value_use_checked = true;
                 Span first = *vec_span_front(&alias_item->alias_path);
-                if (first.sv.size && !scope_get_value(found->alias->scope, first.sv, nullptr)) {
+                if (first.size && !scope_get_value(found->alias->scope, span_sv(first), nullptr)) {
                     scope_report_value_not_found(found->alias->scope, first, false, found->alias->scope->binder->errs);
                 }
             }
@@ -3444,10 +3444,10 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         // (A specifier is reported whole: `A as B`)
         bool specifier = item && (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC ||
             item->tag == PORT_REEXPORT_SPECIFIC);
-        if (specifier && span_valid(item->source_name) && item->source_name.source == at.source &&
+        if (specifier && span_valid(item->source_name) && span_source(item->source_name) == span_source(at) &&
             span_start_ptr(item->source_name) < span_start_ptr(at)
         ) {
-            at = span_make(at.source, span_start_ptr(item->source_name), span_end_ptr(at));
+            at = span_make_in(at, span_start_ptr(item->source_name), span_end_ptr(at));
         }
         if (!(item && item->wrong_context)) {
             error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
@@ -3533,7 +3533,7 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Sym
         if (!my alias->item) {
             // `export = x` / `export default x`: what the name finds (tsc's getTargetOfExportAssignment marks it)
             if (my alias->class_expr || my alias->entity || !my alias->scope || !span_valid(my alias->name)) return nullptr;
-            Symbol const* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
+            Symbol const* found = scope_resolve(my alias->scope, span_sv(my alias->name), SYMBOL_ANY_MEANING);
             if (found == me) return nullptr;
             me = found;
             continue;
@@ -3599,7 +3599,7 @@ void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
     if (decl->module_ref->file || memchr(path.buf, '*', (size_t)path.size) || symbol_table_get_own(&my pattern_augmentations, path, hash)) {
         return;
     }
-    Symbol* module = binder_new_symbol(me, decl->name.sv, SYMBOL_VALUE_MODULE);
+    Symbol* module = binder_new_symbol(me, span_sv(decl->name), SYMBOL_VALUE_MODULE);
     module->is_module = true;
     module->module = arena_new(binder_arena(me), SymbolModule);
     module->name_span = decl->name;
@@ -3776,7 +3776,7 @@ static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
     // that other files' imports of the name would find (an augmentation of a file outside the program)
     if (!ret) {
         if (!ref->detached_module) {
-            Symbol* module = binder_new_symbol(me, decl->name.sv, SYMBOL_VALUE_MODULE);
+            Symbol* module = binder_new_symbol(me, span_sv(decl->name), SYMBOL_VALUE_MODULE);
             module->is_module = true;
             module->module = arena_new(binder_arena(me), SymbolModule);
             module->name_span = decl->name;
@@ -3951,7 +3951,7 @@ void binder_resolve_remaining_aliases(Binder* me) {
 }
 
 bool symbol_const_enum_is_ambient(Symbol const* me) {
-    SourceFile const* source = my name_span.source;
+    SourceFile const* source = span_source(my name_span);
     if (source && source->reference_preserves_const_enums) return false;
     return my is_ambient || (source && source->reference_const_enums_ambient);
 }
@@ -4037,7 +4037,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
             case PORT_REEXPORT_SPECIFIC: {
                 // (`import type { A } from "./a"; export { A }` is fine without verbatimModuleSyntax: a transpiler
                 // sees it's a type)
-                SourceFile const* type_only_file = type_only ? type_only->decl_name.source : nullptr;
+                SourceFile const* type_only_file = type_only ? span_source(type_only->decl_name) : nullptr;
                 if (!options->verbatim_module_syntax && type_only_file == file) break;
                 Error* error = is_type ?
                     error_ctx_error_d(errs, at, 1205, "Re-exporting a type when '", flag,
@@ -4083,7 +4083,7 @@ static void merge_into_umd_globals(Binder* me) {
         bool augmentation_merges = false;
         for (u32 d = 0; d < global->decl_count && target == global; d++) {
             augmentation_merges |= global->decls[d].kind != SYMBOL_DECL_ALIAS && global->alias->item &&
-                global->decls[d].full.source == global->alias->item->full_span.source;
+                span_source(global->decls[d].full) == span_source(global->alias->item->full_span);
         }
         if (target == global && global->alias->item && augmentation_merges) {
             error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(global->alias->item->full_span), 2303,
@@ -4192,7 +4192,7 @@ void binder_link(Binder* me) {
         bool cross_file = false;
         for (u32 d = 1; d < symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ALIAS; d++) {
             SymbolDecl const* other = &symbol->decls[d];
-            if (other->kind == SYMBOL_DECL_ALIAS || !(other->flags & excluded) || other->full.source == symbol->decls[0].full.source) {
+            if (other->kind == SYMBOL_DECL_ALIAS || !(other->flags & excluded) || span_source(other->full) == span_source(symbol->decls[0].full)) {
                 continue;
             }
             // (reportMergeSymbolError's message: an enum's TS2567, a block-scoped variable's TS2451)
@@ -4389,10 +4389,10 @@ static int suggest_compare_symbols(void* ctx, isize a, isize b) {
     Symbol const* sb = b >= my extra ? my entries[b - my extra].symbol : nullptr;
     Span da = sa && sa->decl_count ? sa->decls[0].name : span_null;
     Span db = sb && sb->decl_count ? sb->decls[0].name : span_null;
-    bool ha = span_valid(da) && da.source, hb = span_valid(db) && db.source;
+    bool ha = span_valid(da) && span_source(da), hb = span_valid(db) && span_source(db);
     if (ha && hb) {
-        if (da.source != db.source) return da.source->program_order < db.source->program_order ? -1 : 1;
-        if (da.sv.buf != db.sv.buf) return da.sv.buf < db.sv.buf ? -1 : 1;
+        if (span_source(da) != span_source(db)) return span_source(da)->program_order < span_source(db)->program_order ? -1 : 1;
+        if (da.buf != db.buf) return da.buf < db.buf ? -1 : 1;
     } else if (ha != hb) {
         return ha ? -1 : 1;
     }
@@ -4503,7 +4503,7 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
     for (isize i = 0; i < compiler_options()->types.count; i++) {
         if (cstr_equals(&compiler_options()->types.items[i], "*")) types = false;
     }
-    csview n = name.sv;
+    csview n = span_sv(name);
     if (name_is_one_of(n, dom, 2)) {
         error_ctx_error_d(errs, name, 2584, "Cannot find name '", name, "'. Do you need to change your target library? "
             "Try changing the 'lib' compiler option to include 'dom'.");
@@ -4538,12 +4538,12 @@ static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning
 
 static void report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
     // A global of a later lib is said to be so rather than misspelled
-    char const* lib = lib_feature_of_global(name.sv);
+    char const* lib = lib_feature_of_global(span_sv(name));
     if (lib) {
         error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
-    if (report_misspelled(me, name, name.sv, meaning, false, errs)) return;
+    if (report_misspelled(me, name, span_sv(name), meaning, false, errs)) return;
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
@@ -4652,7 +4652,7 @@ static void report_misspelled_or(
 // (A suggestion's diagnostic sorts by its own code: tsgo's CompareDiagnostics has no canonicalHead)
 static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs) {
     // (Not where nothing is reported, a skipLibCheck declaration file's: a suggestion looks at every name in scope)
-    if (!errs || (at.source && !source_file_is_checked(at.source))) return false;
+    if (!errs || (span_source(at) && !source_file_is_checked(span_source(at)))) return false;
     Suggestion suggestion = {0};
     if (!scope_suggest(me, name, meaning, &suggestion)) return false;
     Error* error = namespace ?
@@ -4676,7 +4676,7 @@ void scope_report_jsx_factory_not_found(Scope const* me, Span at, csview name, u
 }
 
 void scope_report_namespace_not_found(Scope const* me, Span at, ErrorCtx* errs) {
-    report_misspelled_or(me, at, at.sv, SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
+    report_misspelled_or(me, at, span_sv(at), SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
 }
 
 typedef struct PendingNotFound {
@@ -4690,7 +4690,7 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
-        ClassItem const* field = in_class ? scope_invalid_initializer_field(me, name.sv, nullptr) : nullptr;
+        ClassItem const* field = in_class ? scope_invalid_initializer_field(me, span_sv(name), nullptr) : nullptr;
         if (field) {
             scope_report_invalid_initializer_reference(field, name, errs);
             return;
@@ -4714,7 +4714,7 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
 // static member of a class around it, or an instance member of the class it is directly a member of
 static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
     Checker* checker = current_checker;
-    Atom const* atom = checker_atom(checker, name.sv);
+    Atom const* atom = checker_atom(checker, span_sv(name));
     bool container_found = false, direct = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         ThisKind kind = scope_rare(scope)->this_ref.kind;
@@ -4779,7 +4779,7 @@ static void report_types_as_values(Binder* me) {
         PendingTypeAsValue const* pending = &my pending_type_as_value[i];
         Span name = pending->name;
         if (maybe_mapped_type(pending->type)) {
-            bool k = csview_equals(name.sv, "K");
+            bool k = csview_equals(span_sv(name), "K");
             error_ctx_error_d(pending->errs, name, 2690, "'", name, "' only refers to a type, but is being used as a value "
                 "here. Did you mean to use '", k ? "P" : "K", " in ", name, "'?");
         } else {
@@ -4796,7 +4796,7 @@ void scope_report_missing_prefixes(Binder* me) {
     for (u32 i = 0; i < my pending_not_found_count; i++) {
         PendingNotFound const* pending = &my pending_not_found[i];
         if (report_missing_prefix(pending->scope, pending->name, pending->errs)) continue;
-        ClassItem const* field = scope_invalid_initializer_field(pending->scope, pending->name.sv, nullptr);
+        ClassItem const* field = scope_invalid_initializer_field(pending->scope, span_sv(pending->name), nullptr);
         if (field) {
             scope_report_invalid_initializer_reference(field, pending->name, pending->errs);
         } else {
@@ -4813,7 +4813,7 @@ csview symbol_default_export_local_name(Symbol const* me) {
         SymbolDecl const* decl = &my decls[i];
         bool declaration = decl->kind == SYMBOL_DECL_CLASS || decl->kind == SYMBOL_DECL_FUNCTION ||
             decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_ENUM;
-        if (declaration && span_valid(decl->name)) return decl->name.sv;
+        if (declaration && span_valid(decl->name)) return span_sv(decl->name);
     }
     return (csview){0};
 }
@@ -4903,7 +4903,7 @@ ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, S
         if (found && scope_declares_symbol(scope, found)) break;
         // (tsc keeps the outermost one when fields are nested in class expressions)
         for (u32 i = 0; i < scope_rare(scope)->constructor_local_count; i++) {
-            if (csview_equals_sv(scope_rare(scope)->constructor_locals[i].sv, name)) {
+            if (csview_equals_sv(span_sv(scope_rare(scope)->constructor_locals[i]), name)) {
                 ret = scope_rare(scope)->instance_field;
                 break;
             }
@@ -4914,7 +4914,7 @@ ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, S
 
 void scope_report_invalid_initializer_reference(ClassItem const* field, Span name, ErrorCtx* errs) {
     Span type = field->field.has_explicit_type ? field->field.explicit_type_span : span_null;
-    bool in_type = span_valid(type) && name.source == type.source && span_start_ptr(name) >= span_start_ptr(type) &&
+    bool in_type = span_valid(type) && span_source(name) == span_source(type) && span_start_ptr(name) >= span_start_ptr(type) &&
         span_start_ptr(name) <= span_end_ptr(type);
     if (in_type) {
         error_ctx_error_d(errs, name, 2844, "Type of instance member variable '", field->field.name_span,
@@ -5068,7 +5068,7 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
     if (found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return false;
     SymbolDecl const* value = nullptr;
     for (u32 i = 0; i < found->decl_count && !value; i++) {
-        if ((found->decls[i].flags & SYMBOL_VALUE) && found->decls[i].full.source == file) value = &found->decls[i];
+        if ((found->decls[i].flags & SYMBOL_VALUE) && span_source(found->decls[i].full) == file) value = &found->decls[i];
     }
     if (!value) return false;
     switch (value->kind) {
@@ -5095,7 +5095,7 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
 static bool expando_host_is_private(Symbol const* host, SourceFile const* file) {
     if (!host->is_local) return false;
     for (u32 i = 0; i < host->decl_count; i++) {
-        if (host->decls[i].full.source != file) return false;
+        if (span_source(host->decls[i].full) != file) return false;
     }
     return true;
 }
@@ -5113,7 +5113,7 @@ static void mark_expando_host(Symbol* host, void const* node) {
 static void set_expando_initializer_host(Expr* init, Symbol* host) {
     if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->expando_host = host;
     if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
-    SourceFile* file = init ? (SourceFile*)init->inner_span.source : nullptr;
+    SourceFile* file = init ? (SourceFile*)span_source(init->inner_span) : nullptr;
     if (init && init->tag == EXPR_OBJECT && file) {
         // (Once per literal and binder: a file bound again by another program has a host of its own there)
         init->expando_container = true;
@@ -5143,9 +5143,9 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
         if (!js || !span_valid(name)) return nullptr;
         Expr* ignored;
         Symbol* object = expando_host(me, &entity->property->expr, &ignored);
-        found = object && object->exports ? symbol_table_get(object->exports, name.sv) : nullptr;
+        found = object && object->exports ? symbol_table_get(object->exports, span_sv(name)) : nullptr;
     } else if (entity->tag == EXPR_IDENTIFIER && !entity->identifier.keyword) {
-        found = lookup_name_for_property_access(me, entity->inner_span.sv);
+        found = lookup_name_for_property_access(me, span_sv(entity->inner_span));
         // The local `f` of `export default function f` is the default export
         if (found && symbol_rare(found)->export_symbol) found = symbol_rare(found)->export_symbol;
     }
@@ -5202,8 +5202,8 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
     ) {
         late_bound_key = &left->property->prop;
-        name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
-        if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
+        name = span_make_in(expr_outer_span(left), span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
+        if (!span_valid(name) || !csview_starts_with(span_sv(name), "[")) return;
     }
     if (!span_valid(name)) return;
     if (late_bound_key && !expr_is_entity_name(object)) return;
@@ -5232,7 +5232,7 @@ static void add_expando_member(
     AssignmentDeclKind kind
 ) {
     // A private name is no expando (tsc's isBindableStaticNameExpression)
-    if (name.sv.size && name.sv.buf[0] == '#') return;
+    if (name.size && name.buf[0] == '#') return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
     if (!host) return;
@@ -5258,14 +5258,14 @@ static void add_expando_member(
     // file's merge later)
     // (A class's exports have its `prototype` in tsgo)
     if (span_equals(name, "prototype") && (host->flags & SYMBOL_CLASS)) return;
-    Symbol const* existing = symbol_table_get(host->exports, name.sv);
+    Symbol const* existing = symbol_table_get(host->exports, span_sv(name));
     for (u32 i = 0; existing && i < existing->decl_count; i++) {
-        if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && existing->decls[i].full.source == my file) return;
+        if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && span_source(existing->decls[i].full) == my file) return;
     }
     bool merged;
-    Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
+    Symbol* member = declare_symbol(me, host->exports, span_sv(name), name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
-        member->name = name.sv;
+        member->name = span_sv(name);
         member->name_span = written_member_name(left, name);
         // (A `{}` container's are the object literal's members in tsgo, whose symbol has no name to qualify them with)
         member->parent = init && init->tag == EXPR_OBJECT ? nullptr : host;
@@ -5329,9 +5329,9 @@ static void declare_assignment_member(
 ) {
     if (!*table) *table = arena_new(binder_arena(my binder), SymbolTable);
     bool merged;
-    Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
+    Symbol* member = declare_symbol(me, *table, span_sv(name), name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
-        member->name = name.sv;
+        member->name = span_sv(name);
         member->name_span = written_member_name(left, name);
         member->parent = parent;
         member->exported = true;
@@ -5364,12 +5364,12 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     Symbol const* class_symbol = object->identifier.target;
     ClassDecl const* class_decl = class_symbol ? symbol_find_node(class_symbol, SYMBOL_DECL_CLASS) : nullptr;
     if (!class_decl) return;
-    ClassItem* field = span_valid(name) ? class_decl_find_member(class_decl, name_cooked(name.sv), is_static) : nullptr;
+    ClassItem* field = span_valid(name) ? class_decl_find_member(class_decl, name_cooked(span_sv(name)), is_static) : nullptr;
     // `this[k] = v` of a field `[k]: T`, written the same way
     for_each (i, vec_class_item, &class_decl->items) {
         if (field) break;
         if (i->tag == CLASS_ITEM_FIELD && i->field.computed_key && i->field.is_static == is_static &&
-            csview_equals_sv(expr_outer_span(i->field.computed_key).sv, expr_outer_span(prop).sv)
+            csview_equals_sv(span_sv(expr_outer_span(i->field.computed_key)), span_sv(expr_outer_span(prop)))
         ) {
             field = (ClassItem*)i;
         }
@@ -5402,7 +5402,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     // (`this[k]` with an entity name k declares no instance member: tsgo's bindThisPropertyAssignment gives the late
     // bound name to the class's exports, which getMembersOfSymbol only reads for its static side)
     // (Private names must be declared, even in JavaScript)
-    if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
+    if (!span_valid(name) || csview_starts_with(span_sv(name), "#")) return;
     IdentifierExpr const* this = expr_this_keyword(object);
     if (!this) return;
     ResolveShard* shard = js_shard(me);
@@ -5430,18 +5430,18 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
             declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             if (left->property->context) expr_link_assignment_declaration(left, my binder);
-            Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
+            Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, span_sv(name));
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned) {
                 symbol_rare_mut(member)->constructor_assigned = left;
                 symbol_rare_mut(member)->declaring_constructor = function;
             }
             // A field the class body declares without a type or initializer has the type the constructor assigns
             ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
-            ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, false) : nullptr;
+            ClassItem* field = class_decl ? class_decl_find_member(class_decl, span_sv(name), false) : nullptr;
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && field && field->tag == CLASS_ITEM_FIELD &&
                 !field->field.has_explicit_type && field->field.value.tag == EXPR_IMPLICIT_ANY
             ) {
-                field->field.js_assigned = symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
+                field->field.js_assigned = symbol_table_get(symbol_rare(class_symbol)->members, span_sv(name));
             }
         }   break;
         case THIS_CLASS_STATIC: {
@@ -5449,7 +5449,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (!class_symbol) return;
             // (A static the class body declares is the symbol: tsgo's declareSymbolEx finds it in the exports)
             ClassDecl const* static_class = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
-            if (static_class && class_decl_find_member(static_class, name.sv, true)) return;
+            if (static_class && class_decl_find_member(static_class, span_sv(name), true)) return;
             symbol_ensure_exports(class_symbol);
             mark_expando_host(class_symbol, left);
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);

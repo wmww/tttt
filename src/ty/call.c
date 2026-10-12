@@ -1189,7 +1189,7 @@ static TyMapper const* infer_type_arguments(
     Ty const* this_arg = info->this_arg;
     Inference inf;
     inference_init(&inf, sig->type_params);
-    SourceFile const* file = info->call ? info->call->callable.inner_span.source : info->call_span.source;
+    SourceFile const* file = info->call ? span_source(info->call->callable.inner_span) : span_source(info->call_span);
     inf.any_default = file && file->is_js;
     ParamShape shape = call_param_shape(me, info, sig, nullptr);
 
@@ -1710,7 +1710,7 @@ static Error* not_callable_error(Checker* me, ErrorCtx* errs, CallInfo const* in
 // stopAfterLineBreak, then isLineBreak of the character before)
 static bool line_break_follows(Span span) {
     char const* c = span_end_ptr(span);
-    char const* end = span.source ? cstr_str(&span.source->contents) + cstr_size(&span.source->contents) : nullptr;
+    char const* end = span_source(span) ? cstr_str(&span_source(span)->contents) + cstr_size(&span_source(span)->contents) : nullptr;
     while (c && c < end) {
         if (*c == '\n' || *c == '\r') return true;
         if (*c == ' ' || *c == '\t' || *c == '\v' || *c == '\f') {
@@ -1834,7 +1834,7 @@ static void report_arity(
             cstr_append_d(&error->message, DEFAULT_DISPLAY, ".");
         } else if (has_rest) {
             error = error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
-        } else if (min == max && min == 1 && args->len == 0 && is_promise_resolve_call(me, info) && span.source && span.source->is_js) {
+        } else if (min == max && min == 1 && args->len == 0 && is_promise_resolve_call(me, info) && span_source(span) && span_source(span)->is_js) {
             // (In JavaScript, where no type argument can be written, a message of its own without related info)
             error_ctx_error_d(errs, span, 2810, "Expected 1 argument, but got 0. 'new Promise()' needs a JSDoc hint to "
                 "produce a 'resolve' that can be called without arguments.");
@@ -1972,10 +1972,10 @@ static Span signature_decl_span(Signature const* sig) {
     while (sig->target) sig = sig->target;
     // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)
     if (sig->function && sig->function->jsdoc_callback && span_valid(sig->function->full_span) &&
-        csview_starts_with(sig->function->full_span.sv, "@overload")
+        csview_starts_with(span_sv(sig->function->full_span), "@overload")
     ) {
         Span full = sig->function->full_span;
-        return span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size);
+        return span_make_in(full, full.buf + 1, full.buf + full.size);
     }
     if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
     if (sig->function && span_valid(function_impl_member_name(sig->function))) return function_impl_member_name(sig->function); // A method signature
@@ -2158,7 +2158,7 @@ static bool is_super_call(CallExpr const* call);
 static TyMapper const* super_filled_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
     TyList params = sig->type_params;
     if (!info->super_fill || !params.len) return nullptr;
-    SourceFile const* file = info->call_span.source;
+    SourceFile const* file = span_source(info->call_span);
     bool js = file && file->is_js;
     if (!js && min_type_arguments(me, sig)) return nullptr;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
@@ -2282,7 +2282,7 @@ static Resolution resolve_with_signatures(
     // A JavaScript `super(...)` whose base clause has no type arguments: the base's constructors that take none
     // (tsgo's getConstructorsForTypeArguments), none of them is a call checked against nothing (no error)
     Signature* filtered[16];
-    if (info->super_fill && info->call_span.source && info->call_span.source->is_js && count <= c_arraylen(filtered)) {
+    if (info->super_fill && span_source(info->call_span) && span_source(info->call_span)->is_js && count <= c_arraylen(filtered)) {
         u32 kept = 0;
         for (u32 i = 0; i < count; i++) {
             signature_resolve(me, signatures[i]);
@@ -2419,7 +2419,7 @@ static Resolution resolve_with_signatures_inner(
                     report_type_argument_arity(me, signatures, count, info, errs);
                 } else {
                     // (JavaScript reports the clause's arity only, TS8026, whatever the count: tsgo's baselines)
-                    bool js = expr_outer_span(&info->call->callable).source && expr_outer_span(&info->call->callable).source->is_js;
+                    bool js = span_source(expr_outer_span(&info->call->callable)) && span_source(expr_outer_span(&info->call->callable))->is_js;
                     bool any_constructor = js;
                     for (u32 i = 0; i < count && !any_constructor; i++) {
                         any_constructor = info->type_args.len >= min_type_arguments(me, signatures[i]) &&
@@ -3348,7 +3348,7 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     if (callee->identifier.import_source && vec_expr_size(&call->args)) {
         module = ty_abstract_module_source_type(me);
     } else if (resolved && !resolved->is_shorthand_module) {
-        module = ty_dynamic_import_module_type(me, resolved, ref->span.source);
+        module = ty_dynamic_import_module_type(me, resolved, span_source(ref->span));
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2711
@@ -4031,9 +4031,9 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
                 s->param_count < decorator_arg_count(dc.arity, dc.count, s->param_count);
         }
         if (uncalled) {
-            error_ctx_error_d(errs, site.at, 1329, "'", decorator->inner_span.sv,
+            error_ctx_error_d(errs, site.at, 1329, "'", span_sv(decorator->inner_span),
                 "' accepts too few arguments to be used as a decorator here. Did you mean to call it first and write '@",
-                decorator->inner_span.sv, "()'?");
+                span_sv(decorator->inner_span), "()'?");
             return;
         }
     }

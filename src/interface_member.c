@@ -130,26 +130,26 @@ Span interface_member_error_span(InterfaceMember const* me) {
     Span at = my key.span;
     if (!interface_member_is_method_signature(me)) return at;
     FunctionImpl const* function = my type.callable->function;
-    if (span_valid(function->full_span) && function->full_span.source == at.source) {
+    if (span_valid(function->full_span) && span_source(function->full_span) == span_source(at)) {
         const char* end = span_end_ptr(function->full_span);
         const char* after = end;
         while (*after == ' ' || *after == '\t') after++;
         if (*after == ';' || *after == ',') end = after + 1;
-        if (end > span_start_ptr(at)) at = span_make(at.source, span_start_ptr(at), end);
+        if (end > span_start_ptr(at)) at = span_make_in(at, span_start_ptr(at), end);
     }
     return at;
 }
 
 // tsc's reportImplicitAny of a property signature, and of a method signature's return type
 static void interface_member_check_implicit_any(InterfaceMember const* me, ErrorCtx* errs) {
-    if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
+    if (my implicit_any && compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js) {
         error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
     }
     // An accessor pair neither of whose sides says the type (tsc's getTypeOfAccessors): at the setter if there is one,
     // else at the getter; a setter without a getter has an implicitly any parameter too
     InterfaceAccessor const* sides = my accessor;
     if (sides && (span_valid(sides->getter_name) || span_valid(sides->setter_name)) && !sides->annotated &&
-        compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js
+        compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js
     ) {
         if (span_valid(sides->setter_name)) {
             error_ctx_error_d(errs, sides->setter_name, 7032, "Property '", sides->setter_name,
@@ -160,7 +160,7 @@ static void interface_member_check_implicit_any(InterfaceMember const* me, Error
         }
     }
     if (sides && span_valid(sides->untyped_setter_param) && !span_valid(sides->getter_name) &&
-        compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js
+        compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js
     ) {
         error_ctx_error_d(errs, sides->untyped_setter_param, 7006, "Parameter '", sides->untyped_setter_param,
             "' implicitly has an 'any' type.");
@@ -256,8 +256,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
         case INTERFACE_KEY_CALLABLE:
             // tsc's checkSignatureDeclaration under noImplicitAny
             if (my type.tag == TYPE_CALLABLE && !my type.callable->function->ret_explicit && compiler_options()->no_implicit_any &&
-                span_valid(my declaration) && my declaration.source &&
-                !my declaration.source->is_js
+                span_valid(my declaration) && span_source(my declaration) &&
+                !span_source(my declaration)->is_js
             ) {
                 Span at = span_with_member_separator(my declaration);
                 if (my type.callable->function->is_constructor) {

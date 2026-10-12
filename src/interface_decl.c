@@ -131,10 +131,10 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     if (first != me) {
         // Lib files are never checked here: when tsc checks them, their first declaration's check is done by the first
         // user one
-        if (!first || !first->name.source || !first->name.source->is_stdlib || !lib_files_checked()) return;
+        if (!first || !span_source(first->name) || !span_source(first->name)->is_stdlib || !lib_files_checked()) return;
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
-            if (decl->kind != SYMBOL_DECL_INTERFACE || !decl->name.source || decl->name.source->is_stdlib) continue;
+            if (decl->kind != SYMBOL_DECL_INTERFACE || !span_source(decl->name) || span_source(decl->name)->is_stdlib) continue;
             if (decl->node != me) return;
             break;
         }
@@ -201,8 +201,8 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
     // tsc's getBaseTypes() reports every declaration of an interface whose bases lead back to it (resolving the bases
     // first: reducing one can find the cycle, `interface Y extends X<Y>` with a mapped type over `keyof Y` in X)
-    if (my symbol && span_valid(my name) && !my name.source->is_stdlib) ty_members(current_checker, ty_declared_type_of(current_checker, my symbol));
-    if (my symbol && span_valid(my name) && !my name.source->is_stdlib && ty_interface_in_base_cycle(current_checker, my symbol)) {
+    if (my symbol && span_valid(my name) && !span_source(my name)->is_stdlib) ty_members(current_checker, ty_declared_type_of(current_checker, my symbol));
+    if (my symbol && span_valid(my name) && !span_source(my name)->is_stdlib && ty_interface_in_base_cycle(current_checker, my symbol)) {
         Ty const* declared = ty_declared_type_of(current_checker, my symbol);
         if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
             declared = ty_reference(current_checker, declared, declared->declared.type_params);
@@ -216,7 +216,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {
         type_typecheck(&extends->type, errs);
-        if (extends->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(extends->span.sv)) {
+        if (extends->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(span_sv(extends->span))) {
             // (A keyword type: what the parser made of an identifier in an expression's place, tsc's
             // checkAndReportErrorForUsingTypeAsValue)
             error_ctx_error_d(errs, extends->span, 2840, "An interface cannot extend a primitive type like '", extends->span,
@@ -245,7 +245,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     InterfaceDecl const* first_checked = nullptr;
     for (u32 d = 0; my symbol && d < my symbol->decl_count && !first_checked; d++) {
         SymbolDecl const* decl = &my symbol->decls[d];
-        if (decl->kind == SYMBOL_DECL_INTERFACE && decl->name.source && !decl->name.source->is_stdlib) first_checked = decl->node;
+        if (decl->kind == SYMBOL_DECL_INTERFACE && span_source(decl->name) && !span_source(decl->name)->is_stdlib) first_checked = decl->node;
     }
     if (first_checked == me) {
         VecInterfaceMember const* lists[16];
@@ -266,7 +266,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     // (tsc's checkTypeForDuplicateIndexSignatures runs for the symbol's first declaration: not at all when that is a
     // lib's and lib files aren't checked)
     SymbolDecl const* first_decl = my symbol && my symbol->decl_count ? &my symbol->decls[0] : nullptr;
-    bool first_is_lib = first_decl && first_decl->name.source && first_decl->name.source->is_stdlib;
+    bool first_is_lib = first_decl && span_source(first_decl->name) && span_source(first_decl->name)->is_stdlib;
     if (first_checked == me && (!first_is_lib || lib_files_checked())) {
         InterfaceMember const* indexes[32];
         u32 index_count = 0;

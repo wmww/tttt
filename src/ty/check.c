@@ -177,11 +177,11 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) {
         // (A method signature is its name, a function type the whole type)
         FunctionImpl const* function = ty->anonymous.node->callable->function;
-        if (function->jsdoc_callback && span_valid(function->full_span) && csview_starts_with(function->full_span.sv, "@callback")) {
+        if (function->jsdoc_callback && span_valid(function->full_span) && csview_starts_with(span_sv(function->full_span), "@callback")) {
             // (A `@callback`'s reparsed signature starts after its name: the next tag, past the comment's `*`s)
             char const* c = span_end_ptr(function->full_span);
             while (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || (*c == '*' && c[1] != '/')) c++;
-            return span_make(function->full_span.source, c, c);
+            return span_make_in(function->full_span, c, c);
         }
         return span_valid(function_impl_member_name(function)) ? function_impl_member_name(function) : function->full_span;
     }
@@ -196,7 +196,7 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     return (Span){0};
 }
 
-static bool in_lib(Span span) { return !span_valid(span) || !span.source || span.source->is_stdlib; }
+static bool in_lib(Span span) { return !span_valid(span) || !span_source(span) || span_source(span)->is_stdlib; }
 
 // The property a target has for a name (tsc's getPropertyOfType): of a union, only if every member has it
 static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* name) {
@@ -380,7 +380,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
         if (target_tuple_like && !target_prop_of(me, declared, name) && !(ty_is_tuple(declared) && i_index < (isize_t)fixed)) {
             continue;
         }
-        if (!expr_outer_span(i).sv.size) continue; // omitted
+        if (!expr_outer_span(i).size) continue; // omitted
         Expr const* check_node = expr_effective_check_node(i);
         Value index = value_number((double)i_index);
         ElaborationItem item = {
@@ -438,7 +438,7 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
     bool array_like_never = (array_like->flags & TYF_NEVER) != 0;
     bool non_array_like_never = (non_array_like->flags & TYF_NEVER) != 0;
     cstr target_str = ty_to_cstr(me, children_target);
-    csview tag = element->tag_name.inner_span.sv;
+    csview tag = span_sv(element->tag_name.inner_span);
     cstr text_message = cstr_d("'", tag, "' components don't accept text as child elements. Text in JSX has the type 'string', "
         "but the expected type of '", atom_sv(children_name), "' is '", target_str, "'.");
     bool reported = false;
@@ -523,10 +523,10 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
 static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     bool reported = false;
     for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
-        if (i->tag == JSX_ATTRIBUTE_SPREAD || csview_contains(i->name.sv, "-")) continue;
+        if (i->tag == JSX_ATTRIBUTE_SPREAD || csview_contains(span_sv(i->name), "-")) continue;
         bool has_value = i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR;
         ElaborationItem item = { .error_span = i->name, .inner = has_value ? &i->value : nullptr };
-        item.name = checker_atom(me, i->name.sv);
+        item.name = checker_atom(me, span_sv(i->name));
         item.name_type = ty_prop_name_literal(me, item.name);
         reported |= elaborate_element(me, &item, source, target, errs);
     }
@@ -770,7 +770,7 @@ static Error* report_unrelated_with_head(
     VecTyReportLine lines = {0};
     ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
     // (A check of a lib's declaration on purpose, when lib files are checked: interface_heritage_typecheck())
-    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span.source && span.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span_source(span) && span_source(span)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
     span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
@@ -1147,7 +1147,7 @@ void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes,
     ObjectLiteralProp* props = calloc(count ? count : 1, sizeof(ObjectLiteralProp));
     panic_if(!props, "out of memory");
     for_each (i, vec_import_attribute, &attributes->elements) {
-        csview name = i->name.sv;
+        csview name = span_sv(i->name);
         if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
         props[i_index] = (ObjectLiteralProp){
             .name = checker_atom(me, name),
@@ -1197,8 +1197,8 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
     if (options->tag == EXPR_OBJECT && !expr_is_perenthisized(options)) {
         for_each (i, vec_object_expr_item, &options->object) {
             ObjectExprItem const* prop = i;
-            if (prop->tag == OBJECT_ITEM_PROPERTY && !prop->computed_key && prop->name_span.sv.size &&
-                *prop->name_span.sv.buf != '"' && *prop->name_span.sv.buf != '\'' && cstr_equals(&prop->name_string, "assert")
+            if (prop->tag == OBJECT_ITEM_PROPERTY && !prop->computed_key && prop->name_span.size &&
+                *prop->name_span.buf != '"' && *prop->name_span.buf != '\'' && cstr_equals(&prop->name_string, "assert")
             ) {
                 // (A checker error in tsgo, not a grammar one: also in a file with parse errors)
                 error_ctx_error_d(errs, prop->name_span, 2880,
@@ -1424,7 +1424,7 @@ static cstr index_name(Checker* me, Ty const* index) {
 // unlike the relation errors' getTypeNamesForErrorDisplay)
 // `index_span`: a bigint literal written there is 'bigint' (tsc's getPropertyTypeForIndexType looks at the node kind)
 static cstr index_type_str(Checker* me, Ty const* index, Span index_span) {
-    csview written = span_valid(index_span) ? index_span.sv : (csview){0};
+    csview written = span_valid(index_span) ? span_sv(index_span) : (csview){0};
     if ((index->flags & TYF_BIGINT_LITERAL) && written.size > 1 && written.buf[0] >= '0' && written.buf[0] <= '9' &&
         written.buf[written.size - 1] == 'n'
     ) {
@@ -1584,7 +1584,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     ErrorCtx* errs
 ) {
     // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
-    if (span_valid(span) && !span.sv.size) return;
+    if (span_valid(span) && !span.size) return;
     cstr name = index_name(me, index);
     // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType,
     // `{}` for `object`, the constraint's for a type parameter)
@@ -1745,10 +1745,10 @@ bool ty_is_js_literal_type(Checker* me, Ty const* type) {
 // An entity name as tsc's entityNameToString writes it: the names and dots, not the whitespace between them
 static cstr entity_name_text(Span span) {
     cstr ret = cstr_null;
-    for (isize i = 0; i < span.sv.size; i++) {
-        char c = span.sv.buf[i];
+    for (isize i = 0; i < span.size; i++) {
+        char c = span.buf[i];
         // (`a?.b` is `a.b`: tsc's entityNameToString)
-        if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '?') cstr_append_n(&ret, &span.sv.buf[i], 1);
+        if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '?') cstr_append_n(&ret, &span.buf[i], 1);
     }
     return ret;
 }
@@ -2193,7 +2193,7 @@ void ty_check_infer_constraints(Checker* me, InferredType const* inferred, Error
         if (other->extends.tag == TYPE_ANY) continue;
         Ty const* other_constraint = ty_from_node(me, &other->extends, (LowerCtx){ .generic = true });
         if (ty_is_related(me, other_constraint, constraint, TY_RELATION_IDENTITY)) continue;
-        error_ctx_error_d(errs, inferred->name, 2838, "All declarations of '", inferred->name.sv,
+        error_ctx_error_d(errs, inferred->name, 2838, "All declarations of '", span_sv(inferred->name),
             "' must have identical constraints.");
         return;
     }
@@ -2369,7 +2369,7 @@ static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty c
     }
     *out = cstr_null;
     if (expr_is_entity_name(&access->expr)) {
-        cstr_append_sv(out, csview_trim(access->expr.inner_span.sv));
+        cstr_append_sv(out, csview_trim(span_sv(access->expr.inner_span)));
         cstr_append(out, ".");
     }
     cstr_append(out, method);
@@ -2551,7 +2551,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         ty_get_prop(me, ty_static_type_of(me, class_symbol), name)
     ) {
         error_ctx_error_d(errs, span, 2576, "Property '", atom_sv(name), "' does not exist on type '", object_str,
-            "'. Did you mean to access the static member '", object_str, "[", csview_trim(access->prop.inner_span.sv),
+            "'. Did you mean to access the static member '", object_str, "[", csview_trim(span_sv(access->prop.inner_span)),
             "]' instead?");
     } else if (number_index) {
         error_ctx_error_d(errs, index_span, 7015,
@@ -2577,8 +2577,8 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             UniqueSymbolDecl const* unique = index->literal.unique;
             if (unique && unique->owner) {
                 // (A property's, `readonly isConcatSpreadable: unique symbol`, by its container: SymbolConstructor.x)
-                cstr qualified = qualified_name_from(me, unique->owner, span.source);
-                if (span_valid(unique->member)) cstr_append_d(&qualified, DEFAULT_DISPLAY, ".", unique->member.sv);
+                cstr qualified = qualified_name_from(me, unique->owner, span_source(span));
+                if (span_valid(unique->member)) cstr_append_d(&qualified, DEFAULT_DISPLAY, ".", span_sv(unique->member));
                 cstr_drop(&index_str);
                 index_str = cstr_d("[", qualified, "]");
                 cstr_drop(&qualified);
@@ -2736,7 +2736,7 @@ static bool is_namespace_import(Expr const* expr) {
 // tsc's isAssignmentToReadonlyEntity for a property
 // `exports.x = v` in a CommonJS file declares x (whatever else declares it: the target of an alias export is a const)
 static bool is_commonjs_export_assignment(PropertyExpr const* access) {
-    SourceFile const* file = expr_outer_span(&access->prop).source;
+    SourceFile const* file = span_source(expr_outer_span(&access->prop));
     if (!file || !file->is_commonjs) return false;
     Expr left = { .tag = EXPR_PROPERTY, .property = (PropertyExpr*)access };
     return expr_commonjs_target(&left, nullptr) == COMMONJS_TARGET_EXPORTS_PROPERTY;
@@ -2780,7 +2780,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     }
     PropertyExpr const* access = operand->property;
     Span name_span = access->prop.inner_span;
-    if (access->form == PROPERTY_EXPR_DOT && span_valid(name_span) && name_span.sv.buf[0] == '#') {
+    if (access->form == PROPERTY_EXPR_DOT && span_valid(name_span) && name_span.buf[0] == '#') {
         error_ctx_error_d(errs, operand->inner_span, 18011, "The operand of a 'delete' operator cannot be a private identifier.");
     }
     Atom const* name = access_name(me, access);
@@ -2950,7 +2950,7 @@ static bool check_accessibility(
             Prop const* root = prop;
             while (root->target) root = root->target;
             Symbol const* symbol = root->decl ? root->decl->symbol : nullptr;
-            csview written = symbol && span_valid(symbol->name_span) ? symbol->name_span.sv : atom_sv(prop->name);
+            csview written = symbol && span_valid(symbol->name_span) ? span_sv(symbol->name_span) : atom_sv(prop->name);
             error_ctx_error_d(errs, span, 2855, "Class field '", written,
                 "' defined by the parent class is not accessible in the child class via super.");
             return false;
@@ -3103,7 +3103,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         declaration_count++;
         for_each (i, vec_generic_item, &generic->items) {
             bool seen = false;
-            for (u32 t = 0; t < target_count && !seen; t++) seen = name_equals(target[t]->name.sv, i->name.sv);
+            for (u32 t = 0; t < target_count && !seen; t++) seen = name_equals(span_sv(target[t]->name), span_sv(i->name));
             if (!seen && target_count < c_arraylen(target)) target[target_count++] = i;
         }
     }
@@ -3117,7 +3117,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         Generic const* generic = class_or_interface_generic(&symbol->decls[d]);
         for (u32 t = 0; generic && t < target_count; t++) {
             for_each (i, vec_generic_item, &generic->items) {
-                if (!name_equals(target[t]->name.sv, i->name.sv)) continue;
+                if (!name_equals(span_sv(target[t]->name), span_sv(i->name))) continue;
                 if (!defaults[t] && i->fallback_explicit) defaults[t] = i->fallback;
                 if (!constraints[t] && i->extends_explicit) constraints[t] = &i->extends;
             }
@@ -3142,7 +3142,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = source_params, .len = count }, (TyList){ .data = target_params, .len = count });
         for (u32 i = 0; i < count && identical; i++) {
             GenericItem const* source = vec_generic_item_at(&generic->items, i);
-            if (!name_equals(source->name.sv, target[i]->name.sv)) {
+            if (!name_equals(span_sv(source->name), span_sv(target[i]->name))) {
                 identical = false;
             } else if (source->extends_explicit && constraints[i] && &source->extends != constraints[i]) {
                 Ty const* a = ty_instantiate(me, ty_of_node(&source->extends), mapper);
@@ -3158,7 +3158,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (!class_or_interface_generic(&symbol->decls[d])) continue;
         Span name = symbol->decls[d].name;
-        if (!name.source || name.source->is_stdlib) continue;
+        if (!span_source(name) || span_source(name)->is_stdlib) continue;
         error_ctx_error_d(errs, name, 2428, "All declarations of '", symbol->name, "' must have identical type parameters.");
     }
 }
@@ -3190,8 +3190,8 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
             if (entries[j].key != entries[i].key) continue;
             Span at = span_valid(entries[j].member->declaration) ? entries[j].member->declaration : entries[j].member->key.span;
             // (A lib's declarations are only checked when lib files are)
-            if (!at.source) continue;
-            if (at.source->is_stdlib) {
+            if (!span_source(at)) continue;
+            if (span_source(at)->is_stdlib) {
                 if (lib_files_checked()) {
                     error_ctx_lib_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
                 }
@@ -3238,13 +3238,13 @@ static MemberEntry* add_member_entry(MemberTables* me) {
 // TS2300 at `at` naming `name` (once: the binder's and the checker's reports of a declaration are one)
 static void report_duplicate_named(Span at, csview name, ErrorCtx* errs) {
     // (A lib's declaration only when lib files are checked: the lib side of the conflict, tsc's check of the lib)
-    if (!span_valid(at) || !at.source || (at.source->is_stdlib && !lib_files_checked())) return;
+    if (!span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_files_checked())) return;
     Error* existing = error_ctx_find(errs, at, 2300);
-    if (!existing) (at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
+    if (!existing) (span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
 }
 
 static void report_duplicate(Span name, ErrorCtx* errs) {
-    report_duplicate_named(name, name.sv, errs);
+    report_duplicate_named(name, span_sv(name), errs);
 }
 
 static MemberEntry* find_member(MemberTables* me, Atom const* name, uint8_t table) {
@@ -3272,7 +3272,7 @@ static i32 declare_symbol_flags(
         // amalgamatedDuplicates with fewer than 8 names, TODO: one TS6200 per file from 8 on)
         Error* error = error_ctx_find(errs, span, 2300);
         for (u32 i = 0; i < entry->decl_count; i++) {
-            if (!span_valid(entry->decls[i]) || entry->decls[i].source == span.source) continue;
+            if (!span_valid(entry->decls[i]) || span_source(entry->decls[i]) == span_source(span)) continue;
             add_duplicate_related(error_ctx_find(errs, entry->decls[i], 2300), entry->decls[i], span);
             add_duplicate_related(error, span, entry->decls[i]);
         }
@@ -3304,7 +3304,7 @@ enum { PRIVATE_TABLE = 2 };
 static i32 declare_late_member(MemberTables* me, Atom const* name, uint8_t table, u32 kind, Span span, bool unique_symbol, ErrorCtx* errs) {
     MemberEntry* entry = find_member(me, name, table + LATE_TABLE);
     if (entry && (entry->flags & symbol_excludes(kind))) {
-        csview display = unique_symbol ? span.sv : atom_sv(name);
+        csview display = unique_symbol ? span_sv(span) : atom_sv(name);
         MemberEntry const* early = find_member(me, name, table);
         for (u32 i = 0; early && i < early->decl_count; i++) report_duplicate_named(early->decls[i], display, errs);
         for (u32 i = 0; i < entry->decl_count; i++) report_duplicate_named(entry->decls[i], display, errs);
@@ -3348,7 +3348,7 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
             // tsc's mergeSymbol of the two: reportMergeSymbolError, named as the late symbol prints (`[foo]`), each
             // side's declarations pointing at the other's
             if (!early->has_member || !late->decl_count) continue;
-            csview display = late->decls[0].sv;
+            csview display = span_sv(late->decls[0]);
             for (u32 i = 0; i < late->decl_count; i++) {
                 report_duplicate_named(late->decls[i], display, errs);
                 for (u32 j = 0; j < early->decl_count; j++) add_duplicate_related_named(error_ctx_find(errs, late->decls[i], 2300), late->decls[i], early->decls[j], display);
@@ -3371,7 +3371,7 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
 
 // How tsc prints a member's symbol (symbolToString): its first declaration's name as written
 static csview dup_record_display(MemberTables const* tables, DupRecord const* record) {
-    return record->entry >= 0 && tables->entries[record->entry].decl_count ? tables->entries[record->entry].decls[0].sv : record->span.sv;
+    return record->entry >= 0 && tables->entries[record->entry].decl_count ? span_sv(tables->entries[record->entry].decls[0]) : span_sv(record->span);
 }
 
 static void report_duplicate_members(
@@ -3382,7 +3382,7 @@ static void report_duplicate_members(
         if (r->list != list || r->name != name || (check_static && r->table != table) || (private_static && !r->is_private)) continue;
         if (!private_static) {
             report_duplicate_named(r->span, dup_record_display(tables, r), errs);
-        } else if (span_valid(r->span) && r->span.source && !r->span.source->is_stdlib && !error_ctx_find(errs, r->span, 2804)) {
+        } else if (span_valid(r->span) && span_source(r->span) && !span_source(r->span)->is_stdlib && !error_ctx_find(errs, r->span, 2804)) {
             error_ctx_error_d(errs, r->span, 2804, "Duplicate identifier '", dup_record_display(tables, r),
                 "'. Static and instance elements cannot share the same private name.");
         }
@@ -3439,7 +3439,7 @@ static void declare_namespace_exports(Checker* me, MemberTables* tables, Symbol 
         Symbol const* exported = exports->entries[i].symbol;
         for (u32 d = 0; d < exported->decl_count; d++) {
             SymbolDecl const* decl = &exported->decls[d];
-            if (decl->name.source != ns->full.source || span_start_ptr(decl->full) < span_start_ptr(ns->full) ||
+            if (span_source(decl->name) != span_source(ns->full) || span_start_ptr(decl->full) < span_start_ptr(ns->full) ||
                 span_end_ptr(decl->full) > span_end_ptr(ns->full)
             ) {
                 continue;
@@ -3467,16 +3467,16 @@ static void check_subsequent_property(Checker* me, Span name, Ty const* first_ty
 // The name of a member's k-th declaration (an accessor pair's, `get x(); set x(v)`, and those after)
 static Span interface_declaration_name(InterfaceMember const* member, Span const* decls, u32 k) {
     if (k == 0 || !member->accessor) return member->key.span;
-    csview text = decls[k].sv;
+    csview text = span_sv(decls[k]);
     isize skip = 0;
     if (text.size > 4 && (csview_starts_with(text, "get") || csview_starts_with(text, "set")) && isspace((unsigned char)text.buf[3])) skip = 3;
-    isize at = csview_find_sv(csview_slice(text, skip, text.size), member->key.span.sv);
+    isize at = csview_find_sv(csview_slice(text, skip, text.size), span_sv(member->key.span));
     if (at == c_NPOS) return span_valid(member->accessor->second_name) ? member->accessor->second_name : member->key.span;
-    return span_make(decls[k].source, text.buf + skip + at, text.buf + skip + at + member->key.span.sv.size);
+    return span_make_in(decls[k], text.buf + skip + at, text.buf + skip + at + member->key.span.size);
 }
 
 static u32 interface_declaration_kind(Span decl) {
-    csview text = decl.sv;
+    csview text = span_sv(decl);
     bool keyword = text.size > 4 && (text.buf[3] == ' ' || text.buf[3] == '\t' || text.buf[3] == '\n');
     return keyword && csview_starts_with(text, "get") ? MEMBER_GET : keyword && csview_starts_with(text, "set") ? MEMBER_SET :
         MEMBER_PROPERTY;
@@ -3495,7 +3495,7 @@ static void check_class_interface_members(Checker* me, Symbol const* symbol, Mem
                     for_each (arg, vec_function_arg, &i->constructor.func.args) {
                         Binding const* binding = &arg->initializer.binding;
                         if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
-                        declare_member(tables, checker_atom(me, binding->content_span.sv), 0, MEMBER_PROPERTY, binding->content_span, errs);
+                        declare_member(tables, checker_atom(me, span_sv(binding->content_span)), 0, MEMBER_PROPERTY, binding->content_span, errs);
                     }
                     continue;
                 }
@@ -3549,7 +3549,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             for_each (arg, vec_function_arg, &i->constructor.func.args) {
                 Binding const* binding = &arg->initializer.binding;
                 if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
-                Atom const* name = checker_atom(me, binding->content_span.sv);
+                Atom const* name = checker_atom(me, span_sv(binding->content_span));
                 i32 entry = declare_member(tables, name, 0, MEMBER_PROPERTY, binding->content_span, errs);
                 vec_dup_record_push(&records, (DupRecord){ .name = name, .span = binding->content_span, .entry = entry, .check_kind = 1 });
             }
@@ -3561,7 +3561,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         Span private_name = class_item_private_name(i);
         bool is_static = class_item_is_static(i);
         Expr const* computed_key = is_field ? i->field.computed_key : i->method.computed_key;
-        Atom const* name = span_valid(private_name) ? checker_atom(me, private_name.sv) :
+        Atom const* name = span_valid(private_name) ? checker_atom(me, span_sv(private_name)) :
             ty_member_name(me, is_field ? &i->field.name_string : &i->method.name_string, computed_key);
         if (!name) continue;
         // (An auto-accessor binds as a get/set accessor pair: tsc's bindPropertyWorker, SymbolFlags.Accessor)
@@ -3677,7 +3677,7 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
                 Binding const* binding = &arg->initializer.binding;
                 if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
                 vec_property_decl_entry_push(out, (PropertyDeclEntry){
-                    .name = binding->content_span.sv, .span = binding->content_span, .optional = arg->explicit_optional,
+                    .name = span_sv(binding->content_span), .span = binding->content_span, .optional = arg->explicit_optional,
                     .modifiers = access_modifier_bits(arg->access) | (arg->is_readonly_property ? PROPERTY_MOD_READONLY : 0),
                 });
             }
@@ -3717,7 +3717,7 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
         // (A lib's declaration too when lib files are checked: tsc checks it there, the lib side of the conflict)
-        if (!span_valid(decl->span) || (decl->span.source->is_stdlib && !lib_files_checked()) || decl->method) continue;
+        if (!span_valid(decl->span) || (span_source(decl->span)->is_stdlib && !lib_files_checked()) || decl->method) continue;
         PropertyDeclEntry const* first = nullptr;
         bool differs = false;
         for (isize j = 0; j < count; j++) {
@@ -3733,7 +3733,7 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
             }
         }
         if (differs) {
-            (decl->span.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, decl->span, 2687,
+            (span_source(decl->span)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, decl->span, 2687,
                 cstr_d("All declarations of '", decl->span, "' must have identical modifiers."));
         }
     }
@@ -3806,7 +3806,7 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = symbol->decls[d].node;
-        if (interface_decl->name.source && interface_decl->name.source->is_stdlib) continue;
+        if (span_source(interface_decl->name) && span_source(interface_decl->name)->is_stdlib) continue;
         for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
             if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function || i->accessor) continue;
             if (!span_valid(i->declaration)) continue;
@@ -3831,10 +3831,10 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
 // property, whose type is its first declaration's (TS2403, "variable": a parameter isn't a property declaration)
 void ty_check_parameter_property_redeclaration(Checker* me, Symbol const* class_symbol, FunctionArg const* arg, ErrorCtx* errs) {
     Binding const* binding = &arg->initializer.binding;
-    if (!class_symbol || binding->tag != BINDING_IDENTIFIER || !binding->content_span.sv.size) return;
+    if (!class_symbol || binding->tag != BINDING_IDENTIFIER || !binding->content_span.size) return;
     Ty const* declared = ty_declared_type_of(me, class_symbol);
     if (!(declared->flags & TYF_OBJECT)) return;
-    Prop const* root = declared_member_root(me, declared, checker_atom(me, binding->content_span.sv));
+    Prop const* root = declared_member_root(me, declared, checker_atom(me, span_sv(binding->content_span)));
     if (!root || span_eq(root->decl->decl_spans[0], arg->span) || !prop_declared_by(root, arg->span)) return;
     Ty const* type = prop_type(me, root);
     Ty const* own = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
@@ -3998,7 +3998,7 @@ static bool is_local_span(Symbol const* owner, Span span) {
     if (!owner) return true;
     for (u32 i = 0; i < owner->decl_count; i++) {
         Span full = owner->decls[i].full;
-        if (span.source == full.source && span_start_ptr(span) >= span_start_ptr(full) && span_end_ptr(span) <= span_end_ptr(full)) {
+        if (span_source(span) == span_source(full) && span_start_ptr(span) >= span_start_ptr(full) && span_end_ptr(span) <= span_end_ptr(full)) {
             return true;
         }
     }
@@ -4042,7 +4042,7 @@ void ty_check_index_constraints(
         Prop const* prop = members->props[p];
         Prop const* root = prop;
         while (root->target) root = root->target;
-        if (span_valid(root->decl->name_span) && root->decl->name_span.sv.buf[0] == '#') continue;
+        if (span_valid(root->decl->name_span) && root->decl->name_span.buf[0] == '#') continue;
         if (is_static && csview_equals(atom_sv(prop->name), "prototype")) continue;
         Ty const* key = ty_prop_name_literal(me, prop->name);
         bool local_prop = is_local_span(owner, root->decl->name_span);
@@ -4066,11 +4066,11 @@ void ty_check_index_constraints(
             cstr key_str = ty_to_cstr(me, info->key);
             cstr value_str = ty_to_cstr(me, info->value);
             // (A lib's declarations: only when lib files are checked, the caller's business)
-            Error* e = (at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2411, cstr_d("Property '",
+            Error* e = (span_source(at)->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2411, cstr_d("Property '",
                 prop_str, "' of type '", type_str, "' is not assignable to '", key_str, "' index type '", value_str, "'."));
             // (Reported elsewhere than at a property with a computed name: where it is declared. tsc also does it for
             // JavaScript assignment declarations, TODO)
-            bool computed = span_valid(root->decl->name_span) && root->decl->name_span.sv.buf[0] == '[';
+            bool computed = span_valid(root->decl->name_span) && root->decl->name_span.buf[0] == '[';
             if (!local_prop && computed) error_add_related_d(e, prop_error_span(prop), 2728, "'", prop_str, "' is declared here.");
             c_drop(cstr, &prop_str, &type_str, &key_str, &value_str);
         }
@@ -4126,7 +4126,7 @@ void ty_check_index_constraints(
 // reading it through `this` (`this.m()` in m). `access` is null for a destructuring, which always reads
 static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {
     while (prop->target) prop = prop->target;
-    bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.sv.buf[0] == '#';
+    bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.buf[0] == '#';
     if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
     if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(prop->flags & PROP_ACCESSOR)) return;
     Expr const* object = access ? &access->expr : nullptr;
@@ -4155,7 +4155,7 @@ void ty_check_destructured_member(
         bool self = false;
         for (u32 d = 0; from_this && span_valid(span) && (prop->flags & PROP_METHOD) && d < prop->decl->decl_span_count; d++) {
             Span decl = prop->decl->decl_spans[d];
-            self |= decl.source == span.source && span_contains_span(decl, span);
+            self |= span_source(decl) == span_source(span) && span_contains_span(decl, span);
         }
         if (!self) mark_member_referenced(me, refs.props[i], nullptr);
     }
@@ -4197,7 +4197,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
             if (s->tag != STATEMENT_EXPR || s->expr.tag != EXPR_BINARY_OP || s->expr.binary_op->op != BINARY_OP_EQUAL) continue;
             Expr const* target = &s->expr.binary_op->left;
             if (target->tag == EXPR_PROPERTY && target->property->form == PROPERTY_EXPR_DOT &&
-                csview_equals_sv(target->property->prop.inner_span.sv, name)
+                csview_equals_sv(span_sv(target->property->prop.inner_span), name)
             ) {
                 return true;
             }
@@ -4213,7 +4213,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
     PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
-    if (!span_valid(prop->decl->name_span) || prop->decl->name_span.source != expr_outer_span(&access->prop).source) return;
+    if (!span_valid(prop->decl->name_span) || span_source(prop->decl->name_span) != span_source(expr_outer_span(&access->prop))) return;
     // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
     if (prop->decl->symbol && prop->decl->symbol->decl_count && prop->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
@@ -4250,7 +4250,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         case INITIALIZER_INSTANCE_FIELD: deferred = !is_instance_field || !same_class; break;
         case INITIALIZER_STATIC_FIELD:
             deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && site->initializer_field &&
-                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(site->initializer_field->span),
+                initialized_in_static_blocks(class_decl, span_sv(access->prop.inner_span), span_start_ptr(site->initializer_field->span),
                     (prop_type(me, prop)->flags & (TYF_ANY | TYF_UNKNOWN)) != 0));
             break;
         case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
@@ -4288,7 +4288,7 @@ static void check_class_used_before_declaration(PropertyExpr const* access, Prop
     // (A class declaration: `exports.C = class {}` aliases a class expression)
     if (!class_decl || class_decl->is_ambient || class_decl->is_expression || access->qualified_name) return;
     Span used = access->prop.inner_span;
-    if (!span_valid(used) || class_decl->full_span.source != used.source || !used.source || used.source->is_declaration) return;
+    if (!span_valid(used) || span_source(class_decl->full_span) != span_source(used) || !span_source(used) || span_source(used)->is_declaration) return;
     char const* declared_at = span_start_ptr(class_decl->full_span);
     if (declared_at <= span_start_ptr(used)) return;
     if (site->containing_function && !span_contains(site->containing_function->full_span, declared_at)) return;
@@ -4496,7 +4496,7 @@ Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, 
     char const* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
     if (bare && expr->literal.tag == VALUE_NULL) {
         error_ctx_error_d(errs, span, 18050, "The value 'null' cannot be used here.");
-    } else if (bare && expr->literal.tag == VALUE_UNDEFINED && csview_equals(expr->inner_span.sv, "undefined")) {
+    } else if (bare && expr->literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(expr->inner_span), "undefined")) {
         error_ctx_error_d(errs, span, 18050, "The value 'undefined' cannot be used here.");
     } else if (named) {
         cstr name = entity_name_text(span);
@@ -4534,7 +4534,7 @@ u32 ty_check_non_null_non_void_at(Checker* me, Ty const* type, Span span, bool c
 Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom const** name) {
     ClassDecl const* class_decl = private_name->private_name->private_class;
     if (!class_decl || !class_decl->symbol) return nullptr;
-    csview text = private_name->inner_span.sv;
+    csview text = span_sv(private_name->inner_span);
     if (name) *name = ty_private_name(me, class_decl->symbol, text);
     ClassItem* item = (ClassItem*)class_decl_find_private_name(class_decl, text);
     return class_item_is_static(item) ? ty_static_type_of(me, class_decl->symbol) : ty_declared_type_of(me, class_decl->symbol);
@@ -4569,7 +4569,7 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
     if (left_expr->tag == EXPR_PRIVATE_NAME) {
         PrivateNameExpr const* name = left_expr->private_name;
         if (name->private_class && unused_enabled()) {
-            ClassItem const* item = class_decl_find_private_name(name->private_class, left_expr->inner_span.sv);
+            ClassItem const* item = class_decl_find_private_name(name->private_class, span_sv(left_expr->inner_span));
             if (item) ty_mark_member_referenced(me, item->span);
         }
         if (!name->enclosing_class) {
@@ -4603,11 +4603,11 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
 bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
     PropertyContext const* site = property_context(access);
     Span name = access->prop.inner_span;
-    if (access->form != PROPERTY_EXPR_DOT || access->prop.tag != EXPR_LITERAL || !span_valid(name) || name.sv.buf[0] != '#') {
+    if (access->form != PROPERTY_EXPR_DOT || access->prop.tag != EXPR_LITERAL || !span_valid(name) || name.buf[0] != '#') {
         return false;
     }
     ClassDecl const* lexical = property_private_class(access);
-    ClassItem const* lexical_item = lexical ? class_decl_find_private_name(lexical, name.sv) : nullptr;
+    ClassItem const* lexical_item = lexical ? class_decl_find_private_name(lexical, span_sv(name)) : nullptr;
     if (access->assignment_target && lexical_item && lexical_item->tag == CLASS_ITEM_METHOD &&
         lexical_item->method.accessor == CLASS_ACCESSOR_NONE
     ) {
@@ -4633,17 +4633,17 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, apparent);
-    Prop const* own = lexical && lexical->symbol ? ty_get_prop(me, apparent, ty_private_name(me, lexical->symbol, name.sv)) : nullptr;
+    Prop const* own = lexical && lexical->symbol ? ty_get_prop(me, apparent, ty_private_name(me, lexical->symbol, span_sv(name))) : nullptr;
     if (own) {
         bool setter = false, getter = false;
         for_each (i, vec_class_item, &lexical->items) {
-            if (i->tag != CLASS_ITEM_METHOD || !name_equals(i->method.name_span.sv, name.sv)) continue;
+            if (i->tag != CLASS_ITEM_METHOD || !name_equals(span_sv(i->method.name_span), span_sv(name))) continue;
             setter |= i->method.accessor == CLASS_ACCESSOR_SET;
             getter |= i->method.accessor == CLASS_ACCESSOR_GET;
         }
         if (setter && !getter && access->assignment_target != FLOW_TARGET_DEFINITE) {
             // The whole access (tsc's error(node))
-            Span at = span_make(name.source, span_start_ptr(expr_outer_span(&access->expr)), span_end_ptr(name));
+            Span at = span_make_in(name, span_start_ptr(expr_outer_span(&access->expr)), span_end_ptr(name));
             error_ctx_error_d(errs, at, 2806, "Private accessor was defined without a getter.");
         }
         return false;
@@ -4652,11 +4652,11 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     Prop const* other = nullptr;
     for (u32 i = 0; i < members->prop_count && !other; i++) {
         Prop const* prop = members->props[i];
-        if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), name.sv)) other = prop;
+        if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), span_sv(name))) other = prop;
     }
     if (!other) {
         // (In a plain JavaScript file the TS2339 that follows isn't reported, this is)
-        if (site->enclosing_class && name.source && name.source->plain_js) {
+        if (site->enclosing_class && span_source(name) && span_source(name)->plain_js) {
             error_ctx_grammar_error_d(errs, name, 1111, "Private field '", name, "' must be declared in an enclosing class.");
         }
         return false;
@@ -4674,8 +4674,8 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
         return true;
     }
     // (tsgo's SymbolToString of the class: a class expression's symbol is called by its assigned name)
-    csview class_name = other_class && span_valid(other_class->name) ? other_class->name.sv :
-        other_class && span_valid(other_class->assigned_name) ? other_class->assigned_name.sv : c_sv("(anonymous)");
+    csview class_name = other_class && span_valid(other_class->name) ? span_sv(other_class->name) :
+        other_class && span_valid(other_class->assigned_name) ? span_sv(other_class->assigned_name) : c_sv("(anonymous)");
     error_ctx_error_d(errs, name, 18013, "Property '", name, "' is not accessible outside class '", class_name,
         "' because it has a private identifier.");
     return true;

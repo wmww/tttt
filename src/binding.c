@@ -11,21 +11,21 @@
 #include "function_impl.h"
 
 static void span_to_offsets(Binding const* me, Span span, u32* start, u32* length) {
-    panic_if(span.source != my content_span.source, "a binding's span in another file than its name");
-    *start = (u32)(span.sv.buf - source_file_start(span.source));
-    *length = (u32)span.sv.size;
+    panic_if(span_source(span) != span_source(my content_span), "a binding's span in another file than its name");
+    *start = (u32)(span.buf - source_file_start(span_source(span)));
+    *length = (u32)span.size;
 }
 
 Span binding_explicit_type_span(Binding const* me) {
     if (!my has_explicit_type_span) return span_null;
-    char const* start = source_file_start(my content_span.source) + my explicit_type_start;
-    return (Span){ .source = my content_span.source, .sv = { start, my explicit_type_length } };
+    char const* start = source_file_start(span_source(my content_span)) + my explicit_type_start;
+    return span_in_sv(my content_span, csview_from_n(start, my explicit_type_length));
 }
 
 Span binding_element_span(Binding const* me) {
     if (!my has_element_span) return span_null;
-    char const* start = source_file_start(my content_span.source) + my element_start;
-    return (Span){ .source = my content_span.source, .sv = { start, my element_length } };
+    char const* start = source_file_start(span_source(my content_span)) + my element_start;
+    return span_in_sv(my content_span, csview_from_n(start, my element_length));
 }
 
 void binding_set_explicit_type_span(Binding* me, Span span) {
@@ -117,7 +117,7 @@ void binding_collect_names(Binding const* me, VecSpan* out) {
 static void binding_check_var_not_shadowed(Binding const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) || symbol->is_parameter) return;
-    csview name = my content_span.sv;
+    csview name = span_sv(my content_span);
     for (Scope const* scope = names; scope && scope->kind == SCOPE_BLOCK; scope = scope->parent) {
         Symbol const* found = symbol_table_get(&scope->locals, name);
         if (!found || found == symbol || !(found->flags & SYMBOL_VARIABLE)) continue;
@@ -316,7 +316,7 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
 // tsc's checkVariableLikeDeclaration for a declaration that isn't the symbol's first (`var x: A; var x: B`): the same
 // type (TS2403)
 static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
-    if (!my content_span.sv.size) return; // (a missing name: recovery's, nothing is said about it)
+    if (!my content_span.size) return; // (a missing name: recovery's, nothing is said about it)
     Symbol const* symbol = my symbol;
     SymbolDecl const* first = nullptr;
     // (The namespace an expando makes of a name isn't its value declaration: tsc's setValueDeclaration)
@@ -333,8 +333,8 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
         // declared first makes it that one's type (`typeof A`)
         Expr const* value = !my parent && my source && my source->tag == LAZY_TYPE_INITIALIZED_BINDING && !my has_explicit_type ?
             initialized_binding_value(c_container_of(me, InitializedBinding, binding)) : nullptr;
-        if (value && value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object) && my content_span.source &&
-            my content_span.source->is_js && first->flags & (SYMBOL_CLASS | SYMBOL_FUNCTION)
+        if (value && value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object) && span_source(my content_span) &&
+            span_source(my content_span)->is_js && first->flags & (SYMBOL_CLASS | SYMBOL_FUNCTION)
         ) {
             ty_check_assignable_expr(checker, ty_expr_type(checker, value), ty_type_of_symbol(checker, symbol), my content_span,
                 value, errs);
@@ -425,7 +425,7 @@ static void binding_report_rest_initializer(Binding const* element, ErrorCtx* er
     char const* start = span_start_ptr(element->content_span);
     while (at > start && at[-1] != '=') at--;
     if (at <= start) return;
-    error_ctx_grammar_error_d(errs, span_make(value.source, at - 1, at), 1186, "A rest element cannot have an initializer.");
+    error_ctx_grammar_error_d(errs, span_make_in(value, at - 1, at), 1186, "A rest element cannot have an initializer.");
 }
 
 // tsc's checkGrammarBindingElement: a trailing comma after the rest element (checkGrammarForDisallowedTrailingComma)
@@ -434,7 +434,7 @@ static void binding_report_rest_trailing_comma(Binding const* element, ErrorCtx*
     if (element->default_value) {
         Span value = expr_outer_span(element->default_value);
         if (span_valid(value) && span_valid(extent) && span_end_ptr(value) > span_end_ptr(extent)) {
-            extent = span_make(extent.source, span_start_ptr(extent), span_end_ptr(value));
+            extent = span_make_in(extent, span_start_ptr(extent), span_end_ptr(value));
         }
     }
     Span comma = span_comma_after(extent);
@@ -459,7 +459,7 @@ void binding_typecheck_bodiless(Binding* me, ErrorCtx* errs) {
 static bool is_js_expando_object_initializer(Binding const* me, Expr const* initializer) {
     if (!initializer || initializer->tag != EXPR_OBJECT || vec_object_expr_item_size(&initializer->object)) return false;
     if (my tag != BINDING_IDENTIFIER || !my symbol || !my symbol->exports || !my symbol->exports->count) return false;
-    return my content_span.source && my content_span.source->is_js;
+    return span_source(my content_span) && span_source(my content_span)->is_js;
 }
 
 // `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
@@ -758,7 +758,7 @@ void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* 
     CallExpr* call = initializer->call;
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
-    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->inner_span.sv, "Symbol")) return;
+    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(callee->inner_span), "Symbol")) return;
     if (!call->unique_symbol) call->unique_symbol = malloc(sizeof(UniqueSymbolDecl));
     *call->unique_symbol = decl;
 }
@@ -870,7 +870,7 @@ FunctionImpl const* initialized_binding_getter(InitializedBinding const* me) {
 
 // Whether the initializer's type `init` is that of `[]` in an unannotated JavaScript declaration, which makes it any[]
 bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init) {
-    SourceFile const* file = my binding.content_span.source;
+    SourceFile const* file = span_source(my binding.content_span);
     return file && file->is_js && !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER &&
         ty_is_empty_array_literal_type(current_checker, init);
 }
@@ -931,9 +931,9 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
 static bool declared_in_literal(Ty const* ty, Prop const* prop) {
     Expr const* literal = ty->anonymous.literal_expr;
     if (!literal || literal->tag != EXPR_OBJECT) return true;
-    char const* at = prop->decl->decl_spans[0].sv.buf;
+    char const* at = prop->decl->decl_spans[0].buf;
     for_each (i, vec_object_expr_item, &literal->object) {
-        if (i->tag != OBJECT_ITEM_SPREAD && at >= i->span.sv.buf && at < i->span.sv.buf + i->span.sv.size) return true;
+        if (i->tag != OBJECT_ITEM_SPREAD && at >= i->span.buf && at < i->span.buf + i->span.size) return true;
     }
     return false;
 }
@@ -961,7 +961,7 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
             bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
             // (At the property's declaration, `a: null` and not just its name: tsc's valueDeclaration, a spread one's too)
-            if (!inner && prop->decl->decl_span_count && prop->decl->decl_spans[0].source && declared_in_literal(ty, prop)) {
+            if (!inner && prop->decl->decl_span_count && span_source(prop->decl->decl_spans[0]) && declared_in_literal(ty, prop)) {
                 cstr name = ty_prop_name_cstr(checker, prop->name);
                 cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
                 error_ctx_error_d(errs, prop->decl->decl_spans[0], 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");

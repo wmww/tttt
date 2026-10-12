@@ -3,11 +3,31 @@
 #include "source_file.h"
 #include <pthread.h>
 
+SourceFile const** span_files[1 << SPAN_FILE_DIR_BITS];
+static u32 span_file_next = 1;
+static pthread_mutex_t span_files_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void source_file_register(SourceFile* file) {
+    pthread_mutex_lock(&span_files_lock);
+    u32 id = span_file_next++;
+    panic_if(id >> SPAN_FILE_CHUNK_BITS >= 1u << SPAN_FILE_DIR_BITS, "too many source files");
+    SourceFile const*** chunk = &span_files[id >> SPAN_FILE_CHUNK_BITS];
+    if (!*chunk) *chunk = calloc(1u << SPAN_FILE_CHUNK_BITS, sizeof(SourceFile const*));
+    (*chunk)[id & ((1u << SPAN_FILE_CHUNK_BITS) - 1)] = file;
+    file->id = id;
+    pthread_mutex_unlock(&span_files_lock);
+}
+
+void source_file_unregister(SourceFile const* file) {
+    if (!file->id) return;
+    span_files[file->id >> SPAN_FILE_CHUNK_BITS][file->id & ((1u << SPAN_FILE_CHUNK_BITS) - 1)] = nullptr;
+}
+
 unsigned span_line_index(Span me) {
-    if (!span_valid(me) || !me.source) {
+    if (!span_valid(me) || !span_source(me)) {
         return 1;
     }
-    return source_file_line_index(me.source, span_start_ptr(me));
+    return source_file_line_index(span_source(me), span_start_ptr(me));
 }
 
 // In UTF-16 code units, like tsc's positions (utf8_byte_utf16_units)
@@ -20,11 +40,11 @@ unsigned span_col_index(Span me) {
 const char* span_line_start(Span me) {
     if (!span_valid(me)) {
         return nullptr;
-    } else if (!me.source) {
-        return me.sv.buf;
+    } else if (!span_source(me)) {
+        return me.buf;
     } else {
         // A span that starts on a line break belongs to the line that line break ends
-        return source_file_start(me.source) + me.source->line_starts[span_line_index(me)];
+        return source_file_start(span_source(me)) + span_source(me)->line_starts[span_line_index(me)];
     }
 }
 
@@ -32,10 +52,10 @@ const char* span_line_start(Span me) {
 const char* span_line_end(Span me) {
     if (!span_valid(me)) {
         return nullptr;
-    } else if (!me.source) {
-        return me.sv.buf + me.sv.size;
+    } else if (!span_source(me)) {
+        return me.buf + me.size;
     } else {
-        SourceFile const* source = me.source;
+        SourceFile const* source = span_source(me);
         unsigned line = span_line_index(me);
         const char* text = source_file_start(source);
         if (line + 1 >= source->line_count) return text + cstr_size(&source->contents);
@@ -48,11 +68,11 @@ const char* span_line_end(Span me) {
 }
 
 Span span_with_semicolon(Span statement) {
-    if (!span_valid(statement) || !statement.source) return statement;
+    if (!span_valid(statement) || !span_source(statement)) return statement;
     char const* end = span_end_ptr(statement);
-    char const* file_end = cstr_str(&statement.source->contents) + cstr_size(&statement.source->contents);
+    char const* file_end = cstr_str(&span_source(statement)->contents) + cstr_size(&span_source(statement)->contents);
     while (end < file_end && (*end == ' ' || *end == '\t')) end++;
-    if (end < file_end && *end == ';') statement.sv.size = end + 1 - statement.sv.buf;
+    if (end < file_end && *end == ';') statement.size = end + 1 - statement.buf;
     return statement;
 }
 
@@ -77,11 +97,11 @@ bool span_only_trivia_between(char const* from, char const* to, bool allow_semic
 }
 
 Span span_with_member_separator(Span member) {
-    if (!span_valid(member) || !member.source) return member;
+    if (!span_valid(member) || !span_source(member)) return member;
     char const* end = span_end_ptr(member);
-    char const* file_end = cstr_str(&member.source->contents) + cstr_size(&member.source->contents);
+    char const* file_end = cstr_str(&span_source(member)->contents) + cstr_size(&span_source(member)->contents);
     while (end < file_end && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end++;
-    if (end < file_end && (*end == ';' || *end == ',')) member.sv.size = end + 1 - member.sv.buf;
+    if (end < file_end && (*end == ';' || *end == ',')) member.size = end + 1 - member.buf;
     return member;
 }
 
@@ -91,11 +111,11 @@ Span span_between(Span const a, Span const b) {
     } else if (!span_valid(b)) {
         return a;
     }
-    if (a.source != b.source) {
+    if (span_source(a) != span_source(b)) {
         panic("Tried to make a span between two different files");
     }
     return span_make(
-        a.source,
+        span_source(a),
         ccpmin(span_start_ptr(a), span_start_ptr(b)),
         ccpmax(  span_end_ptr(a),   span_end_ptr(b))
     );
@@ -109,41 +129,41 @@ int span_cmp(Span a, Span b) {
         default: // Both are valid
             break;
     }
-    switch ((a.source != nullptr) | ((b.source != nullptr) << 1)) {
+    switch ((span_source(a) != nullptr) | ((span_source(b) != nullptr) << 1)) {
         case 1: return 1; // Only A is valid
         case 2: return -1; // Only b is valid
         default: // Both or neither are valid
             break;
     }
-    if (a.source != b.source) {
-        int cmp = cstr_cmp(&a.source->canonical_path, &b.source->canonical_path);
-        panic_if(!cmp, "Two different source files both have path ", a.source->canonical_path);
+    if (span_source(a) != span_source(b)) {
+        int cmp = cstr_cmp(&span_source(a)->canonical_path, &span_source(b)->canonical_path);
+        panic_if(!cmp, "Two different source files both have path ", span_source(a)->canonical_path);
         return cmp;
-    } else if (a.sv.buf != b.sv.buf) {
-        return a.sv.buf > b.sv.buf ? 1 : -1;
-    } else if (a.sv.size != b.sv.size) {
-        return a.sv.size > b.sv.size ? 1 : -1;
+    } else if (a.buf != b.buf) {
+        return a.buf > b.buf ? 1 : -1;
+    } else if (a.size != b.size) {
+        return a.size > b.size ? 1 : -1;
     } else {
         return 0;
     }
 }
 
 void cstr_append_span(cstr* target, Span me) {
-    cstr_append_sv(target, me.sv);
+    cstr_append_sv(target, span_sv(me));
 }
 
 bool span_is_jsdoc_tag(Span me) {
-    if (!span_is_written(me) || !me.source->is_js || *me.sv.buf != '@') return false;
-    const char* file_start = source_file_start(me.source);
-    const char* c = me.sv.buf;
+    if (!span_is_written(me) || !span_source(me)->is_js || *me.buf != '@') return false;
+    const char* file_start = source_file_start(span_source(me));
+    const char* c = me.buf;
     while (c > file_start && (c[-1] == ' ' || c[-1] == '\t')) c--;
     return c > file_start && c[-1] == '*';
 }
 
 bool span_is_written(Span me) {
-    SourceFile const* file = me.source;
+    SourceFile const* file = span_source(me);
     char const* start = file ? source_file_start(file) : nullptr;
-    return start && me.sv.buf >= start && me.sv.buf < start + cstr_size(&file->contents);
+    return start && me.buf >= start && me.buf < start + cstr_size(&file->contents);
 }
 
 // Escaped names. The files whose text has a `\u` (few), each with the names cooked so far. A cooked name is malloc'd
@@ -290,9 +310,9 @@ Span span_comma_after(Span after) {
 }
 
 Span span_token_after(Span after, char const* token) {
-    if (!span_valid(after) || !after.source) return span_null;
+    if (!span_valid(after) || !span_source(after)) return span_null;
     char const* at = span_end_ptr(after);
-    char const* file_end = cstr_str(&after.source->contents) + cstr_size(&after.source->contents);
+    char const* file_end = cstr_str(&span_source(after)->contents) + cstr_size(&span_source(after)->contents);
     while (at < file_end) {
         if (*at == ' ' || *at == '\t' || *at == '\n' || *at == '\r' || *at == '\f' || *at == '\v') {
             at++;
@@ -307,5 +327,5 @@ Span span_token_after(Span after, char const* token) {
         }
     }
     isize len = (isize)strlen(token);
-    return at + len <= file_end && memcmp(at, token, len) == 0 ? span_make(after.source, at, at + len) : span_null;
+    return at + len <= file_end && memcmp(at, token, len) == 0 ? span_make_in(after, at, at + len) : span_null;
 }

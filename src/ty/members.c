@@ -30,7 +30,7 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
 static bool adjacent_methods(ClassItem const* before, ClassItem const* after) {
     Span first = before->span;
     Span second = after->span;
-    if (!span_valid(first) || !span_valid(second) || first.source != second.source) return true;
+    if (!span_valid(first) || !span_valid(second) || span_source(first) != span_source(second)) return true;
     char const* from = span_end_ptr(first);
     char const* to = span_start_ptr(second);
     // (Decorators come first)
@@ -143,7 +143,7 @@ static int prop_cmp_name(void const* a, void const* b) {
 // leaves it to be late bound (getDeclarationName), and late-bound members come after all the early-bound ones of all
 // declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables)
 static bool name_span_is_late_bound(Span name) {
-    csview sv = name.sv;
+    csview sv = span_sv(name);
     if (!span_valid(name) || sv.size < 2 || sv.buf[0] != '[') return false;
     isize_t start = 1, end = sv.size - 1;
     if (sv.buf[end] != ']') return false;
@@ -184,10 +184,10 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
 static bool prop_order_pos(Prop const* prop, u32* file, u32* offset) {
     while (prop && !prop->decl->decl_span_count && !span_valid(prop->decl->name_span)) prop = prop->target;
     if (!prop) return false;
-    Span s = prop->decl->decl_span_count && prop->decl->decl_spans[0].source ? prop->decl->decl_spans[0] : prop->decl->name_span;
-    if (!s.source) return false;
-    *file = s.source->program_order;
-    *offset = (u32)(s.sv.buf - cstr_str(&s.source->contents));
+    Span s = prop->decl->decl_span_count && span_source(prop->decl->decl_spans[0]) ? prop->decl->decl_spans[0] : prop->decl->name_span;
+    if (!span_source(s)) return false;
+    *file = span_source(s)->program_order;
+    *offset = (u32)(s.buf - cstr_str(&span_source(s)->contents));
     return true;
 }
 
@@ -388,7 +388,7 @@ static void add_jsdoc_overload_decl_spans(Checker* me, Prop* prop, ClassDecl con
         FunctionImplRare const* rare = function_impl_rare(&other->method.func);
         for (u32 o = 0; o < rare->jsdoc_overload_count; o++) {
             Span at = rare->jsdoc_overloads[o].callable->function->full_span;
-            if (span_valid(at) && at.sv.size > 1) spans[count++] = span_make(at.source, at.sv.buf + 1, at.sv.buf + at.sv.size);
+            if (span_valid(at) && at.size > 1) spans[count++] = span_make_in(at, at.buf + 1, at.buf + at.size);
         }
         for (u32 k = 0; k < prop->decl->decl_span_count; k++) {
             if (span_eq(prop->decl->decl_spans[k], other->span)) spans[count++] = other->span;
@@ -537,8 +537,8 @@ static void builder_add_interface_member(
                         { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                         if (i->key.tag == INTERFACE_KEY_NAME && !existing->decl->name_form && span_valid(existing->decl->name_span)) {
                             existing->decl->name_form = ty_prop_name_form_merge(
-                                ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
-                                ty_prop_name_form(i->key.span.sv, nullptr, nullptr, false));
+                                ty_prop_name_form(span_sv(existing->decl->name_span), nullptr, nullptr, false),
+                                ty_prop_name_form(span_sv(i->key.span), nullptr, nullptr, false));
                         }
                     } else if (!is_method && !i->has_write_type && !i->computed_accessor && !(existing->flags & PROP_METHOD)) {
                         // A property after a class accessor of its name (a merged class) joins its symbol, which stays
@@ -568,7 +568,7 @@ static void builder_add_interface_member(
                 if (is_method) prop->flags |= PROP_METHOD;
                 prop->decl->name_span = i->key.span;
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
-                if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr, key, false);
+                if (key) prop->decl->name_form = ty_prop_name_form(span_sv(i->key.span), i->key.expr, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 // (A computed enum member name is that member, tsc's late bound nameType: keyof gives it, it prints `[E.A]`)
                 if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, key);
@@ -583,7 +583,7 @@ static void builder_add_interface_member(
                 IndexInfo info = {
                     .key = ty_from_node(me, &i->key.index->type, ctx),
                     .value = ty_from_node(me, &i->type, ctx),
-                    .param_name = checker_atom(me, i->key.index->name.sv),
+                    .param_name = checker_atom(me, span_sv(i->key.index->name)),
                     .readonly = i->readonly,
                     .decl_span = i->declaration,
                 };
@@ -608,7 +608,7 @@ static void builder_add_interface_member(
                 MappedInfo* mapped = arena_new(&my arena, MappedInfo);
                 mapped->type_param = i->key.mapped->owned_symbol ?
                     ty_type_param(me, i->key.mapped->owned_symbol) :
-                    ty_synthetic_type_param(me, i->key.mapped->type_name.sv);
+                    ty_synthetic_type_param(me, span_sv(i->key.mapped->type_name));
                 mapped->constraint = ty_from_node(me, &i->key.mapped->in_type, mapped_ctx);
                 // `[P in any]` is over tsc's keyofConstraintType (getConstraintFromTypeParameter)
                 if (mapped->constraint == ty_intrinsic(me, TY_ANY)) {
@@ -911,7 +911,7 @@ bool ty_is_valid_base_type(Checker* me, Ty const* ty) {
 // (that they all construct the same type, TS2510, is ty_class_base_constructors_differ()'s)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
-    SourceFile const* file = extends->inner_span.source;
+    SourceFile const* file = span_source(extends->inner_span);
     bool js = file && file->is_js;
     VecSpannedType const* written_args = nullptr;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
@@ -930,7 +930,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         namespace_decl = symbol_for_meaning(namespace_decl, SYMBOL_NAMESPACE);
         // (The name of a dot access is a literal)
         if (namespace_decl && !namespace_decl->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
-            decl = symbol_get_export(namespace_decl, name->inner_span.sv);
+            decl = symbol_get_export(namespace_decl, span_sv(name->inner_span));
         }
     }
     // The name was looked up as a value, the class is the same symbol
@@ -1189,7 +1189,7 @@ static Prop* builder_add_class_prop(
     prop->decl->ctx = ctx;
     prop->decl->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
     prop->decl->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
-    if (computed_key) prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, computed_key, key, false);
+    if (computed_key) prop->decl->name_form = ty_prop_name_form(span_sv(prop->decl->name_span), computed_key, key, false);
     prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
     prop_add_shared_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
@@ -1220,7 +1220,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         // (Only when an assignment comes first: one in the accessor's own body, bound after it, joins nothing, as the
         // baselines show)
         bool assigned_first = existing && existing->decl->decl_span_count && vec_span_size(&spans) &&
-            spans.data[0].source == existing->decl->decl_spans[0].source &&
+            span_source(spans.data[0]) == span_source(existing->decl->decl_spans[0]) &&
             span_start_ptr(spans.data[0]) < span_start_ptr(existing->decl->decl_spans[0]);
         if (existing && (existing->flags & PROP_ACCESSOR) && existing->decl->symbol != member && assigned_first) {
             existing->flags &= ~(u32)PROP_READONLY;
@@ -1231,7 +1231,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
             memcpy(all + existing->decl->decl_span_count, spans.data, sizeof(Span) * vec_span_size(&spans));
             for (u32 a = 1; a < total; a++) {
-                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                for (u32 b = a; b > 0 && span_source(all[b]) == span_source(all[b - 1]) && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
                     Span t = all[b];
                     all[b] = all[b - 1];
                     all[b - 1] = t;
@@ -1271,7 +1271,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             builder_push(builder, props, prop);
         } else if ((existing->flags & PROP_FIELD) && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR)) &&
             existing->decl->decl_span_count && vec_span_size(&spans) &&
-            spans.data[0].source == existing->decl->decl_spans[0].source &&
+            span_source(spans.data[0]) == span_source(existing->decl->decl_spans[0]) &&
             span_start_ptr(spans.data[0]) < span_start_ptr(existing->decl->decl_spans[0])
         ) {
             // `this.x = v` in a constructor before the field `x` of the class body: one symbol (tsc's declareSymbol
@@ -1282,7 +1282,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
             memcpy(all + existing->decl->decl_span_count, spans.data, sizeof(Span) * vec_span_size(&spans));
             for (u32 a = 1; a < total; a++) {
-                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                for (u32 b = a; b > 0 && span_source(all[b]) == span_source(all[b - 1]) && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
                     Span t = all[b];
                     all[b] = all[b - 1];
                     all[b - 1] = t;
@@ -1534,7 +1534,7 @@ static void builder_add_class_items(
                 for_each (arg, vec_function_arg, &i->constructor.func.args) {
                     Binding const* binding = &arg->initializer.binding;
                     if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
-                    Atom const* name = checker_atom(me, binding->content_span.sv);
+                    Atom const* name = checker_atom(me, span_sv(binding->content_span));
                     Prop* existing = builder_find_prop(builder, name);
                     if (existing) {
                         // A field declared before it: one symbol (tsc's PropertyExcludes is nothing), the field's type
@@ -1627,7 +1627,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
             // (In the order the binder met them: the namespace may come first. The list was just made)
             Span* all = (Span*)prop->decl->decl_spans;
             for (u32 a = 1; a < prop->decl->decl_span_count; a++) {
-                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                for (u32 b = a; b > 0 && span_source(all[b]) == span_source(all[b - 1]) && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
                     Span t = all[b];
                     all[b] = all[b - 1];
                     all[b - 1] = t;
@@ -1839,7 +1839,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     }
     // (Named by its key's type: `f[s] = v` with `s = "10"` is string named, `"10"`)
     if (symbol_rare(symbol)->late_bound_key) {
-        prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, symbol_rare(symbol)->late_bound_key,
+        prop->decl->name_form = ty_prop_name_form(span_sv(prop->decl->name_span), symbol_rare(symbol)->late_bound_key,
             ty_expr_type(me, symbol_rare(symbol)->late_bound_key), false);
     }
     // `N.p` in the symbols baseline
@@ -1935,7 +1935,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
     bool any_numeric = !vec_enum_case_size(&enum_decl->cases) && enum_decl->symbol && enum_decl->symbol->decl_count == 1;
     for_each (i, vec_enum_case, &enum_decl->cases) {
         if (!i->symbol) continue;
-        Atom const* name = checker_atom(me, i->name.sv);
+        Atom const* name = checker_atom(me, span_sv(i->name));
         if (builder_find_prop(builder, name)) continue;
         Prop* prop = prop_new_declared(me);
         prop->name = name;
@@ -2213,7 +2213,7 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
     // (Anything else but any isn't an object type: a primitive like `void` is TS2507 (errorType), a union of
     // constructors no base either, tsc's resolveBaseTypesOfClass)
     if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return !(constructor->flags & TYF_ANY) || (constructor->flags & TYF_ERROR);
-    SourceFile const* file = extends->inner_span.source;
+    SourceFile const* file = span_source(extends->inner_span);
     // (In JavaScript a class reference's wrong arity is reported and the reference made anyway: tsgo's
     // getTypeFromClassOrInterfaceReference only returns errorType for TypeScript)
     if (file && file->is_js && constructor->kind == TY_DECLARED && constructor->declared.kind == TY_DECLARED_CLASS_STATIC) {
@@ -2296,7 +2296,7 @@ bool ty_class_base_constructors_differ(Checker* me, ClassDecl const* class_decl,
         if (!base_signature_type_args(me, sig, written_args, ctx, &mapper)) continue;
         Signature const* root = sig;
         while (root && !root->function && root->target) root = root->target;
-        if (root && root->function && root->function->full_span.source && root->function->full_span.source->is_js) continue;
+        if (root && root->function && span_source(root->function->full_span) && span_source(root->function->full_span)->is_js) continue;
         Ty const* constructed = signature_return_type(me, sig);
         if (mapper) constructed = ty_instantiate(me, constructed, mapper);
         if (!ty_is_related(me, constructed, base, TY_RELATION_IDENTITY)) return true;
@@ -4090,7 +4090,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
     if (prop->circular && !prop->target && !prop->mapped && span_valid(prop_annotation_circularity_span(prop))) {
         Span name = prop_annotation_circularity_span(prop);
-        ty_error_at(me, name, 2502, cstr_d("'", name.sv, "' is referenced directly or indirectly in its own type annotation."));
+        ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;
@@ -4165,7 +4165,7 @@ static void clone_type_params(Checker* me, Signature* sig) {
 // tsc's IsUntypedSignatureInJSFile: a function of a JavaScript file without JSDoc parameter types (or `@type`), not
 // called where it is made. Every argument is optional (getMinArgumentCount)
 static bool function_is_untyped_js(FunctionImpl const* function) {
-    SourceFile const* file = function->full_span.source;
+    SourceFile const* file = span_source(function->full_span);
     // (A `@type` that isn't a signature, `{function}` or `{number}` on a declaration, leaves it untyped: tsgo's
     // getSignaturesOfSymbol falls back to getSignatureFromDeclaration)
     bool typed = function->jsdoc_typed && !function_impl_rare(function)->jsdoc_signature_type;
@@ -4264,7 +4264,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         // (tsc's minArgumentCount and isOptionalParameter)
         for_each (i, vec_function_arg, &function->args) {
             SigParam* param = &params[i_index];
-            param->name = checker_atom(me, i->initializer.binding.content_span.sv);
+            param->name = checker_atom(me, span_sv(i->initializer.binding.content_span));
             param->rest = i->rest;
             param->decl = i;
             // (A missing initializer, `n: number=)`, is one: tsc's missing identifier)
@@ -4332,13 +4332,13 @@ bool ty_signature_has_this(Checker* me, Signature const* sig) {
     if (root->state == LAZY_STATE_DONE) return root->this_type != nullptr;
     // (A function expression can take its contextual signature's, a JavaScript one its `@type` tag's)
     FunctionImpl const* function = root->function;
-    if (!function || function->is_expression || !function->full_span.source || function->full_span.source->is_js) {
+    if (!function || function->is_expression || !span_source(function->full_span) || span_source(function->full_span)->is_js) {
         signature_resolve(me, sig);
         return sig->this_type != nullptr;
     }
     if (!vec_function_arg_size(&function->args)) return false;
     // (The name as written, like signature_resolve()'s atom of it)
-    csview name = vec_function_arg_at(&function->args, 0)->initializer.binding.content_span.sv;
+    csview name = span_sv(vec_function_arg_at(&function->args, 0)->initializer.binding.content_span);
     return name.size == 4 && memcmp(name.buf, "this", 4) == 0;
 }
 
@@ -4447,7 +4447,7 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
             .is_this = node->is_this,
             .asserts = node->asserts,
             .param_index = node->param_index,
-            .param_name = checker_atom(me, node->name.sv),
+            .param_name = checker_atom(me, span_sv(node->name)),
         };
         // (`this: T` isn't among the parameters of the signature)
         u32 arg_count = (u32)vec_function_arg_size(&sig->function->args);
@@ -4543,7 +4543,7 @@ Ty const* ty_object_literal_alternative(
         words_push(&words, 1);
         words_push(&words, (u64)(uintptr_t)props[i].name);
         words_push(&words, props[i].flags | (u64)props[i].own << 32);
-        words_push(&words, (u64)(uintptr_t)props[i].name_span.sv.buf);
+        words_push(&words, (u64)(uintptr_t)props[i].name_span.buf);
         words_push(&words, props[i].type ? props[i].type->id : (u64)(uintptr_t)props[i].accessor);
         // (How the name prints, and an accessor pair's setter)
         words_push(&words, props[i].name_form | (props[i].name_type ? (u64)props[i].name_type->id << 8 : 0));

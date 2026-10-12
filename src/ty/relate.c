@@ -649,7 +649,7 @@ static cstr missing_prop_name(Checker* me, Prop const* prop) {
             key->literal.enum_member != key->literal.enum_decl && is_plain_identifier(key->literal.enum_member->name)
         ) {
             // (The member's symbol as an expression: `E.A`, even for an enum's only member)
-            return cstr_d("[", ty_symbol_display_name(key->literal.enum_decl).sv, ".", key->literal.enum_member->name, "]");
+            return cstr_d("[", span_sv(ty_symbol_display_name(key->literal.enum_decl)), ".", key->literal.enum_member->name, "]");
         }
     }
     return ty_prop_written_name(me, prop);
@@ -6823,7 +6823,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 Ty const* error_target = filter_excess_check_targets(me, reduced);
                 cstr target_str = display_for_report(me, error_target);
                 // A property written as an identifier gets a spelling suggestion (tsc: `isIdentifier(name)`)
-                csview written = prop->decl->name_span.sv;
+                csview written = span_sv(prop->decl->name_span);
                 bool identifier = span_valid(prop->decl->name_span) && written.size && written.buf[0] != '"' &&
                     written.buf[0] != '\'' && written.buf[0] != '[' && written.buf[0] != '#' &&
                     !(written.buf[0] >= '0' && written.buf[0] <= '9');

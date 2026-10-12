@@ -50,7 +50,7 @@ __attribute__((noinline)) static VecSpan declaration_get_spans(Symbol const* me)
     // declared by the file first, like tsc's clone of the module symbol
     if (me && me->is_module && me->module && me->module->file && me->decl_count) {
         VecSpan ret = vec_span_init();
-        vec_span_push(&ret, (Span){ .source = me->module->file, .sv = csview_from_n(source_file_start(me->module->file), 0) });
+        vec_span_push(&ret, span_from_sv(me->module->file, csview_from_n(source_file_start(me->module->file), 0)));
         VecSpan own = baseline_symbol_declaration_spans(me);
         for_each (i, vec_span, &own) vec_span_push(&ret, *i);
         vec_span_drop(&own);
@@ -127,7 +127,7 @@ static void add_symbol_override(BaselineTestCase* ctx, Span span, Symbol const* 
 static void commonjs_undefined_override(BinaryOpExpr const* assignment, BaselineTestCase* ctx) {
     Expr const* value = &assignment->right;
     if (value->tag != EXPR_LITERAL || value->literal.tag != VALUE_UNDEFINED || expr_is_perenthisized(value)) return;
-    SourceFile const* file = value->inner_span.source;
+    SourceFile const* file = span_source(value->inner_span);
     Symbol const* module = file && file->scope ? file->scope->container : nullptr;
     if (!module || !module->exports) return;
     Symbol const* first = nullptr;
@@ -160,10 +160,10 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
-    Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
+    Symbol const* member = table ? symbol_table_get(table, span_sv(name)) : nullptr;
     // (Not when the class body declares it)
     ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;
-    ClassItem const* item = class_decl ? class_decl_find_member(class_decl, name.sv, this->this_kind == THIS_CLASS_STATIC) : nullptr;
+    ClassItem const* item = class_decl ? class_decl_find_member(class_decl, span_sv(name), this->this_kind == THIS_CLASS_STATIC) : nullptr;
     if (item) return;
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
@@ -418,7 +418,7 @@ static cstr member_text(BaselineTestCase* ctx, Symbol const* container, Span con
 // The name of a property's symbol from here: a namespace's or module's export by its own chain, a member by the chain
 // of its container (tsc's getContainersOfSymbol of a member), else bare
 static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
-    csview name = span_valid(info->name_span) ? info->name_span.sv : fallback.sv;
+    csview name = span_valid(info->name_span) ? span_sv(info->name_span) : span_sv(fallback);
     // (A property no declaration names, `x["a"]` of what `"a" in x` synthesized, is named by its symbol's name)
     if (!span_valid(info->name_span) && name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'') &&
         name.buf[name.size - 1] == name.buf[0] && !memchr(name.buf, '\\', (size_t)name.size)
@@ -429,7 +429,7 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     Symbol const* member = info->member_symbol;
     // A member of a namespace's or module's object is its export (maybe an alias: getSymbolAtLocation doesn't resolve)
     // (by the name accessed: the export's own name may differ, `export default class C`)
-    csview accessed = fallback.sv;
+    csview accessed = span_sv(fallback);
     if (accessed.size >= 2 && (accessed.buf[0] == '"' || accessed.buf[0] == '\'')) accessed = csview_slice(accessed, 1, accessed.size - 1);
     Symbol const* exported = info->member_count == 1 && info->namespace ?
         symbol_get_export(info->namespace, accessed) : nullptr;
@@ -496,7 +496,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             if (!my parent && span_valid(ctx->parameter_property_class) && my symbol) {
                 // A parameter property's name declares the property (tsc's parameter.symbol is the property's)
                 // (One symbol with a field of its name: the class's)
-                VecSpan declarations = class_prop_declarations(ctx->parameter_property_symbol, false, my content_span.sv,
+                VecSpan declarations = class_prop_declarations(ctx->parameter_property_symbol, false, span_sv(my content_span),
                     ctx->parameter_property_arg, 1);
                 // (Not its first declaration, an overload's parameter or a field's: the type of the property)
                 bool secondary = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], ctx->parameter_property_arg);
@@ -508,7 +508,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                 });
                 Checker* checker = current_checker;
                 Prop const* prop = secondary ?
-                    ty_get_prop(checker, ty_declared_type_of(checker, ctx->parameter_property_symbol), checker_atom(checker, my content_span.sv)) :
+                    ty_get_prop(checker, ty_declared_type_of(checker, ctx->parameter_property_symbol), checker_atom(checker, span_sv(my content_span))) :
                     nullptr;
                 if (prop) baseline_test_case_add_type(ctx, my content_span, prop_type(checker, prop));
                 else baseline_test_case_add_symbol_value(ctx, my content_span, my symbol);
@@ -540,7 +540,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                     }
                     expr_compile_test_info(i->computed_key, ctx);
                 } else if (!i->target.rest && !i->private_name && !span_eq(i->source_span, i->target.content_span) &&
-                    i->source_span.sv.size && i->source_span.sv.buf[0] != '"' && i->source_span.sv.buf[0] != '\'' && !isdigit((unsigned char)i->source_span.sv.buf[0])
+                    i->source_span.size && i->source_span.buf[0] != '"' && i->source_span.buf[0] != '\'' && !isdigit((unsigned char)i->source_span.buf[0])
                 ) {
                     // `{ a: x }`: the property name is the property of the pattern's type (tsc's getSymbolAtLocation
                     // of a binding element's propertyName). A string or numeric name isn't an expression to tsc's walker
@@ -726,14 +726,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             VecSpan declarations = vec_span_init();
             // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
-            csview written = my key.span.sv;
+            csview written = span_sv(my key.span);
             // (An instantiation's declarations are its target's: `interface Array<T>` merged with the lib's)
             Prop const* merged_root = merged;
             while (merged_root && !merged_root->decl->decl_span_count && merged_root->target) merged_root = merged_root->target;
             if ((merged_root && merged_root->decl->decl_span_count) || redeclared || joined || shared) {
                 Prop const* shown = merged ? merged_root : redeclared ? redeclared : joined ? joined : shared;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
-                if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
+                if (span_valid(shown->decl->name_span)) written = span_sv(shown->decl->name_span);
             } else {
                 declarations = interface_member_declaration_vec(me);
             }
@@ -768,7 +768,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // In source order: the first accessor's types come before the second's name
             Span second_name = interface_member_second_name(me), setter_param = interface_member_setter_param(me);
             bool pair = span_valid(second_name);
-            bool setter_first = pair && span_valid(setter_param) && setter_param.sv.buf < second_name.sv.buf;
+            bool setter_first = pair && span_valid(setter_param) && setter_param.buf < second_name.buf;
             if (pair && !setter_first) type_compile_test_info(&my type, ctx);
             if (span_valid(setter_param) && setter_first) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
@@ -785,7 +785,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = second_decls,
                     .span = second_name,
-                    .text = member_text(ctx, ctx->member_container, scope, second_name.sv, false),
+                    .text = member_text(ctx, ctx->member_container, scope, span_sv(second_name), false),
                 });
                 baseline_test_case_add_type(ctx, second_name, type);
             }
@@ -849,7 +849,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my key.span,
-                .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
+                .text = member_text(ctx, ctx->member_container, scope, span_sv(my key.span), false),
             }, my key.expr);
             // (Overloads: optional if any of them is, the symbol's flags)
             baseline_test_case_add_type(ctx, my key.span, overloads ? optional_member_type(prop_type(current_checker, overloads), overloads->flags & PROP_OPTIONAL) :
@@ -886,11 +886,11 @@ static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTest
 
 // The type parameter of `infer X`: from the end of `infer` (its leading trivia) to the end of the name
 static Span inferred_type_parameter_span(InferredType const* inferred) {
-    csview full = inferred->full_span.sv;
+    csview full = span_sv(inferred->full_span);
     isize at = csview_find_sv(full, c_sv("infer"));
-    char const* start = at == c_NPOS ? inferred->name.sv.buf : full.buf + at + 5;
-    if (start > inferred->name.sv.buf) start = inferred->name.sv.buf;
-    return span_make(inferred->name.source, start, span_end_ptr(inferred->name));
+    char const* start = at == c_NPOS ? inferred->name.buf : full.buf + at + 5;
+    if (start > inferred->name.buf) start = inferred->name.buf;
+    return span_make_in(inferred->name, start, span_end_ptr(inferred->name));
 }
 
 void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
@@ -910,16 +910,16 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
         case TYPE_VALUE: {
             // tsc's walk sees `true`, `false` and `-1` (and its `1`) as expressions, not other literal types
             if (!span_valid(my value_span)) break;
-            bool negative = (my value.tag == VALUE_NUMBER || my value.tag == VALUE_BIGINT) && my value_span.sv.size && my value_span.sv.buf[0] == '-';
+            bool negative = (my value.tag == VALUE_NUMBER || my value.tag == VALUE_BIGINT) && my value_span.size && my value_span.buf[0] == '-';
             if (my value.tag != VALUE_BOOLEAN && !negative) break;
             baseline_test_case_add_type_node(ctx, my value_span, me);
             if (negative) {
                 Span operand = my value_span;
-                operand.sv.buf++;
-                operand.sv.size--;
-                while (operand.sv.size && (operand.sv.buf[0] == ' ' || operand.sv.buf[0] == '\t')) {
-                    operand.sv.buf++;
-                    operand.sv.size--;
+                operand.buf++;
+                operand.size--;
+                while (operand.size && (operand.buf[0] == ' ' || operand.buf[0] == '\t')) {
+                    operand.buf++;
+                    operand.size--;
                 }
                 Value positive = my value.tag == VALUE_BIGINT ? value_bigint_negated(&my value)
                                                               : value_number(-my value.number);
@@ -945,7 +945,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             // declaration's, errorType)
             if (my identifier->rare && my identifier->rare->import_attributes) {
                 for_each (i, vec_import_attribute, &my identifier->rare->import_attributes->elements) {
-                    if (span_valid(i->name) && i->name.sv.buf[0] != '"' && i->name.sv.buf[0] != '\'') {
+                    if (span_valid(i->name) && i->name.buf[0] != '"' && i->name.buf[0] != '\'') {
                         baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ANY));
                     }
                 }
@@ -970,7 +970,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 Checker* checker = current_checker;
                 Ty const* module_type = ty_type_of_symbol(checker, my identifier->target);
                 Prop const* prop = module_type && (module_type->flags & TYF_OBJECT) ?
-                    ty_get_prop(checker, module_type, checker_atom(checker, my identifier->name.sv)) : nullptr;
+                    ty_get_prop(checker, module_type, checker_atom(checker, span_sv(my identifier->name))) : nullptr;
                 while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
                 if (prop && prop->decl->decl_span_count) {
                     VecSpan spans = vec_span_init();
@@ -979,7 +979,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                         .declarations = spans,
                         .allow_declaration_empty = true,
                         .span = my identifier->name,
-                        .text = cstr_from_sv(my identifier->name.sv),
+                        .text = cstr_from_sv(span_sv(my identifier->name)),
                     });
                 }
             }
@@ -1062,13 +1062,13 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 for_each (i, vec_spanned_type, &my identifier->generic_params) type_compile_test_info(&i->type, ctx);
                 break;
             }
-            if (!my identifier->name.sv.size && !identifier_type_import_ref(my identifier)) {
+            if (!my identifier->name.size && !identifier_type_import_ref(my identifier)) {
                 // A missing name (`a.` at the end of a line): tsc's unknownSymbol, shown where the next token starts
-                const char* at = my identifier->name.sv.buf;
+                const char* at = my identifier->name.buf;
                 at = skip_trivia_forward(at);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .allow_declaration_empty = true,
-                    .span = span_make(my identifier->name.source, at, at),
+                    .span = span_make_in(my identifier->name, at, at),
                     .text = cstr_lit("unknown"),
                 });
                 break;
@@ -1092,7 +1092,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ) {
                 Checker* checker = current_checker;
                 Ty const* type = ty_type_of_symbol(checker, my identifier->target);
-                Atom const* name = checker_atom(checker, my identifier->name.sv);
+                Atom const* name = checker_atom(checker, span_sv(my identifier->name));
                 if ((type->flags & TYF_OBJECT) && ty_get_prop(checker, type, name)) {
                     PropSymbolInfo info = { .declarations = vec_span_init() };
                     collect_prop_symbol(checker, type, name, &info, 0);
@@ -1307,7 +1307,7 @@ static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx,
     ctx->any_keeps_rendering = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
     // (Only an identifier name: a string one, `export type { foo as "a b" }`, isn't a type declaration name to tsc's
     // getTypeOfNode, and is the alias's value)
-    bool string_name = my decl_name.sv.size && (my decl_name.sv.buf[0] == '"' || my decl_name.sv.buf[0] == '\'');
+    bool string_name = my decl_name.size && (my decl_name.buf[0] == '"' || my decl_name.buf[0] == '\'');
     if (type_declaration && !string_name && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
         Symbol const* type_symbol = symbol_for_meaning(my symbol, SYMBOL_TYPE);
         bool declared = type_symbol && !type_symbol->is_placeholder &&
@@ -1336,7 +1336,7 @@ static Symbol const* shorthand_module_of(PortItem const* item, BaselineTestCase*
     if (!module || !module->is_shorthand_module) return nullptr;
     bool local_import = item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_GATHER || item->tag == PORT_IMPORT_SPECIFIC;
     bool same_file = ctx->shorthand_module == module && span_valid(ctx->shorthand_alias) &&
-        ctx->shorthand_alias.source == item->decl_name.source;
+        span_source(ctx->shorthand_alias) == span_source(item->decl_name);
     if (local_import && !same_file) {
         ctx->shorthand_module = module;
         ctx->shorthand_alias = item->decl_name;
@@ -1398,7 +1398,7 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                         symbol_declaration_spans(decl->is_placeholder ? decl : shown_declaration(symbol, decl)),
                     .allow_declaration_empty = decl->is_global_this,
                     .span = *i,
-                    .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
+                    .text = decl->is_placeholder ? cstr_from_sv(span_sv(decl->name_span)) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
                 // (An alias merged with a namespace, `export import A = a.A; export namespace A {}`: its declared type
                 // is the alias's, getDeclaredTypeOfSymbol's getDeclaredTypeOfAlias)
@@ -1434,9 +1434,9 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
             port_item_add_alias(i, ctx, false);
             continue;
         }
-        if (i->decl_name.sv.buf != i->source_name.sv.buf) {
+        if (i->decl_name.buf != i->source_name.buf) {
             // (a string literal name, `{ "<X>" as x }`, is no expression to tsc's walker: no line)
-            bool quoted = i->source_name.sv.size && (i->source_name.sv.buf[0] == '"' || i->source_name.sv.buf[0] == '\'');
+            bool quoted = i->source_name.size && (i->source_name.buf[0] == '"' || i->source_name.buf[0] == '\'');
             if (i->source_symbol && !quoted) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(i->source_symbol),
@@ -1444,7 +1444,7 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                     .span = i->source_name,
                     .text = i->source_symbol->is_placeholder ? cstr_init() : symbol_text(ctx, i->source_symbol),
                 });
-            } else if (!quoted && csview_equals(i->source_name.sv, "default") && i->symbol->alias &&
+            } else if (!quoted && csview_equals(span_sv(i->source_name), "default") && i->symbol->alias &&
                 i->symbol->alias->target && i->symbol->alias->target->is_module && !shorthand
             ) {
                 // A synthetic default (a module without one, allowSyntheticDefaultImports or a CommonJS module from an
@@ -1452,7 +1452,7 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                 Symbol const* module = i->symbol->alias->target;
                 SourceFile const* file = module->module->file;
                 VecSpan declarations = vec_span_init();
-                if (file) vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+                if (file) vec_span_push(&declarations, span_from_sv(file, csview_from_n(source_file_start(file), 0)));
                 VecSpan own = symbol_declaration_spans(module);
                 for_each (k, vec_span, &own) vec_span_push(&declarations, *k);
                 vec_span_drop(&own);
@@ -1464,11 +1464,11 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
             } else if (shorthand && !quoted) {
                 // (tsc's getExternalModuleMember: any member of a shorthand ambient module is the module)
                 bool aliased = ctx->shorthand_module == shorthand && span_valid(ctx->shorthand_alias) &&
-                    ctx->shorthand_alias.source == i->source_name.source;
+                    span_source(ctx->shorthand_alias) == span_source(i->source_name);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(shorthand),
                     .span = i->source_name,
-                    .text = aliased ? cstr_from_sv(ctx->shorthand_alias.sv) : symbol_text(ctx, shorthand),
+                    .text = aliased ? cstr_from_sv(span_sv(ctx->shorthand_alias)) : symbol_text(ctx, shorthand),
                 });
             }
             ctx->any_keeps_rendering = true;
@@ -1483,13 +1483,13 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
     if (span_valid(my missing_specifier)) baseline_test_case_add_type(ctx, my missing_specifier, ty_intrinsic(current_checker, TY_ANY));
     // (A literal there isn't an expression to tsc's writer: isInExpressionContext is false under an import)
     Expr const* bad = my bad_specifier;
-    bool bad_literal = bad && bad->tag == EXPR_LITERAL && *bad->inner_span.sv.buf != '-' &&
+    bool bad_literal = bad && bad->tag == EXPR_LITERAL && *bad->inner_span.buf != '-' &&
         (bad->literal.tag == VALUE_NUMBER || bad->literal.tag == VALUE_BIGINT);
     if (bad && !bad_literal) expr_compile_test_info(my bad_specifier, ctx);
     // `with { type: "json" }`: the keys written as identifiers are errorType (tsc resolves them as nothing)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {
-            if (span_valid(i->name) && i->name.sv.buf[0] != '"' && i->name.sv.buf[0] != '\'') {
+            if (span_valid(i->name) && i->name.buf[0] != '"' && i->name.buf[0] != '\'') {
                 baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ERROR));
             }
             // (a string, number or bigint literal there is no expression to tsc's isExpressionNode: no line)
@@ -1524,7 +1524,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     });
     baseline_test_case_add_type(
         ctx, my name,
-        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_unresolved(current_checker, my name.sv, (TyList){0})
+        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_unresolved(current_checker, span_sv(my name), (TyList){0})
     );
     for_each (i, vec_enum_case, &my cases) {
         //baseline_test_case_add_declaration(ctx, i->name, i->symbol);
@@ -1536,26 +1536,26 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
             // (tsc's symbolToString of the member: an alias of the enum in scope names it, `import b = a.E` gives
             // `b.x`)
             .text = !i->name_is_value && declaration && declaration->parent ? symbol_text(ctx, declaration) :
-                member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
+                member_text(ctx, my symbol, my name, span_sv((i->name_is_value ? i->full_name : declaration->name_span)), true),
         });
         baseline_test_case_add_symbol_value(ctx, span, declaration);
         // `[2] = 2`, `["4"] = 4`: the literal in the computed name names the member too
-        if (!i->computed_name && span_valid(i->full_name) && i->full_name.sv.size && i->full_name.sv.buf[0] == '[' && declaration) {
+        if (!i->computed_name && span_valid(i->full_name) && i->full_name.size && i->full_name.buf[0] == '[' && declaration) {
             Span literal = i->name;
-            if (i->name_is_value) literal = span_make(literal.source, span_start_ptr(literal) - 1, span_end_ptr(literal) + 1);
+            if (i->name_is_value) literal = span_make_in(literal, span_start_ptr(literal) - 1, span_end_ptr(literal) + 1);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = symbol_declaration_spans(declaration),
                 .span = literal,
                 .text = !i->name_is_value && declaration->parent ? symbol_text(ctx, declaration) :
-                    member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
+                    member_text(ctx, my symbol, my name, span_sv((i->name_is_value ? i->full_name : declaration->name_span)), true),
             });
             // ...and is an expression of its own (isInExpressionContext of a ComputedPropertyName)
             {
                 Value value;
                 if (i->name_is_value) {
-                    value = value_string(cstr_from_sv(i->name.sv));
+                    value = value_string(cstr_from_sv(span_sv(i->name)));
                 } else {
-                    cstr text = cstr_from_sv(i->name.sv);
+                    cstr text = cstr_from_sv(span_sv(i->name));
                     value = value_number(strtod(cstr_str(&text), nullptr));
                     cstr_drop(&text);
                 }
@@ -1738,7 +1738,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my method.name_span,
-                .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
+                .text = member_text(ctx, ctx->class_symbol, class_name, span_sv(written_name), false),
             }, my method.computed_key);
             // A method is the member's type: all of its overloads, and those of the declarations it merges with
             // (an interface's, overloads with a computed name)
@@ -1800,7 +1800,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my field.name_span,
-                .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
+                .text = member_text(ctx, ctx->class_symbol, class_name, span_sv(written_name), false),
             }, my field.computed_key);
             Ty const* type = optional_member_type(class_item_get_type(me), my field.is_optional);
             // (Joined into a symbol something else made first: that symbol's type. A static `prototype` property joins
@@ -1809,7 +1809,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             Atom const* name = checker_atom(current_checker, cstr_sv(&my field.name_string));
             // (A `#foo` is the class's own private name)
             if (span_valid(class_item_private_name(me)) && ctx->class_symbol) {
-                name = ty_private_name(current_checker, ctx->class_symbol, class_item_private_name(me).sv);
+                name = ty_private_name(current_checker, ctx->class_symbol, span_sv(class_item_private_name(me)));
             }
             if (my field.is_static && my field.computed_key) {
                 bool is_number = false;
@@ -1887,7 +1887,7 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
         e = &e->property->expr;
     }
     if (!n || e->tag != EXPR_IDENTIFIER || expr_is_perenthisized(e) || e->identifier.keyword || !ctx->enclosing) return;
-    Symbol const* found = scope_resolve(ctx->enclosing, e->inner_span.sv, SYMBOL_NAMESPACE);
+    Symbol const* found = scope_resolve(ctx->enclosing, span_sv(e->inner_span), SYMBOL_NAMESPACE);
     if (alias_of_unknown(found)) {
         // (An import of an unresolved module: the names after it are tsc's unknownSymbol, see unknown_symbol_text())
         for (u32 k = n; k-- > 0 && ctx->symbol_override_count + 2 <= c_arraylen(ctx->symbol_overrides);) {
@@ -1914,7 +1914,7 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
     for (u32 k = n; k-- > 0;) {
         Symbol const* container = symbol_for_meaning(found, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return;
-        csview name = expr_outer_span(&nodes[k]->property->prop).sv;
+        csview name = span_sv(expr_outer_span(&nodes[k]->property->prop));
         Symbol const* next = symbol_get_export(container, name);
         if (!next || !symbol_for_meaning(next, k ? SYMBOL_NAMESPACE : SYMBOL_VALUE)) return;
         add_symbol_override(ctx, nodes[k]->inner_span, next);
@@ -1942,7 +1942,7 @@ static void class_extends_compile_test_info(Expr* extends, Ty const* instance, u
             while (start < end && *start != '(') start++;
             while (end > start && end[-1] != ')') end--;
             if (end - start >= 2) {
-                Span inside = span_make(expr_outer_span(base).source, start + 1, end - 1);
+                Span inside = span_make_in(expr_outer_span(base), start + 1, end - 1);
                 baseline_test_case_add_type_recursive(ctx, inside, base->inner_span, ty_regular(current_checker, expr_get_type(base)));
             }
         }
@@ -1973,7 +1973,7 @@ static void register_type_parameter_member_merges(Symbol const* owner, Generic c
         Checker* checker = current_checker;
         if (!declared) declared = ty_declared_type_of(checker, owner);
         if (!declared || !(declared->flags & TYF_OBJECT)) return;
-        Prop const* prop = ty_get_prop(checker, declared, checker_atom(checker, i->name.sv));
+        Prop const* prop = ty_get_prop(checker, declared, checker_atom(checker, span_sv(i->name)));
         while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
         if (!prop || prop->parent != owner || !prop->decl->decl_span_count) continue;
         VecSpan spans = baseline_symbol_declaration_spans(i->owned_symbol);
@@ -1984,7 +1984,7 @@ static void register_type_parameter_member_merges(Symbol const* owner, Generic c
             continue;
         }
         for (u32 j = 0; j < prop->decl->decl_span_count; j++) vec_span_push(&spans, prop->decl->decl_spans[j]);
-        ctx->merged_declarations[ctx->merged_declaration_count].name = i->name.sv;
+        ctx->merged_declarations[ctx->merged_declaration_count].name = span_sv(i->name);
         ctx->merged_declarations[ctx->merged_declaration_count++].declarations = spans;
     }
 }
@@ -2120,7 +2120,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         // `declare global`: a namespace named `global` of its own in tsc, its value `typeof global` if it has one
         // (Every `declare global` at the top of the file: one symbol in its locals)
         VecSpan declarations = vec_span_init();
-        SourceFile const* file = my name.source;
+        SourceFile const* file = span_source(my name);
         bool top = false;
         for_each (i, vec_statement, &file->ast.statements) {
             if (i->tag != STATEMENT_DECL_NAMESPACE || !i->decl.namespace->is_global) continue;
@@ -2149,7 +2149,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         VecSpan decls = vec_span_init();
         cstr file_name = cstr_init();
         if (file) {
-            vec_span_push(&decls, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+            vec_span_push(&decls, span_from_sv(file, csview_from_n(source_file_start(file), 0)));
             file_name = file_module_text(ctx, my symbol);
         }
         VecSpan own = file ? baseline_symbol_declaration_spans(my symbol) : declaration_get_spans(my symbol);
@@ -2268,7 +2268,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(literal->inner_span),
                 .span = identifier_expr_name(me),
-                .text = named ? cstr_from_sv(ctx->variable_literal_name.sv) : cstr_lit("__object"),
+                .text = named ? cstr_from_sv(span_sv(ctx->variable_literal_name)) : cstr_lit("__object"),
             });
             return;
         }
@@ -2285,7 +2285,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
                 .declarations = vec_span_single(literal_type->anonymous.node->interface.span),
                 .span = identifier_expr_name(me),
                 .text = literal_type->anonymous.node == ctx->variable_type_literal ?
-                    cstr_from_sv(ctx->variable_type_literal_name.sv) : cstr_lit("__type"),
+                    cstr_from_sv(span_sv(ctx->variable_type_literal_name)) : cstr_lit("__type"),
             });
             return;
         }
@@ -2304,8 +2304,8 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     // The `this` parameter of a JSDoc `@this {T}` (its name is the tag's): tsgo's reparsed parameter, a missing name
     // at the tag's
     Span first = symbol->decls[0].name;
-    if (symbol->is_parameter && span_valid(first) && first.source && first.sv.buf > source_file_start(first.source) &&
-        first.sv.buf[-1] == '@'
+    if (symbol->is_parameter && span_valid(first) && span_source(first) && first.buf > source_file_start(span_source(first)) &&
+        first.buf[-1] == '@'
     ) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_single(first), .span = identifier_expr_name(me), .text = cstr_lit("(Missing)"),
@@ -2404,7 +2404,7 @@ static void new_target_function_symbol(IdentifierExpr const* me, Span span, Base
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = vec_span_single(function->full_span),
         .span = span,
-        .text = span_valid(function_impl_variable_name(function)) ? cstr_from_sv(function_impl_variable_name(function).sv) : cstr_lit("(Anonymous function)"),
+        .text = span_valid(function_impl_variable_name(function)) ? cstr_from_sv(span_sv(function_impl_variable_name(function))) : cstr_lit("(Anonymous function)"),
     });
 }
 
@@ -2492,7 +2492,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     if (shown && ctx->export_name && &ctx->export_name->identifier == me && shown->exported && (shown->flags & SYMBOL_VALUE) &&
         ctx->enclosing
     ) {
-        Symbol const* local = symbol_table_get(&ctx->enclosing->locals, identifier_expr_name(me).sv);
+        Symbol const* local = symbol_table_get(&ctx->enclosing->locals, span_sv(identifier_expr_name(me)));
         if (local && local != shown && !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE)) {
             declarations = declaration_get_spans(local);
             VecSpan own = declaration_get_spans(shown);
@@ -2503,7 +2503,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             }
             vec_span_drop(&own);
             for (isize_t a = 1; a < vec_span_size(&declarations); a++) {
-                for (isize_t b = a; b > 0 && declarations.data[b].source == declarations.data[b - 1].source &&
+                for (isize_t b = a; b > 0 && span_source(declarations.data[b]) == span_source(declarations.data[b - 1]) &&
                     span_start_ptr(declarations.data[b]) < span_start_ptr(declarations.data[b - 1]); b--
                 ) {
                     Span t = declarations.data[b];
@@ -2553,16 +2553,16 @@ static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
 // A namespaced JSX name `a:b` (tsc's JsxNamespacedName): its two identifiers, which are the error type
 static void jsx_namespaced_name_compile_test_info(Span name, BaselineTestCase* ctx) {
-    isize colon = csview_find(name.sv, ":");
+    isize colon = csview_find(span_sv(name), ":");
     if (colon == c_NPOS) return;
     Span parts[2] = { name, name };
-    parts[0].sv = csview_slice(name.sv, 0, colon);
-    parts[1].sv = csview_slice(name.sv, colon + 1, name.sv.size);
+    span_set_sv(&parts[0], csview_slice(span_sv(name), 0, colon));
+    span_set_sv(&parts[1], csview_slice(span_sv(name), colon + 1, name.size));
     for (u32 i = 0; i < 2; i++) {
-        while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[0])) parts[i].sv = csview_slice(parts[i].sv, 1, parts[i].sv.size);
-        while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[parts[i].sv.size - 1])) parts[i].sv.size--;
+        while (parts[i].size && isspace((unsigned char)parts[i].buf[0])) span_set_sv(&parts[i], csview_slice(span_sv(parts[i]), 1, parts[i].size));
+        while (parts[i].size && isspace((unsigned char)parts[i].buf[parts[i].size - 1])) parts[i].size--;
         // (A missing name after the colon, `attr:={x}`, is tsc's missing identifier)
-        if (parts[i].sv.size || i == 1) baseline_test_case_add_type(ctx, parts[i], ty_intrinsic(current_checker, TY_ERROR));
+        if (parts[i].size || i == 1) baseline_test_case_add_type(ctx, parts[i], ty_intrinsic(current_checker, TY_ERROR));
     }
 }
 
@@ -2623,12 +2623,12 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
 // member of JSX.IntrinsicElements (its property, or its index signature: `__index`)
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
     if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span)) return;
-    if (!name->inner_span.sv.size) {
+    if (!name->inner_span.size) {
         // A missing name (`<` at the end of the file, a missing closing tag): an error type, shown where the next token
         // starts (the harness skips the trivia after the missing node's position)
-        const char* at = name->inner_span.sv.buf;
+        const char* at = name->inner_span.buf;
         at = skip_trivia_forward(at);
-        baseline_test_case_add_type(ctx, span_make(name->inner_span.source, at, at), ty_intrinsic(current_checker, TY_ANY));
+        baseline_test_case_add_type(ctx, span_make_in(name->inner_span, at, at), ty_intrinsic(current_checker, TY_ANY));
         return;
     }
     if (!jsx_element_is_intrinsic(element)) {
@@ -2654,7 +2654,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         }
         vec_span_drop(&info.declarations);
     } else if (intrinsic.index) {
-        index_symbol_compile_test_info(ctx, intrinsic.elements, ty_string_literal(checker, name->inner_span.sv), name->inner_span, true);
+        index_symbol_compile_test_info(ctx, intrinsic.elements, ty_string_literal(checker, span_sv(name->inner_span)), name->inner_span, true);
     }
     // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
     Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
@@ -2663,7 +2663,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
 }
 
 static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (ty_is_import_meta(me) && !csview_equals(my property->prop.inner_span.sv, "meta")) {
+    if (ty_is_import_meta(me) && !csview_equals(span_sv(my property->prop.inner_span), "meta")) {
         // `import.metal` (TS17012) is the error type, and has no symbols
         baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), ty_intrinsic(current_checker, TY_ERROR));
         return;
@@ -2712,7 +2712,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     // The synthetic `default` of a namespace import of a JSON module (with_synthetic_default()): named as the module
     Symbol const* default_of = nullptr;
     if (info.found && !info.parent && vec_span_is_empty(&info.declarations) && my property->prop.tag == EXPR_LITERAL &&
-        csview_equals(expr_outer_span(&my property->prop).sv, "default") && my property->expr.tag == EXPR_IDENTIFIER
+        csview_equals(span_sv(expr_outer_span(&my property->prop)), "default") && my property->expr.tag == EXPR_IDENTIFIER
     ) {
         Symbol const* alias = my property->expr.identifier.symbol;
         PortItem const* item = alias && alias->alias ? alias->alias->item : nullptr;
@@ -2735,7 +2735,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         expr_compile_test_info(&my property->expr, ctx);
         has_compiled_expr_info = true;
         // tsc has no line for the name in a private name access (`a.#b`)
-        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(expr_outer_span(&my property->prop).sv, "#")) {
+        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
@@ -2758,7 +2758,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     }
     if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
         !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
-        !csview_starts_with(expr_outer_span(&my property->prop).sv, "#")
+        !csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")
     ) {
         // Through a declared index signature: `__index`, on the access and on the name (a type parameter's
         // constraint's too, tsgo; not in element accesses: tsc has no symbol there)
@@ -2783,7 +2783,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
     if (!dot) {
         expr_compile_test_info(&my property->prop, ctx);
-    } else if (!csview_starts_with(expr_outer_span(&my property->prop).sv, "#")) {
+    } else if (!csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")) {
         ctx->any_keeps_rendering = true;
         baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), ty_regular(current_checker, expr_get_type((Expr*)me)));
     }
@@ -2817,7 +2817,7 @@ static void binary_op_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             spine = grown;
         }
         spine[count++] = (SpineEntry){ node, ctx->symbol_override_count };
-        if (binary->op == BINARY_OP_EQUAL && binary->left.inner_span.source && binary->left.inner_span.source->is_js) {
+        if (binary->op == BINARY_OP_EQUAL && span_source(binary->left.inner_span) && span_source(binary->left.inner_span)->is_js) {
             this_property_symbol_overrides(&binary->left, ctx);
         }
         ctx->private_name_in_left = binary->op == BINARY_OP_IN && binary->left.tag == EXPR_PRIVATE_NAME &&
@@ -2846,7 +2846,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
-            if (my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined")) {
+            if (my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(my inner_span), "undefined")) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .allow_declaration_empty = true,
                     .span = my inner_span,
@@ -2877,15 +2877,15 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 Span target = my inner_span;
                 char const* start = span_end_ptr(target);
                 while (start > span_start_ptr(target) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
-                target.sv = csview_from_range(start, span_end_ptr(target));
+                span_set_sv(&target, csview_from_range(start, span_end_ptr(target)));
                 // (A misspelled one, TS17012, has no symbol)
-                if (my identifier.target && csview_equals(target.sv, "target")) {
+                if (my identifier.target && csview_equals(span_sv(target), "target")) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = symbol_declaration_spans(my identifier.target),
                         .span = target,
                         .name = my identifier.target->name_span,
                     });
-                } else if (identifier_this_function(&my identifier) && csview_equals(target.sv, "target")) {
+                } else if (identifier_this_function(&my identifier) && csview_equals(span_sv(target), "target")) {
                     new_target_function_symbol(&my identifier, target, ctx);
                 }
                 baseline_test_case_add_type(ctx, target, ty_regular(current_checker, expr_get_type(me)));
@@ -2914,7 +2914,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 Span spans[2] = { my inner_span, expr_outer_span(&my property->prop) };
                 for (u32 i = 0; i < 2; i++) {
                     VecSpan declarations = vec_span_init();
-                    vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+                    vec_span_push(&declarations, span_from_sv(file, csview_from_n(source_file_start(file), 0)));
                     ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
                         .span = spans[i], .text = cstr_lit("exports"), .declarations = declarations,
                     };
@@ -2961,7 +2961,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             Expr const* callee = &my call->callable;
             if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
             ModuleRef* ref = callee->tag == EXPR_IDENTIFIER ? identifier_module_ref(&callee->identifier) : nullptr;
-            SourceFile const* in_file = my inner_span.source;
+            SourceFile const* in_file = span_source(my inner_span);
             Symbol const* module = ref && in_file && in_file->scope ? binder_module_of_ref(in_file->scope->binder, ref) : ref ? ref->module : nullptr;
             if (ref && module && !callee->identifier.require_call && !callee->identifier.import_source) module = ty_dynamic_import_module(current_checker, my call, ref);
             // (A `require("./a")` only where a declaration's alias imports it: tsgo's
@@ -2972,7 +2972,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             ) {
                 // (a file's module is declared by the file, and named by its path without the extension)
                 SourceFile const* file = module->module ? module->module->file : nullptr;
-                Span file_start = file ? (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) } : span_null;
+                Span file_start = file ? span_from_sv(file, csview_from_n(source_file_start(file), 0)) : span_null;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = file ? vec_span_single(file_start) : declaration_get_spans(module),
                     .allow_declaration_empty = true,
@@ -3053,7 +3053,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         // A late bound name: the accessors written with the same name (see the pairing in expr.c)
                         for_each (other, vec_object_expr_item, &my object) {
                             if ((other->tag == OBJECT_ITEM_GETTER || other->tag == OBJECT_ITEM_SETTER) && other->computed_key &&
-                                csview_equals_sv(expr_outer_span(other->computed_key).sv, expr_outer_span(i->computed_key).sv)
+                                csview_equals_sv(span_sv(expr_outer_span(other->computed_key)), span_sv(expr_outer_span(i->computed_key)))
                             ) {
                                 vec_span_push(&declarations, other->span);
                             }
@@ -3117,7 +3117,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_ARRAY:
             for_each (i, vec_expr, &my array) {
                 // (An omitted element, `[, x]`, has no line: tsc 6's typeWriter skips OmittedExpression)
-                if (i->tag == EXPR_LITERAL && i->literal.tag == VALUE_UNDEFINED && !i->inner_span.sv.size) continue;
+                if (i->tag == EXPR_LITERAL && i->literal.tag == VALUE_UNDEFINED && !i->inner_span.size) continue;
                 expr_compile_test_info(i, ctx);
             }
             break;
@@ -3171,7 +3171,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     // are one symbol)
                     VecSpan declarations = vec_span_init();
                     for_each (j, vec_jsx_attribute, &my jsx_attributes) {
-                        if (j->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(j->name.sv, i->name.sv)) vec_span_push(&declarations, j->span);
+                        if (j->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(span_sv(j->name), span_sv(i->name))) vec_span_push(&declarations, j->span);
                     }
                     baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = declarations, .span = i->name });
                     baseline_test_case_add_type(ctx, i->name, ty_jsx_attribute_type(current_checker, me, i));
@@ -3199,11 +3199,11 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         for_each (i, vec_expr, my missing_decorators) expr_compile_test_info(i, ctx);
         return false;
     }
-    if (my tag == EXPR_IMPLICIT_ANY && my missing && !my inner_span.sv.size && !my paren_before && span_valid(my inner_span)) {
+    if (my tag == EXPR_IMPLICIT_ANY && my missing && !my inner_span.size && !my paren_before && span_valid(my inner_span)) {
         // A missing identifier is at the full start of the next token: the harness shows it where the token starts
-        const char* at = my inner_span.sv.buf;
+        const char* at = my inner_span.buf;
         at = skip_trivia_forward(at);
-        baseline_test_case_add_type_recursive(ctx, span_make(my inner_span.source, at, at), span_make(my inner_span.source, at, at),
+        baseline_test_case_add_type_recursive(ctx, span_make_in(my inner_span, at, at), span_make_in(my inner_span, at, at),
             ty_regular(current_checker, expr_get_type(me)));
         return false;
     }
@@ -3216,7 +3216,7 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         while (start > outer_start && start[-1] != '(') start--;
         while (end < outer_end && *end != ')') end++;
         if (start > outer_start && end < outer_end) {
-            Span parenthesized = span_make(my inner_span.source, start - 1, end + 1);
+            Span parenthesized = span_make_in(my inner_span, start - 1, end + 1);
             baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), parenthesized, ty_regular(current_checker, expr_get_type(me)));
         }
     } else if (my tag == EXPR_PRIVATE_NAME && !ctx->private_name_in_left) {
@@ -3242,14 +3242,14 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
             ) {
                 start--;
             }
-            name.sv = csview_from_range(start, span_end_ptr(name));
+            span_set_sv(&name, csview_from_range(start, span_end_ptr(name)));
             ctx->any_keeps_rendering = true;
             baseline_test_case_add_type(ctx, name, ty_intrinsic(current_checker, TY_ANY));
         }
     } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
         // (Of a local type and an exported value of the name: tsc's local symbol, whose declared type it is, see
         // getTypeOfNode's isInRightSideOfImportOrExportAssignment)
-        Symbol const* local = ctx->enclosing ? symbol_table_get(&ctx->enclosing->locals, my inner_span.sv) : nullptr;
+        Symbol const* local = ctx->enclosing ? symbol_table_get(&ctx->enclosing->locals, span_sv(my inner_span)) : nullptr;
         bool type_twin = local && local != my identifier.target && my identifier.target->exported &&
             !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE);
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, type_twin ?
@@ -3338,8 +3338,8 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_THROW_EXPR:
             // (A bare `return;` returns an implicit undefined literal, a written `undefined` is an expression)
             // A JSON file's value is an expression statement to tsc (its empty file's `{}` is nothing)
-            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my span.source && my span.source->is_json) {
-                if (expr_outer_span(&my expr).sv.size) expr_compile_test_info(&my expr, ctx);
+            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && span_source(my span) && span_source(my span)->is_json) {
+                if (expr_outer_span(&my expr).size) expr_compile_test_info(&my expr, ctx);
                 break;
             }
             // A number or string literal or `this` is no expression to tsc's type writer under an export assignment
@@ -3347,13 +3347,13 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && !expr_is_perenthisized(&my expr) && ((my expr.tag == EXPR_LITERAL &&
                 (my expr.literal.tag == VALUE_NUMBER || my expr.literal.tag == VALUE_STRING ||
                     my expr.literal.tag == VALUE_BIGINT) &&
-                csview_size(my expr.inner_span.sv) && !strchr("-+", my expr.inner_span.sv.buf[0])) ||
+                csview_size(span_sv(my expr.inner_span)) && !strchr("-+", my expr.inner_span.buf[0])) ||
                 (my expr.tag == EXPR_IDENTIFIER && my expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS))
             ) {
                 break;
             }
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED ||
-                csview_equals(my expr.inner_span.sv, "undefined")
+                csview_equals(span_sv(my expr.inner_span), "undefined")
             ) {
                 ctx->any_keeps_rendering = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
                 ctx->export_name = my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_IDENTIFIER ? &my expr : nullptr;
@@ -3382,7 +3382,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             statement_compile_test_info(&my for_loop->initialization, ctx);
             // (`for (;;)` has a `true` condition the parser made up, with an empty span)
             // (a missing one is tsc's missing identifier: `while ()`)
-            if (my for_loop->condition.inner_span.sv.size || my for_loop->condition.missing) {
+            if (my for_loop->condition.inner_span.size || my for_loop->condition.missing) {
                 expr_compile_test_info(&my for_loop->condition, ctx);
             }
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||

@@ -56,7 +56,7 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
     for_each (i, vec_generic_item, &generic->items) {
         Ty const* param = i->symbol_ref ?
             ty_type_param(me, i->symbol_ref) :
-            ty_synthetic_type_param(me, i->name.sv);
+            ty_synthetic_type_param(me, span_sv(i->name));
         if (!param->param.state->item) param->param.state->item = i;
         // (Two of the same name are one symbol, one type parameter: tsc's appendIfUnique in
         // getTypeParametersFromDeclaration)
@@ -84,7 +84,7 @@ static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generi
         if (!other || other == first) continue;
         for_each (i, vec_generic_item, &other->items) {
             if (!i->symbol_ref) continue;
-            Atom const* name = checker_atom(me, i->name.sv);
+            Atom const* name = checker_atom(me, span_sv(i->name));
             Ty const* same = nullptr;
             for (u32 k = 0; k < local.len && !same; k++) if (local.data[k]->param.name == name) same = local.data[k];
             u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->symbol_ref };
@@ -125,7 +125,7 @@ static void append_qualified_name(cstr* out, Symbol const* symbol) {
 
 Atom const* ty_qualified_name(Checker* me, Symbol const* symbol) {
     Symbol const* parent = symbol->parent;
-    if (!parent || parent->is_module) return checker_atom(me, ty_symbol_display_name(symbol).sv);
+    if (!parent || parent->is_module) return checker_atom(me, span_sv(ty_symbol_display_name(symbol)));
     cstr qualified = cstr_null;
     append_qualified_name(&qualified, symbol);
     Atom const* ret = checker_atom(me, cstr_sv(&qualified));
@@ -415,13 +415,13 @@ static Ty const* intrinsic_alias_instance(Checker* me, Symbol const* decl, Ty co
 // The type of a type reference whose name doesn't resolve: tsc's unresolvedType, which prints as written
 static Ty const* unresolved_reference(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
-    if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
+    if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.size) return ty_intrinsic(me, TY_ERROR);
     cstr name = cstr_null;
     for_each (i, vec_span, identifier_type_namespaces(identifier)) {
-        cstr_append_sv(&name, i->sv);
+        cstr_append_sv(&name, span_sv(*i));
         cstr_append(&name, ".");
     }
-    cstr_append_sv(&name, identifier->name.sv);
+    cstr_append_sv(&name, span_sv(identifier->name));
     // (The type arguments' types: tsc's typeArgumentsFromTypeReferenceNode, printed like any type, `KK` of a literal as
     // the literal)
     u32 arg_count = (u32)vec_spanned_type_size(&identifier->generic_params);
@@ -453,8 +453,8 @@ static Symbol const* export_equals_property_type(Checker* me, Symbol const* prop
         if (type && !type->is_placeholder) return canonical(me, type);
     }
     if (!prop && ty_export_equals_property_missing(me, property)) return nullptr;
-    ty_error_at(me, identifier->name, 2749, cstr_d("'", identifier->name.sv,
-        "' refers to a value, but is being used as a type here. Did you mean 'typeof ", identifier->name.sv, "'?"));
+    ty_error_at(me, identifier->name, 2749, cstr_d("'", span_sv(identifier->name),
+        "' refers to a value, but is being used as a type here. Did you mean 'typeof ", span_sv(identifier->name), "'?"));
     return nullptr;
 }
 
@@ -503,7 +503,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             Prop const* previous = nullptr;
             for (isize i = identifier->rare->import_prop_start; i >= 0 && i < count; i++) {
                 Span name = i == count - 1 ? identifier->name : *vec_span_at(identifier_type_namespaces(identifier), i);
-                Prop const* prop = ty_get_prop(me, ret, checker_atom(me, name.sv));
+                Prop const* prop = ty_get_prop(me, ret, checker_atom(me, span_sv(name)));
                 if (!prop) {
                     // A property of what `module.exports =` assigns or of a value, like the names before it (tsc's
                     // getTypeFromImportTypeNode reports it as a missing export of what the previous name resolved
@@ -519,10 +519,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                         // reached through, `obj.a`)
                         container_name = cstr_from_sv(decl->name);
                         for (isize j = identifier->rare->import_prop_start; j < i; j++) {
-                            cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", vec_span_at(identifier_type_namespaces(identifier), j)->sv);
+                            cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", span_sv(*vec_span_at(identifier_type_namespaces(identifier), j)));
                         }
                     }
-                    ty_error_at(me, name, 2694, cstr_d("Namespace '", container_name, "' has no exported member '", name.sv, "'."));
+                    ty_error_at(me, name, 2694, cstr_d("Namespace '", container_name, "' has no exported member '", span_sv(name), "'."));
                     cstr_drop(&container_name);
                     return ty_intrinsic(me, TY_ERROR);
                 }
@@ -555,10 +555,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
     // getTypeFromClassOrInterfaceReference), for a type alias or a type without type parameters in JavaScript too
     // (getTypeFromTypeAliasReference, checkNoTypeArguments)
-    if (!identifier->keyword && span_valid(identifier->name) && identifier->target && identifier->name.source &&
-        (!identifier->name.source->is_js || (identifier->target->flags & SYMBOL_TYPE_ALIAS) ||
+    if (!identifier->keyword && span_valid(identifier->name) && identifier->target && span_source(identifier->name) &&
+        (!span_source(identifier->name)->is_js || (identifier->target->flags & SYMBOL_TYPE_ALIAS) ||
             (!several_types_is_generic(identifier->target) && !identifier_type_is_jsdoc_function(identifier))) &&
-        !several_types_arity_fits(identifier->target, (u32)vec_spanned_type_size(&identifier->generic_params), identifier->name.source)
+        !several_types_arity_fits(identifier->target, (u32)vec_spanned_type_size(&identifier->generic_params), span_source(identifier->name))
     ) {
         return ty_intrinsic(me, TY_ERROR);
     }
@@ -748,7 +748,7 @@ static bool typeof_mentions_no_type_params(Expr const* first) {
         // (An import, `import * as ns`, `import x = N.y`: only in a file or a namespace, never inside what declares a
         // type parameter. JavaScript's `require` aliases can be in a function)
         SymbolDecl const* decl = &symbol->decls[i];
-        if (!block && decl->kind == SYMBOL_DECL_ALIAS && decl->full.source && !decl->full.source->is_js) continue;
+        if (!block && decl->kind == SYMBOL_DECL_ALIAS && span_source(decl->full) && !span_source(decl->full)->is_js) continue;
         if (!block || block->generics || block->function) return false;
     }
     return true;
@@ -974,7 +974,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
         TyFreeParams* computed = arena_new(&my arena, TyFreeParams);
         bool eligible = !function->is_expression && !function->is_constructor && !function->accessor &&
             !function->is_type && !function->jsdoc_type && !function->jsdoc_callback && !function->jsdoc_typed &&
-            function->full_span.source && !function->full_span.source->is_js && (function->ret_explicit || !function->has_body);
+            span_source(function->full_span) && !span_source(function->full_span)->is_js && (function->ret_explicit || !function->has_body);
         for_each (i, vec_function_arg, &function->args) {
             if (!i->initializer.binding.has_explicit_type) eligible = false;
         }
@@ -1004,9 +1004,9 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
 static bool span_in_merged_owner(Checker* me, uint16_t owner, Span at) {
     Symbol const* symbol = my merged_owners.data[owner - 1]->declared.symbol;
     char const* start = span_start_ptr(at);
-    for (u32 i = 0; at.source && i < symbol->decl_count; i++) {
+    for (u32 i = 0; span_source(at) && i < symbol->decl_count; i++) {
         Span full = symbol->decls[i].full;
-        if (full.source == at.source && start >= full.sv.buf && start < full.sv.buf + full.sv.size) return true;
+        if (span_source(full) == span_source(at) && start >= full.buf && start < full.buf + full.size) return true;
     }
     return false;
 }
@@ -1071,8 +1071,8 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
         // (Type parameters are declared before the bodies of what declares them: one declared inside the Block is
         // on a declaration between it and the node)
         Span decl = check->param.symbol->name_span;
-        csview text = cstr_sv(&decl.source->contents);
-        outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.sv.buf < block;
+        csview text = cstr_sv(&span_source(decl)->contents);
+        outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.buf < block;
     }
     outer->node = node->ternary->span;
     ((Ty*)root)->conditional.outer = outer; // (Set once, right after lowering it: a root is never shared between checkers)
@@ -1198,7 +1198,7 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
     Symbol* module = file->scope ? file->scope->container : nullptr;
     if (!module) return ty_intrinsic(me, TY_ANY);
     Span* file_span = arena_new(&my arena, Span);
-    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_first_token(file).sv.buf, 0) };
+    *file_span = span_from_sv(file, csview_from_n(source_file_first_token(file).buf, 0));
     Ty const* exports = ty_commonjs_exports_type(me, file);
     ObjectLiteralProp prop = {
         .name = checker_atom(me, c_sv("exports")),
@@ -1238,7 +1238,7 @@ Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
 // tsc's isAliasableExpression: an entity name (`undefined` too) or a class expression
 static bool is_aliasable_expression(Expr const* value) {
     if (!value || expr_is_perenthisized(value)) return false;
-    if (value->tag == EXPR_LITERAL) return value->literal.tag == VALUE_UNDEFINED && csview_equals(value->inner_span.sv, "undefined");
+    if (value->tag == EXPR_LITERAL) return value->literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(value->inner_span), "undefined");
     return value->tag == EXPR_CLASS_DECL || expr_is_entity_name(value);
 }
 
@@ -1249,7 +1249,7 @@ static bool commonjs_alias_export(Symbol const* symbol) {
         // (tttt binds `exports.x = f` as an alias of its own, `exports.x = undefined` as an assignment)
         if (decl->kind == SYMBOL_DECL_ALIAS) continue;
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROPERTY) return false;
-        if (!decl->full.source || !decl->full.source->is_js || !is_aliasable_expression(decl->node)) return false;
+        if (!span_source(decl->full) || !span_source(decl->full)->is_js || !is_aliasable_expression(decl->node)) return false;
     }
     return true;
 }
@@ -1275,7 +1275,7 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
             // like duplicate implementations in two files, are signatures of their own
             if (((FunctionImpl const*)decl->node)->has_body && index > 0) {
                 SymbolDecl const* previous = &symbol->decls[index - 1];
-                if (previous->kind != SYMBOL_DECL_FUNCTION || previous->full.source != decl->full.source ||
+                if (previous->kind != SYMBOL_DECL_FUNCTION || span_source(previous->full) != span_source(decl->full) ||
                     !span_valid(previous->full) || !span_valid(decl->full)
                 ) {
                     return true;
@@ -1384,7 +1384,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // (PROTOTYPE: JavaScript keeps 6.0's until todo entry 8)
     // (An annotated variable's expando is contextually typed by what the annotation says the member is, its left side)
     Ty const* contextual = annotated_expando_type(me, symbol);
-    if (!contextual && symbol_rare(symbol)->late_bound_key && node && decl->full.source && decl->full.source->is_js && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
+    if (!contextual && symbol_rare(symbol)->late_bound_key && node && span_source(decl->full) && span_source(decl->full)->is_js && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
         decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD
     ) {
         Expr const* value = node;
@@ -1392,7 +1392,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
             if (compiler_options()->no_implicit_any && span_valid(decl->full) && span_valid(decl->name)) {
                 // (At the whole assignment, tsc's declaration)
                 Span value_span = expr_outer_span(value);
-                Span whole = span_make(decl->full.source, span_start_ptr(decl->full), span_end_ptr(value_span));
+                Span whole = span_make_in(decl->full, span_start_ptr(decl->full), span_end_ptr(value_span));
                 ty_error_at(me, span_end_ptr(value_span) > span_start_ptr(decl->full) ? whole : decl->full, 7022, cstr_d("'", decl->name, "' implicitly has type 'any' because it does not have a "
                     "type annotation and is referenced directly or indirectly in its own initializer."));
             }
@@ -1404,7 +1404,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
     // (In TypeScript too, an expando of a function: unless the function's variable is annotated, tsc's
     // hasParentWithTypeAnnotation)
-    SourceFile const* file = decl->full.source;
+    SourceFile const* file = span_source(decl->full);
     Binding const* parent_binding = symbol->parent ? symbol_find_node(symbol->parent, SYMBOL_DECL_VARIABLE) : nullptr;
     if (file && (file->is_js || !parent_binding || !parent_binding->has_explicit_type) && ty_is_empty_array_literal_type(me, type)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
@@ -1424,7 +1424,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
 // getJSContainerObjectType). `value` is the initializer or assigned value
 static bool is_js_container(Symbol const* symbol, Expr const* value) {
     if (!symbol->exports || !value) return false;
-    SourceFile const* file = value->inner_span.source;
+    SourceFile const* file = span_source(value->inner_span);
     if (!file || !file->is_js) return false;
     Expr const* init = expando_initializer((Expr*)value, true, false);
     return init && init->tag == EXPR_OBJECT;
@@ -1507,7 +1507,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             // (A JSDoc `@type` on it is its type: tsc's getEffectiveTypeAnnotationNode of an ExportAssignment)
             if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
             // A JSON file's value is widened, literals too (getTypeOfVariableOrParameterOrPropertyWorker)
-            if (decl->full.source && decl->full.source->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            if (span_source(decl->full) && span_source(decl->full)->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             // An alias of `a.b` that names no symbol (entity_value_symbol()): what checking it resolved, which for
             // a property of any is nothing (tsc's getTargetOfAliasLikeExpression: unknownSymbol, errorType)
             if (symbol->alias == nullptr && ((Expr const*)decl->node)->tag == EXPR_PROPERTY && expr_is_entity_name(decl->node) &&
@@ -1532,7 +1532,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 // Nothing but null and undefined is any in JavaScript (tsc's getWidenedTypeForAssignmentDeclaration),
                 // except `= undefined`, an alias of undefined to tsc (isAliasableExpression)
                 Expr const* value = decl->node;
-                SourceFile const* file = decl->full.source;
+                SourceFile const* file = span_source(decl->full);
                 bool undefined_alias = value->tag == EXPR_LITERAL && value->literal.tag == VALUE_UNDEFINED;
                 // (After getWidenedType: without strictNullChecks what widens is any already, nothing to report)
                 if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
@@ -1712,7 +1712,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     Symbol* assigned = module ? module_export_equals(module) : nullptr;
     if (!assigned || assigned == module || assigned->is_placeholder) return nullptr;
     CompilerOptions const* options = compiler_options();
-    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* importer = span_source(item->decl_name);
     SourceFile const* target = item->module_ref->file;
     bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
     bool esm_usage = node && importer && importer->is_esm;
@@ -1739,7 +1739,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
         while (found && found->target) found = found->target;
         Symbol const* declared = found && found->decl ? found->decl->symbol : nullptr;
         // (A module's type has its exports resolved: the `default` export of the module that declares it says)
-        SourceFile const* declaring = declared && declared->decl_count ? declared->decls[0].full.source : nullptr;
+        SourceFile const* declaring = declared && declared->decl_count ? span_source(declared->decls[0].full) : nullptr;
         Symbol* declaring_module = declaring && declaring->scope ? declaring->scope->container : nullptr;
         Symbol const* exported = declaring_module && declaring_module->is_module ? symbol_get_export(declaring_module, c_sv("default")) : nullptr;
         bool syntactic = declared && (declared->is_default_export || (declared->flags & SYMBOL_ALIAS));
@@ -1805,7 +1805,7 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
     }
     Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol_rare(symbol)->constructor_assigned, function_impl_rare(symbol_rare(symbol)->declaring_constructor)->return_flow);
     // Nothing but `[]` (tsc's autoArrayType, which never evolves here): any[], reported (getFlowTypeInConstructor)
-    SourceFile const* file = symbol_rare(symbol)->constructor_assigned->inner_span.source;
+    SourceFile const* file = span_source(symbol_rare(symbol)->constructor_assigned->inner_span);
     if (file && file->is_js && ret == ty_auto_array(me)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)3;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
@@ -1823,7 +1823,7 @@ static AstWalk visit_same_this_property(Expr const* expr, void* arg) {
     SameThisProperty* state = arg;
     if (expr->tag == EXPR_FUNCTION) return AST_WALK_SKIP;
     if (expr->tag == EXPR_PROPERTY && expr_this_keyword(&expr->property->expr) &&
-        csview_equals_sv(name_cooked(expr_static_property_name(expr).sv), state->name)
+        csview_equals_sv(name_cooked(span_sv(expr_static_property_name(expr))), state->name)
     ) {
         state->found = true;
         return AST_WALK_STOP;
@@ -1857,7 +1857,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // A JavaScript function or class expression assigned first is the type, whatever the later assignments are (tsc's
     // getWidenedTypeForAssignmentDeclaration: an expando initializer of the value declaration is a container of its own)
-    SourceFile const* first_file = symbol->decls[0].full.source;
+    SourceFile const* first_file = span_source(symbol->decls[0].full);
     if (first_file && first_file->is_js && symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
         !symbol_decl_jsdoc_type(&symbol->decls[0]) && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
     ) {
@@ -1933,7 +1933,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         ret = ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     // Nothing but null and undefined is any in JavaScript
-    SourceFile const* file = symbol->decls[0].full.source;
+    SourceFile const* file = span_source(symbol->decls[0].full);
     if (file && file->is_js && ty_only_nullable(ty_widened_nullable(me, ret))) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
@@ -2049,8 +2049,8 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
             Span whole = decl->full;
             if (value && decl->kind == SYMBOL_DECL_ASSIGNMENT) {
                 Span value_span = expr_outer_span(value);
-                if (value_span.source == whole.source && span_end_ptr(value_span) > span_start_ptr(whole)) {
-                    whole = span_make(whole.source, span_start_ptr(whole), span_end_ptr(value_span));
+                if (span_source(value_span) == span_source(whole) && span_end_ptr(value_span) > span_start_ptr(whole)) {
+                    whole = span_make_in(whole, span_start_ptr(whole), span_end_ptr(value_span));
                 }
             }
             ty_error_at(me, whole, 7022, cstr_d("'", symbol->name, "' implicitly has type 'any' because it does not "
@@ -2082,15 +2082,15 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
             if (!item && step->alias && !step->alias->entity && !step->alias->class_expr && step->alias->scope &&
                 span_valid(step->alias->name)
             ) {
-                Symbol* named = scope_resolve(step->alias->scope, step->alias->name.sv, SYMBOL_ANY_MEANING);
+                Symbol* named = scope_resolve(step->alias->scope, span_sv(step->alias->name), SYMBOL_ANY_MEANING);
                 if (named && named != step && (named->flags & SYMBOL_ALIAS)) next = named;
             }
             step = next;
             // (A default import that is what `export =` assigns: the `export =` alias, which may name a namespace import)
             // (So is `export as namespace N` of a module with `export =`: N is the module, what it assigns)
-            bool as_namespace = item && item->tag == PORT_EXPORT_AS_NAMESPACE && item->decl_name.source && item->decl_name.source->scope;
+            bool as_namespace = item && item->tag == PORT_EXPORT_AS_NAMESPACE && span_source(item->decl_name) && span_source(item->decl_name)->scope;
             if (item && !item->source_symbol && ((item->tag == PORT_IMPORT_DEFAULT && item->module_ref) || as_namespace) && target) {
-                Symbol* module = as_namespace ? item->decl_name.source->scope->container : binder_module_of_ref(symbol->binder, item->module_ref);
+                Symbol* module = as_namespace ? span_source(item->decl_name)->scope->container : binder_module_of_ref(symbol->binder, item->module_ref);
                 Symbol* export_equals = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
                 if (export_equals && (export_equals->flags & SYMBOL_ALIAS) && symbol_resolve_alias(export_equals) == target) {
                     step = export_equals;
@@ -2191,7 +2191,7 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
     for_each (i, vec_tuple_element, &node->tuple.elements) {
         flags[i_index] = (i->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (i->rest ? TUPLE_ELEMENT_REST : 0);
         if (span_valid(i->maybe_name)) {
-            names[i_index] = checker_atom(me, i->maybe_name.sv);
+            names[i_index] = checker_atom(me, span_sv(i->maybe_name));
             labels[i_index] = i;
             any_named = true;
         }
@@ -2657,8 +2657,8 @@ static bool prop_has_numeric_name(Prop const* prop) {
     while (prop->target && !prop_decl_rare(prop->decl)->name_type) prop = prop->target;
     PropDecl const* decl = prop->decl;
     if (prop_decl_rare(decl)->name_type) return (prop_decl_rare(decl)->name_type->flags & TYF_NUMBER_LITERAL) != 0;
-    if (!decl->name_is_value || !span_valid(decl->name_span) || !decl->name_span.sv.size) return false;
-    char c = decl->name_span.sv.buf[0];
+    if (!decl->name_is_value || !span_valid(decl->name_span) || !decl->name_span.size) return false;
+    char c = decl->name_span.buf[0];
     return (c >= '0' && c <= '9') || c == '.';
 }
 
@@ -3193,7 +3193,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     // any[], which noImplicitAny reports (tsc's getTypeForBindingElement: widenTypeInferredFromInitializer,
     // isEmptyArrayLiteralType, TS7031)
     if (!binding->parent || !binding->default_value || binding->tag != BINDING_IDENTIFIER) return ret;
-    SourceFile const* file = binding->content_span.source;
+    SourceFile const* file = span_source(binding->content_span);
     if (!file || !file->is_js || !ty_is_array(me, ret)) return ret;
     Binding const* root = binding->parent;
     while (root->parent) root = root->parent;
@@ -3324,8 +3324,8 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         // A JavaScript `var { a } = {}` destructures tsc's getJSContainerObjectType of the empty literal: an empty
         // JS-literal object, not an object literal (a missing property with a default is TS2339 unless open-ended)
         if (binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type && !binding_is_parameter(binding) &&
-            binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING && binding->content_span.source &&
-            binding->content_span.source->is_js
+            binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING && span_source(binding->content_span) &&
+            span_source(binding->content_span)->is_js
         ) {
             Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
             if (value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object)) {
@@ -3799,7 +3799,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_INFERRED: {
             // (Outside a conditional's extends clause, TS1338: an anonymous type parameter, tsc's
             // bindAnonymousDeclaration)
-            if (!node->inferred->owned_symbol) return ty_synthetic_type_param(me, node->inferred->name.sv);
+            if (!node->inferred->owned_symbol) return ty_synthetic_type_param(me, span_sv(node->inferred->name));
             Ty const* param = ty_type_param(me, node->inferred->owned_symbol);
             param->param.state->is_infer = true;
             return param;

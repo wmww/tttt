@@ -122,8 +122,11 @@ unsigned source_file_line_index(SourceFile const* me, const char* pos) {
     return low;
 }
 
+static_assert(offsetof(SourceFile, id) == 0, "source_file_id() reads the first word");
+
 void source_file_drop(SourceFile* me) {
     names_unregister_source(me);
+    source_file_unregister(me);
     for (u32 i = 0; i < my include_reason_count; i++) cstr_drop(&my include_reasons[i].package_id);
     free(my include_reasons);
     cstr_drop(&my canonical_path);
@@ -153,7 +156,7 @@ void source_file_drop(SourceFile* me) {
 // tsc's containsParseError: whether a parse error starts in the node's text or right after it (a missing `,` or `}` is
 // reported at the next token, which its node ends before)
 bool source_file_parse_error_within(Span node) {
-    SourceFile const* file = node.source;
+    SourceFile const* file = span_source(node);
     if (!file || !file->has_parse_errors || !span_valid(node)) return false;
     for (u32 i = 0; i < file->parse_error_count; i++) {
         char const* at = file->parse_error_starts[i];
@@ -383,7 +386,7 @@ static csview declaration_extension(csview path) {
 // first JSX element of a file whose runtime module it is)
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
-    SourceFile const* from = my span.source;
+    SourceFile const* from = span_source(my span);
     bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
     // (A `resolution-mode` attribute of a type-only import or an import type lets it import across formats: tsc's
     // hasResolutionModeOverride)
@@ -453,7 +456,7 @@ static bool has_ts_extension(csview path) {
 // tsc's resolveExternalModule under rewriteRelativeImportExtensions: what emit's rewriting of `.ts` specifiers to
 // `.js` would get wrong (not in ambient code, declaration file names, type-only imports)
 static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
-    SourceFile const* from = my span.source;
+    SourceFile const* from = span_source(my span);
     if (!from || from->is_declaration || declaration_extension(cstr_sv(&my path)).size) return;
     csview path = cstr_sv(&my path);
     bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") || csview_equals(path, ".") ||
@@ -494,7 +497,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
     if (dts.size && !type_only && !side_effect && my file && my used_ts_extension) {
         csview stem = csview_slice(cstr_sv(&my path), 0, cstr_size(&my path) - dts.size);
         bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
-            (my span.source && my span.source->is_esm);
+            (span_source(my span) && span_source(my span)->is_esm);
         char const* ext = "";
         if (esm) {
             bool prefer_ts = options->allow_importing_ts_extensions;
@@ -505,7 +508,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
             "mean to import an implementation file '", stem, ext, "' instead?");
     }
     bool allowed = options->allow_importing_ts_extensions || options->rewrite_relative_import_extensions ||
-        (my span.source && my span.source->is_declaration);
+        (span_source(my span) && span_source(my span)->is_declaration);
     module_ref_report_require_of_esm(me, my span, errs);
     // (Not for a type-only import or export, or an import type: tsc's resolveExternalModule)
     if (my used_ts_extension && !allowed && !type_only && my file && !dts.size) {

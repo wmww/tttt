@@ -50,7 +50,7 @@ const FunctionImplRare function_impl_no_rare = {0};
 
 Span function_impl_span_get(FunctionImpl const* me, FunctionSpan span) {
     if (!span.start) return span_null;
-    return (Span){ .source = my span_source, .sv = { source_file_start(my span_source) + span.start - 1, span.length } };
+    return span_from_sv(my span_source, csview_from_n(source_file_start(my span_source) + span.start - 1, span.length));
 }
 
 void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span) {
@@ -58,9 +58,9 @@ void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span) {
         *field = (FunctionSpan){0};
         return;
     }
-    if (!my span_source) my span_source = span.source;
-    panic_if(span.source != my span_source, "a function's spans in different files");
-    *field = (FunctionSpan){ (u32)(span.sv.buf - source_file_start(span.source)) + 1, (u32)span.sv.size };
+    if (!my span_source) my span_source = span_source(span);
+    panic_if(span_source(span) != my span_source, "a function's spans in different files");
+    *field = (FunctionSpan){ (u32)(span.buf - source_file_start(span_source(span))) + 1, (u32)span.size };
 }
 
 FunctionImplRare* function_impl_rare_mut(FunctionImpl* me) {
@@ -258,8 +258,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     // A control flow container. tsc: bindContainer()
     my is_expression = kind == FUNCTION_IS_EXPRESSION;
     my no_outer_type_params = !names->generics && !my is_expression && !my is_method && !span_valid(function_impl_member_name(me)) &&
-        !(my full_span.source && my full_span.source->is_js);
-    my no_enclosing_type_params = !names->generics && !(my full_span.source && my full_span.source->is_js) &&
+        !(span_source(my full_span) && span_source(my full_span)->is_js);
+    my no_enclosing_type_params = !names->generics && !(span_source(my full_span) && span_source(my full_span)->is_js) &&
         !scope_enclosing_class(names);
     FlowBuilder* outer = names->flow;
     bool is_iife = outer->next_function_is_iife && my has_body;
@@ -396,14 +396,14 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         TypePredicateNode* predicate = my predicate;
         if (predicate->has_type) type_lookup_names(&predicate->type, function_scope, errs);
         for_each (i, vec_function_arg, &my args) {
-            if (predicate->is_this || !name_equals(i->initializer.binding.content_span.sv, predicate->name.sv)) continue;
+            if (predicate->is_this || !name_equals(span_sv(i->initializer.binding.content_span), span_sv(predicate->name))) continue;
             predicate->param_index = (i32)i_index;
             if (i->initializer.binding.tag == BINDING_IDENTIFIER) predicate->symbol = i->initializer.binding.symbol;
         }
         // (No parameter of that name: tsc's getSymbolAtLocation resolves it like any name there, a binding element of
         // a parameter's pattern or an outer variable. Only the symbols baseline looks)
         if (!predicate->is_this && !predicate->symbol && predicate->param_index < 0 && span_valid(predicate->name)) {
-            Symbol const* found = scope_resolve(function_scope, predicate->name.sv, SYMBOL_VALUE);
+            Symbol const* found = scope_resolve(function_scope, span_sv(predicate->name), SYMBOL_VALUE);
             if (found && !found->is_placeholder) predicate->symbol = found;
         }
     }
@@ -668,11 +668,11 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
             }
             if (target->symbol && (target->symbol->referenced || signature_queries(function, target->symbol))) continue;
             // (declarationNameToString: a name recovery left missing is "(Missing)")
-            csview name = target->content_span.sv.size ? target->content_span.sv : c_sv("(Missing)");
+            csview name = target->content_span.size ? span_sv(target->content_span) : c_sv("(Missing)");
             Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", name,
                 "' is an unused renaming of '", i->source_span, "'. Did you intend to use it as a type annotation?");
             if (e && !arg->initializer.binding.has_explicit_type) {
-                Span end = { .source = arg->span.source, .sv = csview_from_n(arg->span.sv.buf + arg->span.sv.size, 0) };
+                Span end = span_in_sv(arg->span, csview_from_n(arg->span.buf + arg->span.size, 0));
                 error_add_related_d(e, end, 2843, "We can only write a type for '", i->source_span,
                     "' by adding a type for the entire parameter here.");
             }
@@ -687,7 +687,7 @@ static void function_impl_check_use_strict_parameters(FunctionImpl const* me, Er
     Statement const* directive = nullptr;
     for_each (i, vec_statement, &my body.statements) {
         if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
-            expr_is_perenthisized(&i->expr) || *i->expr.inner_span.sv.buf == '`'
+            expr_is_perenthisized(&i->expr) || *i->expr.inner_span.buf == '`'
         ) {
             break;
         }
@@ -754,8 +754,8 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
         if (function_impl_rare(me)->jsdoc_overloads[i].tag != TYPE_CALLABLE) continue;
         FunctionImpl const* overload = function_impl_rare(me)->jsdoc_overloads[i].callable->function;
         Span full = overload->full_span;
-        Span tag_name = span_valid(full) && full.sv.size > 1 ?
-            span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size) : full;
+        Span tag_name = span_valid(full) && full.size > 1 ?
+            span_make_in(full, full.buf + 1, full.buf + full.size) : full;
         if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name) &&
             span_valid(name)
         ) {
@@ -769,7 +769,7 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
 }
 
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
-    if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
+    if (!my has_body && span_source(my full_span) && !span_source(my full_span)->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
     }
     generic_typecheck(&my generic, errs);
@@ -900,13 +900,13 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
 static bool pattern_declares(Binding const* pattern, Span name) {
     if (pattern->tag == BINDING_ARRAY) {
         for_each (i, vec_binding, &pattern->array) {
-            if (i->tag == BINDING_IDENTIFIER && csview_equals_sv(i->content_span.sv, name.sv)) return true;
+            if (i->tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(i->content_span), span_sv(name))) return true;
             if ((i->tag == BINDING_ARRAY || i->tag == BINDING_OBJECT) && pattern_declares(i, name)) return true;
         }
     } else if (pattern->tag == BINDING_OBJECT) {
         for_each (i, vec_object_binding_item, &pattern->object) {
             Binding const* target = &i->target;
-            if (target->tag == BINDING_IDENTIFIER && csview_equals_sv(target->content_span.sv, name.sv)) return true;
+            if (target->tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(target->content_span), span_sv(name))) return true;
             if ((target->tag == BINDING_ARRAY || target->tag == BINDING_OBJECT) && pattern_declares(target, name)) return true;
         }
     }
@@ -1009,7 +1009,7 @@ Span function_error_span(FunctionImpl const* me) {
             char const* end = span_end_ptr(ret);
             char const* line_end = span_end_ptr(function_impl_arrow_span(me));
             while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
-            if (line_end < end) ret.sv.size = line_end - ret.sv.buf;
+            if (line_end < end) ret.size = line_end - ret.buf;
         }
         return ret;
     }
@@ -1031,7 +1031,7 @@ static void function_check_emit_helpers(FunctionImpl const* me, ErrorCtx* errs) 
 
 void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs) {
     if (my private_ambient || my has_body || my ret_explicit || my accessor || my is_constructor || !span_valid(name)) return;
-    if (!compiler_options()->no_implicit_any || (name.source && name.source->is_js)) return;
+    if (!compiler_options()->no_implicit_any || (span_source(name) && span_source(name)->is_js)) return;
     error_ctx_error_d(errs, at, 7010, "'", span_name_text(name), "', which lacks return-type annotation, implicitly has an 'any' return type.");
 }
 
@@ -1156,7 +1156,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             // nodeCanBeDecorated: TS1206 at the first decorator's `@`)
             if (span_valid(i->span)) {
                 Span at = i->span;
-                at.sv = csview_from_n(span_start_ptr(i->span), 1);
+                span_set_sv(&at, csview_from_n(span_start_ptr(i->span), 1));
                 error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
             }
             // (Never decorated: tsc's checkDecorators doesn't look at them)
@@ -1222,10 +1222,10 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         JsDocParamIssue const* issue = &function_impl_rare(me)->jsdoc_param_issues[i];
         if (span_valid(issue->left)) {
             // (The names as tsc's scanner has them: escapes decoded)
-            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", name_cooked(issue->name.sv),
-                "' is not allowed without a leading '@param {object} ", name_cooked(issue->left.sv), "'.");
+            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", name_cooked(span_sv(issue->name)),
+                "' is not allowed without a leading '@param {object} ", name_cooked(span_sv(issue->left)), "'.");
         } else {
-            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", name_cooked(issue->name.sv),
+            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", name_cooked(span_sv(issue->name)),
                 "', but there is no parameter with that name.");
         }
     }
@@ -1252,13 +1252,13 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 // for a function expression)
 void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // tsc's checkGrammarStatementInAmbientContext for the body, which then covers the statements directly in it
-    if (my ambient && my has_body && !my expression_body && my full_span.source && !my full_span.source->has_parse_errors) {
+    if (my ambient && my has_body && !my expression_body && span_source(my full_span) && !span_source(my full_span)->has_parse_errors) {
         // (The body's `{`: the first after the parameters and the return type)
         char const* at = span_valid(function_impl_ret_span(me)) && span_end_ptr(function_impl_ret_span(me)) > span_end_ptr(function_impl_args_span(me)) ?
             span_end_ptr(function_impl_ret_span(me)) : span_end_ptr(function_impl_args_span(me));
         char const* end = span_end_ptr(my full_span);
         while (at && at < end && *at != '{') at++;
-        Span body = at && at < end ? block_first_token(span_make(my full_span.source, at, end)) : span_null;
+        Span body = at && at < end ? block_first_token(span_make_in(my full_span, at, end)) : span_null;
         if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
     }
     // (A function expression's return type is asked for before its body is checked, whatever the body says: tsc's

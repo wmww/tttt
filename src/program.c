@@ -264,6 +264,7 @@ SourceFile const* program_set_config_file(Program* me, csview path) {
         free(my config_source);
     }
     my config_source = c_new(SourceFile, source_file_make(cstr_from_sv(path), contents));
+    source_file_register(my config_source);
     my config_source->is_json = true;
     my config_source->is_config = true;
     my config_source->unchecked = true;
@@ -809,7 +810,7 @@ static SourceFile* program_load_reference_path(
     Program* me, Span path_span, csview path, SourceDirectiveStatement* directive
 ) {
     check(span_valid(path_span));
-    csview dir = dirname_of(cstr_sv(&path_span.source->canonical_path));
+    csview dir = dirname_of(cstr_sv(&span_source(path_span)->canonical_path));
     // (A drive root `c:/` is rooted too: one of the current directory, see path_is_drive_rooted())
     bool rooted = (path.size && path.buf[0] == '/') || path_is_drive_rooted(path);
     cstr full = rooted ? cstr_from_sv(path) : cstr_d(dir, "/", path);
@@ -1110,6 +1111,7 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     text_decode(&contents);
 
     SourceFile* source_file = c_new(SourceFile, source_file_make(cstr_from_sv(canonical_path), contents));
+    source_file_register(source_file);
     csview path = cstr_sv(&source_file->canonical_path);
 
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
@@ -1428,7 +1430,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         }
     }
     if (my options.import_helpers && source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
-        Span at = { .source = source_file, .sv = csview_from_n(source_file_start(source_file), 0) };
+        Span at = span_from_sv(source_file, csview_from_n(source_file_start(source_file), 0));
         source_file->helpers_ref = source_file_add_module_ref(source_file, cstr_lit("tslib"), at);
         // First, like tsc's: it decides the order files are in the program
         memmove(source_file->module_refs + 1, source_file->module_refs,
@@ -1439,7 +1441,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
     cstr jsx_runtime = my loading_stdlib ? cstr_null : source_file_jsx_runtime_import(source_file);
     if (cstr_size(&jsx_runtime)) {
-        Span at = { .source = source_file, .sv = csview_from_n(source_file_start(source_file), 0) };
+        Span at = span_from_sv(source_file, csview_from_n(source_file_start(source_file), 0));
         ModuleRef* ref = source_file_add_module_ref(source_file, jsx_runtime, at);
         // Right after the helpers, before what the file imports itself (tsc's order of file.imports)
         u32 first = source_file->helpers_ref ? 1 : 0;
@@ -1748,7 +1750,7 @@ static void program_validate_paths(Program* me) {
                 Span at = config_span(me, substitution->start, substitution->end);
                 if (substitution->tag != JSON_STRING) {
                     // (`${subst}`: the number or boolean as written)
-                    csview written = at.sv;
+                    csview written = span_sv(at);
                     error_ctx_error_d(my errs, at, 5064, "Substitution '", written, "' for pattern '", pattern->key,
                         "' has incorrect type, expected 'string', got '", json_typeof(substitution), "'.");
                     continue;
@@ -2278,7 +2280,7 @@ static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReas
         }
         case INCLUDE_IMPORT:
         case INCLUDE_REFERENCE: {
-            SourceFile const* from = reason->at.source;
+            SourceFile const* from = span_source(reason->at);
             cstr absolute = from ? absolute_path_of(program_cwd(me), cstr_sv(&from->canonical_path)) : cstr_null;
             cstr from_name = program_path_for_message(me, cstr_sv(&absolute));
             cstr ret = reason->kind == INCLUDE_REFERENCE ?
@@ -2370,7 +2372,7 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
     Error* error;
     if (preferred) {
         // (Not in a file that isn't checked, a skipLibCheck declaration file: tsc's getProgramDiagnostics skips them)
-        SourceFile const* at = preferred->at.source;
+        SourceFile const* at = span_source(preferred->at);
         if (at && at->unchecked && !at->plain_js) {
             cstr_drop(&message);
             return;
@@ -2457,12 +2459,12 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
     intptr_t kept = 0;
     for (intptr_t i = 0; i < vec_error_size(errors); i++) {
         Error* error = vec_error_at_mut(errors, i);
-        SourceFile* source = (SourceFile*)error->span.source;
+        SourceFile* source = (SourceFile*)span_source(error->span);
         bool suppressed = false;
         if (error->phase == phase && source && source->comment_directive_count && !source->unchecked) {
             const char* text = source_file_start(source);
             const char* text_end = text + cstr_size(&source->contents);
-            for (intptr_t line = (intptr_t)source_file_line_index(source, error->span.sv.buf) - 1; line >= 0; line--) {
+            for (intptr_t line = (intptr_t)source_file_line_index(source, error->span.buf) - 1; line >= 0; line--) {
                 CommentDirective* directive = source_file_comment_directive_at_line(source, (u32)line);
                 if (directive) {
                     directive->used = true;
@@ -2488,10 +2490,10 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
 // TS2578 for every @ts-expect-error nothing was reported under, once all semantic diagnostics are in
 // A duplicate between two files: the other file (of its "was also declared here"), else null
 static SourceFile const* cross_file_duplicate_other(Error const* e) {
-    if ((e->ts_code != 2300 && e->ts_code != 2451) || !span_valid(e->span) || !e->span.source) return nullptr;
+    if ((e->ts_code != 2300 && e->ts_code != 2451) || !span_valid(e->span) || !span_source(e->span)) return nullptr;
     for_each (i, vec_error, &e->sub_errors) {
-        if (i->ts_code == 6203 && span_valid(i->span) && i->span.source && i->span.source != e->span.source) {
-            return i->span.source;
+        if (i->ts_code == 6203 && span_valid(i->span) && span_source(i->span) && span_source(i->span) != span_source(e->span)) {
+            return span_source(i->span);
         }
     }
     return nullptr;
@@ -2505,7 +2507,7 @@ static void program_amalgamate_duplicates(Program* me) {
         Error const* seed = vec_error_at(errors, i);
         SourceFile const* other = cross_file_duplicate_other(seed);
         if (!other) continue;
-        SourceFile const* a = seed->span.source;
+        SourceFile const* a = span_source(seed->span);
         // The pair's errors, the first file's (by path) first
         SourceFile const* first = cstr_cmp(&a->canonical_path, &other->canonical_path) < 0 ? a : other;
         SourceFile const* second = first == a ? other : a;
@@ -2518,8 +2520,8 @@ static void program_amalgamate_duplicates(Program* me) {
         for (int side = 0; side < 2; side++) {
             for_each (e, vec_error, errors) {
                 SourceFile const* o = cross_file_duplicate_other(e);
-                if (!o || e->span.source != (side ? into : merged) || o != (side ? merged : into)) continue;
-                csview name = e->span.sv;
+                if (!o || span_source(e->span) != (side ? into : merged) || o != (side ? merged : into)) continue;
+                csview name = span_sv(e->span);
                 bool seen = false;
                 for (isize at = 0; at < cstr_size(&names) && !seen;) {
                     isize next = cstr_find_at(&names, at, ", ");
@@ -2539,7 +2541,7 @@ static void program_amalgamate_duplicates(Program* me) {
         for (isize j = vec_error_size(errors) - 1; j >= 0; j--) {
             Error const* e = vec_error_at(errors, j);
             SourceFile const* o = cross_file_duplicate_other(e);
-            if (o && ((e->span.source == first && o == second) || (e->span.source == second && o == first))) {
+            if (o && ((span_source(e->span) == first && o == second) || (span_source(e->span) == second && o == first))) {
                 vec_error_erase_n(errors, j, 1); // (drops it)
             }
         }
@@ -2585,7 +2587,7 @@ static void program_check_builtin_global_names(Program* me) {
         Symbol const* symbol = symbol_table_get(&my binder->globals, csview_from(names[n]));
         for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
             SymbolDecl const* decl = &symbol->decls[i];
-            SourceFile const* file = decl->name.source;
+            SourceFile const* file = span_source(decl->name);
             if (!file || file->is_stdlib || !span_valid(decl->name)) continue;
             // (`declare global { namespace globalThis {} }` in a module augments it)
             if (n == 1 && file->is_module) continue;
@@ -2964,7 +2966,7 @@ static void program_report_missing_global_types(Program* me) {
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
             if (decl->kind != SYMBOL_DECL_INTERFACE && decl->kind != SYMBOL_DECL_CLASS) continue;
-            if (!decl->name.source || decl->name.source->is_stdlib) break;
+            if (!span_source(decl->name) || span_source(decl->name)->is_stdlib) break;
             error_ctx_error_d(my errs, decl->name, 2317, "Global type '", names[i], "' must have ", arity,
                 " type parameter(s).");
             break;

@@ -73,7 +73,7 @@ static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, V
 // Returns result_ok_undefined on success, not the value. Consumes value.
 static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return engine_assign_identifier(me, target->inner_span.sv, value);
+        case EXPR_IDENTIFIER: return engine_assign_identifier(me, span_sv(target->inner_span), value);
 
         case EXPR_PROPERTY: {
             TRY_CATCH(target_value, engine_eval_expr(me, &target->property->expr), res_err, {
@@ -374,7 +374,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return result_ok(value_undefined);
         case EXPR_LITERAL: return result_ok(value_clone(expr->literal));
-        case EXPR_IDENTIFIER: return engine_eval_identifier(me, expr->inner_span.sv);
+        case EXPR_IDENTIFIER: return engine_eval_identifier(me, span_sv(expr->inner_span));
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
         case EXPR_PROPERTY: return engine_eval_property(me, expr->property);

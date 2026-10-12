@@ -131,7 +131,7 @@ static inline Span interface_member_setter_param(InterfaceMember const* me) {
 // `#x: T` in an interface or a type literal: TS18016, and no member of the type (tsc's binder gives it no name outside
 // a class)
 static inline bool interface_member_is_private_name(InterfaceMember const* me) {
-    return my key.tag == INTERFACE_KEY_NAME && my key.span.sv.size && my key.span.sv.buf[0] == '#';
+    return my key.tag == INTERFACE_KEY_NAME && my key.span.size && my key.span.buf[0] == '#';
 }
 
 static inline InterfaceMember interface_member_make(

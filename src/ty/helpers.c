@@ -55,7 +55,7 @@ static bool has_signature_with_more_params(Checker* me, Symbol const* symbol, u3
 }
 
 void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
-    SourceFile const* file = at.source;
+    SourceFile const* file = span_source(at);
     if (!file || !file->helpers_ref) return;
     ModuleRef* ref = file->helpers_ref;
     Symbol* module = binder_module_of_ref(my binder, ref);

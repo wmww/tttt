@@ -300,10 +300,7 @@ static inline Expr expr_implicit_any(Span span) {
 // Includes the parentheses around it, if any
 static inline Span expr_outer_span(Expr const* me) {
     if (!(my paren_before | my paren_after)) return my inner_span;
-    return (Span){
-        .source = my inner_span.source,
-        .sv = csview_from_n(my inner_span.sv.buf - my paren_before, my inner_span.sv.size + my paren_before + my paren_after),
-    };
+    return span_in_sv(my inner_span, csview_from_n(my inner_span.buf - my paren_before, my inner_span.size + my paren_before + my paren_after));
 }
 
 // `outer` must contain inner_span (set that first), or be it
@@ -312,7 +309,7 @@ static inline void expr_set_outer_span(Expr* me, Span outer) {
         my paren_before = my paren_after = 0;
         return;
     }
-    panic_if(!span_contains_span(outer, my inner_span) || outer.source != my inner_span.source,
+    panic_if(!span_contains_span(outer, my inner_span) || span_source(outer) != span_source(my inner_span),
         "expr_set_outer_span(): the outer span doesn't contain the inner one");
     my paren_before = (u32)(span_start_ptr(my inner_span) - span_start_ptr(outer));
     my paren_after = (u32)(span_end_ptr(outer) - span_end_ptr(my inner_span));
@@ -780,7 +777,7 @@ void object_expr_item_drop(ObjectExprItem* me);
 
 // `{ #x: 1 }`: TS18016, and no member of the literal's type (tsc's binder gives it no name outside a class)
 static inline bool object_item_is_private_name(ObjectExprItem const* me) {
-    return !my computed_key && my tag != OBJECT_ITEM_SPREAD && my name_span.sv.size && my name_span.sv.buf[0] == '#';
+    return !my computed_key && my tag != OBJECT_ITEM_SPREAD && my name_span.size && my name_span.buf[0] == '#';
 }
 
 #define g_class_key ObjectExprItem, object_expr_item

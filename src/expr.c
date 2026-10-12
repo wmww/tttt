@@ -20,7 +20,7 @@
 #include "ast_walk.h"
 
 // Expressions are stored inline everywhere: keep them small
-static_assert(sizeof(Expr) == 88, "Expr grew");
+static_assert(sizeof(Expr) == 80, "Expr grew");
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -238,9 +238,9 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
             decl = &symbol->decls[i];
         }
     }
-    if (!decl || !decl->full.source) return;
+    if (!decl || !span_source(decl->full)) return;
     // (Files aren't ordered without an outFile, which TypeScript 7 removed)
-    if (decl->full.source != identifier_expr_name(me).source) return;
+    if (span_source(decl->full) != span_source(identifier_expr_name(me))) return;
     if (span_start_ptr(decl->full) <= span_start_ptr(identifier_expr_name(me))) {
         if (decl->kind == SYMBOL_DECL_CLASS) {
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
@@ -304,7 +304,7 @@ static void check_parameter_reference(IdentifierExpr const* me, Scope const* nam
     Span param_name = param->content_span;
     if (param->tag == BINDING_IDENTIFIER && symbol == param->symbol) {
         error_ctx_error_d(errs, identifier_expr_name(me), 2372, "Parameter '", param_name, "' cannot reference itself.");
-    } else if (span_start_ptr(symbol->name_span) > span_start_ptr(param_name) && symbol->name_span.source == param_name.source &&
+    } else if (span_start_ptr(symbol->name_span) > span_start_ptr(param_name) && span_source(symbol->name_span) == span_source(param_name) &&
         flow->parameter_function_scope && scope_declares_symbol(flow->parameter_function_scope, symbol)
     ) {
         error_ctx_error_d(errs, identifier_expr_name(me), 2373,
@@ -365,12 +365,12 @@ static void note_arguments_reference(Scope const* names) {
 // A span extended back over the `type` keyword in front of it, if there is one (`type a` of an import specifier)
 static Span span_from_type_keyword(Span name) {
     char const* start = span_start_ptr(name);
-    char const* file_start = name.source ? cstr_str(&name.source->contents) : start;
+    char const* file_start = span_source(name) ? cstr_str(&span_source(name)->contents) : start;
     while (start > file_start && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
     if (start - file_start < 4 || memcmp(start - 4, "type", 4)) return name;
     char const* before = start - 4;
     if (before > file_start && (isalnum((unsigned char)before[-1]) || before[-1] == '_' || before[-1] == '$')) return name;
-    return span_make(name.source, before, span_end_ptr(name));
+    return span_make_in(name, before, span_end_ptr(name));
 }
 
 // tsc's addTypeOnlyDeclarationRelatedInfo: TS1376/TS1377 on the type-only import or export `name` comes through
@@ -411,7 +411,7 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&item->alias_path)) return;
     item->value_use_checked = true;
     Span first = *vec_span_front(&item->alias_path);
-    if (!first.sv.size || scope_get_value(scope, first.sv, nullptr)) return;
+    if (!first.size || scope_get_value(scope, span_sv(first), nullptr)) return;
     scope_report_value_not_found(scope, first, false, binder_errs(scope->binder));
 }
 
@@ -430,7 +430,7 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     bool exported = port_item_is_export(item);
     Error* error = error_ctx_error_d(errs, identifier_expr_name(me), exported ? 1362 : 1361, "'", identifier_expr_name(me), "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
-    port_item_add_type_only_related(error, item, identifier_expr_name(me).sv);
+    port_item_add_type_only_related(error, item, span_sv(identifier_expr_name(me)));
 }
 
 // What there is to say about a module name that an import-like construct uses
@@ -457,7 +457,7 @@ static void require_call_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
 // What an entity name expression (`a`, `a.b.c`) names with `meaning`, quietly: null if nothing
 static Symbol const* entity_name_symbol(Scope* names, Expr const* expr, u32 meaning) {
     if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
-        return symbol_for_meaning(scope_resolve(names, expr->inner_span.sv, meaning), meaning);
+        return symbol_for_meaning(scope_resolve(names, span_sv(expr->inner_span), meaning), meaning);
     }
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
     Expr const* name = &expr->property->prop;
@@ -512,7 +512,7 @@ static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* 
     CompilerOptions const* options = compiler_options();
     if (!options->is_set[COMPILER_OPTION_isolated_modules] || !options->isolated_modules) return;
     if (!names->file || !names->file->is_module || !(names->flow && !names->flow->in_type_query)) return;
-    csview name = identifier_expr_name(me).sv;
+    csview name = span_sv(identifier_expr_name(me));
     Scope const* module = names;
     while (module && module->kind != SCOPE_MODULE) module = module->parent;
     Symbol const* local = module ? symbol_table_get(&module->locals, name) : nullptr;
@@ -545,7 +545,7 @@ __attribute__((noinline, cold)) static void check_isolated_enum_member(Identifie
     while (enum_scope && enum_scope->kind != SCOPE_ENUM) enum_scope = enum_scope->parent;
     if (!enum_scope || enum_scope->ambient || !enum_scope->container) return;
     SymbolDecl const* decl = symbol_find_decl(symbol, SYMBOL_DECL_ENUM_MEMBER);
-    if (!decl || decl->full.source == identifier_expr_name(me).source) return;
+    if (!decl || span_source(decl->full) == span_source(identifier_expr_name(me))) return;
     error_ctx_error_d(errs, identifier_expr_name(me), 1281, "Cannot access '", identifier_expr_name(me), "' from another file "
         "without qualification when '", options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules",
         "' is enabled. Use '", enum_scope->container->name, ".", identifier_expr_name(me), "' instead.");
@@ -653,7 +653,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     // (`default` is a reserved word, which only `typeof default` looks up: never the module's default export, which
     // tsc keeps in the module's exports only)
-    my target = csview_equals(identifier_expr_name(me).sv, "default") ? nullptr : scope_get_value(names, identifier_expr_name(me).sv, &my symbol);
+    my target = csview_equals(span_sv(identifier_expr_name(me)), "default") ? nullptr : scope_get_value(names, span_sv(identifier_expr_name(me)), &my symbol);
     if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
         // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
         if (my require_call != 2) require_call_report(identifier_module_ref(me), names, errs);
@@ -668,7 +668,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         }
     }
     if (my target) {
-        ClassItem const* field = scope_invalid_initializer_field(names, identifier_expr_name(me).sv, my symbol);
+        ClassItem const* field = scope_invalid_initializer_field(names, span_sv(identifier_expr_name(me)), my symbol);
         if (field) {
             // Unresolved (any) like in tsc's resolveNameHelper, but the symbols baseline still shows what the name
             // finds (getSymbolAtLocation doesn't report)
@@ -706,7 +706,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         my is_arguments = true;
         note_arguments_reference(names);
     } else if (names->flow && names->flow->type_only_alias_ok &&
-        (my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING)) &&
+        (my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_ANY_MEANING)) &&
         // (`export = string`: a type keyword names nothing, TS2693 below)
         (!symbol_is_builtin_type(my symbol) || ((my symbol = nullptr), false))
     ) {
@@ -716,29 +716,29 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // (tsc's checkAndReportErrorForExtendingInterface)
         error_ctx_error_d(errs, identifier_expr_name(me), 2689, "Cannot extend an interface '", expr_outer_span(identifier_extends_entity(me)),
             "'. Did you mean 'implements'?");
-        my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING);
+        my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_ANY_MEANING);
         my namespace_as_value = identifier_extends_entity(me)->tag != EXPR_IDENTIFIER;
-    } else if (scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_NAMESPACE_MODULE)) {
+    } else if (scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_NAMESPACE_MODULE)) {
         // (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue)
         error_ctx_error_d(errs, identifier_expr_name(me), 2708, "Cannot use namespace '", identifier_expr_name(me), "' as a value.");
-        my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_NAMESPACE_MODULE);
-    } else if (scope_get_type(names, identifier_expr_name(me).sv, nullptr) &&
-        !scope_hides_base_expression_type_parameter(names, scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_TYPE))
+        my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_NAMESPACE_MODULE);
+    } else if (scope_get_type(names, span_sv(identifier_expr_name(me)), nullptr) &&
+        !scope_hides_base_expression_type_parameter(names, scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_TYPE))
     ) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
         bool later_lib = false;
-        for (u32 i = 0; i < c_arraylen(later); i++) later_lib |= csview_equals(identifier_expr_name(me).sv, later[i]);
+        for (u32 i = 0; i < c_arraylen(later); i++) later_lib |= csview_equals(span_sv(identifier_expr_name(me)), later[i]);
         if (later_lib) {
             error_ctx_error_d(errs, identifier_expr_name(me), 2585, "'", identifier_expr_name(me), "' only refers to a type, but is being used as a value "
                 "here. Do you need to change your target library? Try changing the 'lib' compiler option to es2015 or later.");
-        } else if (my class_base && is_primitive_type_name(identifier_expr_name(me).sv)) {
+        } else if (my class_base && is_primitive_type_name(span_sv(identifier_expr_name(me)))) {
             error_ctx_error_d(errs, identifier_expr_name(me), 2863, "A class cannot extend a primitive type like '", identifier_expr_name(me),
                 "'. Classes can only extend constructable values.");
         } else {
             Expr const* lone_key = scope_rare(names)->lone_computed_key;
             bool maybe_mapped = lone_key && lone_key->tag == EXPR_IDENTIFIER && &lone_key->identifier == me;
-            scope_report_type_as_value(names->binder, scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_TYPE),
+            scope_report_type_as_value(names->binder, scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_TYPE),
                 identifier_expr_name(me), maybe_mapped, errs);
         }
     } else if (my call_child && span_equals(identifier_expr_name(me), "await")) {
@@ -772,7 +772,7 @@ static bool plausible_operand(Ty const* ty) {
 static bool report_invalid_assignment_target(IdentifierExpr const* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!my assignment_target || !symbol || !my target || symbol->is_placeholder || my keyword) return false;
-    if (!(symbol->flags & SYMBOL_VARIABLE) && !(identifier_expr_name(me).source && identifier_expr_name(me).source->is_js && (symbol->flags & SYMBOL_VALUE_MODULE))) {
+    if (!(symbol->flags & SYMBOL_VARIABLE) && !(span_source(identifier_expr_name(me)) && span_source(identifier_expr_name(me))->is_js && (symbol->flags & SYMBOL_VALUE_MODULE))) {
         char const* what = symbol->flags & SYMBOL_ENUM ? "an enum" : symbol->flags & SYMBOL_CLASS ? "a class" :
             symbol->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE) ? "a namespace" :
             symbol->flags & SYMBOL_FUNCTION ? "a function" : symbol->flags & SYMBOL_ALIAS ? "an import" : nullptr;
@@ -806,7 +806,7 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
         case IDENTIFIER_FLOW_OK: break;
         case IDENTIFIER_FLOW_UNASSIGNED: {
             // (symbolToString: the name as its declaration writes it, `\u0078x`)
-            Span written = my target && span_valid(my target->name_span) && my target->name_span.sv.size ? my target->name_span : identifier_expr_name(me);
+            Span written = my target && span_valid(my target->name_span) && my target->name_span.size ? my target->name_span : identifier_expr_name(me);
             error_ctx_error_d(errs, identifier_expr_name(me), 2454, "Variable '", written, "' is used before being assigned.");
         }   break;
         case IDENTIFIER_FLOW_IMPLICIT_ANY:
@@ -824,8 +824,8 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
         char const* end = span_end_ptr(identifier_expr_name(me));
         char const* start = end;
         while (start > span_start_ptr(identifier_expr_name(me)) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
-        Span property = span_make(identifier_expr_name(me).source, start, end);
-        if (!csview_equals(property.sv, "target")) {
+        Span property = span_make_in(identifier_expr_name(me), start, end);
+        if (!csview_equals(span_sv(property), "target")) {
             error_ctx_grammar_error_d(errs, property, 17012, "'", property,
                 "' is not a valid meta-property for keyword 'new'. Did you mean 'target'?");
         }
@@ -1116,7 +1116,7 @@ void jsx_element_drop(JsxElement* me) {
 bool jsx_element_is_intrinsic(JsxElement const* me) {
     if (my namespaced) return true;
     if (my tag_name.tag != EXPR_IDENTIFIER || my tag_name.identifier.keyword) return false;
-    csview name = my tag_name.inner_span.sv;
+    csview name = span_sv(my tag_name.inner_span);
     u32 first = name.size ? (uint8_t)name.buf[0] : 0;
     if (first == '\\' && name.size > 2) {
         // `\u0061` / `\u{61}` (TS17021, but the name is still `a`)
@@ -1189,7 +1189,7 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
         return;
     }
     if (place != AWAIT_AT_TOP_LEVEL) return;
-    SourceFile const* file = at.source;
+    SourceFile const* file = span_source(at);
     CompilerOptions const* options = compiler_options();
     if (!file->is_module) {
         error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1375 : kind == AWAIT_KIND_FOR ? 1431 : 2853,
@@ -1323,7 +1323,7 @@ void expr_link_assignment_declaration(Expr* me, Binder* binder) {
     for (u32 d = 0; d < declared->decl_count; d++) {
         SymbolDecl* decl = &declared->decls[d];
         if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
-            decl->name.source == expr_outer_span(me).source
+            span_source(decl->name) == span_source(expr_outer_span(me))
         ) {
             if (decl->js) decl->js->flow_container = my property->context->flow_container;
             // (Files resolved on other threads may set it too)
@@ -1446,11 +1446,11 @@ static void mark_indirect_call(Expr* callee) {
     Expr const* left = &callee->binary_op->left;
     Expr const* right = &callee->binary_op->right;
     if (left->tag != EXPR_LITERAL || left->literal.tag != VALUE_NUMBER || expr_is_perenthisized(left) ||
-        !csview_equals(left->inner_span.sv, "0")
+        !csview_equals(span_sv(left->inner_span), "0")
     ) {
         return;
     }
-    bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(right->inner_span.sv, "eval");
+    bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(span_sv(right->inner_span), "eval");
     if (right->tag == EXPR_PROPERTY || eval) callee->binary_op->indirect_call = true;
 }
 
@@ -1509,7 +1509,7 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
     JsxKind jsx = compiler_options()->jsx;
     u32 meaning = jsx == JSX_PRESERVE || jsx == JSX_REACT_NATIVE ? SYMBOL_VALUE & ~(u32)SYMBOL_ENUM : SYMBOL_VALUE;
     Symbol* found = scope_resolve(names, name, meaning);
-    Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
+    Span at = fragment || !el->tag_name.inner_span.size ? el->opening_span : el->tag_name.inner_span;
     if (found) {
         unused_mark_referenced(names, found, SYMBOL_VALUE);
         // (The factory is a name like any other: tsc's resolveName)
@@ -1588,7 +1588,7 @@ static void jsx_check_attributes_grammar(JsxElement const* el, ErrorCtx* errs) {
         if (attr->tag == JSX_ATTRIBUTE_SPREAD) continue;
         for (isize j = 0; j < i; j++) {
             JsxAttribute const* earlier = vec_jsx_attribute_at(attributes, j);
-            if (earlier->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(earlier->name.sv, attr->name.sv)) {
+            if (earlier->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(span_sv(earlier->name), span_sv(attr->name))) {
                 error_ctx_grammar_error_d(errs, attr->name, 17001,
                     "JSX elements cannot have multiple attributes with the same name.");
                 return;
@@ -1613,17 +1613,17 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
-                !my jsx->tag_name.inner_span.sv.size;
+                !my jsx->tag_name.inner_span.size;
             if (!intrinsic) {
                 expr_lookup_names(&my jsx->tag_name, names, errs);
             } else if (my tag == EXPR_JSX_ELEMENT && !my jsx->namespaced) {
                 // Only for the types baseline, which shows an intrinsic tag name as a value of that name (tsc's
                 // getTypeAtLocation checks it as an expression): no reference
                 IdentifierExpr* name = &my jsx->tag_name.identifier;
-                if (!name->keyword) name->target = scope_get_value(names, identifier_expr_name(name).sv, &name->symbol);
+                if (!name->keyword) name->target = scope_get_value(names, span_sv(identifier_expr_name(name)), &name->symbol);
                 IdentifierExpr* closing = &my jsx->closing_name.identifier;
                 if (my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
-                    closing->target = scope_get_value(names, identifier_expr_name(closing).sv, &closing->symbol);
+                    closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
                 }
             }
             for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
@@ -1632,7 +1632,7 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_lookup_names(&i->expr, names, errs);
             }
             if (!intrinsic && my jsx->closing_name.tag != EXPR_IMPLICIT_ANY && span_valid(my jsx->closing_name.inner_span) &&
-                my jsx->closing_name.inner_span.sv.size
+                my jsx->closing_name.inner_span.size
             ) {
                 expr_lookup_names(&my jsx->closing_name, names, errs);
             }
@@ -1725,7 +1725,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     // `undefined` is a name: a declaration of it (`var undefined` in a module, an import, a script's `class undefined`,
     // which tsc's addUndefinedToGlobalsOrErrorOnRedeclaration keeps as the global) hides tsc's undefinedSymbol
     if (is_written_undefined(me)) {
-        Symbol const* declared = scope_resolve(names, my inner_span.sv, SYMBOL_VALUE);
+        Symbol const* declared = scope_resolve(names, span_sv(my inner_span), SYMBOL_VALUE);
         if (declared && !declared->is_placeholder) {
             Expr old = *me;
             *me = expr_identifier(old.inner_span, (IdentifierExpr){0});
@@ -1843,7 +1843,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             // (A missing operand is a missing identifier to tsc)
             if (my unary_op->op == UNARY_OP_DELETE && names->strict && !expr_is_perenthisized(operand) &&
                 ((operand->tag == EXPR_IDENTIFIER && !operand->identifier.keyword) ||
-                    (operand->tag == EXPR_IMPLICIT_ANY && !operand->inner_span.sv.size) || is_written_undefined(operand))
+                    (operand->tag == EXPR_IMPLICIT_ANY && !operand->inner_span.size) || is_written_undefined(operand))
             ) {
                 error_ctx_error_d(errs, expr_error_span_skip_parens(operand), 1102, "'delete' cannot be called on an identifier in strict mode.");
             }
@@ -1893,7 +1893,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         error_ctx_error_d(errs, my inner_span, 18037, "'await' expression cannot be used inside a class static block.");
                     }
                     await_check_grammar(my unary_op->await_place, AWAIT_KIND_EXPR,
-                        (Span){ .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) },
+                        span_in_sv(my inner_span, csview_from_n(my inner_span.buf, 5)),
                         scope_containing_function(names), errs);
                     expr_lookup_names(operand, names, errs);
                     break;
@@ -1902,7 +1902,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 case UNARY_OP_YIELD_STAR:
                     if (my unary_op->outside_generator) {
                         // tsc's checkYieldExpressionGrammar; tsgo's checkYieldExpression checks the operand anyway
-                        Span keyword = { .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) };
+                        Span keyword = span_in_sv(my inner_span, csview_from_n(my inner_span.buf, 5));
                         error_ctx_grammar_error_d(errs, keyword, 1163, "A 'yield' expression is only allowed in a generator body.");
                     }
                     expr_lookup_names(operand, names, errs);
@@ -1952,9 +1952,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 my property->context = flow_builder_property_context(flow, &context);
             }
             if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
-                span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
+                span_valid(my property->prop.inner_span) && my property->prop.inner_span.buf[0] == '#'
             ) {
-                csview name = my property->prop.inner_span.sv;
+                csview name = span_sv(my property->prop.inner_span);
                 ClassDecl const* c = my property->context->enclosing_class;
                 while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
                 my property->private_class_ = c;
@@ -2179,7 +2179,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->tag == OBJECT_ITEM_SETTER && (!own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key))) {
                     for_each (other, vec_object_expr_item, &my object) {
                         if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key == !own_key && (own_key ?
-                            csview_equals_sv(expr_outer_span(other->computed_key).sv, expr_outer_span(own_key).sv) :
+                            csview_equals_sv(span_sv(expr_outer_span(other->computed_key)), span_sv(expr_outer_span(own_key))) :
                             cstr_eq(&other->name_string, &i->name_string))
                         ) {
                             function_impl_pair_setter(i->value.function, other->value.function, own_key);
@@ -2234,7 +2234,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_PRIVATE_NAME: {
             ClassDecl const* c = scope_enclosing_class(names);
             my private_name->enclosing_class = c;
-            while (c && !class_decl_find_private_name(c, my inner_span.sv)) c = c->outer_class;
+            while (c && !class_decl_find_private_name(c, span_sv(my inner_span))) c = c->outer_class;
             my private_name->private_class = c;
         }   break;
 
@@ -2306,7 +2306,7 @@ void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx
 // JavaScript `ns.a = {}` where `ns.a.b = v` makes `ns.a` a namespace: an assignment declaration that isn't checked
 // against what it declares, which is necessarily incomplete (tsc's isAssignmentDeclaration in checkBinaryLikeExpression)
 static bool is_container_declaration(BinaryOpExpr const* op) {
-    SourceFile const* file = op->left.inner_span.source;
+    SourceFile const* file = span_source(op->left.inner_span);
     if (op->op != BINARY_OP_EQUAL || !file || !file->is_js || op->left.tag != EXPR_PROPERTY) return false;
     Expr const* init = expando_initializer((Expr*)&op->right, true, false);
     if (!init || init->tag != EXPR_OBJECT) return false;
@@ -2450,7 +2450,7 @@ static void assignment_target_typecheck_of(
                         char const* end = span_start_ptr(expr_outer_span(&rest_target->binary_op->right));
                         while (at < end && *at != '=') at++;
                         if (at < end) {
-                            error_ctx_error_d(errs, span_make(target->inner_span.source, at, at + 1), 1186,
+                            error_ctx_error_d(errs, span_make_in(target->inner_span, at, at + 1), 1186,
                                 "A rest element cannot have an initializer.");
                         }
                     } else {
@@ -2476,7 +2476,7 @@ static void assignment_target_typecheck_of(
                         }
                     }
                     assignment_target_typecheck(i->spread, rest, nullptr, site, errs);
-                } else if (i->tag == EXPR_LITERAL && expr_outer_span(i).sv.size == 0) {
+                } else if (i->tag == EXPR_LITERAL && expr_outer_span(i).size == 0) {
                     // A hole
                 } else {
                     // Past the end of a tuple (tsc's checkArrayLiteralDestructuringElementAssignment: TS2493, TS2339 for
@@ -2653,7 +2653,7 @@ static Expr const* skip_outer_expressions(Expr const* me) {
 // The global `undefined` (tsc's undefinedSymbol), which the parser makes a literal. Other undefined literals stand in
 // for missing expressions (`for (;;)`)
 static bool is_written_undefined(Expr const* me) {
-    return my tag == EXPR_LITERAL && my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined");
+    return my tag == EXPR_LITERAL && my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(my inner_span), "undefined");
 }
 
 // tsc's getSyntacticTruthySemantics
@@ -2710,7 +2710,7 @@ static Span node_error_span(Expr const* me) {
                 if (function->expression_body) return span;
                 char const* line_end = span_end_ptr(function_impl_arrow_span(function));
                 while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
-                return line_end < end ? span_make(span.source, start, line_end) : span;
+                return line_end < end ? span_make_in(span, start, line_end) : span;
             }
             if (span_valid(function->name)) return function->name;
             break;
@@ -2721,10 +2721,10 @@ static Span node_error_span(Expr const* me) {
         case EXPR_IMPLICIT_ANY: {
             // A missing expression is reported at its full start, before the trivia (tsc's getErrorSpanForNode:
             // nodeIsMissing). Only whitespace is walked back over
-            if (!my missing || !span_valid(span) || !span.source) return span;
-            char const* file_start = cstr_str(&span.source->contents);
+            if (!my missing || !span_valid(span) || !span_source(span)) return span;
+            char const* file_start = cstr_str(&span_source(span)->contents);
             while (start > file_start && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
-            return span_make(span.source, start, start);
+            return span_make_in(span, start, start);
         }
         default:
             return span;
@@ -2732,7 +2732,7 @@ static Span node_error_span(Expr const* me) {
     // The first token (`function`, `async` or `class`)
     char const* end = start;
     while (end < span_end_ptr(span) && (isalnum((unsigned char)*end) || *end == '_' || *end == '$')) end++;
-    return span_make(span.source, start, end);
+    return span_make_in(span, start, end);
 }
 
 // tsc's checkTruthinessOfType: a condition can't be void, nor something that is obviously always truthy or falsy
@@ -2793,7 +2793,7 @@ static void const* location_symbol(Expr const* me) {
     if (!prop) return nullptr;
     while (prop->target) prop = prop->target;
     if (prop->decl->symbol) return prop->decl->symbol;
-    if (prop->decl->decl_span_count) return prop->decl->decl_spans[0].sv.buf;
+    if (prop->decl->decl_span_count) return prop->decl->decl_spans[0].buf;
     return prop->decl != &ty_prop_decl_none && prop->decl != &ty_prop_decl_value_name ? (void const*)prop->decl :
         (void const*)prop;
 }
@@ -3024,7 +3024,7 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     ModuleKind module = options->module;
     if (options->verbatim_module_syntax && module == MODULE_KIND_COMMONJS) {
-        source_file_verbatim_cjs_error(my inner_span.source, errs, my inner_span, true);
+        source_file_verbatim_cjs_error(span_source(my inner_span), errs, my inner_span, true);
         return;
     }
     Expr const* callee = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
@@ -3088,7 +3088,7 @@ static bool is_unparenthesized_binary(Expr const* me) {
 
 static void mixed_without_parentheses(Expr const* operand, char const* first, char const* second, ErrorCtx* errs) {
     Span at = expr_outer_span(operand);
-    if (!at.source || at.source->has_parse_errors) return; // (A grammar error)
+    if (!span_source(at) || span_source(at)->has_parse_errors) return; // (A grammar error)
     error_ctx_error_d(errs, at, 5076, "'", first, "' and '", second, "' operations cannot be mixed without parentheses.");
 }
 
@@ -3180,7 +3180,7 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
 // tsc's checkGrammarObjectLiteralExpression (which a destructuring target never gets, and which stops at TS1118 and
 // TS1119): a property can't be optional, a name can be one property, one method or one get/set pair
 static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
-    if (!expr_outer_span(me).source || expr_outer_span(me).source->has_parse_errors || is_destructuring_target(me)) return;
+    if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors || is_destructuring_target(me)) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
@@ -3195,7 +3195,7 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
                 kind = PROPERTY;
                 if (item->question_offset) {
                     char const* question = span_end_ptr(item->name_span) + item->question_offset - 1;
-                    error_ctx_grammar_error_d(errs, span_make(item->name_span.source, question, question + 1), 1162,
+                    error_ctx_grammar_error_d(errs, span_make_in(item->name_span, question, question + 1), 1162,
                         "An object member cannot be declared optional.");
                 }
                 break;
@@ -3368,7 +3368,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     if (yield->op == UNARY_OP_YIELD_STAR) {
         ScriptTarget target = compiler_options()->target;
         Span keyword = expr_outer_span(me); // (what tsc reports it at)
-        if (keyword.sv.size > 5) keyword.sv.size = 5;
+        if (keyword.size > 5) keyword.size = 5;
         if (async && target < SCRIPT_TARGET_ES2018) {
             ty_check_emit_helpers(checker, keyword,
                 EMIT_HELPER_AWAIT | EMIT_HELPER_ASYNC_DELEGATOR | EMIT_HELPER_ASYNC_VALUES, errs);
@@ -3400,7 +3400,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         bool call_type_param = contextual && contextual->kind == TY_TYPE_PARAM && yield->no_type_params_in_scope;
         if (!context && (!contextual || (contextual->flags & TYF_ANY) || call_type_param)) {
             Span keyword = expr_outer_span(me); // (the `yield`)
-            if (keyword.sv.size > 5) keyword.sv.size = 5;
+            if (keyword.size > 5) keyword.size = 5;
             error_ctx_error_d(errs, keyword, 7057, "'yield' expression implicitly results in an 'any' type because "
                 "its containing generator lacks a return-type annotation.");
         }
@@ -3576,7 +3576,7 @@ static bool is_literal_expression_of_object(Expr const* me) {
 // checkBinaryLikeExpression, whose checkAssignmentOperator is skipped then)
 // The global NaN (tsc's isGlobalNaN)
 static bool is_global_nan(Expr const* me) {
-    if (my tag != EXPR_IDENTIFIER || my identifier.keyword || !csview_equals(my inner_span.sv, "NaN")) return false;
+    if (my tag != EXPR_IDENTIFIER || my identifier.keyword || !csview_equals(span_sv(my inner_span), "NaN")) return false;
     Symbol const* nan = ty_global_value_symbol(current_checker, c_sv("NaN"));
     return nan && my identifier.target == nan;
 }
@@ -3593,7 +3593,7 @@ static void nan_equality_typecheck(Expr const* me, ErrorCtx* errs) {
     Error* error = error_ctx_error_d(errs, expr_outer_span(me), 2845, "This condition will always return '", eq ? "false" : "true", "'.");
     if (left_nan && right_nan) return;
     Expr const* other = left_nan ? right : left;
-    csview name = expr_is_entity_name(other) ? other->inner_span.sv : c_sv("...");
+    csview name = expr_is_entity_name(other) ? span_sv(other->inner_span) : c_sv("...");
     error_add_related_d(error, expr_outer_span(other), 1369, "Did you mean '", eq ? "" : "!", "Number.isNaN(", name, ")'?");
 }
 
@@ -3671,7 +3671,7 @@ static bool binary_op_typecheck(
                         at++;
                     }
                 }
-                Span op_span = at < end ? span_make(expr->inner_span.source, at, at + binary_op_get_zv(op).size) : expr->inner_span;
+                Span op_span = at < end ? span_make_in(expr->inner_span, at, at + binary_op_get_zv(op).size) : expr->inner_span;
                 error_ctx_error_d(errs, op_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
                     "' operator is not allowed for boolean types. Consider using '", binary_op_get_zv(suggested).str, "' instead.");
                 operands_ok = false;
@@ -3755,9 +3755,9 @@ static bool binary_op_typecheck(
             if (right && (right->flags & TYF_UNDEFINED) && right->kind != TY_UNION) {
                 Span name = span_null;
                 if (binary_commonjs_declaration(expr->binary_op, &name) == COMMONJS_TARGET_EXPORTS_PROPERTY) {
-                    SourceFile const* file = expr_outer_span(expr).source;
+                    SourceFile const* file = span_source(expr_outer_span(expr));
                     Symbol const* module = file && file->scope ? file->scope->container : nullptr;
-                    Symbol const* exported = module && module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
+                    Symbol const* exported = module && module->exports ? symbol_table_get(module->exports, span_sv(name)) : nullptr;
                     if (exported && exported->decl_count > 1) break;
                 }
             }
@@ -3785,7 +3785,7 @@ static bool binary_op_typecheck(
             bool strict_op = op == BINARY_OP_TRIPLE_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL;
             Expr const* l = &expr->binary_op->left;
             if ((is_literal_expression_of_object(l) || is_literal_expression_of_object(&expr->binary_op->right)) &&
-                (!l->inner_span.source || !l->inner_span.source->is_js || strict_op)
+                (!span_source(l->inner_span) || !span_source(l->inner_span)->is_js || strict_op)
             ) {
                 bool eq = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
                 error_ctx_error_d(errs, expr_outer_span(expr), 2839, "This condition will always return '", eq ? "false" : "true",
@@ -3927,7 +3927,7 @@ void jsx_element_typecheck(Expr const* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, my jsx->opening_span, 17004, "Cannot use JSX unless the '--jsx' flag is provided.");
     }
     bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
-        !my jsx->tag_name.inner_span.sv.size;
+        !my jsx->tag_name.inner_span.size;
     if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
     for_each (i, vec_spanned_type, &my jsx->type_args) type_typecheck(&i->type, errs);
     if (span_valid(my jsx->type_args_trailing_comma)) {
@@ -3938,7 +3938,7 @@ void jsx_element_typecheck(Expr const* me, ErrorCtx* errs) {
     if (my tag == EXPR_JSX_ELEMENT && my jsx->namespaced &&
         (jsx_kind == JSX_REACT || jsx_kind == JSX_REACT_JSX || jsx_kind == JSX_REACT_JSXDEV)
     ) {
-        csview name = my jsx->tag_name.inner_span.sv;
+        csview name = span_sv(my jsx->tag_name.inner_span);
         isize colon = csview_find(name, ":");
         csview ns = colon == c_NPOS ? name : csview_trim(csview_slice(name, 0, colon));
         bool intrinsic_like = ns.size && ((ns.buf[0] >= 'a' && ns.buf[0] <= 'z') || csview_contains(ns, "-"));
@@ -3986,7 +3986,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
                 } else {
                     written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
                     panic_if(!written, "out of memory");
-                    written[written_count++] = (TyWrittenProp){ checker_atom(current_checker, i->name.sv), i->span };
+                    written[written_count++] = (TyWrittenProp){ checker_atom(current_checker, span_sv(i->name)), i->span };
                 }
             }
             free(written);
@@ -4031,14 +4031,14 @@ static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs
 // tsc's getTypeOfFuncClassEnumModule reports at the assignment (getWidenedTypeForAssignmentDeclaration of `export=`
 // through reportImplicitAny of a BinaryExpression, whose name is missing)
 static void js_module_exports_implicit_any_check(Expr const* me, ErrorCtx* errs) {
-    SourceFile const* file = my inner_span.source;
+    SourceFile const* file = span_source(my inner_span);
     if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;
     Symbol const* module = file->scope ? file->scope->container : nullptr;
     Symbol const* export_equals = module && module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
     if (!export_equals) return;
     Span left = expr_outer_span(&my binary_op->left);
     // (At the value declaration, the first)
-    if (!export_equals->decl_count || export_equals->decls[0].name.sv.buf != left.sv.buf) return;
+    if (!export_equals->decl_count || export_equals->decls[0].name.buf != left.buf) return;
     Ty const* type = ty_type_of_symbol(current_checker, export_equals);
     // (Not never, which doesn't widen: `const ns: never = {}; module.exports = ns`)
     if (!ty_only_nullable(type) || (type->flags & (TYF_ANY | TYF_NEVER))) return;
@@ -4055,7 +4055,7 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
         return;
     }
     if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !op->left.property->declares) return;
-    SourceFile const* file = my inner_span.source;
+    SourceFile const* file = span_source(my inner_span);
     if (!file || !compiler_options()->no_implicit_any) return;
     Symbol const* member = op->left.property->declares;
     SymbolDecl const* first = nullptr;
@@ -4135,13 +4135,13 @@ static Expr const* checked_callee;
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     Span name = my property->prop.inner_span;
-    if (csview_equals(name.sv, "defer") || csview_equals(name.sv, "source")) { // (tsgo's IsImportPhaseMetaProperty)
+    if (csview_equals(span_sv(name), "defer") || csview_equals(span_sv(name), "source")) { // (tsgo's IsImportPhaseMetaProperty)
         // (Not called: `import.defer(...)` is a deferred import call, see parse_import_keyword_expr())
-        Span end = span_make(my inner_span.source, span_end_ptr(my inner_span), span_end_ptr(my inner_span));
+        Span end = span_make_in(my inner_span, span_end_ptr(my inner_span), span_end_ptr(my inner_span));
         error_ctx_grammar_error_d(errs, end, 1005, "'(' expected.");
         return;
     }
-    if (!csview_equals(name.sv, "meta")) { // (tsc's checkGrammarMetaProperty)
+    if (!csview_equals(span_sv(name), "meta")) { // (tsc's checkGrammarMetaProperty)
         if (me == checked_callee) {
             error_ctx_grammar_error_d(errs, name, 18061, "'", name,
                 "' is not a valid meta-property for keyword 'import'. Did you mean 'meta', 'defer', or 'source'?");
@@ -4151,7 +4151,7 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     }
     ModuleKind module = compiler_options()->module;
     if (module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT) {
-        if (source_file_implied_format_for_emit(my inner_span.source) != MODULE_KIND_ESNEXT) {
+        if (source_file_implied_format_for_emit(span_source(my inner_span)) != MODULE_KIND_ESNEXT) {
             error_ctx_error_d(errs, my inner_span, 1470,
                 "The 'import.meta' meta-property is not allowed in files which will build into CommonJS output.");
         }
@@ -4303,7 +4303,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 my property->optional_chain, nullptr);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
             if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
-                span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
+                span_valid(my property->prop.inner_span) && my property->prop.inner_span.buf[0] == '#'
             ) {
                 private_access_check_emit_helpers(me, errs);
             }
@@ -4379,7 +4379,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             Expr const* inner = &my generic_params->expr;
             if (inner->tag == EXPR_IDENTIFIER && inner->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
                 // `import<T>` (tsc's checkGrammarExpressionWithTypeArguments: at the whole expression, which is all)
-                Span whole = span_make(my inner_span.source, span_start_ptr(inner->inner_span), span_end_ptr(my inner_span));
+                Span whole = span_make_in(my inner_span, span_start_ptr(inner->inner_span), span_end_ptr(my inner_span));
                 error_ctx_grammar_error_d(errs, whole, 1326, "This use of 'import' is invalid. 'import()' calls can be "
                     "written, but they must have parentheses and cannot have type arguments.");
                 break;
@@ -4535,13 +4535,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     // tsc's checkGrammarMethod/checkGrammarAccessor: at the member's last character
                     char const* end = span_end_ptr(i->span);
                     while (end > span_start_ptr(i->span) && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
-                    error_ctx_grammar_error_d(errs, span_make(i->span.source, end - 1, end), 1005, "'{' expected.");
+                    error_ctx_grammar_error_d(errs, span_make_in(i->span, end - 1, end), 1005, "'{' expected.");
                 }
                 expr_typecheck(&i->value, errs);
                 // tsc's getTypeOfAccessors: a setter without a parameter annotation or a getter to take the type from is
                 // implicitly any
                 if (i->tag == OBJECT_ITEM_SETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
-                    i->name_span.source && !i->jsdoc_type
+                    span_source(i->name_span) && !i->jsdoc_type
                 ) {
                     FunctionArg const* value = nullptr;
                     for_each (arg, vec_function_arg, &i->value.function->args) {
@@ -4859,7 +4859,7 @@ void object_expr_item_drop(ObjectExprItem* me) {
 
 bool expr_is_plain_identifier(Expr const* me, const char* name) {
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword && !expr_is_perenthisized(me) &&
-        csview_equals(my inner_span.sv, name);
+        csview_equals(span_sv(my inner_span), name);
 }
 
 // `a.b` or `a["b"]`: the name b, else an invalid span
@@ -4870,7 +4870,7 @@ Span expr_static_property_name(Expr const* me) {
         !expr_is_perenthisized(prop)
     ) {
         // `o[77]` (tsc's isStringOrNumericLiteralLike): named by the number's text, when that is how it prints
-        csview digits = prop->inner_span.sv;
+        csview digits = span_sv(prop->inner_span);
         bool canonical = digits.size && (digits.buf[0] != '0' || digits.size == 1);
         for (isize i = 0; i < digits.size && canonical; i++) canonical = digits.buf[i] >= '0' && digits.buf[i] <= '9';
         return canonical && digits.size < 16 ? prop->inner_span : span_null;
@@ -4879,9 +4879,9 @@ Span expr_static_property_name(Expr const* me) {
     if (my property->form == PROPERTY_EXPR_DOT) return prop->inner_span;
     // Without the quotes
     Span ret = prop->inner_span;
-    if (ret.sv.size < 2) return span_null;
-    ret.sv.buf++;
-    ret.sv.size -= 2;
+    if (ret.size < 2) return span_null;
+    ret.buf++;
+    ret.size -= 2;
     return ret;
 }
 
@@ -4928,19 +4928,19 @@ Symbol const* expr_entity_name_symbol(Expr const* me) {
     Span name = expr_static_property_name(me);
     Symbol const* object = span_valid(name) ? expr_entity_name_symbol(&my property->expr) : nullptr;
     if (!object || object->is_module || (object->flags & SYMBOL_ALIAS) || !object->exports) return nullptr;
-    return symbol_table_get(object->exports, name.sv);
+    return symbol_table_get(object->exports, span_sv(name));
 }
 
 bool expr_is_module_exports(Expr const* me) {
     Span name = expr_static_property_name(me);
-    return span_valid(name) && csview_equals(name.sv, "exports") && expr_is_plain_identifier(&my property->expr, "module");
+    return span_valid(name) && csview_equals(span_sv(name), "exports") && expr_is_plain_identifier(&my property->expr, "module");
 }
 
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret) {
     if (expr_is_module_exports(left)) return COMMONJS_TARGET_MODULE_EXPORTS;
     Span name = expr_static_property_name(left);
     // (`exports.#x` is no export: tsc's isBindableStaticAccessExpression wants an identifier)
-    if (!span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return COMMONJS_TARGET_NONE;
+    if (!span_valid(name) || (name.size && name.buf[0] == '#')) return COMMONJS_TARGET_NONE;
     Expr const* object = &left->property->expr;
     if (!expr_is_plain_identifier(object, "exports") && !expr_is_module_exports(object)) return COMMONJS_TARGET_NONE;
     if (name_ret) *name_ret = name;
@@ -4966,9 +4966,9 @@ bool expr_is_define_property_call(Expr const* me, Span* name_ret) {
     Span text = key->inner_span;
     Span name;
     if (key->literal.tag == VALUE_STRING) {
-        if (text.sv.size < 2 || (isize)cstr_size(&key->literal.string) != text.sv.size - 2) return false;
-        name = span_make(text.source, text.sv.buf + 1, text.sv.buf + text.sv.size - 1);
-    } else if (key->literal.tag == VALUE_NUMBER && value_is_numeric_literal_name(text.sv)) {
+        if (text.size < 2 || (isize)cstr_size(&key->literal.string) != text.size - 2) return false;
+        name = span_make_in(text, text.buf + 1, text.buf + text.size - 1);
+    } else if (key->literal.tag == VALUE_NUMBER && value_is_numeric_literal_name(span_sv(text))) {
         // (A numeric key too, tsc's isStringOrNumericLiteralLike: named by its text when that is the number's own, `42`)
         name = text;
     } else {
@@ -5012,7 +5012,7 @@ bool expr_is_require_call(Expr const* me) {
 
 CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span* name_ret) {
     if (assignment->op != BINARY_OP_EQUAL) return COMMONJS_TARGET_NONE;
-    SourceFile const* file = assignment->left.inner_span.source;
+    SourceFile const* file = span_source(assignment->left.inner_span);
     if (!file || !file->is_commonjs) return COMMONJS_TARGET_NONE;
     return expr_commonjs_target(&assignment->left, name_ret);
 }

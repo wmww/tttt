@@ -212,7 +212,7 @@ bool expr_is_entity_name(Expr const* me) {
     while (my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(me)) {
         // (`a.#x` isn't one: tsc's isPropertyAccessEntityNameExpression wants an identifier)
         Span name = my property->prop.inner_span;
-        if (name.sv.size && name.sv.buf[0] == '#') return false;
+        if (name.size && name.buf[0] == '#') return false;
         me = &my property->expr;
     }
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword && !expr_is_perenthisized(me);
@@ -347,7 +347,7 @@ static bool may_evolve(Expr const* object) {
 static bool is_dot_name(Expr const* access, char const* name) {
     if (access->tag != EXPR_PROPERTY || access->property->form != PROPERTY_EXPR_DOT) return false;
     Expr const* prop = &access->property->prop;
-    return prop->tag == EXPR_LITERAL && span_valid(prop->inner_span) && csview_equals(prop->inner_span.sv, name);
+    return prop->tag == EXPR_LITERAL && span_valid(prop->inner_span) && csview_equals(span_sv(prop->inner_span), name);
 }
 
 void flow_array_mutation(FlowBuilder* me, Expr* expr) {
@@ -470,7 +470,7 @@ static void dump_list(FlowList const* list) {
 
 // One line of source at most
 static csview dump_text(Span span) {
-    csview sv = span.sv;
+    csview sv = span_sv(span);
     for (isize_t i = 0; i < sv.size; i++) {
         if (sv.buf[i] == '\n' || i == 60) return (csview){ sv.buf, i };
     }
@@ -550,7 +550,7 @@ void flow_builder_reference_dump(FlowBuilder* me, Span name) {
 
 void flow_builder_finish(FlowBuilder* me, csview name, Span span) {
     if (!flow_dump_enabled()) return;
-    bool is_lib = span_valid(span) && span.source && span.source->is_stdlib;
+    bool is_lib = span_valid(span) && span_source(span) && span_source(span)->is_stdlib;
     if (my dump_count <= 1 || is_lib) {
         free(my dump);
         my dump = nullptr;

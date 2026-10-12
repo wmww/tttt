@@ -71,8 +71,8 @@ typedef struct OrderPos {
 } OrderPos;
 
 static bool span_pos(Span s, OrderPos* out) {
-    if (!s.source || !s.sv.buf) return false;
-    *out = (OrderPos){ s.source->program_order, (u32)(s.sv.buf - cstr_str(&s.source->contents)) };
+    if (!span_source(s) || !s.buf) return false;
+    *out = (OrderPos){ span_source(s)->program_order, (u32)(s.buf - cstr_str(&span_source(s)->contents)) };
     return true;
 }
 
@@ -455,8 +455,8 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                 UniqueSymbolDecl const* ub = b->literal.unique;
                 if (ua && ub) {
                     OrderPos pa = {0}, pb = {0};
-                    bool ha = ua->member.sv.buf ? span_pos(ua->member, &pa) : (ua->owner && ua->owner->decl_count && span_pos(ua->owner->decls[0].full, &pa));
-                    bool hb = ub->member.sv.buf ? span_pos(ub->member, &pb) : (ub->owner && ub->owner->decl_count && span_pos(ub->owner->decls[0].full, &pb));
+                    bool ha = ua->member.buf ? span_pos(ua->member, &pa) : (ua->owner && ua->owner->decl_count && span_pos(ua->owner->decls[0].full, &pa));
+                    bool hb = ub->member.buf ? span_pos(ub->member, &pb) : (ub->owner && ub->owner->decl_count && span_pos(ub->owner->decls[0].full, &pb));
                     // (tsc's compareSymbols: a declaration first, then by name)
                     if (ha && hb) {
                         int c = cmp_pos(pa, pb);
@@ -608,7 +608,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                 TyConditionalOuter const* ob = xb->conditional.outer;
                 int c = cmp_node_spans(oa ? oa->node : span_null, ob ? ob->node : span_null, oa != nullptr, ob != nullptr);
                 if (c) return c;
-                if (!oa || !ob || oa->node.sv.buf != ob->node.sv.buf) return xa->id < xb->id ? -1 : 1;
+                if (!oa || !ob || oa->node.buf != ob->node.buf) return xa->id < xb->id ? -1 : 1;
             }
             int c = cmp_mappers(a->conditional.mapper, b->conditional.mapper);
             if (c) return c;

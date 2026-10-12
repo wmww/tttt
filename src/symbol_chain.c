@@ -331,7 +331,7 @@ static void keep_best_chain(SymbolChain* best, bool* found, SymbolChain const* c
 
 static char const* declared_at(Symbol const* symbol, SourceFile const* file) {
     for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].name.source == file && span_valid(symbol->decls[i].name)) return symbol->decls[i].name.sv.buf;
+        if (span_source(symbol->decls[i].name) == file && span_valid(symbol->decls[i].name)) return symbol->decls[i].name.buf;
     }
     return nullptr;
 }
@@ -340,7 +340,7 @@ static char const* declared_at(Symbol const* symbol, SourceFile const* file) {
 // its other statements (bindEachFunctionsFirst), so they come first in the block's locals
 static bool declared_as_function(Symbol const* symbol, SourceFile const* file) {
     for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].name.source == file && span_valid(symbol->decls[i].name)) {
+        if (span_source(symbol->decls[i].name) == file && span_valid(symbol->decls[i].name)) {
             return symbol->decls[i].kind == SYMBOL_DECL_FUNCTION;
         }
     }
@@ -549,7 +549,7 @@ static Symbol const* declaring_module(Symbol const* symbol) {
     ) {
         return symbol_table_get(&block->locals, symbol->name) == symbol ? block->container : nullptr;
     }
-    SourceFile const* file = symbol->decls[0].name.source;
+    SourceFile const* file = span_source(symbol->decls[0].name);
     if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
     Symbol const* module = file->scope->container;
     if (symbol_table_get(&file->scope->locals, symbol->name) != symbol) return nullptr;
@@ -590,7 +590,7 @@ static Symbol const* alias_in_container(ChainCtx* me, Symbol const* container, S
 // The module whose `export =` is the container (tsc's getFileSymbolIfFileSymbolExportEqualsContainer)
 static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container) {
     if (!container->decl_count) return nullptr;
-    SourceFile const* file = container->decls[0].name.source;
+    SourceFile const* file = span_source(container->decls[0].name);
     if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
     Symbol const* module = file->scope->container;
     Symbol const* export_equals = module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
@@ -931,15 +931,15 @@ static SourceFile const* file_of_scope(Scope const* scope) {
 // tsc's getNameOfSymbolAsWritten
 static csview written_name(Scope const* enclosing, Symbol const* symbol, bool first) {
     Span display = ty_symbol_display_name(symbol);
-    csview name = span_valid(display) ? display.sv : symbol->name;
+    csview name = span_valid(display) ? span_sv(display) : symbol->name;
     // An `export default` declaration is `default` except where it was declared
     if (csview_equals(export_name(symbol), "default") &&
-        (!first || !span_valid(symbol->name_span) || symbol->name_span.source != file_of_scope(enclosing))
+        (!first || !span_valid(symbol->name_span) || span_source(symbol->name_span) != file_of_scope(enclosing))
     ) {
         return c_sv("default");
     }
     // A declaration whose name is missing (`enum void {}`: tsc's missing identifier)
-    if (!name.size && span_valid(symbol->name_span) && !symbol->name_span.sv.size) return c_sv("(Missing)");
+    if (!name.size && span_valid(symbol->name_span) && !symbol->name_span.size) return c_sv("(Missing)");
     return name;
 }
 

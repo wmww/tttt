@@ -5,29 +5,61 @@
 
 typedef struct SourceFile SourceFile;
 
+// A stretch of a file's text: 16 bytes (the AST holds tens of millions). The file is an index into the process-wide
+// file table (source_file_register()), 0 for none (a span of text that isn't a file's: sv_make_span())
 typedef struct Span {
-    SourceFile const* source;
-    csview sv;
+    char const* buf;
+    i32 size;
+    u32 file;
 } Span;
 
 #define span_null ((Span){0})
+
+// The process-wide file table: chunks of 1 << SPAN_FILE_CHUNK_BITS, indexes never reused (a dropped file's is null)
+#define SPAN_FILE_CHUNK_BITS 12
+#define SPAN_FILE_DIR_BITS 20
+extern SourceFile const** span_files[1 << SPAN_FILE_DIR_BITS];
+static inline SourceFile const* span_file_of(u32 file) {
+    return file ? span_files[file >> SPAN_FILE_CHUNK_BITS][file & ((1u << SPAN_FILE_CHUNK_BITS) - 1)] : nullptr;
+}
+static inline SourceFile const* span_source(Span me) { return span_file_of(me.file); }
+static inline csview span_sv(Span me) { return (csview){ .buf = me.buf, .size = me.size }; }
+// A file's index in the table: SourceFile starts with it (static_assert in source_file.h)
+static inline u32 source_file_id(SourceFile const* file) { return file ? *(u32 const*)file : 0; }
+// Gives a file (at its final address) its index, before any span of it is made
+void source_file_register(SourceFile* file);
+// Empties the file's entry (when it is freed): its spans have no file any more
+void source_file_unregister(SourceFile const* file);
+
 // The text of a declaration's name as tsc's declarationNameToString has it: "(Missing)" where recovery left none
-static inline csview span_name_text(Span me) { return me.sv.size ? me.sv : c_sv("(Missing)"); }
-#define span_equals(span, lit) csview_equals_sv((span).sv, c_sv(lit))
-#define c_SPAN(span) c_SV((span).sv)
+static inline csview span_name_text(Span me) { return me.size ? span_sv(me) : c_sv("(Missing)"); }
+#define span_equals(span, lit) csview_equals_sv(span_sv(span), c_sv(lit))
+#define c_SPAN(span) c_SV(span_sv(span))
 
 static inline Span span_make(SourceFile const* source, const char* start, const char* end) {
-    return (Span){
-        .source = source,
-        .sv = csview_from_n(start, end - start),
-    };
+    return (Span){ .buf = start, .size = (i32)(end - start), .file = source_file_id(source) };
+}
+
+// A span of the same file as `like`
+static inline Span span_make_in(Span like, const char* start, const char* end) {
+    return (Span){ .buf = start, .size = (i32)(end - start), .file = like.file };
+}
+
+static inline Span span_from_sv(SourceFile const* source, csview sv) {
+    return (Span){ .buf = sv.buf, .size = (i32)sv.size, .file = source_file_id(source) };
+}
+
+static inline Span span_in_sv(Span like, csview sv) {
+    return (Span){ .buf = sv.buf, .size = (i32)sv.size, .file = like.file };
+}
+
+static inline void span_set_sv(Span* me, csview sv) {
+    my buf = sv.buf;
+    my size = (i32)sv.size;
 }
 
 static inline Span sv_make_span(csview sv) {
-    return (Span){
-        .source = nullptr,
-        .sv = sv,
-    };
+    return (Span){ .buf = sv.buf, .size = (i32)sv.size };
 }
 
 // An identifier's name with its unicode escapes decoded (`\u0061` is `a`, tsc's escapedText): what names are keyed and
@@ -50,22 +82,21 @@ static inline bool name_equals(csview a, csview b) {
 void names_register_source(SourceFile* file);
 void names_unregister_source(SourceFile* file);
 
-static inline bool span_valid(Span me) { return me.sv.buf; }
+static inline bool span_valid(Span me) { return me.buf; }
 // The same stretch of the same file
-static inline bool span_eq(Span a, Span b) { return a.sv.buf == b.sv.buf && a.sv.size == b.sv.size; }
+static inline bool span_eq(Span a, Span b) { return a.buf == b.buf && a.size == b.size; }
 
 // Whether `inner` lies within `outer` (both valid)
 static inline bool span_contains_span(Span outer, Span inner) {
-    return outer.sv.buf && inner.sv.buf && inner.sv.buf >= outer.sv.buf &&
-        inner.sv.buf + inner.sv.size <= outer.sv.buf + outer.sv.size;
+    return outer.buf && inner.buf && inner.buf >= outer.buf && inner.buf + inner.size <= outer.buf + outer.size;
 }
 
 static inline const char* span_start_ptr(Span me) {
-    return me.sv.buf;
+    return me.buf;
 }
 
 static inline const char* span_end_ptr(Span me) {
-    return me.sv.buf ? me.sv.buf + me.sv.size : nullptr;
+    return me.buf ? me.buf + me.size : nullptr;
 }
 
 // Whether the span is text of its file (not a name made up for something that isn't written: the `argN` parameters
@@ -102,7 +133,7 @@ int span_cmp(Span a, Span b);
 void cstr_append_span(cstr* target, Span me);
 
 static inline cstr cstr_from_span(Span me) {
-    return cstr_from_sv(me.sv);
+    return cstr_from_sv(span_sv(me));
 }
 
 #define g_key Span, span

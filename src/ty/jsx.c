@@ -30,7 +30,7 @@ static AstWalk visit_first_jsx(Expr const* expr, void* arg) {
 // what there is to say about it is said at the file's first JSX tag (links.firstJSXTagInFile), whichever element asks
 // (once per program: the first checked file's)
 static void report_runtime_module(Checker* me, JsxElement const* element, Span at) {
-    SourceFile const* file = element->opening_span.source;
+    SourceFile const* file = span_source(element->opening_span);
     ModuleRef const* ref = file ? file->jsx_runtime_ref : nullptr;
     if (!ref || !my errs || my errs->phase != ERROR_PHASE_TYPECHECK || !ty_first_check(me, ref)) return;
     Span first = span_null;
@@ -83,7 +83,7 @@ Ty const* ty_jsx_element_type(Checker* me, Expr const* expr) {
 // resolve, the error type when it isn't there
 Ty const* ty_jsx_fragment_type(Checker* me, JsxElement const* element) {
     CompilerOptions const* options = compiler_options();
-    SourceFile const* file = element->opening_span.source;
+    SourceFile const* file = span_source(element->opening_span);
     if (options->jsx != JSX_REACT && !cstr_size(&options->jsx_fragment_factory)) return nullptr;
     Symbol const* factory = element->factory_value;
     if (!factory) {
@@ -249,7 +249,7 @@ JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csvi
 
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
     if (element->tag_name.tag != EXPR_IDENTIFIER) return (JsxIntrinsic){ .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
-    return ty_jsx_intrinsic_named(me, element, element->tag_name.inner_span.sv);
+    return ty_jsx_intrinsic_named(me, element, span_sv(element->tag_name.inner_span));
 }
 
 // The errors of looking an intrinsic tag up, at the opening or closing tag (tsc checks both)
@@ -259,7 +259,7 @@ static void report_intrinsic_lookup(Checker* me, JsxElement const* element, JsxI
             error_ctx_error_d(errs, at, 7026, "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.");
         }
     } else if (!intrinsic->props) {
-        error_ctx_error_d(errs, at, 2339, "Property '", element->tag_name.inner_span.sv,
+        error_ctx_error_d(errs, at, 2339, "Property '", span_sv(element->tag_name.inner_span),
             "' does not exist on type 'JSX.IntrinsicElements'.");
     }
     (void)me;
@@ -294,13 +294,13 @@ static void check_children(Checker* me, JsxElement const* element, ErrorCtx* err
                 ty_expr_type(me, &i->value);
             if (spread->flags & TYF_ANY) return;
         } else {
-            explicit |= csview_eq(&i->name.sv, &name);
+            explicit |= csview_equals_sv(span_sv(i->name), name);
         }
     }
     if (!explicit) return;
     // (at all of the attributes)
     Span span = vec_jsx_attribute_at(attributes, 0)->span;
-    span.sv.size = span_end_ptr(vec_jsx_attribute_back(attributes)->span) - span.sv.buf;
+    span.size = span_end_ptr(vec_jsx_attribute_back(attributes)->span) - span.buf;
     error_ctx_error_d(errs, span, 2710, "'", name, "' are specified twice. The attribute named '", name, "' will be overwritten.");
 }
 
@@ -429,12 +429,12 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
         if (ty_jsx_fragment_type(me, element)) ty_resolve_jsx_element(me, element, errs);
         return;
     }
-    if (!element->tag_name.inner_span.sv.size) return;
+    if (!element->tag_name.inner_span.size) return;
     if (!jsx_element_is_intrinsic(element)) {
         check_value_tag(me, element, errs);
         return;
     }
-    check_element_type(me, element, ty_string_literal(me, element->tag_name.inner_span.sv), errs);
+    check_element_type(me, element, ty_string_literal(me, span_sv(element->tag_name.inner_span)), errs);
     if (!vec_spanned_type_is_empty(&element->type_args)) {
         // An intrinsic element takes no type arguments (resolveJsxOpeningLikeElement)
         // (the list, a trailing comma included)
@@ -487,7 +487,7 @@ bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target) {
 // `<reactNamespace>.createElement`. Invalid names count as not given
 static cstr jsx_factory_entity(JsxElement const* element) {
     CompilerOptions const* options = compiler_options();
-    SourceFile const* file = element->opening_span.source;
+    SourceFile const* file = span_source(element->opening_span);
     if (file && compiler_option_is_entity_name(file->jsx_pragmas.factory)) return cstr_from_sv(file->jsx_pragmas.factory);
     if (compiler_option_is_entity_name(cstr_sv(&options->jsx_factory))) return cstr_clone(options->jsx_factory);
     if (!cstr_size(&options->jsx_factory) && cstr_size(&options->react_namespace)) {

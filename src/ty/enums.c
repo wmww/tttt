@@ -40,7 +40,7 @@ static EnumValue member_value(Checker* me, Symbol const* decl, u32 depth) {
     if (!decl || !(decl->flags & SYMBOL_ENUM_MEMBER)) return enum_value_unknown;
     // A member declared later in the file (TS2651) evaluates to 0 (tsc's evaluateEnumMember)
     EnumCase const* at = my enum_evaluating;
-    if (at && decl != at->symbol && decl->name_span.source == at->name.source &&
+    if (at && decl != at->symbol && span_source(decl->name_span) == span_source(at->name) &&
         span_start_ptr(decl->name_span) > span_start_ptr(at->name)
     ) {
         return enum_value_number(0);
@@ -117,13 +117,13 @@ static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span us
     if (binding->parent || binding->has_explicit_type || !binding->source || binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
         return enum_value_unknown;
     }
-    if (symbol->name_span.source == use.source && span_start_ptr(symbol->name_span) >= span_start_ptr(use)) {
+    if (span_source(symbol->name_span) == span_source(use) && span_start_ptr(symbol->name_span) >= span_start_ptr(use)) {
         return enum_value_unknown;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
     EnumValue ret = evaluate(me, initialized_binding_value(initialized), depth);
     // (From another file it isn't written here: tsc's evaluateEntityNameExpression)
-    if (symbol->name_span.source != use.source) ret.syntactic_string = false;
+    if (span_source(symbol->name_span) != span_source(use)) ret.syntactic_string = false;
     return ret;
 }
 
@@ -172,7 +172,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             if (!expr->identifier.target || !(expr->identifier.target->flags & SYMBOL_ENUM_MEMBER)) {
                 // (The global ones, not a local of that name)
                 Symbol const* target = expr->identifier.target;
-                csview name = expr->inner_span.sv;
+                csview name = span_sv(expr->inner_span);
                 bool global = !target || target == program_get_global(my program, name, SYMBOL_VALUE);
                 if (global && csview_equals(name, "NaN")) return enum_value_number(NAN);
                 if (global && csview_equals(name, "Infinity")) return enum_value_number(INFINITY);
@@ -225,7 +225,7 @@ static void check_enum_reference(EnumCase const* member, Symbol const* reference
     if (!referenced || !(referenced->flags & SYMBOL_ENUM_MEMBER)) return;
     if (referenced == member->symbol) {
         error_ctx_error_d(errs, at, 2565, "Property '", referenced->name_span, "' is used before being assigned.");
-    } else if (referenced->name_span.source == member->name.source &&
+    } else if (span_source(referenced->name_span) == span_source(member->name) &&
         span_start_ptr(referenced->name_span) > span_start_ptr(member->name)
     ) {
         error_ctx_error_d(errs, at, 2651, "A member initializer in a enum declaration cannot reference members declared "

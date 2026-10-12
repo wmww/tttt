@@ -314,7 +314,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     // (tsc's symbolToTypeNode: the resolution-mode import attribute)
     ModuleResolutionKind resolution = compiler_options()->module_resolution;
     SourceFile const* target = module->module ? module->module->file : nullptr;
-    SourceFile const* context = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
+    SourceFile const* context = d.enclosing && span_valid(d.at) ? span_source(d.at) : nullptr;
     bool resolution_mode = (resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) &&
         target && context && target->has_format && target->is_esm && !(context->has_format && context->is_esm);
     // (Remembered: computing a module specifier walks the package's exports, paths and symlinks, and a printed
@@ -352,7 +352,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
         for_each (i, vec_import_attribute, &attributes->elements) {
             if (count == c_arraylen(found)) break;
             if (i->value.tag != EXPR_LITERAL || i->value.literal.tag != VALUE_STRING) continue;
-            csview name = i->name.sv;
+            csview name = span_sv(i->name);
             if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
             u32 at = count++;
             while (at > 0 && csview_cmp(&found[at - 1].name, &name) > 0) {
@@ -408,7 +408,7 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
     if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
     if (!d.enclosing && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
         // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
-        SourceFile const* file = symbol->decls[0].full.source;
+        SourceFile const* file = span_source(symbol->decls[0].full);
         out_lit(d, "import(\"");
         out(d, file ? source_file_display_path(file) : c_sv(""));
         out_lit(d, "\")");
@@ -416,7 +416,7 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
     }
     Symbol const* parent = symbol->parent;
     if ((!parent && !d.enclosing) || (symbol->is_global_this && !d.enclosing) || (!d.enclosing && !d.fully_qualified)) {
-        out(d, ty_symbol_display_name(symbol).sv);
+        out(d, span_sv(ty_symbol_display_name(symbol)));
         return;
     }
     if (!d.enclosing) {
@@ -430,7 +430,7 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
         }
         out_lit(d, ".");
         // (An `export default` declaration is `default` through its module: tsc's getNameOfSymbolAsWritten)
-        out(d, symbol->is_default_export && (parent->is_module || quoted_parent) ? c_sv("default") : ty_symbol_display_name(symbol).sv);
+        out(d, symbol->is_default_export && (parent->is_module || quoted_parent) ? c_sv("default") : span_sv(ty_symbol_display_name(symbol)));
         return;
     }
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
@@ -450,17 +450,17 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
         // module not augmenting a relative name (tryGetModuleNameFromAmbientModule), else by a specifier from here
         // to the file of its first declaration
         Symbol const* module = chain.items[0];
-        SourceFile const* file = module->decls[0].full.source;
+        SourceFile const* file = span_source(module->decls[0].full);
         if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file, symbol);
         csview ambient = {0};
         for (u32 i = 0; i < module->decl_count && !ambient.size; i++) {
             if (module->decls[i].kind != SYMBOL_DECL_NAMESPACE) continue;
             NamespaceDecl const* ns = module->decls[i].node;
-            if (!ns->is_ambient_module || ns->name.sv.size < 2) continue;
-            csview name = csview_slice(ns->name.sv, 1, ns->name.sv.size - 1);
+            if (!ns->is_ambient_module || ns->name.size < 2) continue;
+            csview name = csview_slice(span_sv(ns->name), 1, ns->name.size - 1);
             if (!ns->is_augmentation || !module_name_is_relative(name)) ambient = name;
         }
-        SourceFile const* context = span_valid(d.at) ? d.at.source : nullptr;
+        SourceFile const* context = span_valid(d.at) ? span_source(d.at) : nullptr;
         out_lit(d, "import(\"");
         if (ambient.size) {
             out(d, ambient);
@@ -558,12 +558,12 @@ static u32 out_outer_type_args(Checker* me, TyDisplay d, OuterGenerics const* ou
     for (u32 i = start; i < start + len; i++) same &= params.data[i] == args.data[i];
     if (!same) {
         if (span_valid(outer->owner_class)) {
-            out(d, outer->owner_class.sv);
+            out(d, span_sv(outer->owner_class));
             out_lit(d, ".");
         }
         // (Without its type arguments: tsgo's appendReferenceToType keeps only the last reference's, unless
         // UseInstantiationExpressions, which only hover sets)
-        out(d, outer->owner.sv);
+        out(d, span_sv(outer->owner));
         out_lit(d, ".");
     }
     return start + len;
@@ -588,7 +588,7 @@ static bool display_module_clone(Checker* me, TyDisplay d, Ty const* ty) {
         // (The clone's declarations include the augmentation, a module: `typeof import("m")`)
         out_symbol_name(me, d, assigned, SYMBOL_VALUE);
     } else {
-        out(d, ty_symbol_display_name(assigned).sv);
+        out(d, span_sv(ty_symbol_display_name(assigned)));
     }
     return true;
 }
@@ -853,7 +853,7 @@ static void out_unique_symbol_name_impl(Checker* me, TyDisplay d, UniqueSymbolDe
     // Printed from nowhere, a member is its bare name (tsc's lookupSymbolChain without an enclosing declaration: the
     // chain is the symbol alone): `typeof VALID` for a static `SecurePassword.VALID`, `typeof toStringTag`
     if (d.typeof_unique_symbols && !d.enclosing && !d.fully_qualified && !d.tracker) {
-        out(d, decl->member.sv);
+        out(d, span_sv(decl->member));
         return;
     }
     if (owner && (owner->flags & SYMBOL_INTERFACE)) {
@@ -866,7 +866,7 @@ static void out_unique_symbol_name_impl(Checker* me, TyDisplay d, UniqueSymbolDe
             if (program_get_global(my program, value_name, SYMBOL_VALUE)) {
                 out(d, value_name);
                 out_lit(d, ".");
-                out(d, decl->member.sv);
+                out(d, span_sv(decl->member));
                 return;
             }
         }
@@ -875,7 +875,7 @@ static void out_unique_symbol_name_impl(Checker* me, TyDisplay d, UniqueSymbolDe
         out_symbol_name(me, d, owner, SYMBOL_VALUE);
         out_lit(d, ".");
     }
-    out(d, decl->member.sv);
+    out(d, span_sv(decl->member));
 }
 
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name);
@@ -892,10 +892,10 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     // (a mapped type's properties are instantiations of its template, under other names)
     Span name = root->name == prop->name ? root->decl->name_span : span_null;
     // (tsc's getNameOfSymbolAsWritten: a name that isn't an identifier as written, `"a"`, `2.0`, `["a"]`)
-    if (span_valid(name) && name.sv.size >= 2 && (name.sv.buf[0] == '"' || name.sv.buf[0] == '\'' || name.sv.buf[0] == '[')) {
-        return cstr_from_sv(name.sv);
+    if (span_valid(name) && name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'' || name.buf[0] == '[')) {
+        return cstr_from_sv(span_sv(name));
     }
-    if (span_valid(name) && name.sv.size && name.sv.buf[0] >= '0' && name.sv.buf[0] <= '9') return cstr_from_sv(name.sv);
+    if (span_valid(name) && name.size && name.buf[0] >= '0' && name.buf[0] <= '9') return cstr_from_sv(span_sv(name));
     return ty_prop_name_cstr(me, prop->name);
 }
 
@@ -934,8 +934,8 @@ uint8_t ty_prop_name_form_of(Prop const* prop) {
     }
     uint8_t form = decl->name_form;
     if (!(form & PROP_NAME_KNOWN)) {
-        form = span_valid(decl->name_span) && decl->name_span.sv.size && decl->name_span.sv.buf[0] != '[' ?
-            ty_prop_name_form(decl->name_span.sv, nullptr, nullptr, false) : PROP_NAME_KNOWN;
+        form = span_valid(decl->name_span) && decl->name_span.size && decl->name_span.buf[0] != '[' ?
+            ty_prop_name_form(span_sv(decl->name_span), nullptr, nullptr, false) : PROP_NAME_KNOWN;
     }
     // (A mapped type's property is named by its key type)
     if (root->name != prop->name) form |= PROP_NAME_TYPED;
@@ -1004,7 +1004,7 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
         if (d.enclosing && !d.tracker && decl->owner && !span_valid(decl->member)) {
             SymbolChain chain = symbol_chain_at(d.enclosing, decl->owner, SYMBOL_VALUE, true);
             if (chain.len && chain.items[0]->is_module) {
-                out(d, ty_symbol_display_name(decl->owner).sv);
+                out(d, span_sv(ty_symbol_display_name(decl->owner)));
                 out_lit(d, "]");
                 return;
             }
@@ -1114,7 +1114,7 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         FunctionImpl const* function = symbol->decls[0].block->function;
         bool printed = false;
         for (TyDisplayParams const* i = d.printed_params; i && !printed; i = i->outer) printed = i->function == function;
-        if (!printed && function && span_valid(function->full_span) && function->full_span.source == d.at.source &&
+        if (!printed && function && span_valid(function->full_span) && span_source(function->full_span) == span_source(d.at) &&
             !span_contains_span(function->full_span, d.at)
         ) {
             return false;
@@ -1127,7 +1127,7 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
             FunctionImpl const* function = i->function;
             if (!function || !function->has_body || !function->body.scope || !span_valid(function->full_span) ||
-                function->full_span.source != d.at.source || !span_contains_span(function->full_span, d.at)
+                span_source(function->full_span) != span_source(d.at) || !span_contains_span(function->full_span, d.at)
             ) {
                 continue;
             }
@@ -1246,7 +1246,7 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
         static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };
         bool plain = !compiler_options()->no_implicit_any && !vec_spanned_type_size(&identifier->generic_params);
         for (u32 i = 0; i < c_arraylen(intended); i++) {
-            if (csview_equals(identifier->name.sv, intended[i])) {
+            if (csview_equals(span_sv(identifier->name), intended[i])) {
                 if (i < 2 || plain) return false;
             }
         }
@@ -1280,7 +1280,7 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
     bool mapped = d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) && !qualified &&
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped) return IDENTIFIER_MAPPED;
-    if (name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
+    if (name_accessible(me, d, symbol, span_sv(first), qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
     Symbol const* target = identifier->target;
     if (target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
         symbol_type_accessible_at(d.enclosing, target)
@@ -1304,7 +1304,7 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_TYPEOF: {
             Expr const* leftmost = entity_leftmost(node->typeof_->expr);
             return leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-                !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE);
+                !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE);
         }
         case TYPE_INDEXED: return simple_node_fails(me, d, &node->indexed->interface);
         case TYPE_KEYOF: return simple_node_fails(me, d, &node->keyof->interface);
@@ -1315,7 +1315,7 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
 static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->keyword) {
-        out(d, identifier->name.sv);
+        out(d, span_sv(identifier->name));
         return;
     }
     if (identifier->jsdoc && !jsdoc_reference_reusable(me, d, node)) {
@@ -1339,8 +1339,8 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out_lit(d, "import(");
         ModuleRef const* ref = identifier_type_import_ref(identifier);
         // (Reused from another file, the specifier is made anew from here: tsc's rewriteModuleSpecifier)
-        SourceFile const* here = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
-        SourceFile const* written = span_valid(identifier->name) ? identifier->name.source : nullptr;
+        SourceFile const* here = d.enclosing && span_valid(d.at) ? span_source(d.at) : nullptr;
+        SourceFile const* written = span_valid(identifier->name) ? span_source(identifier->name) : nullptr;
         if (ref && here && written && written != here && ref->module_state == ALIAS_DONE && ref->module &&
             ref->module->is_module && ref->module->module && ref->module->module->file
         ) {
@@ -1360,7 +1360,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             cstr_drop(&name);
         } else if (ref) {
             // (The argument's literal, its quotes kept: tsgo's node copy)
-            bool single = span_valid(ref->span) && ref->span.sv.size && ref->span.sv.buf[0] == '\'';
+            bool single = span_valid(ref->span) && ref->span.size && ref->span.buf[0] == '\'';
             display_quoted_string(d, cstr_sv(&ref->path), single, false);
         } else {
             display_node(me, d, identifier_type_import_argument(identifier));
@@ -1368,11 +1368,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out_lit(d, ")");
         for_each (i, vec_span, identifier_type_namespaces(identifier)) {
             out_lit(d, ".");
-            out(d, i->sv);
+            out(d, span_sv(*i));
         }
         if (span_valid(identifier->name)) {
             out_lit(d, ".");
-            out(d, identifier->name.sv);
+            out(d, span_sv(identifier->name));
         }
         display_node_args(me, d, &identifier->generic_params);
         return;
@@ -1393,13 +1393,13 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         return;
     }
     for_each (i, vec_span, identifier_type_namespaces(identifier)) {
-        out(d, i->sv);
+        out(d, span_sv(*i));
         out_lit(d, ".");
     }
     if (!qualified && d.param_names && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER)) {
         out_type_param_name(me, d, ty_type_param(me, symbol), true);
     } else {
-        out(d, identifier->name.sv);
+        out(d, span_sv(identifier->name));
     }
     display_node_args(me, d, &identifier->generic_params);
 }
@@ -1417,21 +1417,21 @@ static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
     if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
         display_entity_expr(me, d, &expr->property->expr);
         out_lit(d, ".");
-        out(d, expr->property->prop.inner_span.sv);
+        out(d, span_sv(expr->property->prop.inner_span));
     } else if (expr->tag == EXPR_GENERIC_PARAMS) {
         display_entity_expr(me, d, &expr->generic_params->expr);
         display_node_args(me, d, &expr->generic_params->params);
     } else {
-        out(d, expr->inner_span.sv);
+        out(d, span_sv(expr->inner_span));
     }
 }
 
 static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
     Expr const* leftmost = entity_leftmost(node->typeof_->expr);
     // (In JavaScript a name through `exports` or `module.exports` is never reused: tsc's trackExistingEntityName)
-    if (leftmost->tag == EXPR_IDENTIFIER && leftmost->inner_span.source && leftmost->inner_span.source->is_js) {
-        csview entity = expr_outer_span(node->typeof_->expr).sv;
-        bool exports = csview_equals(leftmost->inner_span.sv, "exports") || (csview_starts_with(entity, "module.exports") &&
+    if (leftmost->tag == EXPR_IDENTIFIER && span_source(leftmost->inner_span) && span_source(leftmost->inner_span)->is_js) {
+        csview entity = span_sv(expr_outer_span(node->typeof_->expr));
+        bool exports = csview_equals(span_sv(leftmost->inner_span), "exports") || (csview_starts_with(entity, "module.exports") &&
             (entity.size == 14 || entity.buf[14] == '.'));
         if (exports) {
             display_node_fallback(me, d, node);
@@ -1439,7 +1439,7 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         }
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
+        !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE)
     ) {
         // tsc's tryVisitTypeQuery: a name that means something else here is named anew where its symbol is accessible
         // (serializeTypeName), in a node with the query's range: `typeof import("a").x` reuses `typeof import(` and
@@ -1469,7 +1469,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         if (i->is_in) out_lit(d, "in ");
         if (i->is_out) out_lit(d, "out ");
         if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref), true);
-        else out(d, i->name.sv);
+        else out(d, span_sv(i->name));
         if (i->extends_explicit) {
             out_lit(d, " extends ");
             display_node(me, d, &i->extends);
@@ -1505,7 +1505,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
         } else {
-            out(d, binding->content_span.sv);
+            out(d, span_sv(binding->content_span));
         }
         if (i->explicit_optional) out_lit(d, "?");
         // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
@@ -1518,7 +1518,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
     TypePredicateNode const* predicate = function->predicate;
     if (predicate) {
         if (predicate->asserts) out_lit(d, "asserts ");
-        out(d, predicate->name.sv);
+        out(d, span_sv(predicate->name));
         if (predicate->has_type) {
             out_lit(d, " is ");
             display_node(me, d, &predicate->type);
@@ -1539,10 +1539,10 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
         (ty_expr_type(me, expr)->flags & TYF_UNIQUE_ES_SYMBOL)
     ) {
         Span name = expr_outer_span(expr);
-        d.tracker->track_computed_name(d.tracker, csview_slice(name.sv, 0, name.sv.size), name.source);
+        d.tracker->track_computed_name(d.tracker, csview_slice(span_sv(name), 0, name.size), span_source(name));
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
+        !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE)
     ) {
         Ty const* key = ty_expr_type(me, expr);
         if (key->kind == TY_LITERAL && key->literal.string && !(key->flags & TYF_UNIQUE_ES_SYMBOL)) {
@@ -1567,7 +1567,7 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
         }
     }
     out_lit(d, "[");
-    out(d, expr_outer_span(expr).sv);
+    out(d, span_sv(expr_outer_span(expr)));
     out_lit(d, "]");
 }
 
@@ -1599,7 +1599,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 if (d.param_names && i->key.mapped->owned_symbol) {
                     out_type_param_name(me, d, ty_type_param(me, i->key.mapped->owned_symbol), true);
                 } else {
-                    out(d, i->key.mapped->type_name.sv);
+                    out(d, span_sv(i->key.mapped->type_name));
                 }
                 out_lit(d, " in ");
                 display_node(me, d, &i->key.mapped->in_type);
@@ -1617,7 +1617,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             case INTERFACE_KEY_INDEX:
                 if (i->readonly) out_lit(d, "readonly ");
                 out_lit(d, "[");
-                out(d, i->key.index->name.sv);
+                out(d, span_sv(i->key.index->name));
                 out_lit(d, ": ");
                 display_node(me, d, &i->key.index->type);
                 out_lit(d, "]: ");
@@ -1632,7 +1632,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
                     display_node_computed_name(me, d, i->key.expr);
                 } else {
-                    out(d, i->key.span.sv);
+                    out(d, span_sv(i->key.span));
                 }
                 if (i->optional) out_lit(d, "?");
                 if ((i->key.tag == INTERFACE_KEY_NAME ? i->key.name_is_member_function : i->is_method) && i->type.tag == TYPE_CALLABLE) {
@@ -1750,7 +1750,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                 if (i_index) out_lit(d, ", ");
                 if (i->rest) out_lit(d, "...");
                 if (span_valid(i->maybe_name)) {
-                    out(d, i->maybe_name.sv);
+                    out(d, span_sv(i->maybe_name));
                     if (i->optional) out_lit(d, "?");
                     out_lit(d, ": ");
                     display_node(me, d, &i->type);
@@ -1799,7 +1799,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             if (d.param_names && node->inferred->owned_symbol) {
                 out_type_param_name(me, d, ty_type_param(me, node->inferred->owned_symbol), true);
             } else {
-                out(d, node->inferred->name.sv);
+                out(d, span_sv(node->inferred->name));
             }
             if (node->inferred->extends.parsed) {
                 out_lit(d, " extends ");
@@ -1847,11 +1847,11 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // its TokenFlagsSingleQuote, with NoAsciiEscaping, and the printer can't reach the original text of a
             // clone): `'a"b'` stays `'a"b'`, `'\x41'` prints `'A'`
             if (node->value.tag == VALUE_STRING) {
-                if (node->value_span.sv.size && node->value_span.sv.buf[0] == '`') {
+                if (node->value_span.size && node->value_span.buf[0] == '`') {
                     display_template_string(d, cstr_sv(&node->value.string));
                     break;
                 }
-                bool single = node->value_span.sv.size && node->value_span.sv.buf[0] == '\'';
+                bool single = node->value_span.size && node->value_span.buf[0] == '\'';
                 display_quoted_string(d, cstr_sv(&node->value.string), single, false);
                 break;
             }
@@ -2084,8 +2084,8 @@ static TypeNode const* single_return_quoted_literal(Checker* me, FunctionImpl co
     Expr const* expr = single_return_expr(function);
     if (!expr || expr->tag != EXPR_AS_TYPE || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) return nullptr;
     Expr const* literal = &expr->as_type->expr;
-    if (literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_STRING || !literal->inner_span.sv.size ||
-        (literal->inner_span.sv.buf[0] != '\'' && literal->inner_span.sv.buf[0] != '`') ||
+    if (literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_STRING || !literal->inner_span.size ||
+        (literal->inner_span.buf[0] != '\'' && literal->inner_span.buf[0] != '`') ||
         ty_regular(me, ty_expr_type(me, expr)) != ty_regular(me, ret)
     ) {
         return nullptr;
@@ -2287,7 +2287,7 @@ static Atom const* numbered_name(Checker* me, csview base, char const* suffix_fo
 // tsc's getTupleElementLabelFromBindingElement: `binding` is a rest parameter's or an element of its array pattern
 static Atom const* binding_element_label(Checker* me, Binding const* binding, bool rest, u32 index, unsigned char flags) {
     if (binding->tag == BINDING_IDENTIFIER) {
-        Atom const* name = checker_atom(me, binding->content_span.sv);
+        Atom const* name = checker_atom(me, span_sv(binding->content_span));
         if (rest) return flags & TUPLE_ELEMENT_REST ? name : numbered_name(me, atom_sv(name), "_%u", index);
         if (!(flags & TUPLE_ELEMENT_REST)) return name;
         cstr numbered = cstr_d(atom_sv(name), "_n"); // (tsc's `${name}_n`, literally)
@@ -2674,7 +2674,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
 
 // The pattern ends with a comma before its `]` or `}` (tsc's NodeArray.hasTrailingComma, which the printer keeps)
 static bool pattern_has_trailing_comma(Binding const* binding) {
-    csview text = binding->content_span.sv;
+    csview text = span_sv(binding->content_span);
     isize_t i = text.size - 1; // On the closing bracket
     while (i-- > 0) {
         char c = text.buf[i];
@@ -2705,9 +2705,9 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
             ObjectBindingItem const* item = &binding->object.data[i];
             if (i) cstr_append_sv(out, c_sv(", "));
             bool shorthand = item->target.rest || (item->target.tag == BINDING_IDENTIFIER &&
-                item->target.content_span.sv.buf == item->source_span.sv.buf);
+                item->target.content_span.buf == item->source_span.buf);
             if (!shorthand) {
-                cstr_append_sv(out, item->source_span.sv);
+                cstr_append_sv(out, span_sv(item->source_span));
                 cstr_append_sv(out, c_sv(": "));
             }
             append_binding_pattern(out, &item->target);
@@ -2715,7 +2715,7 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
         if (pattern_has_trailing_comma(binding)) cstr_append_sv(out, c_sv(","));
         cstr_append_sv(out, c_sv(" }"));
     } else {
-        cstr_append_sv(out, binding->content_span.sv);
+        cstr_append_sv(out, span_sv(binding->content_span));
     }
 }
 
@@ -2892,7 +2892,7 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
             if (span_valid(d.at) && !span_contains_span(symbol->function->full_span, d.at)) return false;
             continue;
         }
-        Symbol const* found = scope_resolve(d.enclosing, leftmost->inner_span.sv, SYMBOL_VALUE);
+        Symbol const* found = scope_resolve(d.enclosing, span_sv(leftmost->inner_span), SYMBOL_VALUE);
         if (!found || !same_symbol(me, found, leftmost->identifier.symbol)) return false;
     }
     return true;
@@ -2915,8 +2915,8 @@ static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
         declared = declared->target;
     }
     Span name = declared->decl->name_span;
-    if (span_valid(name) && name.sv.size && name.sv.buf[0] == '[') {
-        d.tracker->track_computed_name(d.tracker, name.sv, name.source);
+    if (span_valid(name) && name.size && name.buf[0] == '[') {
+        d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
     } else if (!span_valid(name) && !declared->decl->decl_span_count) {
         cstr text = ty_prop_name_cstr(me, prop->name);
         d.tracker->report(d.tracker, DECL_REPORT_NON_SERIALIZABLE, cstr_sv(&text));
@@ -2949,7 +2949,7 @@ static bool reverse_placeholder(TyDisplay d, Prop const* prop) {
 
 // Whether a type literal is the annotation of the declaration whose name is at `at`: only `?` and `:` between them
 static bool annotates_name_at(Span at, Span literal) {
-    if (!span_valid(at) || !span_valid(literal) || at.source != literal.source) return false;
+    if (!span_valid(at) || !span_valid(literal) || span_source(at) != span_source(literal)) return false;
     char const* i = span_end_ptr(at);
     char const* end = span_start_ptr(literal);
     if (i > end) return false;
@@ -2977,7 +2977,7 @@ static u32 prop_symbol_name_length(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (!unique) return (u32)atom_sv(name).size;
     UniqueSymbolDecl const* decl = unique->literal.unique;
-    u32 own = span_valid(decl->member) ? (u32)decl->member.sv.size : decl->owner ? (u32)ty_symbol_display_name(decl->owner).sv.size : 0;
+    u32 own = span_valid(decl->member) ? (u32)decl->member.size : decl->owner ? (u32)ty_symbol_display_name(decl->owner).size : 0;
     return 3 + own + 1 + 6;
 }
 
@@ -3057,11 +3057,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 TyDisplay reused = reused_if(d, true);
                 if (d.tracker) {
                     Span name = expr_outer_span(component->name);
-                    d.tracker->track_computed_name(d.tracker, name.sv, name.source);
+                    d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
                 }
                 if (info->readonly) out_lit(reused, "readonly ");
                 out_lit(reused, "[");
-                out(reused, expr_outer_span(component->name).sv);
+                out(reused, span_sv(expr_outer_span(component->name)));
                 out_lit(reused, "]: ");
                 ty_display(me, d, component->type);
                 out_lit(reused, ";");
@@ -3140,7 +3140,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             Ty const* write = prop_write_type(me, prop);
             if (write && write != type && type != ty_intrinsic(me, TY_ERROR) && write != ty_intrinsic(me, TY_ERROR)) {
                 // (Two signatures: three each, the setter's parameter its name and three)
-                approx_add(d, 3 + 3 + 3 + (prop_decl_rare(declared->decl)->setter ? 5 : (u32)prop_decl_rare(declared->decl)->setter_param.sv.size));
+                approx_add(d, 3 + 3 + 3 + (prop_decl_rare(declared->decl)->setter ? 5 : (u32)prop_decl_rare(declared->decl)->setter_param.size));
                 out_lit(d, "get ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(): ");
@@ -3160,7 +3160,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                     out(reused_if(d, true), cstr_sv(&param));
                     cstr_drop(&param);
                 } else {
-                    out(reused_if(d, true), prop_decl_rare(declared->decl)->setter_param.sv);
+                    out(reused_if(d, true), span_sv(prop_decl_rare(declared->decl)->setter_param));
                 }
                 out_lit(d, ": ");
                 TypeNode const* write_node = prop_decl_rare(declared->decl)->setter ?
@@ -3279,7 +3279,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             display_node(me, d, annotation);
         }
-        else if (literal_initializer && !d.reused) out(reused_if(d, true), literal_initializer->inner_span.sv);
+        else if (literal_initializer && !d.reused) out(reused_if(d, true), span_sv(literal_initializer->inner_span));
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
         else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && reuses_nodes(d) && span_valid(d.decl_literal) &&
@@ -3665,10 +3665,10 @@ static bool pseudo_object_literal(Expr const* expr, u32 depth) {
 static u32 pseudo_object_length(Expr const* expr) {
     u32 ret = 0;
     for_each (i, vec_object_expr_item, &expr->object) {
-        char const* start = i->name_span.sv.buf;
-        char const* contents = i->name_span.source ? cstr_str(&i->name_span.source->contents) : start;
+        char const* start = i->name_span.buf;
+        char const* contents = span_source(i->name_span) ? cstr_str(&span_source(i->name_span)->contents) : start;
         while (start > contents && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
-        ret += (u32)(i->name_span.sv.buf - start + i->name_span.sv.size);
+        ret += (u32)(i->name_span.buf - start + i->name_span.size);
         if (i->value.tag == EXPR_OBJECT) ret += pseudo_object_length(&i->value);
     }
     return ret;
@@ -4016,7 +4016,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         out_lit(d, "any");
                         return;
                     }
-                    if (here && span_valid(expression->name) && expression->symbol) out(d, expression->name.sv);
+                    if (here && span_valid(expression->name) && expression->symbol) out(d, span_sv(expression->name));
                     else out_symbol_name(me, d, variable, SYMBOL_VALUE);
                     return;
                 }
@@ -4025,7 +4025,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;
                 // (Only a name `typeof C.m` can write: not `#m`, `"m"`, `[k]` or `1`, tsgo's shouldWriteTypeOfFunctionSymbol)
                 if (owner && span_valid(owner->name_span) && span_valid(function_impl_member_name(method)) &&
-                    is_identifier_name(function_impl_member_name(method).sv) && function_impl_member_name(method).sv.buf[0] != '#'
+                    is_identifier_name(span_sv(function_impl_member_name(method))) && function_impl_member_name(method).buf[0] != '#'
                 ) {
                     out_lit(d, "typeof ");
                     // (Qualified by the class only where printed for a location: tsc's symbolToTypeNode without an
@@ -4034,7 +4034,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         out_symbol_name(me, d, owner, SYMBOL_VALUE);
                         out_lit(d, ".");
                     }
-                    out(d, function_impl_member_name(method).sv);
+                    out(d, span_sv(function_impl_member_name(method)));
                     return;
                 }
                 // (and a type alias's type literal by the alias: tsc's getTypeAliasForTypeLiteral)
@@ -4278,7 +4278,7 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
                 return binding->symbol->decls[0].block;
             }
         }
-        SourceFile const* file = function->span_source ? function->span_source : function->full_span.source;
+        SourceFile const* file = function->span_source ? function->span_source : span_source(function->full_span);
         return file ? file->scope : nullptr;
     }
     if (!ty->anonymous.object_literal || ty->anonymous.jsx_attributes) return nullptr;
@@ -4290,7 +4290,7 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     }
     // (Else where the literal is: one of spread properties only)
     if (!span_valid(at) && ty->anonymous.literal_expr) at = ty->anonymous.literal_expr->inner_span;
-    SourceFile const* file = span_valid(at) ? at.source : nullptr;
+    SourceFile const* file = span_valid(at) ? span_source(at) : nullptr;
     if (!file || !file->scope || object_literal_is_context_sensitive(me, ty, 0)) return nullptr;
     // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the innermost statement-level scope around
     // it, which doesn't see into function expressions

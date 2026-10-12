@@ -54,13 +54,13 @@ void class_item_drop(ClassItem* me) {
 
 Span class_item_private_name(ClassItem const* me) {
     Span name = my tag == CLASS_ITEM_METHOD ? my method.name_span : my tag == CLASS_ITEM_FIELD ? my field.name_span : span_null;
-    return span_valid(name) && name.sv.size > 1 && name.sv.buf[0] == '#' ? name : span_null;
+    return span_valid(name) && name.size > 1 && name.buf[0] == '#' ? name : span_null;
 }
 
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name) {
     for_each (i, vec_class_item, &my items) {
         Span item_name = class_item_private_name(i);
-        if (span_valid(item_name) && name_equals(item_name.sv, name)) return i;
+        if (span_valid(item_name) && name_equals(span_sv(item_name), name)) return i;
     }
     return nullptr;
 }
@@ -108,7 +108,7 @@ static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNo
 // constructor, or of the first static block that assigns more than null/undefined. Null: none (any)
 static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me) {
     // (In JavaScript always: tsc's getWidenedTypeForVariableLikeDeclaration)
-    if (!my field.ts_assigned || !(compiler_options()->no_implicit_any || (my field.name_span.source && my field.name_span.source->is_js))) return nullptr;
+    if (!my field.ts_assigned || !(compiler_options()->no_implicit_any || (span_source(my field.name_span) && span_source(my field.name_span)->is_js))) return nullptr;
     for_each (i, vec_class_item, &my field.ts_assigned_class->items) {
         if (my field.is_static && i->tag == CLASS_ITEM_STATIC_BLOCK && i->static_block_return_flow) {
             Ty const* ret = field_flow_type(checker, my field.ts_assigned, i->static_block_return_flow);
@@ -136,7 +136,7 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
     Ty const* value = ty_quick_expr_type(checker, &my field.value, false);
     if (!value) value = ty_expr_type(checker, &my field.value);
     // `p = []` in JavaScript is any[] (tsc's widenTypeInferredFromInitializer, TS7008 in class_field_check_implicit_any())
-    if (my field.name_span.source && my field.name_span.source->is_js && ty_is_empty_array_literal_type(checker, value)) {
+    if (span_source(my field.name_span) && span_source(my field.name_span)->is_js && ty_is_empty_array_literal_type(checker, value)) {
         return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
     }
     Ty const* ret = ty_widened_for_declaration(checker, value, !my field.is_readonly);
@@ -676,7 +676,7 @@ static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, b
 
 static Atom const* item_member_name(Checker* checker, ClassDecl const* me, ClassItem const* item) {
     if (span_valid(class_item_private_name(item)) && my symbol) {
-        return ty_private_name(checker, my symbol, class_item_private_name(item).sv);
+        return ty_private_name(checker, my symbol, span_sv(class_item_private_name(item)));
     }
     bool is_field = item->tag == CLASS_ITEM_FIELD;
     return ty_member_name(checker, is_field ? &item->field.name_string : &item->method.name_string,
@@ -787,7 +787,7 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
         if (i->tag != CLASS_ITEM_CONSTRUCTOR) continue;
         for_each (arg, vec_function_arg, &i->constructor.func.args) {
             if (!arg->is_parameter_property || arg->initializer.binding.tag != BINDING_IDENTIFIER) continue;
-            if (checker_atom(checker, arg->initializer.binding.content_span.sv) != name) continue;
+            if (checker_atom(checker, span_sv(arg->initializer.binding.content_span)) != name) continue;
             ret.kind = MEMBER_PROPERTY;
             ret.is_private = arg->access == ACCESS_MODIFIER_PRIVATE;
             ret.name = arg->initializer.binding.content_span;
@@ -1088,7 +1088,7 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
         .type = ty_declared_type_of(checker, my symbol),
         .static_type = ty_static_type_of(checker, my symbol),
         .base = base,
-        .is_js = my full_span.source && my full_span.source->is_js,
+        .is_js = span_source(my full_span) && span_source(my full_span)->is_js,
     };
     Expr const* extends = &my extends;
     if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
@@ -1117,7 +1117,7 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
             case CLASS_ITEM_CONSTRUCTOR:
                 for_each (arg, vec_function_arg, &i->constructor.func.args) {
                     if (!arg->is_parameter_property || arg->initializer.binding.tag != BINDING_IDENTIFIER) continue;
-                    Atom const* name = checker_atom(checker, arg->initializer.binding.content_span.sv);
+                    Atom const* name = checker_atom(checker, span_sv(arg->initializer.binding.content_span));
                     check_member_override(&ctx, name, false, arg->is_override_property, false, false, true, arg->span, errs);
                 }
                 break;
@@ -1133,8 +1133,8 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
                 FunctionImplRare const* rare = is_field ? nullptr : function_impl_rare(&i->method.func);
                 for (u32 o = 0; rare && o < rare->jsdoc_overload_count; o++) {
                     Span tag = rare->jsdoc_overloads[o].callable->function->full_span;
-                    if (!csview_starts_with(tag.sv, "@overload")) continue;
-                    Span at = span_make(tag.source, tag.sv.buf + 1, tag.sv.buf + 9);
+                    if (!csview_starts_with(span_sv(tag), "@overload")) continue;
+                    Span at = span_make_in(tag, tag.buf + 1, tag.buf + 9);
                     check_member_override(&ctx, name, computed_key && !name, false, i->method.is_abstract,
                         class_item_is_static(i), false, at, errs);
                 }
@@ -1207,7 +1207,7 @@ static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
         FunctionImpl const* function = sig ? sig->function : nullptr;
         if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access != ACCESS_MODIFIER_PRIVATE) continue;
         ClassDecl const* base = symbol_find_node(function_impl_rare(function)->constructed_class, SYMBOL_DECL_CLASS);
-        if (base && span_valid(base->full_span) && base->full_span.source == extends->inner_span.source &&
+        if (base && span_valid(base->full_span) && span_source(base->full_span) == span_source(extends->inner_span) &&
             span_start_ptr(base->full_span) <= span_start_ptr(extends->inner_span) &&
             span_end_ptr(extends->inner_span) <= span_end_ptr(base->full_span)
         ) {
@@ -1388,7 +1388,7 @@ static void check_super_call_root(Span name, FunctionImpl const* func, Expr cons
         span_start_ptr(first) < span_start_ptr(statement->span)
     ) {
         // (At the `constructor` keyword: the name span runs to the parameters)
-        while (name.sv.size && (name.sv.buf[name.sv.size - 1] == ' ' || name.sv.buf[name.sv.size - 1] == '\t')) name.sv.size--;
+        while (name.size && (name.buf[name.size - 1] == ' ' || name.buf[name.size - 1] == '\t')) name.size--;
         error_ctx_error_d(errs, name, 2376, "A 'super' call must be the first statement in the ",
             "constructor to refer to 'super' or 'this' when a derived class contains initialized properties, parameter ",
             "properties, or private identifiers.");
@@ -1480,7 +1480,7 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
 // tsc's checkFunctionOrConstructorSymbol for the methods and constructors of a class: overloads are consecutive and
 // followed by the implementation (TS2391, TS2389, TS2390, TS2516, TS2387/TS2388), one implementation (TS2393)
 static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
-    SourceFile const* file = my name.source ? my name.source : my full_span.source;
+    SourceFile const* file = span_source(my name) ? span_source(my name) : span_source(my full_span);
     if ((my symbol && my symbol->is_ambient) || !file || file->is_declaration) return;
     isize count = vec_class_item_size(&my items);
     for (isize i = 0; i < count; i++) {
@@ -1491,7 +1491,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         if (!is_constructor && !bindable_method(item)) continue;
         if (!is_constructor && item->method.is_declare) continue; // (Ambient: tsc's checkFunctionOrConstructorSymbol)
         // (A missing name: tsc's reportImplementationExpectedError says nothing)
-        if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.sv.size) continue;
+        if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.size) continue;
         ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
         if (next && !overloadable(next)) next = nullptr;
         if (next && same_member(item, next) && !span_only_trivia_between(span_end_ptr(item->span),
@@ -1540,7 +1540,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         // The last one without a body is only an error for what needs an implementation
         if (!later && (is_abstract || (!is_constructor && item->method.is_optional))) continue;
         if (next && overloadable(next)->has_body && next->tag == item->tag) {
-            cstr name = cstr_from_sv(overload_name(item).sv);
+            cstr name = cstr_from_sv(span_sv(overload_name(item)));
             error_ctx_error_d(errs, overload_name(next), 2389, "Function implementation name must be '", name, "'.");
             cstr_drop(&name);
         } else if (is_constructor) {
@@ -1611,10 +1611,10 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
 static Span decorator_span(Expr const* decorator) {
     Span ret = expr_outer_span(decorator);
     const char* start = span_start_ptr(ret);
-    const char* file_start = source_file_start(ret.source);
+    const char* file_start = source_file_start(span_source(ret));
     while (start > file_start && start[-1] != '@') start--;
     if (start > file_start) start--;
-    ret.sv = csview_from_n(start, span_end_ptr(ret) - start);
+    span_set_sv(&ret, csview_from_n(start, span_end_ptr(ret) - start));
     return ret;
 }
 
@@ -1724,7 +1724,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     Span name = item->field.name_span;
     // An initializer that needs the field's own type (tsc's reportCircularityError)
     if (span_valid(name) && !item->field.has_explicit_type && compiler_options()->no_implicit_any &&
-        !(name.source && name.source->is_js) && item->field.value.tag != EXPR_IMPLICIT_ANY &&
+        !(span_source(name) && span_source(name)->is_js) && item->field.value.tag != EXPR_IMPLICIT_ANY &&
         class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)
     ) {
         error_ctx_error_d(errs, name, 7022, "'", name, "' implicitly has type 'any' because it does not have a type "
@@ -1732,7 +1732,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
-    if (name.source && name.source->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
+    if (span_source(name) && span_source(name)->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
         ty_is_empty_array_literal_type(current_checker, ty_expr_type(current_checker, &item->field.value))
     ) {
         error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any[]' type.");
@@ -1740,7 +1740,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     }
     // (In JavaScript a field without an initializer nothing assigns is any too; one `this.x = v` assigns has the
     // assignments' type)
-    bool js = name.source && name.source->is_js;
+    bool js = span_source(name) && span_source(name)->is_js;
     if ((js && (item->field.value.tag != EXPR_IMPLICIT_ANY || item->field.js_assigned)) || class_item_private_in_ambient(me, item)) return;
     if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
         // tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the member
@@ -1768,7 +1768,7 @@ static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, b
     Expr const* base = &my extends;
     *arg_count = 0;
     // (tsc's getTypeFromClassOrInterfaceReference: the clause, whatever type arguments an `@extends` tag gave it)
-    *missing_extends = expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
+    *missing_extends = span_source(expr_outer_span(&my extends)) && span_source(expr_outer_span(&my extends))->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
         *arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
         base = &base->generic_params->expr;
@@ -1784,7 +1784,7 @@ static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, b
         Symbol const* namespace = symbol_for_meaning(base->property->expr.identifier.target, SYMBOL_NAMESPACE);
         Expr const* name = &base->property->prop;
         if (namespace && !namespace->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
-            target = symbol_get_export(namespace, name->inner_span.sv);
+            target = symbol_get_export(namespace, span_sv(name->inner_span));
         }
     }
     target = symbol_for_meaning(target, SYMBOL_CLASS);
@@ -1797,7 +1797,7 @@ bool class_decl_base_arity_fits(ClassDecl const* me) {
     bool missing_extends;
     Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
     // (In JavaScript the reference is still made, the missing arguments any: tsc's getTypeFromClassOrInterfaceReference)
-    SourceFile const* source = expr_outer_span(&my extends).source;
+    SourceFile const* source = span_source(expr_outer_span(&my extends));
     return !target || (source && source->is_js) || several_types_arity_fits(target, arg_count, source);
 }
 
@@ -1817,7 +1817,7 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
             if (instance->kind == TY_DECLARED && !instance->declared.outer_count) target = constructor->declared.symbol;
         }
         if (!target && (constructor->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
-            !ty_base_constructors_fit(checker, constructor, arg_count, expr_outer_span(&my extends).source->is_js)
+            !ty_base_constructors_fit(checker, constructor, arg_count, span_source(expr_outer_span(&my extends))->is_js)
         ) {
             error_ctx_error_d(errs, expr_outer_span(base), 2508, "No base constructor has the specified number of type arguments.");
             return;
@@ -1868,7 +1868,7 @@ static void class_check_static_name_conflicts(ClassDecl const* me, ErrorCtx* err
             continue;
         }
         error_ctx_error_d(errs, name_span, 2699, "Static property '", name, "' conflicts with built-in property 'Function.",
-            name, "' of constructor function '", class_decl_display_name(me).sv, "'.");
+            name, "' of constructor function '", span_sv(class_decl_display_name(me)), "'.");
     }
 }
 
@@ -1920,7 +1920,7 @@ static TypeNode const* metadata_entity_type(TypeNode const* node) {
             return nullptr;
         }
         if (!common) common = entity;
-        else if (!csview_equals_sv(common->identifier->name.sv, entity->identifier->name.sv)) return nullptr;
+        else if (!csview_equals_sv(span_sv(common->identifier->name), span_sv(entity->identifier->name))) return nullptr;
     }
     return common;
 }
@@ -1937,7 +1937,7 @@ static void check_decorator_metadata_type(TypeNode const* node, ErrorCtx* errs) 
     PortItem const* item = root->alias->item;
     if (item->type_only) return;
     Span first = qualified ? *vec_span_front(identifier_type_namespaces(identifier)) : identifier->name;
-    Span name = span_make(first.source, span_start_ptr(first), span_end_ptr(identifier->name));
+    Span name = span_make_in(first, span_start_ptr(first), span_end_ptr(identifier->name));
     Error* error = error_ctx_error_d(errs, name, 1272, "A type referenced in a decorated signature must be imported with "
         "'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.");
     if (error) error_add_related_d(error, item->full_span, 1376, "'", first, "' was imported here.");
@@ -1956,8 +1956,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (!ty_first_check(current_checker, me)) return;
 
     // tsc's checkClassNameCollisionWithObject (named by the module option, not the file's format)
-    if (!my is_ambient && span_valid(my name) && csview_equals(my name.sv, "Object") && my name.source &&
-        source_file_emit_module_kind(my name.source) < MODULE_KIND_ES2015
+    if (!my is_ambient && span_valid(my name) && csview_equals(span_sv(my name), "Object") && span_source(my name) &&
+        source_file_emit_module_kind(span_source(my name)) < MODULE_KIND_ES2015
     ) {
         static char const* const module_names[] = {
             [MODULE_KIND_NONE] = "None", [MODULE_KIND_COMMONJS] = "CommonJS", [MODULE_KIND_AMD] = "AMD",
@@ -1975,7 +1975,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (compiler_options()->experimental_decorators && my is_expression && vec_expr_size(&my decorators)) {
         Span at = decorator_span(vec_expr_at(&my decorators, 0));
-        at.sv.size = 1;
+        at.size = 1;
         error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
     }
     // tsgo's checkClassDeclaration: legacy decorators of a class with a static private member
@@ -2016,7 +2016,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             if (!valid) {
                 decorator_error = true;
                 Span at = i->span;
-                at.sv = csview_from_n(span_start_ptr(i->span), 1);
+                span_set_sv(&at, csview_from_n(span_start_ptr(i->span), 1));
                 if (code == 1249) {
                     error_ctx_grammar_error_d(errs, at, 1249, "A decorator can only decorate a method implementation, not an overload.");
                 } else {
@@ -2060,7 +2060,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // reported at the setter if there is one (TS7032), else at the getter (TS7033)
         if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && compiler_options()->no_implicit_any &&
             !(my is_ambient && i->access == ACCESS_MODIFIER_PRIVATE) && span_valid(i->method.name_span) &&
-            i->method.name_span.source
+            span_source(i->method.name_span)
         ) {
             FunctionImpl const* func = &i->method.func;
             if (i->method.accessor == CLASS_ACCESSOR_SET) {
@@ -2096,7 +2096,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             bool valid = legacy && function->has_body && !getter && !my is_expression;
             if (!valid && span_valid(arg->span)) {
                 Span at = arg->span;
-                at.sv = csview_from_n(span_start_ptr(arg->span), 1);
+                span_set_sv(&at, csview_from_n(span_start_ptr(arg->span), 1));
                 error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
             }
             // (What can't be decorated isn't checked at all, a `this` parameter's decorators neither: tsc's checkDecorators)
@@ -2191,7 +2191,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
     for_each (i, vec_class_item, &my items) {
         // (Not after the decorators' grammar error: checkGrammarModifiers comes first, one grammar error per member)
         Span first_char = i->span;
-        first_char.sv = csview_from_n(span_start_ptr(i->span), span_valid(i->span) ? 1 : 0);
+        span_set_sv(&first_char, csview_from_n(span_start_ptr(i->span), span_valid(i->span) ? 1 : 0));
         bool decorators_rejected = vec_expr_size(&i->decorators) && span_valid(i->span) &&
             (error_ctx_find(errs, first_char, 1206) || error_ctx_find(errs, first_char, 1249));
         if (vec_expr_size(&i->decorators) && !decorators_rejected && decorator_metadata_checked()) {
@@ -2240,10 +2240,10 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 ) {
                     // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one)
                     Span full = i->method.func.full_span;
-                    while (full.sv.size && strchr(" \t\r\n", full.sv.buf[full.sv.size - 1])) full.sv.size--;
+                    while (full.size && strchr(" \t\r\n", full.buf[full.size - 1])) full.size--;
                     full = span_with_semicolon(full);
                     char const* end = span_end_ptr(full);
-                    error_ctx_grammar_error_d(errs, span_make(full.source, end - 1, end), 1005, "'{' expected.");
+                    error_ctx_grammar_error_d(errs, span_make_in(full, end - 1, end), 1005, "'{' expected.");
                 }
                 if (!i->method.computed_key && !i->method.name_is_value && span_equals(i->method.name_span, "constructor")) {
                     if (i->method.accessor) { // (tsc's checkAccessorDeclaration)
@@ -2333,7 +2333,7 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
         type_typecheck(&i->type, errs);
         // (A keyword type: what the parser made of an identifier in an expression's place, tsc's
         // checkAndReportErrorForUsingTypeAsValue)
-        if (i->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(i->span.sv)) {
+        if (i->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(span_sv(i->span))) {
             error_ctx_error_d(errs, i->span, 2864, "A class cannot implement a primitive type like '", i->span,
                 "'. It can only implement other named object types.");
         }

@@ -105,6 +105,8 @@ typedef struct IncludeReason {
 } IncludeReason;
 
 typedef struct SourceFile {
+    // Its index in the process-wide file table (spans hold it, source_file_register()): first, see source_file_id()
+    u32 id;
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
     // Offset of the first character of each line, for span_line_index(). Diagnostics are sorted and printed by line,

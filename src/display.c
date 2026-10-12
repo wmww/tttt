@@ -39,7 +39,7 @@ AnsiColor color_type   = ANSI("\x1b[0;32m");
 
 const csview indent_string = c_sv_const_init("    ");
 
-impl_display_no_drop(Span, span) { return debuggable_sv_display(me.sv, d); }
+impl_display_no_drop(Span, span) { return debuggable_sv_display(span_sv(me), d); }
 
 impl_display_no_drop(Ty const*, ty_d) {
     if (!current_checker) return debuggable_sv_display(c_sv("(type)"), d);
@@ -969,7 +969,7 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
         case EXPR_JSX_ATTRIBUTES:
-            display_sv(d, my inner_span.sv);
+            display_sv(d, span_sv(my inner_span));
             break;
 
         case EXPR_TEMPLATE:
