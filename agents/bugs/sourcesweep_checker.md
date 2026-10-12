@@ -106,7 +106,7 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent A)
 Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
-was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match).
+was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match; second round: react-router, shiki, lit, typedoc match too).
 - **-TS5115 (12 projects: zod 4's `schemas.d.cts:804` in crawlee/unocss/knip, better-auth `db/to-zod.ts:40`, vitepress
   `postcss/isolateStyles.ts:15`)**: tsgo hits its depth-100 instantiation limit where tttt has no runaway at all. Single
   file reproduction (tsgo reports TS5115 at `Root`, tttt nothing):
@@ -130,14 +130,25 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - **trpc examples/nuxt -TS2416 in vite 8.3's `dist/node/index.d.ts:1512`** (`MinimalPluginContext$1 extends
   BasicMinimalPluginContext implements MinimalPluginContext`): not looked at; the project mixes several vite/rollup/
   @types/node copies.
-- **Checker keys in these repos, not looked at**: react-router `react-router-dev/vite/route-chunks.ts:296` (+TS2322
-  `Set<unknown>` to `Set<NodePath<Identifier>>`, 2 projects, 24 diags), typedoc `scripts/generate_site_plugins.js:293`
-  (+TS2769), shiki `transformers/render-whitespace.ts:54` (+TS2322 assigning to `line.children` of an
-  `Element | Root` union), knip `src/plugins/postcss/index.ts:36` (+TS2345 `string | never[]`) and
-  `language-server/src/server.js:277` (-TS7022), lit `reactive-element/src/decorators/query.ts:134-143` (+TS2352,
-  +TS2345, +TS7006) and `lit-html/src/private-ssr-support.ts:55` (+TS2653), redux-toolkit `combineSlices.ts:120`
-  (+TS2344), `query/core/module.ts:656` (+TS2322), `query/core/buildThunks.ts:384` (+TS2339), react-navigation's +TS2339
-  `in` (the entry above).
+- **redux-toolkit query/core/module.ts:182/185/205 (+TS2344 x3) and :656, react/module.ts:216 (+TS2322)**, all
+  `Definitions[EndpointName] & { type: "query" }` against `QueryDefinition<any, ...>`. tsc accepts it because its
+  getReducedType looks through type variables: getPropertiesOfUnionOrIntersectionType takes each member's apparent
+  type, so `D & { type: "query" }` with D's constraint a union of definitions whose `type` is `DefinitionType.x`
+  (an enum literal, disjoint from the string "query") is never. Self-contained reduction (tsc: only T5 errors; tttt
+  both): `enum DT { query = "query", mutation = "mutation" }`, `QD = Base & { type: DT.query }`, `MD = Base & { type:
+  DT.mutation }`, `type T2<D extends QD | MD> = Q<D & { type: "query" }>` with `Q<D extends QD>`. A patch that does
+  this in never_reduced_prop() (checker.c: a type-variable member contributes its apparent type when that's a known
+  object or a union of them, compared lazily) fixed every probe and changed no oracle, but cost +0.3% instructions
+  (zod, valibot, effect) and did NOT fix the real file, where the result is order-dependent: with it, module.ts alone matches
+  tsc, with src/query/react/namedHooks.ts checked first it doesn't (a backtrace showed the apparent type of
+  `Definitions[EndpointName]` coming back unknown during an indexed-access check in another file). Not committed;
+  the patch (described above) was left in /tmp/a-probes/keep/red_lazy.patch, which may be gone. Next: find what
+  namedHooks.ts's checking caches.
+- **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
+  type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
+  across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
+  flow narrowing, tttt doesn't. Not reduced.
+- **react-navigation +TS2339 `in`** (the entry above, unchanged).
 - **Content mappers with --runExternalCode**: tttt validates `contentMappers` and reports TS18068 without the flag
   (like tsgo), but with it tsgo resolves each mapper package (TS18075) and runs it; tttt does neither.
 - Perf: knip/packages/knip/test (3.4 s at the session start), postiz-app (36 s) and tabby (1.5 s) were checking that tsc
