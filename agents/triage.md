@@ -25,4 +25,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
   tsc 2811 s"; idle, a 1/8 sample is 84 s vs 214 s): print the machine's load average next to them, or warn.
 
 ## From human
-- :
+- Not sure how important emitting .d.ts files are. for now emitting js should def be out of scope. there are already plenty of fast emitters (eg esbuild), so for now anything covered by them doesn't need to be a focus. otherwise up to you what's important.
+- I'll test on various configurations in the future. for now I don't see why we would cap at a particular number of threads. maybe tsgo has it's reasons but cargo culting from that seems silly. idk, you're the boss. just make it sensible and fast.
+- btw if at any point you come across situations where typecheckers can diverge in behavior that are not covered by existing tests, please write new tests for them. For example if you find a false error in a large existing project you test against, or a way to introduce an error tsc catches that tttt misses that isn't covered anywhere in tsc's tests, add it somewhere checked into this repo so we don't regress. I was originally putting such cases in test/cases/ (I only have a few). you can move them around if you want, and you might need to change the test suite to actually check against them, idk
