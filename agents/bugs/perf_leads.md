@@ -20,6 +20,31 @@ karakeep/packages/plugins 1.40. Recipe: `scripts/perfsweep.py -f '^PROJECT$'` re
 the file, then which type kinds grow (`scripts/arenasites.sh`); instrumented tsgo builds (overlay outside the shared
 tree) answer "does tsgo make these too".
 
+## feathers/packages/knex: variance measurement types blow-up (d93172d5, 2026-10-12)
+`tttt -p thirdparty/sources/feathers/packages/knex --checkers 1 --time`: 4518 types before d93172d5 (tsgo-style
+variance restart + Unknown + structural marker comparison), 18287 after; tsgo makes ~7300 (types_0.json of
+`--generateTrace`). Turning off either the restart or the structural marker rule gives 4518 again, but each is needed
+(xstate: 5 spurious TS2578 without the marker rule; circularVariance1 without the restart). What is known:
+- The new types are instantiations of knex's QueryBuilder sub-interfaces: Select 309 references in tttt vs 26 in tsgo,
+  Distinct/Table/Comment ~225 vs ~17; QueryBuilder 683 vs 589. They come from structural comparisons of
+  `QueryBuilder<sub-T, X>` with X not a marker (`QueryBuilder<sub-T, number>`, `...<sub-T, AddUnionMember<...>>`),
+  i.e. variance comparisons that fail and fall back to structure because QueryBuilder's TRecord variance is
+  *unreliable* in tttt (8, invariant unreliable) where tsgo has a reliable `in out` (0). Unreliable/unmeasurable
+  variances allow the structural fallback (tsgo's VarianceFlagsAllowsStructuralFallback), so every such failure
+  instantiates all of QueryBuilder's members.
+- tttt's unreliable mark on QueryBuilder #0 comes from `columnInfo`'s `Record<keyof Resolve<sub-T>, ColumnInfo>`
+  (Record's K is `in (unreliable)` in both) reached during QueryBuilder<sub-T> -> QueryBuilder<super-T>, and later from
+  the cached pair (relate.c recursive_related's CACHE_UNRELIABLE). tsgo goes through Record too during QueryBuilder's
+  measurement (its trace measures Record there), so it must stop comparing QueryBuilder's members before columnInfo
+  (propertiesRelatedTo returns at the first failing property) or reach it while the comparison is Unknown. tttt's
+  sub -> super comparison passes every property up to there (Select/As/... in flight: Maybe/Unknown).
+- Other variances on this project disagree too (tsgo trace vs TTTT_DUMP_VARIANCES: 27 match, 35 differ), e.g.
+  QueryCallback `[independent, independent]` in tttt vs `in out (unreliable), independent` in tsgo, measured in both
+  during a fresh QueryBuilder measurement after restarts.
+Next step: compare the order and results of QueryBuilder's member comparisons inside its final measurement with
+tsgo's (tsgo needs an instrumented build: the trace has no relation events; memory note "Instrument tsgo"), find the
+first property where tsgo fails and tttt doesn't. perfsweep's worst types ratio is this project (2.50, was 1.56).
+
 ## Plan 59 stage 2 leftovers (agent D)
 Fixed (2026-10-12): dokploy x4 (`typeof f<T>` / `typeof ns.x` free params, 2.3 -> 0.69), arktype/ark/docs (this-only
 references share thisless base signatures, 1.51 -> 0.92), linkwarden/apps/mobile (union flattening skips repeated
