@@ -12900,7 +12900,12 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
         if (tok_is(t, "{")) {
             parse_error(p, token, 1438, "Interface must be given a name.");
         } else {
-            parse_error(p, token, 2427, "Interface name cannot be '", token, "'.");
+            // (tsc's parseErrorForInvalidName: the token's value, a string literal's without its quotes)
+            Span value = token;
+            if (token.size >= 2 && (token.buf[0] == '"' || token.buf[0] == '\'') && token.buf[token.size - 1] == token.buf[0]) {
+                value = span_make_in(token, token.buf + 1, token.buf + token.size - 1);
+            }
+            parse_error(p, token, 2427, "Interface name cannot be '", span_sv(value), "'.");
         }
     } else if (span_equals(name, "is")) {
         parse_error(p, span_make(p->shared->source, span_start_ptr(name), t.start), 1228,
