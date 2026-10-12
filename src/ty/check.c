@@ -3706,23 +3706,30 @@ static void collect_interface_property_decls(VecInterfaceMember const* members, 
 }
 
 // TS2687: tsc's checkVariableLikeDeclaration, for the property declarations of one member symbol: the first one
-// (the valueDeclaration) against every other one, every other one against the first. HACK: methods and accessors of
-// the same name are left out (they can be tsc's valueDeclaration too, but merging with them is an error already)
+// (the valueDeclaration) against every other one, every other one against the first. Accessors of the same name are left
+// out (HACK: they can be tsc's valueDeclaration too, but merging with them is an error already)
 static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx* errs) {
     isize count = vec_property_decl_entry_size(decls);
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
         // (A lib's declaration too when lib files are checked: tsc checks it there, the lib side of the conflict)
         if (!span_valid(decl->span) || (span_source(decl->span)->is_stdlib && !lib_files_checked()) || decl->method) continue;
+        // The declarations merged into the symbol: tsc's declareSymbol gives a declaration that conflicts with the
+        // symbol in the table (TS2300) a symbol of its own. A method first makes every property alone, a method later
+        // is only alone itself
         PropertyDeclEntry const* first = nullptr;
+        for (isize j = 0; j < count && !first; j++) {
+            PropertyDeclEntry const* other = vec_property_decl_entry_at(decls, j);
+            if (csview_equals_sv(other->name, decl->name)) first = other;
+        }
+        if (first->method) continue;
         bool differs = false;
         for (isize j = 0; j < count; j++) {
             PropertyDeclEntry const* other = vec_property_decl_entry_at(decls, j);
-            if (!csview_equals_sv(other->name, decl->name)) continue;
-            if (!first) first = other;
+            if (other->method || !csview_equals_sv(other->name, decl->name)) continue;
             bool identical = other->optional == decl->optional && other->modifiers == decl->modifiers;
             if (first == decl) {
-                differs |= other != decl && !other->method && !identical;
+                differs |= other != decl && !identical;
             } else {
                 differs = !identical;
                 break;
