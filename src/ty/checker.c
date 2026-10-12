@@ -2491,12 +2491,10 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
         Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
         void const** target_labels = labels ? arena_new_n(&my arena, void const*, shape->arity) : nullptr;
-        bool variable = false;
         for (u32 i = 0; i < shape->arity; i++) {
             flags[i] = shape->flags[i];
             if (names) names[i] = shape->names[i];
             if (target_labels) target_labels[i] = shape->names[i] ? shape->labels[i] : nullptr;
-            variable |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         }
         Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
         ret->declared.kind = TY_DECLARED_TUPLE_TARGET;

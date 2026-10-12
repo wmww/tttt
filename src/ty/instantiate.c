@@ -830,14 +830,12 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     Ty const** targets = len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * len);
     key[0] = my for_constraint_root == root ? KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT : KEY_CONDITIONAL_INSTANCE;
     key[1] = root->id;
-    u32 mapped = 0;
     for (u32 i = 0; i < len; i++) {
         // What the parameter maps to through this conditional type's mapper and then the new one: no need to compose
         // the two, which would instantiate every one of the first's targets
         targets[i] = ty_instantiate(me, ty_instantiate(me, outer->params.data[i], ty->conditional.mapper), mapper);
         if (i % 2) key[2 + i / 2] |= (u64)targets[i]->id << 32;
         else key[2 + i / 2] = targets[i]->id;
-        mapped += targets[i] != outer->params.data[i];
     }
     Ty const* const* cached = intern_get(&my types, key, key_len);
     if (cached && (uintptr_t)cached[2]) {

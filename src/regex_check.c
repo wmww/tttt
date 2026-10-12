@@ -117,12 +117,12 @@ static bool is_ascii_letter(i32 ch) { return (ch >= 'a' && ch <= 'z') || (ch >= 
 static bool is_word_character(i32 ch) { return is_ascii_letter(ch) || is_digit(ch) || ch == '_'; }
 static i32 hex_value(i32 ch) { return is_digit(ch) ? ch - '0' : (ch | 0x20) - 'a' + 10; }
 
-static bool is_identifier_start(Rx const* me, i32 ch) {
+static bool is_identifier_start(i32 ch) {
     return is_ascii_letter(ch) || ch == '$' || ch == '_' ||
         (ch > 0x7F && unicode_is_identifier_start((u32)ch));
 }
 
-static bool is_identifier_part(Rx const* me, i32 ch) {
+static bool is_identifier_part(i32 ch) {
     return is_ascii_letter(ch) || is_digit(ch) || ch == '$' || ch == '_' ||
         (ch > 0x7F && unicode_is_identifier_part((u32)ch));
 }
@@ -437,7 +437,7 @@ static RxStr scan_escape_sequence(Rx* me, bool atom_escape) {
         case '\n': case 0x2028: case 0x2029:
             return str_empty();
         default:
-            if (my any_unicode_mode || (!my annex_b && is_identifier_part(me, ch))) {
+            if (my any_unicode_mode || (!my annex_b && is_identifier_part(ch))) {
                 rx_error(me, my pos - 2, 2, 1535, "This character cannot be escaped in a regular expression.");
             }
             return str_unit(ch);
@@ -482,7 +482,7 @@ static bool scan_identifier_escape(Rx* me, bool start) {
     if (cu(me, my pos + 1) != 'u') return false;
     i32 end;
     i32 escaped = scan_unicode_escape_at(me, my pos, &end);
-    if (escaped >= 0 && (start ? is_identifier_start(me, escaped) : is_identifier_part(me, escaped))) {
+    if (escaped >= 0 && (start ? is_identifier_start(escaped) : is_identifier_part(escaped))) {
         my pos = end;
         pool_push_code_point(me, (u32)escaped);
         return true;
@@ -494,7 +494,7 @@ static bool scan_identifier_escape(Rx* me, bool start) {
         i32 low = scan_unicode_escape_at(me, end, &low_end);
         if (low >= 0xDC00 && low <= 0xDFFF) {
             i32 cp = 0x10000 + ((escaped - 0xD800) << 10) + (low - 0xDC00);
-            if (start ? is_identifier_start(me, cp) : is_identifier_part(me, cp)) {
+            if (start ? is_identifier_start(cp) : is_identifier_part(cp)) {
                 my pos = low_end;
                 pool_push_code_point(me, (u32)cp);
                 return true;
@@ -508,7 +508,7 @@ static bool scan_identifier_escape(Rx* me, bool start) {
 static void scan_identifier_parts(Rx* me) {
     while (true) {
         i32 ch = code_point_at(me, my pos);
-        if (my pos < my n && is_identifier_part(me, ch)) {
+        if (my pos < my n && is_identifier_part(ch)) {
             pool_push_code_point(me, (u32)ch);
             my pos += char_size(ch);
         } else if (ch == '\\' && scan_identifier_escape(me, false)) {
@@ -524,7 +524,7 @@ static void scan_group_name(Rx* me, bool is_reference) {
     i32 off = my pool_len;
     // scanIdentifier(0, identifierVariantRegExpGroupName)
     i32 ch = cpc(me, my pos);
-    if (is_identifier_start(me, ch)) {
+    if (is_identifier_start(ch)) {
         pool_push_code_point(me, (u32)ch);
         my pos += char_size(ch);
         scan_identifier_parts(me);
@@ -560,7 +560,7 @@ static void scan_group_name(Rx* me, bool is_reference) {
 static u32 scan_pattern_modifiers(Rx* me, u32 curr_flags) {
     while (true) {
         i32 ch = cpc(me, my pos);
-        if (ch == RX_EOF || !is_identifier_part(me, ch)) break;
+        if (ch == RX_EOF || !is_identifier_part(ch)) break;
         i32 size = char_size(ch);
         u32 flag = flag_of(ch);
         if (!flag) {
@@ -1351,7 +1351,7 @@ static void rescan_slash_token(Rx* me) {
     u32 flags = 0;
     while (true) {
         i32 ch = cpc(me, my pos);
-        if (ch == RX_EOF || !is_identifier_part(me, ch)) break;
+        if (ch == RX_EOF || !is_identifier_part(ch)) break;
         i32 size = char_size(ch);
         u32 flag = flag_of(ch);
         if (!flag) {
