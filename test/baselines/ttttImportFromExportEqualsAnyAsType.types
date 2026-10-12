@@ -1,0 +1,47 @@
+//// [test/cases/ttttImportFromExportEqualsAnyAsType.ts] ////
+
+=== anyMod.d.ts ===
+declare const module: any
+>module : any
+
+export = module
+>module : any
+
+=== objMod.d.ts ===
+declare const m: { Plugin: number; Other: number }
+>m : { Plugin: number; Other: number; }
+>Plugin : number
+>Other : number
+
+export = m
+>m : { Plugin: number; Other: number; }
+
+=== main.ts ===
+import type { Plugin } from './anyMod'
+>Plugin : any
+
+export function f(): Plugin {
+>f : () => Plugin
+
+  return { name: 'x', enforce: 'pre' }
+>{ name: 'x', enforce: 'pre' } : { name: string; enforce: string; }
+>name : string
+>'x' : "x"
+>enforce : string
+>'pre' : "pre"
+}
+=== main2.ts ===
+import { Plugin, Other } from './objMod'
+>Plugin : number
+>Other : number
+
+export const a: Plugin = 1 as any
+>a : Plugin
+>1 as any : any
+>1 : 1
+
+export const b: Other = 1 as any
+>b : Other
+>1 as any : any
+>1 : 1
+

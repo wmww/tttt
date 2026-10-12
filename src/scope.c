@@ -4318,7 +4318,18 @@ static bool is_export_specifier_alias(Symbol const* me) {
 
 static bool symbol_has_meaning(Symbol const* me, u32 meaning) {
     if (my flags & meaning || my is_placeholder) return true;
-    return my flags & SYMBOL_ALIAS && symbol_resolved_flags(me) & meaning;
+    if (!(my flags & SYMBOL_ALIAS)) return false;
+    if (symbol_resolved_flags(me) & meaning) return true;
+    // An import of a property of what `export =` names is looked up as a type too: whether it is one is the checker's
+    // (lower.c export_equals_property_type()), and a missing one is tsc's unknownSymbol, which has every meaning. So
+    // vite's CJS `export = module` (any) makes `import type { Plugin } from "vite"` the error type, not lib.dom's
+    // global `Plugin` (feathers/docs)
+    // (Only an `import { X }`: JavaScript's `const { X } = require()` stays a value, a `@typedef X` of the file
+    // names the type, webpack's syntax-printer.js)
+    PortItem const* item = my alias->item;
+    if (!(meaning & SYMBOL_TYPE) || !item || item->tag != PORT_IMPORT_SPECIFIC || item->require_binding) return false;
+    Symbol const* target = symbol_resolve_alias((Symbol*)me);
+    return target && target != me && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY;
 }
 
 bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* symbol) {

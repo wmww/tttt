@@ -25,6 +25,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportFromExportEqualsAnyAsType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportFromReexport': {
         errors: true,
         symbols: true,

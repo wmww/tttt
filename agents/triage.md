@@ -46,9 +46,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
   not the method's T2), so the same type comes back and is cyclic (`any`). Pre-existing (base build ff7d821a prints
   the same). Same family: `this` in an object literal method is the literal's widened type itself in tttt, another
   type in tsgo (getWidenedType(checkExpressionCached(literal))), see plans/55 "Known traps".
-- **Source sweep flakiness** (agent B, 2026-10-12 fan-out): pixijs and feathers matched tsc in some full sourcesweep
-  runs and not in others. Check whether their output depends on the checker count or file order (`scripts/checkerdiff.py`
-  style: `--checkers 1` vs 4, twice each) before chasing their diagnostics.
 - (2026-10-12, test/cases wiring) A JSX element spreading five unions of ten object types
   (`<Comp {...a} {...b} {...c} {...d} {...e} />`, Comp generic, `@jsx: preserve`) is TS2590 in tsgo, nothing in tttt
   (missed, before and after 16b4bb4b). The same five unions in `inter(a, b, c, d, e)` returning `P & Q & R & S & T`

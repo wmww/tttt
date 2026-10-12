@@ -1,0 +1,27 @@
+main.ts(1,15): error TS2305: Module '"./anyMod"' has no exported member 'Plugin'.
+main2.ts(1,1): error TS6192: All imports in import declaration are unused.
+main2.ts(3,17): error TS2749: 'Other' refers to a value, but is being used as a type here. Did you mean 'typeof Other'?
+
+
+==== anyMod.d.ts (0 errors) ====
+    declare const module: any
+    export = module
+==== objMod.d.ts (0 errors) ====
+    declare const m: { Plugin: number; Other: number }
+    export = m
+==== main.ts (1 errors) ====
+    import type { Plugin } from './anyMod'
+                  ~~~~~~
+!!! error TS2305: Module '"./anyMod"' has no exported member 'Plugin'.
+    export function f(): Plugin {
+      return { name: 'x', enforce: 'pre' }
+    }
+==== main2.ts (2 errors) ====
+    import { Plugin, Other } from './objMod'
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS6192: All imports in import declaration are unused.
+    export const a: Plugin = 1 as any
+    export const b: Other = 1 as any
+                    ~~~~~
+!!! error TS2749: 'Other' refers to a value, but is being used as a type here. Did you mean 'typeof Other'?
+    

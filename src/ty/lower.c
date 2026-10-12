@@ -449,7 +449,10 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
 // property (a class merged with a namespace, or a base class of one: node's `stream` and its `EventEmitter`). The
 // binder can't know, so the type side is decided here (resolve_alias_target(), identifier_type_lookup_names()).
 // Null for none: missing (TS2305 comes from the import) or a value only (TS2749 here)
-static Symbol const* export_equals_property_type(Checker* me, Symbol const* property, IdentifierType const* identifier) {
+static Symbol const* export_equals_property_resolve(
+    Checker* me, Symbol const* property, IdentifierType const* identifier, bool report, bool* missing
+) {
+    *missing = false;
     Ty const* assigned = ty_type_of_symbol(me, property->decls[0].node);
     if (assigned->flags & TYF_ERROR) return nullptr;
     Ty const* holder = assigned->flags & (TYF_OBJECT | TYF_INTERSECTION) ? assigned : ty_apparent_type(me, assigned);
@@ -462,16 +465,46 @@ static Symbol const* export_equals_property_type(Checker* me, Symbol const* prop
         if (type && !type->is_placeholder) {
             // A use of the import as a type (noUnusedLocals): the binder can't know, a value-only property used as a
             // type (TS2749, webpack's JSDoc `@returns {TRANSITIVE}`) doesn't count, tsc's resolveName failed for it
-            if (identifier->symbol && unused_enabled()) {
+            if (report && identifier->symbol && unused_enabled()) {
                 __atomic_fetch_or(&((Symbol*)identifier->symbol)->referenced, SYMBOL_TYPE, __ATOMIC_RELAXED);
             }
             return canonical(me, type);
         }
     }
-    if (!prop && ty_export_equals_property_missing(me, property)) return nullptr;
-    ty_error_at(me, identifier->name, 2749, cstr_d("'", span_sv(identifier->name),
-        "' refers to a value, but is being used as a type here. Did you mean 'typeof ", span_sv(identifier->name), "'?"));
+    if (!prop && ty_export_equals_property_missing(me, property)) {
+        // (tsc's resolveName found the import, whose target is unknownSymbol: a use)
+        if (report && identifier->symbol && unused_enabled()) {
+            __atomic_fetch_or(&((Symbol*)identifier->symbol)->referenced, SYMBOL_TYPE, __ATOMIC_RELAXED);
+        }
+        *missing = true;
+        return nullptr;
+    }
+    // A value-only property isn't a type: tsc's resolveName goes on past the import, and imports live in module
+    // scope, whose parent is the global one (lib.dom's `Plugin` for a `Plugin` value property)
+    Symbol const* global = program_get_global(me->program, span_sv(identifier->name), SYMBOL_TYPE);
+    if (global) return canonical(me, global);
+    if (report) {
+        ty_error_at(me, identifier->name, 2749, cstr_d("'", span_sv(identifier->name),
+            "' refers to a value, but is being used as a type here. Did you mean 'typeof ", span_sv(identifier->name), "'?"));
+    }
     return nullptr;
+}
+
+static Symbol const* export_equals_property_type(Checker* me, Symbol const* property, IdentifierType const* identifier) {
+    bool missing;
+    return export_equals_property_resolve(me, property, identifier, true, &missing);
+}
+
+Symbol const* ty_export_equals_property_shown(Checker* me, IdentifierType const* identifier) {
+    Symbol const* decl = identifier->target ? canonical(me, identifier->target) : nullptr;
+    if (!decl || !decl->decl_count || decl->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY ||
+        identifier_type_namespace_count(identifier) || span_valid(identifier_type_import_span(identifier))
+    ) {
+        return nullptr;
+    }
+    bool missing;
+    Symbol const* ret = export_equals_property_resolve(me, decl, identifier, false, &missing);
+    return ret ? ret : missing ? identifier->symbol : nullptr;
 }
 
 // tsc checks every type reference (checkTypeReferenceNode): one to a property of what `export =` names is TS2749 when

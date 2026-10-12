@@ -241,8 +241,12 @@ string config options), tsx cache.ts (no flow narrowing of a non-variable module
 - **tiptap/demos `VueNodeViewRenderer.test.ts` +TS2345 x9**: `ReturnType<typeof defineComponent>` (overloaded,
   generic) prints as `DefineComponent<unknown, unknown, ...>` in tttt's message and isn't a Component<NodeViewProps>;
   not reduced.
-- pixijs (+TS2451 in @webgpu/types) and feathers matched in some runs and not in others of this round: check
-  whether the result depends on the checker count or file order before chasing them.
+- pixijs/feathers "flakiness" (2026-10-12, agent C): not reproduced. Both are byte-identical over 5 runs at
+  `--checkers` 1 and 4 and over repeated `sourcesweep.py -f` runs; the runs that matched were probably of other
+  commits. feathers' mismatch (+TS6196/+TS2339/+TS2353 in docs/vite.config.ts: `import type { Plugin } from "vite"`
+  of vite's CJS `export = module` (any) found lib.dom's global `Plugin`) is fixed; pixijs is the @webgpu/types merge
+  unit above. Run outside sourcesweep.py from a worktree (`tttt -p thirdparty/sources/feathers`), feathers shows ~19
+  extra TS2307: the symlinked-sources path issue of perf_leads.md, not flakiness.
 
 ## Source sweep checker leftovers of agent ss-b (round 2)
 Unreduced or order-dependent findings on the +TS2339/+TS7006/+TS2349/+TS2698 keys, for a future session.

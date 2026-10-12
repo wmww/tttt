@@ -1131,6 +1131,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ) {
                 shown = nullptr;
             }
+            Symbol const* export_equals_shown = my identifier->jsdoc ? nullptr : ty_export_equals_property_shown(current_checker, my identifier);
+            if (export_equals_shown) shown = export_equals_shown;
             // (A name an import type can't find, in a module that doesn't resolve or doesn't export it, is nothing: tsc's
             // getSymbolAtLocation of an ImportTypeNode's qualifier resolves through the module)
             bool unresolved_import = identifier_type_import_ref(my identifier) && (!shown || shown->is_placeholder);

@@ -1,0 +1,43 @@
+//// [test/cases/ttttImportFromExportEqualsAnyAsType.ts] ////
+
+=== anyMod.d.ts ===
+declare const module: any
+>module : Symbol(module, Decl(anyMod.d.ts, 0, 13))
+
+export = module
+>module : Symbol(module, Decl(anyMod.d.ts, 0, 13))
+
+=== objMod.d.ts ===
+declare const m: { Plugin: number; Other: number }
+>m : Symbol(m, Decl(objMod.d.ts, 0, 13))
+>Plugin : Symbol(Plugin, Decl(objMod.d.ts, 0, 18))
+>Other : Symbol(Other, Decl(objMod.d.ts, 0, 34))
+
+export = m
+>m : Symbol(m, Decl(objMod.d.ts, 0, 13))
+
+=== main.ts ===
+import type { Plugin } from './anyMod'
+>Plugin : Symbol(Plugin, Decl(main.ts, 0, 13))
+
+export function f(): Plugin {
+>f : Symbol(f, Decl(main.ts, 0, 38))
+>Plugin : Symbol(Plugin, Decl(main.ts, 0, 13))
+
+  return { name: 'x', enforce: 'pre' }
+>name : Symbol(name, Decl(main.ts, 2, 10))
+>enforce : Symbol(enforce, Decl(main.ts, 2, 21))
+}
+=== main2.ts ===
+import { Plugin, Other } from './objMod'
+>Plugin : Symbol(Plugin, Decl(main2.ts, 0, 8))
+>Other : Symbol(Other, Decl(main2.ts, 0, 16))
+
+export const a: Plugin = 1 as any
+>a : Symbol(a, Decl(main2.ts, 1, 12))
+>Plugin : Symbol(Plugin, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export const b: Other = 1 as any
+>b : Symbol(b, Decl(main2.ts, 2, 12))
+>Other : Symbol(Other)
+
