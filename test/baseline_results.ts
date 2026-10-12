@@ -6333,7 +6333,7 @@ const baselines = {
     'contextualTypeBasedOnIntersectionWithAnyInTheMix1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix2': {
         errors: true,

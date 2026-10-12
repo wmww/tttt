@@ -1235,6 +1235,9 @@ static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node
 
 static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* args) {
     if (!vec_spanned_type_size(args)) return;
+    // (The arguments aren't constituents or elements of what the reference is one of)
+    d.array_element_node = false;
+    d.constituent_node = false;
     out_lit(d, "<");
     for_each (i, vec_spanned_type, args) {
         if (i_index) out_lit(d, ", ");
