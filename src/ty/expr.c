@@ -2421,8 +2421,23 @@ static bool is_narrowable_access(Expr const* expr) {
     }
 }
 
+// tsc's getFlowTypeOfAccessExpression looks at the flow only for variables, properties and accessors, and for a method
+// whose declared type is a union (an optional one under strictNullChecks): `!Array.isArray` doesn't make the method
+// never in what follows. (An intersection's or a union's property is tsc's synthetic Property when more than one
+// member has it: only a plain object's is looked at)
+static bool is_unnarrowed_method(Checker* me, Ty const* object, Ty const* key) {
+    Atom const* name = ty_literal_name(me, key);
+    if (!name) return false;
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (!(apparent->flags & TYF_OBJECT) || (apparent->flags & (TYF_UNION | TYF_INTERSECTION))) return false;
+    Prop const* prop = ty_property_of_type(me, apparent, name);
+    if (!prop || !(prop->flags & PROP_METHOD)) return false;
+    if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) return false;
+    return prop_type(me, prop)->kind != TY_UNION;
+}
+
 // tsc's getFlowTypeOfAccessExpression()
-static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type, Ty const* contextual) {
+static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* object, Ty const* key, Ty const* type, Ty const* contextual) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target == FLOW_TARGET_DEFINITE && access->compound_like_target) return base_type_of_literal(me, type);
     if (access->assignment_target == FLOW_TARGET_DEFINITE) return type;
@@ -2441,6 +2456,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     if (!narrowable) return type;
     my flow_substitutes_constraints = type != declared_type;
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
+    if (flow_type != type && is_unnarrowed_method(me, object, key)) return type;
     // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
     if (access->non_null_operand && !(flow_type->flags & TYF_NEVER) && (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)) {
         return type;
@@ -5316,7 +5332,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (A property of any isn't narrowed: tsc's checkPropertyAccessExpressionOrQualifiedName returns any before
             // getFlowTypeOfAccessExpression. An element access is)
             if (expr->property->form != PROPERTY_EXPR_DOT || !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
-                ret = access_flow_type(me, expr, ret, ctx.contextual);
+                ret = access_flow_type(me, expr, object, key, ret, ctx.contextual);
             }
             if (generic_access) ret = invalid_generic_access_type(me, ret);
             return propagate_optional(me, ret, expr->property->continues_chain, optional);
