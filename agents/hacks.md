@@ -145,6 +145,9 @@ src` finds the code-side markers; every significant one has an entry here.
   in the relation); tttt's relation doesn't, and deleting the skip loses
   homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1. Real fix: that apparent type in relate.c.
 
+- `json_check_value()` (parser.c): the TS1328 of a missing or omitted JSON value is placed at its full start by walking
+  back over whitespace only; a comment between `:` and the missing value puts tsc's at the comment's end.
+
 ## Binder and name resolution (`scope.c`)
 - `scope_release()` (permanent: plan 43's memory): walk-only scopes (parameter list, return type, block statement,
   type literal, interface `this`, computed name/decorator) are popped off the binder arena when still its latest
@@ -395,6 +398,9 @@ src` finds the code-side markers; every significant one has an entry here.
   away, because tsc builds TS1360's message there and printing T resolves what it resolves (a return type in flight:
   `const f = () => 1 satisfies typeof f` is TS7023). The diagnostic itself is still the walk's. A message built for
   its side effects; the general fix is reporting satisfies where it's checked (tsgo's checkSatisfiesExpression).
+
+- `alias_is_local()` (lower.c): tsc's isLocalTypeAlias is "has a containing function"; tttt uses TypeDecl.local (any
+  block or function body), which also counts a type alias in a top-level block.
 
 ## Relations (`ty/relate.c`)
 - `canonical_signature()` (tsc's getCanonicalSignature) returns the signature itself when none of its type parameters

@@ -111,3 +111,43 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
   fine: the difference is in how `spans` becomes unknown).
+
+## Source sweep fan-out 2026-10-12 leftovers (agent A)
+Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
+was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match).
+- **-TS5115 (12 projects: zod 4's `schemas.d.cts:804` in crawlee/unocss/knip, better-auth `db/to-zod.ts:40`, vitepress
+  `postcss/isolateStyles.ts:15`)**: tsgo hits its depth-100 instantiation limit where tttt has no runaway at all. Single
+  file reproduction (tsgo reports TS5115 at `Root`, tttt nothing):
+  ```ts
+  type Diff<T, U> = T extends U ? never : T;
+  interface Base<P extends Container | undefined = Container | undefined> { parent: P; }
+  interface Container<C extends Node = Node> extends Base { first: C; }
+  interface Root extends Container<Selector> { type: "root" }
+  interface _Selector<S> extends Container<Diff<Node, S>> { type: "selector" }
+  type Selector = _Selector<Selector>;
+  export type Node = Root | Selector;
+  ```
+  tsgo's stack (instrumented build): checkTypeArgumentConstraints (Selector against `C extends Node`) -> relation ->
+  isWeakType -> resolveTypeReferenceMembers(_Selector<Selector>) -> resolveObjectTypeMembers instantiates the base
+  `Container<Diff<Node, S>>` eagerly -> getConditionalType's isTypeAssignableTo(Root, Selector) -> isWeakType again on the
+  same reference whose members are still being resolved -> ... zod's is the same shape (propertiesRelatedTo ->
+  resolveTypeReferenceMembers -> base instantiation -> conditional -> relation). tttt never instantiates a reference's
+  base types (lazy mapper-chained props, members.c `instantiate_members`), so it can't re-enter. Matching it would mean
+  copying tsgo's eager base instantiation (or detecting "this base's instantiation needs this reference's members"):
+  plan-sized and arguably copying a tsgo runaway; not done.
+- **trpc examples/nuxt -TS2416 in vite 8.3's `dist/node/index.d.ts:1512`** (`MinimalPluginContext$1 extends
+  BasicMinimalPluginContext implements MinimalPluginContext`): not looked at; the project mixes several vite/rollup/
+  @types/node copies.
+- **Checker keys in these repos, not looked at**: react-router `react-router-dev/vite/route-chunks.ts:296` (+TS2322
+  `Set<unknown>` to `Set<NodePath<Identifier>>`, 2 projects, 24 diags), typedoc `scripts/generate_site_plugins.js:293`
+  (+TS2769), shiki `transformers/render-whitespace.ts:54` (+TS2322 assigning to `line.children` of an
+  `Element | Root` union), knip `src/plugins/postcss/index.ts:36` (+TS2345 `string | never[]`) and
+  `language-server/src/server.js:277` (-TS7022), lit `reactive-element/src/decorators/query.ts:134-143` (+TS2352,
+  +TS2345, +TS7006) and `lit-html/src/private-ssr-support.ts:55` (+TS2653), redux-toolkit `combineSlices.ts:120`
+  (+TS2344), `query/core/module.ts:656` (+TS2322), `query/core/buildThunks.ts:384` (+TS2339), react-navigation's +TS2339
+  `in` (the entry above).
+- **Content mappers with --runExternalCode**: tttt validates `contentMappers` and reports TS18068 without the flag
+  (like tsgo), but with it tsgo resolves each mapper package (TS18075) and runs it; tttt does neither.
+- Perf: knip/packages/knip/test (3.4 s at the session start), postiz-app (36 s) and tabby (1.5 s) were checking that tsc
+  gates (options diagnostics hidden by spurious syntax errors) or load noise; now 0.46 s, 5.4 s and 0.27 s (tsc 0.41,
+  25.8, 0.46).
