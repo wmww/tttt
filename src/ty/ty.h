@@ -2167,6 +2167,7 @@ static inline u32 ty_key_flags(Ty const* index) {
     return flags;
 }
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+void ty_check_export_equals_property_reference(Checker* me, struct IdentifierType const* identifier); // lower.c
 Ty const* ty_union_any_index_type(Checker* me, Ty const* object, Ty const* index, u32 kinds); // `U[any]` of a union (access.c)
 // TS4111 (noPropertyAccessFromIndexSignature): `o.k` that only an index signature has (check.c)
 void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs);

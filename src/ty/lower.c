@@ -466,6 +466,17 @@ static Symbol const* export_equals_property_type(Checker* me, Symbol const* prop
     return nullptr;
 }
 
+// tsc checks every type reference (checkTypeReferenceNode): one to a property of what `export =` names is TS2749 when
+// that property is a value only, also in an annotation nothing reads (an unused interface member's type)
+void ty_check_export_equals_property_reference(Checker* me, IdentifierType const* identifier) {
+    Symbol const* decl = identifier->target ? canonical(me, identifier->target) : nullptr;
+    if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
+        !identifier_type_namespace_count(identifier) && !span_valid(identifier_type_import_span(identifier))
+    ) {
+        export_equals_property_type(me, decl, identifier);
+    }
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
         case JSDOC_INTRINSIC_NONE: break;

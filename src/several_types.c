@@ -754,6 +754,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
             cstr_drop(&qualified);
         }
     }
+    ty_check_export_equals_property_reference(current_checker, me);
     // tsc's getTypeFromTypeReference: a referenced alias is resolved (TS2456 if that is circular)
     if (my target && (my target->flags & (SYMBOL_TYPE_ALIAS | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM)) && !my target->is_placeholder) ty_declared_type_of(current_checker, my target);
     if (my target) {
