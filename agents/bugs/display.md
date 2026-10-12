@@ -95,14 +95,49 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - `Pick<T, "a">` with T generic: the mapped property expanded from the key's lower bound has no declaration
   (`p.a : Symbol(a)`, tsc `Symbol(a, Decl(...))` from T's constraint).
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests (members
-  aren't binder symbols, hacks.md).
+  aren't binder symbols, hacks.md). (A class property followed by accessors of its name is one symbol typed by the
+  accessors since 2026-10-12: ClassField.joined_accessor.)
+- **Wrongly placed `export =`/`export default` in a function** (exportInFunction, moduleElementsInWrongContext2): tsgo's
+  bindExportAssignment declares it in the container's symbol's exports when the container has a symbol (a function,
+  function expression, arrow, method), as a Property (`export = 0`) or an Alias (`export default v`), so the function's
+  type grows a `"export=": 0` / `default: number` member (`{ (): void; "export=": 0; }`, also in TS2339 messages). An
+  alias to a non-value (`export = M` of an uninstantiated namespace) isn't a member (isNamedMember's symbolIsValue).
+  tttt drops them. Needs the binder to add them to the function's exports (as JS expandos are) and arrows/function
+  expressions a symbol to hang them on. Error recovery only.
+- es6ExportEqualsInterop/nodeModulesJson: fixed in the harness only (export_equals_property_alias()); the checker's
+  symbol chains still can't name a member through an import alias (member identity).
 - **Spread doesn't keep the property's identity**: tsc's getSpreadSymbol returns the same symbol when readonly-ness
   doesn't change, so `{ ...x }.a` with `x: N.A` shows `Symbol(N.A.a)` and reuse carets in the types baseline; tttt
   `Symbol(a)`. Setting `.reuse` in `spread_props_of` (ty/expr.c) did it but lost 14 tests: `spread_into`, excess
   property checks and JSX spread attributes read the builder's other fields (and object literal widening may rebuild
   the properties).
 - Late-bound computed members merge with the written member of the same name, named and ordered like it (`[c0]` with
-  c0 = "1" after `1:` is `T0[1]`, Decls in binding order): dynamicNamesErrors (2026-10-04 fan-out leftover).
+  c0 = "1" after `1:` is `T0[1]`, Decls in binding order): dynamicNamesErrors (2026-10-04 fan-out leftover). tsgo
+  shows `T0[c0]` with the late declaration first, which its combineSymbolTables(early, late) doesn't explain as read
+  (2026-10-12, agent C): instrument lateBindMember/combineSymbolTables before changing anything.
+- **Cross-file merges with an alias** (2026-10-12, agent C): tsgo's checker-time mergeSymbol resolves a target alias
+  (resolveSymbol) and checks the excludes against what it resolves to; on a conflict it reports and keeps the two
+  symbols apart (`return source`). tttt's binder merges by flags at bind time, aliases unresolved, so these show one
+  symbol where tsgo has two (or the other way round): checkerInitializationCrash (`export import VNode =
+  react.ReactNode` in one `declare global` vs `type VNode` in another), importEqualsError45874,
+  duplicateVarsAcrossFileBoundaries (`import p = P` vs a later file's `var p`), moduleAugmentationWithNonExistentNamedImport
+  (`export as namespace Bar` vs an augmentation's `namespace Bar`). Needs the global/augmentation merge to resolve
+  aliases first (or defer those merges to after binding, like tsgo's initializeChecker).
+- **Global augmentations merge after every script's globals** (tsgo's initializeChecker merges the files' locals, then
+  the `declare global` blocks): a script's `interface RawJSON` is the first declaration of the merged symbol even
+  though lib.es2026.json.d.ts (a module with `declare global`) comes first in the program (jsonRawJSON2). tttt adds
+  declarations in file order (clone_parent_symbol copies the lib's first). Declaration order also decides an
+  interface's member and overload order, so a fix should keep declarations partitioned (script ones, then
+  augmentation ones) wherever a global symbol gets one.
+- duplicateIdentifierChecks (symbols, types): an interface's duplicate accessors (`get x; get x`) are symbols of their
+  own in tsgo 7.1 (GetAccessorExcludes), a property and an accessor pair one symbol; tttt's interface accessors are
+  paired into one InterfaceMember by the parser and merged by builder_add_interface_member(), so the binder's
+  table-symbol rule (see bind_member_symbols() for classes, literal_bind() for object literals) has nothing to run
+  on. Needs the interface's members bound like the class's (per member, in order) before pairing.
+- typeAliasesDoNotMerge (types): `export type A = {}; type A = {}`: tsgo prints the second alias as
+  `import("./typeAliasesDoNotMerge").A`, i.e. the conflicting symbol has the file's module as parent (fast path of
+  getAliasForSymbolInContainer), not a symbol in scope. Where tsgo's binder puts it (exports with the file as parent?)
+  wasn't checked.
 
 ## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
 - **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
@@ -159,8 +194,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 ## Leftovers of plan 35 (silent type differences, retired 2026-10-09; components as of the tsgo 7.1 suite)
 - recursiveConditionalCrash3 (types): a mapped key named `K_1` where tsc says `K_2`: tsc gives every instantiated mapped
   type a fresh key type parameter (instantiateMappedType's cloneTypeParameter), tttt keeps the declared one.
-- typeAliasesDoNotMerge (types), symbolDeclarationEmit12 (all components now): duplicate declarations that resolve to
-  the other symbol (`import("f").A`).
+- symbolDeclarationEmit12 (errors, types; symbols pass since 2026-10-12): duplicate declarations that resolve to the
+  other symbol (`import("f").A`).
 - isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
   saw the types side; the errors component fails now).
 - ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
@@ -242,3 +277,28 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   symbol`. A mapped type's property of that type prints `unique symbol` on both sides. tsgo's typeToTypeNode names
   the symbol when the type isn't AllowUniqueESSymbolType and the symbol is accessible. Find which flags the message's
   typeToString passes there.
+
+## Suite tail leftovers (2026-10-12 fan-out, agent C: TS tests failing types/symbols only)
+Looked at, root cause where found, not fixed (one test each unless named):
+- circularTypeArgumentsLocalAndOuterNoCrash1: tsgo prints `f.NumArray<any>` for a local interface of a generic
+  function when the reference's outer type arguments aren't its outer type parameters (typeReferenceToTypeNode's
+  outer type parameter groups); tttt prints `NumArray<any>` (in scope). The reference made under the circularity has
+  other outer arguments in tsgo.
+- genericClassesRedeclaration: `class C extends StringHashTable<T>` in a second `declare namespace TypeScript` block
+  where StringHashTable is declared twice: tsgo prints the base as `TypeScript.StringHashTable<T>` (the conflicting
+  second class, a symbol outside the exports table, needs qualification); tttt resolves to the table's.
+- mergedClassWithNamespacePrototype: `namespace prototype` inside a namespace merged with `declare class Foo` merges
+  into the class's prototype property symbol in tsgo (NamespaceModuleExcludes is none), so it prints `typeof
+  prototype`; tttt `typeof Foo.prototype`.
+- jsxNamespacePrefixInName(React): `<a attr:={"value"} />` (recovery of a namespaced attribute name with a missing
+  local name): tsgo's type of the tag name `a` is `undefined`. Not chased.
+- typeofImportDefer: `typeof import.defer("./a").Foo` recovers to an import type with a missing string literal;
+  tsgo's symbols are `Symbol(unknown)` for the missing literal and `Symbol(unknown.defer)` for the qualifier (an
+  unresolved but non-null module), tttt prints nothing. An unresolved `import("./nope")` prints nothing in both.
+- declarationEmitUsingAlternativeContainingModules1/2: in a long signature tsgo prints some optional properties
+  without `| undefined` (`enabled?: boolean;`, reused annotations through a mapped type?) and `readonly ["entries"]`
+  for an object literal's `['entries'] as const` while the declaration line keeps `['entries']`.
+- jsonRawJSON2, duplicateIdentifierChecks, typeAliasesDoNotMerge, the cross-file alias merges: see "Symbols
+  baseline" above. exportInFunction, moduleElementsInWrongContext2: see "Duplicate class/interface members" above.
+- es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
+  escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
