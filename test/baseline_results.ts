@@ -50,6 +50,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLibInterfaceMergeIndexConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
         errors: true,
         symbols: true,
@@ -61,6 +66,16 @@ const baselines = {
         types: true,
     },
     'ttttParenthisizedIdentifierFollowedByExpr': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttPartialLibReferenceChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRestMappedOverEmptyTuple': {
         errors: true,
         symbols: true,
         types: true,

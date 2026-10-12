@@ -1,0 +1,41 @@
+//// [test/cases/ttttRestMappedOverEmptyTuple.ts] ////
+
+=== ttttRestMappedOverEmptyTuple.ts ===
+// A homomorphic mapped type over T whose constraint includes the empty tuple `[]` is apparently an array (tsc's
+// getResolvedApparentTypeOfMappedType): no TS2370/TS2322. lib.es2026.iterator.d.ts's IteratorConstructor.concat is
+// this shape, which tttt reported once it checked lib files
+declare function concat<T extends readonly unknown[] | []>(...iterables: { -readonly [K in keyof T]: Iterable<T[K]> & object }): T[number];
+>concat : Symbol(concat, Decl(ttttRestMappedOverEmptyTuple.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 24))
+>iterables : Symbol(iterables, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 59))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 86))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 24))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 24))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 86))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 24))
+
+function f<T extends []>(y: { [K in keyof T]: Iterable<T[K]> }) { const b: readonly any[] = y; }
+>f : Symbol(f, Decl(ttttRestMappedOverEmptyTuple.ts, 3, 139))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 11))
+>y : Symbol(y, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 25))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 31))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 11))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 11))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 31))
+>b : Symbol(b, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 71))
+>y : Symbol(y, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 25))
+
+function g<T extends [] | [string]>(y: { [K in keyof T]: Iterable<T[K]> }) { const b: readonly any[] = y; }
+>g : Symbol(g, Decl(ttttRestMappedOverEmptyTuple.ts, 4, 96))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 11))
+>y : Symbol(y, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 36))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 42))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 11))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 11))
+>K : Symbol(K, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 42))
+>b : Symbol(b, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 82))
+>y : Symbol(y, Decl(ttttRestMappedOverEmptyTuple.ts, 5, 36))
+
