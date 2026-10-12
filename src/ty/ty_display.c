@@ -266,6 +266,17 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando;
 }
 
+// Declaration emit (TyDisplay.tracker) prints a function's own type by its name, `typeof f`, where that name is
+// accessible as a value (tsc's declarationEmitNodeBuilderFlags have UseTypeOfFunction, and UseStructuralFallback asks
+// isValueSymbolAccessible); not at the function's own declaration, whose type is what's being written
+static bool typeof_function_in_declaration(TyDisplay d, Symbol const* symbol) {
+    if (!d.tracker || !symbol || !d.enclosing || !symbol_value_accessible_at(d.enclosing, symbol)) return false;
+    for (u32 i = 0; span_valid(d.at) && i < symbol->decl_count; i++) {
+        if (span_eq(symbol->decls[i].name, d.at) || span_contains_span(symbol->decls[i].full, d.at)) return false;
+    }
+    return true;
+}
+
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
 static bool is_identifier_name(csview name);
 
@@ -3867,7 +3878,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         // (Within itself `typeof f`: tsc's shouldWriteTypeOfFunctionSymbol, visitedTypes)
                         bool recursive = false;
                         for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;
-                        if (!recursive) {
+                        Symbol const* function = ty->declared.namespace_symbol ? ty->declared.namespace_symbol : ty->declared.symbol;
+                        if (!recursive && !(is_non_local_function(function) && typeof_function_in_declaration(d, function))) {
                             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
                             d.visiting = &visit;
                             display_structure(me, d, ty);
@@ -3981,6 +3993,18 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_ANONYMOUS: {
             if (ty->anonymous.module_clone && display_module_clone(me, d, ty)) break;
+            // (In declaration emit a function's type is `typeof f` wherever f is accessible, see
+            // typeof_function_in_declaration(); a function expression's by the variable it initializes)
+            if (d.tracker && ty->anonymous.function && !ty->anonymous.target) {
+                FunctionImpl const* impl = ty->anonymous.function;
+                Symbol const* named = impl->symbol && is_non_local_function(impl->symbol) ? impl->symbol :
+                    function_impl_rare(impl)->top_level_variable;
+                if (typeof_function_in_declaration(d, named)) {
+                    out_lit(d, "typeof ");
+                    out_symbol_name(me, d, named, SYMBOL_VALUE);
+                    return;
+                }
+            }
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
             // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see

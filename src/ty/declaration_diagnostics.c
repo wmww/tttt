@@ -1565,6 +1565,19 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
     // (A literal const is written with its initializer)
     bool literal = is_const && initialized_binding_value(decl)->tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol);
     if (literal) my fell_back = false;
+    Expr const* init = initialized_binding_value(decl);
+    if (binding->symbol && init->tag == EXPR_FUNCTION && is_expando_variable(me, binding, init)) {
+        // An expando function is emitted as a function declaration per call signature and a namespace of its members
+        // (tsc's declaration transform of isExpandoFunctionDeclaration): its signatures are printed, not its type
+        bool fell_back = my fell_back;
+        my fell_back = outer || fell_back;
+        if (fell_back) {
+            Members const* members = ty_members(my checker, ty_type_of_symbol(my checker, binding->symbol));
+            for (u32 i = 0; i < members->call_count; i++) print_inferred(me, ty_signature_type(my checker, members->call[i]));
+        }
+        emit_leave(me, saved);
+        return;
+    }
     fallback_end(me, outer, binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr);
     emit_leave(me, saved);
 }
