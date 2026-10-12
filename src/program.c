@@ -2510,7 +2510,10 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
         Error* error = vec_error_at_mut(errors, i);
         SourceFile* source = (SourceFile*)span_source(error->span);
         bool suppressed = false;
-        if (error->phase == phase && source && source->comment_directive_count && !source->unchecked) {
+        // (And the grammar errors the parser finds for tsc's checker, checkGrammar*: semantic diagnostics there)
+        bool applies = error->phase == phase ||
+            (phase == ERROR_PHASE_RESOLVE_NAMES && error->phase == ERROR_PHASE_PARSE && error->grammar);
+        if (applies && source && source->comment_directive_count && !source->unchecked) {
             const char* text = source_file_start(source);
             const char* text_end = text + cstr_size(&source->contents);
             for (intptr_t line = (intptr_t)source_file_line_index(source, error->span.buf) - 1; line >= 0; line--) {

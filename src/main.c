@@ -313,6 +313,24 @@ static void count_diagnostic_kinds(ErrorCtx const* errs, intptr_t counts[DIAGNOS
     for_each (i, vec_error, &errs->errors) counts[diagnostic_kind(i)]++;
 }
 
+// report_errors(), but the errors of one kind stay
+static intptr_t report_errors_except(VecError* shown, ErrorCtx* errs, DiagnosticKind kept_kind) {
+    VecError* errors = &errs->errors;
+    intptr_t kept = 0, count = 0;
+    for (intptr_t i = 0; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        if (diagnostic_kind(error) == kept_kind) {
+            if (kept != i) errors->data[kept] = *error;
+            kept++;
+        } else {
+            vec_error_push(shown, *error);
+            count++;
+        }
+    }
+    errors->size = kept;
+    return count;
+}
+
 // Drops the errors of the kind (what tsc doesn't ask the program for)
 static void drop_diagnostic_kind(ErrorCtx* errs, DiagnosticKind kind) {
     VecError* errors = &errs->errors;
@@ -538,7 +556,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     bool gated = !ungated && (syntactic || kinds[DIAGNOSTIC_OPTIONS]);
     if (!ungated && syntactic) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
     if (gated) drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
-    const intptr_t parse_errors = report_errors(&shown, errs);
+    // (The grammar errors tsc's checker reports, semantic ones, wait for the comment directives: reported with the rest)
+    const intptr_t parse_errors = report_errors_except(&shown, errs, DIAGNOSTIC_SEMANTIC);
     if (parse_errors) ret = 1;
 
     // Gated, the emit still reports the declaration diagnostics: checked only for them. Gated by options diagnostics
