@@ -2696,6 +2696,9 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown
         if (members_rare(members)->expanded_from && !members_rare(members)->expanded_from->name_type) return members_rare(members)->expanded_from->constraint;
         if (members->mapped && !members->mapped->name_type) return members->mapped->constraint;
+        // (Over no keys there are none, whatever the `as` clause: tsc's getIndexTypeForMappedType iterates the never
+        // constraint, `keyof { [K in never as F<K, C>]: X }` with F generic in C is never)
+        if (members->mapped && (members->mapped->constraint->flags & TYF_NEVER)) return my intrinsics[TY_NEVER];
         // (A generic mapped type with an `as` clause stays `keyof` it: tsc 6.0's shouldDeferIndexType, see ty_simplified())
         if (!members->mapped) {
             TyBuf parts = {0};
@@ -2894,7 +2897,9 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
-    if (index->flags & TYF_NEVER) return index;
+    // (No shortcut for a never index: a generic object defers first, `(T | Record<string, T> | null)[never]`, and an
+    // index signature takes never, `Record<string, T>[never]` is T: tsc's getIndexedAccessTypeOrUndefined and
+    // getPropertyTypeForIndexType, which access() follows)
     // (Before the generic index check: `{ [k: string]: V }[K]` with K extends string is V, tsc's
     // getIndexedAccessTypeOrUndefined. Only an object, union or intersection can be one: this runs for every deferred
     // `T[K]`, the call alone cost react 0.3%)
