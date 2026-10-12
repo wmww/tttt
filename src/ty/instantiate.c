@@ -587,6 +587,16 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     ) {
         free_params_unknown = false;
     }
+    // A declared function's or method's whose signature is all annotations by the outer type parameters those mention
+    // (tsc's getObjectTypeInstantiation filters a method's by isTypeParameterPossiblyReferenced): every `() => void`
+    // method of ts-morph's Node<T> was a new type for every Node<X>, relating two of its subclasses member by member
+    if (free_params_unknown && target->anonymous.function && !target->anonymous.function->is_expression &&
+        !target->anonymous.node && !target->anonymous.overload_count && !target->anonymous.is_reverse &&
+        !target->anonymous.merged_value && !target->anonymous.applies_type_args &&
+        ty_function_free_params(me, target->anonymous.function, &free_params)
+    ) {
+        free_params_unknown = false;
+    }
     for (u32 i = 0; inner && i < inner->len; i++) {
         // (What the node doesn't mention is dropped below anyway: not instantiated, like tsc's getObjectTypeInstantiation
         // maps only the outer type parameters it mentions)
