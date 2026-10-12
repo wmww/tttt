@@ -877,7 +877,7 @@ static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr c
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag == LAZY_TYPE_EXPR && lazy->slot) {
         LazyMemo* memo = lazy_type_state_peek(lazy);
-        if (memo && memo->done) return memo->evaluated;
+        if (memo && memo->done) return lazy_memo_evaluated(memo);
     }
     // With no loop in progress what comes out is complete, and remembered like in tsc's flowTypeCache (not in the
     // memo: nobody gave this evaluation a contextual type). Without it a chain of `x = x + x` doubles at every link

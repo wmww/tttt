@@ -130,7 +130,7 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr) {
     if (my flow_uncached) {
         // For the flow engine (ty_flow_expr_type()): finished memos only, and nothing is remembered
         LazyMemo* memo = lazy_type_state_peek(lazy);
-        return memo && memo->done ? memo->evaluated : ty_compute_expr_without_context(me, expr);
+        return memo && memo->done ? lazy_memo_evaluated(memo) : ty_compute_expr_without_context(me, expr);
     }
     return lazy_type_get(lazy); // Detects cycles
 }
@@ -354,8 +354,8 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
     if (memo && memo->done && !ctx.is_const && !ctx.template_context) {
-        if (!ctx.contextual || memo->context == ctx.contextual || !(kind_uses_context(expr) || identifier_uses_context(me, expr))) {
-            return memo->evaluated;
+        if (!ctx.contextual || memo->context == ctx.contextual->id || !(kind_uses_context(expr) || identifier_uses_context(me, expr))) {
+            return lazy_memo_evaluated(memo);
         }
     }
     if (!ctx.contextual && !ctx.sig_contextual && !ctx.is_const && !ctx.template_context) return ty_expr_type(me, expr); // through the LazyType, which detects cycles

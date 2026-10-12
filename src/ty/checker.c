@@ -316,6 +316,7 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
     Ty* ret = arena_alloc(&my arena, ty_size_of_kind(kind));
 #endif
     ret->id = my next_type_id++;
+    lazy_slots_add_type(&my lazy, ret);
     ret->kind = kind;
     ret->flags = flags;
     return ret;

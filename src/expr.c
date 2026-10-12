@@ -3394,7 +3394,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     if (!generator->ret_explicit && yield->op == UNARY_OP_YIELD && compiler_options()->no_implicit_any && !yield->result_unused) {
         TyIterationTypes const* context = ty_generator_context(checker, generator);
         LazyMemo const* memo = lazy_type_state_peek((LazyType*)&me->lazy_type);
-        Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+        Ty const* contextual = memo && memo->done ? lazy_memo_context(memo) : nullptr;
         // (A type parameter that isn't in scope is the one of a call's signature the argument was checked against
         // while inferring: the resolved signature has it inferred from this yield, which is any)
         bool call_type_param = contextual && contextual->kind == TY_TYPE_PARAM && yield->no_type_params_in_scope;
@@ -4442,7 +4442,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // Resolving the call gives the arguments their contextual types, so it comes before checking them
             Checker* checker = current_checker;
             LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
-            Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+            Ty const* contextual = memo && memo->done ? lazy_memo_context(memo) : nullptr;
             Ty const* callee_type = ty_expr_type(checker, callee);
             // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended
             callee_type = ty_optional_expression_type(checker, callee_type, my call->optional_chain, nullptr);
@@ -4643,7 +4643,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 // Resolving the call gives the substitutions their contextual types, so it comes before checking them
                 Checker* checker = current_checker;
                 LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
-                Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+                Ty const* contextual = memo && memo->done ? lazy_memo_context(memo) : nullptr;
                 ty_tagged_template_typecheck(checker, ty_expr_type(checker, tag), me, contextual, errs);
             }
             // (An untyped tag call checks the template as an untagged one: tsc's resolveUntypedCall)

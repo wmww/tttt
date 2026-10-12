@@ -2,18 +2,20 @@
 
 #include "type.h"
 
-// The memo of a LazyType: whether evaluation has started (to detect cycles) and the result
+// The memo of a LazyType: whether evaluation has started (to detect cycles) and the result. Types are held by id
+// (Ty.id, 0 for none; lazy_memo_evaluated() and lazy_memo_context() look them up): a big program has a memo for
+// most of its expressions (vscode: 10M), 12 bytes each instead of 24
 typedef struct LazyMemo {
-    bool evaluation_started;
-    bool is_self_referential;
-    bool reevaluating; // Evaluated again from below a call's barrier, see lazy_type_evaluate_inner()
-    bool done;
-    // A destructuring pattern found circular once: not remembered, see lazy_type_evaluate_inner()
-    bool pattern_retried;
-    unsigned char hits; // Expressions: re-entrant evaluations so far
-    struct Ty const* evaluated;
+    u32 evaluated;
     // Expressions: the contextual type `evaluated` was computed with, see ty_check_expr()
-    struct Ty const* context;
+    u32 context;
+    bool evaluation_started : 1;
+    bool is_self_referential : 1;
+    bool reevaluating : 1; // Evaluated again from below a call's barrier, see lazy_type_evaluate_inner()
+    bool done : 1;
+    // A destructuring pattern found circular once: not remembered, see lazy_type_evaluate_inner()
+    bool pattern_retried : 1;
+    unsigned char hits; // Expressions: re-entrant evaluations so far
 } LazyMemo;
 
 typedef struct LazyType {
@@ -43,14 +45,33 @@ u32 lazy_slot_new(void);
 #define LAZY_PAGE_BITS 8
 #define LAZY_DIR_BITS 10
 #define LAZY_TOP_BITS 12
+// The checker's types by id (two levels, chunks allocated as types are made, see lazy_slots_add_type())
+#define LAZY_TYPE_CHUNK_BITS 16
+#define LAZY_TYPE_DIR_BITS 16
 typedef struct LazySlots {
     LazyMemo** top[1 << LAZY_TOP_BITS];
+    struct Ty const** types[1 << LAZY_TYPE_DIR_BITS];
 } LazySlots;
+
+// Every type the checker makes is added, by its id
+void lazy_slots_add_type(LazySlots* me, struct Ty const* ty);
+
+static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
+    return id ? my types[id >> LAZY_TYPE_CHUNK_BITS][id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;
+}
 
 void lazy_slots_drop(LazySlots* me);
 
 // The slots of the current checker (see current_checker in ty/ty.h), null when nothing is being typechecked
 extern thread_local LazySlots* current_lazy_slots;
+
+static inline struct Ty const* lazy_memo_evaluated(LazyMemo const* me) {
+    return lazy_slots_type(current_lazy_slots, my evaluated);
+}
+
+static inline struct Ty const* lazy_memo_context(LazyMemo const* me) {
+    return lazy_slots_type(current_lazy_slots, my context);
+}
 
 // Should only be called via lazy_type_get()
 struct Ty const* lazy_type_evaluate(LazyType* me);
@@ -84,5 +105,5 @@ static inline void lazy_type_bind(LazyType* me, int tag) {
 
 static inline struct Ty const* lazy_type_get(LazyType* me) {
     LazyMemo* state = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state_peek(me);
-    return state && state->done ? state->evaluated : lazy_type_evaluate(me);
+    return state && state->done ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
 }

@@ -35,6 +35,19 @@ static LazyMemo* lazy_type_state(LazyType* me) {
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
 
+void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
+    Ty const*** chunk = &my types[ty->id >> LAZY_TYPE_CHUNK_BITS];
+    if (!*chunk) {
+        *chunk = malloc(sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS);
+        panic_if(!*chunk, "out of memory");
+    }
+    (*chunk)[ty->id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] = ty;
+}
+
+static u32 lazy_type_id(Ty const* ty) {
+    return ty ? ty->id : 0;
+}
+
 void lazy_slots_drop(LazySlots* me) {
     for (size_t i = 0; i < c_arraylen(my top); i++) {
         if (!my top[i]) continue;
@@ -45,6 +58,10 @@ void lazy_slots_drop(LazySlots* me) {
         }
         free(my top[i]);
         my top[i] = nullptr;
+    }
+    for (size_t i = 0; i < c_arraylen(my types); i++) {
+        free(my types[i]);
+        my types[i] = nullptr;
     }
 }
 
@@ -59,8 +76,8 @@ void lazy_type_drop(LazyType* me) {
 
 void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     LazyMemo* state = lazy_type_state(me);
-    state->evaluated = result;
-    state->context = context;
+    state->evaluated = lazy_type_id(result);
+    state->context = lazy_type_id(context);
     state->evaluation_started = true;
     state->done = true;
 }
@@ -154,8 +171,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
             // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
             // and so we can now safely bail.
             state->done = true;
-            state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR);
-            return state->evaluated;
+            state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR)->id;
+            return ty_intrinsic(current_checker, TY_CIRCULAR);
         }
     }
     state->evaluation_started = true;
@@ -207,7 +224,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
             return ty_intrinsic(current_checker, TY_CIRCULAR);
         }
         // Part of a cycle: any, and the declaration reports it (tsc's reportCircularityError), whatever it evaluated to
-        state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR);
+        state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR)->id;
         state->done = true;
     }
 
@@ -218,8 +235,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         if (resolving && result == ty_intrinsic(current_checker, TY_CIRCULAR) && !lazy_type_pattern_root(me)) {
             result = ty_intrinsic(current_checker, TY_ANY);
         }
-        state->evaluated = result;
+        state->evaluated = lazy_type_id(result);
         state->done = true;
     }
-    return state->evaluated;
+    return lazy_memo_evaluated(state);
 }
