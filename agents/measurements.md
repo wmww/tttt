@@ -9,6 +9,21 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Source sweep fan-out (2026-10-12, todo entry 6)
+4 agents by repo list (A config/module resolution/references/parser/perf, B relations+inference in application code,
+C type-level libraries, D contextual typing/narrowing/calls; then second tasks: A and B their own leftovers, B plan 61,
+D the tail of C's list), ~85 picks, 0 lost components at every merge. Source sweep **3132 -> 3293 / 3363** projects,
+repos fully matching 93 -> 129 / 174, no project that matched at the start lost (match-set diff). Leftovers per agent
+in bugs/sourcesweep_checker.md; plan 61 (constraint functions) written.
+- suite 13317 -> **13318** / 13568; corpora unchanged (webpack 0/5, drizzle 0/3, vue 0/3, effect 3/0, vscode 0/0); DT
+  sweep 8592 / 8595, `$ExpectType` 68631, flagflip 132 / 16 / 3 (6 -> 3 other-code), source sweep sample 4 779 -> 799
+  / 822, perfsweep median check ratio 0.19, worst types ratio 1.56.
+- Caught at merge time: a +15.6% react (C's `T & P` reduction asking a distributive base constraint: fixed with a
+  hacks.md perf gate), +0.8% nest (A: realpath on relative names), 11 source sweep projects lost (B's
+  SkipGenericFunctions in conditional arguments, found only by a full-sweep match-set diff), flagflip webpack -31
+  TS6196 and xstate +7 TS5115 (D: found only by flagflip against a session-start run in a base worktree).
+- Instructions (callgrind): INSTR
+
 ## Perf at breadth after plan 59 stage 2 (2026-10-12, the fan-out's merges up to a43aaa00)
 `scripts/perfsweep.py -j 3` with agents running (types and RSS ratios are exact; time from the end-of-session run
 below). 1779 projects:

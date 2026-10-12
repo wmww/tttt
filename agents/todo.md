@@ -32,9 +32,10 @@ instructions are the stable numbers.
    5438 -> 4992 (plan 60 total -15%/-16%), every corpus -2..-9%; load+parse target (1750) not reached, leftovers in plan
    60. Threads uncapped (checkers stay 4, vision.md). bench.sh re-baselined: tttt 2.6-10.6x tsgo at defaults, 2.0-6.1x
    single-threaded, 0.4-0.8x its RSS (measurements.md "Bench on tsgo 7.1").
-6. **Source sweep fan-out**: four Opus sub-agents on `scripts/sourcesweep.py`'s root causes (244 mismatching projects:
-   +TS2322/+TS2345 across ~20 repos each first, the TS1434 parse errors in postiz-app's `@copilotkit` `.d.mts`,
-   bugs/sourcesweep_checker.md's TS2589/TS7022/TS7023 items), one root-cause key set per agent.
+6. ~~Source sweep fan-out~~ done: 4 agents, ~85 picks; source sweep 3132 -> 3293 / 3363 (repos fully matching 93 ->
+   129), every other oracle unchanged, suite 13318; instructions +0.2..+1% (valibot -1.5%). Leftovers per agent in
+   bugs/sourcesweep_checker.md; plans/61_constraint_functions.md written (stage 1 derisked: +1 suite test). triage.md:
+   the lib-file-checking decision. measurements.md "Source sweep fan-out".
 7. **Plan 55 stage 1-2**: tsgo's pseudochecker as one module (`src/ty/pseudo.c`), equivalence and printing.
 8. **Plan 55 stage 3** (delete the three partial ports it replaces), then any time left on the suite's isolated
    declaration and accessor-pair tests it names.
@@ -46,4 +47,5 @@ instructions are the stable numbers.
 11. **Insights.**
 
 After the insights entry (for the next window): **plan 58** (re-pin to TypeScript 7.1.0 stable, once it's on npm,
-expected after 2026-11-24); plan 56 (content mappers) only if a corpus or sweep starts using them.
+expected after 2026-11-24); **plan 61** (constraint functions, three stages; mikro-orm's
+last TS2345s and the base-vs-immediate distributive constraint hack); plan 56 (content mappers) only if a corpus or sweep starts using them.
