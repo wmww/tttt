@@ -2993,12 +2993,27 @@ typedef struct CheckShares {
 } CheckShares;
 
 // One of Checker.deferred (tsc's checkDeferredNode)
+// (It is the current node, like tsc's checkDeferredNode sets currentNode: what goes wrong without a node of its own
+// inside, TS2589, TS2590, is reported there)
 static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
+    Checker* checker = current_checker;
     switch (deferred.kind) {
-        case DEFERRED_FUNCTION_BODY: function_impl_typecheck_body((FunctionImpl*)deferred.node, errs); break;
+        case DEFERRED_FUNCTION_BODY: {
+            CurrentNode saved = ty_enter_node(checker, ((FunctionImpl*)deferred.node)->full_span);
+            function_impl_typecheck_body((FunctionImpl*)deferred.node, errs);
+            ty_leave_node(checker, saved);
+        }   break;
         case DEFERRED_CLASS_MEMBERS: class_decl_typecheck_members((ClassDecl*)deferred.node, errs); break;
-        case DEFERRED_JSX_ELEMENT: jsx_element_typecheck(deferred.node, errs); break;
-        case DEFERRED_EXPR: expr_typecheck(deferred.node, errs); break;
+        case DEFERRED_JSX_ELEMENT: {
+            CurrentNode saved = ty_enter_node(checker, ((Expr const*)deferred.node)->inner_span);
+            jsx_element_typecheck(deferred.node, errs);
+            ty_leave_node(checker, saved);
+        }   break;
+        case DEFERRED_EXPR: {
+            CurrentNode saved = ty_enter_node(checker, ((Expr const*)deferred.node)->inner_span);
+            expr_typecheck(deferred.node, errs);
+            ty_leave_node(checker, saved);
+        }   break;
     }
 }
 
