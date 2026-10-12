@@ -571,9 +571,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         }
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
         if (typecheck) program_typecheck(program);
-        count_diagnostic_kinds(&names, kinds);
-        count_diagnostic_kinds(errs, type_kinds);
-        if (gated || (!ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS]))) {
+        // (Global diagnostics the checking itself finds, `using`'s TS2318 for a missing Disposable, hide nothing:
+        // tsgo's GetDiagnosticsOfAnyProgram gates on those before checking and sweeps these up after)
+        if (gated) {
             drop_diagnostic_kind(&names, DIAGNOSTIC_SEMANTIC);
             drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
         }
