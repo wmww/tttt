@@ -734,17 +734,21 @@ static void collect_free_params_of_generic(Checker* me, Generic const* generic, 
 }
 
 // `typeof a.b.c` where every declaration of `a` is in a scope inside no type parameter list and no function (the top
-// level of a file or namespace): its type mentions no type parameter. A function's locals may, through the type
-// parameters of its contextual signature (`f(t => { type A = { x: typeof t } })`), and so may an instantiation
-// expression (`typeof f<T>`), `this` or a name declared another way (JavaScript assignments)
-static bool typeof_mentions_no_type_params(TypeofType const* typeof_) {
-    Expr const* first = typeof_->expr;
+// level of a file or namespace, or an import): its type mentions no type parameter. A function's locals may, through
+// the type parameters of its contextual signature (`f(t => { type A = { x: typeof t } })`), and so may `this` or a name
+// declared another way (JavaScript assignments). An instantiation expression's (`typeof f<T>`) type arguments are
+// collected by the caller
+static bool typeof_mentions_no_type_params(Expr const* first) {
     while (first->tag == EXPR_PROPERTY && !expr_is_perenthisized(first)) first = &first->property->expr;
     if (first->tag != EXPR_IDENTIFIER || first->identifier.keyword || expr_is_perenthisized(first)) return false;
     Symbol const* symbol = first->identifier.target;
     if (!symbol || !symbol->decl_count) return false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         Scope const* block = symbol->decls[i].block;
+        // (An import, `import * as ns`, `import x = N.y`: only in a file or a namespace, never inside what declares a
+        // type parameter. JavaScript's `require` aliases can be in a function)
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (!block && decl->kind == SYMBOL_DECL_ALIAS && decl->full.source && !decl->full.source->is_js) continue;
         if (!block || block->generics || block->function) return false;
     }
     return true;
@@ -903,7 +907,20 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             // Not syntax: the type of an expression, which could be about any type parameter in scope. Unless what it
             // names is declared outside every type parameter list (tsc's isTypeParameterPossiblyReferenced: only a name
             // declared inside what declares the type parameter can mention it)
-            if (!typeof_mentions_no_type_params(node->typeof_)) out->unknown = true;
+            // `typeof f<T>`: then only what the type arguments mention (the same function's `Some(node.TypeArguments(),
+            // containsReference)`)
+            if (node->typeof_->expr->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(node->typeof_->expr)) {
+                GenericParamsExpr const* applied = node->typeof_->expr->generic_params;
+                if (!typeof_mentions_no_type_params(&applied->expr)) {
+                    out->unknown = true;
+                    break;
+                }
+                for_each (i, vec_spanned_type, &applied->params) {
+                    collect_free_params(me, &i->type, out);
+                }
+            } else if (!typeof_mentions_no_type_params(node->typeof_->expr)) {
+                out->unknown = true;
+            }
             break;
     }
 }
