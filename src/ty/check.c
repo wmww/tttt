@@ -3018,34 +3018,151 @@ static bool check_accessibility(
 }
 
 
-// An intersection's property made of several (tsc's synthetic property): public if a member is, else, when none is
-// private, protected with every member's class as a declaring class (tsc's checkPropertyAccessibilityAtLocation with
-// isClassDerivedFromDeclaringClasses), the containing type named in the message (the property has no declaring class
-// of its own). Returns whether it took care of the access (false: check member by member)
-static bool check_synthetic_protected(
-    Checker* me, AccessSite const* site, Span span, MemberRefs const* refs, Ty const* containing, Atom const* name, ErrorCtx* errs
-) {
-    // (Instantiations of one property with the same type are that property, not a synthetic one: tsc's
-    // createUnionOrIntersectionProperty keeps the single property)
-    Prop const* root = refs->props[0];
-    while (root->target) root = root->target;
-    bool single = true;
-    for (u32 i = 1; i < refs->len && single; i++) {
-        Prop const* other = refs->props[i];
-        while (other->target) other = other->target;
-        single = other == root && ty_is_related(me, prop_type(me, refs->props[i]), prop_type(me, refs->props[0]), TY_RELATION_IDENTITY);
+// The accessibility of the property tsc makes of a union's or intersection's members' (createUnionOrIntersectionProperty's
+// CheckFlags.Contains{Public,Protected,Private} and ContainsWrite*, for reading and writing): each member's property
+// counts by its own accessibility, a member's synthetic property by its most permissive
+enum { SYNTH_PUBLIC = 1, SYNTH_PROTECTED = 2, SYNTH_PRIVATE = 4 };
+
+typedef struct SyntheticAccess {
+    bool found; // There's a property (a union's has one in every member, and no non-public one it can't read)
+    bool synthetic; // Made of several properties (else `single` is the one)
+    Prop const* single;
+    unsigned char read, write; // SYNTH_* that the members contain
+    bool is_static;
+    MemberRefs leaves; // The declared properties under it (tsc's forEachProperty)
+} SyntheticAccess;
+
+static unsigned char synth_kind(u32 modifiers) {
+    return modifiers & PROP_PROTECTED ? SYNTH_PROTECTED : modifiers & PROP_PRIVATE ? SYNTH_PRIVATE : SYNTH_PUBLIC;
+}
+
+// What a property's accessibility is for reading or writing (tsc's getDeclarationModifierFlagsFromSymbol): an
+// accessor's setter's for writing; of a synthetic one public over protected over private
+static unsigned char synth_effective(SyntheticAccess const* access, bool writing) {
+    if (!access->synthetic) {
+        Prop const* prop = access->single;
+        u32 modifiers = prop->flags & (PROP_PRIVATE | PROP_PROTECTED);
+        if ((prop->flags & PROP_ACCESSOR) && writing) {
+            modifiers = (prop->flags & PROP_SET_PRIVATE ? PROP_PRIVATE : 0) | (prop->flags & PROP_SET_PROTECTED ? PROP_PROTECTED : 0);
+        }
+        return synth_kind(modifiers);
     }
-    if (single) return false;
-    Ty const* declaring[c_arraylen(refs->props)];
+    unsigned char contains = writing ? access->write : access->read;
+    return contains & SYNTH_PUBLIC ? SYNTH_PUBLIC : contains & SYNTH_PROTECTED ? SYNTH_PROTECTED : SYNTH_PRIVATE;
+}
+
+static Prop const* prop_root(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    return prop;
+}
+
+static void synthetic_access(Checker* me, Ty const* object, Atom const* name, SyntheticAccess* out, u32 depth) {
+    *out = (SyntheticAccess){0};
+    if (depth > 8) return;
+    object = ty_reduced(me, object);
+    if (object->kind != TY_UNION && object->kind != TY_INTERSECTION) object = ty_apparent_type(me, object);
+    if ((object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) || object->kind == TY_INTERSECTION) {
+        bool is_union = object->kind == TY_UNION;
+        bool partial = false, distinct = false;
+        Prop const* first = nullptr;
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = object->composite.types.data[i];
+            if (member->flags & TYF_NULLABLE) continue;
+            SyntheticAccess child;
+            synthetic_access(me, member, name, &child, depth + 1);
+            if (!child.found) {
+                if (!is_union) continue;
+                // (Through an index signature it's only partial for writing, else the union has no such property)
+                Ty const* apparent = ty_apparent_type(me, member);
+                IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+                    ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+                if (!info) {
+                    out->found = false;
+                    return;
+                }
+                partial = true;
+                continue;
+            }
+            out->found = true;
+            out->read |= synth_effective(&child, false);
+            out->write |= synth_effective(&child, true);
+            out->is_static |= child.is_static;
+            for (u32 j = 0; j < child.leaves.len && out->leaves.len < c_arraylen(out->leaves.props); j++) {
+                out->leaves.props[out->leaves.len] = child.leaves.props[j];
+                out->leaves.objects[out->leaves.len++] = child.leaves.objects[j];
+            }
+            // (Instantiations of one property with the same type are that property: tsc keeps the single one)
+            if (child.synthetic) {
+                distinct = true;
+            } else if (!first) {
+                first = child.single;
+            } else if (prop_root(child.single) != prop_root(first) ||
+                !ty_is_related(me, prop_type(me, child.single), prop_type(me, first), TY_RELATION_IDENTITY)
+            ) {
+                distinct = true;
+            }
+        }
+        if (!out->found) return;
+        out->synthetic = distinct;
+        out->single = distinct ? nullptr : first;
+        if (!distinct && !partial) return;
+        // A union's property with a private or protected member's that isn't the same declaration everywhere (tsc's
+        // hasCommonDeclaration): none if that's for reading, else written as the most restricted member's
+        bool common = out->leaves.len > 0;
+        for (u32 i = 1; i < out->leaves.len && common; i++) common = prop_root(out->leaves.props[i]) == prop_root(out->leaves.props[0]);
+        if (is_union && ((out->read | out->write) & (SYNTH_PROTECTED | SYNTH_PRIVATE)) && !common) {
+            if (out->read & (SYNTH_PROTECTED | SYNTH_PRIVATE)) {
+                out->found = false;
+                return;
+            }
+            if (out->write & SYNTH_PRIVATE) out->write = SYNTH_PRIVATE;
+            else if (out->write & SYNTH_PROTECTED) out->write &= (unsigned char)~SYNTH_PUBLIC;
+        }
+        // (A partial one is a synthetic property to tsc)
+        if (partial && !out->synthetic) {
+            out->synthetic = true;
+            out->read = synth_effective(&(SyntheticAccess){ .single = first }, false);
+            out->write = (unsigned char)(out->write & (SYNTH_PROTECTED | SYNTH_PRIVATE) ? out->write : synth_effective(&(SyntheticAccess){ .single = first }, true));
+            out->single = nullptr;
+        }
+        return;
+    }
+    if (!(object->flags & TYF_OBJECT)) return;
+    Prop const* prop = ty_get_object_prop(me, object, name);
+    if (!prop) return;
+    out->found = true;
+    out->single = prop;
+    out->is_static = (prop->flags & PROP_STATIC) != 0;
+    out->leaves.props[0] = prop;
+    out->leaves.objects[0] = object;
+    out->leaves.len = 1;
+}
+
+// tsc's checkPropertyAccessibilityAtLocation of a synthetic property: public if its accessibility for the access is,
+// private nowhere (it has no declaring class), protected where the enclosing class derives from the declaring class of
+// every protected property under it (isClassDerivedFromDeclaringClasses). The messages name the containing type
+static void check_synthetic_access(
+    Checker* me, AccessSite const* site, Span span, SyntheticAccess const* access, bool writing, Ty const* containing,
+    Atom const* name, ErrorCtx* errs
+) {
+    unsigned char kind = synth_effective(access, writing);
+    if (kind == SYNTH_PUBLIC) return;
+    if (kind == SYNTH_PRIVATE) {
+        cstr class_str = ty_to_cstr(me, containing);
+        error_ctx_error_d(errs, span, 2341, "Property '", atom_sv(name), "' is private and only accessible within class '", class_str, "'.");
+        cstr_drop(&class_str);
+        return;
+    }
+    Ty const* declaring[c_arraylen(access->leaves.props)];
     u32 count = 0;
-    for (u32 i = 0; i < refs->len; i++) {
-        Prop const* prop = refs->props[i];
-        if (prop->flags & PROP_PRIVATE) return false;
-        if (!(prop->flags & PROP_PROTECTED)) return true; // Public through this member
-        if (!prop->parent || !class_decl_of(prop->parent)) return false;
+    for (u32 i = 0; i < access->leaves.len; i++) {
+        Prop const* prop = access->leaves.props[i];
+        SyntheticAccess leaf = { .single = prop };
+        if (synth_effective(&leaf, writing) != SYNTH_PROTECTED) continue;
+        if (!prop->parent || !class_decl_of(prop->parent)) continue;
         declaring[count++] = ty_declared_type_of(me, prop->parent);
     }
-    bool is_static = (refs->props[0]->flags & PROP_STATIC) != 0;
+    bool is_static = access->is_static;
     Ty const* enclosing_type = nullptr;
     for (ClassDecl const* c = site->enclosing_class; c && !enclosing_type; c = c->outer_class) {
         if (!c->symbol) continue;
@@ -3066,9 +3183,9 @@ static bool check_synthetic_protected(
         error_ctx_error_d(errs, span, 2445, "Property '", atom_sv(name),
             "' is protected and only accessible within class '", class_str, "' and its subclasses.");
         cstr_drop(&class_str);
-        return true;
+        return;
     }
-    if (is_static) return true;
+    if (is_static) return;
     if (containing->kind == TY_TYPE_PARAM) containing = ty_apparent_type(me, containing);
     if (!containing_has_base(me, containing, enclosing_type)) {
         cstr enclosing_str = ty_to_cstr(me, enclosing_type);
@@ -3078,7 +3195,6 @@ static bool check_synthetic_protected(
             "'. This is an instance of class '", containing_str, "'.");
         c_drop(cstr, &enclosing_str, &containing_str);
     }
-    return true;
 }
 
 static Generic const* class_or_interface_generic(SymbolDecl const* decl) {
@@ -4429,32 +4545,37 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, refs.props[0], errs);
     // Element access is the way around accessibility
     bool synthetic_checked = false;
-    if (access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER) &&
-        ty_reduced(me, object)->kind == TY_INTERSECTION
-    ) {
-        AccessSite access_site = {
-            .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
-            .this_parameter = site->this_parameter, .this_function = site->this_function,
-            .initializer_context = site->initializer_context,
-        };
-        synthetic_checked = check_synthetic_protected(me, &access_site, expr_outer_span(&access->prop), &refs, object, name, errs);
+    AccessSite synthetic_site = {
+        .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
+        .this_parameter = site->this_parameter, .this_function = site->this_function,
+        .initializer_context = site->initializer_context,
+    };
+    if (access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER)) {
+        SyntheticAccess synthetic;
+        synthetic_access(me, object, name, &synthetic, 0);
+        if (synthetic.found && synthetic.synthetic) {
+            check_synthetic_access(me, &synthetic_site, expr_outer_span(&access->prop), &synthetic, access->assignment_target,
+                object, name, errs);
+            synthetic_checked = true;
+        }
     }
     Prop const* const* parts = nullptr;
     u32 part_count = access->form == PROPERTY_EXPR_DOT && refs.len == 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER) ?
         ty_synthetic_prop_parts(me, refs.props[0], &parts) : 0;
     if (part_count > 1) {
         // A property a class inherits from an intersection (a mixin's base): the intersection's synthetic property
-        MemberRefs expanded = {0};
-        for (u32 i = 0; i < part_count && i < c_arraylen(expanded.props); i++) {
-            expanded.props[expanded.len] = parts[i];
-            expanded.objects[expanded.len++] = refs.objects[0];
+        SyntheticAccess synthetic = { .found = true, .synthetic = true };
+        for (u32 i = 0; i < part_count && i < c_arraylen(synthetic.leaves.props); i++) {
+            SyntheticAccess part = { .single = parts[i] };
+            synthetic.read |= synth_effective(&part, false);
+            synthetic.write |= synth_effective(&part, true);
+            synthetic.is_static |= (parts[i]->flags & PROP_STATIC) != 0;
+            synthetic.leaves.props[synthetic.leaves.len] = parts[i];
+            synthetic.leaves.objects[synthetic.leaves.len++] = refs.objects[0];
         }
-        AccessSite access_site = {
-            .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
-            .this_parameter = site->this_parameter, .this_function = site->this_function,
-            .initializer_context = site->initializer_context,
-        };
-        synthetic_checked = check_synthetic_protected(me, &access_site, expr_outer_span(&access->prop), &expanded, object, name, errs);
+        check_synthetic_access(me, &synthetic_site, expr_outer_span(&access->prop), &synthetic, access->assignment_target,
+            object, name, errs);
+        synthetic_checked = true;
     }
     if (access->form == PROPERTY_EXPR_DOT && !synthetic_checked) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
