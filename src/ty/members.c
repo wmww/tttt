@@ -2851,10 +2851,12 @@ static bool only_this_arg_generic(Checker* me, Ty const* ty) {
     return true;
 }
 
-// A class or interface instantiated with type variables (not an array or tuple, whose mapped types are arrays and tuples):
-// its property names are known all the same, `T extends Ctx<P>` has Ctx's (tsc's resolveMappedTypeMembers lists
+// A class or interface instantiated with type variables (not an array or tuple, whose mapped types are arrays and tuples),
+// or an object type that isn't a mapped one (`{ a: keyof D & string }`, the constraint of `{ [P in keyof D]: { a: P }
+// }[keyof D]`): its property names are known all the same, `T extends Ctx<P>` has Ctx's (tsc's resolveMappedTypeMembers lists
 // getPropertiesOfType of the apparent modifiers type whatever its type arguments)
 static bool generic_object_reference(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_ANONYMOUS) return !ty_members(me, ty)->mapped;
     return ty->kind == TY_REFERENCE && !ty_is_array(me, ty) && !ty_is_tuple(ty);
 }
 
