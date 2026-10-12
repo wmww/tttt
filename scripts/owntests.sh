@@ -2,7 +2,7 @@
 # Regenerates the expected baselines of tttt's own regression tests (test/cases/tttt*.ts, tsc-suite style: `// @option`
 # and `// @filename` headers) from tsgo 7.1, the oracle: test/baselines/NAME.{errors.txt,symbols,types} (.errors.txt
 # only when there are errors, none of .symbols/.types with @noTypesAndSymbols, a NAME(option=value) set per
-# configuration). baseline_tests runs these tests with the suite (`--own-tests`, on by default).
+# configuration; an empty NAME.noerrors when tsgo reports no errors). baseline_tests runs these tests with the suite (`--own-tests`, on by default).
 # Usage: scripts/owntests.sh [test/cases/ttttFoo.ts...] (default: all of them; old baselines of those tests are replaced)
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
@@ -22,5 +22,17 @@ for f in "$TEST_DIR"/baselines/local/conformance/*; do
     # (Their header names the file where it is in this repo, like the suite's do)
     case "$f" in *.errors.txt|*.symbols|*.types)
         sed '1s|^//// \[tests/cases/conformance/|//// [test/cases/|' "$f" >test/baselines/"$(basename "$f")";; esac
+done
+# tsgo reported nothing: say so explicitly (baseline_tests fails an own test with neither file)
+for f in "$@"; do
+    test -e "$f" || continue
+    name=$(basename "$f"); name=${name%.*}
+    configs=$(ls "$TEST_DIR"/baselines/local/conformance | grep -E "^$name(\(.*\))?\.(types|errors\.txt)\$" | sed -E 's/\.(types|errors\.txt)$//' | sort -u) || true
+    # (No baseline at all, @noTypesAndSymbols and clean: the marker is the plain name's, wrong for a test with several
+    # configurations, whose names only the harness knows)
+    if test -z "$configs"; then configs=$name; fi
+    for c in $configs; do
+        test -e test/baselines/"$c".errors.txt || : >test/baselines/"$c".noerrors
+    done
 done
 ls "$TEST_DIR"/baselines/local/conformance | grep -E '\.(errors\.txt|symbols|types)$' | wc -l | xargs echo "baselines written:"

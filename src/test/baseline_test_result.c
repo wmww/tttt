@@ -123,6 +123,19 @@ void baseline_test_result_run(
     if (test_case.did_run && !my did_run && noisy) {
         eprintln(color_error, name, ":", color_normal, " ", symbols_path, " or ", types_path, " does not exist");
     }
+    // An own test where tsgo reported nothing has an empty NAME.noerrors instead of NAME.errors.txt
+    // (scripts/owntests.sh), so that a regeneration that went wrong can't pass as a clean test
+    if (my did_run && own && !fs_is_reg_file(fs, cstr_sv(&errors_path))) {
+        cstr marker = cstr_d(suite->own_dir, "/baselines/", name, ".noerrors");
+        if (!fs_is_reg_file(fs, cstr_sv(&marker))) {
+            my did_run = false;
+            if (noisy) {
+                eprintln(color_error, name, ":", color_normal, " neither ", errors_path, " nor ", marker,
+                    " exists (scripts/owntests.sh)");
+            }
+        }
+        cstr_drop(&marker);
+    }
 
     if (my did_run) {
         cstr our_result = cstr_null;
