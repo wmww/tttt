@@ -514,7 +514,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())
-            interface_typecheck(&my interface, errs);
+            interface_typecheck(&my interface, nullptr, errs);
             // tsc's checkMappedType: a mapped type without a type (reportImplicitAny)
             if (vec_interface_member_size(&my interface.members) &&
                 vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED &&

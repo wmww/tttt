@@ -5,6 +5,8 @@
 #include "lazy_type.h"
 #include "callable_type.h"
 #include "expr.h"
+#include "scope.h"
+#include "interface_decl.h"
 
 void interface_drop(Interface* me) {
     vec_interface_member_drop(&my members);
@@ -14,12 +16,30 @@ static bool is_named_method(InterfaceMember const* member) {
     return member->key.tag == INTERFACE_KEY_NAME && member->key.name_is_member_function && member->type.tag == TYPE_CALLABLE;
 }
 
+// The first method signature named `name` among the declarations of `merged` (tsc's getCanonicalOverload: the first
+// overload of the merged symbol, wherever it is), null if none
+static InterfaceMember const* canonical_method(Symbol const* merged, cstr const* name) {
+    for (u32 d = 0; merged && d < merged->decl_count; d++) {
+        if (merged->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* decl = merged->decls[d].node;
+        for_each (i, vec_interface_member, &decl->type.interface.members) {
+            if (is_named_method(i) && cstr_eq(&i->key.name_string, name)) return i;
+        }
+    }
+    return nullptr;
+}
+
 // tsc's checkQuestionTokenAgreementBetweenOverloads for method signatures: the overloads of a name are all optional or
-// all required, the first one decides (TS2386). Per body, not across merged declarations
-static void interface_check_overload_optionality(Interface const* me, ErrorCtx* errs) {
-    bool any_optional = false;
-    for_each (i, vec_interface_member, &my members) any_optional |= is_named_method(i) && i->optional;
-    if (!any_optional) return;
+// all required, the first one decides (TS2386). Across the merged declarations of an interface (the first one of
+// them, a lib's `ImportMeta.resolve` against @types/node's `resolve?`), else per body
+static void interface_check_overload_optionality(Interface const* me, Symbol const* merged, ErrorCtx* errs) {
+    bool any_optional = false, any_required = false;
+    for_each (i, vec_interface_member, &my members) {
+        if (!is_named_method(i)) continue;
+        any_optional |= i->optional;
+        any_required |= !i->optional;
+    }
+    if (!any_optional && !(any_required && merged && merged->decl_count > 1)) return;
     isize count = vec_interface_member_size(&my members);
     for (isize i = 0; i < count; i++) {
         InterfaceMember const* first = vec_interface_member_at(&my members, i);
@@ -30,19 +50,21 @@ static void interface_check_overload_optionality(Interface const* me, ErrorCtx* 
             seen_before = is_named_method(other) && cstr_eq(&other->key.name_string, &first->key.name_string);
         }
         if (seen_before) continue;
-        for (isize j = i + 1; j < count; j++) {
+        InterfaceMember const* canonical = merged && merged->decl_count > 1 ? canonical_method(merged, &first->key.name_string) : nullptr;
+        if (!canonical) canonical = first;
+        for (isize j = i; j < count; j++) {
             InterfaceMember const* other = vec_interface_member_at(&my members, j);
-            if (!is_named_method(other) || !cstr_eq(&other->key.name_string, &first->key.name_string)) continue;
-            if (other->optional != first->optional) {
+            if (other == canonical || !is_named_method(other) || !cstr_eq(&other->key.name_string, &first->key.name_string)) continue;
+            if (other->optional != canonical->optional) {
                 error_ctx_error_d(errs, other->key.span, 2386, "Overload signatures must all be optional or required.");
             }
         }
     }
 }
 
-void interface_typecheck(Interface const* me, ErrorCtx* errs) {
+void interface_typecheck(Interface const* me, Symbol const* merged, ErrorCtx* errs) {
     for_each (i, vec_interface_member, &my members) {
         interface_member_typecheck(i, false, my type_literal, errs);
     }
-    interface_check_overload_optionality(me, errs);
+    interface_check_overload_optionality(me, merged, errs);
 }

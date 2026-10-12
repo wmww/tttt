@@ -22,4 +22,5 @@ typedef struct Interface {
 } Interface;
 
 void interface_drop(Interface* me);
-void interface_typecheck(Interface const* me, ErrorCtx* errs);
+// `merged`: the interface symbol whose declarations its own merges with (null for a type literal)
+void interface_typecheck(Interface const* me, struct Symbol const* merged, ErrorCtx* errs);

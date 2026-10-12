@@ -241,7 +241,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     // (Its members' anonymous types know the declared type is merged whoever lowers them first, see LowerCtx.merged_owner)
     uint16_t saved_owner = current_checker->walk_merged_owner;
     if (my symbol) current_checker->walk_merged_owner = ty_merged_owner_index(current_checker, ty_declared_type_of(current_checker, my symbol));
-    interface_typecheck(&my type.interface, errs);
+    interface_typecheck(&my type.interface, my symbol, errs);
     current_checker->walk_merged_owner = saved_owner;
     // Once for all declarations of the interface, by the first one that is checked (a lib's aren't)
     InterfaceDecl const* first_checked = nullptr;
