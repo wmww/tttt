@@ -5334,6 +5334,16 @@ static void add_expando_member(
     for (u32 i = 0; existing && i < existing->decl_count; i++) {
         if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && span_source(existing->decls[i].full) == my file) return;
     }
+    // (A class's static members are its exports in tsgo, here they're its items)
+    for (u32 d = 0; d < host->decl_count; d++) {
+        if (host->decls[d].kind != SYMBOL_DECL_CLASS || span_source(host->decls[d].full) != my file) continue;
+        ClassDecl const* class_decl = host->decls[d].node;
+        for_each (i, vec_class_item, &class_decl->items) {
+            cstr const* item_name = i->tag == CLASS_ITEM_FIELD && !i->field.computed_key && i->field.is_static ? &i->field.name_string :
+                i->tag == CLASS_ITEM_METHOD && !i->method.computed_key && i->method.is_static ? &i->method.name_string : nullptr;
+            if (item_name && cstr_equals_sv(item_name, span_sv(name))) return;
+        }
+    }
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, span_sv(name), name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
