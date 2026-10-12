@@ -5044,6 +5044,8 @@ static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
 // `{ a: 1, b: "" }[k]` that doesn't find k (tsc's getPropertyTypeForIndexType on an object literal type): a missing
 // literal key is undefined (TS2339 under noImplicitAny), a string or number key any of the properties or undefined
 static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* key) {
+    // (A JavaScript object literal's is any first: tsc's isJSLiteralType comes before isObjectLiteralType there)
+    if (ty_is_js_literal_type(me, object)) return nullptr;
     key = ty_regular(me, key);
     TyList keys = key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) ? key->composite.types : (TyList){ .data = &key, .len = 1 };
     TyBuf parts = {0};
