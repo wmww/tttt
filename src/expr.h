@@ -495,7 +495,8 @@ bool expr_check_reference_is_reference(Expr const* target, unsigned code, char c
 // expr_typecheck() and expr_check_truthiness() of the condition of an `if` statement whose body is `then`, and tsc's
 // checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType
 typedef struct Statement Statement;
-void expr_typecheck_if_condition(Expr const* me, Statement const* then, ErrorCtx* errs);
+void expr_typecheck_if_condition(Expr const* me, ErrorCtx* errs);
+void expr_check_if_known_truthy(Expr const* me, Statement const* then, ErrorCtx* errs);
 zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {

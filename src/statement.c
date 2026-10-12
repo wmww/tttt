@@ -2576,7 +2576,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             }
             for (intptr_t i = 0; i < cond_size; i++) {
                 // Conditions do not have to be booleans
-                expr_typecheck_if_condition(vec_expr_at(&my if_else.conditions, i), vec_statement_at(&my if_else.statements, i), errs);
+                expr_typecheck_if_condition(vec_expr_at(&my if_else.conditions, i), errs);
                 Statement const* then = vec_statement_at(&my if_else.statements, i);
                 if (then->tag == STATEMENT_NOOP && span_valid(then->span) && *span_start_ptr(then->span) == ';') { // (tsc's checkIfStatement)
                     char const* at = span_start_ptr(then->span);
@@ -2586,6 +2586,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             ctx.body = true;
             for_each (i, vec_statement, &my if_else.statements) {
                 statement_typecheck(i, ctx, errs);
+            }
+            for (intptr_t i = 0; i < cond_size; i++) {
+                expr_check_if_known_truthy(vec_expr_at(&my if_else.conditions, i), vec_statement_at(&my if_else.statements, i), errs);
             }
             break;
         }

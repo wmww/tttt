@@ -2952,13 +2952,19 @@ static void check_known_truthy_tree(Expr const* me, CondPath const* path, bool i
     check_known_truthy_tree(&my binary_op->right, &right, in_if, body, errs);
 }
 
-// The condition of an `if` statement, whose body is `then`
-void expr_typecheck_if_condition(Expr const* me, Statement const* then, ErrorCtx* errs) {
+// The condition of an `if` statement
+void expr_typecheck_if_condition(Expr const* me, ErrorCtx* errs) {
     Expr const* outer = if_condition;
     if_condition = me;
     expr_typecheck(me, errs);
     if_condition = outer;
     expr_check_truthiness(me, errs);
+}
+
+// The tested functions and promises of an `if` statement's condition that its body `then` never uses (TS2774,
+// TS2801). After the body is checked: the search reads the types of the body's property accesses, and an expression
+// is typed by whoever knows its contextual type first (a parameter of a function expression typed early is any)
+void expr_check_if_known_truthy(Expr const* me, Statement const* then, ErrorCtx* errs) {
     if (!compiler_options()->strict_null_checks) return;
     CondPath root = { me, nullptr };
     TruthyBody body = { .statement = then };
@@ -4410,11 +4416,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_TERNARY:
             expr_typecheck(&my ternary->condition, errs);
             expr_check_truthiness(&my ternary->condition, errs);
+            expr_typecheck(&my ternary->yes, errs);
+            // (After the branch is checked, see expr_check_if_known_truthy())
             if (compiler_options()->strict_null_checks) {
                 CondPath path = { &my ternary->condition, nullptr };
                 check_known_truthy(&my ternary->condition, &path, (TruthyBody){ .expr = &my ternary->yes }, errs);
             }
-            expr_typecheck(&my ternary->yes, errs);
             expr_typecheck(&my ternary->no, errs);
             break;
 
