@@ -1,0 +1,71 @@
+//// [test/cases/ttttConditionalTypeResolving.ts] ////
+
+=== ttttConditionalTypeResolving.ts ===
+type Foo<T> = T | { x: Foo<T>}
+>Foo : Symbol(Foo, Decl(ttttConditionalTypeResolving.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 0, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 0, 9))
+>x : Symbol(x, Decl(ttttConditionalTypeResolving.ts, 0, 19))
+>Foo : Symbol(Foo, Decl(ttttConditionalTypeResolving.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 0, 9))
+
+type Bar<T> = 1 extends T ? [T] : T
+>Bar : Symbol(Bar, Decl(ttttConditionalTypeResolving.ts, 0, 30))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 1, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 1, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 1, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 1, 9))
+
+type Baz<T> = 1 extends number ? [T] : T
+>Baz : Symbol(Baz, Decl(ttttConditionalTypeResolving.ts, 1, 35))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 2, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 2, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 2, 9))
+
+type Biz<T> = {notbiz: T} extends {biz: T} ? [T] : T
+>Biz : Symbol(Biz, Decl(ttttConditionalTypeResolving.ts, 2, 40))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 3, 9))
+>notbiz : Symbol(notbiz, Decl(ttttConditionalTypeResolving.ts, 3, 15))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 3, 9))
+>biz : Symbol(biz, Decl(ttttConditionalTypeResolving.ts, 3, 35))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 3, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 3, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 3, 9))
+
+type Buz<T> = {buz: 7} extends {buz: T} ? [T] : T
+>Buz : Symbol(Buz, Decl(ttttConditionalTypeResolving.ts, 3, 52))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 4, 9))
+>buz : Symbol(buz, Decl(ttttConditionalTypeResolving.ts, 4, 15))
+>buz : Symbol(buz, Decl(ttttConditionalTypeResolving.ts, 4, 32))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 4, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 4, 9))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 4, 9))
+
+type Buzz<T extends number> = {buzz: T} extends {buzz: number} ? [T] : T
+>Buzz : Symbol(Buzz, Decl(ttttConditionalTypeResolving.ts, 4, 49))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 5, 10))
+>buzz : Symbol(buzz, Decl(ttttConditionalTypeResolving.ts, 5, 31))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 5, 10))
+>buzz : Symbol(buzz, Decl(ttttConditionalTypeResolving.ts, 5, 49))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 5, 10))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 5, 10))
+
+type Boop<T> = 7
+>Boop : Symbol(Boop, Decl(ttttConditionalTypeResolving.ts, 5, 72))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 6, 10))
+
+type Beep<T> = {beep: 7}
+>Beep : Symbol(Beep, Decl(ttttConditionalTypeResolving.ts, 6, 16))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 7, 10))
+>beep : Symbol(beep, Decl(ttttConditionalTypeResolving.ts, 7, 16))
+
+type Zeep<T> = 1 extends number ? (1 extends T ? 1 : 2) : 3
+>Zeep : Symbol(Zeep, Decl(ttttConditionalTypeResolving.ts, 7, 24))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 8, 10))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 8, 10))
+
+type Zoop<T> = 1 extends number ? (1 extends T ? 1 : (2 extends number ? 4 : 5)) : 3
+>Zoop : Symbol(Zoop, Decl(ttttConditionalTypeResolving.ts, 8, 59))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 9, 10))
+>T : Symbol(T, Decl(ttttConditionalTypeResolving.ts, 9, 10))
+

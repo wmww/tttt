@@ -1,5 +1,65 @@
 const tsCommit = "fed0bf24149fb1ed36039212648bafdafc1ea10e"
 const baselines = {
+    'ttttBasicGlobalNamespaceAugmentation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConditionalTypeResolving': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeepNestingObjectLiteralSource': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeferredCheckErrorLocation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFunctionParsing': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportFromReexport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInterfaceExtendsGenericFunctionAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIntersectionOfManyMembersProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttKnownTruthyBodySearchContextualParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMutuallyRecursiveArrayTypesOverlap': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNullIdentifierName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttParenthisizedIdentifierFollowedByExpr': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     '2dArrays': {
         errors: true,
         symbols: true,

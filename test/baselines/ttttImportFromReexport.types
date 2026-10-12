@@ -1,0 +1,19 @@
+//// [test/cases/ttttImportFromReexport.ts] ////
+
+=== a.ts ===
+export let foo = 3;
+>foo : number
+>3 : 3
+
+=== b.ts ===
+export {foo} from './a'
+>foo : number
+
+=== c.ts ===
+import {foo} from './b'
+>foo : number
+
+let x = foo;
+>x : number
+>foo : number
+

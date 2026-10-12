@@ -4,7 +4,9 @@
   CASES     TESTS/cases (compiler/, conformance/; transpile/ isn't a baseline suite)
   ref(name, ext)   tsc's baseline of a test: ref('foo(target=es2015)', '.types'). Baselines are per suite
                    (reference/compiler/, reference/conformance/), found from the test file's directory
-  test_files()     every test file (path), compiler and conformance
+  test_files()     every test file (path), compiler and conformance, then tttt's own (OWN_CASES, own=False: not those)
+  OWN_CASES, OWN_REF   tttt's own regression tests (test/cases/tttt*.ts) and their tsgo baselines (test/baselines,
+                   scripts/owntests.sh): kind 'tttt'
 """
 import os
 
@@ -14,13 +16,15 @@ TESTS = os.path.join(TESTDATA, 'tests')
 CASES = os.path.join(TESTS, 'cases')
 REF_ROOT = os.path.join(TESTDATA, 'baselines/reference')
 SUITES = ('compiler', 'conformance')
+OWN_CASES = os.path.join(ROOT, 'test/cases')
+OWN_REF = os.path.join(ROOT, 'test/baselines')
 
 _kinds = None
 
 
-def test_files():
-    for suite in SUITES:
-        for root, _, files in os.walk(os.path.join(CASES, suite)):
+def test_files(own=True):
+    for d in [os.path.join(CASES, suite) for suite in SUITES] + ([OWN_CASES] if own else []):
+        for root, _, files in os.walk(d):
             for f in files:
                 if f.endswith('.ts') or f.endswith('.tsx'):
                     yield os.path.join(root, f)
@@ -33,9 +37,11 @@ def test_kind(name):
         _kinds = {}
         for path in test_files():
             rel = os.path.relpath(path, CASES)
-            _kinds[os.path.basename(path).rsplit('.', 1)[0]] = rel.split(os.sep)[0]
+            _kinds[os.path.basename(path).rsplit('.', 1)[0]] = 'tttt' if path.startswith(OWN_CASES + os.sep) else \
+                rel.split(os.sep)[0]
     return _kinds.get(name.split('(')[0], 'compiler')
 
 
 def ref(name, ext=''):
-    return os.path.join(REF_ROOT, test_kind(name), name + ext)
+    kind = test_kind(name)
+    return os.path.join(OWN_REF, name + ext) if kind == 'tttt' else os.path.join(REF_ROOT, kind, name + ext)

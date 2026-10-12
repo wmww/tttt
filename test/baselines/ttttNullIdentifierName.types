@@ -1,0 +1,17 @@
+//// [test/cases/ttttNullIdentifierName.ts] ////
+
+=== ttttNullIdentifierName.ts ===
+let a: { 'null': number };
+>a : { null: number; }
+>'null' : number
+
+a.null;
+>a.null : number
+>a : { null: number; }
+>null : number
+
+let null = 7;
+>let : any
+>null = 7 : 7
+>7 : 7
+

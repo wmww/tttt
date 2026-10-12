@@ -1,0 +1,20 @@
+//// [test/cases/ttttParenthisizedIdentifierFollowedByExpr.ts] ////
+
+=== ttttParenthisizedIdentifierFollowedByExpr.ts ===
+let a = 7;
+>a : number
+>7 : 7
+
+(a);
+>(a) : number
+>a : number
+
+(a) a;
+>(a) : number
+>a : number
+>a : number
+
+(a) {};
+>(a) {} : (a: any) => void
+>a : any
+

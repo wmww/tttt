@@ -91,10 +91,18 @@ void baseline_test_result_run(
     bool noisy = show_errs || show_syms || show_typs;
     csview name = cstr_sv(&my name);
     // tsgo's layout: testdata/tests/cases/compiler/x.ts has its baselines in testdata/baselines/reference/compiler
+    // tttt's own tests (BaselineTestSuite.own_dir) have theirs in own_dir/baselines
     csview kind = csview_contains(cstr_sv(&my source_path), "/cases/compiler/") ? c_sv("compiler") : c_sv("conformance");
-    cstr errors_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".errors.txt");
-    cstr symbols_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".symbols");
-    cstr types_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".types");
+    csview path = cstr_sv(&my source_path);
+    bool own = csview_size(suite->own_dir) && csview_size(path) > csview_size(suite->own_dir) &&
+        csview_equals_sv(csview_slice(path, 0, csview_size(suite->own_dir)), suite->own_dir) &&
+        csview_starts_with(csview_slice(path, csview_size(suite->own_dir), INTPTR_MAX), "/cases/");
+    cstr baselines = own ? cstr_d(suite->own_dir, "/baselines/") :
+        cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/");
+    cstr errors_path = cstr_d(baselines, name, ".errors.txt");
+    cstr symbols_path = cstr_d(baselines, name, ".symbols");
+    cstr types_path = cstr_d(baselines, name, ".types");
+    cstr_drop(&baselines);
 
     // It's ok if errors file doesn't exist, and with @noTypesAndSymbols the other two don't either. Whether a test
     // has that is only known after loading it, so a test without baselines runs and is then dropped if it turns out

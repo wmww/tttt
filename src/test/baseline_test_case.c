@@ -554,6 +554,8 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             cstr lib_dir = cstr_d(csview_slice(my source_path, 0, cases), "/tests/lib");
             mount_test_lib_folder(me, cstr_sv(&lib_dir), c_sv("/.lib"));
             cstr_drop(&lib_dir);
+        } else if (csview_size(baseline_test_lib_dir)) {
+            mount_test_lib_folder(me, baseline_test_lib_dir, c_sv("/.lib"));
         }
     }
 
@@ -939,6 +941,7 @@ static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, Baseline
 }
 
 u32 baseline_test_checkers = 0;
+csview baseline_test_lib_dir = {0};
 u32 baseline_test_threads = 0;
 
 BaselineTestCase run_baseline_test_case(

@@ -1,0 +1,23 @@
+//// [test/cases/ttttMutuallyRecursiveArrayTypesOverlap.ts] ////
+
+=== ttttMutuallyRecursiveArrayTypesOverlap.ts ===
+type A = B[];
+>A : Symbol(A, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 0))
+>B : Symbol(B, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 13))
+
+type B = A[];
+>B : Symbol(B, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 13))
+>A : Symbol(A, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 0))
+
+let a: A;
+>a : Symbol(a, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 2, 3))
+>A : Symbol(A, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 0))
+
+let b: B;
+>b : Symbol(b, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 3, 3))
+>B : Symbol(B, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 0, 13))
+
+a == b ? true : false;
+>a : Symbol(a, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 2, 3))
+>b : Symbol(b, Decl(ttttMutuallyRecursiveArrayTypesOverlap.ts, 3, 3))
+

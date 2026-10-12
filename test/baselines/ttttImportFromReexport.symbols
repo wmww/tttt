@@ -1,0 +1,18 @@
+//// [test/cases/ttttImportFromReexport.ts] ////
+
+=== a.ts ===
+export let foo = 3;
+>foo : Symbol(foo, Decl(a.ts, 0, 10))
+
+=== b.ts ===
+export {foo} from './a'
+>foo : Symbol(foo, Decl(b.ts, 0, 8))
+
+=== c.ts ===
+import {foo} from './b'
+>foo : Symbol(foo, Decl(c.ts, 0, 8))
+
+let x = foo;
+>x : Symbol(x, Decl(c.ts, 1, 3))
+>foo : Symbol(foo, Decl(c.ts, 0, 8))
+

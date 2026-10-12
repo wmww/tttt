@@ -39,16 +39,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
 - Not sure how important emitting .d.ts files are. for now emitting js should def be out of scope. there are already plenty of fast emitters (eg esbuild), so for now anything covered by them doesn't need to be a focus. otherwise up to you what's important.
 - I'll test on various configurations in the future. for now I don't see why we would cap at a particular number of threads. maybe tsgo has it's reasons but cargo culting from that seems silly. idk, you're the boss. just make it sensible and fast.
   - (Answered 2026-10-12, todo entry 5) Threads are no longer capped: `--threads` defaults to every core. Checkers stay a fixed 4 by default because K changes output details (union order in messages) and memory; see vision.md "Thread defaults". Numbers from a many-core machine would tell whether a bigger fixed K pays.
-- btw if at any point you come across situations where typecheckers can diverge in behavior that are not covered by existing tests, please write new tests for them. For example if you find a false error in a large existing project you test against, or a way to introduce an error tsc catches that tttt misses that isn't covered anywhere in tsc's tests, add it somewhere checked into this repo so we don't regress. I was originally putting such cases in test/cases/ (I only have a few). you can move them around if you want, and you might need to change the test suite to actually check against them, idk
-- (main session, plan 59 stage 2 fan-out, for the item above) Divergences found on real projects this session, each
-  fixed, none covered by a checked test yet (cut-down repros to write once test/cases is wired in): an intersection of
-  > 16 members lost properties in find_prop() (better-auth's `authClient.organization.update`: spurious TS2339,
-  91d6a206); TS2774's body search ran before the body was checked, so arrow parameters in it got no contextual type
-  (spurious TS7006 in react-hook-form, trpc/packages/openapi, e332b875); deferred checks' TS2589/TS2590 had no
-  location, so `// @ts-ignore` didn't cover them (tiptap/demos, 16b4bb4b); deep nesting never stopped on object
-  literal sources (nuxt's `defu(route, {...})`: spurious TS2590, 17dabf96); an interface extending a generic
-  function-type alias ran into the instantiation limit (arktype/ark/docs: spurious TS2589/TS5114, f973cab3). Also an
-  open one: agent A's zod getter probe (bugs/perf_leads.md "agent A round 2"), a spurious TS2322 where tsgo is clean.
 - (2026-10-12, plan 55 session) genericCallOnMemberReturningClosedOverObject's expression lines: `example<number>()
   .foo("hello")` prints ten levels of `{ foo: <T2_1>(t2: T2_1) => ...` where tsgo's is `{ foo: <T2>(t2: T2) => any; ... }`.
   The object literal `x` instantiated inside its own generic method's signature instantiation (T2 -> fresh T2') is a new
@@ -62,3 +52,11 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
 - **Variance accuracy** (agent A): on feathers/packages/knex 27 measured variances match tsgo's trace and 35 differ
   (perf_leads.md "knex"); after d93172d5 that costs 4x types there. An instrumented tsgo (memory note) logging
   QueryBuilder's measurement order is the next step; worth a plan if more projects show it.
+- (2026-10-12, test/cases wiring) A JSX element spreading five unions of ten object types
+  (`<Comp {...a} {...b} {...c} {...d} {...e} />`, Comp generic, `@jsx: preserve`) is TS2590 in tsgo, nothing in tttt
+  (missed, before and after 16b4bb4b). The same five unions in `inter(a, b, c, d, e)` returning `P & Q & R & S & T`
+  match tsgo. Probe: the jsx spread's union/intersection size check.
+- (2026-10-12, test/cases wiring) TS2322 elaboration "Type 'SVGCircleElement' is missing the following properties from
+  type 'HTMLSpanElement': ..." lists `accessKey, accessKeyLabel, ...` in tttt, `contentEditable, enterKeyHint, ...` in
+  tsgo (react16.d.ts, test/cases/ttttDeferredCheckErrorLocation.tsx without its @ts-ignore; tiptap's MarkViewContent):
+  the missing-properties list's order or filtering differs (both say "and 26 more").

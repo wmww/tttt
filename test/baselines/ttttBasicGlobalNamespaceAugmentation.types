@@ -1,0 +1,14 @@
+//// [test/cases/ttttBasicGlobalNamespaceAugmentation.ts] ////
+
+=== ttttBasicGlobalNamespaceAugmentation.ts ===
+export {}
+a
+>a : number
+
+declare global {
+>global : typeof global
+
+  let a: number
+>a : number
+}
+

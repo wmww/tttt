@@ -1,0 +1,126 @@
+//// [test/cases/ttttIntersectionOfManyMembersProperty.ts] ////
+
+=== ttttIntersectionOfManyMembersProperty.ts ===
+// A property every member of an intersection of more than 16 members has is the intersection of all of their property
+// types, not of the first 16 (better-auth's client, `UnionToIntersection` of one `{ organization: ... }` per endpoint:
+// `authClient.organization.update` was a spurious TS2339 in dokploy, fixed in 91d6a206)
+declare const r:
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+
+    { o: { a0: 0 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5))
+>a0 : Symbol(a0, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 10))
+
+    { o: { a1: 1 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5))
+>a1 : Symbol(a1, Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 10))
+
+    { o: { a2: 2 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5))
+>a2 : Symbol(a2, Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 10))
+
+    { o: { a3: 3 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5))
+>a3 : Symbol(a3, Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 10))
+
+    { o: { a4: 4 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5))
+>a4 : Symbol(a4, Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 10))
+
+    { o: { a5: 5 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 9, 5))
+>a5 : Symbol(a5, Decl(ttttIntersectionOfManyMembersProperty.ts, 9, 10))
+
+    { o: { a6: 6 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 10, 5))
+>a6 : Symbol(a6, Decl(ttttIntersectionOfManyMembersProperty.ts, 10, 10))
+
+    { o: { a7: 7 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 11, 5))
+>a7 : Symbol(a7, Decl(ttttIntersectionOfManyMembersProperty.ts, 11, 10))
+
+    { o: { a8: 8 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 12, 5))
+>a8 : Symbol(a8, Decl(ttttIntersectionOfManyMembersProperty.ts, 12, 10))
+
+    { o: { a9: 9 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 13, 5))
+>a9 : Symbol(a9, Decl(ttttIntersectionOfManyMembersProperty.ts, 13, 10))
+
+    { o: { a10: 10 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 14, 5))
+>a10 : Symbol(a10, Decl(ttttIntersectionOfManyMembersProperty.ts, 14, 10))
+
+    { o: { a11: 11 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 15, 5))
+>a11 : Symbol(a11, Decl(ttttIntersectionOfManyMembersProperty.ts, 15, 10))
+
+    { o: { a12: 12 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 16, 5))
+>a12 : Symbol(a12, Decl(ttttIntersectionOfManyMembersProperty.ts, 16, 10))
+
+    { o: { a13: 13 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 17, 5))
+>a13 : Symbol(a13, Decl(ttttIntersectionOfManyMembersProperty.ts, 17, 10))
+
+    { o: { a14: 14 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 18, 5))
+>a14 : Symbol(a14, Decl(ttttIntersectionOfManyMembersProperty.ts, 18, 10))
+
+    { o: { a15: 15 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 19, 5))
+>a15 : Symbol(a15, Decl(ttttIntersectionOfManyMembersProperty.ts, 19, 10))
+
+    { o: { a16: 16 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 20, 5))
+>a16 : Symbol(a16, Decl(ttttIntersectionOfManyMembersProperty.ts, 20, 10))
+
+    { o: { a17: 17 } } &
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 21, 5))
+>a17 : Symbol(a17, Decl(ttttIntersectionOfManyMembersProperty.ts, 21, 10))
+
+    { o: { a18: 18 } };
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 5))
+>a18 : Symbol(a18, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 10))
+
+r.o.a0;
+>r.o.a0 : Symbol(a0, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 10))
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>a0 : Symbol(a0, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 10))
+
+r.o.a15;
+>r.o.a15 : Symbol(a15, Decl(ttttIntersectionOfManyMembersProperty.ts, 19, 10))
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>a15 : Symbol(a15, Decl(ttttIntersectionOfManyMembersProperty.ts, 19, 10))
+
+r.o.a16;
+>r.o.a16 : Symbol(a16, Decl(ttttIntersectionOfManyMembersProperty.ts, 20, 10))
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>a16 : Symbol(a16, Decl(ttttIntersectionOfManyMembersProperty.ts, 20, 10))
+
+r.o.a18;
+>r.o.a18 : Symbol(a18, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 10))
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>a18 : Symbol(a18, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 10))
+
+const n: 18 = r.o.a18;
+>n : Symbol(n, Decl(ttttIntersectionOfManyMembersProperty.ts, 28, 5))
+>r.o.a18 : Symbol(a18, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 10))
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>a18 : Symbol(a18, Decl(ttttIntersectionOfManyMembersProperty.ts, 22, 10))
+
+r.o.missing;
+>r.o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+>r : Symbol(r, Decl(ttttIntersectionOfManyMembersProperty.ts, 3, 13))
+>o : Symbol(o, Decl(ttttIntersectionOfManyMembersProperty.ts, 4, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 5, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 6, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 7, 5), Decl(ttttIntersectionOfManyMembersProperty.ts, 8, 5) ... and 14 more)
+

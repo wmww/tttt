@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeferredCheckErrorLocation.tsx] ////
+
+=== a.tsx ===
+/// <reference path="react16.d.ts" />
+import * as React from 'react';
+>React : Symbol(React, Decl(a.tsx, 1, 6))
+
+export type ContentProps<T extends keyof JSX.IntrinsicElements = 'span'> = { as?: T } & Omit<React.ComponentProps<T>, 'as'>;
+>ContentProps : Symbol(ContentProps, Decl(a.tsx, 1, 31))
+>T : Symbol(T, Decl(a.tsx, 2, 25))
+>JSX : Symbol(JSX, Decl(react16.d.ts, 2495, 12))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(react16.d.ts, 2516, 86))
+>as : Symbol(as, Decl(a.tsx, 2, 76))
+>T : Symbol(T, Decl(a.tsx, 2, 25))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>React : Symbol(React, Decl(a.tsx, 1, 6))
+>ComponentProps : Symbol(React.ComponentProps, Decl(react16.d.ts, 2425, 9))
+>T : Symbol(T, Decl(a.tsx, 2, 25))
+
+export const Content = <T extends keyof JSX.IntrinsicElements = 'span'>(props: ContentProps<T>) => {
+>Content : Symbol(Content, Decl(a.tsx, 3, 12))
+>T : Symbol(T, Decl(a.tsx, 3, 24))
+>JSX : Symbol(JSX, Decl(react16.d.ts, 2495, 12))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(react16.d.ts, 2516, 86))
+>props : Symbol(props, Decl(a.tsx, 3, 72))
+>ContentProps : Symbol(ContentProps, Decl(a.tsx, 1, 31))
+>T : Symbol(T, Decl(a.tsx, 3, 24))
+
+    const { as: Tag = 'span', ...rest } = props;
+>as : Symbol(as, Decl(a.tsx, 2, 76))
+>Tag : Symbol(Tag, Decl(a.tsx, 4, 11))
+>rest : Symbol(rest, Decl(a.tsx, 4, 29))
+>props : Symbol(props, Decl(a.tsx, 3, 72))
+
+    const r = (element: HTMLElement | null) => {};
+>r : Symbol(r, Decl(a.tsx, 5, 9))
+>element : Symbol(element, Decl(a.tsx, 5, 15))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+    return (
+        // @ts-ignore
+        <Tag {...rest} ref={r} />
+>Tag : Symbol(Tag, Decl(a.tsx, 4, 11))
+>rest : Symbol(rest, Decl(a.tsx, 4, 29))
+>ref : Symbol(ref, Decl(a.tsx, 8, 22))
+>r : Symbol(r, Decl(a.tsx, 5, 9))
+
+    );
+};
+

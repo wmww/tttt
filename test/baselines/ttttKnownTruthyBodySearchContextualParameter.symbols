@@ -1,0 +1,72 @@
+//// [test/cases/ttttKnownTruthyBodySearchContextualParameter.ts] ////
+
+=== ttttKnownTruthyBodySearchContextualParameter.ts ===
+// TS2774 (a tested function the body never calls) searches the `if` body / the ternary's true branch for uses of the
+// tested function, reading the types of property accesses on the way. Done before the body was checked, that typed the
+// parameters of function expressions in it without their contextual signature: spurious TS7006 (react-hook-form's
+// validateField.ts, trpc/packages/openapi, dokploy; fixed in e332b875)
+declare function k(cb: (name: string) => void): void;
+>k : Symbol(k, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 0, 0))
+>cb : Symbol(cb, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 4, 19))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 4, 24))
+
+declare const res: { appendHeader: (name: string, value: number) => void; m(): boolean };
+>res : Symbol(res, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 13))
+>appendHeader : Symbol(appendHeader, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 20))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 36))
+>value : Symbol(value, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 49))
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 73))
+
+function inIf(m: () => boolean) {
+>inIf : Symbol(inIf, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 89))
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 7, 14))
+
+    if (m) {
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 7, 14))
+
+        k((name) => { name.toLowerCase(); });
+>k : Symbol(k, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 0, 0))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 9, 11))
+>name.toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 9, 11))
+>toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+    }
+}
+
+function inTernary(m: () => boolean) {
+>inTernary : Symbol(inTernary, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 11, 1))
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 13, 19))
+
+    return m ? k((name) => { name.toLowerCase(); }) : undefined;
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 13, 19))
+>k : Symbol(k, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 0, 0))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 14, 18))
+>name.toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 14, 18))
+>toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+>undefined : Symbol(undefined)
+}
+
+function assigned() {
+>assigned : Symbol(assigned, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 15, 1))
+
+    if (res.m) {
+>res.m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 73))
+>res : Symbol(res, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 13))
+>m : Symbol(m, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 73))
+
+        res.appendHeader = (name, value) => { name.toLowerCase(); value.toFixed(); };
+>res.appendHeader : Symbol(appendHeader, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 20))
+>res : Symbol(res, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 13))
+>appendHeader : Symbol(appendHeader, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 5, 20))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 19, 28))
+>value : Symbol(value, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 19, 33))
+>name.toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 19, 28))
+>toLowerCase : Symbol(String.toLowerCase, Decl(lib.es5.d.ts, --, --))
+>value.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(ttttKnownTruthyBodySearchContextualParameter.ts, 19, 33))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+    }
+}
+

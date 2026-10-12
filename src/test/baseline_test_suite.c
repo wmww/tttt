@@ -105,6 +105,27 @@ static_failable load_subdir(BaselineTestSuite* me, csview subdir) {
     return ok;
 }
 
+// tttt's own tests (BaselineTestSuite.own_dir): their names must not collide with tsgo's, so they all start with tttt
+static_failable load_own_tests(BaselineTestSuite* me) {
+    cstr cases = cstr_d(my own_dir, "/cases");
+    if (!fs_is_directory(fs, cstr_sv(&cases))) {
+        FailableResult ret = err_d(cases, " is not a directory");
+        cstr_drop(&cases);
+        return ret;
+    }
+    intptr_t first = vec_baseline_test_result_size(&my results);
+    load_dir(me, cstr_sv(&cases));
+    cstr_drop(&cases);
+    for (intptr_t i = first; i < vec_baseline_test_result_size(&my results); i++) {
+        csview name = cstr_sv(&vec_baseline_test_result_at(&my results, i)->name);
+        if (!csview_starts_with(name, "tttt")) {
+            return err_d(vec_baseline_test_result_at(&my results, i)->source_path,
+                ": tttt's own tests must be named tttt* (not to collide with tsgo's)");
+        }
+    }
+    return ok;
+}
+
 void baseline_test_suite_drop(BaselineTestSuite* me) {
     arc_js_object_drop(&my prev_results);
     cregex_drop(&my filter);
@@ -453,6 +474,7 @@ static const char* cregex_error_str(int error) {
 
 failable load_baseline_test_suite(
     csview tests_dir,
+    csview own_dir,
     const char* filter_re,
     csview results_path,
     bool summary_only,
@@ -473,6 +495,7 @@ failable load_baseline_test_suite(
     }
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
+        .own_dir = own_dir,
         .has_filter = filter_re != nullptr,
         .filter = filter_re && !cstr_size(&names) ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
         .filter_names = names,
@@ -499,6 +522,9 @@ failable load_baseline_test_suite(
     FailableResult dirs_result = {0};
     try (load_subdir(ret.get, c_sv("conformance"))) or_collect_into (&dirs_result);
     try (load_subdir(ret.get, c_sv("compiler"))) or_collect_into (&dirs_result);
+    if (csview_size(own_dir)) {
+        try (load_own_tests(ret.get)) or_collect_into (&dirs_result);
+    }
     try (dirs_result) cleanup {
         box_baseline_test_suite_drop(&ret);
     }

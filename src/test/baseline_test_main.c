@@ -6,6 +6,10 @@
 
 csview const default_tests_dir = c_sv_const_init("thirdparty/typescript/tsc/testdata/tests");
 csview tests_dir = default_tests_dir;
+csview const default_own_dir = c_sv_const_init("test");
+// Off when --dir points somewhere else (scripts/filetest.sh, mutate.py), unless --own-tests says so too
+csview own_dir = default_own_dir;
+bool own_dir_given = false;
 const char* test_filter = nullptr;
 csview const default_results_path = c_sv_const_init("test/baseline_results.ts");
 csview results_path = default_results_path;
@@ -22,6 +26,8 @@ static void show_help(FILE* target) {
         "  -h, --help                show this help message\n\n"
         "  --dir [PATH]              path to TypeScript tests directory\n"
         "                            (default = ", default_tests_dir, ")\n\n"
+        "  --own-tests [DIR]         tttt's own tests: DIR/cases/tttt*.ts with tsgo's baselines in DIR/baselines\n"
+        "                            (default = ", default_own_dir, ", but none with --dir; --no-own-tests: none)\n\n"
         "  --summary                 only show tests who's results changed\n\n"
         "  -f, --filter [FILTER]     regex of tests to run, case insensitive\n"
         "                            (@path: a file with one exact test name per line)\n\n"
@@ -61,6 +67,14 @@ static_failable parse_args(int argc, const char** argv) {
         } else if (streq(argv[i], "--dir")) {
             try (const char* dir, next_arg_value(argc, argv, &i, &dir)) bubble;
             tests_dir = csview_from(dir);
+            if (!own_dir_given) own_dir = c_sv("");
+        } else if (streq(argv[i], "--own-tests")) {
+            try (const char* dir, next_arg_value(argc, argv, &i, &dir)) bubble;
+            own_dir = csview_from(dir);
+            own_dir_given = true;
+        } else if (streq(argv[i], "--no-own-tests")) {
+            own_dir = c_sv("");
+            own_dir_given = true;
         } else if (streq(argv[i], "-f") || streq(argv[i], "--filter")) {
             try (const char* filter, next_arg_value(argc, argv, &i, &filter)) bubble;
             test_filter = filter;
@@ -121,7 +135,7 @@ int main(int argc, const char** argv) {
 
     try (
         BoxBaselineTestSuite suite,
-        load_baseline_test_suite(tests_dir, test_filter, results_path, summary_only, &suite)
+        load_baseline_test_suite(tests_dir, own_dir, test_filter, results_path, summary_only, &suite)
     ) if_err (e) {
         error_base_eprintln(e);
         current_error_destroy();
@@ -129,6 +143,8 @@ int main(int argc, const char** argv) {
     }
 
     suite.get->dump_dir = dump_dir;
+    cstr lib_dir = cstr_d(tests_dir, "/lib");
+    baseline_test_lib_dir = cstr_sv(&lib_dir);
     baseline_test_suite_run(suite.get, summary_only, show_errs, show_syms, show_typs);
 
     if (save_results) {
@@ -136,6 +152,7 @@ int main(int argc, const char** argv) {
     }
 
 #ifdef DEBUG_BUILD
+    cstr_drop(&lib_dir);
     box_baseline_test_suite_drop(&suite);
 #endif
 

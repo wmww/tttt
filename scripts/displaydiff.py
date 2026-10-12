@@ -24,7 +24,7 @@ ap.add_argument('--fine', action='store_true')
 ap.add_argument('--shape', action='store_true')
 ap.add_argument('--first-tsv', help='write test<TAB>kind of its first differing line<TAB>js to this file')
 args = ap.parse_args()
-from suite import ref, CASES
+from suite import ref, test_files
 DUMP = 'build/failstats/dump/'
 EXT = '.symbols' if args.symbols else '.types'
 COMPONENT = 'symbols' if args.symbols else 'types'
@@ -40,9 +40,8 @@ def lines(path, sources=None):
 
 def source_of(name):
     base = name.split('(')[0]
-    for root, _, files in os.walk(CASES):
-        for ext in ('.ts', '.tsx'):
-            if base + ext in files: return os.path.join(root, base + ext)
+    for path in test_files():
+        if os.path.basename(path) in (base + '.ts', base + '.tsx'): return path
     return None
 
 JS = re.compile(r'@(allowjs|checkjs)\s*:\s*true|@filename:\s*\S+\.(js|jsx|cjs|mjs)\b', re.I)

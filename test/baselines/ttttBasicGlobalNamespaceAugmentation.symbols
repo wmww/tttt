@@ -1,0 +1,14 @@
+//// [test/cases/ttttBasicGlobalNamespaceAugmentation.ts] ////
+
+=== ttttBasicGlobalNamespaceAugmentation.ts ===
+export {}
+a
+>a : Symbol(a, Decl(ttttBasicGlobalNamespaceAugmentation.ts, 3, 5))
+
+declare global {
+>global : Symbol(global, Decl(ttttBasicGlobalNamespaceAugmentation.ts, 1, 1))
+
+  let a: number
+>a : Symbol(a, Decl(ttttBasicGlobalNamespaceAugmentation.ts, 3, 5))
+}
+

@@ -1,0 +1,53 @@
+//// [test/cases/ttttFunctionParsing.ts] ////
+
+=== ttttFunctionParsing.ts ===
+var foo: {id:number;} = <{id:number;}>({ }); foo = {id: 5};
+>foo : Symbol(foo, Decl(ttttFunctionParsing.ts, 0, 3))
+>id : Symbol(id, Decl(ttttFunctionParsing.ts, 0, 10))
+>id : Symbol(id, Decl(ttttFunctionParsing.ts, 0, 26))
+>foo : Symbol(foo, Decl(ttttFunctionParsing.ts, 0, 3))
+>id : Symbol(id, Decl(ttttFunctionParsing.ts, 0, 52))
+
+var v: {A: number; <T>; };
+>v : Symbol(v, Decl(ttttFunctionParsing.ts, 1, 3))
+>A : Symbol(A, Decl(ttttFunctionParsing.ts, 1, 8))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 1, 20))
+
+var r = <T>(x: T) => x;
+>r : Symbol(r, Decl(ttttFunctionParsing.ts, 2, 3))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 2, 9))
+>x : Symbol(x, Decl(ttttFunctionParsing.ts, 2, 12))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 2, 9))
+>x : Symbol(x, Decl(ttttFunctionParsing.ts, 2, 12))
+
+var g = a => <any>{};
+>g : Symbol(g, Decl(ttttFunctionParsing.ts, 3, 3))
+>a : Symbol(a, Decl(ttttFunctionParsing.ts, 3, 7))
+
+let h = ():void {};
+>h : Symbol(h, Decl(ttttFunctionParsing.ts, 4, 3))
+
+let dot;
+>dot : Symbol(dot, Decl(ttttFunctionParsing.ts, 5, 3))
+
+dot = <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x));
+>dot : Symbol(dot, Decl(ttttFunctionParsing.ts, 5, 3))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 6, 7))
+>S : Symbol(S, Decl(ttttFunctionParsing.ts, 6, 9))
+>f : Symbol(f, Decl(ttttFunctionParsing.ts, 6, 13))
+>_ : Symbol(_, Decl(ttttFunctionParsing.ts, 6, 17))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 6, 7))
+>S : Symbol(S, Decl(ttttFunctionParsing.ts, 6, 9))
+>U : Symbol(U, Decl(ttttFunctionParsing.ts, 6, 33))
+>g : Symbol(g, Decl(ttttFunctionParsing.ts, 6, 36))
+>_ : Symbol(_, Decl(ttttFunctionParsing.ts, 6, 40))
+>U : Symbol(U, Decl(ttttFunctionParsing.ts, 6, 33))
+>T : Symbol(T, Decl(ttttFunctionParsing.ts, 6, 7))
+>r : Symbol(r, Decl(ttttFunctionParsing.ts, 6, 54))
+>U : Symbol(U, Decl(ttttFunctionParsing.ts, 6, 33))
+>S : Symbol(S, Decl(ttttFunctionParsing.ts, 6, 9))
+>x : Symbol(x, Decl(ttttFunctionParsing.ts, 6, 68))
+>f : Symbol(f, Decl(ttttFunctionParsing.ts, 6, 13))
+>g : Symbol(g, Decl(ttttFunctionParsing.ts, 6, 36))
+>x : Symbol(x, Decl(ttttFunctionParsing.ts, 6, 68))
+

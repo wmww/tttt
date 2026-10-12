@@ -1,0 +1,58 @@
+//// [test/cases/ttttFunctionParsing.ts] ////
+
+=== ttttFunctionParsing.ts ===
+var foo: {id:number;} = <{id:number;}>({ }); foo = {id: 5};
+>foo : { id: number; }
+>id : number
+><{id:number;}>({ }) : { id: number; }
+>id : number
+>({ }) : {}
+>{ } : {}
+>foo = {id: 5} : { id: number; }
+>foo : { id: number; }
+>{id: 5} : { id: number; }
+>id : number
+>5 : 5
+
+var v: {A: number; <T>; };
+>v : { <T>(): any; A: number; }
+>A : number
+
+var r = <T>(x: T) => x;
+>r : <T>(x: T) => T
+><T>(x: T) => x : <T>(x: T) => T
+>x : T
+>x : T
+
+var g = a => <any>{};
+>g : (a: any) => any
+>a => <any>{} : (a: any) => any
+>a : any
+><any>{} : any
+>{} : {}
+
+let h = ():void {};
+>h : () => void
+>():void {} : () => void
+
+let dot;
+>dot : any
+
+dot = <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x));
+>dot = <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x)) : <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T) => (r: U) => S
+>dot : any
+><T, S>(f: (_: T) => S) => <U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x)) : <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T) => (r: U) => S
+>f : (_: T) => S
+>_ : T
+><U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x)) : <U>(g: (_: U) => T) => (r: U) => S
+>g : (_: U) => T
+>_ : U
+>r : U
+>(x) => f(g(x)) : (x: U) => S
+>x : U
+>f(g(x)) : S
+>f : (_: T) => S
+>g(x) : T
+>g : (_: U) => T
+>x : U
+

@@ -112,7 +112,7 @@ def suite_tests(kinds=()):
     res = open(f'{ROOT}/test/baseline_results.ts').read()
     passing = set(re.findall(r"'([^']+)': \{\s*errors: true,\s*symbols: true,\s*types: true", res))
     paths = {}
-    for p in suite.test_files():
+    for p in suite.test_files(own=False):
         f = os.path.basename(p)
         if f.endswith('.ts') and f[:-3] in passing:
             paths[f[:-3]] = p

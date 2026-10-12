@@ -1,0 +1,293 @@
+//// [test/cases/ttttDeepNestingObjectLiteralSource.ts] ////
+
+=== ttttDeepNestingObjectLiteralSource.ts ===
+// Deep nesting (tsc's isDeeplyNestedType) has to stop on object literal sources too: inference into the return type of
+// defu (its declarations below, verbatim) from the contextual type of `route = defu(route, ...)` walked the recursive
+// Defu/MergeObjects/Merge aliases level after level otherwise: 500k types and a spurious TS2590 (nitro's vercel preset;
+// fixed in 17dabf96, which also fixed nuxt's packages/schema/src/config/app.ts, not cut down here)
+type Input = Record<string | number | symbol, any>;
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+type IgnoredInput = boolean | number | null | any[] | Record<never, any> | undefined;
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+type Merger = <T extends Input, K extends keyof T>(object: T, key: keyof T, value: T[K], namespace: string) => any;
+>Merger : Symbol(Merger, Decl(ttttDeepNestingObjectLiteralSource.ts, 5, 85))
+>T : Symbol(T, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 15))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>K : Symbol(K, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 31))
+>T : Symbol(T, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 15))
+>object : Symbol(object, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 51))
+>T : Symbol(T, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 15))
+>key : Symbol(key, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 61))
+>T : Symbol(T, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 15))
+>value : Symbol(value, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 75))
+>T : Symbol(T, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 15))
+>K : Symbol(K, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 31))
+>namespace : Symbol(namespace, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 88))
+
+type nullish = null | undefined | void;
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+
+type MergeObjects<Destination extends Input, Defaults extends Input> = Destination extends Defaults ? Destination : Omit<Destination, keyof Destination & keyof Defaults> & Omit<Defaults, keyof Destination & keyof Defaults> & {
+>MergeObjects : Symbol(MergeObjects, Decl(ttttDeepNestingObjectLiteralSource.ts, 7, 39))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+
+    -readonly [Key in keyof Destination & keyof Defaults]: Destination[Key] extends nullish ? Defaults[Key] extends nullish ? nullish : Defaults[Key] : Defaults[Key] extends nullish ? Destination[Key] : Merge<Destination[Key], Defaults[Key]>;
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>Merge : Symbol(Merge, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 225))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 18))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 8, 44))
+>Key : Symbol(Key, Decl(ttttDeepNestingObjectLiteralSource.ts, 9, 15))
+
+};
+type Defu<S extends Input, D extends Array<Input | IgnoredInput>> = D extends [
+>Defu : Symbol(Defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 10, 2))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>D : Symbol(D, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 26))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>D : Symbol(D, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 26))
+
+    infer F,
+>F : Symbol(F, Decl(ttttDeepNestingObjectLiteralSource.ts, 12, 9))
+
+    ...infer Rest
+>Rest : Symbol(Rest, Decl(ttttDeepNestingObjectLiteralSource.ts, 13, 12))
+
+] ? F extends Input ? Rest extends Array<Input | IgnoredInput> ? Defu<MergeObjects<S, F>, Rest> : MergeObjects<S, F> : F extends IgnoredInput ? Rest extends Array<Input | IgnoredInput> ? Defu<S, Rest> : S : S : S;
+>F : Symbol(F, Decl(ttttDeepNestingObjectLiteralSource.ts, 12, 9))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Rest : Symbol(Rest, Decl(ttttDeepNestingObjectLiteralSource.ts, 13, 12))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>Defu : Symbol(Defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 10, 2))
+>MergeObjects : Symbol(MergeObjects, Decl(ttttDeepNestingObjectLiteralSource.ts, 7, 39))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>F : Symbol(F, Decl(ttttDeepNestingObjectLiteralSource.ts, 12, 9))
+>Rest : Symbol(Rest, Decl(ttttDeepNestingObjectLiteralSource.ts, 13, 12))
+>MergeObjects : Symbol(MergeObjects, Decl(ttttDeepNestingObjectLiteralSource.ts, 7, 39))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>F : Symbol(F, Decl(ttttDeepNestingObjectLiteralSource.ts, 12, 9))
+>F : Symbol(F, Decl(ttttDeepNestingObjectLiteralSource.ts, 12, 9))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>Rest : Symbol(Rest, Decl(ttttDeepNestingObjectLiteralSource.ts, 13, 12))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>Defu : Symbol(Defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 10, 2))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>Rest : Symbol(Rest, Decl(ttttDeepNestingObjectLiteralSource.ts, 13, 12))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+>S : Symbol(S, Decl(ttttDeepNestingObjectLiteralSource.ts, 11, 10))
+
+type DefuFn = <Source extends Input, Defaults extends Array<Input | IgnoredInput>>(source: Source, ...defaults: Defaults) => Defu<Source, Defaults>;
+>DefuFn : Symbol(DefuFn, Decl(ttttDeepNestingObjectLiteralSource.ts, 14, 213))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 15))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 36))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>source : Symbol(source, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 83))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 15))
+>defaults : Symbol(defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 98))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 36))
+>Defu : Symbol(Defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 10, 2))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 15))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 36))
+
+interface DefuInstance {
+>DefuInstance : Symbol(DefuInstance, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 148))
+
+    <Source extends Input, Defaults extends Array<Input | IgnoredInput>>(source: Source | IgnoredInput, ...defaults: Defaults): Defu<Source, Defaults>;
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 5))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 26))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>source : Symbol(source, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 73))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 5))
+>IgnoredInput : Symbol(IgnoredInput, Decl(ttttDeepNestingObjectLiteralSource.ts, 4, 51))
+>defaults : Symbol(defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 103))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 26))
+>Defu : Symbol(Defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 10, 2))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 5))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 26))
+
+    fn: DefuFn;
+>fn : Symbol(DefuInstance.fn, Decl(ttttDeepNestingObjectLiteralSource.ts, 17, 151))
+>DefuFn : Symbol(DefuFn, Decl(ttttDeepNestingObjectLiteralSource.ts, 14, 213))
+
+    arrayFn: DefuFn;
+>arrayFn : Symbol(DefuInstance.arrayFn, Decl(ttttDeepNestingObjectLiteralSource.ts, 18, 15))
+>DefuFn : Symbol(DefuFn, Decl(ttttDeepNestingObjectLiteralSource.ts, 14, 213))
+
+    extend(merger?: Merger): DefuFn;
+>extend : Symbol(DefuInstance.extend, Decl(ttttDeepNestingObjectLiteralSource.ts, 19, 20))
+>merger : Symbol(merger, Decl(ttttDeepNestingObjectLiteralSource.ts, 20, 11))
+>Merger : Symbol(Merger, Decl(ttttDeepNestingObjectLiteralSource.ts, 5, 85))
+>DefuFn : Symbol(DefuFn, Decl(ttttDeepNestingObjectLiteralSource.ts, 14, 213))
+}
+type MergeArrays<Destination, Source> = Destination extends Array<infer DestinationType> ? Source extends Array<infer SourceType> ? Array<DestinationType | SourceType> : Source | Array<DestinationType> : Source | Destination;
+>MergeArrays : Symbol(MergeArrays, Decl(ttttDeepNestingObjectLiteralSource.ts, 21, 1))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 17))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 29))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 17))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DestinationType : Symbol(DestinationType, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 71))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 29))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>SourceType : Symbol(SourceType, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 117))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DestinationType : Symbol(DestinationType, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 71))
+>SourceType : Symbol(SourceType, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 117))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 29))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DestinationType : Symbol(DestinationType, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 71))
+>Source : Symbol(Source, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 29))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 17))
+
+type Merge<Destination extends Input, Defaults extends Input> = Destination extends nullish ? Defaults extends nullish ? nullish : Defaults : Defaults extends nullish ? Destination : Destination extends Array<any> ? Defaults extends Array<any> ? MergeArrays<Destination, Defaults> : Destination | Defaults : Destination extends Function ? Destination | Defaults : Destination extends RegExp ? Destination | Defaults : Destination extends Promise<any> ? Destination | Defaults : Defaults extends Function ? Destination | Defaults : Defaults extends RegExp ? Destination | Defaults : Defaults extends Promise<any> ? Destination | Defaults : Destination extends Input ? Defaults extends Input ? MergeObjects<Destination, Defaults> : Destination | Defaults : Destination | Defaults;
+>Merge : Symbol(Merge, Decl(ttttDeepNestingObjectLiteralSource.ts, 22, 225))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>nullish : Symbol(nullish, Decl(ttttDeepNestingObjectLiteralSource.ts, 6, 115))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>MergeArrays : Symbol(MergeArrays, Decl(ttttDeepNestingObjectLiteralSource.ts, 21, 1))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>RegExp : Symbol(RegExp, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.regexp.d.ts, --, --) ... and 3 more)
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>RegExp : Symbol(RegExp, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.regexp.d.ts, --, --) ... and 3 more)
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Input : Symbol(Input, Decl(ttttDeepNestingObjectLiteralSource.ts, 0, 0))
+>MergeObjects : Symbol(MergeObjects, Decl(ttttDeepNestingObjectLiteralSource.ts, 7, 39))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+>Destination : Symbol(Destination, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 11))
+>Defaults : Symbol(Defaults, Decl(ttttDeepNestingObjectLiteralSource.ts, 23, 37))
+
+declare const defu: DefuInstance;
+>defu : Symbol(defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 25, 13))
+>DefuInstance : Symbol(DefuInstance, Decl(ttttDeepNestingObjectLiteralSource.ts, 15, 148))
+
+
+export {};
+declare const src: string;
+>src : Symbol(src, Decl(ttttDeepNestingObjectLiteralSource.ts, 29, 13))
+
+declare const status: number | undefined;
+>status : Symbol(status, Decl(ttttDeepNestingObjectLiteralSource.ts, 30, 13))
+
+declare const headers: Record<string, string>;
+>headers : Symbol(headers, Decl(ttttDeepNestingObjectLiteralSource.ts, 31, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+function vercelRedirect() {
+>vercelRedirect : Symbol(vercelRedirect, Decl(ttttDeepNestingObjectLiteralSource.ts, 31, 46))
+
+    let route = {
+>route : Symbol(route, Decl(ttttDeepNestingObjectLiteralSource.ts, 33, 7))
+
+        src,
+>src : Symbol(src, Decl(ttttDeepNestingObjectLiteralSource.ts, 33, 17))
+
+        status,
+>status : Symbol(status, Decl(ttttDeepNestingObjectLiteralSource.ts, 34, 12))
+
+        headers: { Location: src },
+>headers : Symbol(headers, Decl(ttttDeepNestingObjectLiteralSource.ts, 35, 15))
+>Location : Symbol(Location, Decl(ttttDeepNestingObjectLiteralSource.ts, 36, 18))
+>src : Symbol(src, Decl(ttttDeepNestingObjectLiteralSource.ts, 29, 13))
+
+    };
+    route = defu(route, { headers });
+>route : Symbol(route, Decl(ttttDeepNestingObjectLiteralSource.ts, 33, 7))
+>defu : Symbol(defu, Decl(ttttDeepNestingObjectLiteralSource.ts, 25, 13))
+>route : Symbol(route, Decl(ttttDeepNestingObjectLiteralSource.ts, 33, 7))
+>headers : Symbol(headers, Decl(ttttDeepNestingObjectLiteralSource.ts, 38, 25))
+
+    return route;
+>route : Symbol(route, Decl(ttttDeepNestingObjectLiteralSource.ts, 33, 7))
+}
+
+

@@ -1,0 +1,41 @@
+//// [test/cases/ttttConditionalTypeResolving.ts] ////
+
+=== ttttConditionalTypeResolving.ts ===
+type Foo<T> = T | { x: Foo<T>}
+>Foo : Foo<T>
+>x : Foo<T>
+
+type Bar<T> = 1 extends T ? [T] : T
+>Bar : Bar<T>
+
+type Baz<T> = 1 extends number ? [T] : T
+>Baz : [T]
+
+type Biz<T> = {notbiz: T} extends {biz: T} ? [T] : T
+>Biz : T
+>notbiz : T
+>biz : T
+
+type Buz<T> = {buz: 7} extends {buz: T} ? [T] : T
+>Buz : Buz<T>
+>buz : 7
+>buz : T
+
+type Buzz<T extends number> = {buzz: T} extends {buzz: number} ? [T] : T
+>Buzz : Buzz<T>
+>buzz : T
+>buzz : number
+
+type Boop<T> = 7
+>Boop : 7
+
+type Beep<T> = {beep: 7}
+>Beep : Beep<T>
+>beep : 7
+
+type Zeep<T> = 1 extends number ? (1 extends T ? 1 : 2) : 3
+>Zeep : 1 extends T ? 1 : 2
+
+type Zoop<T> = 1 extends number ? (1 extends T ? 1 : (2 extends number ? 4 : 5)) : 3
+>Zoop : 1 extends T ? 1 : 4
+

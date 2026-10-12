@@ -1,0 +1,83 @@
+//// [test/cases/ttttKnownTruthyBodySearchContextualParameter.ts] ////
+
+=== ttttKnownTruthyBodySearchContextualParameter.ts ===
+// TS2774 (a tested function the body never calls) searches the `if` body / the ternary's true branch for uses of the
+// tested function, reading the types of property accesses on the way. Done before the body was checked, that typed the
+// parameters of function expressions in it without their contextual signature: spurious TS7006 (react-hook-form's
+// validateField.ts, trpc/packages/openapi, dokploy; fixed in e332b875)
+declare function k(cb: (name: string) => void): void;
+>k : (cb: (name: string) => void) => void
+>cb : (name: string) => void
+>name : string
+
+declare const res: { appendHeader: (name: string, value: number) => void; m(): boolean };
+>res : { appendHeader: (name: string, value: number) => void; m(): boolean; }
+>appendHeader : (name: string, value: number) => void
+>name : string
+>value : number
+>m : () => boolean
+
+function inIf(m: () => boolean) {
+>inIf : (m: () => boolean) => void
+>m : () => boolean
+
+    if (m) {
+>m : () => boolean
+
+        k((name) => { name.toLowerCase(); });
+>k((name) => { name.toLowerCase(); }) : void
+>k : (cb: (name: string) => void) => void
+>(name) => { name.toLowerCase(); } : (name: string) => void
+>name : string
+>name.toLowerCase() : string
+>name.toLowerCase : () => string
+>name : string
+>toLowerCase : () => string
+    }
+}
+
+function inTernary(m: () => boolean) {
+>inTernary : (m: () => boolean) => void
+>m : () => boolean
+
+    return m ? k((name) => { name.toLowerCase(); }) : undefined;
+>m ? k((name) => { name.toLowerCase(); }) : undefined : void
+>m : () => boolean
+>k((name) => { name.toLowerCase(); }) : void
+>k : (cb: (name: string) => void) => void
+>(name) => { name.toLowerCase(); } : (name: string) => void
+>name : string
+>name.toLowerCase() : string
+>name.toLowerCase : () => string
+>name : string
+>toLowerCase : () => string
+>undefined : undefined
+}
+
+function assigned() {
+>assigned : () => void
+
+    if (res.m) {
+>res.m : () => boolean
+>res : { appendHeader: (name: string, value: number) => void; m(): boolean; }
+>m : () => boolean
+
+        res.appendHeader = (name, value) => { name.toLowerCase(); value.toFixed(); };
+>res.appendHeader = (name, value) => { name.toLowerCase(); value.toFixed(); } : (name: string, value: number) => void
+>res.appendHeader : (name: string, value: number) => void
+>res : { appendHeader: (name: string, value: number) => void; m(): boolean; }
+>appendHeader : (name: string, value: number) => void
+>(name, value) => { name.toLowerCase(); value.toFixed(); } : (name: string, value: number) => void
+>name : string
+>value : number
+>name.toLowerCase() : string
+>name.toLowerCase : () => string
+>name : string
+>toLowerCase : () => string
+>value.toFixed() : string
+>value.toFixed : (fractionDigits?: number) => string
+>value : number
+>toFixed : (fractionDigits?: number) => string
+    }
+}
+

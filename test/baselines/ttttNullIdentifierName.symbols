@@ -1,0 +1,14 @@
+//// [test/cases/ttttNullIdentifierName.ts] ////
+
+=== ttttNullIdentifierName.ts ===
+let a: { 'null': number };
+>a : Symbol(a, Decl(ttttNullIdentifierName.ts, 0, 3))
+>'null' : Symbol('null', Decl(ttttNullIdentifierName.ts, 0, 8))
+
+a.null;
+>a.null : Symbol('null', Decl(ttttNullIdentifierName.ts, 0, 8))
+>a : Symbol(a, Decl(ttttNullIdentifierName.ts, 0, 3))
+>null : Symbol('null', Decl(ttttNullIdentifierName.ts, 0, 8))
+
+let null = 7;
+

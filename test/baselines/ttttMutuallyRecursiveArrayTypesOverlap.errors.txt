@@ -1,0 +1,15 @@
+ttttMutuallyRecursiveArrayTypesOverlap.ts(5,1): error TS2454: Variable 'a' is used before being assigned.
+ttttMutuallyRecursiveArrayTypesOverlap.ts(5,6): error TS2454: Variable 'b' is used before being assigned.
+
+
+==== ttttMutuallyRecursiveArrayTypesOverlap.ts (2 errors) ====
+    type A = B[];
+    type B = A[];
+    let a: A;
+    let b: B;
+    a == b ? true : false;
+    ~
+!!! error TS2454: Variable 'a' is used before being assigned.
+         ~
+!!! error TS2454: Variable 'b' is used before being assigned.
+    

@@ -17,7 +17,7 @@ import argparse, collections, os, re, shutil, subprocess, sys
 from concurrent.futures import ProcessPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from suite import ref, CASES
+from suite import ref, test_files
 OUT = os.path.join(ROOT, 'build/failstats')
 DUMP = os.path.join(OUT, 'dump')
 
@@ -170,11 +170,10 @@ def table(title, counter, n, tests_by_key=None, width=100):
 def jsx_filter():
     unit = re.compile(r'@filename:\s*\S+\.(tsx|jsx)\b|@jsx:', re.I)
     names = []
-    for root, _, files in os.walk(CASES):
-        if 'fourslash' in root: continue
-        for f in files:
-            if f.endswith('.tsx') or (f.endswith('.ts') and unit.search(open(os.path.join(root, f), errors='replace').read())):
-                names.append(f.rsplit('.', 1)[0])
+    for path in test_files():
+        f = os.path.basename(path)
+        if f.endswith('.tsx') or unit.search(open(path, errors='replace').read()):
+            names.append(f.rsplit('.', 1)[0])
     return sorted(names)
 
 

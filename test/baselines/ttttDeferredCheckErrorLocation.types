@@ -1,0 +1,45 @@
+//// [test/cases/ttttDeferredCheckErrorLocation.tsx] ////
+
+=== a.tsx ===
+/// <reference path="react16.d.ts" />
+import * as React from 'react';
+>React : typeof React
+
+export type ContentProps<T extends keyof JSX.IntrinsicElements = 'span'> = { as?: T } & Omit<React.ComponentProps<T>, 'as'>;
+>ContentProps : ContentProps<T>
+>JSX : any
+>as : T | undefined
+>React : any
+
+export const Content = <T extends keyof JSX.IntrinsicElements = 'span'>(props: ContentProps<T>) => {
+>Content : <T extends keyof JSX.IntrinsicElements = "span">(props: ContentProps<T>) => JSX.Element
+><T extends keyof JSX.IntrinsicElements = 'span'>(props: ContentProps<T>) => {    const { as: Tag = 'span', ...rest } = props;    const r = (element: HTMLElement | null) => {};    return (        // @ts-ignore        <Tag {...rest} ref={r} />    );} : <T extends keyof JSX.IntrinsicElements = "span">(props: ContentProps<T>) => JSX.Element
+>JSX : any
+>props : ContentProps<T>
+
+    const { as: Tag = 'span', ...rest } = props;
+>as : any
+>Tag : "span" | T
+>'span' : "span"
+>rest : Omit<ContentProps<T>, "as">
+>props : ContentProps<T>
+
+    const r = (element: HTMLElement | null) => {};
+>r : (element: HTMLElement | null) => void
+>(element: HTMLElement | null) => {} : (element: HTMLElement | null) => void
+>element : HTMLElement | null
+
+    return (
+>(        // @ts-ignore        <Tag {...rest} ref={r} />    ) : JSX.Element
+
+        // @ts-ignore
+        <Tag {...rest} ref={r} />
+><Tag {...rest} ref={r} /> : JSX.Element
+>Tag : "span" | T
+>rest : Omit<ContentProps<T>, "as">
+>ref : (element: HTMLElement | null) => void
+>r : (element: HTMLElement | null) => void
+
+    );
+};
+

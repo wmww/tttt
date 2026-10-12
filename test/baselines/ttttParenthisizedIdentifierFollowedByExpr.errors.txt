@@ -1,0 +1,17 @@
+ttttParenthisizedIdentifierFollowedByExpr.ts(3,5): error TS1005: ';' expected.
+ttttParenthisizedIdentifierFollowedByExpr.ts(4,2): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttParenthisizedIdentifierFollowedByExpr.ts(4,5): error TS1005: '=>' expected.
+
+
+==== ttttParenthisizedIdentifierFollowedByExpr.ts (3 errors) ====
+    let a = 7;
+    (a);
+    (a) a;
+        ~
+!!! error TS1005: ';' expected.
+    (a) {};
+     ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+        ~
+!!! error TS1005: '=>' expected.
+    

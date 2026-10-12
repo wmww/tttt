@@ -1,0 +1,23 @@
+//// [test/cases/ttttMutuallyRecursiveArrayTypesOverlap.ts] ////
+
+=== ttttMutuallyRecursiveArrayTypesOverlap.ts ===
+type A = B[];
+>A : A
+
+type B = A[];
+>B : B
+
+let a: A;
+>a : A
+
+let b: B;
+>b : B
+
+a == b ? true : false;
+>a == b ? true : false : boolean
+>a == b : boolean
+>a : A
+>b : B
+>true : true
+>false : false
+

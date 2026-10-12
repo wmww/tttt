@@ -1,0 +1,19 @@
+ttttNullIdentifierName.ts(2,1): error TS2454: Variable 'a' is used before being assigned.
+ttttNullIdentifierName.ts(3,1): error TS1440: Variable declaration not allowed at this location.
+ttttNullIdentifierName.ts(3,1): error TS2304: Cannot find name 'let'.
+ttttNullIdentifierName.ts(3,5): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+
+
+==== ttttNullIdentifierName.ts (4 errors) ====
+    let a: { 'null': number };
+    a.null;
+    ~
+!!! error TS2454: Variable 'a' is used before being assigned.
+    let null = 7;
+    ~~~
+!!! error TS1440: Variable declaration not allowed at this location.
+    ~~~
+!!! error TS2304: Cannot find name 'let'.
+        ~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+    

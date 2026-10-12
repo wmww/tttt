@@ -1,0 +1,23 @@
+ttttFunctionParsing.ts(2,20): error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+ttttFunctionParsing.ts(2,23): error TS1005: '(' expected.
+ttttFunctionParsing.ts(4,9): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttFunctionParsing.ts(5,17): error TS1005: '=>' expected.
+
+
+==== ttttFunctionParsing.ts (4 errors) ====
+    var foo: {id:number;} = <{id:number;}>({ }); foo = {id: 5};
+    var v: {A: number; <T>; };
+                       ~~~~
+!!! error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+                          ~
+!!! error TS1005: '(' expected.
+    var r = <T>(x: T) => x;
+    var g = a => <any>{};
+            ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    let h = ():void {};
+                    ~
+!!! error TS1005: '=>' expected.
+    let dot;
+    dot = <T, S>(f: (_: T) => S) => <U>(g: (_: U) => T): (r:U) => S => (x) => f(g(x));
+    

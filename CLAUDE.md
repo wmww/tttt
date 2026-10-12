@@ -43,6 +43,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 ## Workflow
 - **Ending your turn ends the session**: nothing wakes you up again. Never end a turn waiting on a background job; run long jobs (`findcrash.py`, `bench.sh`, full suites) in the foreground with a timeout, and commit before starting anything long.
 - `todo.md` has a fixed number of sessions before the next insights session. Don't insert sessions ahead of it; new work goes into plans, triage.md, or after the insights entry, which the next insights session reorders.
+- When you fix a divergence found outside tsc's suite (corpora, sweeps, a probe), add a cut-down repro to `test/cases/` (`scripts/owntests.sh` for its baselines) that fails without the fix.
 - Commit at the end of every session. Commit messages should be a summary of what you did and what happened, generally a paragraph or two. Include doubts and things that went wrong, these will be helpful later.
 - Don't use feature branches. If you change branch, always change back by end of session.
 - There is no strict chain of command or scoping of agents. An insights agent may write some code, an execution agent may edit vision.md. The structure is just to keep everyone focused on what's usually most useful to them.
@@ -58,6 +59,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 ## Development Scripts
 You will use scripts to help you run tests, but some scripts and options are more useful to AI agents than others. All scripts live in `scripts/` (run them from the repo root: they `cd` there themselves), automatically compile the code in src before running tttt, and abort if there are any compile errors. The main scripts you will use are:
 
+- `test/cases/tttt*.ts`: tttt's own regression tests (tsc-suite style headers), run by `scripts/fasttest.sh` with the suite against tsgo's baselines checked in at `test/baselines` (`scripts/owntests.sh [FILE...]` regenerates them)
 - `scripts/fasttest.sh --summary`: Shows which new tests pass and which new tests fail, compared to the saved results (`test/baseline_results.ts`). **Save them with `scripts/fasttest.sh -s` before you commit** (`scripts/passcount.py` prints the totals of the saved file), or the next session's summary is polluted by yours
 - `scripts/test.sh -f specificTestName -d`: Shows the detailed output of a specific failing test, runs under valgrind, so may fail with a useful message if there are memory errors.
 - `scripts/test.sh -f specificTestName --sym`: Shows only symbols for a given test, flag can also be `--err` or `--typ`

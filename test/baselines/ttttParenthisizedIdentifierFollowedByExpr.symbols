@@ -1,0 +1,16 @@
+//// [test/cases/ttttParenthisizedIdentifierFollowedByExpr.ts] ////
+
+=== ttttParenthisizedIdentifierFollowedByExpr.ts ===
+let a = 7;
+>a : Symbol(a, Decl(ttttParenthisizedIdentifierFollowedByExpr.ts, 0, 3))
+
+(a);
+>a : Symbol(a, Decl(ttttParenthisizedIdentifierFollowedByExpr.ts, 0, 3))
+
+(a) a;
+>a : Symbol(a, Decl(ttttParenthisizedIdentifierFollowedByExpr.ts, 0, 3))
+>a : Symbol(a, Decl(ttttParenthisizedIdentifierFollowedByExpr.ts, 0, 3))
+
+(a) {};
+>a : Symbol(a, Decl(ttttParenthisizedIdentifierFollowedByExpr.ts, 3, 1))
+
