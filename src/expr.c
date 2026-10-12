@@ -3249,16 +3249,19 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
 }
 
 // tsc's binder declares the members of an object literal like any symbols (TypeScript 7's excludes): a property
-// excludes methods, a method everything, an accessor everything but its other half and properties. A conflict is TS2300 on every declaration of the name so far
-// and on the new one, which then starts over (this is not a grammar check: also with parse errors)
+// excludes methods, a method everything, an accessor everything but its other half and properties. A conflict is TS2300
+// on every declaration of the table's symbol of the name and on the new one, which is a symbol of its own that the
+// table doesn't keep (an accessor conflicting with what isn't its other half makes the table's symbol both accessors:
+// tsgo's declareSymbolEx). Not a grammar check: also with parse errors
 static void object_bind_members(Expr const* me, ErrorCtx* errs) {
     enum { PROPERTY = 1, METHOD = 2, GET = 4, SET = 8, VALUE = PROPERTY | METHOD | GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
-    // Per item: the flags of the symbol it was declared into, and the item that symbol started with
+    // Per item: the item whose symbol it was declared into (-1: none), and for the table's symbols their flags
     uint8_t* flags = calloc(count ? (size_t)count : 1, 1);
     isize* start = malloc(sizeof(isize) * (count ? (size_t)count : 1));
-    panic_if(!flags || !start, "out of memory");
+    bool* in_table = calloc(count ? (size_t)count : 1, 1);
+    panic_if(!flags || !start || !in_table, "out of memory");
     for (isize n = 0; n < count; n++) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t includes, excludes;
@@ -3274,32 +3277,35 @@ static void object_bind_members(Expr const* me, ErrorCtx* errs) {
             start[n] = -1;
             continue;
         }
-        // The symbol of that name: the latest item declared under it
-        isize last = -1;
-        for (isize j = n - 1; j >= 0 && last < 0; j--) {
+        // The table's symbol of that name
+        isize table = -1;
+        for (isize j = 0; j < n && table < 0; j++) {
             ObjectExprItem const* other = vec_object_expr_item_at(object, j);
-            if (start[j] >= 0 && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) last = j;
+            if (in_table[j] && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) table = j;
         }
-        if (last < 0) {
+        if (table < 0) {
             flags[n] = includes;
+            in_table[n] = true;
             continue;
         }
-        if (!(flags[last] & excludes)) {
-            flags[n] = flags[last] | includes;
-            start[n] = start[last];
+        if (!(flags[table] & excludes)) {
+            flags[table] |= includes;
+            start[n] = table;
             continue;
         }
-        for (isize j = start[last]; j < n; j++) {
+        if ((flags[table] & (GET | SET)) && (flags[table] & (GET | SET)) != (includes & (GET | SET))) flags[table] |= GET | SET;
+        for (isize j = table; j < n; j++) {
             ObjectExprItem const* other = vec_object_expr_item_at(object, j);
-            if (start[j] != start[last]) continue;
+            if (start[j] != table) continue;
             Span at = other->name_span;
             if (!error_ctx_find(errs, at, 2300)) error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", at, "'.");
         }
-        error_ctx_error_d(errs, item->name_span, 2300, "Duplicate identifier '", item->name_span, "'.");
+        if (!error_ctx_find(errs, item->name_span, 2300)) error_ctx_error_d(errs, item->name_span, 2300, "Duplicate identifier '", item->name_span, "'.");
         flags[n] = includes;
     }
     free(flags);
     free(start);
+    free(in_table);
 }
 
 // tsc's isSideEffectFree

@@ -3895,6 +3895,154 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
     return ret;
 }
 
+
+// tsgo's binder of an object literal's members (bindPropertyOrMethodOrAccessor, declareSymbolEx): a member joins the
+// symbol the first member of its name made unless that symbol has a meaning it excludes, then it is a symbol of its own
+// that no later member finds. A property excludes methods, a method everything, an accessor methods and the same
+// accessor; an accessor conflicting with a member that isn't the other accessor marks the symbol as both accessors.
+// Members with a computed name that isn't a literal are late bound, symbols of their own
+enum { LIT_SYM_PROPERTY = 1, LIT_SYM_METHOD = 2, LIT_SYM_GET = 4, LIT_SYM_SET = 8 };
+typedef struct LiteralSymbol {
+    Atom const* name;
+    uint8_t flags;
+    bool in_table;
+    u32 first; // Item indices
+    i32 getter, setter; // -1: none
+    u32 member_start, member_count; // Its members' item indices in LiteralBinding.members, in order
+} LiteralSymbol;
+
+#define LITERAL_BINDING_INLINE 16
+typedef struct LiteralBinding {
+    u32 count;
+    u32* symbol_of; // Per item, UINT32_MAX for spreads and members without a bound name
+    Atom const** names; // Per item, its bound name (null: none)
+    LiteralSymbol* symbols;
+    u32* members;
+    // (Small literals don't allocate)
+    u32 symbol_of_buf[LITERAL_BINDING_INLINE];
+    Atom const* names_buf[LITERAL_BINDING_INLINE];
+    LiteralSymbol symbols_buf[LITERAL_BINDING_INLINE];
+    u32 members_buf[LITERAL_BINDING_INLINE];
+} LiteralBinding;
+
+static Atom const* literal_item_bound_name(Checker* me, ObjectExprItem const* item) {
+    if (item->tag == OBJECT_ITEM_SPREAD) return nullptr;
+    if (!item->computed_key) return checker_atom(me, cstr_sv(&item->name_string));
+    Expr const* key = item->computed_key;
+    if (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER) || expr_is_perenthisized(key)) return nullptr;
+    bool is_number = false;
+    return ty_property_name_of_key(me, ty_expr_type(me, key), &is_number);
+}
+
+static uint8_t literal_item_symbol_flags(ObjectExprItem const* item) {
+    switch (item->tag) {
+        case OBJECT_ITEM_METHOD: return LIT_SYM_METHOD;
+        case OBJECT_ITEM_GETTER: return LIT_SYM_GET;
+        case OBJECT_ITEM_SETTER: return LIT_SYM_SET;
+        default: return LIT_SYM_PROPERTY;
+    }
+}
+
+static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBinding* out) {
+    u32 n = (u32)vec_object_expr_item_size(object);
+    LiteralBinding* r = out;
+    r->count = 0;
+    bool small = n <= LITERAL_BINDING_INLINE;
+    r->symbol_of = small ? r->symbol_of_buf : malloc(sizeof(u32) * n);
+    r->names = small ? r->names_buf : malloc(sizeof(Atom const*) * n);
+    r->symbols = small ? r->symbols_buf : malloc(sizeof(LiteralSymbol) * n);
+    r->members = small ? r->members_buf : malloc(sizeof(u32) * n);
+    #define ret (*r)
+    // (Without a name written twice every member is a symbol of its own: none are made)
+    if (small) {
+        bool repeated = false;
+        for (u32 k = 0; k < n; k++) {
+            Atom const* name = literal_item_bound_name(me, &object->data[k]);
+            ret.names[k] = name;
+            ret.symbol_of[k] = UINT32_MAX;
+            for (u32 j = 0; j < k && name && !repeated; j++) repeated = ret.names[j] == name;
+        }
+        if (!repeated) return;
+    }
+    // The table: symbol indices by name (open addressing on the atom)
+    // (A small literal searches its symbols instead)
+    u32 slots = 16;
+    while (slots < n * 2) slots <<= 1;
+    u32* table = small ? nullptr : malloc(sizeof(u32) * slots);
+    if (table) memset(table, 0xFF, sizeof(u32) * slots);
+    u32 small_slot = UINT32_MAX;
+    for (u32 k = 0; k < n; k++) {
+        ObjectExprItem const* item = &object->data[k];
+        ret.symbol_of[k] = UINT32_MAX;
+        Atom const* name = small ? ret.names[k] : literal_item_bound_name(me, item);
+        ret.names[k] = name;
+        if (!name && !(item->computed_key && item->tag != OBJECT_ITEM_SPREAD)) continue;
+        uint8_t includes = literal_item_symbol_flags(item);
+        uint8_t excludes = includes == LIT_SYM_PROPERTY ? LIT_SYM_METHOD :
+            includes == LIT_SYM_METHOD ? 0xF :
+            includes == LIT_SYM_GET ? LIT_SYM_METHOD | LIT_SYM_GET : LIT_SYM_METHOD | LIT_SYM_SET;
+        u32* slot = nullptr;
+        if (name && !table) {
+            small_slot = UINT32_MAX;
+            for (u32 j = 0; j < ret.count; j++) {
+                if (ret.symbols[j].in_table && ret.symbols[j].name == name) small_slot = j;
+            }
+            slot = &small_slot;
+        } else if (name) {
+            u32 h = (u32)(((uintptr_t)name >> 4) * 2654435761u) & (slots - 1);
+            while (table[h] != UINT32_MAX && ret.symbols[table[h]].name != name) h = (h + 1) & (slots - 1);
+            slot = &table[h];
+        }
+        LiteralSymbol* existing = slot && *slot != UINT32_MAX ? &ret.symbols[*slot] : nullptr;
+        if (existing && !(existing->flags & excludes)) {
+            existing->flags |= includes;
+            ret.symbol_of[k] = (u32)(existing - ret.symbols);
+        } else {
+            if (existing && (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) &&
+                (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) != (includes & (LIT_SYM_GET | LIT_SYM_SET))
+            ) {
+                existing->flags |= LIT_SYM_GET | LIT_SYM_SET;
+            }
+            ret.symbols[ret.count] = (LiteralSymbol){
+                .name = name, .flags = includes, .in_table = slot && !existing, .first = k, .getter = -1, .setter = -1,
+            };
+            if (slot && !existing) *slot = ret.count;
+            ret.symbol_of[k] = ret.count++;
+        }
+        LiteralSymbol* symbol = &ret.symbols[ret.symbol_of[k]];
+        symbol->member_count++;
+        if (item->tag == OBJECT_ITEM_GETTER && symbol->getter < 0) symbol->getter = (i32)k;
+        if (item->tag == OBJECT_ITEM_SETTER && symbol->setter < 0) symbol->setter = (i32)k;
+    }
+    free(table);
+    u32 offset = 0;
+    for (u32 s = 0; s < ret.count; s++) {
+        ret.symbols[s].member_start = offset;
+        offset += ret.symbols[s].member_count;
+        ret.symbols[s].member_count = 0;
+    }
+    for (u32 k = 0; k < n; k++) {
+        if (ret.symbol_of[k] == UINT32_MAX) continue;
+        LiteralSymbol* symbol = &ret.symbols[ret.symbol_of[k]];
+        ret.members[symbol->member_start + symbol->member_count++] = k;
+    }
+    #undef ret
+}
+
+static void literal_binding_drop(LiteralBinding* me) {
+    if (my symbol_of == my symbol_of_buf) return;
+    free(my symbol_of);
+    free(my names);
+    free(my symbols);
+    free(my members);
+}
+
+// The type tsgo's getTypeOfAccessors gives an object literal's accessor symbol: the getter's, else the setter's
+static Ty const* literal_symbol_accessor_type(Checker* me, VecObjectExprItem const* object, LiteralSymbol const* symbol) {
+    if (symbol->getter >= 0) return ty_object_literal_accessor_type(me, object->data[symbol->getter].value.function, true);
+    return ty_object_literal_accessor_type(me, object->data[symbol->setter].value.function, false);
+}
+
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
     if (expr->expando_container) {
@@ -3939,8 +4087,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* pattern_context = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN) &&
         (ctx.contextual->flags & TYF_OBJECT) && !ty_is_tuple(ctx.contextual) && !pattern_type_has_rest(me, ctx.contextual) &&
         !intern_get(&my links, (u64[]){ KEY_PATTERN_COMPUTED, ctx.contextual->id }, 2) ? ctx.contextual : nullptr;
-    // Accessor pairs share a property: the declarations of both halves
-    Span* accessor_spans = nullptr;
+    LiteralBinding binding;
+    literal_bind(me, object, &binding);
 
     LiteralMembers members = {0};
     for_each (i, vec_object_expr_item, object) {
@@ -3971,7 +4119,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             name = ty_property_name_of_key(me, key_type, &is_number);
             if (name) name_is_value = is_number;
         } else {
-            name = checker_atom(me, cstr_sv(&i->name_string));
+            name = binding.names[i - object->data]; // (Interned by literal_bind())
         }
 
         // The type
@@ -4067,66 +4215,51 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             continue;
         }
 
-        ObjectLiteralProp* existing = literal_builder_find(&builder, name);
-        if (existing && is_accessor && existing->decl_span_count == 1 && existing->accessor) {
-            // The other half of an accessor pair. The getter decides the type
-            Span* both = arena_new_n(&my arena, Span, 2);
-            both[0] = existing->decl_spans[0];
-            both[1] = i->span;
-            existing->decl_spans = both;
-            existing->decl_span_count = 2;
-            existing->name_form = ty_prop_name_form_merge(existing->name_form,
-                ty_prop_name_form(span_sv(i->name_span), i->computed_key, key_type, true));
-            if (i->tag == OBJECT_ITEM_GETTER) {
-                existing->setter = existing->accessor;
-                existing->accessor = i->value.function;
-                existing->flags = (existing->flags & ~(u32)PROP_SETTER) | PROP_GETTER;
-            } else {
-                existing->setter = i->value.function;
-                if (!ctx.is_const) existing->flags &= ~(u32)PROP_READONLY; // Not getter-only after all
-            }
-            continue;
-        }
-        // (A JSDoc `@type` is the property's annotation; the rest of what its declaration says is its pseudo type, see
-        // PropDecl.item)
+        // The member's binder symbol (literal_bind()): a property or method is a property of its own type with the
+        // symbol's declarations and meanings (tsgo's checkObjectLiteral makes a transient symbol of them), an accessor
+        // is its symbol, typed by its accessors (getTypeOfAccessors). The last member of a name wins
+        u32 item_index = (u32)(i - object->data);
+        LiteralSymbol const* symbol = binding.symbol_of[item_index] != UINT32_MAX ? &binding.symbols[binding.symbol_of[item_index]] : nullptr;
         TypeNode const* asserted = i->jsdoc_type;
+        u32 single = item_index;
+        u32 const* member_items = symbol ? binding.members + symbol->member_start : &single;
+        u32 decl_span_count = symbol ? symbol->member_count : 1;
         uint8_t name_form = ty_prop_name_form(span_sv(i->name_span), i->computed_key, key_type, true);
-        // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
-        // conflict: its name is only its own)
-        bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
-        // (A member written again is the same binder symbol, declared by both: `{ a: 1, a: 2 }`, `{ m() {}, m() {} }`)
-        bool redeclares = existing && !own_symbol && !existing->accessor;
-        u32 decl_span_count = redeclares ? existing->decl_span_count + 1 : 1;
         Span* decl_span = arena_new_n(&my arena, Span, decl_span_count);
-        if (redeclares) memcpy(decl_span, existing->decl_spans, sizeof(Span) * existing->decl_span_count);
-        decl_span[decl_span_count - 1] = i->span;
-        if (existing && !own_symbol) name_form = ty_prop_name_form_merge(existing->name_form, name_form);
+        for (u32 k = 0; k < decl_span_count; k++) {
+            ObjectExprItem const* other = &object->data[member_items[k]];
+            decl_span[k] = other->span;
+            if (decl_span_count == 1) break;
+            Ty const* other_key = other->computed_key ? ty_expr_type(me, other->computed_key) : nullptr;
+            uint8_t form = ty_prop_name_form(span_sv(other->name_span), other->computed_key, other_key, true);
+            name_form = k ? ty_prop_name_form_merge(name_form, form) : form;
+        }
+        uint8_t symbol_flags = symbol ? symbol->flags : literal_item_symbol_flags(i);
         u32 flags = 0;
+        FunctionImpl const* accessor = nullptr;
+        FunctionImpl const* setter = nullptr;
+        if (is_accessor) {
+            bool has_getter = symbol ? symbol->getter >= 0 : i->tag == OBJECT_ITEM_GETTER;
+            bool has_setter = symbol ? symbol->setter >= 0 : i->tag == OBJECT_ITEM_SETTER;
+            FunctionImpl const* getter_fn = !has_getter ? nullptr : symbol ? object->data[symbol->getter].value.function : i->value.function;
+            FunctionImpl const* setter_fn = !has_setter ? nullptr : symbol ? object->data[symbol->setter].value.function : i->value.function;
+            accessor = getter_fn ? getter_fn : setter_fn;
+            setter = getter_fn ? setter_fn : nullptr;
+            flags |= getter_fn ? PROP_GETTER : PROP_SETTER;
+        }
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD | (i->optional_method ? PROP_OPTIONAL : 0);
-        if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
-        if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
+        // (tsgo's isReadonlySymbol: a getter without a setter)
+        if ((symbol_flags & LIT_SYM_GET) && !(symbol_flags & LIT_SYM_SET)) flags |= PROP_READONLY;
         if (ctx.is_const) flags |= PROP_READONLY;
-        // `{ m(x: 'a') {}, m(x: 'b') {} }`: one method symbol to tsc's binder (MethodExcludes doesn't exclude a method),
-        // whose type (getTypeOfFuncClassEnumModule) has the signatures of every declaration
         FunctionImpl const* const* methods = nullptr;
         u32 method_count = 0;
         if (i->tag == OBJECT_ITEM_METHOD && i->value.tag == EXPR_FUNCTION && !i->jsdoc_type) {
-            u32 before = redeclares && existing->method_count ? existing->method_count : 0;
-            FunctionImpl const** list = arena_new_n(&my arena, FunctionImpl const*, before + 1);
-            if (before) memcpy(list, existing->methods, sizeof(FunctionImpl const*) * before);
-            list[before] = i->value.function;
+            FunctionImpl const** list = arena_new_n(&my arena, FunctionImpl const*, 1);
+            list[0] = i->value.function;
             methods = list;
-            method_count = before + 1;
-            if (method_count > 1) {
-                u64 key[2] = { KEY_LITERAL_METHOD_OVERLOADS, (u64)(uintptr_t)i->value.function };
-                Ty const* overloaded = intern_get(&my links, key, 2);
-                if (!overloaded) {
-                    overloaded = ty_anonymous_from_overloads(me, methods, method_count, (LowerCtx){ .generic = true });
-                    *intern_slot(me, &my links, key, 2) = overloaded;
-                }
-                type = overloaded;
-            }
+            method_count = 1;
         }
+        ObjectExprItem const* value_declaration = symbol ? &object->data[symbol->first] : i;
         if (pattern_context) {
             Prop const* implied = ty_get_prop(me, pattern_context, name);
             if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;
@@ -4141,7 +4274,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .name = name,
             .flags = flags,
             .type = type,
-            .accessor = is_accessor ? i->value.function : nullptr,
+            .accessor = accessor,
+            .setter = setter,
             .methods = methods,
             .method_count = method_count,
             .name_span = i->name_span,
@@ -4150,13 +4284,13 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .name_is_value = name_is_value,
             .asserted = asserted,
             // (A member written again is declared by the first one: tsc's valueDeclaration)
-            .item = redeclares && existing->item ? existing->item : i,
+            .item = value_declaration,
             .own = true,
             .name_form = name_form,
             .name_type = i->computed_key && (key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) ? key_type : nullptr,
         });
     }
-    free(accessor_spans);
+    literal_binding_drop(&binding);
     literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
     free(members.items);
     // (An object literal with a contextual type isn't open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
@@ -4221,6 +4355,19 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
 
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item) {
     Ty const* type = ty_expr_type(me, object);
+    // A member of a symbol with accessors is typed by them (tsgo's getTypeOfSymbol: getTypeOfAccessors), whatever the
+    // literal's property of the name is
+    if (item->tag != OBJECT_ITEM_SPREAD) {
+        LiteralBinding binding;
+        literal_bind(me, &object->object, &binding);
+        u32 index = (u32)(item - object->object.data);
+        LiteralSymbol const* symbol = index < (u32)vec_object_expr_item_size(&object->object) && binding.symbol_of[index] != UINT32_MAX ?
+            &binding.symbols[binding.symbol_of[index]] : nullptr;
+        Ty const* accessor_type = symbol && (symbol->getter >= 0 || symbol->setter >= 0) ?
+            literal_symbol_accessor_type(me, &object->object, symbol) : nullptr;
+        literal_binding_drop(&binding);
+        if (accessor_type) return accessor_type;
+    }
     Atom const* name = nullptr;
     if (item->computed_key) {
         bool is_number = false;

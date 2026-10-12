@@ -7518,12 +7518,12 @@ const baselines = {
     'declFileImportChainInExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileImportModuleWithExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileImportedTypeUseInTypeArgPosition': {
         errors: true,
@@ -8438,7 +8438,7 @@ const baselines = {
     'declarationEmitImportInExportAssignmentModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitImportSpecifierWithTsExtensionRelativeImport': {
         errors: true,
@@ -8688,7 +8688,7 @@ const baselines = {
     'declarationEmitNameConflicts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNameConflicts2': {
         errors: true,
@@ -9333,7 +9333,7 @@ const baselines = {
     'declarationMaps': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationMapsExportAssignmentExpression': {
         errors: true,
@@ -9348,7 +9348,7 @@ const baselines = {
     'declarationMapsWithoutDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationMerging1': {
         errors: true,
@@ -9428,12 +9428,12 @@ const baselines = {
     'declareFileExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareFileExportAssignmentWithVarFromVariableStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareIdentifierAsBeginningOfStatementExpression01': {
         errors: true,
@@ -10707,8 +10707,8 @@ const baselines = {
     },
     'duplicateClassElements': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicateConstructSignature': {
         errors: true,
@@ -12218,7 +12218,7 @@ const baselines = {
     'es5ExportEqualsDts(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5ModuleInternalNamedImports(target=es2015)': {
         errors: true,
@@ -12803,7 +12803,7 @@ const baselines = {
     'esModuleIntersectionCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esNextWeakRefs_IterableWeakMap': {
         errors: true,
@@ -13098,7 +13098,7 @@ const baselines = {
     'exportAssignClassAndModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignNamedImport': {
         errors: true,
@@ -13413,7 +13413,7 @@ const baselines = {
     'exportDefaultProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultProperty2': {
         errors: true,
@@ -13548,7 +13548,7 @@ const baselines = {
     'exportEqualsProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportEqualsProperty2': {
         errors: true,
@@ -17038,7 +17038,7 @@ const baselines = {
     'importPropertyFromMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importShadowsGlobalName': {
         errors: true,
@@ -23533,7 +23533,7 @@ const baselines = {
     'namespaceMergedWithFunctionWithOverloadsUsage': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'namespaceMergedWithImportAliasNoCrash': {
         errors: true,
@@ -31753,7 +31753,7 @@ const baselines = {
     'tsxResolveExternalModuleExportsTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadDoesNotReportExcessProps': {
         errors: true,
@@ -38562,8 +38562,8 @@ const baselines = {
     },
     'propertyAndAccessorWithSameName': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'propertyAndFunctionWithSameName': {
         errors: true,
@@ -47813,7 +47813,7 @@ const baselines = {
     'objectLiteralErrors(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralGettersAndSetters': {
         errors: true,
@@ -63828,7 +63828,7 @@ const baselines = {
     'importTypeInJSDoc': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTypeLocal': {
         errors: true,
@@ -64747,8 +64747,8 @@ const baselines = {
     },
     'callSignaturesWithParameterInitializers2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'constructSignatureWithAccessibilityModifiersOnParameters': {
         errors: true,
@@ -64823,7 +64823,7 @@ const baselines = {
     'stringLiteralTypesInImplementationSignatures2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterAsTypeArgument': {
         errors: true,

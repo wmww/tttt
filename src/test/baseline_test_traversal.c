@@ -2417,6 +2417,8 @@ static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprIt
         // (TypeScript 7's excludes: an object literal method excludes every value, see object_bind_members())
         u32 excludes = kind == PROP ? METHOD : kind == METHOD ? (PROP | METHOD | GET | SET) : kind == GET ? (METHOD | GET) : (METHOD | SET);
         if (flags && (flags & excludes)) {
+            // (An accessor conflicting with what isn't the other accessor makes the symbol both: tsgo's declareSymbolEx)
+            if ((flags & (GET | SET)) && (flags & (GET | SET)) != (kind & (GET | SET))) flags |= GET | SET;
             // A symbol of its own, outside the table
             if (other == item) {
                 vec_span_clear(&ret);
@@ -3084,9 +3086,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (i->tag != OBJECT_ITEM_SPREAD) {
                     VecSpan declarations = {0};
                     ObjectExprItem const* named = i; // (named like its first declaration)
-                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER || i->tag == OBJECT_ITEM_METHOD) &&
-                        !i->computed_key
-                    ) {
+                    if (!i->computed_key) {
                         // (Its symbol: with the other accessor or the other methods of its name, alone if it conflicts
                         // with what came first)
                         ObjectExprItem const* accessor_first = nullptr;
