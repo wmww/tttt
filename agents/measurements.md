@@ -19,9 +19,10 @@ components at every merge, 0 duplicates, 0 conflicts.
   DT sweep 8592 -> **8593 / 8595**, `$ExpectType` 68631, flagflip 132 / 16 / 3 -> **46 / 8 / 3**, source sweep sample 4
   800 -> **804 / 822** (full: 3295 -> 3304 / 3363 by agent B's runs), mutants seed 41 10 -> 7, seed 42 13 -> 5.
   clidiff `--sample 4` 820 / 839, scenarios 209 / 213.
-- perfsweep: worst types ratio 1.56 -> **2.50** (feathers/packages/knex 4518 -> 18287 types, tsgo 7324: the variance
-  measurement port d93172d5 makes QueryBuilder's parameter unreliable where tsgo's is reliable; perf_leads.md, needs
-  an instrumented tsgo); total types 67.1M vs tsgo 128.0M, check median 0.20x.
+- perfsweep: worst types ratio 1.56 -> 2.50 (feathers/packages/knex 4518 -> 18287 types, tsgo 7324, from the variance
+  port d93172d5); total types 67.1M vs tsgo 128.0M, check median 0.20x. Fixed after the fan-out (agent C, generic
+  relation keys, bugs/variance_accuracy.md): knex **4832** types (0.66); `--sample 4` worst types ratio **1.56**
+  (lightweight-charts lwc-plugin-hlc-area-series, 1624 vs 1044 types), median 0.66.
 - Instructions (callgrind): tsc 4.774, type-fest 18.686, valibot 3.433, react 1.497, nest 1.167, webpack 10.468, zod
   5.022, xstate 2.680, drizzle 6.007, vue 6.601, effect 10.130, vscode 91.288, excalidraw 7.971, tanstack-router
   5.339 G (+0.3..+0.6% creep from ~85 commits; drizzle +0.96%, 0.77 of it a GCC layout shift from 6c3c5419 whose new

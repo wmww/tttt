@@ -65,7 +65,8 @@ src` finds the code-side markers; every significant one has an entry here.
   charged to whichever node first needs them (tsc pays once): a TS2589 near the 5M limit could depend on `--checkers`
   (see also "Instantiation limit" under Type core).
   The variances themselves can differ too: circular measurements (tsc's Unknown for one in flight) depend on which
-  type is measured first, which follows the files a checker saw (bugs/include_order.md, vue's ObjectDirective).
+  type is measured first, which follows the files a checker saw. (vue's vModel.ts:446 used to depend on it; it is
+  stable at every `--checkers` since an in-flight measurement answers Unknown like tsgo, not Maybe: 2026-10-12)
 
 ## Parser
 - `unique symbol` placement (TS1335, `parse_type_inner` and `expect_annotation_type`): checked by the parser through

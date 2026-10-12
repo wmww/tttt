@@ -122,8 +122,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   perf sessions (+7% over 09-25..09-27). Wall times drift with the machine: compare callgrind counts across sessions.
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.
-- tsgo is order dependent in places tttt isn't (bugs/include_order.md); tsgo 7.1's ordering rules are what
-  `ty/order.c` must port, not patch.
+- tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
 - **Competition**: bun check (a Rust tsgo port, 2026-10) already beats tttt on memory. If tsgo itself gets a
   similar memory or perf pass, our margin is the corpora's 3-14x minus whatever perf at breadth reveals. Memory per
   type/node is the lever we've worked least on since plan 43.

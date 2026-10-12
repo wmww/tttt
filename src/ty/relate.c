@@ -178,6 +178,99 @@ static u64 relation_key(Ty const* source, Ty const* target) {
     return (u64)source->id << 32 | target->id; // ids start at 1, so a key is never 0
 }
 
+// tsc's isTypeReferenceWithGenericArguments: a (non-deferred) reference with a type parameter among its arguments, or
+// such a reference
+static bool is_generic_args_reference(Ty const* ty) {
+    if (ty->kind != TY_REFERENCE || ty->reference.deferred || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    TyList args = ty->reference.args;
+    for (u32 i = 0; i < args.len; i++) {
+        if (args.data[i]->kind == TY_TYPE_PARAM || is_generic_args_reference(args.data[i])) return true;
+    }
+    Ty const* this_arg = ty->reference.this_arg;
+    return this_arg && (this_arg->kind == TY_TYPE_PARAM || is_generic_args_reference(this_arg));
+}
+
+typedef struct GenericKeyBuilder {
+    u64 words[96];
+    u32 len;
+    bool overflow;
+    bool constrained;
+    bool ignore_constraints;
+    u32 param_count;
+    Ty const* params[24];
+} GenericKeyBuilder;
+
+enum { GENERIC_KEY_PARAM = 1ull << 60, GENERIC_KEY_TYPE = 2ull << 60, GENERIC_KEY_OPEN = 3ull << 60 };
+
+static void generic_key_push(GenericKeyBuilder* b, u64 word) {
+    if (b->len < c_arraylen(b->words)) b->words[b->len++] = word;
+    else b->overflow = true;
+}
+
+static void generic_key_arg(Checker* me, GenericKeyBuilder* b, Ty const* arg, u32 depth);
+
+static void generic_key_reference(Checker* me, GenericKeyBuilder* b, Ty const* ref, u32 depth) {
+    generic_key_push(b, ref->reference.target->id);
+    TyList args = ref->reference.args;
+    for (u32 i = 0; i < args.len; i++) generic_key_arg(me, b, args.data[i], depth);
+    // (tsc's this-argument is the last type argument)
+    if (ref->reference.this_arg) generic_key_arg(me, b, ref->reference.this_arg, depth);
+}
+
+static void generic_key_arg(Checker* me, GenericKeyBuilder* b, Ty const* arg, u32 depth) {
+    if (arg->kind == TY_TYPE_PARAM) {
+        if (b->ignore_constraints || !ty_param_constraint(me, arg)) {
+            u32 index = 0;
+            while (index < b->param_count && b->params[index] != arg) index++;
+            if (index == b->param_count) {
+                if (index == c_arraylen(b->params)) { b->overflow = true; return; }
+                b->params[b->param_count++] = arg;
+            }
+            generic_key_push(b, GENERIC_KEY_PARAM | index);
+            return;
+        }
+        b->constrained = true;
+    } else if (depth < 4 && is_generic_args_reference(arg)) {
+        generic_key_push(b, GENERIC_KEY_OPEN);
+        generic_key_reference(me, b, arg, depth + 1);
+        generic_key_push(b, GENERIC_KEY_OPEN | 1);
+        return;
+    }
+    generic_key_push(b, GENERIC_KEY_TYPE | arg->id);
+}
+
+// tsc's getRelationKey for two references with generic arguments: their unconstrained type parameters (all of them
+// with `ignore_constraints`) by order of appearance, so `Foo<T>` to `Bar<T>` is the same question as `Foo<U>` to
+// `Bar<U>` and shares its cache entry and its place on the maybe stack. A variance measurement relies on it: the
+// members of `QueryBuilder<sub-T, TResult>` relate `WhereIn<sub-T, TResult>` with QueryBuilder's TResult, which WhereIn's
+// own measurement failed with its own TResult. `constrained`: a constrained type parameter was taken as itself
+static u64 generic_relation_key(Checker* me, Ty const* source, Ty const* target, bool ignore_constraints, bool* constrained) {
+    GenericKeyBuilder b;
+    b.len = 0;
+    b.overflow = b.constrained = false;
+    b.ignore_constraints = ignore_constraints;
+    b.param_count = 0;
+    generic_key_push(&b, KEY_GENERIC_RELATION);
+    generic_key_reference(me, &b, source, 0);
+    generic_key_push(&b, GENERIC_KEY_OPEN | 2);
+    generic_key_reference(me, &b, target, 0);
+    *constrained = b.constrained;
+    if (b.overflow) return relation_key(source, target); // (Too big to share: asked as itself)
+    void const** slot = intern_slot(me, &my links, b.words, b.len);
+    if (!*slot) *slot = (void const*)(uintptr_t)++my generic_relation_keys;
+    // (Type ids stay below 2^29, so this never collides with relation_key())
+    return 1ull << 61 | (u64)(uintptr_t)*slot;
+}
+
+// The relation cache's and maybe stack's key of a pair (tsc's getRelationKey)
+static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool* constrained) {
+    *constrained = false;
+    if (is_generic_args_reference(source) && is_generic_args_reference(target)) {
+        return generic_relation_key(me, source, target, false, constrained);
+    }
+    return relation_key(source, target);
+}
+
 // Globals
 
 [[gnu::noinline, gnu::cold]] static Ty const* resolve_global_type(Checker* me, GlobalType which) {
@@ -2452,6 +2545,77 @@ typedef struct SourceProp {
 static SourceProp* source_props(Checker* me, Ty const* source, Members const* source_members, u32* count_out);
 static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth);
 
+
+// TTTT_DEBUG_VARIANCE: a short description of a type that resolves nothing (the format of an instrumented tsgo's log,
+// see agents/bugs/perf_leads.md)
+static Ty const* variance_marker(Checker* me, u32 which);
+static void variance_debug_desc(Checker* me, Ty const* ty, u32 depth, cstr* out) {
+    if (!ty) { cstr_append(out, "nil"); return; }
+    if (ty == variance_marker(me, 0)) { cstr_append(out, "SUPER"); return; }
+    if (ty == variance_marker(me, 1)) { cstr_append(out, "SUB"); return; }
+    if (ty == variance_marker(me, 2)) { cstr_append(out, "OTHER"); return; }
+    if (depth > 3) { cstr_append(out, "…"); return; }
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        char const* sep = ty->kind == TY_UNION ? " | " : " & ";
+        cstr_append(out, "(");
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (i > 6) { cstr_append(out, sep); cstr_append(out, "…"); break; }
+            if (i) cstr_append(out, sep);
+            variance_debug_desc(me, ty->composite.types.data[i], depth + 1, out);
+        }
+        cstr_append(out, ")");
+        return;
+    }
+    TyList args = {0};
+    if (ty->alias) {
+        cstr_append_sv(out, ty->alias->name);
+        args = ty->alias_args;
+    } else if (ty->kind == TY_TYPE_PARAM) {
+        cstr_append_sv(out, atom_sv(ty->param.name));
+        char buf[16]; snprintf(buf, sizeof buf, "@%u", ty->id); cstr_append(out, buf);
+    } else if (ty->kind == TY_DECLARED) {
+        if (ty->declared.symbol) cstr_append_sv(out, ty->declared.symbol->name);
+        else cstr_append(out, "#decl");
+    } else if (ty->kind == TY_REFERENCE) {
+        Ty const* target = ty->reference.target;
+        if (target->declared.symbol) cstr_append_sv(out, target->declared.symbol->name);
+        else cstr_append(out, "#tuple");
+        if (!ty->reference.deferred) args = ty->reference.args;
+        if (ty->reference.this_arg) cstr_append(out, "[this]");
+        if (ty->reference.from_type_node) cstr_append(out, "[node]");
+    } else {
+        cstr_append(out, "#");
+        char buf[32];
+        snprintf(buf, sizeof buf, "%u.%x", ty->kind, ty->flags);
+        cstr_append(out, buf);
+    }
+    if (args.len) {
+        cstr_append(out, "<");
+        for (u32 i = 0; i < args.len; i++) {
+            if (i) cstr_append(out, ", ");
+            variance_debug_desc(me, args.data[i], depth + 1, out);
+        }
+        cstr_append(out, ">");
+    }
+}
+
+static void variance_debug_log(Checker* me, u32 indent, char const* what, Ty const* source, Ty const* target, char const* tail) {
+    cstr line = cstr_init();
+    for (u32 i = 0; i < indent; i++) cstr_append(&line, " ");
+    cstr_append(&line, what);
+    cstr_append(&line, " ");
+    variance_debug_desc(me, source, 0, &line);
+    cstr_append(&line, " -> ");
+    variance_debug_desc(me, target, 0, &line);
+    cstr_append(&line, tail);
+    fprintf(stderr, "%s  @%u,%u\n", cstr_str(&line), source->id, target->id);
+    cstr_drop(&line);
+}
+
+static char const* ternary_debug_name(unsigned ternary) {
+    return ternary == 0 ? "F" : ternary == 1 ? "U" : ternary == 3 ? "M" : ternary == 7 ? "T" : "?";
+}
+
 static Ternary props_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
     bool optionals_only
@@ -2662,6 +2826,10 @@ static Ternary props_related_impl(
                 source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
             }
             related = is_related_to(me, st, source_type, target_type, report);
+        }
+        if (debug_env.debug_variance && my variance_depth) {
+            for (u32 j = 0; j < st->source_depth; j++) fputc(' ', stderr);
+            fprintf(stderr, "PROP %.*s = %s\n", (int)target_prop->name->len, target_prop->name->str, ternary_debug_name(related));
         }
         if (!related) {
             if (report) {
@@ -3284,6 +3452,10 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
             (typeof(my variance_stack[0])){ .declared = subject.declared, .alias = subject.alias, .variances = variances };
     }
     unsigned char measured[variances->len ? variances->len : 1];
+    if (debug_env.debug_variance) {
+        Symbol const* sym = subject_symbol(subject);
+        fprintf(stderr, "VAR> %.*s depth=%u\n", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len);
+    }
     for (u32 i = 0; i < variances->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
         // every declaration of a merged interface together
@@ -3307,6 +3479,18 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
         measured[i] = (unsigned char)variance;
         // (A computation restarted from a circularity measured them already: tsgo exits early)
         if (variances->state == LAZY_STATE_DONE) break;
+    }
+    if (debug_env.debug_variance) {
+        Symbol const* sym = subject_symbol(subject);
+        fprintf(stderr, "VAR< %.*s [", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "");
+        // (tsgo's VarianceFlags values: 0 invariant, 1 co, 2 contra, 3 bi, 4 independent, +8 unmeasurable, +16
+        // unreliable; tttt's own flags are the other way round)
+        for (u32 i = 0; i < variances->len; i++) {
+            unsigned v = measured[i];
+            unsigned tsgo = (v & 7) | (v & VARIANCE_UNMEASURABLE ? 8 : 0) | (v & VARIANCE_UNRELIABLE ? 16 : 0);
+            fprintf(stderr, i ? " %u" : "%u", tsgo);
+        }
+        fprintf(stderr, "] stored=%s\n", variances->state == LAZY_STATE_DONE ? "false" : "true");
     }
     if (pushed) my variance_stack_len--;
     my variance_depth--;
@@ -3340,6 +3524,11 @@ static Variances const* measured_variances(Checker* me, VarianceSubject subject,
     u32 min = (u32)index;
     for (u32 i = (u32)index + 1; i < my variance_stack_len; i++) {
         if (ty_compare_symbols(subject_symbol(subject_of_frame(me, i)), subject_symbol(subject_of_frame(me, min))) < 0) min = i;
+    }
+    if (debug_env.debug_variance) {
+        Symbol const* sym = subject_symbol(subject);
+        Symbol const* restart = subject_symbol(subject_of_frame(me, min));
+        fprintf(stderr, "VAR circular %.*s restart=%.*s\n", (int)sym->name.size, sym->name.buf, (int)restart->name.size, restart->name.buf);
     }
     if (min > (u32)index) {
         u32 saved_len = my variance_stack_len;
@@ -6041,11 +6230,13 @@ static Ternary structured_related_members(
             }
             Variances const* variances = get_variances(me, source_target);
             // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
-            // variance only from occurrences that aren't nested in recursive instantiations of the type
+            // variance only from occurrences that aren't nested in recursive instantiations of the type. Unknown, not
+            // Maybe: a Maybe that reaches depth 0 is cached as success, and the generic relation key shares it with
+            // the measurement itself (vue's DirectiveBinding came out independent in Modifiers that way)
             if (!variances && !is_marker_reference(me, source) && !is_marker_reference(me, target) &&
                 !is_array_target(me, source_target) && source_target->declared.kind != TY_DECLARED_TUPLE_TARGET
             ) {
-                return TERNARY_MAYBE;
+                return TERNARY_UNKNOWN;
             }
             if (variances) {
                 bool unreliable;
@@ -6402,21 +6593,34 @@ static void maybe_truncate(RelationState* st, u32 len) {
 
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
-    u64 key = relation_key(source, target);
+    bool constrained;
+    u64 key = relation_key_of(me, source, target, &constrained);
     // Relating to an intersection's members is a question of its own (tsc's getRelationKey postfix): no excess property
     // checks, and a pair compared inside it isn't the same pair on the stack outside it
-    if (st->intersection_target) key ^= 1ull << 63;
-    if (st->intersection_source) key ^= 1ull << 62;
+    u64 intersection_bits = (st->intersection_target ? 1ull << 63 : 0) | (st->intersection_source ? 1ull << 62 : 0);
+    key ^= intersection_bits;
     unsigned cached = relation_cache_get(cache, key);
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
     if (cached & CACHE_UNMEASURABLE) report_variance(me, source, VARIANCE_UNMEASURABLE);
+    if (debug_env.debug_variance && my variance_depth && cached) {
+        variance_debug_log(me, st->source_depth, "CACHE", source, target, (cached & CACHE_SUCCEEDED) ? " = T" : " = F");
+    }
     cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
     // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
-    if (maybe_contains(st, key)) return TERNARY_MAYBE;
+    if (maybe_contains(st, key)) {
+        if (debug_env.debug_variance && my variance_depth) variance_debug_log(me, st->source_depth, "MAYBE", source, target, "");
+        return TERNARY_MAYBE;
+    }
+    // References to constrained type parameters: as related as the same pair with all type parameters unconstrained
+    // that is being compared (tsc's broadestEquivalentId)
+    if (constrained) {
+        bool unused;
+        if (maybe_contains(st, generic_relation_key(me, source, target, true, &unused) ^ intersection_bits)) return TERNARY_MAYBE;
+    }
     if (fails_common_properties(me, st, source, target, report)) {
         relation_cache_put(cache, key, CACHE_FAILED);
         return TERNARY_FALSE;
@@ -6450,6 +6654,9 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 
     unsigned char saved_reports = my variance_reports;
     my variance_reports = 0;
+    if (debug_env.debug_variance && my variance_depth && st->expanding != 3) {
+        variance_debug_log(me, st->source_depth, "REL>", source, target, "");
+    }
     Ternary result = st->expanding == 3 ? TERNARY_MAYBE : structured_related(me, st, source, target, report);
     unsigned unreliable = (my variance_reports & VARIANCE_UNRELIABLE ? CACHE_UNRELIABLE : 0) |
         (my variance_reports & VARIANCE_UNMEASURABLE ? CACHE_UNMEASURABLE : 0);
@@ -6462,6 +6669,12 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     my variance_reports |= saved_reports;
     st->depth--;
     if (push_source) st->source_depth--;
+    if (debug_env.debug_variance && my variance_depth) {
+        char tail[64];
+        snprintf(tail, sizeof tail, " = %s flags=%s%s", ternary_debug_name(result), unreliable & CACHE_UNRELIABLE ? "r" : "",
+            unreliable & CACHE_UNMEASURABLE ? "m" : "");
+        variance_debug_log(me, st->source_depth, "REL<", source, target, tail);
+    }
     if (push_target) st->target_depth--;
     st->expanding = saved_expanding;
 
@@ -7394,6 +7607,16 @@ static bool check_related(
     // (Unreduced, like tsc's isTypeRelatedTo: `any` is assignable to an intersection that is never, which
     // is_related_to() reduces first and finds it isn't)
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
+    // Two object types related before: the cached answer, *without* the unreliable/unmeasurable marks it was cached
+    // with (tsc's isTypeRelatedTo, unlike recursiveTypeRelatedTo). A variance measurement that asks about a pair that
+    // failed earlier, `QueryBuilder<sub-T, R>` to `QueryBuilder<super-T, R>` in knex, is reliable then: measuring it
+    // unreliable again lets every later failed comparison of QueryBuilder fall back to structure (4x the types)
+    if (!st->reporting && (source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT)) {
+        bool constrained;
+        unsigned cached = relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained)) &
+            (CACHE_SUCCEEDED | CACHE_FAILED);
+        if (cached) return cached == CACHE_SUCCEEDED;
+    }
     if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {
         // Nothing to look into (narrowing asks this about every member of big literal unions): see is_related_to()
         if (relation != TY_RELATION_COMPARABLE || source->kind != TY_INTRINSIC) return false;

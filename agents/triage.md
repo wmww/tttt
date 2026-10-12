@@ -49,9 +49,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
 - **Source sweep flakiness** (agent B, 2026-10-12 fan-out): pixijs and feathers matched tsc in some full sourcesweep
   runs and not in others. Check whether their output depends on the checker count or file order (`scripts/checkerdiff.py`
   style: `--checkers 1` vs 4, twice each) before chasing their diagnostics.
-- **Variance accuracy** (agent A): on feathers/packages/knex 27 measured variances match tsgo's trace and 35 differ
-  (perf_leads.md "knex"); after d93172d5 that costs 4x types there. An instrumented tsgo (memory note) logging
-  QueryBuilder's measurement order is the next step; worth a plan if more projects show it.
 - (2026-10-12, test/cases wiring) A JSX element spreading five unions of ten object types
   (`<Comp {...a} {...b} {...c} {...d} {...e} />`, Comp generic, `@jsx: preserve`) is TS2590 in tsgo, nothing in tttt
   (missed, before and after 16b4bb4b). The same five unions in `inter(a, b, c, d, e)` returning `P & Q & R & S & T`

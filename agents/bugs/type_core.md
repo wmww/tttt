@@ -71,9 +71,6 @@ passing tests).
   Instantiation) passes; do it if another shows up (ex plan 42 stage 4).
 
 ## Relations, instantiation, reduction
-- **Variance measurement order (vue)**: circular variance measurements finish differently depending on which one starts
-  first; bugs/include_order.md (vModel.ts:446, depends on `--checkers`). The tsc 6-era spurious TS2345 at
-  vModel.ts:383 no longer reproduces (2026-10-09).
 - **Two copies of one declaration file (webpack through a symlink): one diagnostic left.** From a worktree (where
   `thirdparty/corpora` is a symlink) webpack's `types.d.ts` is in the program twice, as in tsc (root files keep the
   symlinked path, only node_modules results are realpathed and `node_modules/webpack -> ..`), and the examples'

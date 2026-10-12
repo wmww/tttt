@@ -1109,6 +1109,7 @@ struct Checker {
     // checked (tsc's flowAnalysisDisabled, saved and restored around function and module blocks; per file here)
     bool flow_analysis_disabled;
     u32 flow_shared_cap;
+    u32 generic_relation_keys; // How many generic_relation_key()s were made (relate.c)
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     // The declared types and aliases whose variances are being measured, outermost first (tsgo's varianceStack): a
     // circularity restarts from its smallest symbol (relate.c, measured_variances())
