@@ -24,39 +24,75 @@ void inference_drop(Inference* inf) {
     }
     free(inf->params);
     free(inf->visited);
+    free(inf->visited_priority);
     free(inf->circular);
     free(inf->array_literals);
     free(inf->inferred_type_params);
     *inf = (Inference){0};
 }
 
-// False if the pair was there already
-static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
-    u64 key = ((u64)source->id << 32) | target->id;
-    if (!key) return true;
+// The pair's slot in `visited` (its priority in visited_priority), added if it wasn't there (`*existed` says)
+static u32 visited_slot(Inference* inf, u64 key, bool* existed) {
     if ((inf->visited_len + 1) * 2 > inf->visited_cap) {
         u32 cap = inf->visited_cap ? inf->visited_cap * 2 : 64;
         u64* grown = calloc(cap, sizeof(u64));
-        panic_if(!grown, "out of memory");
+        u32* grown_priority = calloc(cap, sizeof(u32));
+        panic_if(!grown || !grown_priority, "out of memory");
         for (u32 i = 0; i < inf->visited_cap; i++) {
             u64 old = inf->visited[i];
             if (!old) continue;
             u32 at = (u32)((old * 0x9E3779B97F4A7C15ull) >> 32) & (cap - 1);
             while (grown[at]) at = (at + 1) & (cap - 1);
             grown[at] = old;
+            grown_priority[at] = inf->visited_priority[i];
         }
         free(inf->visited);
+        free(inf->visited_priority);
         inf->visited = grown;
+        inf->visited_priority = grown_priority;
         inf->visited_cap = cap;
     }
     u32 at = (u32)((key * 0x9E3779B97F4A7C15ull) >> 32) & (inf->visited_cap - 1);
     while (inf->visited[at]) {
-        if (inf->visited[at] == key) return false;
+        if (inf->visited[at] == key) {
+            *existed = true;
+            return at;
+        }
         at = (at + 1) & (inf->visited_cap - 1);
     }
     inf->visited[at] = key;
+    inf->visited_priority[at] = UINT32_MAX; // (While its walk runs: nothing inferred yet)
     inf->visited_len++;
-    return true;
+    *existed = false;
+    return at;
+}
+
+static u64 visited_key(Ty const* source, Ty const* target) {
+    return ((u64)source->id << 32) | target->id;
+}
+
+// False if the pair was there already; then what its walk inferred at counts as inferred here too (tsc's invokeOnce:
+// `inferencePriority = min(inferencePriority, status)`), so a source seen before is still used up for a naked type
+// parameter beside the target
+static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
+    u64 key = visited_key(source, target);
+    if (!key) return true;
+    bool existed;
+    u32 at = visited_slot(inf, key, &existed);
+    if (existed && inf->visited_priority[at] < inf->hit_priority) inf->hit_priority = inf->visited_priority[at];
+    return !existed;
+}
+
+// After the walk of a pair visited_add() added: what it inferred at (the best priority since `saved`, which the caller
+// reset hit_priority from)
+static void visited_done(Inference* inf, Ty const* source, Ty const* target, u32 saved) {
+    u64 key = visited_key(source, target);
+    if (key) {
+        bool existed;
+        u32 at = visited_slot(inf, key, &existed);
+        inf->visited_priority[at] = inf->hit_priority;
+    }
+    if (saved < inf->hit_priority) inf->hit_priority = saved;
 }
 
 static InferParam* inference_param(Inference* inf, Ty const* ty) {
@@ -1866,6 +1902,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             u64 key = ((u64)source->id << 32) | target->id;
             for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = inf->circular[i] == key;
         } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+            u32 saved_hit = inf->hit_priority;
+            inf->hit_priority = UINT32_MAX;
             bool outer_circularity = inf->circularity;
             inf->circularity = false;
             unsigned saved_expanding = inf->expanding;
@@ -1884,6 +1922,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             inf->expanding = saved_expanding;
             if (inf->circularity) record_circular(inf, source, target);
             inf->circularity |= outer_circularity;
+            visited_done(inf, source, target, saved_hit);
         }
     }
     inf->depth--;

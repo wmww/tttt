@@ -249,6 +249,7 @@ typedef struct Inference {
     // (source id, target id) of the object pairs one infer_types() walked already (tsc's `visited`): a type graph
     // is a DAG with a lot of sharing, and walking every path to a pair is exponential. Open addressing, 0 is empty
     u64* visited;
+    u32* visited_priority; // Of each pair in visited: the best priority its walk inferred at (tsc's invokeOnce status)
     u32 visited_cap;
     u32 visited_len;
     // The visited pairs whose walk was cut short by circularity: met again, they are circular too (tsc's invokeOnce
