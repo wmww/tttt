@@ -2868,6 +2868,19 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &apparent, .len = 1 });
     }
     if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !only_this_arg_generic(me, apparent))) {
+        // (A generic reference without any properties or index signatures, an interface whose bases are all
+        // unresolved, `RData<H>`: none either, and that's known, `Partial<T>` with `T extends RData<H>` has no `open`)
+        if (apparent != mapped->modifiers_type && apparent->kind == TY_REFERENCE && (apparent->flags & TYF_OBJECT) &&
+            !ty_has_unresolved_base(me, apparent)
+        ) {
+            Members const* source = ty_members(me, apparent);
+            if (!source->mapped && !source->prop_count && !source->index_count) {
+                MembersBuilder empty = { .mapped = mapped };
+                Members* ret = (Members*)builder_finish(me, &empty);
+                members_rare_mut(me, ret)->generic_keys_known = true;
+                return ret;
+            }
+        }
         return members;
     }
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
