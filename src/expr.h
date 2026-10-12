@@ -138,7 +138,7 @@ bool identifier_is_invalid_assignment_target(IdentifierExpr const* me);
 
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
-    enum {
+    enum : uint8_t {
         EXPR_IMPLICIT_ANY = 0,
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
@@ -182,9 +182,10 @@ typedef struct Expr {
     // A JavaScript `{}` with expandos: SourceFile.expando_containers says whose. Set by the resolve walk
     bool expando_container : 1;
     // The parentheses around it: how many bytes the outer span (expr_outer_span()) starts before inner_span and ends
-    // after it. Set with expr_set_outer_span()
-    u32 paren_before;
-    u32 paren_after;
+    // after it (trivia and parentheses only, so 16 MB is plenty). Set with expr_set_outer_span(). Bit fields: the tag,
+    // flags and these share one word
+    u64 paren_before : 24;
+    u64 paren_after : 24;
     union {
         Value literal;
         IdentifierExpr identifier;
@@ -309,10 +310,13 @@ static inline void expr_set_outer_span(Expr* me, Span outer) {
         my paren_before = my paren_after = 0;
         return;
     }
-    panic_if(!span_contains_span(outer, my inner_span) || span_source(outer) != span_source(my inner_span),
+    panic_if(!span_contains_span(outer, my inner_span) || outer.file != my inner_span.file,
         "expr_set_outer_span(): the outer span doesn't contain the inner one");
-    my paren_before = (u32)(span_start_ptr(my inner_span) - span_start_ptr(outer));
-    my paren_after = (u32)(span_end_ptr(outer) - span_end_ptr(my inner_span));
+    u64 before = (u64)(span_start_ptr(my inner_span) - span_start_ptr(outer));
+    u64 after = (u64)(span_end_ptr(outer) - span_end_ptr(my inner_span));
+    panic_if((before | after) >> 24, "expr_set_outer_span(): more than 16 MB of parentheses and trivia");
+    my paren_before = before;
+    my paren_after = after;
 }
 
 // Clears the parentheses (an expression that moves into a node that has them)

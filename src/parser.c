@@ -10627,6 +10627,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ret->assignment_pattern = false;
     ret->missing = false;
     ret->spread_into_call = false;
+    ret->undefined_assigned = false;
+    ret->literal_ambient = false;
+    ret->no_enclosing_type_params = false;
+    ret->expando_container = false;
     // Most branches below need a particular first character: test it before trying the branch
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);

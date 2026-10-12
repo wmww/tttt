@@ -2,6 +2,7 @@
 #include "math_helpers.h"
 #include "source_file.h"
 #include <pthread.h>
+#include <sys/mman.h>
 
 SourceFile const** span_files[1 << SPAN_FILE_DIR_BITS];
 static u32 span_file_next = 1;
@@ -12,7 +13,12 @@ void source_file_register(SourceFile* file) {
     u32 id = span_file_next++;
     panic_if(id >> SPAN_FILE_CHUNK_BITS >= 1u << SPAN_FILE_DIR_BITS, "too many source files");
     SourceFile const*** chunk = &span_files[id >> SPAN_FILE_CHUNK_BITS];
-    if (!*chunk) *chunk = calloc(1u << SPAN_FILE_CHUNK_BITS, sizeof(SourceFile const*));
+    // Never freed (indexes outlive programs): mmapped, so leak checks don't count it
+    if (!*chunk) {
+        void* mem = mmap(nullptr, sizeof(SourceFile const*) << SPAN_FILE_CHUNK_BITS, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        panic_if(mem == MAP_FAILED, "mmap failed");
+        *chunk = mem;
+    }
     (*chunk)[id & ((1u << SPAN_FILE_CHUNK_BITS) - 1)] = file;
     file->id = id;
     pthread_mutex_unlock(&span_files_lock);

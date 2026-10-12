@@ -20,7 +20,7 @@
 #include "ast_walk.h"
 
 // Expressions are stored inline everywhere: keep them small
-static_assert(sizeof(Expr) == 80, "Expr grew");
+static_assert(sizeof(Expr) == 72, "Expr grew");
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
