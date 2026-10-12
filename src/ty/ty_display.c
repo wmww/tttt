@@ -2607,6 +2607,34 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
+        // The parameter's pseudo type where it says the same (tsgo's serializeTypeForDeclaration of the parameter):
+        // an initialized parameter before a required one has undefined added (requiresAddingImplicitUndefined), an
+        // optional one's undefined isn't in its annotation (isOptionalAnnotated)
+        if (reusable && reuses_nodes(param_d) && !d.approx && !d.reused && param->decl && !contextual_jsdoc &&
+            !function->jsdoc_callback && !function->jsdoc_type &&
+            param->decl >= function->args.data && param->decl < function->args.data + vec_function_arg_size(&function->args)
+        ) {
+            Pseudo const* pseudo = pseudo_of_parameter(me, function, param->decl);
+            bool initialized = initializer && initializer->tag != EXPR_IMPLICIT_ANY;
+            bool add_undefined = compiler_options()->strict_null_checks && !param->optional && initialized && !param->rest;
+            Ty const* type = shown;
+            if (add_undefined && ty_without_undefined(me, type) == type) {
+                type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            }
+            bool optional_annotated = !add_undefined && param->decl->explicit_optional;
+            bool equivalent = pseudo_equivalent(me, d, pseudo, type, optional_annotated);
+            if (!equivalent && add_undefined && !pseudo_could_be_undefined(pseudo)) {
+                pseudo = pseudo_add_undefined(me, pseudo);
+                equivalent = pseudo_equivalent(me, d, pseudo, type, false);
+            }
+            if (equivalent) {
+                TyDisplay pseudo_d = param_d;
+                pseudo_d.mapped_by = instantiated ? sig : nullptr;
+                display_pseudo(me, pseudo_d, pseudo, type);
+                approx_add(d, name_length);
+                continue;
+            }
+        }
         // A parameter without annotation whose initializer is a type assertion `x = v as T` reuses T (tsc's
         // typeFromParameter -> typeFromExpression -> typeFromTypeAssertion), with undefined added like an annotation
         TypeNode const* asserted = nullptr;
@@ -3692,10 +3720,17 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // literal initializer (tsc's serializeTypeOfDeclaration through the property's declarations)
         Expr const* literal_initializer = nullptr;
         FunctionImpl const* initializer_function = nullptr;
+        Pseudo const* variable_pseudo = nullptr;
         Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
         if (!annotation && !placeholder && variable && reuses_nodes(d)) {
             Binding const* binding = variable->decl_count == 1 && variable->decls[0].kind == SYMBOL_DECL_VARIABLE ?
                 variable->decls[0].node : nullptr;
+            // (tsgo's typeFromVariable, through the property's declaration: not a type that still widens)
+            if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable &&
+                !d.approx && !d.reused && !requires_widening(type)
+            ) {
+                variable_pseudo = pseudo_of_variable(me, (InitializedBinding const*)binding, variable->is_const, (PseudoPlace){0});
+            }
             if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable) {
                 if (binding->has_explicit_type) {
                     annotation = &binding->explicit_type;
@@ -3757,7 +3792,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
         // (A mapped one from an optional declaration reuses the annotation as it is: tsgo's pseudoTypeEquivalentToType
         // with isOptionalAnnotated, requiresAddingImplicitUndefined being only for reverse mapped ones)
-        if (reverse && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
+        if (variable_pseudo && pseudo_equivalent(me, d, variable_pseudo, shown, false)) {
+            display_pseudo(me, d, variable_pseudo, shown);
+        }
+        else if (reverse && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
             annotation_plus_undefined(me, annotation, shown)
         ) {
             display_node_plus_undefined(me, d, annotation);

@@ -3368,7 +3368,7 @@ const baselines = {
     'circularObjectLiteralAccessors(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularOptionalityRemoval': {
         errors: true,
@@ -8763,7 +8763,7 @@ const baselines = {
     'declarationEmitNonAsciiStringLiteralType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNonExportedBindingPattern': {
         errors: true,
@@ -24588,7 +24588,7 @@ const baselines = {
     'noImplicitThisBigThis': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitThisFunctions': {
         errors: true,
@@ -31318,7 +31318,7 @@ const baselines = {
     'thisInPropertyBoundDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisInStaticMethod1': {
         errors: true,
@@ -43768,12 +43768,12 @@ const baselines = {
     'newTarget.es5(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newTarget.es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newTargetNarrowing': {
         errors: true,
@@ -60193,7 +60193,7 @@ const baselines = {
     'parserRealSource14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource2': {
         errors: true,
@@ -60228,7 +60228,7 @@ const baselines = {
     'parserRealSource8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource9': {
         errors: true,
@@ -65953,7 +65953,7 @@ const baselines = {
     'variadicTuples1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'variadicTuples2': {
         errors: true,
