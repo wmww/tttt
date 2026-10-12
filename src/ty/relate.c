@@ -6026,7 +6026,9 @@ static Ternary structured_related_members(
         // (A marker instantiation of a generic whose variances are measured, or being measured, is compared
         // structurally: tsgo's isMarkerType, the instantiations createMarkerType made)
         // (Not arrays and tuples, whose variances aren't measured: tsgo's getVariances answers them without markers)
-        bool marker = !source_self && !target_self && (is_marker_reference(me, source) || is_marker_reference(me, target)) &&
+        // (Markers only exist while variances are measured)
+        bool marker = my variance_depth && source_target == target_target && use_variances && !source_self && !target_self &&
+            (is_marker_reference(me, source) || is_marker_reference(me, target)) &&
             !is_array_target(me, source_target) && source_target->declared.kind != TY_DECLARED_TUPLE_TARGET &&
             source_target->declared.kind != TY_DECLARED_SYNTHETIC &&
             intern_get(&my links, (u64[]){ KEY_VARIANCES, source_target->id }, 2);
