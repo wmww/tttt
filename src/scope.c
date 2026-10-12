@@ -3988,7 +3988,10 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     Scope const* scope = alias->alias->scope;
     SourceFile const* file = scope->file;
     if (item->type_only || item->type_modifier || item->jsdoc || scope->ambient || !file || file->is_declaration) return;
+    // (The alias's: a type the namespace merged with the value `export =` names exports, which may have a property of
+    // that name too, is a value as well, tsc's combineValueAndTypeSymbols; see SymbolAlias.value_target)
     u32 target_flags = symbol_resolved_flags(target);
+    if (alias->alias->value_target) target_flags |= alias->alias->value_target->flags;
     bool is_type = !(target_flags & SYMBOL_VALUE);
     // (a JavaScript file's import of a type is an error of its own)
     if (file->is_js && is_type) return;
