@@ -27,24 +27,6 @@ A cut-down with `Record<string, { n: number }> | undefined` for `Session['messag
 real type (zod-inferred Session) matters. Next step: copy message-tree.ts with chatbox's node_modules into a probe
 project and cut it down.
 
-## +TS7023 tiptap `packages/core/src/Extendable.test.ts` (11 lines, `addAttributes`)
-Reduced (tsc: only TS2339 on `parent`; tttt adds TS7023 on addAttributes):
-```ts
-interface ExtensionConfig<O = any> { name?: string; addOptions?: (this: { parent: any }) => O; [key: string]: any }
-interface NodeConfig<O = any> { name?: string; group?: string; addOptions?: (this: { parent: any }) => O }
-declare class Ext<Options = any> {
-  extend<EO = Options, EC = ExtensionConfig<EO> | NodeConfig<EO>>(config?: Partial<EC>): Ext<EO>
-}
-declare const x: Ext;
-export const e = x.extend({ addAttributes() { return { ...this.parent?.(), bar: {} } } });
-```
-The TS7023 comes from Checker.print_probe (missing_property_type() prints the object type the way tsc's eager
-TS2339 message would): in the deferred body check `this` is `Partial<{ addAttributes: () => ... }>`, whose method's
-return type is in flight, so printing marks it circular. tsc had already resolved that return type during the call
-(its `this` there was the uninstantiated contextual type, so `this.parent` was the error type and the return type
-any), and prints `() => any`. Likely fix: resolve the method's return type during argument checking like tsc (or make
-the print probe skip a return type whose first evaluation is the current deferred check).
-
 ## Spelling suggestions run out in a different order (angular-components `task-state-zone-interceptor.ts`, 3 projects)
 tsc counts every unresolved name toward its 10 spelling suggestions in *check* order, which is lazy: a method's
 parameter types are resolved when a call in the constructor first needs them, so line 55's `HasTaskState` gets its
@@ -83,9 +65,6 @@ Fixed that session: chai's assert via an export= property (TS2775), discriminant
 TS2875's position, union signature return reduction (Promise | PromiseLike `then`), free type parameter limits
 (Playwright's Unboxed), TS2862 with a generic union index, `import x = require` resolving module members (mongoose
 TS2303), TS2348 for unions with construct signatures only, destructuring typeof globalThis (TS2339). Left, by key:
-- +TS2339 tiptap `Extendable.test.ts` (11): `this.parent` in an object literal method passed to `.extend()` of a union
-  of classes (`[Extension, Node, Mark].forEach(E => E.create(...).extend({...}))`): the `this` type from a union
-  signature's contextual type.
 - +TS2339 telegraf `markup.ts:121-135`: `B[] | B[][]` narrowed by `is2D()` and filtered; button's type wrong.
 - +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses), react-hook-form
   `validateField.ts:67`, angular-cli `registry.ts:659` (ajv addKeyword validate), ember runloop: contextual typing
@@ -96,7 +75,6 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
   resolution (agent A's area).
 - +TS6305 (astro & others, 1445), +TS6059 react-router rootDir, ±TS6310 react-navigation: project reference / config
   handling (agent A's area).
-- arktype (+TS2345/2322/2339/7006/2589/2769 across ~60 projects): deep type-level library; nothing reduced yet.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 
 ## Left by the 2026-10-09 triage's real-world agent (cut off before it reported)
@@ -239,3 +217,35 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
   `k(c = new Set<string>()) { return c }` is TS9039 in tsc, TS9008 in tttt.
 - stripInternal is only applied to statements and class members (not interface/type-literal members, enum members,
   parameter properties), and a trailing `// @internal` on the previous code line isn't seen.
+
+## Source sweep fan-out 2026-10-12 leftovers (agent C)
+Fixed this round: arktype's ark/docs (indexed-access `T & P` reduction, union base classes), react-hook-form's
+`__typetest__`, rxjs (TS2314 typeof import, `[...Mapped]`), nuxt/pinia (TS2310), openapi-typescript (cross-file
+default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the perf fix for react. Left:
+- **pixijs** `@webgpu/types` (+TS2451/-TS2709 x5): TS 7's lib.dom declares `namespace GPUBufferUsage` (and friends),
+  `@webgpu/types` declares `interface GPUBufferUsage` + `declare var GPUBufferUsage`, pixijs `declare const`. tsc merges
+  cross-file per *file symbol*: webgpu's file-local symbol (interface + var) conflicts as a whole with the lib namespace
+  (TS2300 on both webgpu declarations, the interface isn't merged), so webgpu's `: GPUBufferUsage` resolves to the
+  namespace (TS2709) and pixijs's const conflicts with the namespace (TS2451; lookupOrIssueError keeps the first
+  diagnostic at a node). tttt's binder merges declaration by declaration (declare_symbol): the interface merges into
+  the lib symbol, only the var is rejected. Architectural (the binder's cross-file merge unit); rare (conflicts only).
+- **soybean-admin** root: +TS2503 x17 `Cannot find namespace 'JSX'` in naive-ui's .d.ts (`() => JSX.Element`), no
+  skipLibCheck. tsc's full program doesn't report them, but a probe project with only Close.d.ts (types []) does, and
+  no file in tsc's program declares a global JSX that I could find. tttt's program has one file more:
+  `vue/jsx-runtime/index.d.ts` (the jsxImportSource implicit import; tsc's list doesn't have it). Lead: how tsc
+  resolves `JSX` there (maybe through the jsx-runtime/jsxImportSource namespace for a file without JSX). Also
+  -TS2502 in bumpp's index.d.mts:331 (2 projects), not looked at.
+- **tiptap** demos +TS2345 x9 `VueNodeViewRenderer.test.ts:58,69,122...`: `ReturnType<typeof defineComponent>`
+  (vue's overloaded defineComponent). tsc: `typeof defineComponent extends (...args: any) => infer R ? R : 2` is 2
+  (definitely false), tttt defers it; underneath, tttt finds `DefineSetupFnComponent<any, any, any, any, PublicProps>`
+  assignable to `DefineComponent<unknown, ...>` (an intersection of a constructor type, ComponentOptionsBase and
+  PublicProps) where tsc doesn't. Probe: /tmp-style project importing `defineComponent, DefineSetupFnComponent,
+  PublicProps` from tiptap's vue `dist/vue.d.mts` by absolute path; a hand-written two-overload copy doesn't reproduce.
+- **arktype** root (not compared in the sweep before this round: it now is, 4 left): fn.test.ts:286 +TS2769,
+  this.test.ts:190 +TS2322 (exactOptionalPropertyTypes, a morph `(child) => child` vs `Morph<{ child?: ... }>`),
+  type.test.ts:138 +TS2740 / :140 +TS2769. Not reduced.
+- For agent D (mermaid is theirs now): mermaid's `renderHelpers.ts:150` +TS18048 (`insertNode`'s inferred return type
+  keeps `undefined`) only reproduces in the full project with one checker: a probe with only renderHelpers.ts, or a
+  file importing insertNode, matches tsc, and the files before it in program order don't reproduce it alone either.
+  Order-dependent; a delta-debugging bisect over the 765 project files was started and stopped.
+

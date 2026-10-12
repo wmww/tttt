@@ -10,7 +10,6 @@ Unreduced or order-dependent findings on the +TS2339/+TS7006/+TS2349/+TS2698 key
 - **react-navigation `example/__typechecks__/common.check.tsx:1501` TS2349** (`expectTypeOf(navigation.setParams)
   .parameter(0).toBeUndefined()` not callable) only in the root project: checking common.check.tsx alone (a mirror
   project with only that file) matches tsc, so it depends on what's checked before it.
-- **tiptap `Extendable.test.ts:89` +TS2339 `this.parent`**: not reduced (a close probe gets tsc's error too).
 - **discord.js root `REST.ts:128` and `structures/__tests__/types/channels.test-d.ts:8`**: only in the broken root
   project (no jsx setting, everything included).
 - **redux-toolkit `combineSlices.ts:120` +TS2344 `Sl` vs `AnySliceLike`** (relations, agent A's key).
