@@ -207,6 +207,15 @@ void class_decl_drop(ClassDecl* me) {
 // initializer, which tsc's binder binds inside the member's own flow container (bindContainer saves and restores
 // currentFlow): what it assigns isn't seen after the member
 // `member`: the method or accessor whose computed name it is, its containing function to tsc's getContainingFunction
+// `[K in T]` as a class member's name, a mapped type's member written in a class: tsc's isInvalidComputedPropertyName
+// gives it errorType without checking the expression (TS7061 for a property said it all)
+static bool class_item_key_is_misplaced_mapped(ClassItem const* item) {
+    if (item->tag == CLASS_ITEM_METHOD && item->method.accessor) return false;
+    Expr const* key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key :
+        item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : nullptr;
+    return key && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
+}
+
 static void lookup_names_without_super(
     Expr* expr, Scope* names, NoSuper why, bool own_container, FunctionImpl const* member, ErrorCtx* errs
 ) {
@@ -272,7 +281,8 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
                 names->flow->type_only_alias_ok = my method.is_abstract;
                 bool method_name = names->flow->method_name;
                 names->flow->method_name = true;
-                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, &my method.func, errs);
+                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, &my method.func,
+                    class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
                 names->flow->method_name = method_name;
                 names->flow->type_only_alias_ok = false;
             }
@@ -292,7 +302,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
             if (my field.computed_key) {
                 names->flow->type_only_alias_ok = my field.is_abstract || my field.is_declare;
                 lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY,
-                    nullptr, errs);
+                    nullptr, class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
@@ -645,9 +655,13 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, bool modifier_error, ErrorCtx* errs) {
     bool field = item->tag == CLASS_ITEM_FIELD;
     Expr* key = field ? item->field.computed_key : item->method.computed_key;
-    expr_typecheck(key, errs);
+    bool misplaced_mapped = class_item_key_is_misplaced_mapped(item);
+    // (Typed all the same, quietly: tsc's errorType for it is any to the members)
+    expr_typecheck(key, misplaced_mapped ? nullptr : errs);
     bool accessor = !field && item->method.accessor;
-    ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
+    if (!misplaced_mapped) {
+        ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
+    }
     // tsc's checkGrammarProperty: `[K in T]: X` is a mapped type's member written in a class, reported at the class's
     // first member (a property, method or constructor: at its name)
     if (field && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key) &&
@@ -1258,13 +1272,8 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     // getBaseTypes of the class type), and the static side is compared with null's
     bool null_base = false;
     if (!base && my extends.tag != EXPR_IMPLICIT_ANY && (ty_expr_type(checker, &my extends)->flags & TYF_NULL)) {
-        for (u32 d = 0; d < my symbol->decl_count && !base; d++) {
-            if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
-            InterfaceDecl const* interface = my symbol->decls[d].node;
-            if (!vec_spanned_type_size(&interface->extends)) continue;
-            base = ty_of_node(&vec_spanned_type_at(&interface->extends, 0)->type);
-            null_base = true;
-        }
+        base = class_decl_merged_interface_base(me);
+        null_base = base != nullptr;
     }
     if (!base && my extends.tag != EXPR_IMPLICIT_ANY) {
         Ty const* never_base = ty_class_never_base(checker, me);
@@ -1802,6 +1811,15 @@ bool class_decl_base_arity_fits(ClassDecl const* me) {
     // (In JavaScript the reference is still made, the missing arguments any: tsc's getTypeFromClassOrInterfaceReference)
     SourceFile const* source = span_source(expr_outer_span(&my extends));
     return !target || (source && source->is_js) || several_types_arity_fits(target, arg_count, source);
+}
+
+Ty const* class_decl_merged_interface_base(ClassDecl const* me) {
+    for (u32 d = 0; my symbol && d < my symbol->decl_count; d++) {
+        if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface = my symbol->decls[d].node;
+        if (vec_spanned_type_size(&interface->extends)) return ty_of_node(&vec_spanned_type_at(&interface->extends, 0)->type);
+    }
+    return nullptr;
 }
 
 static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {

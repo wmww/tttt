@@ -2028,9 +2028,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     if (instance && my symbol && ty_has_base_type(current_checker, instance, ty_declared_type_of(current_checker, my symbol))) {
         instance = nullptr;
     }
-    // (With the wrong number of type arguments the reference is errorType, which the harness replaces with the
-    // expression's type)
-    if (instance && !class_decl_base_arity_fits(me)) instance = nullptr;
+    // (With the wrong number of type arguments the reference is errorType and no base: the first base of an interface
+    // merged into the class is, else the harness replaces errorType with the expression's type. tsc's getBaseTypes)
+    if (my extends.tag != EXPR_IMPLICIT_ANY && !class_decl_base_arity_fits(me)) instance = class_decl_merged_interface_base(me);
     // (A reference is the base with the class's `this` as its this-argument to tsc's type writer, a new reference
     // without the alias it was written through: getTypeWithThisArgument. `extends Constructor<T3>()` with `type T3 =
     // number[]` shows number[])
@@ -2463,6 +2463,14 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
                 });
                 return;
             }
+        }
+        // (A base reference with the wrong number of type arguments isn't a base, but an interface merged into the
+        // class may still give it one: then `super()` is the base constructor's, tsc's checkSuperExpression)
+        if (!base && my super_call && base_expr && base_expr->tag == EXPR_IDENTIFIER && my this_kind != THIS_CLASS_STATIC &&
+            !class_decl_base_arity_fits(class_decl) && class_decl_merged_interface_base(class_decl) &&
+            base_expr->identifier.target && (base_expr->identifier.target->flags & SYMBOL_CLASS)
+        ) {
+            base = ty_declared_type_of(current_checker, base_expr->identifier.target);
         }
         if (base && base->kind == TY_REFERENCE) base = base->reference.target;
         Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol :

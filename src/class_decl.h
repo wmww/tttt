@@ -187,3 +187,6 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs);
 // Whether a base class named by the `extends` clause gets as many type arguments as it takes (TS2314/TS2707 if not,
 // and the base is errorType). Always in JavaScript
 bool class_decl_base_arity_fits(ClassDecl const* me);
+// The base of the first interface merged into the class that extends something (tsc's getBaseTypes after the class's
+// own base), null if none
+struct Ty const* class_decl_merged_interface_base(ClassDecl const* me);
