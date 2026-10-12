@@ -2088,7 +2088,9 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 // Whether the interface is on a cycle of `extends` (tsc reports TS2310 on each declaration of the interfaces in a
 // cycle of base types, not on those that merely extend one)
-bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol); // `source` is, extends or inherits from `target`
+bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol);
+// Whether TS2310 goes on this declaration (a direct `extends` of itself only where it's written)
+bool ty_interface_decl_reports_base_cycle(Checker* me, Symbol const* symbol, struct InterfaceDecl const* decl);
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name
 // Whether it fits (false: reported)
 bool ty_check_heritage(

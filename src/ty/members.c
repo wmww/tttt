@@ -2228,6 +2228,37 @@ bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
     return links->base_cycle & BASE_CYCLE_IN_CYCLE;
 }
 
+// Whether TS2310 goes on this declaration of an interface in a base cycle. tsc's resolveBaseTypesOfInterface reports a
+// base that is the type itself at the declaration naming it (`interface X extends X`, also through an augmentation
+// merged with X); only a cycle through other types re-enters getBaseTypes, whose failed popTypeResolution reports at
+// every declaration
+bool ty_interface_decl_reports_base_cycle(Checker* me, Symbol const* symbol, InterfaceDecl const* decl) {
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    LowerCtx ctx = { .generic = declared->kind == TY_DECLARED && declared->declared.type_params.len > 0 };
+    bool names_itself = false;
+    for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count; node++) {
+        if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = node->node;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
+            if (base == symbol) {
+                names_itself |= interface_decl == decl;
+                continue;
+            }
+            if (!base) continue;
+            BaseWalk* walk = malloc(sizeof(BaseWalk));
+            panic_if(!walk, "out of memory");
+            walk->target = symbol;
+            walk->visited_count = 1;
+            walk->visited[0] = symbol;
+            bool reaches = interface_reaches(me, base, walk);
+            free(walk);
+            if (reaches) return true;
+        }
+    }
+    return names_itself;
+}
+
 // An extends expression (not a class name) whose type has no construct signatures (TS2507) or none that take the
 // written type arguments (TS2508): errorType, no base at all (tsc's getBaseConstructorTypeOfClass,
 // resolveBaseTypesOfClass)
