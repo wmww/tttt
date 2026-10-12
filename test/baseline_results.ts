@@ -51477,7 +51477,7 @@ const baselines = {
     },
     'callbackTag4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callbackTagNamespace': {
@@ -52752,12 +52752,12 @@ const baselines = {
     },
     'jsdocTemplateTag4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocTemplateTag5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocTemplateTag6': {
@@ -60868,7 +60868,7 @@ const baselines = {
     'classCanExtendConstructorFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commonJSAliasedExport': {
         errors: true,
@@ -61062,7 +61062,7 @@ const baselines = {
     },
     'inferringClassStaticMembersFromAssignments': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsContainerMergeJsContainer': {
@@ -61738,12 +61738,12 @@ const baselines = {
     'typeFromPropertyAssignment9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment9_1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignmentOutOfOrder(target=es2015)': {
         errors: true,

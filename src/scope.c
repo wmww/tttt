@@ -5079,25 +5079,27 @@ Expr* expando_initializer(Expr* init, bool js, bool annotated) {
     }
 }
 
-Span expando_host_written_name(Symbol const* host) {
+bool expando_host_is_initializer(Symbol const* host, Span* name) {
+    *name = span_null;
     Expr const* init = nullptr;
     for (u32 i = 0; i < host->decl_count && !init; i++) {
         SymbolDecl const* decl = &host->decls[i];
         if (!(decl->flags & SYMBOL_VALUE)) continue;
         if (decl->kind == SYMBOL_DECL_VARIABLE) {
             Binding const* binding = decl->node;
-            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return span_null;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
             init = initialized_binding_value((InitializedBinding*)binding);
         } else if (decl->kind == SYMBOL_DECL_ASSIGNMENT) {
             init = decl->node;
         } else {
-            return span_null;
+            return false;
         }
     }
-    if (!init || expr_is_perenthisized(init)) return span_null;
-    if (init->tag == EXPR_FUNCTION) return init->function->name;
-    if (init->tag == EXPR_CLASS_DECL) return init->class_decl->name;
-    return span_null;
+    if (!init || expr_is_perenthisized(init)) return false;
+    if (init->tag == EXPR_FUNCTION) *name = init->function->name;
+    else if (init->tag == EXPR_CLASS_DECL) *name = init->class_decl->name;
+    else return false;
+    return true;
 }
 
 // What a name is where an assignment to one of its properties is (tsgo's lookupName): a name in the block, then in its

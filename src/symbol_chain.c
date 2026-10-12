@@ -995,21 +995,32 @@ void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* c
     symbol_chain_append_entity(out, enclosing, chain, false, false);
 }
 
+// An expando's container in tsgo is the initializer's symbol of its host (`var x = function f() {}; x.a = 1`), which
+// has no parent: a chain to the member starts there, named by the expression (`f.a`) or else the variable
+static u32 expando_initializer_start(SymbolChain const* chain, Span* host_name) {
+    *host_name = span_null;
+    for (u32 i = chain->len - 1; i-- > 0;) {
+        Symbol const* next = chain->items[i + 1];
+        if (next->parent != chain->items[i] || !next->decl_count || next->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+        if (expando_host_is_initializer(chain->items[i], host_name)) return i;
+    }
+    return 0;
+}
+
 void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity, bool after_module) {
-    for (u32 i = 0; i < chain->len; i++) {
+    Span host_name = span_null;
+    u32 start = chain->len > 1 ? expando_initializer_start(chain, &host_name) : 0;
+    if (start) after_module = false;
+    for (u32 i = start; i < chain->len; i++) {
         Symbol const* symbol = chain->items[i];
-        csview name = written_name(enclosing, symbol, i == 0 && !after_module);
-        // (An expando's container is the initializer's symbol in tsgo: `var x = function f() {}; x.a = 1` is `f.a`)
-        Symbol const* next = i + 1 < chain->len ? chain->items[i + 1] : nullptr;
-        if (next && next->parent == symbol && next->decl_count && next->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
-            Span host_name = expando_host_written_name(symbol);
-            if (span_valid(host_name)) name = span_sv(host_name);
-        }
+        bool first = i == start;
+        csview name = written_name(enclosing, symbol, first && !after_module);
+        if (first && span_valid(host_name) && i + 1 < chain->len) name = span_sv(host_name);
         // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
         // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
         // (Not a module's export, `exports["d"] = v`: the binder declares it by the literal, which getNameOfSymbolAsWritten
         // writes as it is, an identifier `"d"`, where an expando of an object is late bound by its name type)
-        bool quoted = entity && i && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0];
+        bool quoted = entity && !first && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0];
         if (quoted && symbol->parent && symbol->parent->is_module) {
             cstr_append_lit(out, ".");
             cstr_append_sv(out, name);
@@ -1021,7 +1032,7 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
             for (isize k = 0; plain && k < inner.size; k++) plain = inner.buf[k] != '\\' && inner.buf[k] != '-' && inner.buf[k] != ' ';
             if (plain) name = inner;
         }
-        if (i == 0) {
+        if (first) {
             cstr_append_sv(out, name);
         } else {
             symbol_chain_append_member(out, name, symbol->flags & SYMBOL_ENUM_MEMBER);

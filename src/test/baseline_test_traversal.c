@@ -2305,6 +2305,18 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             // (`o.m = function () { this }` where o is a namespace value, a function with expandos: its symbol)
             if (type && type->kind == TY_DECLARED && !symbol && type->declared.kind == TY_DECLARED_NAMESPACE) {
                 symbol = type->declared.namespace_symbol;
+                // (A `{}` container's: the object literal's symbol in tsgo, named by its variable)
+                SymbolDecl const* decl = symbol && symbol->decl_count ? &symbol->decls[0] : nullptr;
+                Binding const* binding = decl && decl->kind == SYMBOL_DECL_VARIABLE ? decl->node : nullptr;
+                Expr const* init = binding && !binding->parent && binding->tag == BINDING_IDENTIFIER ?
+                    initialized_binding_value((InitializedBinding*)binding) : nullptr;
+                if (init && init->tag == EXPR_OBJECT && init->expando_container) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = vec_span_single(init->inner_span), .span = identifier_expr_name(me),
+                        .text = cstr_from_sv(span_sv(decl->name)),
+                    });
+                    return;
+                }
             }
         }
     }
@@ -2315,6 +2327,21 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (symbol->is_parameter && span_valid(first) && span_source(first) && first.buf > source_file_start(span_source(first)) &&
         first.buf[-1] == '@'
     ) {
+        // (A `@callback`'s `@this` is the parameter's name node itself in tsgo: named by the tag's text, from its `@`
+        // through the line's end)
+        char const* file_start = source_file_start(span_source(first));
+        char const* comment = first.buf - 1;
+        while (comment > file_start + 1 && !(comment[-1] == '*' && comment[-2] == '/')) comment--;
+        if (csview_contains(csview_from_range(comment, first.buf), "@callback")) {
+            char const* end = first.buf;
+            while (*end && *end != '\n' && !(end[0] == '*' && end[1] == '/')) end++;
+            if (*end == '\n') end++;
+            Span tag = span_make(span_source(first), first.buf - 1, end);
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_single(tag), .span = identifier_expr_name(me), .text = cstr_from_sv(span_sv(tag)),
+            });
+            return;
+        }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_single(first), .span = identifier_expr_name(me), .text = cstr_lit("(Missing)"),
         });
