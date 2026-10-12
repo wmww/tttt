@@ -2757,8 +2757,9 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         }
     }
     if (apparent->flags & TYF_ANY) {
-        // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments
-        if (info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
+        // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments (an untyped tagged
+        // template can: resolveTaggedTemplateExpression doesn't say, `tx.$queryRaw<Row[]>\`...\`` on any)
+        if (info->type_arg_nodes && !info->tagged_template && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
             error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
         }
         // The arguments have the contextual type any (tsc's getContextualTypeForArgumentAtIndex of anySignature, and of
@@ -2895,7 +2896,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     if (!count && !other_count && !construct && apparent->kind != TY_UNION && !(apparent->flags & TYF_NEVER)) {
         Ty const* function_type = ty_global_function_type(me);
         if (function_type && ty_is_related(me, callee, function_type, TY_RELATION_ASSIGNABLE)) {
-            if (info->type_arg_nodes) {
+            if (info->type_arg_nodes && !info->tagged_template) {
                 error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
             }
             return any;
