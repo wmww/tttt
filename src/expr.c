@@ -4332,7 +4332,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             bool generic_key = my property->form == PROPERTY_EXPR_BRACKET && compiler_options()->strict_null_checks &&
                 (expr_type->kind == TY_UNION || (expr_type->kind == TY_TYPE_PARAM && ty_base_constraint(current_checker, expr_type))) &&
                 ty_is_generic_index(ty_regular(current_checker, ty_access_key_type(current_checker, my property)));
-            if (generic_key && !my property->qualified_name && ty_can_be_nullish(current_checker, expr_type)) {
+            // (tsc's getTypeFacts(IsUndefinedOrNull): an unconstrained type parameter is unknown's facts, which don't
+            // have it, `x[k]` of `x: T | U` indexes `T | U`)
+            if (generic_key && !my property->qualified_name && ty_undefined_or_null_facts(current_checker, expr_type)) {
                 ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
                 expr_type = ty_non_nullable(current_checker, expr_type);
             }
