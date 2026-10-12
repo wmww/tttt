@@ -1395,7 +1395,7 @@ __attribute__((noinline)) void regex_check_literal(Span literal, ErrorCtx* errs)
             cp -= 0x10000;
             offs[n] = (i32)i;
             text[n++] = (uint16_t)(0xD800 + (cp >> 10));
-            offs[n] = (i32)i + 2; // Between the surrogates: see utf8_byte_utf16_units()
+            offs[n] = (i32)i; // (tsgo's scanSourceCharacter: the high surrogate doesn't advance, the low one starts there too)
             text[n++] = (uint16_t)(0xDC00 + (cp & 0x3FF));
         } else {
             offs[n] = (i32)i;
