@@ -4455,9 +4455,11 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
                 symbol->alias->state != ALIAS_IN_FLIGHT && symbol->alias->state != ALIAS_CIRCULAR &&
                 (symbol_resolved_flags(symbol) & meaning)));
         // (An alias of nothing is tsc's unknownSymbol, a Property: no module member)
-        if (fits && exports && (symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & meaning)) {
+        // (Elsewhere too, unknownSymbol only has a value meaning: an import from a module that isn't found is no
+        // namespace, `React.X` isn't "Did you mean 'act'?")
+        if (fits && (symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & meaning)) {
             Symbol const* target = symbol_resolve_alias((Symbol*)symbol);
-            if (!target || (target->is_placeholder && target->is_unresolved)) fits = false;
+            if (!target || (target->is_placeholder && target->is_unresolved)) fits = !exports && (meaning & SYMBOL_PROPERTY);
         }
         if (fits && exports && symbol->decl_count) {
             bool expression = true;
