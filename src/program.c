@@ -1020,10 +1020,21 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 // Loads the file at the given path, adds it to the program, and returns a SourceFile for it. Returns nullptr on error.
 // Only loads each file once, even if paths aren't expressed identically. Calls itself recursively to load imports and
 // referenced files.
+// Where a file's leading comments start: past a BOM and a `#!` line (tsc's scanner takes both as trivia)
+static const char* past_bom_and_shebang(csview contents) {
+    const char* c = contents.buf;
+    const char* end = contents.buf + contents.size;
+    if (end - c >= 3 && (uint8_t)c[0] == 0xEF && (uint8_t)c[1] == 0xBB && (uint8_t)c[2] == 0xBF) c += 3;
+    if (end - c >= 2 && c[0] == '#' && c[1] == '!') {
+        while (c < end && *c != '\n') c++;
+    }
+    return c;
+}
+
 // `// @ts-check` (1) or `// @ts-nocheck` (-1) in the comments at the top of a file, the last one wins. 0 without
 static int source_check_directive(csview contents) {
     int ret = 0;
-    const char* c = contents.buf;
+    const char* c = past_bom_and_shebang(contents);
     const char* end = contents.buf + contents.size;
     while (c < end) {
         while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')) c++;
@@ -1054,7 +1065,7 @@ static int source_check_directive(csview contents) {
 // `/// <reference no-default-lib="true"/>` in the comments at the top of a file (tsc's hasNoDefaultLib): the file
 // says it is the default lib, which skipDefaultLibCheck doesn't check
 static bool source_has_no_default_lib(csview contents) {
-    const char* c = contents.buf;
+    const char* c = past_bom_and_shebang(contents);
     const char* end = contents.buf + contents.size;
     while (c < end) {
         while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')) c++;
