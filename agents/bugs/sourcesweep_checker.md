@@ -76,8 +76,6 @@ solid `component.type-tests.ts:100` already matched at this base. Left:
   definitions (stub NavigatorLike/NSP) did not reproduce; the real core types are needed (probe dir layout: tsconfig
   extending react-navigation's with `"types": []`, a p.ts importing by absolute path; /tmp/tc-probes/tools has
   tsctype.js/tscbase.js, node scripts printing tsc's type and getBaseConstraintOfType at a span).
-- query `mutation.test.tsx:1264`, svelte-query `queryOptions.test-d.ts:90` (+TS2554 expected 1 argument, got 0): not
-  looked at; probably the void-parameter optionality on another path (getMinArgumentCount in call resolution).
 - dokploy's react-hook-form `Control<...>` mismatches: not looked at.
 
 ## Source sweep after the TS 7.1 fan-out (agent B, 2026-10-09: 3069 -> 3119 / 3363)
@@ -92,6 +90,12 @@ TS2303), TS2348 for unions with construct signatures only, destructuring typeof 
 - +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses), react-hook-form
   `validateField.ts:67`, angular-cli `registry.ts:659` (ajv addKeyword validate), ember runloop: contextual typing
   misses, not reduced.
+  `validateField.ts:67`, ember runloop: contextual typing misses, not reduced (renovate and ember matched by
+  2026-10-12).
+- -TS2307/-TS7006/-TS2339 commitlint (6 projects): `@commitlint/test` through project references + paths: module
+  resolution (agent A's area).
+- +TS6305 (astro & others, 1445), +TS6059 react-router rootDir, ±TS6310 react-navigation: project reference / config
+  handling (agent A's area).
 - arktype (+TS2345/2322/2339/7006/2589/2769 across ~60 projects): deep type-level library; nothing reduced yet.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 
@@ -175,3 +179,42 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
 - folo renderer +TS2883 x7: declaration diagnostics tsc doesn't report, hidden until the TS2345s there were fixed
   (tttt's CLI drops them while other errors exist).
 
+## Source sweep fan-out 2026-10-12 leftovers (agent D)
+Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted here).
+- **socket.io `broadcast-operator.ts:329` -TS2339 (`args.push`)**: `...args: AllButLast<EventParams<E, Ev>>` with `Ev
+  extends EventNamesWithError<E>` (a recursive IfAny/Last/Parameters conditional over `E[K]`). tsc's apparent type of
+  `Parameters<E[Ev]>` has no `length` (assignable to `unknown[]`, but no properties: likely a circular base constraint),
+  tttt's is `any[] | unknown[]`. Self-contained reduction: the typed-events helpers copied into one file with
+  `m<Ev extends EventNamesWithError<E>>(ev: Ev, a: AllButLast<EventParams<E, Ev>>, p: EventParams<E, Ev>) { p.length }`.
+  Order-dependent in tsc too: with that method checked first, a sibling `n<Ev extends EventNames<E>>` errors as well.
+- **query svelte-query `queryOptions.test-d.ts:90` +TS2554 and `createQueries.svelte.ts:303,321` -TS2345**: tsc's
+  result depends on check order (`new QueryClient().fetchQuery(options)` is TS2345 in tsc when checked first in a probe
+  project, clean in the real project). Variance/relation caching; not pursued.
+- **nuqs e2e/tanstack-router `repro-1501.tsx:16`** (+TS2322/+TS2339 on never): `Route.useSearch({ select: search =>
+  search.folder })` inside a component that `export const Route = createFileRoute(...)({ component: Page })` uses:
+  a circularity (the route's type needs Page's). Not reduced.
+- **graphql-yoga benchmark `server.ts:684` +TS2769**: `handleMaybePromise(() => parse(), r => { if (isResponse(r))
+  return { response: r }; let rr = r; return handleMaybePromise(() => it(), () => ({ requestParserResult: rr })) })`
+  (overloads with MaybePromise / MaybePromiseLike). tsc infers TOutput `{ response } | { requestParserResult }`, tttt
+  the common supertype of its candidates, only `{ requestParserResult }`. Reduced to one file (17 lines, the two
+  overloads, `declare function parse(): Promise<P | Response> | P | Response`). How tsc combines the candidates there
+  (priority, return-type inference of the nested call) not found yet.
+- **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: `expectTypeOf<Actual>().toEqualTypeOf<Expected>` (an
+  instantiation expression; tsc reports TS2344 there too when it fails). tttt's `z.input<typeof z.strictObject({
+  ...LayoutPropsSchema.shape, ... })>` has a top-level `[x: string]: any` index signature (zod v4); not reduced.
+- **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
+  over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
+  storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
+- **angularfire test/functions -TS2552 in lib.esnext.intl.d.ts** (and DT react-intl-redux): tsc checks lib files
+  without skipLibCheck/skipDefaultLibCheck; @types/node's `/// <reference lib="esnext.intl">` without es2021.intl
+  leaves `DateTimeRangeFormatPart` unresolved there. tttt never checks stdlib files (`is_stdlib` skipped in program.c).
+  Checking them costs time on every project; only partial lib sets ever produce errors. A policy decision.
+- **es-toolkit tests/types `compat.spec-d.ts:34` -TS2344** (flatMapDepth vs lodash) and root `without.spec.ts:6`
+  +TS2345: not looked at.
+- **svelte** (JS/JSDoc, see the agent tc entry above): not looked at this round.
+- Display differences seen on the way: tsc prints `Nullable<Vals<K>>` (`{ [K in keyof T]: T[K] | null } & {}` over a
+  mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
+  TS2345 elaboration prints `Partial<T>[K] & null` where tsc normalizes to `T[K] & null`; isolatedDeclarations on
+  `k(c = new Set<string>()) { return c }` is TS9039 in tsc, TS9008 in tttt.
+- stripInternal is only applied to statements and class members (not interface/type-literal members, enum members,
+  parameter properties), and a trailing `// @internal` on the previous code line isn't seen.
