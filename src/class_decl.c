@@ -855,11 +855,12 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             // part has the same kind of accessor: tsc's createUnionOrIntersectionProperty)
             // A synthetic one any declaration of which is an interface's or abstract isn't checked (tsc's
             // isPropertyAbstractOrInterface with `some`)
-            bool synthetic = false, synthetic_exempt = false;
+            bool synthetic = false, synthetic_exempt = false, several = false;
             for (u32 later = part + 1; later < parts.len; later++) {
                 Ty const* later_type = parts.data[later];
                 Prop const* other = (later_type->flags & TYF_OBJECT) ? ty_get_prop(checker, later_type, base_prop->name) : nullptr;
                 if (!other) continue;
+                several = true;
                 synthetic |= accessor_kinds(other) != accessor_kinds(base_prop);
                 ClassDecl const* other_class = class_of_prop(other);
                 MemberInfo other_info = other_class ? class_instance_member(checker, other_class, other->name) : (MemberInfo){0};
@@ -876,7 +877,9 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             if (derived_class == base_class) {
                 // Inherited as it is: an abstract member has to be implemented, unless another base (an interface
                 // merged with the class extends it) brings a member of the name (tsc's checkKindsOfPropertyMemberOverrides)
-                if (base_info.is_abstract && !my is_abstract && !merged_interface_base_has(checker, me, base_prop)) {
+                // (Not when another part of an intersection base has it too: that synthetic property has no abstract
+                // modifier, tsc's getDeclarationModifierFlagsFromSymbol keeps only accessibility and static)
+                if (base_info.is_abstract && !several && !my is_abstract && !merged_interface_base_has(checker, me, base_prop)) {
                     if (!missing_count) first_missing = base_prop->name;
                     if (missing_count < 5) {
                         if (missing_count == 4) five = base_prop->name;
