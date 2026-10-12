@@ -305,11 +305,10 @@ passing tests).
   `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
 - contextualTypingGenericFunction2 (TypeScript#61979): a context-sensitive arrow returned from a generic arrow argument
   gets `unknown` for parameters typed by the outer call's still-inferring type parameter P; tttt leaves P.
-- circularControlFlowNarrowingWithCurrentElement01: spurious TS7022 on `const child = current.children[i]` in a loop
-  assigning `current = firstChild || current.next` (firstChild an evolving `let = null`); tsgo 7.1 no longer cycles.
-  Not located in tsgo's flow.go yet.
-- circularVariance1: `Bar<U> = (x: Baz<U[]>) => void` with Baz/Foo mutually recursive: tsgo reports `bar1 = bar2`
-  (Bar<string> -> Bar<unknown>), tttt measures Bar's variance differently (TTTT_DUMP_VARIANCES).
+- Variances still measured differently from tsgo on xstate (25 of 160 type parameters, 2026-10-12; compare with
+  tsgo's `--generateTrace` getVariancesWorker events, script idea: dump both, key by symbol name): mostly the
+  unreliable/unmeasurable flags (tsgo `out (unreliable)` where tttt has plain or invariant) and some independent vs
+  measured. The restart/Unknown/marker mechanics are ported (relate.c measured_variances()).
 - nestedSpreadsAndWidening: the spread of an 11-member union of nested spreads prints a 6 MB type (tsc 1.4 MB): tttt's
   spread of unions doesn't reduce/dedupe like tsc's getSpreadType.
 - crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1: `props?.w` of a big union of intersections: tsc's type

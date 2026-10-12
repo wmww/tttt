@@ -10,6 +10,13 @@
   but `unknown` in the CLI. tttt (noEmit) checks in the CLI's order; the mechanism (record the current node when
   the constraint walk finds the cycle, relate it in generic_typecheck()) was tried 2026-10-12 and dropped: it can't
   match without emulating the emit resolver's queries.
+- augmentExportEquals2 repeats `// @filename: file3.ts`; its last file uses `require`, so tsgo's harness makes it the
+  only root and writes it first, then the other units (toBeCompiled, then otherFiles): the earlier, empty file3.ts
+  overwrites it and the program checks nothing (no errors, symbols without any). tttt's add_virtual_source_file()
+  keeps the last copy. Mirroring means the root-first write order when last_is_only_root; one test.
+- `FAST=1 scripts/test.sh -f '.*import[A-Z].*'` (some test in that set) ends with valgrind's "131 bytes in 3 blocks
+  definitely lost" from symbol_text() in namespace_decl_compile_test_info (baseline_test_traversal.c), at the
+  base commit too: a leaked cstr in the symbols walk.
 - STC's `cregex` silently matches nothing once a `-f` pattern gets long (~100 alternatives); the harness says so when
   a filter selected no tests. Use `-f @names.txt`.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.

@@ -104,8 +104,15 @@ Each one mutant:
   for renamed elements of bodiless signatures; tttt skips them eagerly (binding_add_implicit_any_type_errors'
   `bodiless && renaming`). Reporting from lazy type computation (ty_error_at) needs care with several checkers each
   computing it; one test.
-- awaitedTypeNoLib: unchanged (without lib, tsc keeps NotPromise<TResult> through `instanceof Thenable` narrowing,
-  TS2345, and TS2318 'Awaited' from an unlocated lookup).
+- awaitedTypeNoLib (2026-10-12): the narrowing matches (both keep the union); the difference is inference. With
+  `PromiseLike` unresolved (noLib: the nested `T extends PromiseLike<unknown> ? never : T` extends an error type; the
+  same with lib and `T extends any ? never : T`), tsgo infers `R = TResult` for `rp<R>(result: Thenable<R>, resolve:
+  Receiver<R>)` called with `Thenable<NotPromise<T>> | NotPromise<T>` and `Receiver<T>`, tttt `NotPromise<T>` (no
+  TS2345). Not when the argument is `Thenable<NotPromise<T>>` alone. Likely the union source's NotPromise<T> member
+  adds a candidate (its apparent type through the any-extends conditional) or makes the covariant candidate fail
+  isTypeAssignableTo(..., contra candidate). The TS2318 'Awaited' follows from the TS2345 (the missing-await
+  suggestion's getAwaitedTypeOfPromise). Reduce with `type NotPromise<T> = T extends
+  Thenable<unknown> ? T : T extends any ? never : T`.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
   self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
   tttt. Still so.
@@ -335,9 +342,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
 - **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with
   noUnused* off (unused_enabled() is false then; plain JS too) and TS6385 'x' is
   deprecated (deprecatedReferenceInEnumComputedNameNoFlake). The CLI never prints suggestions; only the harness wants them.
-- exportAsNamespaceConflict: the `export =` side of an `export as namespace` cycle doesn't go through
-  symbol_resolve_alias's stack (one TS2303 of two).
-- augmentExportEquals2: tsgo lets `declare module "./file1"` augment an `export = foo` function (no TS2671/TS2503).
 - arrayFakeFlatNoCrashInferenceDeclarations: TS5088 from a union's circularity elision
   (typeToTypeNodeOrCircularityElision), not ported. TS7056 (declarationEmitUnserializableTypes) likewise.
 - syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the

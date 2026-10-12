@@ -103,10 +103,6 @@ whatever the file order; tsc drops the UMD global when a script declared the nam
 skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.)
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
-- Duplicate declarations across merges: tsgo's addDuplicateDeclarationError makes a fresh diagnostic per merge (each
-  starts with "'x' was also declared here.", TS6203) and compactAndMergeRelatedInfos joins them; tttt's scope.c counts
-  the related information already on one diagnostic and says "and here." (TS6204): duplicateIdentifierRelatedSpans1,
-  exportAsNamespace_augment. The merge itself is ported (error.c merge_related_info()).
 - TS expandos follow tsgo's binder, but the binder still adds 6.0's SYMBOL_DECL_EXPANDO to the host (filtered in
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
