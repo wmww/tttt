@@ -721,3 +721,8 @@ src` finds the code-side markers; every significant one has an entry here.
   branches with the twins mapped back (tsgo's first distributive constraint T' -> T), instantiate_conditional() keeps
   identity mappings of params that have a twin (tsgo maps every outer parameter), and the identity relation treats a
   twin as its original (also inside a substitution) since tttt's merged declarations have per-declaration params.
+- `ty_tuple_target()`: every tuple target's element type parameters are the first n of `Checker.tuple_params`, one
+  list shared by all targets (tsgo makes fresh ones per target; type-fest's IntRange made 4.5M of them). Sound while a
+  target's parameters only appear in its own generic members, mapped by that target's arguments: a type mentioning two
+  targets' raw parameters at once would conflate them. Element props share the read-only `ty_prop_decl_value_name`
+  (writing to it faults: `prop_decl_shared()` is the check before giving a prop a declaration of its own).

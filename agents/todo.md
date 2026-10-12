@@ -21,15 +21,13 @@ instructions are the stable numbers.
    keyed by the whole mapper, eager intersection props/erased/canonical signatures, recursion identity, message
    truncation). perfsweep: worst types ratio 16.4 -> 1.55, total 96.0M -> 71.3M (tsgo 127.9M), no project above
    tsgo's RSS (was 28); drizzle -17%, xstate -9% instructions; suite 13317. Check time median 0.21 -> 0.16x tsgo.
-3. **Planning: plan 60, memory.** Bun's `bun check` uses 2.1 GB on vscode against tttt's 6.0 GB (type-fest 0.8 vs
-   2.4 GB; measurements.md). Find where tttt's peak goes per corpus at K1 and K4 (`scripts/arenasites.sh`,
-   `scripts/memtrack.sh`: AST, binder, checker arena by kind, relation caches, interned keys; what is duplicated per
-   checker), compare bytes per type with tsgo's `Memory used / Types`, and prototype the biggest one or two levers
-   (bugs/perf_leads.md "Memory" lists candidates: a ~40-byte instantiated Prop, the `Signature` split, interned
-   lists keyed by their ids, freeing what checking no longer needs). Write plan 60 with stages and expected savings,
-   or say no with numbers.
-4. **Plan 60 stage 1** (execution).
-5. **Plan 60 stage 2**, or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
+3. ~~Planning: plan 60~~ done: plans/60_memory.md (where every corpus' peak goes; vscode: AST 2.17 GB, binder
+   0.6, checker malloc 0.45 (LazyMemo pages, intern tables), arena 1.8). Landed the big lever: tuple targets share
+   element type parameters and element props a read-only declaration: type-fest K1 2057 -> 797 MB RSS (Bun 835),
+   every oracle unchanged. Bun's remaining 1.5-3x is representation (compact AST): not worth chasing; plan 60 aims -20%.
+4. **Plan 60 stage 1** (execution): checker side tables and structs (LazyMemo, intern tables, PropDecl,
+   CallResolution, instantiated Prop/Signature).
+5. **Plan 60 stage 2** (the AST: Span 16 bytes, Expr 64), or its remainder, then a **perf session**: `scripts/bench.sh` re-baselined on tsgo 7.1 only
    (drop the tsc 6 / tsgo 7.0.2 columns), measurements.md's perf section rewritten (wall and RSS at K1 and K4 against
    tsgo 7.1 `--singleThreaded` and default), the corpora's instructions; the user asks why threads are capped at 4
    (triage.md "From human").

@@ -32,6 +32,17 @@ check 153 s vs tsgo's 1159 s (0.13). Its *wall* column was inflated in the load/
 renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py`'s other oracles. tsgo's side is cached in
 `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
 
+## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
+Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
+"Memory used": the table is in plans/60_memory.md, with vscode's split (AST 2.17 GB, binder ~0.6, checker malloc
+~0.45: LazyMemo pages 222 MB, intern tables 202 MB; arena 1.82 GB) and the top arena sites of vscode, drizzle and effect.
+The tuple fix (tuple targets share element type parameters, element props a read-only declaration): type-fest K1 arena
+1906 -> 695 MB, RSS 2057 -> 797 MB, types 4.78M -> 217k (type counts on tuple-heavy code are now well below tsgo's,
+which makes fresh parameters per target). No huge-page slack: RSS is the same with `TTTT_NO_REEXEC=1`.
+- Instructions (callgrind, after it): tsc 4.665, type-fest 18.609 (19.687 before: -5.5%), valibot 3.486, react 1.488,
+  nest 1.159, webpack 10.352, zod 4.933, xstate 2.662, drizzle 5.910, vue 6.547, effect 9.998, vscode 90.478,
+  excalidraw 7.891, tanstack-router 5.285 G.
+
 ## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
 **Other machine**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, GCC 16.2, load ~2 (an idle desktop). Best of 3 wall
 s / peak RSS MB, `/usr/bin/time`. tttt default = 4 checkers / 4 threads (its cap), tttt-12 = `--checkers 12 --threads 12`;

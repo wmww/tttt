@@ -201,16 +201,10 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (measurements.md "AST and binder memory" has the table: below tsgo everywhere at one checker)
-- **Arena by call site and interned keys by kind**: `scripts/arenasites.sh -p <corpus>`. drizzle at one checker (10-05, 495
-  MB arena): types 88 MB (136 bytes each), interned keys ~60 MB (KEY_ANONYMOUS_INSTANCE 15, KEY_CONDITIONAL 13 (node
-  pointers and mapper pairs per branch), KEY_CONDITIONAL_INSTANCE 9), instantiated `Prop`s 68 MB (56 bytes),
-  `ty_list_copy` 65 MB (union/intersection/reference member lists: the key holds the same ids again), scopes/symbols
-  of name resolution ~50, `builder_finish` member arrays 44, `expand_mapped` 24.
-- Next steps if memory matters again: a ~40-byte instantiated Prop (no `decl`/`parent`, plan 42); `Signature`'s
-  declaration-only fields (two Spans, class_instance, declared_by: 80 bytes) behind a pointer like PropDecl; Ty's
-  `anonymous` member could be 88 bytes but `declared` is 96 (the union's size); an interned list whose key *is* its
-  member ids (a u32 id array in the type, pointers looked up) would drop `ty_list_copy`'s duplicate.
+## Memory (plans/60_memory.md has the current breakdown per corpus and the staged diet)
+- 2026-10-12: tuple targets share their element type parameters (`Checker.tuple_params`) and tuple element props a
+  read-only `ty_prop_decl_value_name`: type-fest 2.06 -> 0.80 GB. The rest of the old candidate list (a ~40-byte
+  instantiated Prop, the `Signature` split, interned lists keyed by their ids) is plan 60 stage 1.
 - **Duplication across checkers**: files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
