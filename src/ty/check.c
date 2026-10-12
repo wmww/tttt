@@ -2494,7 +2494,8 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
                 TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE;
             for (u32 i = 0; i < object->composite.types.len; i++) {
-                if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION | primitive))) return;
+                // (`object` too, apparently `{}`: `([] | object)[k]`)
+                if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_NON_PRIMITIVE | primitive))) return;
             }
         }
         if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
