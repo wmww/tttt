@@ -551,6 +551,12 @@ __attribute__((noinline, cold)) static void check_isolated_enum_member(Identifie
         "' is enabled. Use '", enum_scope->container->name, ".", identifier_expr_name(me), "' instead.");
 }
 
+// tsgo's isPrimitiveTypeName (checkAndReportErrorForUsingTypeAsValue)
+static bool is_value_primitive_type_name(csview name) {
+    return csview_equals(name, "any") || csview_equals(name, "string") || csview_equals(name, "number") ||
+        csview_equals(name, "boolean") || csview_equals(name, "never") || csview_equals(name, "unknown");
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
@@ -723,7 +729,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         error_ctx_error_d(errs, identifier_expr_name(me), 2708, "Cannot use namespace '", identifier_expr_name(me), "' as a value.");
         my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_NAMESPACE_MODULE);
     } else if (scope_get_type(names, span_sv(identifier_expr_name(me)), nullptr) &&
-        !scope_hides_base_expression_type_parameter(names, scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_TYPE))
+        !scope_hides_base_expression_type_parameter(names, scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_TYPE)) &&
+        // (A keyword type is no name tsc's resolveName finds: only any, string, number, boolean, never and unknown are
+        // said to be types, checkAndReportErrorForUsingTypeAsValue's isPrimitiveTypeName; `object` isn't found)
+        !(symbol_is_builtin_type(scope_get_type(names, span_sv(identifier_expr_name(me)), nullptr)) &&
+            !is_value_primitive_type_name(span_sv(identifier_expr_name(me))))
     ) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
