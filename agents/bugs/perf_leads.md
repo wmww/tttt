@@ -41,6 +41,38 @@ memoizes module specifiers and accessible chains: 9.5 -> 1.3 G instructions on a
 - Wall times of this session are meaningless (load 20+ on 4 cores): remeasure linkwarden/apps/mobile and
   mcp-sdk/packages/core-internal check-time ratios on a quiet machine (`scripts/perfsweep.py -f`); their types ratios
   (0.87, 0.83) were never the problem.
+### Plan 59 stage 2 leftovers (agent A)
+Fixed (types ratio before -> after): date-fns/pkgs/docs 16.4 -> 1.6 (overloads' type parameters made a method type's
+free parameters unknown), feathers/packages/typebox 7.0 -> 1.1 (object literal instances keyed by the whole mapper),
+lit ssr-react 2.4 -> 0.65 and the small React projects (every JSX.IntrinsicElements member's property types resolved
+when relating to an intersection), mcp-sdk/packages/codemod 2.2 -> 0.9 (declared method types keyed by the whole
+mapper), nitro/examples/hono 1.76 -> 0.77 (all overloads resolved up front to look for a `this` type). How each was
+found: `A_VAR`-style logging of the types each variance measurement makes (next_type_id before/after in
+measure_variances(), and the same in a patched tsgo's getVariancesWorker built with `go build -overlay` into /tmp, not
+through ensure-typescript.sh, whose built/ is shared), then a probe of the costliest measurement with a log of the
+same-named property pairs that relate as distinct types (`sourceProp != targetProp` in tsgo).
+- **date-fns/pkgs/docs still 1.6x** (33k vs 21k types): typesaurus's variance measurements are still costlier than
+  tsgo's: update.d.ts `Builder<Def, Props>` #1 9.9k types vs 1.6k, `CollectionFunction` #0 9.9k vs 1.7k, `DB` #1 20k vs
+  12k. Not the inherited-member sharing (that one is fixed); not looked into further.
+- **A getter resolved inside its own circularity** (found by the object literal fix, 56a730f2): zod's
+  recursive-types.test.ts `z.strictObject({ type: ..., get content() { return z.array(z.tuple([Self, ...])) } })`.
+  Object literals with a getter are still instantiated by the whole mapper, because making their identity instance the
+  literal itself (what tsgo does: the literal has no outer type parameters) gave a spurious TS2344 there: the literal's
+  own getter type is wrong (resolved while circular) and only a later instance's re-resolution gets it right. tsgo has
+  one type and gets it right, so the getter's type (or its circularity marker) is the bug.
+- **angular-components/tools/extract-tokens 1.62** (1.01M vs 627k): all of it is checking immutable@5's immutable.d.ts,
+  the immutable-js/type-definitions cause (agent B's).
+- **karakeep/packages/plugins 1.43** (83k vs 58k after these fixes): all in ratelimit-redis/src/index.ts, and all of
+  that in `const r: RedisClientType = createClient(...)` (66.6k types vs tsgo's 39k for that line alone). tsgo
+  measures the variances of the class RedisClient (`default`, 25k types); tttt measures those of the alias
+  RedisClientType (@redis/client's `RedisClient<...> & RedisClientExtensions<...>`, #3 RESP alone 26k types) and
+  RedisClientPoolType, from infer_from()'s alias shortcut (ty_alias_param_is_contravariant()) while inferring from the
+  client's method signatures (`duplicate(): RedisClientType<...>`) in the return type inference. tsgo's inferFromTypes
+  has the same alias shortcut, so find why it never gets there with these two (redis's own `RedisClientType` alias
+  wraps @redis/client's, so the contextual type's alias differs from the return type's in tsgo: does tttt give the
+  wrapper's instantiation the inner alias?). Also: alias_variance_applies() (relate.c) tests TYF_OBJECT where tsgo
+  tests TypeFlagsObject|Conditional, which no intersection or union has: check whether tttt's intersections carry
+  TYF_OBJECT (excluding them didn't change this case).
 
 ## Compare relation counts with tsc first (2026-10-06 perf session)
 `tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints
