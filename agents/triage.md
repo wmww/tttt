@@ -23,3 +23,6 @@ into bugs/harness.md, sourcesweep_checker.md, js.md and display.md.
 ## From the insights of 2026-10-11
 - `scripts/sourcesweep.py`'s timing lines are meaningless when other agents run (its 10-09 full run said "tttt 2801 s,
   tsc 2811 s"; idle, a 1/8 sample is 84 s vs 214 s): print the machine's load average next to them, or warn.
+
+## From human
+- :
