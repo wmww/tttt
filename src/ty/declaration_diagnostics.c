@@ -1698,10 +1698,52 @@ static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl 
 }
 
 // `statement`: the class declaration's (an anonymous one's diagnostics go to its first token)
+static bool contains_internal(char const* from, char const* to) {
+    for (char const* c = from; c + 9 <= to; c++) {
+        if (*c == '@' && memcmp(c, "@internal", 9) == 0) return true;
+    }
+    return false;
+}
+
+// tsgo's shouldStripInternal: with stripInternal, a declaration whose leading comments say `@internal` isn't emitted, so
+// it has no declaration diagnostics. `start`: the declaration's first token (its modifiers included). Block comments and
+// whole-line `//` comments right before it (tsc's getLeadingCommentRanges from the previous token's end)
+static bool is_internal_declaration(Span start) {
+    if (!compiler_options()->strip_internal || !span_valid(start)) return false;
+    SourceFile const* file = span_source(start);
+    if (!file) return false;
+    char const* text = cstr_str(&file->contents);
+    char const* at = start.buf;
+    if (at < text || at > text + cstr_size(&file->contents)) return false;
+    for (;;) {
+        while (at > text && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+        if (at - text >= 2 && at[-1] == '/' && at[-2] == '*') {
+            char const* open = at - 2;
+            while (open - text >= 2 && !(open[-2] == '/' && open[-1] == '*')) open--;
+            if (open - text < 2) return false;
+            open -= 2;
+            if (contains_internal(open, at)) return true;
+            at = open;
+            continue;
+        }
+        char const* line = at;
+        while (line > text && line[-1] != '\n') line--;
+        char const* first = line;
+        while (first < at && (*first == ' ' || *first == '\t')) first++;
+        if (at - first >= 2 && first[0] == '/' && first[1] == '/') {
+            if (contains_internal(first, at)) return true;
+            at = line;
+            continue;
+        }
+        return false;
+    }
+}
+
 static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     for_each (i, vec_class_item, &cls->items) {
+        if (is_internal_declaration(i->span)) continue;
         my member_static = class_item_is_static((ClassItem*)i);
         Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key :
             i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
@@ -2164,6 +2206,7 @@ static void check_import(Walk* me, Statement const* statement) {
 }
 
 static void check_statement_now(Walk* me, Statement const* statement, Container container) {
+    if (is_internal_declaration(statement->span)) return;
     switch (statement->tag) {
         case STATEMENT_IMPORT_EXPORT:
             check_import(me, statement);
