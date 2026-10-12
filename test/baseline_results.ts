@@ -3272,7 +3272,7 @@ const baselines = {
     },
     'checkingObjectDefinePropertyOnFunctionNonexistentPropertyNoCrash1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkingObjectWithThisInNamePositionNoCrash': {
@@ -19687,7 +19687,7 @@ const baselines = {
     },
     'jsDeclarationsGlobalFileConstFunctionNamed': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsInheritedTypes': {
@@ -19802,7 +19802,7 @@ const baselines = {
     },
     'jsExpandoObjectDefineProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsExportAssignmentNonMutableLocation': {
@@ -51672,7 +51672,7 @@ const baselines = {
     },
     'checkObjectDefineProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkOtherObjectAssignProperty': {
@@ -52241,7 +52241,7 @@ const baselines = {
         types: true,
     },
     'importDeferJsdoc': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52266,7 +52266,7 @@ const baselines = {
         types: true,
     },
     'importTag13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52842,7 +52842,7 @@ const baselines = {
     },
     'jsdocTypeReferenceToMergedClass': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocTypeReferenceToValue': {
@@ -61072,7 +61072,7 @@ const baselines = {
     },
     'jsContainerMergeTsDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsContainerMergeTsDeclaration2': {
@@ -61532,7 +61532,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromPropertyAssignment10': {
@@ -61647,7 +61647,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromPropertyAssignment30': {

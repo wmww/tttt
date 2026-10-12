@@ -5124,6 +5124,40 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
 
 static bool parse_import_export_statement(Parser* parent, Statement* ret);
 
+// Where tsgo's parseImportTag goes on after a missing `from`: parseModuleSpecifier's expression at `c` (an operator there
+// has a missing left operand: `= require("m")`, `* as`), which checkExternalImportOrExportDeclaration says TS1141
+// about unless it's a string literal or missing. Invalid otherwise
+static Span jsdoc_import_specifier_extent(Parser* parent, const char* c, const char* end) {
+    if (c >= end || *c == '"' || *c == '\'') return span_null;
+    Parser p = parser(parent);
+    bool outer_in_jsdoc = p.shared->in_jsdoc;
+    const char* outer_end = p.shared->jsdoc_end;
+    p.shared->in_jsdoc = true;
+    p.shared->jsdoc_end = end;
+    p.pos = c;
+    p.whitespace_end = nullptr;
+    const char* start = c;
+    const char* stop = c;
+    // (A binary operator's characters: what follows is its right operand)
+    while (stop < end && strchr("=*/%<>&|^!?,", *stop)) stop++;
+    if (stop > c) {
+        p.pos = stop;
+        hop_whitespace(&p);
+    }
+    Expr operand;
+    if (parse_expr(&p, expr_ctx_null, &operand)) {
+        stop = span_end_ptr(expr_outer_span(&operand));
+        expr_drop(&operand);
+    }
+    p.shared->in_jsdoc = outer_in_jsdoc;
+    p.shared->jsdoc_end = outer_end;
+    parse_fail(&p);
+    // (The expression parser's end of a call takes the comment's `*/` along)
+    if (stop > end) stop = end;
+    while (stop > start && is_js_ascii_space(stop[-1])) stop--;
+    return stop > start ? span_make(parent->shared->source, start, stop) : span_null;
+}
+
 // `@import { A } from "m"` (TS 5.5): a type-only import declaration, parsed by the statement parser from the tag's
 // name on (tsc's JSDocImportTag). Parse errors are JSDoc errors
 static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const char* end, VecStatement* out) {
@@ -5171,6 +5205,8 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             if (token_end == c && c < end) token_end++;
             parse_error(&p, span_make(source, c, token_end), 1005, "'from' expected.");
             bad = true;
+            Span specifier = jsdoc_import_specifier_extent(&p, c, end);
+            if (span_valid(specifier)) jsdoc_error(&p, specifier, 1141, "String literal expected.");
         }
     }
     if (!clause && !name && c < end && *c != '"' && *c != '\'') {
