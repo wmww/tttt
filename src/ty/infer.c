@@ -1016,25 +1016,23 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
 
 // tsc's getUnmatchedProperty, optional properties not required: a required property of `target` that `source` doesn't
 // have, or with `discriminants` one of a unit type that `source` has another type for
-// The type of `source`'s property `name` as tsc's getPropertyOfType finds it (an intersection's is its members'
-// combined), or null
-static Ty const* unmatched_source_prop(Checker* me, Ty const* source, Atom const* name) {
-    if (source->kind == TY_INTERSECTION) {
-        FoundProp found = ty_find_prop(me, source, name);
-        return found.found ? found.type : nullptr;
-    }
-    Prop const* prop = ty_get_object_prop(me, source, name);
-    return prop ? prop_type(me, prop) : nullptr;
-}
-
 // Whether `target` has a required property `source` lacks (or, with `discriminants`, a unit-typed one whose type the
-// source's doesn't have): tsc's getUnmatchedProperty
+// source's doesn't have): tsc's getUnmatchedProperty. An intersection source's properties are its members' combined
+// (tsc's getPropertyOfType). The source's property type is only read for a unit-typed target property: reading it
+// otherwise can be circular (`var crypto: typeof globalThis extends { crypto: infer T } ? ...`)
 static bool unmatched_prop_of(Checker* me, Ty const* source, Atom const* name, Ty const* target_type, bool discriminants) {
-    Ty const* source_type = unmatched_source_prop(me, source, name);
-    if (!source_type) return true;
+    Prop const* prop = nullptr;
+    if (source->kind == TY_INTERSECTION) {
+        if (!ty_find_prop(me, source, name).found) return true;
+    } else {
+        prop = ty_get_object_prop(me, source, name);
+        if (!prop) return true;
+    }
     if (!discriminants) return false;
     bool unit = (target_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE)) && target_type->kind != TY_UNION;
-    return unit && !(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type);
+    if (!unit) return false;
+    Ty const* source_type = prop ? prop_type(me, prop) : ty_find_prop(me, source, name).type;
+    return !(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type);
 }
 
 static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, bool discriminants) {
