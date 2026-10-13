@@ -511,6 +511,44 @@ static bool object_lacks_signatures(Checker* me, Ty const* check_type, Ty const*
     return (target->construct_count && !source->construct_count) || (target->call_count && !source->call_count);
 }
 
+// An object type with call signatures against `(...args: any[]) => any`, or one with call or construct signatures
+// against the global `Function` (the "is it a function" idioms), is related whatever its signatures return or mention,
+// without resolving them: tsc's relation compares the target's return type first and stops at any
+// (compareSignaturesRelated), and finds Function's members on anything callable (getPropertyOfType). So
+// `T[P] extends (...args: any[]) => any` over a class whose method infers its return type from a body that needs the
+// mapped type being resolved isn't circular (dexie's NonInsertProps<T>), nor is `T[K] & {} extends Function` over a
+// method whose type parameter is constrained by it (mikro-orm's CleanKeys<T, K>): TS2615 depending on which file a
+// checker saw first
+static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty const* extends) {
+    if (!(check_type->flags & TYF_OBJECT)) return false;
+    if (check_type->kind != TY_ANONYMOUS && check_type->kind != TY_REFERENCE && check_type->kind != TY_DECLARED &&
+        check_type->kind != TY_INTERSECTION
+    ) {
+        return false;
+    }
+    bool any_function = false;
+    if (extends->kind == TY_ANONYMOUS) {
+        Members const* target = ty_members(me, extends);
+        if (target->mapped || target->prop_count || target->index_count || target->construct_count || target->call_count != 1) {
+            return false;
+        }
+        Signature const* sig = target->call[0];
+        signature_resolve(me, sig);
+        if (sig->type_params.len || sig->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
+        if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
+        for (u32 i = 0; i < sig->param_count; i++) {
+            Ty const* type = sig->params[i].type;
+            if (sig->params[i].rest && !(type->flags & TYF_ANY)) type = ty_is_array(me, type) ? ty_rest_element_type(me, type) : nullptr;
+            if (!type || !(type->flags & TYF_ANY)) return false;
+        }
+        any_function = true;
+    } else if (extends != ty_global_function_type(me)) {
+        return false;
+    }
+    Members const* source = ty_members(me, check_type);
+    return !source->mapped && (source->call_count || (!any_function && source->construct_count));
+}
+
 // Whether the check type isn't assignable to the extends type whatever the type variables in them turn out to be: not
 // even with each of them the wildcard, which relates to everything (tsc's getPermissiveInstantiation). When the walk
 // can't tell which type variables there are, it doesn't know
@@ -664,6 +702,7 @@ Ty const* ty_conditional_resolve(
     // (For a constraint, false still has the true branch too: what the constraint stands for may match, tsc's
     // forConstraint)
     bool mentions = false;
+    if (callable_definitely_related(me, check_type, inferred_extends)) return branch_type_with(me, if_true, mapper);
     bool is_false = definitely_unrelated(me, check_type, inferred_extends);
     if (!is_false && definitely_related(me, check_type, inferred_extends, &mentions)) {
         return branch_type_with(me, if_true, mapper);

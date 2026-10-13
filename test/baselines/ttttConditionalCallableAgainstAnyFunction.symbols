@@ -1,0 +1,80 @@
+//// [test/cases/ttttConditionalCallableAgainstAnyFunction.ts] ////
+
+=== db.ts ===
+class Db {
+>Db : Symbol(Db, Decl(db.ts, 0, 0))
+
+  lists!: Table<InsertType<Item>>;
+>lists : Symbol(Db.lists, Decl(db.ts, 0, 10))
+>Table : Symbol(Table, Decl(lib.ts, 1, 48))
+>InsertType : Symbol(InsertType, Decl(lib.ts, 0, 103))
+>Item : Symbol(Item, Decl(item.ts, 0, 0))
+}
+=== lib.ts ===
+type NonInsertProps<T> = { [P in keyof T]: T[P] extends (...args: any[]) => any ? P : never }[keyof T];
+>NonInsertProps : Symbol(NonInsertProps, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 0, 20))
+>P : Symbol(P, Decl(lib.ts, 0, 28))
+>T : Symbol(T, Decl(lib.ts, 0, 20))
+>T : Symbol(T, Decl(lib.ts, 0, 20))
+>P : Symbol(P, Decl(lib.ts, 0, 28))
+>args : Symbol(args, Decl(lib.ts, 0, 57))
+>P : Symbol(P, Decl(lib.ts, 0, 28))
+>T : Symbol(T, Decl(lib.ts, 0, 20))
+
+type InsertType<T> = Omit<T, NonInsertProps<T>>;
+>InsertType : Symbol(InsertType, Decl(lib.ts, 0, 103))
+>T : Symbol(T, Decl(lib.ts, 1, 16))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(lib.ts, 1, 16))
+>NonInsertProps : Symbol(NonInsertProps, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 1, 16))
+
+interface Table<I> { add(item: I): void; where(x: string): Table<I> }
+>Table : Symbol(Table, Decl(lib.ts, 1, 48))
+>I : Symbol(I, Decl(lib.ts, 2, 16))
+>add : Symbol(Table.add, Decl(lib.ts, 2, 20))
+>item : Symbol(item, Decl(lib.ts, 2, 25))
+>I : Symbol(I, Decl(lib.ts, 2, 16))
+>where : Symbol(Table.where, Decl(lib.ts, 2, 40))
+>x : Symbol(x, Decl(lib.ts, 2, 47))
+>Table : Symbol(Table, Decl(lib.ts, 1, 48))
+>I : Symbol(I, Decl(lib.ts, 2, 16))
+
+declare function transaction<U>(table: Table<any>, scope: () => U): U;
+>transaction : Symbol(transaction, Decl(lib.ts, 2, 69))
+>U : Symbol(U, Decl(lib.ts, 3, 29))
+>table : Symbol(table, Decl(lib.ts, 3, 32))
+>Table : Symbol(Table, Decl(lib.ts, 1, 48))
+>scope : Symbol(scope, Decl(lib.ts, 3, 50))
+>U : Symbol(U, Decl(lib.ts, 3, 29))
+>U : Symbol(U, Decl(lib.ts, 3, 29))
+
+=== item.ts ===
+class Item {
+>Item : Symbol(Item, Decl(item.ts, 0, 0))
+
+  db!: Db;
+>db : Symbol(Item.db, Decl(item.ts, 0, 12))
+>Db : Symbol(Db, Decl(db.ts, 0, 0))
+
+  name!: string;
+>name : Symbol(Item.name, Decl(item.ts, 1, 10))
+
+  rename() {
+>rename : Symbol(Item.rename, Decl(item.ts, 2, 16))
+
+    return transaction(this.db.lists, () => 1);
+>transaction : Symbol(transaction, Decl(lib.ts, 2, 69))
+>this.db.lists : Symbol(Db.lists, Decl(db.ts, 0, 10))
+>this.db : Symbol(Item.db, Decl(item.ts, 0, 12))
+>this : Symbol(Item, Decl(item.ts, 0, 0))
+>db : Symbol(Item.db, Decl(item.ts, 0, 12))
+>lists : Symbol(Db.lists, Decl(db.ts, 0, 10))
+  }
+}
+const k: NonInsertProps<Item> = "rename";
+>k : Symbol(k, Decl(item.ts, 7, 5))
+>NonInsertProps : Symbol(NonInsertProps, Decl(lib.ts, 0, 0))
+>Item : Symbol(Item, Decl(item.ts, 0, 0))
+

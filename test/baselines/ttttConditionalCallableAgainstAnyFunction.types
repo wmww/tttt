@@ -1,0 +1,57 @@
+//// [test/cases/ttttConditionalCallableAgainstAnyFunction.ts] ////
+
+=== db.ts ===
+class Db {
+>Db : Db
+
+  lists!: Table<InsertType<Item>>;
+>lists : Table<InsertType<Item>>
+}
+=== lib.ts ===
+type NonInsertProps<T> = { [P in keyof T]: T[P] extends (...args: any[]) => any ? P : never }[keyof T];
+>NonInsertProps : NonInsertProps<T>
+>args : any[]
+
+type InsertType<T> = Omit<T, NonInsertProps<T>>;
+>InsertType : InsertType<T>
+
+interface Table<I> { add(item: I): void; where(x: string): Table<I> }
+>add : (item: I) => void
+>item : I
+>where : (x: string) => Table<I>
+>x : string
+
+declare function transaction<U>(table: Table<any>, scope: () => U): U;
+>transaction : <U>(table: Table<any>, scope: () => U) => U
+>table : Table<any>
+>scope : () => U
+
+=== item.ts ===
+class Item {
+>Item : Item
+
+  db!: Db;
+>db : Db
+
+  name!: string;
+>name : string
+
+  rename() {
+>rename : () => number
+
+    return transaction(this.db.lists, () => 1);
+>transaction(this.db.lists, () => 1) : number
+>transaction : <U>(table: Table<any>, scope: () => U) => U
+>this.db.lists : Table<InsertType<Item>>
+>this.db : Db
+>this : this
+>db : Db
+>lists : Table<InsertType<Item>>
+>() => 1 : () => number
+>1 : 1
+  }
+}
+const k: NonInsertProps<Item> = "rename";
+>k : "rename"
+>"rename" : "rename"
+
