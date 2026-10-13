@@ -1069,10 +1069,6 @@ struct Checker {
     struct Expr const* const_enum_object_ok;
     u32 type_only_site_depth;
     bool return_inference_skipped;
-    // The generic types whose apparent type is being resolved (relate.c's apparent_type_inner(), tsc's
-    // pushTypeResolution for a constraint): one met again is circular
-    Ty const* apparent_stack[32];
-    u32 apparent_depth;
     u32 conditional_constraint_depth; // Conditional types whose constraint base_constraint() computes (tsc's conditionalConstraintDepth)
     // Typechecking a range of unreachable code (TS7027): nothing in it says so again, except in function expressions,
     // which tsc checks later (tsc's withinUnreachableCode)

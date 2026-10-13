@@ -925,7 +925,7 @@ static bool is_union_of_arrays(Checker* me, Ty const* ty) {
 }
 
 static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) {
-    if (!contextual || depth > 8) return false;
+    if (!contextual) return false;
     if (ty_is_tuple(contextual)) return true;
     if (contextual->kind == TY_DECLARED && contextual->declared.kind == TY_DECLARED_TUPLE_TARGET) return true;
     if (contextual->kind == TY_UNION) {
@@ -4817,7 +4817,6 @@ Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper con
 // tsc's getInstantiationExpressionType: object types get their applicable signatures instantiated, unions and
 // intersections each member, a type parameter its constraint's
 static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList args, u32 depth) {
-    if (depth > 8) return ty;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         u32 len = ty->composite.types.len;
         Ty const** parts = malloc(sizeof(Ty const*) * (len ? len : 1));

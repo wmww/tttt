@@ -906,7 +906,6 @@ static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr 
 }
 
 static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth) {
-    if (depth > 8) return;
     if (type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN)) {
         for (u32 i = 0; i < type->composite.types.len; i++) instantiation_scan_type(checker, scan, type->composite.types.data[i], depth + 1);
     } else if (type->kind == TY_INTERSECTION) {

@@ -1343,7 +1343,6 @@ static Ty const* spread_base_constraint(Checker* me, Ty const* ty) {
 }
 
 static bool is_valid_spread_type(Checker* me, Ty const* ty, u32 depth) {
-    if (depth > 8) return true;
     if (ty->kind == TY_UNION) {
         // (tsc maps the base constraint over it before removing what's definitely falsy)
         TyBuf parts = {0};

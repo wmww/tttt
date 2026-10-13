@@ -1331,43 +1331,19 @@ static inline Ty const* apparent_type(Checker* me, Ty const* ty) {
     return ty_reduced(me, apparent_type_inner(me, ty_reduced(me, ty)));
 }
 
-static Ty const* apparent_type_resolve(Checker* me, Ty const* ty);
-
-// A generic intersection or instantiable type whose apparent type needs itself (a constraint feeding its own `infer`:
-// `C extends Ctor<Props<C> & X>`) is circular, and apparently unknown (tsc's circularConstraintType through
-// pushTypeResolution in getResolvedBaseConstraint)
+// tsc's getApparentType: an instantiable type is its base constraint (unknown without one or with a circular one), a
+// generic mapped type over an array its array, primitives their global interfaces
 static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
-    bool generic = ty->kind == TY_INTERSECTION || ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL ||
-        ty->kind == TY_SUBSTITUTION;
-    if (!generic) return apparent_type_resolve(me, ty);
-    for (u32 i = 0; i < my apparent_depth; i++) {
-        if (my apparent_stack[i] == ty) return ty_intrinsic(me, TY_UNKNOWN_);
-    }
-    if (my apparent_depth == c_arraylen(my apparent_stack)) return ty_intrinsic(me, TY_UNKNOWN_);
-    my apparent_stack[my apparent_depth++] = ty;
-    Ty const* ret = apparent_type_resolve(me, ty);
-    my apparent_depth--;
-    return ret;
-}
-
-static Ty const* apparent_type_resolve(Checker* me, Ty const* ty) {
     if (ty->kind == TY_ANONYMOUS) return apparent_type_of_mapped(me, ty);
     if (ty->kind == TY_TYPE_PARAM) {
-        // Through the constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s
+        // Through the base constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s
         // x, and so is `t.x` for `t: T` with `T extends C`: tsc's getApparentType + getTypeWithThisArgument)
-        Ty const* param = ty;
-        for (u32 depth = 0; ty->kind == TY_TYPE_PARAM && depth < 16; depth++) {
-            Ty const* constraint = ty_param_constraint(me, ty);
-            // (`T extends R | string` with R unconstrained has no base constraint either: composite_base_constraint)
-            bool lacks = constraint && constraint->kind == TY_UNION && (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-                !base_constraint(me, ty, nullptr);
-            if (!constraint || constraint == ty || lacks) {
-                // (tsc's getApparentType: the base constraint is unknown, which is `{}` only without strictNullChecks)
-                return compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_UNKNOWN_) : global_type(me, GLOBAL_EMPTY_OBJECT);
-            }
-            ty = constraint;
-        }
-        if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);
+        Ty const* constraint = base_constraint(me, ty, nullptr);
+        // (Unknown without one, which is `{}` only without strictNullChecks; `T extends R | string` with R unconstrained
+        // has none either)
+        if (!constraint) return compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_UNKNOWN_) : global_type(me, GLOBAL_EMPTY_OBJECT);
+        if (constraint->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, constraint, ty);
+        ty = constraint;
     }
     if (ty->kind == TY_INTERSECTION) {
         // The intersection of what its generic members are apparently (tsc's getApparentTypeOfIntersectionType, through
@@ -3800,7 +3776,6 @@ static Ternary object_related(
     return result;
 }
 
-static Ty const* intersection_constraint(Checker* me, Ty const* ty);
 static Ty const* normalized_intersection(Checker* me, Ty const* ty, bool writing);
 
 // The mapped type an object type is, generic (keys not known yet) or not (tsc's ObjectFlags.Mapped). Null if none
@@ -4078,19 +4053,22 @@ static Ty const* mapped_generic_indexed_access(Checker* me, Ty const* indexed) {
 static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed);
 static bool has_non_circular_base_constraint(Checker* me, Ty const* ty);
 
+// tsc's getConstraintOfType, one step: a type parameter's declared constraint, an indexed access's
+// getConstraintFromIndexedAccess, a conditional type's distributive or default constraint (each unless its base constraint
+// is circular), anything else's base constraint
+static Ty const* constraint_of_type(Checker* me, Ty const* ty) {
+    switch ((TyKind)ty->kind) {
+        case TY_TYPE_PARAM: return has_non_circular_base_constraint(me, ty) ? ty_param_constraint(me, ty) : nullptr;
+        case TY_INDEXED: return has_non_circular_base_constraint(me, ty) ? constraint_of_indexed(me, ty) : nullptr;
+        case TY_CONDITIONAL: return has_non_circular_base_constraint(me, ty) ? ty_conditional_constraint(me, ty) : nullptr;
+        default: return base_constraint(me, ty, nullptr);
+    }
+}
+
 // tsc's getSimplifiedTypeOrConstraint: getConstraintOfType of what can't be simplified
 static Ty const* simplified_or_constraint(Checker* me, Ty const* ty) {
     Ty const* simplified = ty_simplified(me, ty, false);
-    if (simplified != ty) return simplified;
-    switch ((TyKind)ty->kind) {
-        case TY_TYPE_PARAM: return ty_param_constraint(me, ty);
-        case TY_INDEXED: return has_non_circular_base_constraint(me, ty) ? constraint_of_indexed(me, ty) : nullptr;
-        case TY_INTERSECTION: return intersection_constraint(me, ty);
-        // (HACK: tsc's getConstraintOfConditionalType checks hasNonCircularBaseConstraint too, but tttt finds
-        // `FromSchema<C, C[keyof C]>` circular where tsc goes on: distributiveConditionalBaseConstraint)
-        case TY_CONDITIONAL: return ty_conditional_constraint(me, ty);
-        default: return base_constraint(me, ty, nullptr);
-    }
+    return simplified != ty ? simplified : constraint_of_type(me, ty);
 }
 
 // What `T[K]` is at least (tsc's getConstraintFromIndexedAccess): through the index's constraint first, then the
@@ -4332,7 +4310,7 @@ static Ty const* write_type_or_null(Checker* me, Ty const* type) {
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
-    Ty const* base_object = object->kind == TY_INTERSECTION ? intersection_constraint(me, object) : base_constraint(me, object, nullptr);
+    Ty const* base_object = base_constraint(me, object, nullptr);
     Ty const* base_index = base_constraint(me, index, nullptr);
     if (!base_object) base_object = object;
     if (!base_index) base_index = index;
@@ -4468,232 +4446,92 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
     return ret;
 }
 
-// The base constraint of a union or intersection, the union or intersection of its members' (tsc's
-// computeBaseConstraint): `T["k"] & {}` with T["k"] constrained to `X | undefined` is X. A union has none when a member
-// is a type variable without one (`R | string` with R unconstrained is no more than unknown, not string): null with
-// `*lacks` set. Null without it: nothing replaced (itself). An intersection keeps the members that have one
-static Ty const* composite_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack, bool* lacks) {
-    *lacks = false;
-    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
-    TyList types = ty->composite.types;
-    TyBuf bases = {0};
-    bool different = false;
-    for (u32 i = 0; i < types.len; i++) {
-        Ty const* part = types.data[i];
-        bool variable = part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED);
-        Ty const* base = variable || (part->flags & (TYF_UNION | TYF_INTERSECTION)) ? base_constraint(me, part, stack) : part;
-        if (!base && variable && ty->kind == TY_UNION) {
-            ty_buf_drop(&bases);
-            *lacks = true;
-            return nullptr;
-        }
-        // (A nested union or intersection without type variables to replace has none of its own: itself)
-        if (!base && (part->kind == TY_UNION || part->kind == TY_INTERSECTION) && !(part->flags & TYF_DEFERRED)) base = part;
-        if (base != part) different = true;
-        if (base) ty_buf_push(&bases, base);
-    }
-    // (An intersection none of whose members has a base constraint has none either: tsc's computeBaseConstraint)
-    Ty const* ret = !different || !bases.len ? nullptr : ty->kind == TY_UNION ?
-        ty_union(me, bases.data, bases.len, nullptr, (TyList){0}) :
-        ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0});
-    ty_buf_drop(&bases);
-    return ret;
+static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack);
+
+// tsc's getNextBaseConstraint: what `ty` is at least, itself if it isn't generic, null if nothing is known (no constraint,
+// or a circular one)
+static Ty const* next_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+    return ty ? resolved_base_constraint(me, ty, stack) : nullptr;
 }
 
-// What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
-// Null if there's nothing to know (an unconstrained type parameter, `T[K]` that stays generic...)
-static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+// tsc's computeBaseConstraint, of a type simplified already: every step goes through next_base_constraint(), which
+// counts on the recursion identity stack (a chain of conditional types reaching each other stops 10 levels deep there,
+// not at the first one seen again: distributiveConditionalBaseConstraint)
+static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
     switch ((TyKind)ty->kind) {
         case TY_TYPE_PARAM: {
             Ty const* constraint = ty_param_constraint(me, ty);
-            if (!constraint || constraint == ty) return nullptr;
-            if (constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED)) {
-                return base_constraint(me, constraint, stack);
-            }
-            // Of a union or intersection, the base constraints of its members (tsc's getBaseConstraint of the
-            // constraint): `T extends X & (C extends U ? A : B)` is at least `X & (A | B)`
-            if ((constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) &&
-                (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-            ) {
-                bool lacks;
-                Ty const* base = composite_base_constraint(me, constraint, stack, &lacks);
-                if (lacks) return nullptr;
-                if (base) return base;
-            }
-            return constraint;
-        }
-        case TY_KEYOF: {
-            // (Of a generic mapped type with an `as` clause, its names': tsc 6.0's computeBaseConstraint)
-            Ty const* names = ty->keyof.operand->kind == TY_ANONYMOUS ? mapped_keyof_names(me, ty) : nullptr;
-            if (names) {
-                Ty const* base = base_constraint(me, names, stack);
-                if (base) return base;
-            }
-            Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
-            return ty_union(me, all, 3, nullptr, (TyList){0});
-        }
-        case TY_INDEXED: {
-            // (tsc's getResolvedBaseConstraint simplifies first)
-            Ty const* simple = ty_simplified(me, ty, false);
-            if (simple == ty) simple = mapped_generic_indexed_access(me, ty);
-            if (simple && simple != ty) {
-                // (tsc's computeBaseConstraint of the simplified type: of a union or intersection its members', where
-                // `T[string] & X` with T unconstrained is X)
-                if ((simple->kind == TY_UNION || simple->kind == TY_INTERSECTION) && (simple->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                    bool lacks;
-                    Ty const* base = composite_base_constraint(me, simple, stack, &lacks);
-                    if (lacks) return nullptr;
-                    return base ? base : simple;
-                }
-                if (simple->kind != TY_TYPE_PARAM && !(simple->flags & TYF_DEFERRED)) return simple;
-                Ty const* deeper = base_constraint(me, simple, stack);
-                return deeper ? deeper : nullptr;
-            }
-            Ty const* object = ty->indexed.object;
-            Ty const* index = ty->indexed.index;
-            Ty const* object_constraint = base_constraint(me, object, stack);
-            Ty const* index_constraint = base_constraint(me, index, stack);
-            if (!object_constraint && !index_constraint) return nullptr;
-            // (A type variable without a constraint leaves nothing to know: tsc's computeBaseConstraint needs both,
-            // `T[K]` with `K extends keyof T` isn't `T[string] | T[number] | T[symbol]`)
-            if (!object_constraint && (object->kind == TY_TYPE_PARAM || (object->flags & TYF_DEFERRED))) return nullptr;
-            if (!index_constraint && (index->kind == TY_TYPE_PARAM || (index->flags & TYF_DEFERRED))) return nullptr;
-            Ty const* base_object = object_constraint ? object_constraint : object;
-            Ty const* base_index = index_constraint ? index_constraint : index;
-            Ty const* ret = ty_indexed_include_undefined(me, base_object, base_index, ty->indexed.include_undefined);
-            if (ret == ty) return nullptr;
-            // (None where the constraints' access isn't valid, tsc's getIndexedAccessTypeOrUndefined: `T[P]` with
-            // `T extends object`; only an unknown/error/any access can be one)
-            if ((ret->flags & (TYF_UNKNOWN | TYF_ERROR | TYF_ANY)) && !indexed_or_null_flagged(me, base_object, base_index, ty->indexed.include_undefined)) {
-                return nullptr;
-            }
-            if (ret->kind == TY_UNION) {
-                bool lacks;
-                Ty const* base = composite_base_constraint(me, ret, stack, &lacks);
-                if (lacks) return nullptr;
-                return base ? base : ret;
-            }
-            // (tsc's computeBaseConstraint takes the base constraint of the access too: `[T][0]` is T's)
-            return ret->kind == TY_TYPE_PARAM || (ret->flags & TYF_DEFERRED) ? base_constraint(me, ret, stack) : ret;
-        }
-        case TY_CONDITIONAL: {
-            // (tsc's computeBaseConstraint gives up 100 conditional constraints deep)
-            if (my conditional_constraint_depth >= 100) return nullptr;
-            my conditional_constraint_depth++;
-            Ty const* distributive = distributive_constraint(me, ty);
-            my conditional_constraint_depth--;
-            if (distributive) {
-                // (Of a union or intersection, its members' base constraints: tsc's getBaseConstraint of the constraint,
-                // `T & (string | undefined)` with T unconstrained is `string | undefined`)
-                if ((distributive->kind == TY_UNION || distributive->kind == TY_INTERSECTION) &&
-                    (distributive->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-                ) {
-                    bool lacks;
-                    Ty const* base = composite_base_constraint(me, distributive, stack, &lacks);
-                    if (!lacks) return base ? base : distributive;
-                } else if (distributive->kind != TY_TYPE_PARAM && !(distributive->flags & TYF_DEFERRED)) {
-                    return distributive;
-                }
-                Ty const* deeper = base_constraint(me, distributive, stack);
-                if (deeper) return deeper;
-            }
-            // (tsc's getDefaultConstraintOfConditionalType: an any branch is left out, the other one is all there is:
-            // `T extends string ? T : any` with T unconstrained has no base constraint, it's apparently unknown)
-            Ty const* parts[2];
-            u32 count = 2;
-            // (The true branch with its `infer` types inferred, unknown where nothing is: tsc's
-            // getInferredTrueTypeFromConditionalType in getDefaultConstraintOfConditionalType)
-            my conditional_constraint_depth++;
-            Ty const* branches[2] = { ty_conditional_branch(me, ty, false), inferred_true_branch(me, ty) };
-            my conditional_constraint_depth--;
-            if ((branches[0]->flags & TYF_ANY) != (branches[1]->flags & TYF_ANY)) {
-                branches[0] = branches[0]->flags & TYF_ANY ? branches[1] : branches[0];
-                count = 1;
-            }
-            for (u32 i = 0; i < count; i++) {
-                parts[i] = branches[i];
-                if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) {
-                    parts[i] = base_constraint(me, parts[i], stack);
-                    if (!parts[i]) return nullptr;
-                } else if ((parts[i]->kind == TY_UNION || parts[i]->kind == TY_INTERSECTION) &&
-                    (parts[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-                ) {
-                    // (A union branch is its members' base constraints too, none if one has none: tsc's getBaseConstraint
-                    // of the conditional's constraint)
-                    bool lacks;
-                    Ty const* base = composite_base_constraint(me, parts[i], stack, &lacks);
-                    if (lacks) return nullptr;
-                    if (base) parts[i] = base;
-                }
-            }
-            return count == 1 ? parts[0] : ty_union(me, parts, 2, nullptr, (TyList){0});
-        }
-        case TY_TEMPLATE_LITERAL: {
-            // The template of the constraints, string if one has none
-            u32 len = ty->template_literal.types.len;
-            Ty const** constraints = malloc(sizeof(Ty const*) * len);
-            panic_if(!constraints, "out of memory");
-            Ty const* ret = nullptr;
-            for (u32 i = 0; i < len && !ret; i++) {
-                Ty const* t = ty->template_literal.types.data[i];
-                if (t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED)) {
-                    constraints[i] = base_constraint(me, t, stack);
-                    if (!constraints[i]) ret = ty_intrinsic(me, TY_STRING);
-                } else if (t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
-                    Ty const* constraint = base_constraint(me, t, stack);
-                    constraints[i] = constraint ? constraint : t;
-                } else if ((t->kind == TY_UNION || t->kind == TY_INTERSECTION) && (t->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                    // (`${keyof O & string}` is at least `${string}`: tsc's getBaseConstraint of each part)
-                    bool lacks;
-                    Ty const* constraint = composite_base_constraint(me, t, stack, &lacks);
-                    if (lacks) ret = ty_intrinsic(me, TY_STRING);
-                    constraints[i] = constraint ? constraint : t;
-                } else {
-                    constraints[i] = t;
-                }
-            }
-            if (!ret) ret = ty_template_literal(me, ty->template_literal.texts, constraints, len);
-            free(constraints);
-            return ret == ty ? nullptr : ret;
-        }
-        case TY_SUBSTITUTION: {
-            // Of `base & constraint`: the intersection of what the parts are at least
-            Ty const* both = ty_substitution_intersection(me, ty);
-            TyList parts = both->kind == TY_INTERSECTION ? both->composite.types : (TyList){ .data = &both, .len = 1 };
-            TyBuf bases = {0};
-            for (u32 i = 0; i < parts.len; i++) {
-                Ty const* part = parts.data[i];
-                Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED) ? base_constraint(me, part, stack) : part;
-                // (`T & (string | undefined)` is normalized to `(T & string) | (T & undefined)`: its members' base
-                // constraints, `string | undefined` with T unconstrained)
-                if ((part->kind == TY_UNION || part->kind == TY_INTERSECTION) && (part->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                    bool lacks;
-                    Ty const* composite = composite_base_constraint(me, part, stack, &lacks);
-                    base = lacks ? nullptr : composite ? composite : part;
-                }
-                if (base) ty_buf_push(&bases, base);
-            }
-            Ty const* ret = bases.len ? ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0}) : nullptr;
-            ty_buf_drop(&bases);
-            return ret;
+            if (constraint == ty) constraint = nullptr;
+            return ty->param.state->is_this ? constraint : next_base_constraint(me, constraint, stack);
         }
         case TY_UNION:
         case TY_INTERSECTION: {
-            bool lacks;
-            return composite_base_constraint(me, ty, stack, &lacks);
+            TyList types = ty->composite.types;
+            TyBuf constraints = {0};
+            bool different = false;
+            for (u32 i = 0; i < types.len; i++) {
+                Ty const* constraint = next_base_constraint(me, types.data[i], stack);
+                if (constraint) {
+                    different |= constraint != types.data[i];
+                    ty_buf_push(&constraints, constraint);
+                } else {
+                    different = true;
+                }
+            }
+            Ty const* ret = !different ? ty :
+                ty->kind == TY_UNION && constraints.len == types.len ? ty_union(me, constraints.data, constraints.len, nullptr, (TyList){0}) :
+                ty->kind == TY_INTERSECTION && constraints.len ? ty_intersection(me, constraints.data, constraints.len, nullptr, (TyList){0}) :
+                nullptr;
+            ty_buf_drop(&constraints);
+            return ret;
+        }
+        case TY_KEYOF: {
+            // (Of a generic mapped type with an `as` clause, its names')
+            Ty const* names = ty->keyof.operand->kind == TY_ANONYMOUS ? mapped_keyof_names(me, ty) : nullptr;
+            if (names) return next_base_constraint(me, names, stack);
+            Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+            return ty_union(me, all, 3, nullptr, (TyList){0});
+        }
+        case TY_TEMPLATE_LITERAL: {
+            u32 len = ty->template_literal.types.len;
+            Ty const** constraints = malloc(sizeof(Ty const*) * (len ? len : 1));
+            panic_if(!constraints, "out of memory");
+            bool all = true;
+            for (u32 i = 0; i < len && all; i++) {
+                constraints[i] = next_base_constraint(me, ty->template_literal.types.data[i], stack);
+                all = constraints[i] != nullptr;
+            }
+            Ty const* ret = all ? ty_template_literal(me, ty->template_literal.texts, constraints, len) : ty_intrinsic(me, TY_STRING);
+            free(constraints);
+            return ret;
         }
         case TY_STRING_MAPPING: {
             Ty const* inner = ty->string_mapping.type;
-            Ty const* constraint = inner->kind == TY_TYPE_PARAM || (inner->flags & TYF_DEFERRED) ? base_constraint(me, inner, stack) : nullptr;
+            Ty const* constraint = next_base_constraint(me, inner, stack);
             if (!constraint || constraint == inner) return ty_intrinsic(me, TY_STRING);
-            Ty const* ret = ty_string_mapping(me, ty->string_mapping.mapping, ty->string_mapping.symbol, constraint);
-            return ret == ty ? nullptr : ret;
+            return ty_string_mapping(me, ty->string_mapping.mapping, ty->string_mapping.symbol, constraint);
         }
+        case TY_INDEXED: {
+            Ty const* mapped = mapped_generic_indexed_access(me, ty);
+            if (mapped) return next_base_constraint(me, mapped, stack);
+            Ty const* object = next_base_constraint(me, ty->indexed.object, stack);
+            Ty const* index = next_base_constraint(me, ty->indexed.index, stack);
+            if (!object || !index) return nullptr;
+            return next_base_constraint(me, indexed_or_null_flagged(me, object, index, ty->indexed.include_undefined), stack);
+        }
+        case TY_CONDITIONAL: {
+            if (my conditional_constraint_depth >= 100) return nullptr;
+            my conditional_constraint_depth++;
+            Ty const* constraint = ty_conditional_constraint(me, ty);
+            my conditional_constraint_depth--;
+            return next_base_constraint(me, constraint, stack);
+        }
+        case TY_SUBSTITUTION: return next_base_constraint(me, ty_substitution_intersection(me, ty), stack);
         case TY_REFERENCE: {
             // A generic tuple: its variadic elements as the arrays or non-generic tuples (or unions of them) they're
-            // constrained to (tsc's computeBaseConstraint), `[S, ...T]` with `T extends readonly X[]` is `[S, ...X[]]`,
-            // `[...T, ...T]` with `T extends [] | [unknown]` is `[] | [unknown] | [unknown, unknown]`
-            if (!is_tuple(ty) || !ty_is_generic_tuple(me, ty)) return nullptr;
+            // constrained to, `[S, ...T]` with `T extends readonly X[]` is `[S, ...X[]]` (and no further: a constraint
+            // that's generic itself could recurse without end)
+            if (!is_tuple(ty) || !ty_is_generic_tuple(me, ty)) return ty;
             TupleShape const* shape = ty_tuple_shape(ty);
             TyList args = ty_reference_args(me, ty);
             Ty const** elements = malloc(sizeof(Ty const*) * (args.len ? args.len : 1));
@@ -4702,57 +4540,71 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, ConstraintS
             for (u32 i = 0; i < args.len; i++) {
                 elements[i] = args.data[i];
                 if (i >= shape->arity || !(shape->flags[i] & TUPLE_ELEMENT_REST) || args.data[i]->kind != TY_TYPE_PARAM) continue;
-                Ty const* constraint = base_constraint(me, args.data[i], stack);
-                if (constraint && every_array_or_tuple(me, constraint)) {
+                Ty const* constraint = next_base_constraint(me, args.data[i], stack);
+                if (constraint && constraint != args.data[i] && every_array_or_tuple(me, constraint)) {
                     elements[i] = constraint;
                     changed = true;
                 }
             }
-            Ty const* ret = changed ? ty_reference(me, ty->reference.target, (TyList){ .data = elements, .len = args.len }) : nullptr;
+            Ty const* ret = changed ? ty_reference(me, ty->reference.target, (TyList){ .data = elements, .len = args.len }) : ty;
             free(elements);
             return ret;
         }
         default:
-            return nullptr;
+            return ty;
     }
 }
 
-// (Cached like tsc's resolvedBaseConstraint, whatever the stack: React's `T & {}` check types ask again and again)
-static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, ConstraintStack const* stack);
-static Ty const base_constraint_in_flight, base_constraint_circular;
-static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+// tsc's getResolvedBaseConstraint, without the sentinels: cached like its resolvedBaseConstraint, whatever the stack
+// (React's `T & {}` check types ask again and again)
+static Ty const base_constraint_in_flight, base_constraint_circular, base_constraint_none;
+static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
+    if (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+        Ty const* cached = intern_get(&my links, key, 2);
+        if (cached == &base_constraint_in_flight) {
+            // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
+            // resolution barrier, where it's computed again
+            if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
+                ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
+                return nullptr;
+            }
+        } else if (cached) {
+            return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
+        }
+    } else {
+        // (Nothing generic in it: itself, but for `Uppercase<string>`, which is a string, also inside a template literal,
+        // and a substitution type (`NoInfer<X>` is X). tsc also replaces those in unions and intersections, which tttt
+        // doesn't look into for want of type variables)
+        bool computed = ty->kind == TY_STRING_MAPPING || ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_SUBSTITUTION;
+        return computed ? compute_base_constraint(me, ty, stack) : ty;
+    }
     // We always explore at least 10 levels of nested constraints, then up to 50 while the type's recursion identity
     // isn't on the stack yet (tsc's getResolvedBaseConstraint: a safety stop for long cycles of generated types)
     void const* identity = recursion_identity(ty);
     if (!identity) identity = ty;
     u32 len = stack ? stack->len : 0;
+    bool deep = false;
     if (len >= 10) {
-        bool deep = len >= 50;
+        deep = len >= 50;
         for (ConstraintStack const* s = stack; s && !deep; s = s->up) deep = s->identity == identity;
-        if (deep) return nullptr;
     }
     ConstraintStack inner = { .up = stack, .identity = identity, .len = len + 1 };
-    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return base_constraint_uncached(me, ty, &inner);
-    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    Ty const* cached = intern_get(&my links, key, 2);
-    if (cached == &base_constraint_in_flight) {
-        // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
-        // resolution barrier, where it's computed again
-        if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
-            ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
-            return nullptr;
-        }
-    } else if (cached) {
-        return cached == ty || cached == &base_constraint_circular ? nullptr : cached;
-    }
     *intern_slot(me, &my links, key, 2) = &base_constraint_in_flight;
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
-    Ty const* ret = base_constraint_uncached(me, ty, &inner);
+    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty_simplified(me, ty, false), &inner);
     bool circular = ty_resolving_pop(me);
     void const** slot = intern_slot(me, &my links, key, 2);
     // (The first answer stays: one computed again below the barrier answered already)
-    if (*slot == &base_constraint_in_flight) *slot = circular ? &base_constraint_circular : ret ? ret : ty;
+    if (*slot == &base_constraint_in_flight) *slot = circular ? &base_constraint_circular : ret ? ret : &base_constraint_none;
     return circular ? nullptr : ret;
+}
+
+// What a type variable is known to be at least (tsc's getBaseConstraintOfType): null if there's nothing to know (an
+// unconstrained type parameter, a circular constraint) or nothing generic to replace (itself)
+static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+    Ty const* ret = resolved_base_constraint(me, ty, stack);
+    return ret == ty ? nullptr : ret;
 }
 
 // tsc's hasNonCircularBaseConstraint
@@ -4796,43 +4648,6 @@ static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
     return is_tuple(ty) && !ty->reference.target->declared.tuple->readonly;
 }
 
-// An intersection with type variables, with their constraints in their place. Null if it has none
-static Ty const* intersection_constraint(Checker* me, Ty const* ty) {
-    TyList members = ty->composite.types;
-    bool any = false;
-    for (u32 i = 0; i < members.len && !any; i++) any = members.data[i]->kind == TY_TYPE_PARAM || (members.data[i]->flags & TYF_DEFERRED);
-    if (!any) return nullptr;
-    TyBuf parts = {0};
-    for (u32 i = 0; i < members.len; i++) {
-        Ty const* member = members.data[i];
-        if (member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED)) {
-            // (One without a constraint is left out, tsc's computeBaseConstraint: `"a" & K` is at least "a")
-            Ty const* constraint = base_constraint(me, member, nullptr);
-            if (!constraint || constraint == member) continue;
-            member = constraint;
-        }
-        ty_buf_push(&parts, member);
-    }
-    if (!parts.len) {
-        ty_buf_drop(&parts);
-        return nullptr;
-    }
-    Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
-    ty_buf_drop(&parts);
-    return ret == ty ? nullptr : ret;
-}
-
-// tsc's getConstraintOfType, one step: a type parameter's constraint, an indexed access's getConstraintFromIndexedAccess,
-// a conditional type's constraint, else the base constraint
-static Ty const* immediate_constraint(Checker* me, Ty const* ty) {
-    switch ((TyKind)ty->kind) {
-        case TY_TYPE_PARAM: return ty_param_constraint(me, ty);
-        case TY_INDEXED: return constraint_of_indexed(me, ty);
-        case TY_CONDITIONAL: return ty_conditional_constraint(me, ty);
-        default: return base_constraint(me, ty, nullptr);
-    }
-}
-
 // What an intersection source with type variables is related through once its members weren't (tsc's
 // getEffectiveConstraintOfIntersection): each instantiable member's constraint, followed through type parameters,
 // keyof and conditional types but not indexed accesses (which may be circular), together with the member itself
@@ -4848,11 +4663,11 @@ static Ty const* effective_intersection_constraint(Checker* me, Ty const* source
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = members.data[i];
         if (member->kind == TY_TYPE_PARAM || member->kind == TY_SUBSTITUTION || (member->flags & TYF_DEFERRED)) {
-            Ty const* constraint = immediate_constraint(me, member);
+            Ty const* constraint = constraint_of_type(me, member);
             for (u32 depth = 0; constraint && depth < 32 &&
                 (constraint->kind == TY_TYPE_PARAM || constraint->kind == TY_KEYOF || constraint->kind == TY_CONDITIONAL); depth++
             ) {
-                Ty const* next = immediate_constraint(me, constraint);
+                Ty const* next = constraint_of_type(me, constraint);
                 constraint = next == constraint ? nullptr : next;
             }
             if (constraint) {
@@ -6093,14 +5908,14 @@ static Ternary structured_related_members(
             // constraint: `S[K]` isn't `U[K]` because `S[keyof T]` happens to be (tsc's structuredTypeRelatedToWorker)
             if (target->kind == TY_INDEXED) break;
             // (tsc: `getConstraintOfType(source) || unknownType`, which is comparable to anything; not elaborated)
-            Ty const* constraint = constraint_of_indexed(me, source);
+            Ty const* constraint = constraint_of_type(me, source);
             if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
             // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
             if (!mapped_generic_indexed_access(me, source)) return is_related_to_side(me, st, constraint, target, report, 2);
             Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
             if (related) return related;
-            Ty const* index_constraint = simplified_or_constraint(me, source->indexed.index);
+            Ty const* index_constraint = constraint_of_type(me, source->indexed.index);
             Ty const* whole = index_constraint && index_constraint != source->indexed.index ?
                 indexed_or_null(me, source->indexed.object, index_constraint) : nullptr;
             if (whole && whole != source) {
