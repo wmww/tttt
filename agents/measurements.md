@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 62 stage 1 (2026-10-13, todo entry 2)
+- kdiff (`scripts/kdiff.py`) 19 -> **5** / 3363 at K=16 (babel-traverse, inbox-zero, mermaid, openapi-typescript,
+  redux-toolkit), **2** at K=4 (inbox-zero, redux-toolkit); suite dump at K=16 still 0 files differ.
+- The sweeps now run at the default K: source sweep **3309 / 3363** (K=1 was 3307), DT sweep 8594 / 8595,
+  `$ExpectType` 68631, flagflip 46 / 8 / 3, corpora unchanged; suite 13458 -> **13460** (2 own tests).
+- perfsweep: check median 0.21x tsgo (load), worst types ratio 1.56. Instructions (callgrind): tsc 4.763, type-fest
+  18.992, valibot 3.435, react 1.503, nest 1.169, webpack 10.842, zod 5.048, xstate 2.688, drizzle 6.020, vue 6.580,
+  effect 10.086, vscode 91.142, excalidraw 7.964, tanstack-router 5.337 G (all within 0.1%).
+
 ## Checker count (2026-10-13, todo entry 1, plan 62)
 Output at `--checkers 16` against 1: suite dump 0 / 39636 files differ, corpora 16 / 16 identical, DT sweep 0 / 8595,
 source sweep 19 / 3363 (13 already at K=4; tsgo 1/4/16 identical on all 19 but inbox-zero's undefinedProperties).

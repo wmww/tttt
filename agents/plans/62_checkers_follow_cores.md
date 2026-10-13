@@ -60,7 +60,17 @@ what is left are bugs that already hit today's default of 4 checkers.
   retry without node counts and a reason.
 
 ## Stages
-### Stage 1: the oracles run at K, the order bugs fixed (one session)
+### Stage 1: the oracles run at K, the order bugs fixed (one session) — done 2026-10-13
+Result: kdiff 19 -> **5** / 3363 at K=16 (inbox-zero, the three class 3 displays, mermaid), **2** at K=4 (inbox-zero,
+redux-toolkit); the DT sweep, corpora and suite dumps stay K-independent. Source sweep at the default K 3309 / 3363
+(K=1 was 3307), DT sweep 8594 / 8595. Fixed: the JSX runtime module per file (the once_key tagging also caught a later
+TS7026: errors are inserted sorted, the tag went by index range); trpc and better-auth (`outer_inference` leaking into
+variable initializers and predicate inference, hacks.md); dexie and mikro-orm's TS2615 (callable_definitely_related(),
+bugs/type_core.md). Left: mermaid (bugs/type_core.md "Relation answers that depend on what was related before"), so
+stage 2 starts with it or with babel-traverse. `TTTT_CHECK_ONLY=substring` (program.c deal_files) reproduces an order
+dependence at one checker: only the matching files are checked, by a fresh checker. The sweeps now run at the default
+K; `scripts/oracles.py --only kdiff` is the K oracle (suite dumps + source sweep at 16, ~9 min).
+
 - Make K>1 part of the routine oracles: `scripts/sourcesweep.py` and `scripts/sweep.py` run tttt at its default
   checker count (with `--threads 1`, so `-j` still means processes), since tsc's caches are tsgo's 4-checker output and
   that is what users run. Add `scripts/kdiff.py` (source sweep at K=16, ~7 min) and the suite's K=16 dump diff to

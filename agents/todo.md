@@ -20,8 +20,9 @@ plan 61.
    identical at K=16 on the suite, corpora and DT sweep, but 19 / 3363 source sweep projects differ (13 already at
    the default K=4, trpc +201 spurious): bugs, not a design limit. tsgo 7.1's FENNEL partitioner prototyped: worse
    than `deal_files()`. `scripts/kdiff.py` added.
-2. **Plan 62 stage 1**: the sweeps at the default K, the JSX once-per-program emulation ported to tsgo's per-file
-   rule, the order dependences (trpc first) reduced to file-order repros and fixed.
+2. Done (2026-10-13): plan 62 stage 1. kdiff 19 -> 5 projects at K=16 (2 at K=4: inbox-zero's known
+   undefinedProperties order and redux-toolkit's display), sweeps at the default K (source 3309, DT 8594), suite 13460.
+   mermaid left for stage 2 (bugs/type_core.md).
 3. **Plan 61 stages 1-2** (constraint functions: getConstraintOfType / getBaseConstraintOfType, the callers migrated;
    mikro-orm's TS2345s). The hacks it names are deleted, not left next to the new functions.
 4. **Plan 61 stage 3** and its hacks.md entries closed.

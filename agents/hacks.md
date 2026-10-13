@@ -53,11 +53,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - Load pool (`program_load_ahead_from()`) (permanent: a wrong guess only wastes a parse, `TTTT_LOAD_POOL_STATS=1`):
   guesses what a file will load with a simplified copy of `program_load_module_ref()`/`program_handle_statement()`.
   Sizes from `stat()` in `main.c` (harness: FIFO).
-- Once-per-program diagnostics (permanent: K checkers each report what tsc's one reports once): `Error.once_key`,
-  `error_ctx_keep_first_once()` keeps the earliest file's. Tagged: TS2343/TS2807 (`ty_check_emit_helpers`, keyed by
-  module) and the JSX factory ones (jsx.c). A new "said once" checker memo must be tagged too. The JSX runtime
-  module one is wrong: tsgo reports it per file (`getJsxNamespaceContainerForImplicitImport`), and the per-checker
-  emulation loses TS7026s at K>1 (plan 62 stage 1).
+- Once-per-file diagnostics another checker may also say (permanent: K checkers): `Error.once_key`,
+  `error_ctx_keep_first_once()` keeps the one of the checker whose current file comes first. Tagged: TS2343/TS2807
+  (`ty_check_emit_helpers`, keyed by file; tsgo keeps only the owning checker's, tttt approximates it by file order).
+  A new "said once" checker memo must be tagged too. (The JSX runtime module one is untagged since plan 62 stage 1:
+  tsgo says it per file at the file's first tag, so every checker says the same thing and the merge dedupes it.)
 - Per-checker caches assumed pure in the type ids (permanent: tsc caches the same): `ty_union` of two types
   (KEY_UNION_PAIR), `ty_intersection` without an alias (KEY_INTERSECTION_OF), flow's `assignment_reduced_type`
   (KEY_ASSIGNMENT_REDUCED). A result computed while something it reads is in flight (constraints in
@@ -271,6 +271,12 @@ src` finds the code-side markers; every significant one has an entry here.
   computed contextual type would decide it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `Checker.outer_inference` (the call inferring now) is dynamic state, where tsc finds a node's inference context
+  among its ancestors (getInferenceContext): every evaluation of something that isn't part of the argument must clear
+  it, or its contextual types are instantiated with the wrong call's inferences. Cleared by `function_return_type()`
+  (unless the function is the argument), a variable's initializer (`initialized_binding_evaluate_assigned_type()`, not
+  a parameter default) and `ty_infer_type_predicate()`. A new cached evaluation reached from inside inference must
+  clear it too (trpc's order-dependent `any`, plan 62).
 - `visited_add()` (infer.c) keys an inference's visited pairs by (source, target) alone; tsgo's invokeOnce key also has
   the priority, contravariant and bivariant, and it routes alias-to-alias inference (inferFromAliasTypeArguments)
   through invokeOnce too, where tttt's alias branch of `infer_from()` recurses unguarded. Keying like tsgo walks more
@@ -522,7 +528,8 @@ src` finds the code-side markers; every significant one has an entry here.
   "local alias" exception. `renames` in `lower`: whether an alias instance keeps the name is syntactic.
 - Conditional types (`conditional.c`): deferred conditionals don't keep their inferences (`inferred_true_branch()`
   recomputes); `ty_implied_infer_constraint` lacks the mapped-extends rule. Permissive/restrictive instantiations only
-  replace what `mentions_type_variables` finds (8192 types / 48 deep, then "unsure": defer), since
+  replace what `mentions_type_variables` finds (8192 types / 48 deep, then "unsure": defer; it resolves signatures tsc
+  never would, `callable_definitely_related()` short-cuts the two "is it a function" idioms, bugs/type_core.md), since
   TYF_COULD_CONTAIN_TYPE_VARIABLES is on every function/object literal; an object literal getter whose return type is
   in flight counts as unsure (asking re-infers it below a call's barrier: zod's recursive getters became TS7023).
 - `instantiate_conditional`: outer parameters from `collect_free_params`, falling back to the uncached full-mapper path

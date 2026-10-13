@@ -328,21 +328,33 @@ passing tests).
   parameters, plan 57's area).
 - flagflip xstate/eopt: one spurious TS2322 (input.test.ts:272, a spawn signature); vue/nuia 2 spurious + 2 other-code.
 
-## The conditional type-variable walk infers method return types (dexie's TS2615/TS2502)
+## The conditional type-variable walk resolves signatures tsc never looks at
 `definitely_unrelated()` / `definitely_related()` in `src/ty/conditional.c` collect the type variables a conditional's
-check type mentions with `mentions_type_variables()`, which resolves every signature of a function type, including a
-return type still to be inferred from the body. tsc never looks there: `getPermissiveInstantiation` instantiates
-lazily, and relating to `(...args: any[]) => any` never asks for the source's return type.
+check type mentions with `mentions_type_variables()`, which resolves every signature of a function type: return types
+still to be inferred from bodies, type parameter constraints. tsc never looks there: `getPermissiveInstantiation`
+instantiates lazily, and the relation asks only for what it compares. Over a class whose method needs the mapped type
+being resolved that is a cycle (TS2615/TS2502), and whether it happens depends on what a checker resolved first.
 
-Repro (source sweep): `dexie/samples/dexie-cloud-todo-app` (and the `dexie` root project). `TodoList extends
-Entity<TodoDB>`, `TodoDB.todoLists: DexieCloudTable<TodoList, 'id'>` = `InsertType<...>` = `Omit<T, NonInsertProps<T>>`,
-whose `T[P] extends (...args: any[]) => any ? P : ...` for P = `changeOwner` (an async method without a return type)
-infers its body, which reads `db.todoLists`: TS2502 on `todoLists`, TS2615 in the mapped type. tsc is clean (only the
-project's 28 TS2786).
+Patched (2026-10-13, plan 62 stage 1) for the two "is it a function" idioms only: `callable_definitely_related()`
+takes the true branch of `X extends (...args: any[]) => any` and `X extends Function` for a callable X before any walk
+(dexie's NonInsertProps, mikro-orm's CleanKeys; test ttttConditionalCallableAgainstAnyFunction). Any other extends
+type over such a class still walks.
 
-Tried: returning "unsure" from the walk when a function's return type isn't inferred yet (so the plain relation
+Tried before: returning "unsure" from the walk when a function's return type isn't inferred yet (so the plain relation
 decides). Fixed dexie, but regressed excalidraw (TS7006/TS2493/TS2345 in vitest `mockImplementationOnce` callbacks) and
 vscode (1): "unsure" also makes `definitely_related` relate without the restrictive instantiation and report
-`mentions`, which changes other conditionals' answers. A real fix probably makes the walk lazy like tsc's permissive
+`mentions`, which changes other conditionals' answers. A real fix makes the walk lazy like tsc's permissive
 instantiation (instantiate the check type with the wildcard mapper without walking, relate, and only resolve what the
 relation asks for), which is plan-sized: definitely_related's restrictive instantiation needs the same.
+
+## Relation answers that depend on what was related before (mermaid, plan 62)
+mermaid's `packages/mermaid/scripts/create-types-from-json-schema.mts(129,23)` TS2345 (tsgo reports it at any checker
+count) is lost when that file is checked by a fresh checker: `TTTT_CHECK_ONLY=create-types-from-json-schema
+release/tttt --checkers 1 -p .` in `thirdparty/sources/mermaid` reproduces it at one checker (kdiff lists it at K=16).
+`UncheckedJSONSchemaType<MermaidConfig, false>` -> `UncheckedJSONSchemaType<Record<string, any>, false>`: in the full
+run the structural comparison of `UncheckedPropertiesSchema<MermaidConfig>` (variances unmeasurable|unreliable, 24)
+meets SankeyDiagramConfig's property first and fails (0); fresh, it meets `Config`'s, which ends Maybe through the
+recursion (`TTTT_DEBUG_RELATE_NESTED=1`: every level 3), and the top-level Maybe is success. Partial's variance is
+measured in the middle of the fresh relation. Unknown whether tsgo would give Maybe in some order too (then it's a
+tsgo-style order dependence for bugs/tsgo_divergences.md); start by checking which member and property order tsgo
+compares (`scripts/variancetrace.py`-style instrumentation of relater.go's recursiveTypeRelatedTo).
