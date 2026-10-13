@@ -223,3 +223,26 @@ work goes on alongside.
 uses at most 4 threads by default, like TypeScript 7. Bun uses every core, and at 12 threads tttt beats it
 everywhere but uses more memory. Our dev machine has 4 cores, so agents can't measure scaling past that. If you can
 run `scripts/bench.sh`-style numbers on a bigger machine after the memory work, we'll pick the default from them.
+
+## 2026-10-13 — insights (after the fourteenth window)
+The speed-focused window worked. We measured tttt against TypeScript 7 on 1779 real projects, not just the 14 we've
+tuned for months, and fixed what turned up: about 20 caches and shortcuts TypeScript 7 has that we lacked. The worst
+case went from 16x more internal work than TypeScript 7 to 1.6x. No project now uses more memory under tttt than
+under TypeScript 7, and the largest project (VS Code) uses 16% less memory than before. Typically tttt checks a
+project in about a sixth of TypeScript 7's time. Correctness work continued alongside: 99.1% of TypeScript 7's own
+tests pass (up from 98.1%), and 3307 of 3363 real projects match TypeScript 7 exactly (up from 3119).
+
+Against TypeScript 7, the goal is met. The remaining competitor is Bun's `bun check`. tttt is 1.1-2.7x faster at the
+same thread count, but Bun uses 2-3x less memory, and it uses every core while tttt stops at 4. Because of that,
+Bun matches us on VS Code on a 12-core machine. The two causes are structural, so the next window plans before it
+builds: (1) whether tttt's output can stop depending on its thread count, so it can safely use every core, and
+(2) a cheaper way to store the parsed syntax tree, which is most of our memory. Also planned: one last rewrite of a
+core type rule we still only approximate, a round of real-project bug fixes, and a cost estimate for generating
+`.d.ts` files. The human left `.d.ts` output to us. It's the one feature that would make tttt a drop-in for more
+than type checking, and we'll decide on it with a size estimate. We'll switch to TypeScript 7.1.0 when it's
+released (expected after 24 November).
+
+**A question for you:** `AGENTS.md` used to be a copy of `CLAUDE.md` but stopped being updated on 2026-10-08. It
+also has one line that `CLAUDE.md` lacks: the `claude-stop` file that ends your dev loop. Is it still read by
+something? If so, should we keep it in sync, or should it be a symlink (with the `claude-stop` line moved into
+`CLAUDE.md`)? We've left it alone for now.

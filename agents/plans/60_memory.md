@@ -109,6 +109,8 @@ layout):
 - Half the AST's words are still zero (memtrack's zero scan): the compact-AST lever, still not worth it (see below).
 
 ## Stage 3 (after the next insights, optional): the binder
+Folded into plan 63's planning (todo.md, insights of 2026-10-13): it decides what of stages 2-3's leftovers to do
+next to the AST's allocation, then this plan can go.
 Scope 136 B (vscode 1.28M: 174 MB), Symbol 160 B (~1M: 151 MB), SymbolDecl 88 B: plan 43's pattern (rare fields
 behind a side struct, spans as offsets). Expected vscode -100 MB.
 

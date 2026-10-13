@@ -5,25 +5,23 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-11, insights after the thirteenth window)
+## State (2026-10-13, insights after the fourteenth window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  after 2026-11-24: plan 58). Its native suite is the suite: **13316 / 13571** (98.1%), 0 lost all window. Every
-  oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay on the pinned checkout, so a patched
-  tsgo is one `go build` away).
+  after 2026-11-24: plan 58). Its native suite: **13440 / 13568** (99.1%), plus 18 own regression tests (`test/cases`,
+  every fix found outside the suite gets one). Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`:
+  a Go overlay on the pinned checkout, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`** (plan 53): tsc's output formats, sorting, exit codes and flags; `scripts/clidiff.py`
-  compares stdout byte for byte. Check-only by design (readme.md). The human (answered 2026-10-12): JS emit is out of
-  scope (esbuild and co. cover it); .d.ts emit is our call, unclear importance. Not before the checker and perf goals.
-- **Corpora** 0 spurious everywhere; missing: webpack 5, drizzle 3, vue 3, effect 3 spurious. **DT sweep** 8592 /
-  8595, **`$ExpectType`** 68631 / 68640, **flagflip** 132 / 16 / 6, **scenarios** 209 / 213, **source sweep** 3119 /
-  3363 (88 / 174 repos).
-- **Perf**: on the curated corpora, single-threaded tttt is ~5x faster than single-threaded tsgo 7.1 with less
-  memory (type-fest: 1.45 s / 2.0 GB vs 8.0 s / 3.3 GB). **At breadth** (plan 59, done 2026-10-12: 1779 source
-  sweep projects tsgo checks, `scripts/perfsweep.py`): tttt makes 0.68x tsgo's types at the median, no project above
-  1.55x (was 16.4x), and no project above tsgo's peak RSS. The fan-out's ~15 fixes were all tsgo caches and lazinesses
-  tttt lacked (instantiations keyed by the whole mapper, eager work tsgo defers); they also cut drizzle -17% and xstate
-  -9% instructions. **Bun 1.4.3's `bun check`** (a Rust port of tsgo 7.0.2, 2026-10-11) ties tttt's default wall
-  time on a 12-core box and uses less memory on 10 of 14 corpora (vscode 2.1 GB vs our 6.0 GB): memory and core
-  scaling are now the competitive gap, not single-threaded speed.
+  compares stdout byte for byte. The human (2026-10-12): JS emit is out of scope (esbuild and co. cover it); .d.ts
+  emit is our call (plan 64 scopes it this window).
+- **Corpora** 0 spurious everywhere; missing: webpack 1, vue 3; effect 3 spurious. **DT sweep** 8594 / 8595,
+  **`$ExpectType`** 68631 / 68640, **flagflip** 46 / 8 / 3, **scenarios** 209 / 213, **source sweep** 3307 / 3363
+  (129 / 174 repos fully matching).
+- **Perf**: single-threaded tttt is 2.0-6.1x faster than single-threaded tsgo 7.1 on the corpora, 2.6-10.6x at both
+  defaults, at 0.4-0.8x its RSS (measurements.md "Bench on tsgo 7.1"). **At breadth** (`scripts/perfsweep.py`, 1779
+  source sweep projects): check time median 0.16x tsgo's, types 0.66x, worst types ratio 1.56 (was 16.4), no project
+  above tsgo's peak RSS. **Bun's `bun check`** (a Rust port of tsgo 7.0.2): tttt is 1.1-2.7x faster at equal threads,
+  but bun uses every core and 2-3x less memory (vscode at defaults on 12 cores: bun 3.3 s / 2.1 GB, tttt 4.4 s / 6.0
+  GB, tttt at 12 checkers 3.1 s / 7.6 GB). Plan 60 took vscode's peak -16%; the rest is representation.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow and ContextChecked/context anchors,
@@ -32,34 +30,40 @@ types components) are the oracle, not the goal; real projects that are clean und
   origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them,
   parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
-- **Absent or approximated**: pseudo types (`src/ty/pseudo.c`, tsgo's pseudochecker: the types baseline, messages
-  and isolatedDeclarations all go through them; plan 55 has the builder gaps left), content mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive
-  instantiation, member identity (members aren't Symbols; decided acceptable).
+- **Absent or approximated**: constraint functions (plan 61), pseudo-type builder gaps (plan 55's list), content
+  mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
+  member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64 scopes it).
 
-## Course correction (insights of 2026-10-11, end of the thirteenth window)
-- **The 7.1 switch was a clean success.** Ten sessions did plan 53 and plan 54: CLI parity, the native suite,
-  Go-based oracle tools, every cache regenerated, what 7 removed deleted, and three fan-outs that took the suite from
-  87% at the switch to 98.1%. JS shrank (-2246 lines: 7 removed constructor functions and friends) and hacks.md fell
-  798 -> 709 lines. The predicted dip-and-recover took two sessions, not a window. No course correction needed on
-  correctness: the tail is now plans 55/56 and per-project source sweep bugs.
-- **The window's blind spot was perf, and it's the project's actual goal.** Three things changed under us: the
-  oracle is now tsgo 7.1 (faster than 7.0.2, never re-benchmarked, `bench.sh` still not re-baselined), a second
-  competitor appeared (bun check, which already wins on memory), and the source sweep showed that our "3-14x" comes
-  from corpora we have tuned for months. **This window is perf-first**: perf at breadth (plan 59: the gate fix, a
-  tsgo-vs-tttt perf sweep ranked by type-count ratio, a fan-out on the outliers), then memory (plan 60, to be
-  planned: bytes per type and per node against bun's bar), then the re-baselined bench. Correctness keeps two fan-outs
-  (source sweep, suite/JS tail) and plan 55.
-- **The type count is the perf oracle we were missing.** Wall times on a shared 4-vCPU box are noisy (the sweep's
-  "tttt as slow as tsc" line was measured while four agents ran). tsgo's `--extendedDiagnostics` `Types` and
-  `Instantiations` are machine-independent and directly comparable with tttt's (type-fest 4.78M vs 5.10M), so a
-  ratio far above 1 is a missing cache or a runaway, found without timing anything.
-- **Thread defaults** (decided 2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and
-  name resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4. K is part of the
-  output: which checker makes a type decides union order in messages, so a core-dependent K would make output
-  machine-dependent, and each checker duplicates lib types (memory). Raising the fixed K, or making checking scale
-  past K without changing output, needs numbers from a many-core machine (agents can't measure past 4 vCPUs here).
+## Course correction (insights of 2026-10-13, end of the fourteenth window)
+- **The perf-first window delivered, on both fronts.** Perf at breadth (plan 59) found what fourteen tuned corpora
+  never showed: ~20 tsgo caches and lazinesses tttt lacked; the worst types ratio went 16.4 -> 1.56 and no project is
+  above tsgo's memory any more. Plan 60 cut vscode's peak 16% and type-fest's 61%. Correctness didn't stall: two
+  fan-outs and plan 55 took the suite 98.1% -> 99.1% and the source sweep 3119 -> 3307. hacks.md grew 709 -> 771
+  lines, nearly all of it *permanent* memory-layout notes (Span file table, LazyMemo ids, node links), not workarounds.
+- **Against tsgo, the goal is met at the corpora and at breadth; the open front is bun.** Two gaps, both structural:
+  (1) **cores**: checking stops at 4 checkers because the checker count is part of the output (union order from
+  type-id ties), so on a 12-core box bun's every-core default ties our 4-checker one on vscode; (2) **memory**: our
+  AST is tsgo-sized (~10M malloc'd boxes on vscode, half their words zero) and each checker duplicates lib and shared
+  types (+17..55% arena at K4). This window plans both (62: decouple output from K, or say why not; 63: the AST's
+  allocation) before building either. Plan 60 called a compact index-based AST "not worth it now": plan 63 looks at
+  the cheaper half (arenas instead of malloc, rare fields) and only reopens that question with numbers.
+- **The last core-rule approximation is the constraint functions** (plan 61: getConstraintOfType /
+  getBaseConstraintOfType, behind several HACKs and mikro-orm's TS2345s). It gets two entries; the HACKs it names must
+  go with it.
+- **`.d.ts` emit gets scoped, not built** (plan 64). The pseudochecker and declaration diagnostics are most of a
+  declaration emitter's hard part, and `tsc --emitDeclarationOnly` beside esbuild is a common real workflow, so it is
+  the one feature that would widen "drop-in". It competes with the scaling work for sessions: decide with a size.
+- **Keep the oracle discipline that caught this window's regressions**: full source sweep match-set diffs and flagflip
+  against a session-start run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
+- **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
+  machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
+  without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).
+- **Thread defaults** (2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and name
+  resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4 because K is part of the
+  output (which checker makes a type decides union order in messages) and each checker duplicates lib types. Plan 62
+  revisits this with numbers.
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
   test lists, 0 lost enforced at merge) are the engine for the long tail: one or two per window. **Instruction counts
   at every session end** (`scripts/instrcount.sh`): creep is silent otherwise.
@@ -126,9 +130,11 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
-- **Competition**: bun check (a Rust tsgo port, 2026-10) already beats tttt on memory. If tsgo itself gets a
-  similar memory or perf pass, our margin is the corpora's 3-14x minus whatever perf at breadth reveals. Memory per
-  type/node is the lever we've worked least on since plan 43.
+- **Competition**: bun check (a Rust tsgo port, 2026-10) beats tttt on memory and, on many cores, ties it on wall time
+  (it uses every core, we stop at 4 checkers). If tsgo itself gets a similar pass, our margin is single-threaded speed
+  (2-6x) minus what core scaling and memory cost us: plans 62 and 63.
+- **Determinism vs scaling**: the checker count is part of the output today. Any scaling design must keep output
+  byte-identical across machines (`scripts/checkerdiff.py`, `scripts/threadcheck.sh`).
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
 
 ## Where this is going (rough order)
@@ -154,7 +160,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    session~~ done.
 13. ~~TypeScript 7.1 as the target and tttt as a drop-in `tsc --noEmit` (plans 53, 54): CLI parity, the native suite,
    tsgo-based oracle tools and caches, 7's removals deleted, the 7.x deltas by fan-out~~ done.
-14. **Now**: perf at breadth (plan 59), memory against bun's bar (plan 60, to be planned), the bench re-baselined
-   against tsgo 7.1; plan 55 (pseudochecker); the source sweep tail. Plan 58 (7.1.0 stable re-pin) after 2026-11-24.
-15. Then: parallel declare/link (bugs/perf_leads.md "Parallelism"), a token cache / node arenas in the parser, thread
-   defaults that scale with cores (with numbers from a many-core machine).
+14. ~~Perf at breadth (plan 59), memory (plan 60), the bench against tsgo 7.1, plan 55 (pseudochecker), the
+   source sweep and suite tails, own regression tests, lib checking~~ done.
+15. **Now**: checking that scales with cores (plan 62), the AST's allocation (plan 63), constraint functions (plan
+   61), scoping `.d.ts` emit (plan 64). Plan 58 (7.1.0 stable re-pin) once it's on npm (after 2026-11-24).
+16. Then: whatever plans 62-64 found worth building; parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
+   cache in the parser.
