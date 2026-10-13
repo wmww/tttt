@@ -35,6 +35,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferenceContextNotInDeclarationInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInheritedMembersDeclarationOrder': {
         errors: true,
         symbols: true,

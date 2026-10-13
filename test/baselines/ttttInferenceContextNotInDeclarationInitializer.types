@@ -1,0 +1,75 @@
+//// [test/cases/ttttInferenceContextNotInDeclarationInitializer.ts] ////
+
+=== main.ts ===
+const r = outer(1);
+>r : { ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }
+>outer(1) : { ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }
+>outer : <T>(r: T) => { ctx: { o: { v: T; make: (x: T) => number; }; r: T; }; }
+>1 : 1
+
+r.ctx.o.v;
+>r.ctx.o.v : number
+>r.ctx.o : { v: number; make: (x: number) => number; }
+>r.ctx : { o: { v: number; make: (x: number) => number; }; r: number; }
+>r : { ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }
+>ctx : { o: { v: number; make: (x: number) => number; }; r: number; }
+>o : { v: number; make: (x: number) => number; }
+>v : number
+
+r.zz;
+>r.zz : any
+>r : { ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }
+>zz : any
+
+=== inner.ts ===
+interface Opts<T> { make?: (x: T) => number; v?: T }
+>make : ((x: T) => number) | undefined
+>x : T
+>v : T | undefined
+
+function inner<T>(r: T, opts?: Opts<T>) {
+>inner : <T>(r: T, opts?: Opts<T>) => { o: { v: T; make: (x: T) => number; }; r: T; }
+>r : T
+>opts : Opts<T> | undefined
+
+  const o = { v: r, make: (x) => 1 } satisfies Opts<T>;
+>o : { v: T; make: (x: T) => number; }
+>{ v: r, make: (x) => 1 } satisfies Opts<T> : { v: T; make: (x: T) => number; }
+>{ v: r, make: (x) => 1 } : { v: T; make: (x: T) => number; }
+>v : T
+>r : T
+>make : (x: T) => number
+>(x) => 1 : (x: T) => number
+>x : T
+>1 : 1
+
+  const ctx = { o, r };
+>ctx : { o: { v: T; make: (x: T) => number; }; r: T; }
+>{ o, r } : { o: { v: T; make: (x: T) => number; }; r: T; }
+>o : { v: T; make: (x: T) => number; }
+>r : T
+
+  return ctx;
+>ctx : { o: { v: T; make: (x: T) => number; }; r: T; }
+}
+=== outer.ts ===
+function outer<T>(r: T) {
+>outer : <T>(r: T) => { ctx: { o: { v: T; make: (x: T) => number; }; r: T; }; }
+>r : T
+
+  const ctx = inner(r, { make: (x) => 1 });
+>ctx : { o: { v: T; make: (x: T) => number; }; r: T; }
+>inner(r, { make: (x) => 1 }) : { o: { v: T; make: (x: T) => number; }; r: T; }
+>inner : <T_1>(r: T_1, opts?: Opts<T_1>) => { o: { v: T_1; make: (x: T_1) => number; }; r: T_1; }
+>r : T
+>{ make: (x) => 1 } : { make: (x: T) => number; }
+>make : (x: T) => number
+>(x) => 1 : (x: T) => number
+>x : T
+>1 : 1
+
+  return { ctx };
+>{ ctx } : { ctx: { o: { v: T; make: (x: T) => number; }; r: T; }; }
+>ctx : { o: { v: T; make: (x: T) => number; }; r: T; }
+}
+

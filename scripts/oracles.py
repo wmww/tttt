@@ -2,9 +2,10 @@
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
 every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep and perf at breadth
-(scripts/perfsweep.py: check time and type count ratios against tsgo).
+(scripts/perfsweep.py: check time and type count ratios against tsgo), and the output's independence of the checker count
+(scripts/kdiff.py, the suite's --dump at 1 and 16 checkers).
 
-  scripts/oracles.py                  # everything (~7 min)
+  scripts/oracles.py                  # everything (~15 min)
   scripts/oracles.py --quick          # suite and corpora only (~1 min)
   scripts/oracles.py --only sweep,expect
 The per-oracle scripts keep their --last caches per tree name in /tmp, so worktrees can run this side by side.
@@ -71,8 +72,27 @@ def perf():
     out = run(['scripts/perfsweep.py', '--no-build', '-j', '4', '--summary'])
     print('perfsweep (tttt/tsgo): ' + (out.strip().splitlines() or ['?'])[-1], flush=True)
 
+def kdiff():
+    # (Plan 62: tsgo's output doesn't depend on its checker count, tttt's mustn't either. The suite dumped at 1 and 16
+    # checkers, then the source sweep's raw CLI output at 1 and 16, ~7 min)
+    import shutil, tempfile
+    tmp = tempfile.mkdtemp(prefix='oracles-kdiff-')
+    try:
+        for k in (1, 16):
+            os.mkdir(f'{tmp}/k{k}')
+            run(['release/baseline_tests', '--checkers', str(k), '--dump', f'{tmp}/k{k}'])
+        differ = subprocess.run(['diff', '-rq', f'{tmp}/k1', f'{tmp}/k16'], capture_output=True, text=True).stdout
+        suite_differ = len(differ.splitlines())
+    finally:
+        shutil.rmtree(tmp)
+    out = run(['scripts/kdiff.py'], timeout=3600)
+    m = re.search(r'\d+ / \d+ projects differ.*', out)
+    projects = [re.search(r'"project": "([^"]+)"', l).group(1) for l in out.splitlines() if l.startswith('{')]
+    print(f'kdiff (1 vs 16 checkers): suite {suite_differ} files differ, sources ' + (m.group(0) if m else '?') +
+          (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
+
 ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
-           'perf': perf}
+           'perf': perf, 'kdiff': kdiff}
 
 def main():
     ap = argparse.ArgumentParser()

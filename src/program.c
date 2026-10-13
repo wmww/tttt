@@ -3080,8 +3080,13 @@ static void check_share(Program* me, u32 c, u32 count) {
 static void deal_files(Program* me) {
     enum { RUNS_PER_CHECKER = 2 };
     vec_source_file_ptr_clear(&my check_files);
+    // (Debugging order dependences: TTTT_CHECK_ONLY=substring checks only the files whose path has it, in a fresh
+    // checker, the rest of the program still there)
+    char const* only = getenv("TTTT_CHECK_ONLY");
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if (source_file_is_checked(*i)) vec_source_file_ptr_push(&my check_files, *i);
+        if (!source_file_is_checked(*i)) continue;
+        if (only && !(*i)->is_stdlib && !strstr(cstr_str(&(*i)->canonical_path), only)) continue;
+        vec_source_file_ptr_push(&my check_files, *i);
     }
     u32 total = (u32)vec_source_file_ptr_size(&my check_files);
     u64 bytes = 0;

@@ -909,7 +909,13 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Ty const* ret = ty_quick_expr_type(checker, initialized_binding_value(me), false);
     if (!ret) {
         FlowIsolation isolation = ty_flow_isolate(checker); // (tsc's checkExpressionCached)
+        // A variable's initializer isn't an argument of the call inferring now (tsc finds that call among the node's
+        // ancestors, getInferenceContext): whoever asks for the variable's type, its contextual types are its own. A
+        // parameter's default may be inside an argument
+        struct OuterInference* outer = checker->outer_inference;
+        if (!binding_is_parameter(&my binding)) checker->outer_inference = nullptr;
         ret = initialized_binding_check_value(me);
+        checker->outer_inference = outer;
         ty_flow_restore(checker, isolation);
     }
     if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);

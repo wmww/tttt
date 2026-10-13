@@ -1,0 +1,22 @@
+main.ts(3,3): error TS2339: Property 'zz' does not exist on type '{ ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }'.
+
+
+==== main.ts (1 errors) ====
+    const r = outer(1);
+    r.ctx.o.v;
+    r.zz;
+      ~~
+!!! error TS2339: Property 'zz' does not exist on type '{ ctx: { o: { v: number; make: (x: number) => number; }; r: number; }; }'.
+==== inner.ts (0 errors) ====
+    interface Opts<T> { make?: (x: T) => number; v?: T }
+    function inner<T>(r: T, opts?: Opts<T>) {
+      const o = { v: r, make: (x) => 1 } satisfies Opts<T>;
+      const ctx = { o, r };
+      return ctx;
+    }
+==== outer.ts (0 errors) ====
+    function outer<T>(r: T) {
+      const ctx = inner(r, { make: (x) => 1 });
+      return { ctx };
+    }
+    

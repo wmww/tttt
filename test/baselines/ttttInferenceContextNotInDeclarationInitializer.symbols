@@ -1,0 +1,73 @@
+//// [test/cases/ttttInferenceContextNotInDeclarationInitializer.ts] ////
+
+=== main.ts ===
+const r = outer(1);
+>r : Symbol(r, Decl(main.ts, 0, 5))
+>outer : Symbol(outer, Decl(outer.ts, 0, 0))
+
+r.ctx.o.v;
+>r.ctx.o.v : Symbol(v, Decl(inner.ts, 2, 13))
+>r.ctx.o : Symbol(o, Decl(inner.ts, 3, 15))
+>r.ctx : Symbol(ctx, Decl(outer.ts, 2, 10))
+>r : Symbol(r, Decl(main.ts, 0, 5))
+>ctx : Symbol(ctx, Decl(outer.ts, 2, 10))
+>o : Symbol(o, Decl(inner.ts, 3, 15))
+>v : Symbol(v, Decl(inner.ts, 2, 13))
+
+r.zz;
+>r : Symbol(r, Decl(main.ts, 0, 5))
+
+=== inner.ts ===
+interface Opts<T> { make?: (x: T) => number; v?: T }
+>Opts : Symbol(Opts, Decl(inner.ts, 0, 0))
+>T : Symbol(T, Decl(inner.ts, 0, 15))
+>make : Symbol(Opts.make, Decl(inner.ts, 0, 19))
+>x : Symbol(x, Decl(inner.ts, 0, 28))
+>T : Symbol(T, Decl(inner.ts, 0, 15))
+>v : Symbol(Opts.v, Decl(inner.ts, 0, 44))
+>T : Symbol(T, Decl(inner.ts, 0, 15))
+
+function inner<T>(r: T, opts?: Opts<T>) {
+>inner : Symbol(inner, Decl(inner.ts, 0, 52))
+>T : Symbol(T, Decl(inner.ts, 1, 15))
+>r : Symbol(r, Decl(inner.ts, 1, 18))
+>T : Symbol(T, Decl(inner.ts, 1, 15))
+>opts : Symbol(opts, Decl(inner.ts, 1, 23))
+>Opts : Symbol(Opts, Decl(inner.ts, 0, 0))
+>T : Symbol(T, Decl(inner.ts, 1, 15))
+
+  const o = { v: r, make: (x) => 1 } satisfies Opts<T>;
+>o : Symbol(o, Decl(inner.ts, 2, 7))
+>v : Symbol(v, Decl(inner.ts, 2, 13))
+>r : Symbol(r, Decl(inner.ts, 1, 18))
+>make : Symbol(make, Decl(inner.ts, 2, 19))
+>x : Symbol(x, Decl(inner.ts, 2, 27))
+>Opts : Symbol(Opts, Decl(inner.ts, 0, 0))
+>T : Symbol(T, Decl(inner.ts, 1, 15))
+
+  const ctx = { o, r };
+>ctx : Symbol(ctx, Decl(inner.ts, 3, 7))
+>o : Symbol(o, Decl(inner.ts, 3, 15))
+>r : Symbol(r, Decl(inner.ts, 3, 18))
+
+  return ctx;
+>ctx : Symbol(ctx, Decl(inner.ts, 3, 7))
+}
+=== outer.ts ===
+function outer<T>(r: T) {
+>outer : Symbol(outer, Decl(outer.ts, 0, 0))
+>T : Symbol(T, Decl(outer.ts, 0, 15))
+>r : Symbol(r, Decl(outer.ts, 0, 18))
+>T : Symbol(T, Decl(outer.ts, 0, 15))
+
+  const ctx = inner(r, { make: (x) => 1 });
+>ctx : Symbol(ctx, Decl(outer.ts, 1, 7))
+>inner : Symbol(inner, Decl(inner.ts, 0, 52))
+>r : Symbol(r, Decl(outer.ts, 0, 18))
+>make : Symbol(make, Decl(outer.ts, 1, 24))
+>x : Symbol(x, Decl(outer.ts, 1, 32))
+
+  return { ctx };
+>ctx : Symbol(ctx, Decl(outer.ts, 2, 10))
+}
+

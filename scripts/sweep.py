@@ -105,13 +105,15 @@ def run_tsc(projects, jobs, extra=(), cwd=DT, progress=False):
     return results
 
 
-# (No --keep-going: the caches are tsgo's CLI, which stops at syntactic and options diagnostics like tttt's)
+# (No --keep-going: the caches are tsgo's CLI, which stops at syntactic and options diagnostics like tttt's.) At tttt's
+# default checker count, what users run (tsgo's output doesn't depend on its count: plan 62); one thread, so -j still
+# counts processes
 def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
     limit = mem_gb << 30
     start = time.time()
     try:
         proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1',
-                               '--checkers', '1', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
+                               '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode

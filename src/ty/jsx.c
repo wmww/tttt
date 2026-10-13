@@ -27,9 +27,10 @@ static AstWalk visit_first_jsx(Expr const* expr, void* arg) {
 }
 
 // tsc's getJsxNamespaceContainerForImplicitImport: the first time a checker asks about the runtime module of a file,
-// what there is to say about it is said at the file's first JSX tag (links.firstJSXTagInFile), whichever element asks
-// (once per program: the first checked file's)
-static void report_runtime_module(Checker* me, JsxElement const* element, Span at) {
+// what there is to say about it is said at the file's first JSX tag (links.firstJSXTagInFile), whichever element asks.
+// Once per file and checker like tsgo's: another checker that asks says the same thing at the same tag, which the
+// merge dedupes
+static void report_runtime_module(Checker* me, JsxElement const* element) {
     SourceFile const* file = span_source(element->opening_span);
     ModuleRef const* ref = file ? file->jsx_runtime_ref : nullptr;
     if (!ref || !my errs || my errs->phase != ERROR_PHASE_TYPECHECK || !ty_first_check(me, ref)) return;
@@ -38,20 +39,13 @@ static void report_runtime_module(Checker* me, JsxElement const* element, Span a
         ast_walk_statement(i, visit_first_jsx, &first);
         if (span_valid(first)) break;
     }
-    if (span_valid(first)) at = first;
-    isize before = vec_error_size(&my errs->errors);
-    jsx_report_runtime_module(file, at, my errs);
-    for (isize i = before; i < vec_error_size(&my errs->errors); i++) {
-        Error* error = vec_error_at_mut(&my errs->errors, i);
-        error->once_key = ((u64)(uintptr_t)ref << 8) | 0x5a;
-        error->once_order = my file_order;
-    }
+    jsx_report_runtime_module(file, span_valid(first) ? first : element->opening_span, my errs);
 }
 
 // tsc's getJsxNamespaceAt: `JSX` of the runtime module or else the factory's namespace (`React.JSX`), else the global
 // one. Null if neither
 Symbol const* ty_jsx_namespace(Checker* me, JsxElement const* element) {
-    report_runtime_module(me, element, element->opening_span);
+    report_runtime_module(me, element);
     Symbol const* factory = element->runtime_module ? module_export_equals((Symbol*)element->runtime_module) :
         symbol_for_meaning(element->factory_namespace, SYMBOL_NAMESPACE);
     if (factory && !factory->is_placeholder) {
@@ -72,8 +66,7 @@ Ty const* ty_jsx_type(Checker* me, JsxElement const* element, csview name) {
 // What an element or fragment evaluates to (tsc's getJsxElementTypeAt): JSX.Element, else the error type for an
 // element and any for a fragment
 Ty const* ty_jsx_element_type(Checker* me, Expr const* expr) {
-    // (Blamed on the element, the opening `<>` of a fragment: whichever tsc asks at first)
-    report_runtime_module(me, expr->jsx, expr->tag == EXPR_JSX_FRAGMENT ? expr->jsx->opening_span : expr->inner_span);
+    report_runtime_module(me, expr->jsx);
     Ty const* type = ty_jsx_type(me, expr->jsx, c_sv("Element"));
     return type ? type : ty_intrinsic(me, expr->tag == EXPR_JSX_FRAGMENT ? TY_ANY : TY_ERROR);
 }
@@ -463,7 +456,7 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
 }
 
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
-    report_runtime_module(me, expr->jsx, expr->jsx->opening_span);
+    report_runtime_module(me, expr->jsx);
     JsxElement const* outer = my jsx_element;
     my jsx_element = expr->jsx;
     check_jsx_element(me, expr, errs);

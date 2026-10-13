@@ -3630,7 +3630,11 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
     Expr const* expr = &single->expr;
     FlowIsolation isolation = ty_flow_isolate(me);
     TyPredicate* ret = nullptr;
+    // (Nothing in the body is an argument of the call inferring now, see function_return_type())
+    struct OuterInference* outer = my outer_inference;
+    my outer_inference = nullptr;
     Ty const* returned = ty_expr_type(me, expr);
+    my outer_inference = outer;
     if (returned->flags & TYF_BOOLEAN) {
         FlowNode* antecedent = single->flow;
         if (!antecedent) {
