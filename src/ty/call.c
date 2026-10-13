@@ -204,13 +204,7 @@ static Args collect_args(Checker* me, CallInfo const* info) {
             // constraint is assignable to `readonly any[]`, `AsArray<T> = T extends any[] ? T : [T]` included)
             Ty const* variadic = nullptr;
             if (operand->kind == TY_TYPE_PARAM || (operand->flags & TYF_DEFERRED)) {
-                Ty const* constraint = ty_base_constraint(me, operand);
-                if (constraint && (ty_is_array(me, constraint) || ty_is_tuple(constraint) ||
-                    (!(constraint->flags & TYF_NULLABLE) &&
-                        ty_is_related(me, constraint, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)))
-                ) {
-                    variadic = operand;
-                }
+                if (ty_is_related(me, operand, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)) variadic = operand;
             } else if (operand->kind == TY_ANONYMOUS && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
                 ty_is_related(me, operand, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)
             ) {

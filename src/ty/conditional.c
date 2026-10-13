@@ -274,10 +274,15 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     // (Written in a Block its check type parameter is declared outside of: possibly referenced, syntactically)
     TyConditionalOuter const* outer = ty_conditional_outer(me, root);
     if (outer && outer->check_outside_block) return true;
+    // (Cached on the root like tsc's ConditionalRoot.isDistributionDependent: the relation asks for every instance)
+    u64 key[2] = { KEY_DISTRIBUTION_DEPENDENT, root->id };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return (uintptr_t)known == 2;
     MentionWalk walk = { .only = ty_non_distributed(root->conditional.check) };
     bool ret = mentions_type_variables(me, ty_conditional_branch(me, root, true), &walk, 0) ||
         mentions_type_variables(me, ty_conditional_branch(me, root, false), &walk, 0);
     free(walk.visited);
+    *intern_slot(me, &my links, key, 2) = (void const*)(uintptr_t)(1 + ret);
     return ret;
 }
 

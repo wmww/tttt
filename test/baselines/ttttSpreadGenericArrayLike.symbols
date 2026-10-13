@@ -1,0 +1,186 @@
+//// [test/cases/ttttSpreadGenericArrayLike.ts] ////
+
+=== ttttSpreadGenericArrayLike.ts ===
+// A spread argument of a generic type is variadic when the type itself is array-like (tsc's isArrayLikeType), not when
+// its base constraint is: socket.io's `nsp.emit(ev, ...args)` with `args: Parameters<Map[Ev]>`, Ev constrained by a
+// conditional type
+
+interface EventsMap {
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+
+  [event: string]: any;
+>event : Symbol(event, Decl(ttttSpreadGenericArrayLike.ts, 5, 3))
+}
+
+type EventNames<Map extends EventsMap> = keyof Map & (string | symbol);
+>EventNames : Symbol(EventNames, Decl(ttttSpreadGenericArrayLike.ts, 6, 1))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 8, 16))
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 8, 16))
+
+type EventNamesWithoutAck<
+>EventNamesWithoutAck : Symbol(EventNamesWithoutAck, Decl(ttttSpreadGenericArrayLike.ts, 8, 71))
+
+  Map extends EventsMap,
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+
+  K extends EventNames<Map> = EventNames<Map>,
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+>EventNames : Symbol(EventNames, Decl(ttttSpreadGenericArrayLike.ts, 6, 1))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>EventNames : Symbol(EventNames, Decl(ttttSpreadGenericArrayLike.ts, 6, 1))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+
+> = IfAny<
+>IfAny : Symbol(IfAny, Decl(ttttSpreadGenericArrayLike.ts, 28, 24))
+
+  Last<Parameters<Map[K]>> | Map[K],
+>Last : Symbol(Last, Decl(ttttSpreadGenericArrayLike.ts, 33, 47))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+  K,
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+  K extends (Parameters<Map[K]> extends never[] ? K : never)
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+    ? K
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+    : K extends (
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+          Last<Parameters<Map[K]>> extends (...args: any[]) => any ? never : K
+>Last : Symbol(Last, Decl(ttttSpreadGenericArrayLike.ts, 33, 47))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 10, 26))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+>args : Symbol(args, Decl(ttttSpreadGenericArrayLike.ts, 19, 44))
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+        )
+      ? K
+>K : Symbol(K, Decl(ttttSpreadGenericArrayLike.ts, 11, 24))
+
+      : never
+>;
+
+type EventParams<
+>EventParams : Symbol(EventParams, Decl(ttttSpreadGenericArrayLike.ts, 23, 2))
+
+  Map extends EventsMap,
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 25, 17))
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+
+  Ev extends EventNames<Map>,
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 26, 24))
+>EventNames : Symbol(EventNames, Decl(ttttSpreadGenericArrayLike.ts, 6, 1))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 25, 17))
+
+> = Parameters<Map[Ev]>;
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Map : Symbol(Map, Decl(ttttSpreadGenericArrayLike.ts, 25, 17))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 26, 24))
+
+type IfAny<T, TypeIfAny = true, TypeIfNotAny = false> =
+>IfAny : Symbol(IfAny, Decl(ttttSpreadGenericArrayLike.ts, 28, 24))
+>T : Symbol(T, Decl(ttttSpreadGenericArrayLike.ts, 30, 11))
+>TypeIfAny : Symbol(TypeIfAny, Decl(ttttSpreadGenericArrayLike.ts, 30, 13))
+>TypeIfNotAny : Symbol(TypeIfNotAny, Decl(ttttSpreadGenericArrayLike.ts, 30, 31))
+
+  IsAny<T> extends true ? TypeIfAny : TypeIfNotAny;
+>IsAny : Symbol(IsAny, Decl(ttttSpreadGenericArrayLike.ts, 31, 51))
+>T : Symbol(T, Decl(ttttSpreadGenericArrayLike.ts, 30, 11))
+>TypeIfAny : Symbol(TypeIfAny, Decl(ttttSpreadGenericArrayLike.ts, 30, 13))
+>TypeIfNotAny : Symbol(TypeIfNotAny, Decl(ttttSpreadGenericArrayLike.ts, 30, 31))
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : Symbol(IsAny, Decl(ttttSpreadGenericArrayLike.ts, 31, 51))
+>T : Symbol(T, Decl(ttttSpreadGenericArrayLike.ts, 33, 11))
+>T : Symbol(T, Decl(ttttSpreadGenericArrayLike.ts, 33, 11))
+
+type Last<ValueType extends readonly unknown[]> =
+>Last : Symbol(Last, Decl(ttttSpreadGenericArrayLike.ts, 33, 47))
+>ValueType : Symbol(ValueType, Decl(ttttSpreadGenericArrayLike.ts, 35, 10))
+
+  ValueType extends readonly [infer ElementType]
+>ValueType : Symbol(ValueType, Decl(ttttSpreadGenericArrayLike.ts, 35, 10))
+>ElementType : Symbol(ElementType, Decl(ttttSpreadGenericArrayLike.ts, 36, 35))
+
+    ? ElementType
+>ElementType : Symbol(ElementType, Decl(ttttSpreadGenericArrayLike.ts, 36, 35))
+
+    : ValueType extends readonly [infer _, ...infer Tail]
+>ValueType : Symbol(ValueType, Decl(ttttSpreadGenericArrayLike.ts, 35, 10))
+>_ : Symbol(_, Decl(ttttSpreadGenericArrayLike.ts, 38, 39))
+>Tail : Symbol(Tail, Decl(ttttSpreadGenericArrayLike.ts, 38, 51))
+
+      ? Last<Tail>
+>Last : Symbol(Last, Decl(ttttSpreadGenericArrayLike.ts, 33, 47))
+>Tail : Symbol(Tail, Decl(ttttSpreadGenericArrayLike.ts, 38, 51))
+
+      : ValueType extends ReadonlyArray<infer ElementType>
+>ValueType : Symbol(ValueType, Decl(ttttSpreadGenericArrayLike.ts, 35, 10))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>ElementType : Symbol(ElementType, Decl(ttttSpreadGenericArrayLike.ts, 40, 45))
+
+        ? ElementType
+>ElementType : Symbol(ElementType, Decl(ttttSpreadGenericArrayLike.ts, 40, 45))
+
+        : never;
+
+declare class Emitter<EmitEvents extends EventsMap> {
+>Emitter : Symbol(Emitter, Decl(ttttSpreadGenericArrayLike.ts, 42, 16))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 44, 22))
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+
+    emit<Ev extends EventNamesWithoutAck<EmitEvents>>(ev: Ev, ...args: EventParams<EmitEvents, Ev>): boolean;
+>emit : Symbol(Emitter.emit, Decl(ttttSpreadGenericArrayLike.ts, 44, 53))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 45, 9))
+>EventNamesWithoutAck : Symbol(EventNamesWithoutAck, Decl(ttttSpreadGenericArrayLike.ts, 8, 71))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 44, 22))
+>ev : Symbol(ev, Decl(ttttSpreadGenericArrayLike.ts, 45, 54))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 45, 9))
+>args : Symbol(args, Decl(ttttSpreadGenericArrayLike.ts, 45, 61))
+>EventParams : Symbol(EventParams, Decl(ttttSpreadGenericArrayLike.ts, 23, 2))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 44, 22))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 45, 9))
+}
+
+function relay<EmitEvents extends EventsMap, Ev extends EventNamesWithoutAck<EmitEvents>>(
+>relay : Symbol(relay, Decl(ttttSpreadGenericArrayLike.ts, 46, 1))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 48, 15))
+>EventsMap : Symbol(EventsMap, Decl(ttttSpreadGenericArrayLike.ts, 0, 0))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 48, 44))
+>EventNamesWithoutAck : Symbol(EventNamesWithoutAck, Decl(ttttSpreadGenericArrayLike.ts, 8, 71))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 48, 15))
+
+    e: Emitter<EmitEvents>, ev: Ev, ...args: EventParams<EmitEvents, Ev>
+>e : Symbol(e, Decl(ttttSpreadGenericArrayLike.ts, 48, 90))
+>Emitter : Symbol(Emitter, Decl(ttttSpreadGenericArrayLike.ts, 42, 16))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 48, 15))
+>ev : Symbol(ev, Decl(ttttSpreadGenericArrayLike.ts, 49, 27))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 48, 44))
+>args : Symbol(args, Decl(ttttSpreadGenericArrayLike.ts, 49, 35))
+>EventParams : Symbol(EventParams, Decl(ttttSpreadGenericArrayLike.ts, 23, 2))
+>EmitEvents : Symbol(EmitEvents, Decl(ttttSpreadGenericArrayLike.ts, 48, 15))
+>Ev : Symbol(Ev, Decl(ttttSpreadGenericArrayLike.ts, 48, 44))
+
+) {
+    e.emit(ev, ...args);
+>e.emit : Symbol(Emitter.emit, Decl(ttttSpreadGenericArrayLike.ts, 44, 53))
+>e : Symbol(e, Decl(ttttSpreadGenericArrayLike.ts, 48, 90))
+>emit : Symbol(Emitter.emit, Decl(ttttSpreadGenericArrayLike.ts, 44, 53))
+>ev : Symbol(ev, Decl(ttttSpreadGenericArrayLike.ts, 49, 27))
+>args : Symbol(args, Decl(ttttSpreadGenericArrayLike.ts, 49, 35))
+}
+

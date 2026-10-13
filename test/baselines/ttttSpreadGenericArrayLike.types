@@ -1,0 +1,93 @@
+//// [test/cases/ttttSpreadGenericArrayLike.ts] ////
+
+=== ttttSpreadGenericArrayLike.ts ===
+// A spread argument of a generic type is variadic when the type itself is array-like (tsc's isArrayLikeType), not when
+// its base constraint is: socket.io's `nsp.emit(ev, ...args)` with `args: Parameters<Map[Ev]>`, Ev constrained by a
+// conditional type
+
+interface EventsMap {
+  [event: string]: any;
+>event : string
+}
+
+type EventNames<Map extends EventsMap> = keyof Map & (string | symbol);
+>EventNames : EventNames<Map>
+
+type EventNamesWithoutAck<
+>EventNamesWithoutAck : EventNamesWithoutAck<Map, K>
+
+  Map extends EventsMap,
+  K extends EventNames<Map> = EventNames<Map>,
+> = IfAny<
+  Last<Parameters<Map[K]>> | Map[K],
+  K,
+  K extends (Parameters<Map[K]> extends never[] ? K : never)
+    ? K
+    : K extends (
+          Last<Parameters<Map[K]>> extends (...args: any[]) => any ? never : K
+>args : any[]
+
+        )
+      ? K
+      : never
+>;
+
+type EventParams<
+>EventParams : EventParams<Map, Ev>
+
+  Map extends EventsMap,
+  Ev extends EventNames<Map>,
+> = Parameters<Map[Ev]>;
+
+type IfAny<T, TypeIfAny = true, TypeIfNotAny = false> =
+>IfAny : IfAny<T, TypeIfAny, TypeIfNotAny>
+>true : true
+>false : false
+
+  IsAny<T> extends true ? TypeIfAny : TypeIfNotAny;
+>true : true
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : IsAny<T>
+>true : true
+>false : false
+
+type Last<ValueType extends readonly unknown[]> =
+>Last : Last<ValueType>
+
+  ValueType extends readonly [infer ElementType]
+    ? ElementType
+    : ValueType extends readonly [infer _, ...infer Tail]
+      ? Last<Tail>
+      : ValueType extends ReadonlyArray<infer ElementType>
+        ? ElementType
+        : never;
+
+declare class Emitter<EmitEvents extends EventsMap> {
+>Emitter : Emitter<EmitEvents>
+
+    emit<Ev extends EventNamesWithoutAck<EmitEvents>>(ev: Ev, ...args: EventParams<EmitEvents, Ev>): boolean;
+>emit : <Ev extends EventNamesWithoutAck<EmitEvents>>(ev: Ev, ...args: EventParams<EmitEvents, Ev>) => boolean
+>ev : Ev
+>args : Parameters<EmitEvents[Ev]>
+}
+
+function relay<EmitEvents extends EventsMap, Ev extends EventNamesWithoutAck<EmitEvents>>(
+>relay : <EmitEvents extends EventsMap, Ev extends EventNamesWithoutAck<EmitEvents>>(e: Emitter<EmitEvents>, ev: Ev, ...args: EventParams<EmitEvents, Ev>) => void
+
+    e: Emitter<EmitEvents>, ev: Ev, ...args: EventParams<EmitEvents, Ev>
+>e : Emitter<EmitEvents>
+>ev : Ev
+>args : Parameters<EmitEvents[Ev]>
+
+) {
+    e.emit(ev, ...args);
+>e.emit(ev, ...args) : boolean
+>e.emit : <Ev_1 extends EventNamesWithoutAck<EmitEvents>>(ev: Ev_1, ...args: Parameters<EmitEvents[Ev_1]>) => boolean
+>e : Emitter<EmitEvents>
+>emit : <Ev_1 extends EventNamesWithoutAck<EmitEvents>>(ev: Ev_1, ...args: Parameters<EmitEvents[Ev_1]>) => boolean
+>ev : Ev
+>...args : any
+>args : Parameters<EmitEvents[Ev]>
+}
+

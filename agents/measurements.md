@@ -9,13 +9,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
-## Plan 61 stages 1-2 (2026-10-13, todo entry 3)
-- Suite 13460 -> **13463** (distributiveConditionalBaseConstraint, 2 own tests); corpora unchanged (webpack 0/1, vue
-  0/3, effect 3/0), DT sweep 8594 / 8595, `$ExpectType` 68631, flagflip 46 / 8 / 3, sourcesweep sample 4 805 / 822,
-  kdiff 5 / 3363, perfsweep worst types ratio 1.56. mikro-orm/tests: +TS2345 x13, +TS2322 x3, +TS2615 x3 gone.
-- Instructions (callgrind): tsc 4.765, type-fest 19.014, valibot 3.426, react 1.511 (+0.5%), nest 1.170, webpack
-  10.859, zod 5.052, xstate 2.699 (+0.4%), drizzle 5.990 (-0.5%), vue 6.589, effect 10.089, vscode 91.190, excalidraw
-  7.967, tanstack-router 5.393 G (+1.0%; perf_leads.md).
+## Plan 61 stage 3 (2026-10-13, todo entry 4)
+- Suite 13463 -> **13464** (1 own test); corpora unchanged (webpack 0/1, vue 0/3, effect 3/0), DT sweep 8594 / 8595,
+  `$ExpectType` 68631, flagflip 46 / 8 / 3, sourcesweep sample 4 805 -> **806** / 822 (socket.io), kdiff 5 / 3363,
+  perfsweep worst types ratio 1.62 (date-fns/pkgs/docs; mikro-orm/packages/seeder 444k -> 392k types).
+- Instructions (callgrind): tsc 4.761, type-fest 19.033, valibot 3.427, react 1.509, nest 1.170, webpack 10.875, zod
+  5.051, xstate 2.698, drizzle 5.995, vue 6.581, effect 10.100, vscode 91.217, excalidraw 7.952, tanstack-router
+  5.401 G (all within 0.2% of stages 1-2).
 
 ## Plan 62 stage 1 (2026-10-13, todo entry 2)
 - kdiff (`scripts/kdiff.py`) 19 -> **5** / 3363 at K=16 (babel-traverse, inbox-zero, mermaid, openapi-typescript,

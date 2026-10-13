@@ -5247,78 +5247,6 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
 }
 
 
-static void walk_base_constraint(Checker* me, Ty const* ty);
-
-// Walks what tsc's getResolvedBaseConstraint goes through to find its base constraint, pushing each type on the walk
-// stack: coming back to a type that's on it makes that one and everything pushed after it circular
-static void walk_base_constraint_parts(Checker* me, Ty const* ty) {
-    switch ((TyKind)ty->kind) {
-        case TY_TYPE_PARAM: {
-            if (ty->param.state->is_this) return;
-            Ty const* constraint = declared_param_constraint(me, ty);
-            if (constraint) walk_base_constraint(me, constraint);
-            return;
-        }
-        case TY_UNION:
-        case TY_INTERSECTION:
-            if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-            for (u32 i = 0; i < ty->composite.types.len; i++) walk_base_constraint(me, ty->composite.types.data[i]);
-            return;
-        case TY_INDEXED: {
-            Ty const* simple = ty_simplified(me, ty, false);
-            if (simple != ty) {
-                walk_base_constraint_parts(me, simple);
-                return;
-            }
-            walk_base_constraint(me, ty->indexed.object);
-            walk_base_constraint(me, ty->indexed.index);
-            return;
-        }
-        case TY_SUBSTITUTION:
-            walk_base_constraint(me, ty->substitution.base);
-            return;
-        case TY_TEMPLATE_LITERAL:
-            for (u32 i = 0; i < ty->template_literal.types.len; i++) walk_base_constraint(me, ty->template_literal.types.data[i]);
-            return;
-        case TY_STRING_MAPPING:
-            walk_base_constraint(me, ty->string_mapping.type);
-            return;
-        case TY_CONDITIONAL:
-            // tsc's getConstraintFromConditionalType: a distributive one's goes through its check type's constraint
-            // (getConstraintOfDistributiveConditionalType), the default one is the union of the branches
-            // (`[K in keyof O extends true ? K : never]` is TS2313)
-            // (A branch only when it is lowered already or a plain name to lower: lowering them all costs type-fest 0.4%)
-            if (ty->conditional.distributive) walk_base_constraint(me, ty->conditional.check);
-            for (int which = 1; which >= 0; which--) {
-                TyCondBranch* branch = &ty->conditional.branches[which];
-                if (branch->type || (branch->node && branch->node->tag == TYPE_IDENTIFIER && !branch->mapper)) {
-                    walk_base_constraint(me, ty_cond_branch_type(me, branch));
-                }
-            }
-            return;
-        default:
-            return;
-    }
-}
-
-// Each type on the walk is on the resolution stack (tsc's getResolvedBaseConstraint pushing ImmediateBaseConstraint),
-// with the lowering of a type parameter's declared constraint: a cycle through an alias being resolved is one too
-static void walk_base_constraint(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_TYPE_PARAM && !(ty->flags & (TYF_UNION | TYF_INTERSECTION | TYF_DEFERRED))) return;
-    if (ty->kind == TY_TYPE_PARAM && ty->param.state->circular) return; // Known (circular: its base is none)
-    if (ty_resolving_find(me, RESOLVING_CONSTRAINT, ty)) {
-        ty_resolving_cycle(me, RESOLVING_CONSTRAINT, ty);
-        return;
-    }
-    if (my constraint_walk_len == 50) return; // (tsc's safety stop)
-    my constraint_walk_len++;
-    ty_resolving_push(me, RESOLVING_CONSTRAINT, ty);
-    walk_base_constraint_parts(me, ty);
-    bool circular = ty_resolving_pop(me);
-    my constraint_walk_len--;
-    if (ty->kind == TY_TYPE_PARAM) ty->param.state->circular = circular ? 2 : 1;
-}
-
 // tsc's getConstraintOfTypeParameter: none if the base constraint is circular (`T extends T`, `T extends U, U extends
 // T`, `T extends Foo | T["k"]`). A copy made by instantiation is circular when its original is
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
@@ -5328,14 +5256,19 @@ bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
         if (state->clone_of) {
             state->circular = ty_param_constraint_is_circular(me, state->clone_of) ? 2 : 1;
         } else {
-            walk_base_constraint(me, param);
+            bool circular = !ty_has_non_circular_base_constraint(me, param);
+            // (Asked while its base constraint is computed: circular for now, the answer is known once that's done)
+            if (ty_base_constraint_in_flight(me, param)) return circular;
+            if (!state->circular) state->circular = circular ? 2 : 1;
         }
     }
     return state->circular == 2;
 }
 
+Ty const* ty_declared_param_constraint(Checker* me, Ty const* param) { return declared_param_constraint(me, param); }
+
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
-    // The declared constraint is lowered under the walk's push (tsc's getResolvedBaseConstraint)
+    // The declared constraint is lowered under the base constraint's push (tsc's getResolvedBaseConstraint)
     if (!param->param.state->circular && !param->param.state->clone_of && !param->param.state->is_this &&
         param->param.state->constraint_state == LAZY_STATE_NOT_STARTED) {
         ty_param_constraint_is_circular(me, param);

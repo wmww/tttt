@@ -110,6 +110,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadGenericArrayLike': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     '2dArrays': {
         errors: true,
         symbols: true,

@@ -4058,7 +4058,7 @@ static bool has_non_circular_base_constraint(Checker* me, Ty const* ty);
 // is circular), anything else's base constraint
 static Ty const* constraint_of_type(Checker* me, Ty const* ty) {
     switch ((TyKind)ty->kind) {
-        case TY_TYPE_PARAM: return has_non_circular_base_constraint(me, ty) ? ty_param_constraint(me, ty) : nullptr;
+        case TY_TYPE_PARAM: return ty_param_constraint(me, ty); // (gated itself)
         case TY_INDEXED: return has_non_circular_base_constraint(me, ty) ? constraint_of_indexed(me, ty) : nullptr;
         case TY_CONDITIONAL: return has_non_circular_base_constraint(me, ty) ? ty_conditional_constraint(me, ty) : nullptr;
         default: return base_constraint(me, ty, nullptr);
@@ -4460,8 +4460,7 @@ static Ty const* next_base_constraint(Checker* me, Ty const* ty, ConstraintStack
 static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
     switch ((TyKind)ty->kind) {
         case TY_TYPE_PARAM: {
-            Ty const* constraint = ty_param_constraint(me, ty);
-            if (constraint == ty) constraint = nullptr;
+            Ty const* constraint = ty_declared_param_constraint(me, ty);
             return ty->param.state->is_this ? constraint : next_base_constraint(me, constraint, stack);
         }
         case TY_UNION:
@@ -4559,25 +4558,25 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
 // (React's `T & {}` check types ask again and again)
 static Ty const base_constraint_in_flight, base_constraint_circular, base_constraint_none;
 static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
+    // (Nothing generic in it: itself, but for `Uppercase<string>`, which is a string, also inside a template literal,
+    // and a substitution type (`NoInfer<X>` is X). tsc also replaces those in unions and intersections, which tttt
+    // doesn't look into for want of type variables)
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+        ty->kind != TY_STRING_MAPPING && ty->kind != TY_TEMPLATE_LITERAL && ty->kind != TY_SUBSTITUTION
+    ) {
+        return ty;
+    }
     u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    if (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-        Ty const* cached = intern_get(&my links, key, 2);
-        if (cached == &base_constraint_in_flight) {
-            // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
-            // resolution barrier, where it's computed again
-            if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
-                ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
-                return nullptr;
-            }
-        } else if (cached) {
-            return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached == &base_constraint_in_flight) {
+        // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
+        // resolution barrier, where it's computed again
+        if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
+            ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
+            return nullptr;
         }
-    } else {
-        // (Nothing generic in it: itself, but for `Uppercase<string>`, which is a string, also inside a template literal,
-        // and a substitution type (`NoInfer<X>` is X). tsc also replaces those in unions and intersections, which tttt
-        // doesn't look into for want of type variables)
-        bool computed = ty->kind == TY_STRING_MAPPING || ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_SUBSTITUTION;
-        return computed ? compute_base_constraint(me, ty, stack) : ty;
+    } else if (cached) {
+        return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
     }
     // We always explore at least 10 levels of nested constraints, then up to 50 while the type's recursion identity
     // isn't on the stack yet (tsc's getResolvedBaseConstraint: a safety stop for long cycles of generated types)
@@ -4590,9 +4589,11 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
         for (ConstraintStack const* s = stack; s && !deep; s = s->up) deep = s->identity == identity;
     }
     ConstraintStack inner = { .up = stack, .identity = identity, .len = len + 1 };
+    // (tsc simplifies every type first; a conditional type's simplification instantiates both its branches, which in
+    // tttt resolves the conditional types inside them: mikro-orm/packages/seeder 2.3x types. HACK: indexed accesses only)
     *intern_slot(me, &my links, key, 2) = &base_constraint_in_flight;
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
-    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty_simplified(me, ty, false), &inner);
+    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED ? ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
     void const** slot = intern_slot(me, &my links, key, 2);
     // (The first answer stays: one computed again below the barrier answered already)
@@ -4608,14 +4609,23 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack cons
 }
 
 // tsc's hasNonCircularBaseConstraint
+// (Asked for while it's computed above the barrier: circular, tsc's pushTypeResolution failing, an answer for now only)
 static bool has_non_circular_base_constraint(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
-    base_constraint(me, ty, nullptr);
     u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    return intern_get(&my links, key, 2) != &base_constraint_circular;
+    bool in_flight = intern_get(&my links, key, 2) == &base_constraint_in_flight && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
+    base_constraint(me, ty, nullptr);
+    return !in_flight && intern_get(&my links, key, 2) != &base_constraint_circular;
+}
+
+// Whether the base constraint is being computed (its circularity isn't known yet)
+bool ty_base_constraint_in_flight(Checker* me, Ty const* ty) {
+    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
+    return intern_get(&my links, key, 2) == &base_constraint_in_flight;
 }
 
 Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, nullptr); }
+bool ty_has_non_circular_base_constraint(Checker* me, Ty const* ty) { return has_non_circular_base_constraint(me, ty); }
 
 // tsc's getConstraintOfConditionalType: the distributive constraint, else the default one, the union of the branches
 // (an `any` branch counting as never)
@@ -5259,7 +5269,9 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
             if (related) return related;
         }
     }
-    // Through the distributive constraint (not to another conditional type, like in tsc)
+    // Through the distributive constraint (not to another conditional type, like in tsc. HACK: tsc also wants a
+    // non-circular base constraint, whose computation here can reach a type alias still being resolved: TS2456 in
+    // type-fest's _ConditionalPickDeep)
     if (target->kind != TY_CONDITIONAL) {
         // (tsc's getConstraintOfDistributiveConditionalType. What tsc reports: its failure replaces
         // the default constraint's)

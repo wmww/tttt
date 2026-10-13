@@ -1706,6 +1706,11 @@ static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 
             else if (pair.data[1] == variable) ty_buf_push(&primitives, pair.data[0]);
         }
         Ty const* constraint = ty_base_constraint(me, variable);
+        // (TYX_CONSTRAINED_TYPE_VARIABLE says it has one, unless that turned out circular since)
+        if (!constraint) {
+            ty_buf_drop(&primitives);
+            continue;
+        }
         TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
         bool covered = true;
         for (u32 i = 0; i < parts.len && covered; i++) {

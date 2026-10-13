@@ -56,6 +56,7 @@ enum {
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)
     KEY_BASE_CONSTRAINT, // type id -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)
     KEY_INFERRED_TRUE_BRANCH, // (conditional type id) -> inferred_true_branch() of it (relate.c, tsc's resolvedInferredTrueType)
+    KEY_DISTRIBUTION_DEPENDENT, // (root conditional type id) -> 1 + ty_conditional_distribution_dependent() (conditional.c)
     KEY_DISTRIBUTIVE_CONSTRAINT, // (conditional type id) -> distributive_constraint() of it, the conditional itself for none (relate.c)
     KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)

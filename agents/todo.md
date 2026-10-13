@@ -26,7 +26,11 @@ plan 61.
 3. Done (2026-10-13): plan 61 stages 1-2. base_constraint() is getResolvedBaseConstraint (circularity, identity
    stack, cached at every depth), one immediate distributive constraint, keyof target steps push the target only.
    Suite 13463 (+1 tsc, +2 own), oracles unchanged, mikro-orm/tests' TS2345/TS2322/TS2615 gone, react +0.5% instr.
-4. **Plan 61 stage 3** and its hacks.md entries closed.
+4. Done (2026-10-13): plan 61 stage 3, plan finished and deleted. computeBaseConstraint ported literally (its
+   getNextBaseConstraint depth accounting was what made tttt call FromSchema circular), one getConstraintOfType with
+   every gate, TS2313 from the base constraint (members.c's walk deleted), apparent types through it. Suite 13464 (+1
+   own), oracles unchanged, source sweep sample: socket.io fixed. Left in hacks.md: conditional simplification and the
+   relation's conditional gate (both reach things tttt resolves eagerly), triage.md has an order dependence.
 5. **Planning: plan 63, the AST's allocation.** vscode's AST is 1.9 GB after parsing in ~10M malloc'd boxes (half their
    words zero); bun's whole run is 1.6-2.1 GB. Measure what malloc itself costs (headers, size-class rounding: memtrack
    and a counting LD_PRELOAD or glibc's `mallinfo2`), then plan per-file bump arenas for the parser (they'd also delete

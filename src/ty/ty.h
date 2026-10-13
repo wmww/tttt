@@ -1120,7 +1120,6 @@ struct Checker {
     bool disposable_looked_up[2];
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
     bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
-    u32 constraint_walk_len; // How deep walk_base_constraint() is (members.c)
 };
 
 // checker.c
@@ -1519,6 +1518,9 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param); // TS2313
+Ty const* ty_declared_param_constraint(Checker* me, Ty const* param); // tsc's getConstraintFromTypeParameter, not gated
+bool ty_has_non_circular_base_constraint(Checker* me, Ty const* ty); // relate.c
+bool ty_base_constraint_in_flight(Checker* me, Ty const* ty);
 Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `infer X` without `extends`, from its position
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing);
 Ty const* ty_distribute_index_over_object(Checker* me, Ty const* object, Ty const* index); // relate.c
@@ -1948,7 +1950,6 @@ typedef enum ResolvingKind {
     RESOLVING_PATTERN, // A LazyType of a root binding pattern (see lazy_type.c)
     RESOLVING_SIGNATURE_RETURN,
     RESOLVING_BASES, // The bases of a declared class or interface type
-    RESOLVING_CONSTRAINT, // A type on the walk to a base constraint (members.c walk_base_constraint())
     RESOLVING_BASE_CONSTRAINT, // A type whose base constraint is computed (relate.c base_constraint())
 } ResolvingKind;
 typedef struct Resolving {

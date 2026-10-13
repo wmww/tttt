@@ -30,7 +30,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them,
   parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
-- **Absent or approximated**: constraint functions (plan 61), pseudo-type builder gaps (plan 55's list), content
+- **Absent or approximated**: pseudo-type builder gaps (plan 55's list), content
   mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
   member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64 scopes it).
 
@@ -47,9 +47,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   types (+17..55% arena at K4). This window plans both (62: decouple output from K, or say why not; 63: the AST's
   allocation) before building either. Plan 60 called a compact index-based AST "not worth it now": plan 63 looks at
   the cheaper half (arenas instead of malloc, rare fields) and only reopens that question with numbers.
-- **The last core-rule approximation is the constraint functions** (plan 61: getConstraintOfType /
-  getBaseConstraintOfType, behind several HACKs and mikro-orm's TS2345s). It gets two entries; the HACKs it names must
-  go with it.
+- **The last core-rule approximation, the constraint functions, is gone** (plan 61, 2026-10-13): getConstraintOfType /
+  getBaseConstraintOfType are tsgo's, circularity included. What remains is where tttt resolves eagerly what tsgo
+  defers (alias references, conditional branches): two hacks.md entries name the places it shows.
 - **`.d.ts` emit gets scoped, not built** (plan 64). The pseudochecker and declaration diagnostics are most of a
   declaration emitter's hard part, and `tsc --emitDeclarationOnly` beside esbuild is a common real workflow, so it is
   the one feature that would widen "drop-in". It competes with the scaling work for sessions: decide with a size.

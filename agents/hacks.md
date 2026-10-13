@@ -416,16 +416,19 @@ src` finds the code-side markers; every significant one has an entry here.
 - relate.c sits at GCC's `inline-unit-growth` limit (permanent: a build constraint): code added anywhere can cost a
   hot inlining elsewhere (`find_prop` into `props_related_impl`). Reporting helpers are `[[gnu::cold]]`, rare paths
   `[[gnu::noinline, gnu::cold]]`; check `-fopt-info-inline-missed` when an innocent change shows in `scripts/instrcount.sh`.
-- **Constraint functions are approximations** (real fix: plans/61_constraint_functions.md stage 3, tsc's getConstraintOfType
-  and getBaseConstraintOfType as two well-defined functions). Stages 1-2 are done: `base_constraint()` is tsc's
-  getResolvedBaseConstraint (resolution stack, recursion-identity stack, circular sentinel, cached at every depth) and
-  every distributive constraint is the immediate one. Left:
-  - `simplified_or_constraint()` (getSimplifiedTypeOrConstraint) and `immediate_constraint()` are two spellings of
-    getConstraintOfType; an intersection's is `intersection_constraint()` rather than its base constraint.
-  - A conditional type's constraint skips tsc's hasNonCircularBaseConstraint gate (`simplified_or_constraint()`,
-    `conditional_source_related()`): tttt finds `FromSchema<C, C[keyof C]>` circular where tsc carries on, and the gate
-    loses distributiveConditionalBaseConstraint. The indexed access gate is in (infiniteConstraints needs it).
-  - TS2313 still comes from members.c's own `walk_base_constraint()` rather than `base_constraint()`'s circular answer.
+- `effective_intersection_constraint()` follows constraints through type parameters, keyof and conditional types at most
+  32 steps (tsc: until it reaches something else; a safety cap, never seen hit). `apparent_type_of_mapped_at()` stops 8
+  modifiers types deep (tsc: unbounded, relying on mapped type circularity checks).
+- `conditional_source_related()` relates a conditional source's distributive constraint without tsc's
+  hasNonCircularBaseConstraint(source) gate: computing that base constraint inside an alias's resolution lowers branches
+  that reach the alias in flight (spurious TS2456 in type-fest's `_ConditionalPickDeep`, sourcesweep: crawlee and 3 more).
+  tsc's alias references are lazier. Real fix: deferred alias references, or that gate after the alias is resolved.
+- `resolved_base_constraint()` simplifies only indexed accesses before computing (tsc: every type). A conditional's
+  simplification instantiates both branches, which resolves the conditional types in them: mikro-orm/packages/seeder
+  went 2.3x types (triage.md has the order dependence a cheaper prefilter exposed).
+- Base constraints of types without type variables are themselves (`resolved_base_constraint()`) except string mappings,
+  template literals and substitution types: tsc also computes unions/intersections containing those
+  (`Uppercase<string> | number` is `string | number` to tsc, itself to tttt).
 - `conditional_source_related()` (permanent: perf): the default-constraint step pushes the target on the deep-nesting
   stack too (tsc: RecursionFlags.Source only); tsc's flags cost +8.6% instructions on react (react-hook-form's
   `T[a][b]...` chains).
