@@ -155,7 +155,9 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
   deep-partial.test.ts). Dealing by content size was tried and reverted (bytes are a poor cost proxy: JS vs
   declarations, and scattering a directory's files duplicates shared types); `deal_files()` cuts program order into 2
   runs per checker. Next: a cost model (per-file check time of a previous run, or type counts). Sharing types
-  between checkers is not a lever (2026-10-08, measurements.md "Perf session").
+  between checkers is not a lever (2026-10-08, measurements.md "Perf session"). tsgo 7.1's import-graph FENNEL
+  partitioner (compiler/checkerpool.go), prototyped with bytes for node counts, duplicated 2-21% more types than the
+  contiguous runs (2026-10-13, plan 62).
 - **`-b` over many projects** (ex plan 41 stage 2): per-program name resolution of referenced projects' sources is
   the biggest phase of `-b` on tsc-src and typescript-eslint (summed over programs). Not done: a cross-program file
   cache (parsing is no longer the cost after `skip_typed_body()`), sharing resolved reference sources between

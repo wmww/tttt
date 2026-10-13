@@ -16,16 +16,12 @@ measurements.md "Triage (2026-10-13)".
 lose is many cores (checking stops at 4 checkers) and memory (bun 2-3x below us). Correctness keeps one fan-out and
 plan 61.
 
-1. **Planning: plan 62, checking that scales with cores.** The question: can the checker count stop deciding the
-   output? Measure first: `scripts/checkerdiff.py -k 8` and `-k 16` (and the suite's `--checkers K --dump`) against
-   K=4 on every corpus, the sweep and a source sweep sample; classify every difference (union order from type-id ties,
-   once-per-program diagnostics, anything else). Read how tsgo 7.1 itself behaves (does its output depend on its
-   checker count? `--checkers` on tsgo against its default on the corpora). Then decide: (a) output independent of K
-   (finish `ty/order.c`'s id tie-breaks) so K can follow cores, (b) keep K=4 and get parallelism inside a checker's
-   work elsewhere (balance: deal_files()' cost model; serial phases: declare/link, perf_leads.md "Parallelism"), or
-   (c) neither is worth it. Include the K4 arena duplication (+17..55%) since more checkers multiply it. Write plan 62
-   with stages and validation, or a "no" with the numbers in vision.md. Prototype where it's cheap.
-2. **Plan 62 stage 1** (or, if plan 62 said no, plan 61 stage 3 moves up and the rest shifts).
+1. Done (2026-10-13): plan 62 written, decision (a). tsgo's output doesn't depend on its checker count; tttt's is
+   identical at K=16 on the suite, corpora and DT sweep, but 19 / 3363 source sweep projects differ (13 already at
+   the default K=4, trpc +201 spurious): bugs, not a design limit. tsgo 7.1's FENNEL partitioner prototyped: worse
+   than `deal_files()`. `scripts/kdiff.py` added.
+2. **Plan 62 stage 1**: the sweeps at the default K, the JSX once-per-program emulation ported to tsgo's per-file
+   rule, the order dependences (trpc first) reduced to file-order repros and fixed.
 3. **Plan 61 stages 1-2** (constraint functions: getConstraintOfType / getBaseConstraintOfType, the callers migrated;
    mikro-orm's TS2345s). The hacks it names are deleted, not left next to the new functions.
 4. **Plan 61 stage 3** and its hacks.md entries closed.

@@ -55,7 +55,9 @@ src` finds the code-side markers; every significant one has an entry here.
   Sizes from `stat()` in `main.c` (harness: FIFO).
 - Once-per-program diagnostics (permanent: K checkers each report what tsc's one reports once): `Error.once_key`,
   `error_ctx_keep_first_once()` keeps the earliest file's. Tagged: TS2343/TS2807 (`ty_check_emit_helpers`, keyed by
-  module) and the JSX factory ones (jsx.c). A new "said once" checker memo must be tagged too.
+  module) and the JSX factory ones (jsx.c). A new "said once" checker memo must be tagged too. The JSX runtime
+  module one is wrong: tsgo reports it per file (`getJsxNamespaceContainerForImplicitImport`), and the per-checker
+  emulation loses TS7026s at K>1 (plan 62 stage 1).
 - Per-checker caches assumed pure in the type ids (permanent: tsc caches the same): `ty_union` of two types
   (KEY_UNION_PAIR), `ty_intersection` without an alias (KEY_INTERSECTION_OF), flow's `assignment_reduced_type`
   (KEY_ASSIGNMENT_REDUCED). A result computed while something it reads is in flight (constraints in

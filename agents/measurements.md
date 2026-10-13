@@ -9,6 +9,12 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Checker count (2026-10-13, todo entry 1, plan 62)
+Output at `--checkers 16` against 1: suite dump 0 / 39636 files differ, corpora 16 / 16 identical, DT sweep 0 / 8595,
+source sweep 19 / 3363 (13 already at K=4; tsgo 1/4/16 identical on all 19 but inbox-zero's undefinedProperties).
+Types / arena / RSS per K for six corpora and the FENNEL prototype (worse): plans/62_checkers_follow_cores.md.
+Times: suite K=1 13 s, K=16 21 s; `scripts/kdiff.py` source sweep 7 min, `--dt` 4.5 min (4 jobs).
+
 ## Triage (2026-10-13, todo entry 10)
 3 agents (own tests + vscode excludes; lib checking + two JSX/elaboration items; variance accuracy + feathers +
 sweep load averages), ~12 picks, 0 lost at every merge. GCC 16.0 / clang 22.1 builds: warning-free in src/, suite and

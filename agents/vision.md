@@ -61,9 +61,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).
 - **Thread defaults** (2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and name
-  resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4 because K is part of the
-  output (which checker makes a type decides union order in messages) and each checker duplicates lib types. Plan 62
-  revisits this with numbers.
+  resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4 because K was thought to be
+  part of the output and each checker duplicates lib types. Plan 62 (2026-10-13) measured: tsgo's output is
+  K-independent, tttt's nearly (19 / 3363 source sweep projects differ at K=16, all of them bugs, 13 already at K=4);
+  K 4 -> 16 costs +7..47% RSS. So: fix the order bugs, then K follows the cores with a size cap (plan 62 stages 1-3).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
   test lists, 0 lost enforced at merge) are the engine for the long tail: one or two per window. **Instruction counts
   at every session end** (`scripts/instrcount.sh`): creep is silent otherwise.
