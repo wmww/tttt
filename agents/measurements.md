@@ -9,6 +9,21 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Triage (2026-10-13, todo entry 10)
+3 agents (own tests + vscode excludes; lib checking + two JSX/elaboration items; variance accuracy + feathers +
+sweep load averages), ~12 picks, 0 lost at every merge. GCC 16.0 / clang 22.1 builds: warning-free in src/, suite and
+corpus output byte-identical to GCC 15's, user times within noise.
+- suite **13440 -> 13458 / 13583**: 18 own tests now run (test/cases, all pass); tsgo's suite unchanged at 13440 / 13568.
+- corpora unchanged (webpack 0/1, vue 0/3, effect 3/0; vscode now checks its 3 formerly excluded files, 0/0). DT sweep
+  8593 -> **8594 / 8595**, `$ExpectType` 68631, flagflip 46 / 8 / 3 (vscode cells regenerated for the overlay), source
+  sweep sample 4 804 / 822 (full: 3307 / 3363 by agent B).
+- perfsweep: worst types ratio 2.50 -> **1.56** (knex 18287 -> 4832 types, tsgo 7324), types 70.3M vs tsgo 128.0M
+  (+3M: default lib files are checked now), check median 0.16x tsgo, RSS median 0.65x, none above tsgo's.
+- Instructions (callgrind): tsc 4.763, type-fest 18.988, valibot 3.433, react 1.503, nest 1.169, webpack 10.844, zod
+  5.048, xstate 2.688, drizzle 6.016, vue 6.579, effect 10.089, excalidraw 7.966, tanstack-router 5.336 G (type-fest
+  +1.6%, webpack +3.6%: lib checking, ~0.3 G per esnext+dom program where tsgo spends ~4x; the rest -0.4..+0.5%).
+  vscode not measured.
+
 ## Suite/JS tail fan-out (2026-10-12, todo entry 9)
 4 agents by test list (A/B the 80 non-JS errors-failing tests split alphabetically, C the 89 types/symbols-only, D the
 63 JS tests), then second tasks (B source sweep, C mutation seeds 41/42, D corpora/flagflip missing); ~85 picks, 0 lost

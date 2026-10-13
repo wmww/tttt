@@ -48,8 +48,9 @@ instructions are the stable numbers.
    instructions +0.3..+0.6%. New perf lead: feathers/knex types 2.5x tsgo from the variance port (perf_leads.md).
    Leftovers in bugs/{js,display,missing_checks,harness,sourcesweep_checker,type_core}.md. measurements.md
    "Suite/JS tail fan-out".
-10. **Triage.** Also: a build with the newest GCC and clang (`-Werror` off, warnings counted) since GCC 16 found a
-    false positive; readme.md's numbers.
+10. ~~Triage~~ done: own regression tests wired in (test/cases, `scripts/owntests.sh`, 18 tests), default lib files
+    checked like tsgo, knex variances ported (types ratio 2.50 -> 1.56 worst), vscode's excludes dropped, GCC 16 /
+    clang 22 clean, readme.md's numbers. Suite 13458 (tsgo's 13440), DT sweep 8594. measurements.md "Triage (2026-10-13)".
 11. **Insights.**
 
 After the insights entry (for the next window): **plan 58** (re-pin to TypeScript 7.1.0 stable, once it's on npm,
