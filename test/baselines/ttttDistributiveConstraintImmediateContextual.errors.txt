@@ -1,0 +1,18 @@
+ttttDistributiveConstraintImmediateContextual.ts(7,54): error TS2536: Type '"books"' cannot be used to index type 'MU<E>'.
+ttttDistributiveConstraintImmediateContextual.ts(8,11): error TS2322: Type 'string' is not assignable to type 'readonly {}[]'.
+
+
+==== ttttDistributiveConstraintImmediateContextual.ts (2 errors) ====
+    // mikro-orm's `$in: raw()`: the contextual type goes through the immediate distributive constraint (plan 61)
+    type OperatorMap<T> = { $in?: readonly T[] };
+    declare function r<R = "dflt">(): R;
+    type EP<T> = T extends (infer U)[] ? NonNullable<U> : NonNullable<T>;
+    type EQ<T> = T extends object ? OperatorMap<T> : number;
+    type MU<T> = [T] extends [object] ? T extends string ? T : { [K in keyof T]: T[K] } : T;
+    declare function g2<E extends object>(w: { b?: EQ<EP<MU<E>["books"]>> }): void;
+                                                         ~~~~~~~~~~~~~~
+!!! error TS2536: Type '"books"' cannot be used to index type 'MU<E>'.
+    g2({ b: { $in: r() } });
+              ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'readonly {}[]'.
+    

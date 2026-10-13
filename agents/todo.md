@@ -23,8 +23,9 @@ plan 61.
 2. Done (2026-10-13): plan 62 stage 1. kdiff 19 -> 5 projects at K=16 (2 at K=4: inbox-zero's known
    undefinedProperties order and redux-toolkit's display), sweeps at the default K (source 3309, DT 8594), suite 13460.
    mermaid left for stage 2 (bugs/type_core.md).
-3. **Plan 61 stages 1-2** (constraint functions: getConstraintOfType / getBaseConstraintOfType, the callers migrated;
-   mikro-orm's TS2345s). The hacks it names are deleted, not left next to the new functions.
+3. Done (2026-10-13): plan 61 stages 1-2. base_constraint() is getResolvedBaseConstraint (circularity, identity
+   stack, cached at every depth), one immediate distributive constraint, keyof target steps push the target only.
+   Suite 13463 (+1 tsc, +2 own), oracles unchanged, mikro-orm/tests' TS2345/TS2322/TS2615 gone, react +0.5% instr.
 4. **Plan 61 stage 3** and its hacks.md entries closed.
 5. **Planning: plan 63, the AST's allocation.** vscode's AST is 1.9 GB after parsing in ~10M malloc'd boxes (half their
    words zero); bun's whole run is 1.6-2.1 GB. Measure what malloc itself costs (headers, size-class rounding: memtrack

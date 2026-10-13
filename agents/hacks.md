@@ -416,17 +416,16 @@ src` finds the code-side markers; every significant one has an entry here.
 - relate.c sits at GCC's `inline-unit-growth` limit (permanent: a build constraint): code added anywhere can cost a
   hot inlining elsewhere (`find_prop` into `props_related_impl`). Reporting helpers are `[[gnu::cold]]`, rare paths
   `[[gnu::noinline, gnu::cold]]`; check `-fopt-info-inline-missed` when an innocent change shows in `scripts/instrcount.sh`.
-- **Constraint functions are approximations** (real fix: plans/61_constraint_functions.md, tsc's getConstraintOfType and
-  getBaseConstraintOfType as two cached, circularity-aware functions):
-  - `base_constraint()` cuts off at depth 8 instead of tsc's circularity stack, so its memo (KEY_BASE_CONSTRAINT) only
-    holds depth-0 answers; `display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type` relies on the cutoff
-    (`Compute<A[K]>`, computedTypesKeyofNoIndexSignatureType). perf_leads.md.
-  - `conditional_source_related()`: the distributive constraint is tried as the check type's *base* constraint first,
-    then the immediate one (tsc: immediate only, `distributive_constraint_as(.., true)`); while measuring variances the
-    immediate step only marks the measurement unreliable. Immediate alone loses 6 suite tests
-    (keyofAndIndexedAccess, styledComponentsInstantiaionLimitNotReached, substituteReturnTypeSatisfiesConstraint,
-    instantiateContextualTypes, ...). `base_constraint()` and other users keep the base version: the immediate one
-    stops at unions of conditional types there.
+- **Constraint functions are approximations** (real fix: plans/61_constraint_functions.md stage 3, tsc's getConstraintOfType
+  and getBaseConstraintOfType as two well-defined functions). Stages 1-2 are done: `base_constraint()` is tsc's
+  getResolvedBaseConstraint (resolution stack, recursion-identity stack, circular sentinel, cached at every depth) and
+  every distributive constraint is the immediate one. Left:
+  - `simplified_or_constraint()` (getSimplifiedTypeOrConstraint) and `immediate_constraint()` are two spellings of
+    getConstraintOfType; an intersection's is `intersection_constraint()` rather than its base constraint.
+  - A conditional type's constraint skips tsc's hasNonCircularBaseConstraint gate (`simplified_or_constraint()`,
+    `conditional_source_related()`): tttt finds `FromSchema<C, C[keyof C]>` circular where tsc carries on, and the gate
+    loses distributiveConditionalBaseConstraint. The indexed access gate is in (infiniteConstraints needs it).
+  - TS2313 still comes from members.c's own `walk_base_constraint()` rather than `base_constraint()`'s circular answer.
 - `conditional_source_related()` (permanent: perf): the default-constraint step pushes the target on the deep-nesting
   stack too (tsc: RecursionFlags.Source only); tsc's flags cost +8.6% instructions on react (react-hook-form's
   `T[a][b]...` chains).

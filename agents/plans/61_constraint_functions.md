@@ -46,7 +46,7 @@ in migrating ~60 callers onto two well-defined functions and deleting the ad-hoc
   - pop: a failed resolution is circular (TS2313 for a type parameter, at its constraint declaration).
 - `getApparentType` = base constraint or unknown; circular -> unknown.
 
-## What tttt has (relate.c unless noted)
+## What tttt had before stage 1 (relate.c unless noted; the caller inventory still holds)
 - `base_constraint(ty, depth)` / `base_constraint_uncached`: tsc's computeBaseConstraint shape, but cut off at
   `depth > 8` instead of a circularity stack; memoized (KEY_BASE_CONSTRAINT) at depth 0 only, with an in-flight
   sentinel whose re-entry *recomputes from depth 0*. `composite_base_constraint` likewise.
@@ -87,63 +87,29 @@ in migrating ~60 callers onto two well-defined functions and deleting the ad-hoc
 Nearly every caller outside relate.c wants getBaseConstraintOfType (or getBaseConstraintOrType); the immediate users
 are the relation (conditional/indexed sources and targets) and getSimplifiedTypeOrConstraint's users.
 
-## The runaway, found
-Switching `base_constraint_uncached`'s conditional case to the immediate distributive constraint
-(`distributive_constraint_as(me, ty, depth, true)`) crashes the suite in exactly one test, infiniteConstraints
-(stack overflow; every other test runs, distributiveConditionalBaseConstraint newly passes). The cycle (gdb):
-```
-base_constraint(conditional, 0) -> distributive_constraint_as(immediate) -> simplified_or_constraint(check: indexed)
-  -> ty_simplified -> compute_simplified_conditional -> ty_intersection -> reduce_type_variable_intersection
-  -> primitive_constraint_of (checker.c) -> ty_base_constraint(..)      <- a fresh depth-0 call
-  -> base_constraint -> ... -> composite_base_constraint -> base_constraint(conditional, 0) again
-```
-The depth-8 cutoff only bounds one call chain's own `depth` argument; any caller that goes out and comes back in
-through `ty_base_constraint()` starts at 0 again, and the memo's in-flight sentinel *recomputes* on re-entry instead
-of answering "circular". With the base flavour the cycle happened not to close (the base check-type constraint is
-already concrete, so no intersection reduction asks again).
+## Stages 1-2: done (2026-10-13)
+- `base_constraint(me, ty, ConstraintStack*)` is tsc's getResolvedBaseConstraint: `RESOLVING_BASE_CONSTRAINT` on
+  `my resolving` for every type computed (re-entry above the barrier marks the cycle, every entry of it caches
+  `base_constraint_circular`), the recursion-identity stack (10 always, 50 while the identity isn't on it),
+  `my conditional_constraint_depth` (100), cached at every depth. `has_non_circular_base_constraint()` reads the
+  sentinel. The depth-8 cutoff and the in-flight recompute are gone (that recompute was the infiniteConstraints runaway).
+- One `distributive_constraint()` (KEY_DISTRIBUTIVE_CONSTRAINT): the check type simplified, else its
+  getConstraintOfType through `simplified_or_constraint()` (whose default is now the base constraint, a conditional's
+  `ty_conditional_constraint()`, an indexed access's gated by has_non_circular_base_constraint). Used by
+  `base_constraint()`, `ty_conditional_constraint()` and `conditional_source_related()` (base-first HACK and its
+  variance special case deleted). The base flavour and KEY_BASE_DISTRIBUTIVE are deleted.
+- Relation: every `keyof` target step pushes only the target (tsc's RecursionFlags.Target); pushing the source too
+  made type-fest's FixedLengthArray Maybe on both sides once constraints were one step (test
+  ttttKeyofConstraintChainNotDeeplyNested).
+- Results: suite +1 (distributiveConditionalBaseConstraint) + 2 own tests, corpora/sweeps/`$ExpectType`/flagflip/kdiff
+  unchanged, mikro-orm/tests' +TS2345 x13 / +TS2322 x3 and +TS2615 x3 gone (probe: ttttDistributiveConstraintImmediateContextual,
+  `r()` is "dflt" and the TS2322 is there). Instructions: react +0.5% (1.503 -> 1.511, all of it from
+  `conditional_source_related()` relating the immediate constraint where the base one used to succeed first), the
+  rest flat.
+- Not done from stage 1: TS2313 still comes from members.c's `walk_base_constraint()`, not from the circular answer
+  (moved to stage 3). A conditional type's constraint skips the hasNonCircularBaseConstraint gate (hacks.md).
 
-## The experiment (not committed)
-```diff
--            Ty const* distributive = distributive_constraint(me, ty, depth);
-+            Ty const* distributive = distributive_constraint_as(me, ty, depth, true);
-...
--    if (cached) return cached == ty ? nullptr : cached == &base_constraint_in_flight ? base_constraint_uncached(me, ty, 0) : cached;
-+    if (cached) return cached == ty ? nullptr : cached == &base_constraint_in_flight ? nullptr : cached;
-```
-(re-entry while in flight = circular = no constraint, tsc's circularConstraintType). Results at ai-main 4f5b6475:
-suite 13318 -> 13319 (distributiveConditionalBaseConstraint), 0 lost; infiniteConstraints passes; every corpus
-identical (0 spurious except effect's 3, missing webpack 5, drizzle 3, vue 3); instructions flat except react
-1.501 -> 1.509 G (+0.5%); the probe above matches tsc's type of `r()` (its TS2322 still missing: see stage 3). The
-mikro-orm project itself doesn't move yet: its `$in` contextual type still has the extra `readonly unknown[] |
-readonly ExpandScalar<{}>[]` members, from other constraint paths (contextual apparent type: `ty_apparent_type` /
-`ty_generic_mapped_prop_context` on the mapped `FilterObject<E>`), which stage 3 covers.
-Caveat: the in-flight answer is cached at the top, so the result can depend on which caller came first (tsc has the
-same property, but marks every entry of the cycle circular, which the experiment doesn't).
-
-## Stages
-1. **Circularity instead of the cutoff** (relate.c only, behaviour-preserving as far as possible).
-   - `base_constraint()` pushes `RESOLVING_BASE_CONSTRAINT` on `my resolving` (ty.h kind) for every type it computes,
-     at every depth; re-entry -> `ty_resolving_cycle` (marks the cycle) and returns the circular sentinel; on pop a
-     circular entry caches the sentinel (KEY_BASE_CONSTRAINT holds three states: constraint, none, circular).
-   - Replace `depth > 8` with tsc's recursion-identity stack (10 levels always, up to 50 while the identity isn't on
-     the stack; reuse `ty_recursion_identity`/the deep-nesting helpers relate.c has for `is_deeply_nested`), plus
-     `conditionalConstraintDepth` (100) for conditionals. Cache at every depth (the depth-0-only rule existed only
-     because the cutoff made answers depth-dependent).
-   - Make `ty_param_constraint_is_circular` and members.c's RESOLVING_CONSTRAINT walk use the same answer (tsc's
-     `hasNonCircularBaseConstraint`), so TS2313 comes from one place.
-   - Validate: suite 0 lost (infiniteConstraints, circularConstraint*, recursiveConditional*, the
-     `Compute<A[K]>`/computedTypesKeyofNoIndexSignatureType display tests), corpora identical, instrcount
-     (react/type-fest/effect are the constraint-heavy ones), `scripts/findcrash.py` clean, threadcheck (the caches are
-     per checker; results must not depend on check order across files more than tsc's do).
-2. **Immediate distributive constraint everywhere tsc has it.**
-   - `base_constraint_uncached`'s conditional case uses `distributive_constraint_as(.., true)` (the experiment's first
-     line); delete the base flavour (KEY_BASE_DISTRIBUTIVE) once nothing uses it.
-   - `conditional_source_related()`: immediate only (drop the base-first HACK). hacks.md named 6 suite tests that
-     immediate-alone lost back then (keyofAndIndexedAccess, styledComponentsInstantiaionLimitNotReached,
-     substituteReturnTypeSatisfiesConstraint, instantiateContextualTypes, ...) and react-hook-form TS2589: recheck
-     them after stage 1; each one left is a probe for stage 3, not a reason to keep the HACK.
-   - Validate: the probe above (filetest), distributiveConditionalBaseConstraint, those 6 tests, react-hook-form in
-     the source sweep (`-f '^react-hook-form/'`), corpora, instrcount.
+## Stage left
 3. **One `ty_constraint_of_type` (getConstraintOfType) and one `ty_base_constraint` (getBaseConstraintOfType).**
    - `ty_constraint_of_type`: type param -> declared constraint if not circular; indexed -> getConstraintFromIndexedAccess
      (`constraint_of_indexed` as it is, with getSimplifiedTypeOrConstraint = simplified else ty_constraint_of_type);
@@ -156,8 +122,10 @@ same property, but marks every entry of the cycle circular, which the experiment
      `depth < 16` chain loop. Then the contextual-type paths (`ty_generic_mapped_prop_context`,
      getApparentTypeOfContextualType's mapType of apparent types) for the mikro-orm `$in` case.
    - Delete the caller-side `depth > 8` caps one at a time (each with a suite + corpora run).
-   - Validate: mikro-orm/tests (`scripts/sourcesweep.py -f '^mikro-orm/tests$'`: the 13 TS2345 + GHx6's 3 TS2322 should
-     go), the probe's TS2322, plus the usual oracles. hacks.md loses the "Constraint functions are approximations"
+   - TS2313 from `has_non_circular_base_constraint()` instead of members.c's `walk_base_constraint()` (stage 1 leftover),
+     and the hasNonCircularBaseConstraint gate on a conditional's constraint (hacks.md: find why tttt finds
+     `FromSchema<C, C[keyof C]>` circular in distributiveConditionalBaseConstraint and tsc doesn't).
+   - Validate: the usual oracles (mikro-orm's TS2345/TS2322 already went with stage 2). hacks.md loses the "Constraint functions are approximations"
      entry and the `expand_mapped` unknown-`T[string]` one if it goes with it.
 
 ## Validation, every stage

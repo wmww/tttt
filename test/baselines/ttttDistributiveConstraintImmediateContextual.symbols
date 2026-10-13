@@ -1,0 +1,60 @@
+//// [test/cases/ttttDistributiveConstraintImmediateContextual.ts] ////
+
+=== ttttDistributiveConstraintImmediateContextual.ts ===
+// mikro-orm's `$in: raw()`: the contextual type goes through the immediate distributive constraint (plan 61)
+type OperatorMap<T> = { $in?: readonly T[] };
+>OperatorMap : Symbol(OperatorMap, Decl(ttttDistributiveConstraintImmediateContextual.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 1, 17))
+>$in : Symbol($in, Decl(ttttDistributiveConstraintImmediateContextual.ts, 1, 23))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 1, 17))
+
+declare function r<R = "dflt">(): R;
+>r : Symbol(r, Decl(ttttDistributiveConstraintImmediateContextual.ts, 1, 45))
+>R : Symbol(R, Decl(ttttDistributiveConstraintImmediateContextual.ts, 2, 19))
+>R : Symbol(R, Decl(ttttDistributiveConstraintImmediateContextual.ts, 2, 19))
+
+type EP<T> = T extends (infer U)[] ? NonNullable<U> : NonNullable<T>;
+>EP : Symbol(EP, Decl(ttttDistributiveConstraintImmediateContextual.ts, 2, 36))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 8))
+>U : Symbol(U, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 29))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 29))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 8))
+
+type EQ<T> = T extends object ? OperatorMap<T> : number;
+>EQ : Symbol(EQ, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 69))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 4, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 4, 8))
+>OperatorMap : Symbol(OperatorMap, Decl(ttttDistributiveConstraintImmediateContextual.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 4, 8))
+
+type MU<T> = [T] extends [object] ? T extends string ? T : { [K in keyof T]: T[K] } : T;
+>MU : Symbol(MU, Decl(ttttDistributiveConstraintImmediateContextual.ts, 4, 56))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>K : Symbol(K, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 62))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+>K : Symbol(K, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 62))
+>T : Symbol(T, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 8))
+
+declare function g2<E extends object>(w: { b?: EQ<EP<MU<E>["books"]>> }): void;
+>g2 : Symbol(g2, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 88))
+>E : Symbol(E, Decl(ttttDistributiveConstraintImmediateContextual.ts, 6, 20))
+>w : Symbol(w, Decl(ttttDistributiveConstraintImmediateContextual.ts, 6, 38))
+>b : Symbol(b, Decl(ttttDistributiveConstraintImmediateContextual.ts, 6, 42))
+>EQ : Symbol(EQ, Decl(ttttDistributiveConstraintImmediateContextual.ts, 3, 69))
+>EP : Symbol(EP, Decl(ttttDistributiveConstraintImmediateContextual.ts, 2, 36))
+>MU : Symbol(MU, Decl(ttttDistributiveConstraintImmediateContextual.ts, 4, 56))
+>E : Symbol(E, Decl(ttttDistributiveConstraintImmediateContextual.ts, 6, 20))
+
+g2({ b: { $in: r() } });
+>g2 : Symbol(g2, Decl(ttttDistributiveConstraintImmediateContextual.ts, 5, 88))
+>b : Symbol(b, Decl(ttttDistributiveConstraintImmediateContextual.ts, 7, 4))
+>$in : Symbol($in, Decl(ttttDistributiveConstraintImmediateContextual.ts, 7, 9))
+>r : Symbol(r, Decl(ttttDistributiveConstraintImmediateContextual.ts, 1, 45))
+

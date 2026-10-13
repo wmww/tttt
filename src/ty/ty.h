@@ -1073,6 +1073,7 @@ struct Checker {
     // pushTypeResolution for a constraint): one met again is circular
     Ty const* apparent_stack[32];
     u32 apparent_depth;
+    u32 conditional_constraint_depth; // Conditional types whose constraint base_constraint() computes (tsc's conditionalConstraintDepth)
     // Typechecking a range of unreachable code (TS7027): nothing in it says so again, except in function expressions,
     // which tsc checks later (tsc's withinUnreachableCode)
     bool within_unreachable;
@@ -1952,6 +1953,7 @@ typedef enum ResolvingKind {
     RESOLVING_SIGNATURE_RETURN,
     RESOLVING_BASES, // The bases of a declared class or interface type
     RESOLVING_CONSTRAINT, // A type on the walk to a base constraint (members.c walk_base_constraint())
+    RESOLVING_BASE_CONSTRAINT, // A type whose base constraint is computed (relate.c base_constraint())
 } ResolvingKind;
 typedef struct Resolving {
     void const* key;

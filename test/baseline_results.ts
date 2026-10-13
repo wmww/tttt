@@ -25,6 +25,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDistributiveConstraintImmediateContextual': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFunctionParsing': {
         errors: true,
         symbols: true,
@@ -56,6 +61,11 @@ const baselines = {
         types: true,
     },
     'ttttIntersectionOfManyMembersProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,
         types: true,
@@ -10471,7 +10481,7 @@ const baselines = {
         types: true,
     },
     'distributiveConditionalBaseConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1,0 +1,35 @@
+//// [test/cases/ttttDistributiveConstraintImmediateContextual.ts] ////
+
+=== ttttDistributiveConstraintImmediateContextual.ts ===
+// mikro-orm's `$in: raw()`: the contextual type goes through the immediate distributive constraint (plan 61)
+type OperatorMap<T> = { $in?: readonly T[] };
+>OperatorMap : OperatorMap<T>
+>$in : readonly T[] | undefined
+
+declare function r<R = "dflt">(): R;
+>r : <R = "dflt">() => R
+
+type EP<T> = T extends (infer U)[] ? NonNullable<U> : NonNullable<T>;
+>EP : EP<T>
+
+type EQ<T> = T extends object ? OperatorMap<T> : number;
+>EQ : EQ<T>
+
+type MU<T> = [T] extends [object] ? T extends string ? T : { [K in keyof T]: T[K] } : T;
+>MU : MU<T>
+
+declare function g2<E extends object>(w: { b?: EQ<EP<MU<E>["books"]>> }): void;
+>g2 : <E extends object>(w: { b?: EQ<EP<MU<E>["books"]>>; }) => void
+>w : { b?: EQ<EP<MU<E>["books"]>>; }
+>b : EQ<EP<MU<E>["books"]>> | undefined
+
+g2({ b: { $in: r() } });
+>g2({ b: { $in: r() } }) : void
+>g2 : <E extends object>(w: { b?: EQ<EP<MU<E>["books"]>>; }) => void
+>{ b: { $in: r() } } : { b: { $in: "dflt"; }; }
+>b : { $in: "dflt"; }
+>{ $in: r() } : { $in: "dflt"; }
+>$in : "dflt"
+>r() : "dflt"
+>r : <R = "dflt">() => R
+

@@ -71,23 +71,8 @@ Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union tar
 check before normalization, intersection typesDefinitelyUnrelated), crawlee (Partial<C> over `C extends X<P>`, vi.fn
 reverse mapping of callables), base-ui TS2740 (Pick<T, K | "a"> keys), folo (untyped call args contextual any),
 msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctions in conditional args), super-productivity (TS2347 on tagged templates). Left:
-- mikro-orm/tests +TS2345 x13 and GHx6 +TS2322 x3: `raw()` (`<R = RawQueryFragment & symbol>`) as `$in` inside
-  `em.find(Author2, { books: { $in: raw(qb) } })`: its return-type inference sees extra members `readonly unknown[] |
-  readonly ExpandScalar<{}>[]`. Reduced (self-contained): `type EP<T> = T extends (infer U)[] ? NonNullable<U> :
-  NonNullable<T>; type EQ<T> = T extends object ? { $in?: readonly T[] } : number; type MU<T> = [T] extends [object] ?
-  T extends string ? T : { [K in keyof T]: T[K] } : T; declare function g<E extends object>(w: { b?:
-  EQ<EP<MU<E>["books"]>> }): void; g({ b: { $in: r() } })` with `declare function r<R = "dflt">(): R`: tsc's
-  contextual type for `$in` is `readonly {}[] | readonly NonNullable<E["books"]>[]` (still mentioning E, so the outer
-  silent-never mapper makes it non-inferrable: R = "dflt"), tttt's `readonly {}[]`. Cause: base_constraint()'s
-  distributive constraint uses the check type's *base* constraint (hacks.md "Constraint functions are
-  approximations"); switching that call to the immediate constraint (`distributive_constraint_as(.., true)`) fixes the
-  probe but makes the suite runaway-recurse (segfault). Plan 61 (plans/61_constraint_functions.md) covers it.
-- mikro-orm/tests +TS2615 x3 (`toJSON` circularly references itself in a mapped type): reproduces in a project
-  extending `mikro-orm/tests/tsconfig.json` with only `import type { Loaded } from '@mikro-orm/core'; import type { Book }
-  from '<abs>/tests/entities/index.js'; declare function createEntity<T>(): T; createEntity<Loaded<Book>>().toObject(['id']);`
-  (BaseEntity's `toObject<Entity extends this, Ignored extends EntityKey<Entity>>(ignoreFields: Ignored[])`, EntityDTO's
-  `as`-clause mapped types with CleanKeys). Not reduced further. +TS2769 EntityManager.mongo.test.ts:1268 and -TS5088
-  x9 / -TS2883 x2 (declaration diagnostics): not looked at.
+- mikro-orm/tests +TS2769 EntityManager.mongo.test.ts:1268 and -TS5088 x9 / -TS2883 x2 (declaration diagnostics):
+  not looked at. (Its +TS2345 x13, +TS2322 x3 and +TS2615 x3 went with plan 61 stage 2.)
 - better-auth +TS2339 `signUpEmail` on `InferAPI<Prettify<{ [x: string]: any }>>` (get-migration-schema.test.ts:293
   and 15 sites in other test files once that file is the only root): reproduces with a tsconfig extending the
   package's (composite/incremental/emitDeclarationOnly turned off, its references by absolute path) whose only file is

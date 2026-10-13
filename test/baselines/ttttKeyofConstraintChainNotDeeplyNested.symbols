@@ -1,0 +1,102 @@
+//// [test/cases/ttttKeyofConstraintChainNotDeeplyNested.ts] ////
+
+=== ttttKeyofConstraintChainNotDeeplyNested.ts ===
+// type-fest's FixedLengthArray: `keyof` constraint steps push only the target on the deep nesting stack (plan 61)
+
+type IsAny<T> = 0 extends 1 & NoInfer<T> ? true : false;
+>IsAny : Symbol(IsAny, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 0, 0))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 2, 11))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 2, 11))
+
+type IsNever<T> = [T] extends [never] ? true : false;
+>IsNever : Symbol(IsNever, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 2, 56))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 3, 13))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 3, 13))
+
+type INAON<T, C extends {ifNot: unknown; ifAny?: unknown; ifNever?: unknown}> =
+>INAON : Symbol(INAON, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 3, 53))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 11))
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+>ifNot : Symbol(ifNot, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 25))
+>ifAny : Symbol(ifAny, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 40))
+>ifNever : Symbol(ifNever, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 57))
+
+    IsAny<T> extends true ? 'ifAny' extends keyof C ? C['ifAny'] : any
+>IsAny : Symbol(IsAny, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 0, 0))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 11))
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+
+    : IsNever<T> extends true ? 'ifNever' extends keyof C ? C['ifNever'] : never
+>IsNever : Symbol(IsNever, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 2, 56))
+>T : Symbol(T, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 11))
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+
+    : C['ifNot'];
+>C : Symbol(C, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 4, 13))
+
+type TO<L extends number, F = unknown> = INAON<L, {ifNot: _TO<L, F>; ifAny: F[]; ifNever: []}>;
+>TO : Symbol(TO, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 7, 17))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 8))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 25))
+>INAON : Symbol(INAON, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 3, 53))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 8))
+>ifNot : Symbol(ifNot, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 51))
+>_TO : Symbol(_TO, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 95))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 8))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 25))
+>ifAny : Symbol(ifAny, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 68))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 25))
+>ifNever : Symbol(ifNever, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 80))
+
+type _TO<L extends number, F> = number extends L ? F[] : BT<`${L}`, F>;
+>_TO : Symbol(_TO, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 8, 95))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 9))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 26))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 9))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 26))
+>BT : Symbol(BT, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 71))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 9))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 26))
+
+type BT<L extends string, F, A extends unknown[] = []> = L extends `${infer X extends '0' | '1'}${infer R}` ? BT<R, F, [...A, ...A, ...(X extends '1' ? [F] : [])]> : A;
+>BT : Symbol(BT, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 71))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 8))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 25))
+>A : Symbol(A, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 28))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 8))
+>X : Symbol(X, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 75))
+>R : Symbol(R, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 103))
+>BT : Symbol(BT, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 9, 71))
+>R : Symbol(R, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 103))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 25))
+>A : Symbol(A, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 28))
+>A : Symbol(A, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 28))
+>X : Symbol(X, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 75))
+>F : Symbol(F, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 25))
+>A : Symbol(A, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 28))
+
+type Except<O, K extends keyof O> = {[P in keyof O as P extends K ? never : P]: O[P]};
+>Except : Symbol(Except, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 168))
+>O : Symbol(O, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 12))
+>K : Symbol(K, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 14))
+>O : Symbol(O, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 12))
+>P : Symbol(P, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 38))
+>O : Symbol(O, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 12))
+>P : Symbol(P, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 38))
+>K : Symbol(K, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 14))
+>P : Symbol(P, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 38))
+>O : Symbol(O, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 12))
+>P : Symbol(P, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 38))
+
+type FLA<E, L extends number> = Except<TO<L, E>, 'push' | number | 'length'>;
+>FLA : Symbol(FLA, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 11, 86))
+>E : Symbol(E, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 12, 9))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 12, 11))
+>Except : Symbol(Except, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 10, 168))
+>TO : Symbol(TO, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 7, 17))
+>L : Symbol(L, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 12, 11))
+>E : Symbol(E, Decl(ttttKeyofConstraintChainNotDeeplyNested.ts, 12, 9))
+

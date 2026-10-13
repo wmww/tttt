@@ -8,6 +8,13 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Immediate distributive constraints (plan 61 stage 2, 2026-10-13)
+tanstack-router 5.337 -> 5.401 G (+1.1%), xstate +0.3%: from base constraints and getSimplifiedTypeOrConstraint taking
+the check type's one-step constraint (tsc's) instead of its base constraint, so a conditional's constraint goes
+through more instantiations. react +0.5% from `conditional_source_related()` relating the immediate distributive
+constraint only (the base one, tried first, often succeeded cheaper). Not profiled: callgrind tanstack-router at
+8a2dfab5 vs after, inclusive counts of `distributive_constraint_uncached`/`ty_instantiate` under `base_constraint`.
+
 ## Checking the default lib (2026-10-12)
 Lib files are checked unless skipLibCheck/skipDefaultLibCheck (vision.md). An empty esnext+dom+dom.iterable project:
 0.16 G -> 0.43 G instructions, ~42 ms check (tsgo --singleThreaded: ~156 ms, 31.5k types vs tttt's 13.4k); quill
