@@ -1,0 +1,17 @@
+a.js(1,38): error TS2322: Type 'number' is not assignable to type 'string'.
+b.js(1,51): error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a: number; }'.
+
+
+==== a.js (1 errors) ====
+    /** @type {string} */ export default (1);
+                                         ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+==== b.js (1 errors) ====
+    /** @type {{a: number}} */export default ({ a: 1, b: 2 });
+                                                      ~
+!!! error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a: number; }'.
+==== c.ts (0 errors) ====
+    import A from "./a";
+    import B from "./b";
+    const x = A, y = B;
+    

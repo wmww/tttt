@@ -1,0 +1,23 @@
+//// [test/cases/ttttExportDefaultJsDocParenthesized.ts] ////
+
+=== a.js ===
+
+/** @type {string} */ export default (1);
+=== b.js ===
+/** @type {{a: number}} */export default ({ a: 1, b: 2 });
+>a : Symbol(a, Decl(b.js, 0, 43))
+>b : Symbol(b, Decl(b.js, 0, 49))
+
+=== c.ts ===
+import A from "./a";
+>A : Symbol(A, Decl(c.ts, 0, 6))
+
+import B from "./b";
+>B : Symbol(B, Decl(c.ts, 1, 6))
+
+const x = A, y = B;
+>x : Symbol(x, Decl(c.ts, 2, 5))
+>A : Symbol(A, Decl(c.ts, 0, 6))
+>y : Symbol(y, Decl(c.ts, 2, 12))
+>B : Symbol(B, Decl(c.ts, 1, 6))
+
