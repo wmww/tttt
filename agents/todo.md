@@ -35,7 +35,11 @@ plan 61.
    105 MB of 2.0 GB, no fragmentation), half the AST's words are zero: stage 1 is the struct diet (PropertyExpr,
    CallExpr, InitializedBinding, import/export, IdentifierExpr, binder), stage 2 per-file arenas as a time lever
    (malloc is 11% of parsing's instructions) behind an audit. Side find: `jsdoc_before_ex` is 3.9% of webpack's run.
-6. **Plan 63 stage 1** (the struct diet).
+6. Done (2026-10-14): plan 63 stage 1, targets missed. vscode K1 resident after parse / names / peak 1917 / 2517 /
+   4403 -> **1724 / 2277 / 4158** MB (targets 1650 / 2150 / 4000), other corpora -3..-5%, instructions vscode -1.2% (react/nest +0.6/0.8%: boxed lib annotations)
+   (PropertyExpr's dot name is a Span, rare parts for calls, object items, imports, module refs, boxed binding
+   annotations, Scope 96 bytes). What's left, led by Expr 72 -> 64 (an IdentifierExpr design), is plan 63 "Stage 1b";
+   stage 2 (arenas) is unaffected.
 7. **Fan-out: source sweep + suite tail** (4 agents, like entries 6 and 9 of the last window; disjoint lists, 0 lost at
    merge, full source sweep match-set diff before and after). bugs/sourcesweep_checker.md and the failing suite tests.
 8. **Perf session**: perfsweep and bench re-run (wall times only with nothing else running), instruction creep since

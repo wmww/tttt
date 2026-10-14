@@ -9,6 +9,19 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 63 stage 1 (2026-10-14, todo entry 6)
+- K1 (`--checkers 1 --threads 1`) resident after load+parse / after names / `/usr/bin/time` peak MB, f67e4fa7 -> now:
+  tsc 109/151/225 -> 104/144/219, webpack 237/323/545 -> 224/307/529, vue 120/164/342 -> 116/157/330, effect
+  203/280/704 -> 192/265/688, excalidraw 153/207/379 -> 146/197/363, **vscode 1917/2517/4403 -> 1724/2277/4158**.
+- Oracles unchanged: suite 13464 (0 lost), corpora (webpack 0/1, vue 0/3, effect 3/0), DT sweep 8594 / 8595,
+  `$ExpectType` 68631, flagflip 46 / 8 / 3, source sweep sample 4 806 / 822, perfsweep worst types ratio 1.62;
+  threadcheck and checkerdiff identical. scenarios 207 / 213, as at f67e4fa7 (triage.md).
+- Instructions (callgrind; perf unavailable): tsc 4.744, type-fest 19.034, valibot 3.432, react 1.518, nest 1.179,
+  webpack 10.853, zod 5.043, xstate 2.704, drizzle 5.997, vue 6.582, effect 10.089, vscode 90.136, excalidraw 7.927,
+  tanstack-router 5.409 G. vscode -1.2%, most within 0.2%; react +0.6% and nest +0.8% (over the plan's 0.5%): small
+  lib-dominated projects pay a malloc per annotated lib parameter (boxed annotation) and a separate locals table per
+  scope that declares something.
+
 ## Plan 61 stage 3 (2026-10-13, todo entry 4)
 - Suite 13463 -> **13464** (1 own test); corpora unchanged (webpack 0/1, vue 0/3, effect 3/0), DT sweep 8594 / 8595,
   `$ExpectType` 68631, flagflip 46 / 8 / 3, sourcesweep sample 4 805 -> **806** / 822 (socket.io), kdiff 5 / 3363,

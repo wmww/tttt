@@ -19,6 +19,15 @@ src` finds the code-side markers; every significant one has an entry here.
   its `Expr`'s inner_span through `offsetof` (never copy one out of its Expr). Its rare pointers (`module_ref_`,
   `this_function_`, `evolving_index_`, `extends_entity_`) share a union picked by keyword/require_call/evolving_op; a
   new writer must keep those discriminants exclusive.
+- `property_dot_new()` (`expr.c`) (permanent, plan 63: memory): a dot `PropertyExpr` is malloc'd only up to the end
+  of `name_` (120 of 184 bytes), the bytes of the bracket form's `index` Expr aren't there: never copy a PropertyExpr by
+  value or read `index` without checking `form` (`property_key_span()` and friends do). Synthetic accesses
+  (`synthetic_access()`, lower.c) are whole arena structs.
+- Shared all-zero stand-ins for absent parts (plan 63: memory): `binding_type()` returns `type_node_none` when a
+  binding has no annotation and `scope_locals()` `symbol_table_empty`, both cast or read as mutable by some callers:
+  only write through `binding_set_type()` / `scope_locals_mut()`. `type_lookup_names()` and the inferred-names walk
+  check the pointer, not just `has_explicit_type` (a parser path that sets the flag without a type would otherwise
+  write into the shared node).
 - Two kinds of `links` (plan 60 stage 1, permanent: memory): `Checker.node_links` (`ty_link_get()`/`ty_link_set()`)
   holds 11 two-word key kinds with the key inline, value-based (no slot to keep); every other kind is still in
   `links`, whose `intern_slot()` slots stay valid. A kind may only move once all its uses are plain gets/sets, and

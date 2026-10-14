@@ -470,7 +470,7 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool object_binding_name_follows(Parser* parent);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
-static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js);
+static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js, TypeNode* into);
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 static Expr* parse_initialization_boxed(Parser* parent, ExprCtx ctx);
@@ -8175,16 +8175,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
 
             Binding binding = { .content_span = name_span }; // (Only for the file of the type's span)
             p.shared->unique_annotation_next = true;
-            bool has_type = parse_binding_type_ex(&p, &binding, !is_type);
+            bool has_type = parse_binding_type_ex(&p, &binding, !is_type, &ret->field.explicit_type);
             p.shared->unique_annotation_next = false;
-            if (has_type && is_type && binding_type(&binding)->tag == TYPE_UNIQUE_SYMBOL && !modifiers.includes[MODIFIER_READONLY]) {
+            if (has_type && is_type && ret->field.explicit_type.tag == TYPE_UNIQUE_SYMBOL && !modifiers.includes[MODIFIER_READONLY]) {
                 // (tsc's checkGrammarTypeOperatorNode for a PropertySignature; a class property's is TS1331)
                 grammar_error(&p, name_span, 1330, "A property of an interface or type literal whose type is a 'unique "
                     "symbol' type must be 'readonly'.");
             }
             if (has_type) {
                 ret->field.explicit_type_span = binding_explicit_type_span(&binding);
-                ret->field.explicit_type = binding_take_type(&binding);
                 ret->field.has_explicit_type = binding.has_explicit_type;
                 is_definitely_field = true;
                 hop_whitespace(&p);
@@ -12146,7 +12145,8 @@ __attribute__((noinline)) static void expect_annotation_type(Parser* parent, cha
     parent->shared->unique_allowed_at = outer_allowed_at;
 }
 
-static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) {
+// `into`: where the type goes instead of a box of ret's (a class field's or property signature's own node)
+static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js, TypeNode* into) {
     if (!hop_char(parent, ':')) {
         return false;
     }
@@ -12165,7 +12165,8 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
         expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     }
     ret->has_explicit_type = true;
-    ret->explicit_type = c_new(TypeNode, type);
+    if (into) *into = type;
+    else ret->explicit_type = c_new(TypeNode, type);
     binding_set_explicit_type_span(ret, span_from(a));
     if (report_js) {
         js_syntax_skip_since(parent, mark);
@@ -12176,7 +12177,7 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
 }
 
 static bool parse_binding_type(Parser* parent, Binding* ret) {
-    return parse_binding_type_ex(parent, ret, true);
+    return parse_binding_type_ex(parent, ret, true, nullptr);
 }
 
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {

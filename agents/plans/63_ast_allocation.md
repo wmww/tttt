@@ -49,28 +49,52 @@ webpack 237 / 323 / 545, vue 120 / 164 / 342, effect 203 / 280 / 704, excalidraw
 That would take 32-bit node references (indices or offsets into a per-file arena, what Bun's Zig port does), which
 stage 2's arenas make possible but which remains out of scope (vision.md decides if it's ever worth it).
 
-## Stage 1: the struct diet (one session)
-Plan 43's pattern, which worked: rare fields behind one owned side struct (`*_rare()` reads a shared all-null static,
-`*_rare_mut()` allocates on first write), bools as bit fields packed into holes, optional children as null pointers.
-In order of zero bytes:
-1. **PropertyExpr** (-145 MB of zeros): first find what reads `prop` as a full Expr (walkers, the types/symbols
-   baselines print a type and symbol for the name, the checker caches `lazy_type` on it). If the name can be a small
-   struct (Span + LazyType + symbol, ~32 B) behind accessors, PropertyExpr drops to ~120 B; `declares`, `context` and the
-   private/for-in union into a rare part (~96 B). Measure who sets `context`/`declares` on vscode before choosing.
-2. **CallExpr** 128 -> ~96 (`enclosing_class`, `unique_symbol`, `declares` rare; plan 60 measured ~-17 MB).
-3. **InitializedBinding** (82% zero) and **FunctionArg** (75%): look at their layout with `ptype /o` and move what is
-   zero for ordinary `const x = e` / `(a: T)` behind a rare part.
-4. **Import/export statements** 400 + 240 (70-80% zero): different shapes in one struct; split by form or rare part.
-5. **IdentifierExpr 40 -> 32** (Expr 72 -> 64, ~8M Exprs: ~-65 MB): one of target/symbol/flow/the union goes (plan 60
-   stage 2 has the options: `target` only differs from `symbol` for aliases; `flow` could share the union).
-6. **Binder**: Scope 136 (1.28M on vscode: count how many are empty walk-only scopes that survive), Symbol 152,
-   SymbolDecl 72: rare parts, expected ~-100 MB on vscode.
-Use `scripts/memtrack.sh --by sizef` and the zero scan after each item (scan.py's Span column is stale since Span went
-to 16 bytes: fix or drop it). Stop items whose readers make the change a churn of hundreds of sites for < 15 MB.
+## Stage 1: the struct diet (done 2026-10-14, todo entry 6; targets missed, see 1b)
+Plan 43's pattern: rare fields behind one owned side struct (`*_rare()` reads a shared all-null static, `*_rare_mut()`
+allocates on first write), bools as bit fields packed into holes, optional children as null pointers. Done, vscode K1
+MB saved after parse / after names (commits e681ab78..HEAD):
+- **PropertyExpr**: a dot access's name is a Span (`property_name()`), not a 72-byte literal Expr with a malloc'd
+  cooked cstr; the access is allocated short (`property_dot_new()`, 120 bytes, the 128 malloc class; a bracket one
+  keeps its `index` Expr at 184). `declares`/private class/for-in loop in `PropertyRare`. The dot key's literal type is
+  memoized in a LazyMemo slot (`name_slot`): recomputing it from the name (atom + literal interning, ~460 instructions)
+  cost +1% instructions, memoized it's -0.3..-0.9%. -120 / -120.
+- **CallExpr** 128 -> 112: `CallRare` (enclosing_class, unique_symbol, declares). -17.
+- **ObjectExprItem** 184 -> 160: shorthand default, its `=`, JSDoc type in `ObjectExprItemRare`. -17.
+- **Binding.explicit_type** boxed (`binding_type()`, `binding_set_type()`, `binding_take_type()`): 428k of vscode's
+  700k bindings have no annotation (-56 each), 272k do (+24). -16.
+- **PortStatement** 400 -> 288 (`PortStatementRare`; `target_path` moves into the ModuleRef instead of being cloned),
+  **PortItem** 208 -> 192 (bools regrouped), **ModuleRef** 240 -> 112 (`ModuleRefRare`: failure paths/hints). -36.
+- Binder: **Scope** 136 -> 96 (locals table allocated on first declaration, `scope_locals()`/`scope_locals_mut()`;
+  flags as bit fields), **SymbolDecl** 72 -> 64. Names -23 (the arena shrank more than resident did).
+- Resolve: per-file **unused candidates** trimmed after the walk and 32 -> 16 bytes. Names -24.
 
-**Target**: vscode resident after load+parse 1917 -> **<= 1650 MB**, after names 2517 -> **<= 2150**, peak 4403 ->
-**<= 4000**; the other corpora down in proportion (compare as a set: peak moves +-30 MB with where an intern table
-grows). Instructions (`scripts/instrcount.sh`) within +0.5% on every corpus.
+Result (K1, resident after load+parse / after names / `/usr/bin/time` peak MB, before -> after):
+tsc 109/151/225 -> 104/144/219, webpack 237/323/545 -> 224/307/529, vue 120/164/342 -> 116/157/330, effect
+203/280/704 -> 192/265/688, excalidraw 153/207/379 -> 146/197/363, **vscode 1917/2517/4403 -> 1724/2277/4158**
+(targets were <= 1650 / 2150 / 4000). Output byte-identical (suite, threadcheck, checkerdiff, oracles).
+
+### Stage 1b: what is left (not done; in order of MB)
+- **Expr 72 -> 64** (the only lever of the size the targets need, ~8M Exprs on vscode, but malloc classes eat part
+  of it: PropertyExpr stays in the 128 class, CallExpr 112 -> 104 and BinaryOpExpr 168 -> 152 drop a class, lists
+  shrink 11%; estimate -50 MB at parse). The union is 40 because of IdentifierExpr (target, symbol, flow, 8 bytes of
+  flags, an 8-byte union). Analysis this session: `flow` can't join the union (`this` needs this_function_, `x[i] = v`
+  needs evolving_index_, any `x[k]` object needs element index: all need flow too); dropping `target` means
+  recomputing `symbol_for_meaning()` (alias resolution) on hot checker paths. The workable design: `symbol` joins
+  the union when it differs from `target` (aliases, the TS2301/TS2693 cases; a 2-bit kind says SAME / NONE / UNION /
+  SIDE), and when the union is taken (an element object or extends entity naming an import) it goes to a per-file
+  side table written by the file's resolve thread; `identifier_symbol()` reads it (54 readers). The union is filled
+  in different orders (parser: module_ref_, extends_entity_; resolve: element index before the object's lookup;
+  flow builder: evolving_index_ after it), so every writer goes through a setter that migrates. Also needs the
+  flags to fit 8 bytes with the kind (they do: 26 bits of bools + 4 u8). A session of its own.
+- **Binding element-only fields** (parent, parent_item/index, default_value, element span offsets: 32 bytes) behind a
+  `BindingElement*`: 37k of 700k bindings are pattern elements. ~-18 MB, ~110 readers.
+- **Symbol** 152 -> 144 (bools as bit fields, ~950k on vscode, -8 MB): `is_assigned`, `is_definitely_assigned`,
+  `is_assigned_in_closure` are written by resolve threads and must stay whole bytes; `is_unresolved` (alias
+  resolution) and `exported` (expando declarations) need an audit of which phase writes them first.
+- **ResolvedModule** cache (one 32 MB hash table on vscode, 224-byte values with 7 cstrs): the failure hints behind a
+  pointer, ~-10 MB; churn in module_resolution.c.
+- Not worth it (measured): BinaryOpExpr (rare parts can't leave the 176 malloc class), Statement (sized by variable
+  declarations, which would need a box each), ClassItem (sized by methods' inline FunctionImpl).
 
 ## Stage 2: per-file parse arenas (one session, after an audit that may stop it)
 ### 2a. Audit (first hour; write the findings into this file and stop if any answer is "no")
