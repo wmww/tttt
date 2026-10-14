@@ -4294,6 +4294,17 @@ void binder_link(Binder* me) {
         Symbol* symbol = my symbols[i];
         if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias->scope) continue;
         Symbol* target = symbol_resolve_alias(symbol);
+        // (An unresolved import merged with an exported value is that value too: tsc's local symbol has ExportValue)
+        if (symbol->alias->item && target && target->is_placeholder && symbol->is_local &&
+            symbol->alias->scope->container && !port_item_declares_export(symbol->alias->item)
+        ) {
+            Symbol* exported = symbol_table_get(symbol->alias->scope->container->exports, symbol->name);
+            if (exported && exported != symbol && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS) &&
+                symbol_declared_in_block(exported, symbol->alias->scope)
+            ) {
+                symbol->alias->export_value = exported;
+            }
+        }
         if (!symbol->alias->item || !target || target->is_placeholder) continue;
         // (A UMD global, `export as namespace foo`, isn't one tsc's checkAliasSymbol checks)
         if (symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE) continue;
@@ -5270,6 +5281,14 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
             ) {
                 found = default_export;
             }
+        }
+        // (An import merged with an exported value of the module: the export, tsgo's lookupName takes the local's
+        // exportSymbol)
+        if (found && (found->flags & SYMBOL_ALIAS) && found->is_local && container && container->exports && found->alias &&
+            found->alias->item && !port_item_declares_export(found->alias->item)
+        ) {
+            Symbol* exported = symbol_table_lookup(container->exports, name, hash);
+            if (exported && exported != found && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS)) found = exported;
         }
         if (found || scope_is_var_container(scope)) return found;
     }

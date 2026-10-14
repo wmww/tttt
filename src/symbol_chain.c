@@ -542,6 +542,11 @@ static bool needs_qualification(ChainCtx* me, Symbol const* symbol, u32 meaning)
         if (found == merged(me, symbol)) return false;
         bool resolve = (found->flags & SYMBOL_ALIAS) && !is_export_specifier(found);
         u32 flags = resolve ? symbol_resolved_flags(found) : found->flags;
+        // (An import that resolves to nothing is tsc's unknownSymbol, a Property: only a value meaning)
+        if (resolve) {
+            Symbol const* target = symbol_resolve_alias((Symbol*)found);
+            if (target && target->is_placeholder) flags = SYMBOL_PROPERTY;
+        }
         if (flags & meaning) return true;
     }
     return false;
