@@ -18,26 +18,9 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 ## Source sweep fan-out 2026-10-12 leftovers (agent A)
 Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
 was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match; second round: react-router, shiki, lit, typedoc match too).
-- **-TS5115 (12 projects: zod 4's `schemas.d.cts:804` in crawlee/unocss/knip, better-auth `db/to-zod.ts:40`, vitepress
-  `postcss/isolateStyles.ts:15`)**: tsgo hits its depth-100 instantiation limit where tttt has no runaway at all. Single
-  file reproduction (tsgo reports TS5115 at `Root`, tttt nothing):
-  ```ts
-  type Diff<T, U> = T extends U ? never : T;
-  interface Base<P extends Container | undefined = Container | undefined> { parent: P; }
-  interface Container<C extends Node = Node> extends Base { first: C; }
-  interface Root extends Container<Selector> { type: "root" }
-  interface _Selector<S> extends Container<Diff<Node, S>> { type: "selector" }
-  type Selector = _Selector<Selector>;
-  export type Node = Root | Selector;
-  ```
-  tsgo's stack (instrumented build): checkTypeArgumentConstraints (Selector against `C extends Node`) -> relation ->
-  isWeakType -> resolveTypeReferenceMembers(_Selector<Selector>) -> resolveObjectTypeMembers instantiates the base
-  `Container<Diff<Node, S>>` eagerly -> getConditionalType's isTypeAssignableTo(Root, Selector) -> isWeakType again on the
-  same reference whose members are still being resolved -> ... zod's is the same shape (propertiesRelatedTo ->
-  resolveTypeReferenceMembers -> base instantiation -> conditional -> relation). tttt never instantiates a reference's
-  base types (lazy mapper-chained props, members.c `instantiate_members`), so it can't re-enter. Matching it would mean
-  copying tsgo's eager base instantiation (or detecting "this base's instantiation needs this reference's members"):
-  plan-sized and arguably copying a tsgo runaway; not done.
+- **-TS5115 (13 projects: zod 4's `schemas.d.cts:804`, postcss-selector-parser through vitepress)**: tsgo's eager
+  base instantiation in resolveObjectTypeMembers re-entering a reference's members; mechanism, prototype and why it
+  isn't committed in plan 65 (agents/plans/65_eager_base_runaway.md).
 - **trpc examples/nuxt -TS2416 in vite 8.3's `dist/node/index.d.ts:1512`** (`MinimalPluginContext$1 extends
   BasicMinimalPluginContext implements MinimalPluginContext`): not looked at; the project mixes several vite/rollup/
   @types/node copies.
