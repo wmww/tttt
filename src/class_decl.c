@@ -493,6 +493,47 @@ static void bind_member_symbols(ClassDecl* me) {
     }
 }
 
+// The first member of a computed name's late-bound symbol that `target` is part of (tsc's lateBindMember, which
+// declares like the binder: a member that conflicts with the symbol already bound to the name stands alone), going
+// by the key's source text the way accessor pairs are matched. `[k]() {}` before `get [k]()` and `set [k](v)` keeps
+// both accessors alone: no pair. Null for a member without a computed name
+static ClassItem const* computed_symbol_first(ClassDecl const* me, ClassItem const* target) {
+    Expr const* key = target->tag == CLASS_ITEM_METHOD ? target->method.computed_key :
+        target->tag == CLASS_ITEM_FIELD ? target->field.computed_key : nullptr;
+    if (!key) return nullptr;
+    bool target_static = class_item_is_static((ClassItem*)target);
+    cstr const* name = target->tag == CLASS_ITEM_METHOD ? &target->method.name_string : &target->field.name_string;
+    // (Each earlier member of the name with the first of its symbol)
+    ClassItem const* seen[64];
+    ClassItem const* seen_first[64];
+    u32 seen_count = 0;
+    for (ClassItem const* i = my items.data; i <= target; i++) {
+        bool method = i->tag == CLASS_ITEM_METHOD;
+        if (!(method ? i->method.computed_key : i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr)) continue;
+        if (class_item_is_static((ClassItem*)i) != target_static) continue;
+        if (!cstr_eq(method ? &i->method.name_string : &i->field.name_string, name)) continue;
+        u32 flags = i->tag == CLASS_ITEM_FIELD ? (i->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY) :
+            i->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET : i->method.accessor == CLASS_ACCESSOR_SET ? BIND_SET : BIND_METHOD;
+        ClassItem const* first = seen_count ? seen[0] : nullptr;
+        u32 existing = 0;
+        for (u32 j = 0; j < seen_count; j++) {
+            if (seen_first[j] != first) continue;
+            ClassItem const* other = seen[j];
+            existing |= other->tag == CLASS_ITEM_FIELD ? (other->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY) :
+                other->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET : other->method.accessor == CLASS_ACCESSOR_SET ? BIND_SET : BIND_METHOD;
+        }
+        u32 excludes = flags == BIND_PROPERTY ? (u32)~(BIND_PROPERTY | BIND_GET | BIND_SET) : flags == BIND_METHOD ? (u32)~BIND_METHOD :
+            flags == (BIND_GET | BIND_SET) ? (u32)~BIND_PROPERTY :
+            flags == BIND_GET ? (u32)~(BIND_SET | BIND_PROPERTY) : (u32)~(BIND_GET | BIND_PROPERTY);
+        ClassItem const* own_first = first && !(existing & excludes) ? first : i;
+        if (i == target) return own_first;
+        if (seen_count == 64) return target; // (Pathological: treat it as alone)
+        seen[seen_count] = i;
+        seen_first[seen_count++] = own_first;
+    }
+    return target;
+}
+
 // Each overload signature of a method or constructor: its implementation, see FunctionImpl.overload_implementation
 static void link_overload_implementations(ClassDecl* me) {
     for_each (i, vec_class_item, &my items) {
@@ -602,7 +643,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                     other->method.accessor &&
                     other->method.is_static == i->method.is_static &&
                     cstr_eq(&other->method.name_string, &i->method.name_string) &&
-                    other->symbol_first == i->symbol_first
+                    other->symbol_first == i->symbol_first &&
+                    (!own_key || computed_symbol_first(me, other) == computed_symbol_first(me, i))
                 ) {
                     if (!i->method.accessor_first) {
                         i->method.accessor_first = other;
