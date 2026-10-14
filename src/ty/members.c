@@ -356,6 +356,32 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     return ret;
 }
 
+// The members a builder holds so far, leaving it as it is
+static Members const* builder_snapshot(Checker* me, MembersBuilder const* builder) {
+    MembersBuilder copy = { .mapped = builder->mapped };
+#define COPY(field) \
+    if (builder->field##_count) { \
+        copy.field = malloc(sizeof(*builder->field) * builder->field##_count); \
+        panic_if(!copy.field, "out of memory"); \
+        memcpy(copy.field, builder->field, sizeof(*builder->field) * builder->field##_count); \
+        copy.field##_count = copy.field##_cap = builder->field##_count; \
+    }
+    COPY(props)
+    COPY(call)
+    COPY(construct)
+    COPY(index)
+#undef COPY
+    return builder_finish(me, &copy);
+}
+
+// A class or interface whose bases are being lowered, with its own members (tsc's getBaseTypes in flight: what
+// resolveObjectTypeMembers gives a type whose bases resolve circularly, see resolve_declared_members())
+typedef struct BasesFrame {
+    Ty const* ty;
+    MembersBuilder const* builder;
+    struct BasesFrame* outer;
+} BasesFrame;
+
 static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
     Signature* ret = arena_new(&my arena, Signature);
     ret->function = function;
@@ -2307,7 +2333,7 @@ bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     return has_base_type(me, source, target);
 }
 
-enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2 };
+enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2, BASE_CYCLE_REENTERED = 4 };
 
 typedef struct BaseWalk {
     Symbol const* target;
@@ -2342,6 +2368,13 @@ static bool interface_reaches(Checker* me, Symbol const* symbol, BaseWalk* walk)
         }
     }
     return false;
+}
+
+bool ty_bases_reentered(Checker* me, Symbol const* symbol) {
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    if (declared->kind != TY_DECLARED) return false;
+    ty_members(me, declared);
+    return ty_symbol_links(me, symbol)->base_cycle & BASE_CYCLE_REENTERED;
 }
 
 bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
@@ -2602,6 +2635,21 @@ static void early_declared_members(Checker* me, Ty const* ty) {
         ty->declared.merged_value || !ty->declared.symbol) {
         return;
     }
+    TyObjectState* states[2] = { ty->declared.raw, object_state(ty) };
+    bool wanted = false;
+    for (u32 k = 0; k < 2; k++) wanted |= states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members;
+    if (!wanted) return;
+    // While its bases are lowered: its own members, and the bases are circular (tsc's resolveObjectTypeMembers with
+    // getBaseTypes in flight; getBaseTypes resets the type's members once its bases are known)
+    for (BasesFrame const* frame = my bases_frames; frame; frame = frame->outer) {
+        if (frame->ty != ty) continue;
+        Members const* members = builder_snapshot(me, frame->builder);
+        for (u32 k = 0; k < 2; k++) {
+            if (states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members) states[k]->members = members;
+        }
+        ty_resolving_cycle(me, RESOLVING_BASES, ty);
+        return;
+    }
     Symbol const* decl = ty->declared.symbol;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 || ty->declared.this_param };
     if (ctx.generic) ctx.merged_owner = ty_merged_owner_index(me, ty);
@@ -2620,10 +2668,6 @@ static void early_declared_members(Checker* me, Ty const* ty) {
         }
     }
     if (!late) return;
-    TyObjectState* states[2] = { ty->declared.raw, object_state(ty) };
-    bool wanted = false;
-    for (u32 k = 0; k < 2; k++) wanted |= states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members;
-    if (!wanted) return;
     MembersBuilder early = { .skip_computed = true };
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
         if (node->kind == SYMBOL_DECL_INTERFACE) {
@@ -2705,6 +2749,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             // (tsc's getBaseTypes pushing ResolvedBaseTypes: members asked for while the bases are lowered, see
             // members_reentered())
             ty_resolving_push(me, RESOLVING_BASES, ty);
+            BasesFrame frame = { .ty = ty, .builder = &builder, .outer = my bases_frames };
+            my bases_frames = &frame;
             bool any_base = false;
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
@@ -2747,12 +2793,27 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         .param_name = checker_atom(me, c_sv("x")) }));
                 }
             }
+            my bases_frames = frame.outer;
             if (ty_resolving_pop(me)) {
-                // The bases lead back to the type: it has none (TS2310, see ty_interface_in_base_cycle())
-                ty_symbol_links(me, decl)->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
-                bases.len = 0;
-                written_bases.len = 0;
+                // Its members were asked for while its bases were lowered: TS2310 at its declarations (tsc's
+                // getBaseTypes when popTypeResolution fails). The bases that lead back to the type are dropped (tsc's
+                // hasBaseType in resolveBaseTypesOfClass/Interface), the others kept: a default type argument reading
+                // the class's own members (`class Foo extends Next<Foo>`, `Next<C, T = C['p']>`) still has its base
+                SymbolLinks* links = ty_symbol_links(me, decl);
+                u32 kept = 0;
                 dynamic = false;
+                for (u32 i = 0; i < bases.len; i++) {
+                    if (has_base_type(me, written_bases.data[i], ty)) continue;
+                    dynamic |= base_is_dynamic(me, written_bases.data[i], 0);
+                    bases.data[kept] = bases.data[i];
+                    written_bases.data[kept++] = written_bases.data[i];
+                }
+                // (Bases that lead back are a cycle tsc finds elsewhere: TS2506 in getBaseConstructorTypeOfClass, or
+                // the interfaces' own TS2310, see ty_interface_in_base_cycle())
+                if (kept < bases.len || !bases.len) links->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
+                else links->base_cycle |= BASE_CYCLE_REENTERED;
+                bases.len = kept;
+                written_bases.len = kept;
             }
             if (dynamic) {
                 // Members that depend on the type arguments: whoever instantiates these adds the bases' (see

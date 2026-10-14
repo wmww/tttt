@@ -206,8 +206,8 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     // tsc's getBaseTypes() reports the declarations of an interface whose bases lead back to it (resolving the bases
     // first: reducing one can find the cycle, `interface Y extends X<Y>` with a mapped type over `keyof Y` in X)
     if (my symbol && span_valid(my name) && !span_source(my name)->is_stdlib) ty_members(current_checker, ty_declared_type_of(current_checker, my symbol));
-    if (my symbol && span_valid(my name) && !span_source(my name)->is_stdlib && ty_interface_in_base_cycle(current_checker, my symbol) &&
-        ty_interface_decl_reports_base_cycle(current_checker, my symbol, me)
+    if (my symbol && span_valid(my name) && !span_source(my name)->is_stdlib && (ty_bases_reentered(current_checker, my symbol) ||
+        (ty_interface_in_base_cycle(current_checker, my symbol) && ty_interface_decl_reports_base_cycle(current_checker, my symbol, me)))
     ) {
         Ty const* declared = ty_declared_type_of(current_checker, my symbol);
         if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {

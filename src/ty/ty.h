@@ -1049,6 +1049,9 @@ struct Checker {
     u32 resolving_len;
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
+    // The classes and interfaces whose bases are being lowered, innermost first, with their own members so far (see
+    // resolve_declared_members())
+    struct BasesFrame* bases_frames;
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool creating_from_type_node; // ty_reference_with_this() marks what it makes from_type_node (see lower.c)
@@ -2128,6 +2131,9 @@ bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 // Whether the interface is on a cycle of `extends` (tsc reports TS2310 on each declaration of the interfaces in a
 // cycle of base types, not on those that merely extend one)
 bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol);
+// Whether the members of the class or interface were asked for while its bases were resolved (tsc's getBaseTypes
+// failing popTypeResolution: TS2310 at every declaration). Resolves them
+bool ty_bases_reentered(Checker* me, Symbol const* symbol);
 // Whether TS2310 goes on this declaration (a direct `extends` of itself only where it's written)
 bool ty_interface_decl_reports_base_cycle(Checker* me, Symbol const* symbol, struct InterfaceDecl const* decl);
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name

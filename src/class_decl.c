@@ -1406,6 +1406,11 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
     Span span = span_valid(my name) ? my name : my full_span;
+    // Its members asked for while its bases were resolved (tsc's getBaseTypes, reportCircularBaseType)
+    if (span_valid(my name) && ty_bases_reentered(checker, my symbol)) {
+        Ty const* shown = declared->declared.type_params.len ? ty_reference(checker, declared, declared->declared.type_params) : declared;
+        error_ctx_error_d(errs, my name, 2310, "Type '", shown, "' recursively references itself as a base type.");
+    }
     Ty const* base = my extends.tag != EXPR_IMPLICIT_ANY ? ty_class_base_instance(checker, me) : nullptr;
     // A class that extends itself through its bases (tsc's circularity in getBaseConstructorTypeOfClass), and then
     // nothing is compared
