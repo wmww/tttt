@@ -32,10 +32,15 @@ typedef struct Found {
 typedef struct PackageJson {
     bool exists;
     JsonValue json;
+    // The package id's `+peer@version` part (append_peer_dependencies()), computed by the first package_id_of() of the
+    // package (under the resolver's lock once computed: several threads may get there)
+    bool peer_suffix_computed;
+    cstr peer_suffix;
 } PackageJson;
 
 static void package_json_drop(PackageJson* me) {
     json_drop(&my json);
+    cstr_drop(&my peer_suffix);
 }
 
 // Boxed: a PackageJson never moves once read, whatever other threads add to the map
@@ -530,7 +535,25 @@ static cstr package_id_of(State* me, csview path, cstr* package_name) {
     if (!name.size || !version.size) return cstr_null;
     *package_name = cstr_from_sv(name);
     cstr ret = cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
-    append_peer_dependencies(me, csview_from_n(path.buf, end), package, &ret);
+    ModuleResolver* resolver = my resolver;
+    pthread_mutex_lock(&resolver->lock);
+    bool computed = package->peer_suffix_computed;
+    pthread_mutex_unlock(&resolver->lock);
+    if (!computed) {
+        cstr suffix = cstr_null;
+        append_peer_dependencies(me, csview_from_n(path.buf, end), package, &suffix);
+        pthread_mutex_lock(&resolver->lock);
+        PackageJson* mut = (PackageJson*)package;
+        if (!mut->peer_suffix_computed) {
+            mut->peer_suffix = suffix;
+            suffix = cstr_null;
+            mut->peer_suffix_computed = true;
+        }
+        pthread_mutex_unlock(&resolver->lock);
+        cstr_drop(&suffix);
+    }
+    // (Written once under the lock, read-only after)
+    cstr_append_sv(&ret, cstr_sv(&package->peer_suffix));
     return ret;
 }
 
