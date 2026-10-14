@@ -347,6 +347,37 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   global augmentation merges, before the script's ambient modules are in the globals (8-line repro: an @types/ember
   with `declare module "ember" { namespace Ember {...} export default Ember }`).
 
+## Mutation seeds 61/62 leftovers (2026-10-14, agent C: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
+Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
+- **Circularity met by a check tsgo runs inside a type computation** (seed 61 noCircularitySelfReferentialGetter3/4
+  ann-number-string): `const a = { prop: 42, get self() { return a } } satisfies { prop: string; self: any }`: tsgo's
+  checkSatisfiesExpression runs while a's type is computed, its failure elaborates every property
+  (elaborateObjectLiteral reads `self`'s getter type) and that meets a in flight: TS7022 on a, TS7023 on self, a: any.
+  tttt checks `satisfies` in the typecheck walk, after a's type is done. Same family, reversed (seed 62): spurious
+  TS7022/TS7023/TS2502 in recursiveTypeInference add-optional (`_zod?:`), spurious TS2339 in
+  noCircularitySelfReferentialGetter2 drop-as.
+- **Lazy TS2339 of a callback's binding element** (seed 61 destructuringWithGenericParameter null-arg):
+  `f(null, ({ a }) => { a.x() })` with `f<T>(o: G<T>, cb: (p: T) => void)` failing on the null: tsgo reports
+  "Property 'a' does not exist on type 'unknown'" only when the body uses `a` (a's type computed while the parameter
+  has the unknown contextual type), not for `({ a }) => {}`. Check order of a failed call; not attempted.
+- seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
+- seed 62 controlFlowForStatement delete-stmt: `for (x = 5; cond; x = x.length)`: tsgo's message has the loop's
+  first-iteration type `number`, tttt the final `string | number | boolean` (with the `number` elaboration): the
+  seeds 41/42 "Flow loop partial types in messages" entry.
+- seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
+  `typeof x` implicit-any entry.
+- seed 62 conditionalContextualReturnSubstitutionCache drop-as (render): tttt adds the related TS2208 "This type
+  parameter might need an `extends C` constraint" for `T` against `null extends T ? K | null : K`; tsgo doesn't when a
+  branch mentions another type parameter (K, constrained or not), but does for `null extends T ? string : number`.
+  hasNonCircularBaseConstraint must find the synthetic parameter's constraint circular through K somehow; not found.
+  relate.c report_missing_constraint().
+- seed 62 localTypeParameterInferencePriority delete-stmt and extends-object (spurious TS2322): without the
+  `__schema!: S` property, `typeof ColumnSelectViewImp` to `new <S>() => Table<UnrollOnHover<S>>` fails in tttt
+  (S' inferred as Schema, the generic `getRows<C extends keyof S>` the only mention of S); tsgo infers through it.
+  Inference, not reduced further.
+- seed 62 recursiveTypeInference drop-prop (TS2741 text): the source object literal prints `posts: []` in tsgo,
+  `posts: never[]` in tttt (an empty array literal against a circular `any[]` target); not looked into.
+
 ## Mutation seeds 41/42 leftovers (2026-10-12, agent C: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - **Flow loop partial types in messages** (seed 41 typeGuardsAsAssertions null-arg and str-to-num): an error inside
