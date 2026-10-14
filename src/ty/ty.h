@@ -1871,6 +1871,7 @@ Ty const* ty_mapped_homomorphic_variable(Checker* me, Ty const* ty);
 #define MAX_TYPE_ARGS 32
 TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]);
 Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper);
+Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper const* mapper, Ty const* query);
 bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper);
 
 typedef struct ObjectLiteralProp {
@@ -2310,6 +2311,14 @@ typedef struct TyDisplayVisit {
     struct TyDisplayVisit const* outer;
 } TyDisplayVisit;
 
+// The declarations whose type is being printed through their pseudo type further up, and that type (tsgo's
+// context.enclosingSymbolTypes, addSymbolTypeToContext): a signature of the same declaration printed inside returns it
+typedef struct TyDisplaySymbolType {
+    void const* decl; // A FunctionImpl: the signature's declaration
+    struct Ty const* type;
+    struct TyDisplaySymbolType const* outer;
+} TyDisplaySymbolType;
+
 // The reverse mapped properties being printed further up (tsc's context.reverseMappedStack), innermost first
 typedef struct TyDisplayReverse {
     Prop const* prop;
@@ -2436,6 +2445,11 @@ typedef struct TyDisplay {
     // The type literal being printed is the annotation of the declaration whose name is `at` (tsc's enclosing
     // declaration is the printed node's parent): a `unique symbol` written inside it can be reused
     Span decl_literal;
+    // tsc's context.truncating once it is set by the depth limits (a conditional or anonymous type nested eleven times
+    // in itself): sticky for the rest of the print, the truncation length's elisions apply from there on (`any` where
+    // nothing truncates, see display_over()). One per print, made by the entry points
+    bool* over;
+    TyDisplaySymbolType const* symbol_types;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

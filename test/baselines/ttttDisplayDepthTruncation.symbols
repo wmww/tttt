@@ -1,0 +1,97 @@
+//// [test/cases/ttttDisplayDepthTruncation.ts] ////
+
+=== ttttDisplayDepthTruncation.ts ===
+// Eleven levels of one anonymous type deep the next prints as `any` and the rest of the print is past the truncation
+// length (tsgo: visitAndTransformType sets context.truncating): later members, list items and union members elide.
+declare function wrap<T>(x: T): { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6 }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string };
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 2, 22))
+>x : Symbol(x, Decl(ttttDisplayDepthTruncation.ts, 2, 25))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 2, 22))
+>inner : Symbol(inner, Decl(ttttDisplayDepthTruncation.ts, 2, 33))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 2, 22))
+>o : Symbol(o, Decl(ttttDisplayDepthTruncation.ts, 2, 43))
+>a : Symbol(a, Decl(ttttDisplayDepthTruncation.ts, 2, 48))
+>b : Symbol(b, Decl(ttttDisplayDepthTruncation.ts, 2, 54))
+>c : Symbol(c, Decl(ttttDisplayDepthTruncation.ts, 2, 60))
+>d : Symbol(d, Decl(ttttDisplayDepthTruncation.ts, 2, 66))
+>e : Symbol(e, Decl(ttttDisplayDepthTruncation.ts, 2, 72))
+>f : Symbol(f, Decl(ttttDisplayDepthTruncation.ts, 2, 78))
+>l : Symbol(l, Decl(ttttDisplayDepthTruncation.ts, 2, 86))
+>u : Symbol(u, Decl(ttttDisplayDepthTruncation.ts, 2, 109))
+>g : Symbol(g, Decl(ttttDisplayDepthTruncation.ts, 2, 135))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>z : Symbol(z, Decl(ttttDisplayDepthTruncation.ts, 2, 153))
+
+const w = wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0)))))))))))));
+>w : Symbol(w, Decl(ttttDisplayDepthTruncation.ts, 3, 5))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(ttttDisplayDepthTruncation.ts, 0, 0))
+
+declare function pair<T>(x: T): [T, { a: 1; b: 2 }, 3, 4, 5, 6, 7];
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 4, 22))
+>x : Symbol(x, Decl(ttttDisplayDepthTruncation.ts, 4, 25))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 4, 22))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 4, 22))
+>a : Symbol(a, Decl(ttttDisplayDepthTruncation.ts, 4, 37))
+>b : Symbol(b, Decl(ttttDisplayDepthTruncation.ts, 4, 43))
+
+const p = pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(0))))))))))));
+>p : Symbol(p, Decl(ttttDisplayDepthTruncation.ts, 5, 5))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+>pair : Symbol(pair, Decl(ttttDisplayDepthTruncation.ts, 3, 90))
+
+declare function un<T>(x: T): { x: T } | { a: 1 } | { b: 2 } | { c: 3 } | { d: 4 } | { e: 5 };
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 6, 20))
+>x : Symbol(x, Decl(ttttDisplayDepthTruncation.ts, 6, 23))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 6, 20))
+>x : Symbol(x, Decl(ttttDisplayDepthTruncation.ts, 6, 31))
+>T : Symbol(T, Decl(ttttDisplayDepthTruncation.ts, 6, 20))
+>a : Symbol(a, Decl(ttttDisplayDepthTruncation.ts, 6, 42))
+>b : Symbol(b, Decl(ttttDisplayDepthTruncation.ts, 6, 53))
+>c : Symbol(c, Decl(ttttDisplayDepthTruncation.ts, 6, 64))
+>d : Symbol(d, Decl(ttttDisplayDepthTruncation.ts, 6, 75))
+>e : Symbol(e, Decl(ttttDisplayDepthTruncation.ts, 6, 86))
+
+const q = un(un(un(un(un(un(un(un(un(un(un(un(0))))))))))));
+>q : Symbol(q, Decl(ttttDisplayDepthTruncation.ts, 7, 5))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+>un : Symbol(un, Decl(ttttDisplayDepthTruncation.ts, 5, 84))
+
+const e: number = q;
+>e : Symbol(e, Decl(ttttDisplayDepthTruncation.ts, 8, 5))
+>q : Symbol(q, Decl(ttttDisplayDepthTruncation.ts, 7, 5))
+

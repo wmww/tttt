@@ -1,0 +1,127 @@
+//// [test/cases/ttttDisplayDepthTruncation.ts] ////
+
+=== ttttDisplayDepthTruncation.ts ===
+// Eleven levels of one anonymous type deep the next prints as `any` and the rest of the print is past the truncation
+// length (tsgo: visitAndTransformType sets context.truncating): later members, list items and union members elide.
+declare function wrap<T>(x: T): { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6 }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string };
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>x : T
+>inner : T
+>o : { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }
+>a : 1
+>b : 2
+>c : 3
+>d : 4
+>e : 5
+>f : 6
+>l : [1, 2, 3, 4, 5, 6]
+>u : 1 | 2 | 3 | 4 | 5 | 6
+>g : number[]
+>z : string
+
+const w = wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0)))))))))))));
+>w : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: any; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0))))))))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: any; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0)))))))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: any; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0))))))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0)))))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0))))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(wrap(0)))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(wrap(0))))))) : { inner: { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(wrap(0)))))) : { inner: { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(wrap(0))))) : { inner: { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(wrap(0)))) : { inner: { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(wrap(0))) : { inner: { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(wrap(0)) : { inner: { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap(0) : { inner: number; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>wrap : <T>(x: T) => { inner: T; o: { a: 1; b: 2; c: 3; d: 4; e: 5; f: 6; }; l: [1, 2, 3, 4, 5, 6]; u: 1 | 2 | 3 | 4 | 5 | 6; g: Array<number>; z: string; }
+>0 : 0
+
+declare function pair<T>(x: T): [T, { a: 1; b: 2 }, 3, 4, 5, 6, 7];
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>x : T
+>a : 1
+>b : 2
+
+const p = pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(0))))))))))));
+>p : [[[[[[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(0)))))))))))) : [[[[[[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(0))))))))))) : [[[[[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(pair(pair(pair(0)))))))))) : [[[[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(pair(pair(0))))))))) : [[[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(pair(0)))))))) : [[[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(pair(0))))))) : [[[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(pair(0)))))) : [[[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(pair(0))))) : [[[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(pair(0)))) : [[[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(pair(0))) : [[[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(pair(0)) : [[number, { a: 1; b: 2; }, 3, 4, 5, 6, 7], { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair(0) : [number, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>pair : <T>(x: T) => [T, { a: 1; b: 2; }, 3, 4, 5, 6, 7]
+>0 : 0
+
+declare function un<T>(x: T): { x: T } | { a: 1 } | { b: 2 } | { c: 3 } | { d: 4 } | { e: 5 };
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>x : T
+>x : T
+>a : 1
+>b : 2
+>c : 3
+>d : 4
+>e : 5
+
+const q = un(un(un(un(un(un(un(un(un(un(un(un(0))))))))))));
+>q : { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: any | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any
+>un(un(un(un(un(un(un(un(un(un(un(un(0)))))))))))) : { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: any | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(un(un(un(un(un(0))))))))))) : { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(un(un(un(un(0)))))))))) : { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(un(un(un(0))))))))) : { x: { x: { x: { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(un(un(0)))))))) : { x: { x: { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(un(0))))))) : { x: { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(un(0)))))) : { x: { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(un(0))))) : { x: { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(un(0)))) : { x: { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(un(0))) : { x: { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(un(0)) : { x: { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un(0) : { x: number; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>un : <T>(x: T) => { x: T; } | { a: 1; } | { b: 2; } | { c: 3; } | { d: 4; } | { e: 5; }
+>0 : 0
+
+const e: number = q;
+>e : number
+>q : { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: { x: any | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any; } | any | any
+
