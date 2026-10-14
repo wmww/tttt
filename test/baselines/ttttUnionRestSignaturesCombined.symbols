@@ -1,0 +1,134 @@
+//// [test/cases/ttttUnionRestSignaturesCombined.ts] ////
+
+=== ttttUnionRestSignaturesCombined.ts ===
+// A union's signatures `(...p: T) => void` (T generic) and `(...p: [U, ...unknown[]]) => void` don't match (tsc's
+// compareSignaturesIdentical reads `T[0]` at position 0, getTypeAtPosition), so they are combined, with the raw
+// minArgumentCount of 0: a spread argument is fine (vueuse's createEventHook `fn(...args)`, fn a conditional
+// `Callback<T>` whose branches are rest signatures)
+export function f<T extends any[], U>(args: U[], a2: T, a3: [U, ...unknown[]]) {
+>f : Symbol(f, Decl(ttttUnionRestSignaturesCombined.ts, 0, 0))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 4, 18))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 4, 38))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+>a2 : Symbol(a2, Decl(ttttUnionRestSignaturesCombined.ts, 4, 48))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 4, 18))
+>a3 : Symbol(a3, Decl(ttttUnionRestSignaturesCombined.ts, 4, 55))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+
+  let fn1!: ((...p: [U, ...unknown[]]) => void);
+>fn1 : Symbol(fn1, Decl(ttttUnionRestSignaturesCombined.ts, 5, 5))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 5, 14))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+
+  fn1(...args);
+>fn1 : Symbol(fn1, Decl(ttttUnionRestSignaturesCombined.ts, 5, 5))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 4, 38))
+
+  let fn2!: ((...p: unknown[]) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn2 : Symbol(fn2, Decl(ttttUnionRestSignaturesCombined.ts, 7, 5))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 7, 14))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 7, 44))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+
+  fn2(...args);
+>fn2 : Symbol(fn2, Decl(ttttUnionRestSignaturesCombined.ts, 7, 5))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 4, 38))
+
+  let fn3!: ((...p: T) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn3 : Symbol(fn3, Decl(ttttUnionRestSignaturesCombined.ts, 9, 5))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 9, 14))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 4, 18))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 9, 36))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+
+  fn3(...args);
+>fn3 : Symbol(fn3, Decl(ttttUnionRestSignaturesCombined.ts, 9, 5))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 4, 38))
+
+  let fn4!: ((...p: any) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn4 : Symbol(fn4, Decl(ttttUnionRestSignaturesCombined.ts, 11, 5))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 11, 14))
+>p : Symbol(p, Decl(ttttUnionRestSignaturesCombined.ts, 11, 38))
+>U : Symbol(U, Decl(ttttUnionRestSignaturesCombined.ts, 4, 34))
+
+  fn4(...args);
+>fn4 : Symbol(fn4, Decl(ttttUnionRestSignaturesCombined.ts, 11, 5))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 4, 38))
+}
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : Symbol(IsAny, Decl(ttttUnionRestSignaturesCombined.ts, 13, 1))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 15, 11))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 15, 11))
+
+type Callback<T> = IsAny<T> extends true
+>Callback : Symbol(Callback, Decl(ttttUnionRestSignaturesCombined.ts, 15, 47))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+>IsAny : Symbol(IsAny, Decl(ttttUnionRestSignaturesCombined.ts, 13, 1))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+
+  ? (...param: any) => void
+>param : Symbol(param, Decl(ttttUnionRestSignaturesCombined.ts, 17, 5))
+
+  : (
+      [T] extends [void]
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+
+        ? (...param: unknown[]) => void
+>param : Symbol(param, Decl(ttttUnionRestSignaturesCombined.ts, 20, 11))
+
+        : [T] extends [any[]]
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+
+            ? (...param: T) => void
+>param : Symbol(param, Decl(ttttUnionRestSignaturesCombined.ts, 22, 15))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+
+            : (...param: [T, ...unknown[]]) => void
+>param : Symbol(param, Decl(ttttUnionRestSignaturesCombined.ts, 23, 15))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 16, 14))
+
+    )
+export type EventHookTrigger<T = any> = (...param: Parameters<Callback<T>>) => Promise<unknown[]>
+>EventHookTrigger : Symbol(EventHookTrigger, Decl(ttttUnionRestSignaturesCombined.ts, 24, 5))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 25, 29))
+>param : Symbol(param, Decl(ttttUnionRestSignaturesCombined.ts, 25, 41))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Callback : Symbol(Callback, Decl(ttttUnionRestSignaturesCombined.ts, 15, 47))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 25, 29))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+export function createEventHook<T = any>() {
+>createEventHook : Symbol(createEventHook, Decl(ttttUnionRestSignaturesCombined.ts, 25, 97))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 26, 32))
+
+  const fns: Set<Callback<T>> = new Set()
+>fns : Symbol(fns, Decl(ttttUnionRestSignaturesCombined.ts, 27, 7))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+>Callback : Symbol(Callback, Decl(ttttUnionRestSignaturesCombined.ts, 15, 47))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 26, 32))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+
+  const trigger: EventHookTrigger<T> = (...args) => {
+>trigger : Symbol(trigger, Decl(ttttUnionRestSignaturesCombined.ts, 28, 7))
+>EventHookTrigger : Symbol(EventHookTrigger, Decl(ttttUnionRestSignaturesCombined.ts, 24, 5))
+>T : Symbol(T, Decl(ttttUnionRestSignaturesCombined.ts, 26, 32))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 28, 40))
+
+    return Promise.all(Array.from(fns).map(fn => fn(...args)))
+>Promise.all : Symbol(PromiseConstructor.all, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>all : Symbol(PromiseConstructor.all, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Array.from(fns).map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>Array.from : Symbol(ArrayConstructor.from, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>from : Symbol(ArrayConstructor.from, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>fns : Symbol(fns, Decl(ttttUnionRestSignaturesCombined.ts, 27, 7))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>fn : Symbol(fn, Decl(ttttUnionRestSignaturesCombined.ts, 29, 43))
+>fn : Symbol(fn, Decl(ttttUnionRestSignaturesCombined.ts, 29, 43))
+>args : Symbol(args, Decl(ttttUnionRestSignaturesCombined.ts, 28, 40))
+  }
+}
+

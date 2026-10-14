@@ -1,0 +1,121 @@
+//// [test/cases/ttttUnionRestSignaturesCombined.ts] ////
+
+=== ttttUnionRestSignaturesCombined.ts ===
+// A union's signatures `(...p: T) => void` (T generic) and `(...p: [U, ...unknown[]]) => void` don't match (tsc's
+// compareSignaturesIdentical reads `T[0]` at position 0, getTypeAtPosition), so they are combined, with the raw
+// minArgumentCount of 0: a spread argument is fine (vueuse's createEventHook `fn(...args)`, fn a conditional
+// `Callback<T>` whose branches are rest signatures)
+export function f<T extends any[], U>(args: U[], a2: T, a3: [U, ...unknown[]]) {
+>f : <T extends any[], U>(args: U[], a2: T, a3: [U, ...unknown[]]) => void
+>args : U[]
+>a2 : T
+>a3 : [U, ...unknown[]]
+
+  let fn1!: ((...p: [U, ...unknown[]]) => void);
+>fn1 : (p_0: U, ...p: unknown[]) => void
+>p : [U, ...unknown[]]
+
+  fn1(...args);
+>fn1(...args) : void
+>fn1 : (p_0: U, ...p: unknown[]) => void
+>...args : U
+>args : U[]
+
+  let fn2!: ((...p: unknown[]) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn2 : ((...p: unknown[]) => void) | ((p_0: U, ...p: unknown[]) => void)
+>p : unknown[]
+>p : [U, ...unknown[]]
+
+  fn2(...args);
+>fn2(...args) : void
+>fn2 : ((...p: unknown[]) => void) | ((p_0: U, ...p: unknown[]) => void)
+>...args : U
+>args : U[]
+
+  let fn3!: ((...p: T) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn3 : ((...p: T) => void) | ((p_0: U, ...p: unknown[]) => void)
+>p : T
+>p : [U, ...unknown[]]
+
+  fn3(...args);
+>fn3(...args) : void
+>fn3 : ((...p: T) => void) | ((p_0: U, ...p: unknown[]) => void)
+>...args : U
+>args : U[]
+
+  let fn4!: ((...p: any) => void) | ((...p: [U, ...unknown[]]) => void);
+>fn4 : ((...p: any) => void) | ((p_0: U, ...p: unknown[]) => void)
+>p : any
+>p : [U, ...unknown[]]
+
+  fn4(...args);
+>fn4(...args) : void
+>fn4 : ((...p: any) => void) | ((p_0: U, ...p: unknown[]) => void)
+>...args : U
+>args : U[]
+}
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : IsAny<T>
+>true : true
+>false : false
+
+type Callback<T> = IsAny<T> extends true
+>Callback : Callback<T>
+>true : true
+
+  ? (...param: any) => void
+>param : any
+
+  : (
+      [T] extends [void]
+        ? (...param: unknown[]) => void
+>param : unknown[]
+
+        : [T] extends [any[]]
+            ? (...param: T) => void
+>param : T
+
+            : (...param: [T, ...unknown[]]) => void
+>param : [T, ...unknown[]]
+
+    )
+export type EventHookTrigger<T = any> = (...param: Parameters<Callback<T>>) => Promise<unknown[]>
+>EventHookTrigger : EventHookTrigger<T>
+>param : Parameters<Callback<T>>
+
+export function createEventHook<T = any>() {
+>createEventHook : <T = any>() => void
+
+  const fns: Set<Callback<T>> = new Set()
+>fns : Set<Callback<T>>
+>new Set() : Set<Callback<T>>
+>Set : SetConstructor
+
+  const trigger: EventHookTrigger<T> = (...args) => {
+>trigger : EventHookTrigger<T>
+>(...args) => {    return Promise.all(Array.from(fns).map(fn => fn(...args)))  } : (...args: Parameters<Callback<T>>) => Promise<void[]>
+>args : Parameters<Callback<T>>
+
+    return Promise.all(Array.from(fns).map(fn => fn(...args)))
+>Promise.all(Array.from(fns).map(fn => fn(...args))) : Promise<void[]>
+>Promise.all : { <T_1>(values: Iterable<T_1 | PromiseLike<T_1>>): Promise<Awaited<T_1>[]>; <T_1 extends readonly unknown[] | []>(values: T_1): Promise<{ -readonly [P in keyof T_1]: Awaited<T_1[P]>; }>; }
+>Promise : PromiseConstructor
+>all : { <T_1>(values: Iterable<T_1 | PromiseLike<T_1>>): Promise<Awaited<T_1>[]>; <T_1 extends readonly unknown[] | []>(values: T_1): Promise<{ -readonly [P in keyof T_1]: Awaited<T_1[P]>; }>; }
+>Array.from(fns).map(fn => fn(...args)) : void[]
+>Array.from(fns).map : <U>(callbackfn: (value: Callback<T>, index: number, array: Callback<T>[]) => U, thisArg?: any) => U[]
+>Array.from(fns) : Callback<T>[]
+>Array.from : { <T_1>(arrayLike: ArrayLike<T_1>): T_1[]; <T_1, U>(arrayLike: ArrayLike<T_1>, mapfn: (v: T_1, k: number) => U, thisArg?: any): U[]; <T_1>(iterable: Iterable<T_1> | ArrayLike<T_1>): T_1[]; <T_1, U>(iterable: Iterable<T_1> | ArrayLike<T_1>, mapfn: (v: T_1, k: number) => U, thisArg?: any): U[]; }
+>Array : ArrayConstructor
+>from : { <T_1>(arrayLike: ArrayLike<T_1>): T_1[]; <T_1, U>(arrayLike: ArrayLike<T_1>, mapfn: (v: T_1, k: number) => U, thisArg?: any): U[]; <T_1>(iterable: Iterable<T_1> | ArrayLike<T_1>): T_1[]; <T_1, U>(iterable: Iterable<T_1> | ArrayLike<T_1>, mapfn: (v: T_1, k: number) => U, thisArg?: any): U[]; }
+>fns : Set<Callback<T>>
+>map : <U>(callbackfn: (value: Callback<T>, index: number, array: Callback<T>[]) => U, thisArg?: any) => U[]
+>fn => fn(...args) : (fn: Callback<T>) => void
+>fn : Callback<T>
+>fn(...args) : void
+>fn : ((...param: any) => void) | ((...param: unknown[]) => void) | ((...param: T) => void) | ((param_0: T, ...param: unknown[]) => void)
+>...args : any
+>args : Parameters<Callback<T>>
+  }
+}
+

@@ -7566,6 +7566,17 @@ static Ternary sig_types_compare(Checker* me, RelationState* st, Ty const* t, Ty
 }
 
 static Ty const* type_at_position(Checker* me, Signature const* sig, u32 i) {
+    // (A generic rest parameter is indexed at the position, `T[0]` for `...p: T`: tsc's tryGetTypeAtPosition's
+    // getIndexedAccessType, where param_type_at() says any. So `(...p: T)` doesn't match `(...p: [U, ...unknown[]])`
+    // in a union's signatures, which are combined instead)
+    if (sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 >= sig->param_count) {
+        Ty const* rest = sig->params[sig->param_count - 1].type;
+        if (rest->kind == TY_TYPE_PARAM || ((rest->flags & TYF_DEFERRED) && rest->kind != TY_UNION)) {
+            Value index = value_number((double)(i + 1 - sig->param_count));
+            Ty const* element = ty_indexed_or_null(me, rest, ty_literal(me, &index), false);
+            if (element) return element;
+        }
+    }
     Ty const* ret = param_type_at(me, sig, i);
     return ret ? ret : ty_intrinsic(me, TY_ANY);
 }
