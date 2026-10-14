@@ -93,15 +93,22 @@
 - If a TS2589 runaway needs tsc's per-node instantiation budget again (the deleted tsc 6 `scripts/tscinstcount.js`),
   port it as a `test/oracle` overlay: a patched copy of `internal/checker/checker.go` logging `c.instantiationCount`
   where it's reset (scratch branch, never committed; test/oracle/README.md's "instrument the oracle").
-- scenarios 209 / 213 left: tsbuild/dependencyUpdate/rebuilds-when-absolute-non-root-dependency-is-updated (spurious
-  TS2307 for an absolute import of a non-root dependency under -b), tsbuild/inferredTypeFromMonorepoReference (spurious
-  TS2883, declaration emit across references), tsbuild/projectReferenceRedirect/uses-correct-project-reference-
-  redirect-when-file-belongs-to-multiple-sub-projects (spurious TS2322: a file in two sub-projects should take the
-  redirect of the project that imports it), tsbuild/contentMapperOptionDiagnostics (plan 56).
-- clidiff `--sample 4` text mismatches (type printing in messages): nodemailer (`typeof nmfetch` where tsc prints the
-  function's structural type `{ (url...): ...; DEFAULT_TIMEOUT }` for a function with expando properties),
-  query-codemods (`import('jscodeshift')` quoting/union order in a long TS2345), vitest/browser-preview (TS2339 type
-  text), vitest/test/coverage-test (an extra "is missing the following properties" line under a TS2345).
+- scenarios: 210 passed, 0 failed, 14 skipped (2026-10-14). The skips are harness artifacts (tsc's fake libs, a fake
+  content-mapper executable, Windows drive-letter paths) or unsupported build modes (`--clean`, `--dry`: both need build
+  info tttt doesn't write; TS6377). `--dry` would print "A non-dry build would build project ..." per project.
+- clidiff `--sample 4` text mismatches left (2026-10-14; nodemailer, nest, vitest/browser-preview fixed):
+  - rxjs/packages/rxjs: the elaboration path `'[bufferTime](...)[bufferTime](...)[groupBy]'` (tsc) against
+    `'[bufferTime](...)[groupBy]'`, and `boolean[][]` against `boolean[]` below it: a different first failing member
+    of a deep return-type chain; not looked at.
+  - es-toolkit isEmpty.spec.ts:56: `{ constructor: { (): void; prototype: ...; }; }` (tsc) against `prototype: any`.
+    `function Foo() {}; Foo.prototype = { constructor: Foo }`: tsc types `{ constructor: Foo }` while Foo's type is
+    in flight (the expando `prototype` reads itself: any, printed `...` at depth); tttt's types baseline shows it
+    resolving Foo fully (`{ constructor: typeof Foo }`). A probe of those lines alone prints `any` in both.
+  - gemini-cli eval-coverage/eval-inventory.test.ts: `location: { line: number; column: number; }` (tsc) against
+    `location: EvalSourceLocation`: the merged optional spread property is the subtype-reduced union of the literal's
+    `{ line: number; column: number }` and the interface; which one survives (tsc's removeSubtypes with the strict
+    subtype relation, identical structures) differs.
+  - vitest/test/coverage-test, query-codemods (older entries, not rechecked).
 - File include explanations (program_error_explaining_file()): type reference directives, automatic type directives
   and lib files aren't recorded as reasons.
 - source sweep `+TS6059` (react-router/packages/create-react-router, 11 projects in 2 repos): a file outside rootDir

@@ -130,3 +130,19 @@ Left:
 - Comparisons of names against literals (`span_equals(name, "constructor")`, `"prototype"`, `"__proto__"`...) are by
   raw text: `constructor` isn't a constructor. tsc compares escapedText there. No test needs it.
 - Computed keys compare by source text, JSX attribute names stay raw (TS17021 there anyway).
+
+## Global ambient modules are merged after the global types: an augmented global interface's base can't see them
+DT sweep's last mismatch, types/ember/v2 (-TS2306 at test/function-ext.ts:1, -TS2339 x4). function-ext.ts is a module
+with `import Ember from "ember"` and `declare global { interface Function extends Ember.FunctionPrototypeExtensions {} }`;
+"ember" is a `declare module "ember"` in the script index.d.ts (which the package's own name also resolves to). tsgo's
+initializeChecker merges global augmentations, then calls getGlobalType for IArguments/Array/Object/Function/
+CallableFunction/NewableFunction/String/Number/Boolean/RegExp/ReadonlyArray/ThisType, and only *then* merges the
+scripts' ambient module declarations ("deferred since they may require other global symbols"). getGlobalType("Function")
+asks isThislessInterface, which resolves every declaration's `extends` entity names (resolveEntityName, ignoreErrors)
+and so the import alias `Ember`: resolveExternalModule finds no ambient "ember" yet, takes the resolved file, reports
+TS2306 "is not a module" at the import (TS2307 if nothing resolves), and caches the alias as unknown for good: the
+Function augmentation gets no base and `function() {}.property()` is TS2339. tttt resolves imports with every ambient
+module known. Mirroring it: for interfaces of those global names declared in a global augmentation, resolve the first
+identifier of each dotted `extends` name; if it's an import alias of a bare specifier that only a script's ambient
+module declares (not a module file, not a pattern), resolve it as a file (TS2306/TS2307 at the import) and make the
+alias unknown program-wide. Not done (one DT package).
