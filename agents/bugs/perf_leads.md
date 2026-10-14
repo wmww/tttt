@@ -380,3 +380,10 @@ memo that only fills on the early path?) isn't known: worth finding, it may cost
   composite mapper is lazy: maps through inner then outer on lookup, no up-front instantiation of inner's targets).
 - **immutable.d.ts after the canonical signature fix**: 292k types against tsgo's 595k (the whole sweep's immutable
   projects are at types ratio 0.43-0.57 now, from 1.3-1.8). Nothing left there.
+- (2026-10-14, agent C) TS2574's check of generic variadic tuple elements (type.c, tsgo's checkTupleType ->
+  isArrayLikeType, the same relation tsgo runs) costs type-fest +0.84% instructions (19.08 -> 19.25 G). 60 checks;
+  three `...MergeDeepArrayOrTupleElements<PickRestType<D>, PickRestType<S>, Options>` (merge-deep.d.ts:167/193/219) take
+  ~22 of the 25 ms: relating that conditional to `readonly any[]` goes through its default constraint into the whole
+  MergeDeepOrReturn machinery (resolve_conditional_instance/branch_type_with dominate the callgrind delta). Worth a look
+  if tsgo is much cheaper there: relate.c conditional_source_related() relates the branches before the distributive
+  constraint (tsgo: distributive first) and again after it when that fails.
