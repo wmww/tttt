@@ -7,7 +7,6 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 (satisfies getter, `extends Object?.Bar`, drop-as, spread loop, deferredLookupTypeResolution2) all still differ.
 
 ## Known missing checks
-- TS4109/TS4110 (type arguments circularly referencing themselves: circularTypeArgumentsLocalAndOuterNoCrash1).
 - `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 on the
   member's type argument is missing (xstate).
 - Missing TS2353 for `const x: Trans<E> = { NEXT: ... }` in a generic function with `Trans<E> = { [K in E['type'] |

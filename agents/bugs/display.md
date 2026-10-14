@@ -274,10 +274,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 
 ## Suite tail leftovers (2026-10-12 fan-out, agent C: TS tests failing types/symbols only)
 Looked at, root cause where found, not fixed (one test each unless named):
-- circularTypeArgumentsLocalAndOuterNoCrash1: tsgo prints `f.NumArray<any>` for a local interface of a generic
-  function when the reference's outer type arguments aren't its outer type parameters (typeReferenceToTypeNode's
-  outer type parameter groups); tttt prints `NumArray<any>` (in scope). The reference made under the circularity has
-  other outer arguments in tsgo.
 - genericClassesRedeclaration: `class C extends StringHashTable<T>` in a second `declare namespace TypeScript` block
   where StringHashTable is declared twice: tsgo prints the base as `TypeScript.StringHashTable<T>` (the conflicting
   second class, a symbol outside the exports table, needs qualification); tttt resolves to the table's.

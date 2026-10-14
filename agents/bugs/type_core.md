@@ -162,14 +162,6 @@ passing tests).
   circular; tttt interns the instance and meets it at once. Matching it means not interning in-flight alias
   instantiations, not tuning a counter: leave it.)
 - circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
-- TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1
-  (`type X = NumArray<X extends {} ? number : number>`, NumArray local
-  to `f<_T, _S>`) tttt does find the cycle in `ty_reference_args()`, but outside the typecheck phase (the types walk),
-  where `ty_error_at` drops the error. tsc gets there during the alias's check: resolving the argument's conditional
-  relates X to `{}`, which resolves X's members and so its type arguments while they're in flight. tttt's relation to
-  `{}` never looks at a deferred reference's arguments, and the TS2344 check of the alias body doesn't reach them
-  either. Also: the circular branch errors all arguments, outer ones included (`f<any, any>.NumArray<any>`); tsc
-  keeps the outer type parameters and errors only the local ones (`NumArray<any>`).
 - Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.

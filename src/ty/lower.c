@@ -2538,10 +2538,10 @@ Ty const* ty_deferred_reference(
     return ret;
 }
 
-static void circular_reference_args(Checker* me, Ty const* reference, Ty const** args, u32 len) {
-    Ty const* target = reference->reference.target;
-    u32 outer = target->kind == TY_DECLARED ? target->declared.outer_count : 0;
-    for (u32 i = 0; i < len; i++) args[i] = i < outer ? target->declared.type_params.data[i] : ty_intrinsic(me, TY_ERROR);
+// (All of them error types, the outer type parameters' too: tsgo's getTypeArguments repeats errorType for
+// len(TypeParameters()), outer and local, so a local interface prints qualified, `f.NumArray<any>`)
+static void circular_reference_args(Checker* me, Ty const** args, u32 len) {
+    for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
 }
 
 TyList ty_reference_args(Checker* me, Ty const* reference) {
@@ -2552,10 +2552,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     u32 len = reference->reference.target->declared.type_params.len;
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     if (deferred->state == LAZY_STATE_IN_FLIGHT) {
-        // Only an illegal cycle gets here (its arguments need its arguments). (The outer type parameters stay
-        // themselves: tsc's concatenate(outerTypeParameters, local error types))
+        // Only an illegal cycle gets here (its arguments need its arguments)
         deferred->circular = true;
-        circular_reference_args(me, reference, args, len);
+        circular_reference_args(me, args, len);
         return (TyList){ .data = args, .len = len };
     }
     deferred->state = LAZY_STATE_IN_FLIGHT;
@@ -2578,7 +2577,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     if (deferred->circular) {
         // tsc's getTypeArguments when popTypeResolution fails: error type arguments, reported at the node (array and
         // tuple nodes have no span here: the current node instead)
-        circular_reference_args(me, reference, args, len);
+        circular_reference_args(me, args, len);
         if (node->tag == TYPE_IDENTIFIER) {
             Symbol const* symbol = reference->reference.target->declared.symbol;
             ty_error_at(me, identifier_type_span(node->identifier), 4109, cstr_d("Type arguments for '",
