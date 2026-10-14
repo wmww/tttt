@@ -1,0 +1,24 @@
+//// [test/cases/ttttInstantiationStackTailCall.ts] ////
+
+=== ttttInstantiationStackTailCall.ts ===
+// The instantiation stack TS5114/TS5115 name the types of keeps an aliased conditional type's entry while its branch,
+// a conditional type, is resolved as a tail call (tsgo's getConditionalType loop): the runaway is named 'Unwrap'
+interface Box<T> { inner: Unwrap<T> }
+>Box : Symbol(Box, Decl(ttttInstantiationStackTailCall.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 2, 14))
+>inner : Symbol(Box.inner, Decl(ttttInstantiationStackTailCall.ts, 2, 18))
+>Unwrap : Symbol(Unwrap, Decl(ttttInstantiationStackTailCall.ts, 2, 37))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 2, 14))
+
+type Unwrap<T> = T extends string ? "s" : T extends number ? "n" : Box<[T]>["inner"];
+>Unwrap : Symbol(Unwrap, Decl(ttttInstantiationStackTailCall.ts, 2, 37))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 3, 12))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 3, 12))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 3, 12))
+>Box : Symbol(Box, Decl(ttttInstantiationStackTailCall.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInstantiationStackTailCall.ts, 3, 12))
+
+declare const b: Unwrap<boolean>;
+>b : Symbol(b, Decl(ttttInstantiationStackTailCall.ts, 4, 13))
+>Unwrap : Symbol(Unwrap, Decl(ttttInstantiationStackTailCall.ts, 2, 37))
+

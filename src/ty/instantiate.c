@@ -881,7 +881,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     return ret;
 }
 
-static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* mapper) {
+static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
     Ty const* stack_buf[16];
     switch ((TyKind)ty->kind) {
         case TY_INTRINSIC:
@@ -902,9 +902,10 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             break;
     }
     // The instantiation stack, for TS5114 (tsc's instantiationStack): recorded here, out of ty_instantiate()'s hot
-    // path, for the types that instantiate others (a leaf never has a deeper frame above it). HACK: a tail call
-    // replaces its caller's entry, where tsc keeps it
-    if (my instantiation_depth) my instantiation_stack[my instantiation_depth - 1] = ty;
+    // path, for the types that instantiate others (a leaf never has a deeper frame above it). A tail call keeps its
+    // caller's entry (tsc's getConditionalType resolves it in a loop, inside the instantiation of the conditional type
+    // it started with)
+    if (my instantiation_depth && !tail) my instantiation_stack[my instantiation_depth - 1] = ty;
     switch ((TyKind)ty->kind) {
         case TY_INTRINSIC:
         case TY_LITERAL:
@@ -1113,7 +1114,7 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
         u32 counts = ty->alias != nullptr;
         my instantiation_tail_count += counts;
         my instantiation_count++;
-        Ty const* ret = instantiate_inner(me, ty, mapper);
+        Ty const* ret = instantiate_inner(me, ty, mapper, true);
         my instantiation_tail_count -= counts;
         return ret;
     }
@@ -1155,7 +1156,7 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
     u32 tail_count = my instantiation_tail_count;
     my instantiation_tail_count = 0;
     u32 limit_hits = my instantiation_limit_hits;
-    Ty const* ret = instantiate_inner(me, ty, mapper);
+    Ty const* ret = instantiate_inner(me, ty, mapper, false);
     my instantiation_tail_count = tail_count;
     my instantiation_depth--;
     if (pushed) {

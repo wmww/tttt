@@ -75,6 +75,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInstantiationStackTailCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInterfaceExtendsGenericFunctionAlias': {
         errors: true,
         symbols: true,
