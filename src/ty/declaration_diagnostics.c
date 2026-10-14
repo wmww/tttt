@@ -191,6 +191,7 @@ typedef struct Walk {
     // `export_offsets`: where in `out` the `export ` modifiers of a namespace body's statements are, which tsc strips
     // when every statement has one
     bool has_scope_marker, needs_scope_fix, has_module_indicator;
+    u32 generated_names; // The printer's generated names given so far (`_a`, `_b`...)
     u32* export_offsets;
     u32 export_offset_count, export_offset_cap;
 } Walk;
@@ -2894,6 +2895,20 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     cstr_drop(&declarations);
 }
 
+// A reserved word (tsc's isNonContextualKeyword: what can't name a variable)
+static bool is_reserved_word(csview name) {
+    static char const* const words[] = {
+        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "enum",
+        "export", "extends", "false", "finally", "for", "function", "if", "import", "in", "instanceof", "new", "null",
+        "return", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with",
+        "implements", "interface", "let", "package", "private", "protected", "public", "static", "yield",
+    };
+    for (u32 i = 0; i < c_arraylen(words); i++) {
+        if (csview_equals(name, words[i])) return true;
+    }
+    return false;
+}
+
 // The expando members of a function (`f.x = v`, tsc's transformExpandoAssignment), as a namespace of the function's
 // name after it (createFullExpandoBlock): a variable of each assignment's type, or `export { v as x }` when the value
 // is a name (every member is exported then). `modifiers`: the function's, as written
@@ -2925,11 +2940,27 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, cs
                 w_lit(me, " };\n");
                 continue;
             }
+            // (A keyword can't be a variable's name: a generated one, exported as the keyword)
+            bool keyword = is_reserved_word(member->name);
+            char generated[16] = "";
+            if (keyword) {
+                u32 n = my generated_names++;
+                snprintf(generated, sizeof generated, n < 26 ? "_%c" : "_%c%u", 'a' + n % 26, n / 26);
+            }
             w_lit(me, "\x01var ");
-            w(me, member->name);
+            w(me, keyword ? csview_from(generated) : member->name);
             w_lit(me, ": ");
             w_type(me, ty_widened_literal(my checker, ty_type_of_symbol(my checker, member)));
             w_lit(me, ";\n");
+            if (keyword) {
+                any_export = true;
+                w_indent(me);
+                w_lit(me, "export { ");
+                w(me, csview_from(generated));
+                w_lit(me, " as ");
+                w(me, member->name);
+                w_lit(me, " };\n");
+            }
         }
     }
     my indent--;
@@ -3121,6 +3152,13 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     for_each (i, vec_class_item, &cls->items) {
         if (is_internal_declaration(i->span)) continue;
         my member_static = class_item_is_static((ClassItem*)i);
+        // (A computed name that isn't late bound, of a type that isn't a literal or unique symbol, isn't written:
+        // visitDeclarationSubtree's hasDynamicName check)
+        Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key : i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
+        if (key && is_dynamic_name(key)) {
+            Ty const* key_type = lazy_type_get((LazyType*)&key->lazy_type);
+            if (!pseudo_is_entity_name(key) || !key_type || !(key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) continue;
+        }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
@@ -3165,11 +3203,15 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     }
                 } else {
                     w_lit(me, "(");
-                    for_each (j, vec_function_arg, &fn->args) {
-                        Binding const* binding = &j->initializer.binding;
-                        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-                        w_parameter(me, fn, j, private_member);
-                        break;
+                    if (private_member) {
+                        w_lit(me, "value"); // (updateAccessorParamList)
+                    } else {
+                        for_each (j, vec_function_arg, &fn->args) {
+                            Binding const* binding = &j->initializer.binding;
+                            if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                            w_parameter(me, fn, j, false);
+                            break;
+                        }
                     }
                     w_lit(me, ")");
                 }
@@ -3211,13 +3253,16 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
 // when empty)
 static void w_members(Walk* me, TypeNode const* type) {
     bool empty = type->tag != TYPE_INTERFACE || !vec_interface_member_size(&type->interface.members);
-    if (empty) {
-        w_lit(me, "{\n");
-        w_indent(me);
-        w_lit(me, "}");
-        return;
+    if (!empty) {
+        isize_t start = cstr_size(my out);
+        w_node(me, type);
+        // (Every member left out)
+        if (cstr_size(my out) - start != 2 || cstr_str(my out)[start] != '{') return;
+        cstr_erase(my out, start, 2);
     }
-    w_node(me, type);
+    w_lit(me, "{\n");
+    w_indent(me);
+    w_lit(me, "}");
 }
 
 static void emit_interface(Walk* me, InterfaceDecl const* decl, Statement const* statement, Container container) {
@@ -3459,6 +3504,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     w_indent(me);
     w_lit(me, "import ");
     if (port->main.type_only) w_lit(me, "type ");
+    if (port->source_phase) w_lit(me, "source ");
     if (default_kept) {
         w(me, span_sv(port->main.decl_name));
         if (gather_kept || named) w_lit(me, ", ");
