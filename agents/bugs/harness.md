@@ -109,6 +109,9 @@
     `{ line: number; column: number }` and the interface; which one survives (tsc's removeSubtypes with the strict
     subtype relation, identical structures) differs.
   - vitest/test/coverage-test, query-codemods (older entries, not rechecked).
+  - apollo-client/integration-tests/vite: truncation (`DeepPartial<...>` in tsc, printed in full in tttt) and two
+    missing `'undefined & TData' is not assignable to type 'RegExp & ...'` lines in a deep TS2322 chain (also at the
+    session start's binary, deterministic).
 - File include explanations (program_error_explaining_file()): type reference directives, automatic type directives
   and lib files aren't recorded as reasons.
 - source sweep `+TS6059` (react-router/packages/create-react-router, 11 projects in 2 repos): a file outside rootDir
