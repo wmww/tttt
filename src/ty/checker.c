@@ -1352,7 +1352,7 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
             Ty const* a_type = nullptr;
             for (u32 j = 0; j < len; j++) {
                 Ty const* other_type = types[j];
-                if (other_type->kind != TY_ANONYMOUS || !(other_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                if ((other_type->kind != TY_ANONYMOUS && other_type->kind != TY_REFERENCE) || !(other_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
                 if (!a_type) {
                     a_type = prop_type(me, prop);
                     if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
@@ -1363,7 +1363,8 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
                 if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
                 Ty const* b_type = prop_type(me, other);
                 if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_type(me, b_type);
-                if (!is_literal_like(b_type) || (b_type->flags & TYF_NEVER)) continue;
+                // (A literal part on one side is enough, tsc's CheckFlags.HasLiteralPart)
+                if (b_type->flags & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
                 if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return prop->name;
             }

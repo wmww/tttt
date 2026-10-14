@@ -1,0 +1,98 @@
+//// [test/cases/ttttNeverReducedGenericReference.ts] ////
+
+=== ttttNeverReducedGenericReference.ts ===
+// tsc's getReducedType: a discriminant conflict with a generic instantiation is never (one literal side is enough,
+// CheckFlags.HasLiteralPart): Object.assign({ onError: null, ... }, opts) with opts: AwaiterOpts<T | null> (vencord)
+interface AwaiterOpts<T> {
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 2, 22))
+
+    fallbackValue: T;
+>fallbackValue : Symbol(AwaiterOpts.fallbackValue, Decl(ttttNeverReducedGenericReference.ts, 2, 26))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 2, 22))
+
+    deps?: unknown[];
+>deps : Symbol(AwaiterOpts.deps, Decl(ttttNeverReducedGenericReference.ts, 3, 21))
+
+    onError?(e: any): void;
+>onError : Symbol(AwaiterOpts.onError, Decl(ttttNeverReducedGenericReference.ts, 4, 21))
+>e : Symbol(e, Decl(ttttNeverReducedGenericReference.ts, 5, 13))
+
+    onSuccess?(value: T): void;
+>onSuccess : Symbol(AwaiterOpts.onSuccess, Decl(ttttNeverReducedGenericReference.ts, 5, 27))
+>value : Symbol(value, Decl(ttttNeverReducedGenericReference.ts, 6, 15))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 2, 22))
+}
+export function useAwaiter<T>(providedOpts?: AwaiterOpts<T | null>) {
+>useAwaiter : Symbol(useAwaiter, Decl(ttttNeverReducedGenericReference.ts, 7, 1))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 8, 27))
+>providedOpts : Symbol(providedOpts, Decl(ttttNeverReducedGenericReference.ts, 8, 30))
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 8, 27))
+
+    const opts: Required<AwaiterOpts<T | null>> = Object.assign({
+>opts : Symbol(opts, Decl(ttttNeverReducedGenericReference.ts, 9, 9))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 8, 27))
+>Object.assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+
+        fallbackValue: null,
+>fallbackValue : Symbol(fallbackValue, Decl(ttttNeverReducedGenericReference.ts, 9, 65))
+
+        deps: [],
+>deps : Symbol(deps, Decl(ttttNeverReducedGenericReference.ts, 10, 28))
+
+        onError: null,
+>onError : Symbol(onError, Decl(ttttNeverReducedGenericReference.ts, 11, 17))
+
+    }, providedOpts);
+>providedOpts : Symbol(providedOpts, Decl(ttttNeverReducedGenericReference.ts, 8, 30))
+
+    return opts;
+>opts : Symbol(opts, Decl(ttttNeverReducedGenericReference.ts, 9, 9))
+}
+function f<T>() {
+>f : Symbol(f, Decl(ttttNeverReducedGenericReference.ts, 15, 1))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 16, 11))
+
+    type X6 = { onError: null } & AwaiterOpts<T | null>;
+>X6 : Symbol(X6, Decl(ttttNeverReducedGenericReference.ts, 16, 17))
+>onError : Symbol(onError, Decl(ttttNeverReducedGenericReference.ts, 17, 15))
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 16, 11))
+
+    let x6: X6 = null!;
+>x6 : Symbol(x6, Decl(ttttNeverReducedGenericReference.ts, 18, 7))
+>X6 : Symbol(X6, Decl(ttttNeverReducedGenericReference.ts, 16, 17))
+
+    type X7 = { w: null; onError: null } & AwaiterOpts<T | null>;
+>X7 : Symbol(X7, Decl(ttttNeverReducedGenericReference.ts, 18, 23))
+>w : Symbol(w, Decl(ttttNeverReducedGenericReference.ts, 19, 15))
+>onError : Symbol(onError, Decl(ttttNeverReducedGenericReference.ts, 19, 24))
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 16, 11))
+
+    let x7: X7 = null!;
+>x7 : Symbol(x7, Decl(ttttNeverReducedGenericReference.ts, 20, 7))
+>X7 : Symbol(X7, Decl(ttttNeverReducedGenericReference.ts, 18, 23))
+
+    type X8 = { onError: null; w: null } & AwaiterOpts<T | null>;
+>X8 : Symbol(X8, Decl(ttttNeverReducedGenericReference.ts, 20, 23))
+>onError : Symbol(onError, Decl(ttttNeverReducedGenericReference.ts, 21, 15))
+>w : Symbol(w, Decl(ttttNeverReducedGenericReference.ts, 21, 30))
+>AwaiterOpts : Symbol(AwaiterOpts, Decl(ttttNeverReducedGenericReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericReference.ts, 16, 11))
+
+    let x8: X8 = null!;
+>x8 : Symbol(x8, Decl(ttttNeverReducedGenericReference.ts, 22, 7))
+>X8 : Symbol(X8, Decl(ttttNeverReducedGenericReference.ts, 20, 23))
+
+    return [x6, x7, x8];
+>x6 : Symbol(x6, Decl(ttttNeverReducedGenericReference.ts, 18, 7))
+>x7 : Symbol(x7, Decl(ttttNeverReducedGenericReference.ts, 20, 7))
+>x8 : Symbol(x8, Decl(ttttNeverReducedGenericReference.ts, 22, 7))
+}
+

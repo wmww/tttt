@@ -1,0 +1,84 @@
+//// [test/cases/ttttNeverReducedGenericReference.ts] ////
+
+=== ttttNeverReducedGenericReference.ts ===
+// tsc's getReducedType: a discriminant conflict with a generic instantiation is never (one literal side is enough,
+// CheckFlags.HasLiteralPart): Object.assign({ onError: null, ... }, opts) with opts: AwaiterOpts<T | null> (vencord)
+interface AwaiterOpts<T> {
+    fallbackValue: T;
+>fallbackValue : T
+
+    deps?: unknown[];
+>deps : unknown[] | undefined
+
+    onError?(e: any): void;
+>onError : ((e: any) => void) | undefined
+>e : any
+
+    onSuccess?(value: T): void;
+>onSuccess : ((value: T) => void) | undefined
+>value : T
+}
+export function useAwaiter<T>(providedOpts?: AwaiterOpts<T | null>) {
+>useAwaiter : <T>(providedOpts?: AwaiterOpts<T | null>) => Required<AwaiterOpts<T | null>>
+>providedOpts : AwaiterOpts<T | null> | undefined
+
+    const opts: Required<AwaiterOpts<T | null>> = Object.assign({
+>opts : Required<AwaiterOpts<T | null>>
+>Object.assign({        fallbackValue: null,        deps: [],        onError: null,    }, providedOpts) : never
+>Object.assign : { <T_1 extends {}, U>(target: T_1, source: U): T_1 & U; <T_1 extends {}, U, V>(target: T_1, source1: U, source2: V): T_1 & U & V; <T_1 extends {}, U, V, W>(target: T_1, source1: U, source2: V, source3: W): T_1 & U & V & W; (target: object, ...sources: any[]): any; }
+>Object : ObjectConstructor
+>assign : { <T_1 extends {}, U>(target: T_1, source: U): T_1 & U; <T_1 extends {}, U, V>(target: T_1, source1: U, source2: V): T_1 & U & V; <T_1 extends {}, U, V, W>(target: T_1, source1: U, source2: V, source3: W): T_1 & U & V & W; (target: object, ...sources: any[]): any; }
+>{        fallbackValue: null,        deps: [],        onError: null,    } : { fallbackValue: null; deps: never[]; onError: null; }
+
+        fallbackValue: null,
+>fallbackValue : null
+
+        deps: [],
+>deps : never[]
+>[] : never[]
+
+        onError: null,
+>onError : null
+
+    }, providedOpts);
+>providedOpts : AwaiterOpts<T | null> | undefined
+
+    return opts;
+>opts : Required<AwaiterOpts<T | null>>
+}
+function f<T>() {
+>f : <T>() => never[]
+
+    type X6 = { onError: null } & AwaiterOpts<T | null>;
+>X6 : never
+>onError : null
+
+    let x6: X6 = null!;
+>x6 : never
+>null! : never
+
+    type X7 = { w: null; onError: null } & AwaiterOpts<T | null>;
+>X7 : never
+>w : null
+>onError : null
+
+    let x7: X7 = null!;
+>x7 : never
+>null! : never
+
+    type X8 = { onError: null; w: null } & AwaiterOpts<T | null>;
+>X8 : never
+>onError : null
+>w : null
+
+    let x8: X8 = null!;
+>x8 : never
+>null! : never
+
+    return [x6, x7, x8];
+>[x6, x7, x8] : never[]
+>x6 : never
+>x7 : never
+>x8 : never
+}
+

@@ -1256,6 +1256,8 @@ static bool is_whole_enum(Checker* me, Ty const* ty);
 static bool conditional_elided(TyDisplay d, Ty const* ty);
 
 static bool needs_parens_as_constituent(Checker* me, TyDisplay d, Ty const* ty) {
+    // (What prints: a union or intersection reduced, see ty_display())
+    if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION) && !shows_alias(d, ty)) ty = ty_reduced(me, ty);
     if (shows_alias(d, ty) || (ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
     bool conditional = (ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || is_function_like(me, d, ty);
@@ -3999,6 +4001,8 @@ static bool expando_displays_structurally(TyDisplay d, Ty const* ty) {
 
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty)) return false;
+    // (What prints: a union or intersection reduced, see ty_display())
+    if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     // (A structure: a type literal, or a function type when it is one signature)
     if (ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.name && ty->declared.name->len &&
         expando_displays_structurally(d, ty)

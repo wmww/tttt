@@ -155,6 +155,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverReducedGenericReference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNullIdentifierName': {
         errors: true,
         symbols: true,
