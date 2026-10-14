@@ -320,6 +320,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRenamedBodilessImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRestMappedOverEmptyTuple': {
         errors: true,
         symbols: true,
@@ -54596,7 +54601,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentOverload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
