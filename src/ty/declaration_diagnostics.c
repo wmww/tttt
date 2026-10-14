@@ -3524,7 +3524,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     }
     if (port->main.tag == PORT_IMPORT_ALIAS || port->is_import_require) {
         PortItem const* item = &port->main;
-        if (!item->export_import && !KEPT(item->symbol) && !(container.ambient || container.global)) return;
+        if (!item->export_import && !KEPT(item->symbol)) return;
         w_indent(me);
         if (item->export_import) w_lit(me, "export ");
         w_lit(me, "import ");
