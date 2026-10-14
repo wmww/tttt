@@ -930,6 +930,13 @@ static SourceFile const* file_of_scope(Scope const* scope) {
 
 // tsc's getNameOfSymbolAsWritten
 static csview written_name(Scope const* enclosing, Symbol const* symbol, bool first) {
+    // A late bound `f[k] = v` is named by the whole access (tsgo's GetNonAssignedNameOfDeclaration: the element access
+    // whose argument isn't a literal), `x.f[f[k]]` in a chain
+    if (symbol_rare(symbol)->late_bound_key && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+        span_valid(symbol->decls[0].name)
+    ) {
+        return span_sv(symbol->decls[0].name);
+    }
     Span display = ty_symbol_display_name(symbol);
     csview name = span_valid(display) ? span_sv(display) : symbol->name;
     // An `export default` declaration is `default` except where it was declared

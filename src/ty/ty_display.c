@@ -1024,12 +1024,29 @@ uint8_t ty_prop_name_form_of(Prop const* prop) {
     return form;
 }
 
+static Scope const* statement_scope_at(Block const* block, Scope const* scope, Span at, u32 depth);
+
+// The innermost statement-level scope around a property's declaration (a mapped type's property is declared where the
+// property it comes from is), null if it has none
+static Scope const* prop_declaration_scope(Prop const* prop) {
+    while (prop->target && !span_valid(prop->decl->name_span) && !prop->decl->decl_span_count) prop = prop->target;
+    Span name = prop->decl->name_span;
+    SourceFile const* file = span_valid(name) ? span_source(name) : nullptr;
+    if (!file || !file->scope) return nullptr;
+    return statement_scope_at(&file->ast, file->scope, name, 0);
+}
+
 // tsc's getPropertyNameNodeForSymbol: an identifier, a number, a string literal quoted like every declaration wrote it,
 // or `[-1]` for a negative number that came from a type
 static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
     d.naming = true; // (Counted by its symbol's name, see prop_symbol_name_length())
     csview sv = atom_sv(prop->name);
     if (ty_unique_symbol_of_name(me, prop->name)) {
+        // (Named from the property's declaration: tsc's addPropertyToElementList makes it the enclosing declaration)
+        if (d.enclosing && !d.tracker) {
+            Scope const* declared_at = prop_declaration_scope(prop);
+            if (declared_at) d.enclosing = declared_at;
+        }
         display_prop_name(me, d, prop->name);
         return;
     }
