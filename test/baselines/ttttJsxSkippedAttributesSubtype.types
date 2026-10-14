@@ -1,0 +1,56 @@
+//// [test/cases/ttttJsxSkippedAttributesSubtype.tsx] ////
+
+=== a.tsx ===
+/// <reference path="react16.d.ts" />
+import * as React from 'react';
+>React : typeof React
+
+interface State { a: number; "1": string }
+>a : number
+>"1" : string
+
+declare const Subscribe: {
+>Subscribe : { <TS, TSel>(props: { source: { get(): TS; }; selector: (state: TS) => TSel; children: ((state: TSel) => string) | string; }): JSX.Element; <TSel>(props: { selector: (state: State) => TSel; children: ((state: TSel) => string) | string; }): JSX.Element; }
+
+  <TS, TSel>(props: { source: { get(): TS }; selector: (state: TS) => TSel; children: ((state: TSel) => string) | string }): JSX.Element
+>props : { source: { get(): TS; }; selector: (state: TS) => TSel; children: ((state: TSel) => string) | string; }
+>source : { get(): TS; }
+>get : () => TS
+>selector : (state: TS) => TSel
+>state : TS
+>children : string | ((state: TSel) => string)
+>state : TSel
+>JSX : any
+
+  <TSel>(props: { selector: (state: State) => TSel; children: ((state: TSel) => string) | string }): JSX.Element
+>props : { selector: (state: State) => TSel; children: ((state: TSel) => string) | string; }
+>selector : (state: State) => TSel
+>state : State
+>children : string | ((state: TSel) => string)
+>state : TSel
+>JSX : any
+}
+declare const anyValue: any
+>anyValue : any
+
+export const y = <Subscribe source={anyValue} selector={(selection) => Boolean(selection['1'])} children={(selected) => String(selected)} />
+>y : JSX.Element
+><Subscribe source={anyValue} selector={(selection) => Boolean(selection['1'])} children={(selected) => String(selected)} /> : JSX.Element
+>Subscribe : { <TS, TSel>(props: { source: { get(): TS; }; selector: (state: TS) => TSel; children: ((state: TSel) => string) | string; }): JSX.Element; <TSel>(props: { selector: (state: State) => TSel; children: ((state: TSel) => string) | string; }): JSX.Element; }
+>source : any
+>anyValue : any
+>selector : (selection: State) => boolean
+>(selection) => Boolean(selection['1']) : (selection: State) => boolean
+>selection : State
+>Boolean(selection['1']) : boolean
+>Boolean : BooleanConstructor
+>selection['1'] : string
+>selection : State
+>'1' : "1"
+>children : (selected: boolean) => string
+>(selected) => String(selected) : (selected: boolean) => string
+>selected : boolean
+>String(selected) : string
+>String : StringConstructor
+>selected : boolean
+

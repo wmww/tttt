@@ -1,0 +1,63 @@
+//// [test/cases/ttttJsxSkippedAttributesSubtype.tsx] ////
+
+=== a.tsx ===
+/// <reference path="react16.d.ts" />
+import * as React from 'react';
+>React : Symbol(React, Decl(a.tsx, 1, 6))
+
+interface State { a: number; "1": string }
+>State : Symbol(State, Decl(a.tsx, 1, 31))
+>a : Symbol(State.a, Decl(a.tsx, 2, 17))
+>"1" : Symbol(State["1"], Decl(a.tsx, 2, 28))
+
+declare const Subscribe: {
+>Subscribe : Symbol(Subscribe, Decl(a.tsx, 3, 13))
+
+  <TS, TSel>(props: { source: { get(): TS }; selector: (state: TS) => TSel; children: ((state: TSel) => string) | string }): JSX.Element
+>TS : Symbol(TS, Decl(a.tsx, 4, 3))
+>TSel : Symbol(TSel, Decl(a.tsx, 4, 6))
+>props : Symbol(props, Decl(a.tsx, 4, 13))
+>source : Symbol(source, Decl(a.tsx, 4, 21))
+>get : Symbol(get, Decl(a.tsx, 4, 31))
+>TS : Symbol(TS, Decl(a.tsx, 4, 3))
+>selector : Symbol(selector, Decl(a.tsx, 4, 44))
+>state : Symbol(state, Decl(a.tsx, 4, 56))
+>TS : Symbol(TS, Decl(a.tsx, 4, 3))
+>TSel : Symbol(TSel, Decl(a.tsx, 4, 6))
+>children : Symbol(children, Decl(a.tsx, 4, 75))
+>state : Symbol(state, Decl(a.tsx, 4, 88))
+>TSel : Symbol(TSel, Decl(a.tsx, 4, 6))
+>JSX : Symbol(JSX, Decl(react16.d.ts, 2495, 12))
+>Element : Symbol(JSX.Element, Decl(react16.d.ts, 2496, 23))
+
+  <TSel>(props: { selector: (state: State) => TSel; children: ((state: TSel) => string) | string }): JSX.Element
+>TSel : Symbol(TSel, Decl(a.tsx, 5, 3))
+>props : Symbol(props, Decl(a.tsx, 5, 9))
+>selector : Symbol(selector, Decl(a.tsx, 5, 17))
+>state : Symbol(state, Decl(a.tsx, 5, 29))
+>State : Symbol(State, Decl(a.tsx, 1, 31))
+>TSel : Symbol(TSel, Decl(a.tsx, 5, 3))
+>children : Symbol(children, Decl(a.tsx, 5, 51))
+>state : Symbol(state, Decl(a.tsx, 5, 64))
+>TSel : Symbol(TSel, Decl(a.tsx, 5, 3))
+>JSX : Symbol(JSX, Decl(react16.d.ts, 2495, 12))
+>Element : Symbol(JSX.Element, Decl(react16.d.ts, 2496, 23))
+}
+declare const anyValue: any
+>anyValue : Symbol(anyValue, Decl(a.tsx, 7, 13))
+
+export const y = <Subscribe source={anyValue} selector={(selection) => Boolean(selection['1'])} children={(selected) => String(selected)} />
+>y : Symbol(y, Decl(a.tsx, 8, 12))
+>Subscribe : Symbol(Subscribe, Decl(a.tsx, 3, 13))
+>source : Symbol(source, Decl(a.tsx, 8, 27))
+>anyValue : Symbol(anyValue, Decl(a.tsx, 7, 13))
+>selector : Symbol(selector, Decl(a.tsx, 8, 45))
+>selection : Symbol(selection, Decl(a.tsx, 8, 57))
+>Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>selection : Symbol(selection, Decl(a.tsx, 8, 57))
+>'1' : Symbol(State["1"], Decl(a.tsx, 2, 28))
+>children : Symbol(children, Decl(a.tsx, 8, 95))
+>selected : Symbol(selected, Decl(a.tsx, 8, 107))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>selected : Symbol(selected, Decl(a.tsx, 8, 107))
+

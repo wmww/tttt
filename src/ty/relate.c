@@ -2376,6 +2376,10 @@ static bool requires_optional_properties(Checker* me, Ty const* source) {
     // (Not one widened for a declaration: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so
     // `const empty = {}` lacks the optional properties of a weak type and isn't its subtype the other way round)
     if (ty_is_unwidened_object_literal(literal)) return false;
+    // (Nor JSX attributes, whose regular type, the one a skipping applicability check relates, is what widening makes
+    // of them here but still an object literal to tsc: getRegularTypeOfObjectLiteral keeps ObjectFlags.ObjectLiteral,
+    // so the attributes needn't have IntrinsicAttributes' optional `key`)
+    if (literal->kind == TY_ANONYMOUS && literal->anonymous.jsx_attributes) return false;
     if (is_tuple(source)) return false;
     // `[]` (never[]; tsc's isEmptyArrayLiteralType)
     // (Without strictNullChecks its element is the widening undefined: isEmptyLiteralType)
