@@ -4935,7 +4935,7 @@ Ty const* ty_object_literal_alternative(
     Ty const* ret = intern_get(&my links, words.data, words.len);
     bool js = kind & OBJECT_JS;
     bool no_inferable_index = kind & OBJECT_NO_INFERABLE_INDEX;
-    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX);
+    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_WIDENED_COPY);
     if (!ret) {
         MembersBuilder builder = {0};
         bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
@@ -5224,22 +5224,33 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
     return widen_object_literal(me, ty, nullptr);
 }
 
+static Ty const* widen_nullable_copy(Checker* me, Ty const* ty, u32 depth, bool copy);
 static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
-    if (depth > 16 || !(ty->xflags & TYX_WIDENS)) return ty;
+    return widen_nullable_copy(me, ty, depth, false);
+}
+
+// `copy`: an object literal is made anew even if nothing in it widens (tsc's getWidenedTypeOfObjectLiteral makes a new
+// type for every object literal it widens, in a union one for each member in order, which orders them by creation)
+static Ty const* widen_nullable_copy(Checker* me, Ty const* ty, u32 depth, bool copy) {
+    copy = copy && ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal && !ty->anonymous.target;
+    if (depth > 16 || (!(ty->xflags & TYX_WIDENS) && !copy)) return ty;
     if (ty->kind != TY_UNION && (ty->flags & TYF_NULLABLE)) return ty_intrinsic(me, TY_ANY);
-    u64 key[2] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty };
-    void const* known = intern_get(&my links, key, 2);
+    u64 key[3] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty, copy };
+    void const* known = intern_get(&my links, key, copy ? 3 : 2);
     if (known) return known;
     Ty const* ret = ty;
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
         // Of nothing but null and undefined: any. Else the others widen (null and undefined vanish from the union)
         TyList types = ty->composite.types;
         bool all_nullable = true, changed = false;
+        // (When some member widens, every object literal member is made anew, in order)
+        bool widens = false;
+        for (u32 i = 0; i < types.len && !widens; i++) widens = (types.data[i]->xflags & TYX_WIDENS) && !(types.data[i]->flags & TYF_NULLABLE);
         TyBuf parts = {0};
         for (u32 i = 0; i < types.len; i++) {
             Ty const* member = types.data[i];
             all_nullable &= (member->flags & TYF_NULLABLE) != 0;
-            Ty const* widened = member->flags & TYF_NULLABLE ? member : widen_nullable(me, member, depth + 1);
+            Ty const* widened = member->flags & TYF_NULLABLE ? member : widen_nullable_copy(me, member, depth + 1, widens);
             changed |= widened != member;
             ty_buf_push(&parts, widened);
         }
@@ -5304,16 +5315,16 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
             index[i].value = widen_nullable(me, index[i].value, depth + 1);
             changed |= index[i].value != members->index[i].value;
         }
-        if (changed) {
+        if (changed || copy) {
             ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
                 (ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
                 ty->anonymous.regular ? OBJECT_LITERAL_REGULAR : ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
-                (ty->anonymous.js_literal ? OBJECT_JS : 0),
+                (ty->anonymous.js_literal ? OBJECT_JS : 0) | (changed ? 0 : OBJECT_WIDENED_COPY),
                 ty->anonymous.literal_expr, ty->anonymous.spread_alternative);
         }
         free(props);
     }
-    *intern_slot(me, &my links, key, 2) = ret;
+    *intern_slot(me, &my links, key, copy ? 3 : 2) = ret;
     return ret;
 }
 

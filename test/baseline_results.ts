@@ -24943,7 +24943,7 @@ const baselines = {
     'noImplicitAnyUnionNormalizedObjectLiteral1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyWithOverloads': {
         errors: true,
