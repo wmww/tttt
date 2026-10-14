@@ -182,7 +182,7 @@ static bool alias_of_unknown(Symbol const* symbol) {
 // what they resolve to; a namespace's table is its exports; the globals last), else not at all
 static cstr unknown_symbol_text(BaselineTestCase const* ctx) {
     for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
-        SymbolTable const* tables[2] = { &scope->locals, nullptr };
+        SymbolTable const* tables[2] = { scope_locals(scope), nullptr };
         if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
         if (scope->kind == SCOPE_GLOBAL) tables[1] = &scope->binder->globals;
         for (u32 t = 0; t < 2; t++) {
@@ -428,9 +428,9 @@ static Symbol const* export_equals_property_alias(BaselineTestCase* ctx, PropSym
     if (info->member_count != 1 || !span_valid(info->first_declaration)) return nullptr;
     Checker* checker = current_checker;
     for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
-        if (!scope->locals.count) continue;
+        if (!scope_locals(scope)->count) continue;
         u32 count;
-        SymbolEntry* entries = symbol_table_collect(&scope->locals, &count);
+        SymbolEntry* entries = symbol_table_collect(scope_locals(scope), &count);
         Symbol const* found = nullptr;
         for (u32 i = 0; i < count && !found; i++) {
             Symbol* alias = (Symbol*)entries[i].symbol;
@@ -2605,7 +2605,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     if (shown && ctx->export_name && &ctx->export_name->identifier == me && shown->exported && (shown->flags & SYMBOL_VALUE) &&
         ctx->enclosing
     ) {
-        Symbol const* local = symbol_table_get(&ctx->enclosing->locals, span_sv(identifier_expr_name(me)));
+        Symbol const* local = symbol_table_get(scope_locals(ctx->enclosing), span_sv(identifier_expr_name(me)));
         if (local && local != shown && !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE)) {
             declarations = declaration_get_spans(local);
             VecSpan own = declaration_get_spans(shown);
@@ -3363,7 +3363,7 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
     } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
         // (Of a local type and an exported value of the name: tsc's local symbol, whose declared type it is, see
         // getTypeOfNode's isInRightSideOfImportOrExportAssignment)
-        Symbol const* local = ctx->enclosing ? symbol_table_get(&ctx->enclosing->locals, span_sv(my inner_span)) : nullptr;
+        Symbol const* local = ctx->enclosing ? symbol_table_get(scope_locals(ctx->enclosing), span_sv(my inner_span)) : nullptr;
         bool type_twin = local && local != my identifier.target && my identifier.target->exported &&
             !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE);
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, type_twin ?

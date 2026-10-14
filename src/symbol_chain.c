@@ -101,11 +101,11 @@ static void chain_ctx_init(ChainCtx* me, Scope const* enclosing) {
             case SCOPE_BLOCK:
             case SCOPE_FUNCTION:
             case SCOPE_STATIC_BLOCK:
-                add_table(me, &scope->locals, true);
+                add_table(me, scope_locals(scope), true);
                 break;
             case SCOPE_MODULE:
             case SCOPE_NAMESPACE:
-                add_locals_with_exports(me, &scope->locals, scope->container, scope->file);
+                add_locals_with_exports(me, scope_locals(scope), scope->container, scope->file);
                 break;
             case SCOPE_SCRIPT: // Locals of a script are globals
             case SCOPE_GLOBAL_AUGMENTATION:
@@ -547,12 +547,12 @@ static Symbol const* declaring_module(Symbol const* symbol) {
     if (block && block->kind == SCOPE_NAMESPACE && block->container && block->container->is_module &&
         !block->container->module->file
     ) {
-        return symbol_table_get(&block->locals, symbol->name) == symbol ? block->container : nullptr;
+        return symbol_table_get(scope_locals(block), symbol->name) == symbol ? block->container : nullptr;
     }
     SourceFile const* file = span_source(symbol->decls[0].name);
     if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
     Symbol const* module = file->scope->container;
-    if (symbol_table_get(&file->scope->locals, symbol->name) != symbol) return nullptr;
+    if (symbol_table_get(scope_locals(file->scope), symbol->name) != symbol) return nullptr;
     return module;
 }
 

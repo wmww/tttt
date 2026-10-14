@@ -486,7 +486,9 @@ typedef struct ScopeRare {
 typedef struct Scope {
     Scope* parent;
     Binder* binder; // (Its errs are the scope's)
-    SymbolTable locals;
+    // Null until something is declared in it (most scopes declare nothing): read it as it is (symbol_table_get() takes
+    // null), write it through scope_locals_mut()
+    SymbolTable* locals;
     Symbol* container; // Exported declarations go to its exports, and lookups see them
     // The resolve walk: the builder of the control flow container this scope is in (inherited by child scopes). Only
     // valid during the walk
@@ -507,34 +509,41 @@ typedef struct Scope {
     // isLegalUsageOfSuperExpression (see resolve_super())
     NoSuper no_super;
     // Ambient namespace (or declaration file) without export declarations: everything is exported
-    bool export_context;
-    bool ambient;
+    bool export_context : 1;
+    bool ambient : 1;
     // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
     // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
-    bool in_field;
+    bool in_field : 1;
     // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
-    bool member_decorator;
-    bool parameters;
+    bool member_decorator : 1;
+    bool parameters : 1;
     // statement_hoist_names() is declaring a nested statement's `var`s and functions here (SymbolDecl.hoisted)
-    bool hoisting;
+    bool hoisting : 1;
     // Unless the downlevel emit moves the parameters into the body (tsc's useOuterVariableScopeInParameter)
-    bool parameters_see_body;
+    bool parameters_see_body : 1;
     // The return type annotation of a function: of the function's scope it sees only the parameters, not what the body
     // declares (tsc's resolveNameHelper: a FunctionScopedVariable only if it is a parameter, no types)
-    bool return_type;
+    bool return_type : 1;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
-    bool strict;
+    bool strict : 1;
     // In a class (its type parameters, heritage clauses and body): strict because of it (tsc's getContainingClass in
     // getStrictModeIdentifierMessage)
-    bool class_strict;
-    bool with_body; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
+    bool class_strict : 1;
+    bool with_body : 1; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
     // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
-    bool decorated_static_field;
+    bool decorated_static_field : 1;
     // An unbraced branch of an `if` (which declares a function in it): no block scope container to tsc's binder
-    bool binder_transparent;
+    bool binder_transparent : 1;
 } Scope;
 
 extern ScopeRare const scope_rare_none;
+extern const SymbolTable symbol_table_empty;
+static inline SymbolTable const* scope_locals(Scope const* me) {
+    return me->locals ? me->locals : &symbol_table_empty;
+}
+// Allocates them if needed
+SymbolTable* scope_locals_mut(Scope* me);
+
 static inline ScopeRare const* scope_rare(Scope const* me) {
     return my rare ? my rare : &scope_rare_none;
 }

@@ -468,6 +468,16 @@ struct FunctionImpl const* scope_containing_function(Scope const* me) {
     return my function;
 }
 
+const SymbolTable symbol_table_empty = {0};
+
+SymbolTable* scope_locals_mut(Scope* me) {
+    if (!my locals) my locals = arena_new(binder_arena(my binder), SymbolTable);
+    return my locals;
+}
+
+// Over a million on a big program, in the binder arena
+static_assert(sizeof(Scope) == 96, "Scope grew");
+
 Scope* scope_new(Scope* parent, ScopeKind kind) {
     Scope* ret = arena_new(binder_arena(parent->binder), Scope);
     ret->parent = parent;
@@ -719,14 +729,14 @@ Scope* scope_new_generic_merged(
                 break;
             }
         }
-        if (!shared || symbol_table_get(&ret->locals, span_sv(i->name))) {
-            if (shared_lib && !symbol_table_get(&ret->locals, span_sv(i->name))) {
+        if (!shared || symbol_table_get(scope_locals(ret), span_sv(i->name))) {
+            if (shared_lib && !symbol_table_get(scope_locals(ret), span_sv(i->name))) {
                 // Merged with a lib declaration (`interface Array<T>`): a symbol of our own that is declared by the
                 // lib's type parameter first, like tsc's merged symbol
                 Symbol* symbol = binder_new_symbol(ret->binder, span_sv(i->name), SYMBOL_TYPE_PARAMETER);
                 symbol->name_span = shared_lib->name_span;
                 for (u32 k = 0; k < shared_lib->decl_count; k++) symbol_add_decl(symbol, shared_lib->decls[k]);
-                symbol_table_insert(&ret->locals, binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), symbol);
+                symbol_table_insert(scope_locals_mut(ret), binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), symbol);
                 symbol_add_decl(symbol, (SymbolDecl){
                     .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
                 });
@@ -739,7 +749,7 @@ Scope* scope_new_generic_merged(
                 .name = i->name, .full = i->full_span, .kind = SYMBOL_DECL_TYPE_PARAMETER, .node = i,
             });
         } else {
-            symbol_table_insert(&ret->locals, binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), shared);
+            symbol_table_insert(scope_locals_mut(ret), binder_arena(ret->binder), span_sv(i->name), symbol_name_hash(span_sv(i->name)), shared);
             symbol_add_decl(shared, (SymbolDecl){
                 .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
             });
@@ -1067,9 +1077,9 @@ static Symbol* declare_symbol(
     // A function's type parameters and the types its body declares share a declaration space (tsc: the function's
     // locals); tttt keeps the type parameters in the scope around the function's
     if (!existing && scope->kind == SCOPE_FUNCTION && (excludes & SYMBOL_TYPE_PARAMETER) && scope->parent &&
-        scope->parent->generics && scope->parent->generics->generic && table == &scope->locals
+        scope->parent->generics && scope->parent->generics->generic && table == scope->locals
     ) {
-        Symbol* param = symbol_table_get_own(&scope->parent->locals, name, hash);
+        Symbol* param = symbol_table_get_own(scope_locals(scope->parent), name, hash);
         if (param && (param->flags & SYMBOL_TYPE_PARAMETER)) report_conflicts(binder_errs(binder), param, name_span, includes, false, (csview){0});
     }
     if (existing && table == &binder->globals && umd_global_conflict(scope, existing, includes, excludes)) {
@@ -1134,7 +1144,7 @@ static SymbolTable* scope_declaration_table(Scope* me, bool exported) {
         case SCOPE_STATIC_BLOCK:
             break;
     }
-    return &my locals;
+    return scope_locals_mut(me);
 }
 
 static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* excludes) {
@@ -1252,10 +1262,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     // An exported declaration of a module or namespace has a local twin too (tsgo's declareModuleMember), declared with
     // the declaration's excludes: a local of the name declared before it that they exclude is a duplicate
     // (`class Foo {}` then `export type Foo = number`)
-    if (!props.default_export && my container && table == my container->exports && table != &scope->locals &&
+    if (!props.default_export && my container && table == my container->exports && table != scope->locals &&
         (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE)
     ) {
-        Symbol const* local = symbol_table_get_own(&scope->locals, name, symbol_name_hash(name));
+        Symbol const* local = symbol_table_get_own(scope_locals(scope), name, symbol_name_hash(name));
         if (local && (local->flags & excludes) && local->decl_count &&
             span_source(local->decls[0].name) == span_source(props.name)
         ) {
@@ -1301,7 +1311,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
         symbol->name_span = props.name;
         symbol->exported = props.exported;
-        if (table == &scope->locals) {
+        if (table == scope->locals) {
             symbol->is_local = true;
             symbol->function = scope->function;
         }
@@ -1318,9 +1328,9 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) && scope->container->exports
     ) {
         if (table == scope->container->exports) {
-            Symbol* local = symbol_table_get_own(&scope->locals, name, symbol_name_hash(name));
+            Symbol* local = symbol_table_get_own(scope_locals(scope), name, symbol_name_hash(name));
             if (local && local != symbol && (local->flags & SYMBOL_FUNCTION)) symbol_add_decl(local, decl);
-        } else if (table == &scope->locals && !merged) {
+        } else if (table == scope->locals && !merged) {
             Symbol* exported = symbol_table_get_own(scope->container->exports, name, symbol_name_hash(name));
             if (exported && exported != symbol && (exported->flags & SYMBOL_FUNCTION)) {
                 for (u32 i = 0; i < exported->decl_count; i++) {
@@ -1340,7 +1350,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
 // default export, see symbol_default_export_local_name()
 static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes) {
     bool merged;
-    Symbol* local = declare_symbol(me, &my locals, span_sv(name), name, SYMBOL_NONE, excludes, false, &merged);
+    Symbol* local = declare_symbol(me, scope_locals_mut(me), span_sv(name), name, SYMBOL_NONE, excludes, false, &merged);
     if (!merged) {
         local->name_span = name;
         local->is_local = true;
@@ -1562,7 +1572,7 @@ static void check_export_context_merges(Scope* me, Span block) {
 
 void scope_check_export_merges(Scope* me, Span block) {
     if (!my container || !my container->exports || !span_valid(block)) return;
-    for (u32 i = 0; i < my locals.count; i++) check_export_merge(me, block, my locals.entries[i].symbol, false);
+    for (u32 i = 0; i < scope_locals(me)->count; i++) check_export_merge(me, block, my locals->entries[i].symbol, false);
     if (my export_context && my file && my file->is_declaration) check_export_context_merges(me, block);
 }
 
@@ -1769,7 +1779,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
     // (An alias is exported only by `export`: an ambient export context doesn't export imports, tsc's
     // declareModuleMember)
-    SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
+    SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? scope_locals_mut(me) :
         scope_declaration_table(me, exported);
     // (An import in a block, TS1232, too: in a script's block it is a global)
     bool block_import = !block_export && item->wrong_context && my kind == SCOPE_BLOCK;
@@ -1780,7 +1790,7 @@ void scope_add_port(Scope* me, PortItem* item) {
         // (declareModuleMember puts an export specifier in a namespace's or module's exports)
         table = container->kind == SCOPE_SCRIPT ? scope_declaration_table(container, false) :
             block_export && (container->kind == SCOPE_NAMESPACE || container->kind == SCOPE_MODULE) && container->container ?
-            scope_declaration_table(container, true) : &container->locals;
+            scope_declaration_table(container, true) : scope_locals_mut(container);
     }
     bool merged;
     csview name = port_item_name(item->decl_name);
@@ -1793,7 +1803,7 @@ void scope_add_port(Scope* me, PortItem* item) {
         symbol->parent = my container;
         symbol->name_span = item->decl_name;
         symbol->exported = exported;
-        symbol->is_local = table == &my locals;
+        symbol->is_local = table == my locals;
     }
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item, .name = item->decl_name, .full = item->full_span,
@@ -2063,11 +2073,11 @@ static void note_top_level_assignments(CommonJsWalk* walk, Expr const* expr) {
 // The `module` and `exports` of a CommonJS file: variables of the file declared by the file itself, unless it declares
 // them (tsc's declareCommonJSVariable). `module` is `{ exports: ... }`, `exports` what the module exports
 static void declare_commonjs_variable(Scope* me, csview name, SymbolDeclKind kind) {
-    if (symbol_table_get(&my locals, name)) return;
+    if (symbol_table_get(scope_locals(me), name)) return;
     SourceFile* file = my file;
     Span at = span_from_sv(file, csview_from_n(source_file_start(file), 0));
     bool merged;
-    Symbol* symbol = declare_symbol(me, &my locals, name, at, SYMBOL_FUNCTION_SCOPED_VARIABLE, 0, false, &merged);
+    Symbol* symbol = declare_symbol(me, scope_locals_mut(me), name, at, SYMBOL_FUNCTION_SCOPED_VARIABLE, 0, false, &merged);
     symbol->name = name;
     symbol->name_span = span_null; // (Not written anywhere)
     symbol->is_local = true;
@@ -2967,7 +2977,7 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     }
     cstr module_name = module_name_for_error(module, item->module_ref, true);
     SourceFile const* file = module->is_module && module->module ? module->module->file : nullptr;
-    Symbol* local = file && file->scope ? symbol_table_get(&file->scope->locals, port_item_name(name)) : nullptr;
+    Symbol* local = file && file->scope ? symbol_table_get(scope_locals(file->scope), port_item_name(name)) : nullptr;
     Symbol const* export_equals = local ? symbol_get_export(module, c_sv("export=")) : nullptr;
     if (!local || (export_equals && symbol_resolve_alias((Symbol*)export_equals) != symbol_resolve_alias(local))) {
         error_ctx_error_d(errs, name, 2305, "Module '", module_name, "' has no exported member '", name, "'.");
@@ -4352,7 +4362,7 @@ bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* s
 
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
     u64 hash = symbol_name_hash(symbol->name);
-    SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : &my locals;
+    SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : scope_locals(me);
     if ((table->count || table->parent) && symbol_table_lookup(table, symbol->name, hash) == symbol) return true;
     return my container && my container->exports && symbol_table_lookup(my container->exports, symbol->name, hash) == symbol;
 }
@@ -4559,7 +4569,7 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
 static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
-        SymbolTable const* table = globals ? &scope->binder->globals : &scope->locals;
+        SymbolTable const* table = globals ? &scope->binder->globals : scope_locals(scope);
         if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) return true;
         // (A module's or namespace's exports by tsc's `meaning & SymbolFlags.ModuleMember`: not `export default <expr>`,
         // a property; an enum's by `meaning & SymbolFlags.EnumMember`)
@@ -4925,7 +4935,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
+        SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : scope_locals(scope);
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
             bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter;
@@ -5167,7 +5177,7 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
     for (Scope* scope = me; scope; scope = scope->parent) {
         if (scope != me && !scope_is_var_container(scope)) continue;
         bool global = scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION;
-        Symbol* found = symbol_table_lookup(global ? &my binder->globals : &scope->locals, name, hash);
+        Symbol* found = symbol_table_lookup(global ? &my binder->globals : scope_locals(scope), name, hash);
         Symbol* container = scope->container;
         if (!found && container && container->exports && !container->is_global_this) {
             found = symbol_table_lookup(container->exports, name, hash);

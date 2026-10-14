@@ -616,7 +616,7 @@ static Symbol const* same_block_counterpart(Symbol const* symbol, SymbolDecl con
     Scope const* block = decl ? decl->block : nullptr;
     if (!block || !block->container || !block->container->exports) return nullptr;
     Symbol const* exported = symbol_table_get(block->container->exports, symbol->name);
-    Symbol const* local = symbol_table_get(&((Scope*)block)->locals, symbol->name);
+    Symbol const* local = symbol_table_get(scope_locals(((Scope*)block)), symbol->name);
     Symbol const* other = exported == symbol ? local : local == symbol ? exported : nullptr;
     if (!other || other == symbol) return nullptr;
     for (u32 i = 0; i < other->decl_count; i++) {
@@ -2268,7 +2268,7 @@ static u32 function_local_symbol_decls(Symbol const* symbol, SymbolDecl const** 
     Symbol const* exports = nullptr;
     if (block && (block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE) && block->container && block->container->exports) {
         exports = symbol_table_get(block->container->exports, symbol->name);
-        local = symbol_table_get(&block->locals, symbol->name);
+        local = symbol_table_get(scope_locals(block), symbol->name);
     }
     if (exports == local) exports = nullptr;
     u32 count = 0;
@@ -2357,7 +2357,7 @@ static void function_check_flag_agreements(FunctionImpl const* me, Symbol const*
         ) {
             return;
         }
-        Symbol const* other = symbol->parent == block->container ? symbol_table_get(&block->locals, symbol->name) :
+        Symbol const* other = symbol->parent == block->container ? symbol_table_get(scope_locals(block), symbol->name) :
             symbol_table_get(block->container->exports, symbol->name);
         if (!other || other == symbol) return;
     }

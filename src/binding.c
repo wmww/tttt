@@ -119,7 +119,7 @@ static void binding_check_var_not_shadowed(Binding const* me, Scope const* names
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) || symbol->is_parameter) return;
     csview name = span_sv(my content_span);
     for (Scope const* scope = names; scope && scope->kind == SCOPE_BLOCK; scope = scope->parent) {
-        Symbol const* found = symbol_table_get(&scope->locals, name);
+        Symbol const* found = symbol_table_get(scope_locals(scope), name);
         if (!found || found == symbol || !(found->flags & SYMBOL_VARIABLE)) continue;
         // A catch variable is block scoped too, but isn't a let/const (the root of its pattern has no source)
         Binding const* decl = symbol_find_node(found, SYMBOL_DECL_VARIABLE);

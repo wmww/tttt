@@ -106,7 +106,7 @@ static void check_reflect_collisions(Scope const* names) {
 void report_emit_name_collisions(Scope const* names, char const* name, bool private_names) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
         if (scope->kind == SCOPE_GLOBAL || (!private_names && scope->kind == SCOPE_SCRIPT)) break;
-        Symbol const* found = symbol_table_get(&scope->locals, csview_from(name));
+        Symbol const* found = symbol_table_get(scope_locals(scope), csview_from(name));
         if (!found && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) && scope->container) {
             found = symbol_table_get(scope->container->exports, csview_from(name));
         }
@@ -535,7 +535,7 @@ static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* 
     csview name = span_sv(identifier_expr_name(me));
     Scope const* module = names;
     while (module && module->kind != SCOPE_MODULE) module = module->parent;
-    Symbol const* local = module ? symbol_table_get(&module->locals, name) : nullptr;
+    Symbol const* local = module ? symbol_table_get(scope_locals(module), name) : nullptr;
     if (!local || !(local->flags & SYMBOL_ALIAS) || symbol_table_get(&names->binder->globals, name) != symbol) return;
     if (!(symbol_resolved_flags(local) & ~SYMBOL_VALUE)) return;
     for (u32 i = 0; i < local->decl_count; i++) {
