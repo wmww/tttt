@@ -1997,7 +1997,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // (Object literals are widened together: the union has their properties as optional in each other. Reduced to
     // subtypes: tsc's getUnionType(types, UnionReduction.Subtype), a CommonJS export's literals only, like tsgo's)
-    Ty const* ret = ty_widened_objects(me, count > 1 && !commonjs_export ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0}));
+    Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));
     if (types != stack) free(types);
     // Only methods assign it: possibly undefined
     if (in_method && count && compiler_options()->strict_null_checks) {

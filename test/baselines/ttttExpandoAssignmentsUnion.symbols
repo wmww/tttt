@@ -1,0 +1,84 @@
+//// [test/cases/ttttExpandoAssignmentsUnion.ts] ////
+
+=== ttttExpandoAssignmentsUnion.ts ===
+// An expando member assigned in several places is the literal-reduced union of what they assign (tsgo's
+// getWidenedTypeForAssignmentDeclaration: getUnionType(types)); subtype reduction would relate `typeof u` to NU and
+// read u's own `unregister` while it is being computed (tsx's register.ts, TS7022). And an unbraced `if` branch is no
+// block scope container: `if (ns) u.unregister = u;` in a block finds that block's `u` (tsgo's
+// bindDeferredExpandoAssignment looks in the blockScopeContainer first), which is no expando host
+type NU = (() => Promise<void>) & { unregister: () => Promise<void> };
+>NU : Symbol(NU, Decl(ttttExpandoAssignmentsUnion.ts, 0, 0))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>unregister : Symbol(unregister, Decl(ttttExpandoAssignmentsUnion.ts, 5, 35))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(ttttExpandoAssignmentsUnion.ts, 6, 13))
+
+declare const ns: string | undefined;
+>ns : Symbol(ns, Decl(ttttExpandoAssignmentsUnion.ts, 7, 13))
+
+export const register = () => {
+>register : Symbol(register, Decl(ttttExpandoAssignmentsUnion.ts, 8, 12))
+
+  if (cond) {
+>cond : Symbol(cond, Decl(ttttExpandoAssignmentsUnion.ts, 6, 13))
+
+    const u = (async () => {}) as NU;
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 10, 9))
+>NU : Symbol(NU, Decl(ttttExpandoAssignmentsUnion.ts, 0, 0))
+
+    if (ns) {
+>ns : Symbol(ns, Decl(ttttExpandoAssignmentsUnion.ts, 7, 13))
+
+      u.unregister = u;
+>u.unregister : Symbol(unregister, Decl(ttttExpandoAssignmentsUnion.ts, 5, 35))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 10, 9))
+>unregister : Symbol(unregister, Decl(ttttExpandoAssignmentsUnion.ts, 5, 35))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 10, 9))
+    }
+    return u;
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 10, 9))
+  }
+  const u = async () => {};
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 16, 7))
+
+  if (ns) {
+>ns : Symbol(ns, Decl(ttttExpandoAssignmentsUnion.ts, 7, 13))
+
+    u.unregister = u;
+>u.unregister : Symbol(u.unregister, Decl(ttttExpandoAssignmentsUnion.ts, 11, 13), Decl(ttttExpandoAssignmentsUnion.ts, 17, 11))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 16, 7))
+>unregister : Symbol(u.unregister, Decl(ttttExpandoAssignmentsUnion.ts, 11, 13), Decl(ttttExpandoAssignmentsUnion.ts, 17, 11))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 16, 7))
+  }
+  return u;
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 16, 7))
+}
+export const register2 = () => {
+>register2 : Symbol(register2, Decl(ttttExpandoAssignmentsUnion.ts, 22, 12))
+  {
+    const u = (async () => {}) as NU;
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 24, 9))
+>NU : Symbol(NU, Decl(ttttExpandoAssignmentsUnion.ts, 0, 0))
+
+    if (ns) u.unregister = u;
+>ns : Symbol(ns, Decl(ttttExpandoAssignmentsUnion.ts, 7, 13))
+>u.unregister : Symbol(unregister, Decl(ttttExpandoAssignmentsUnion.ts, 5, 35))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 24, 9))
+>unregister : Symbol(unregister, Decl(ttttExpandoAssignmentsUnion.ts, 5, 35))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 24, 9))
+  }
+  const u = async () => {};
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 27, 7))
+
+  u.unregister = u;
+>u.unregister : Symbol(u.unregister, Decl(ttttExpandoAssignmentsUnion.ts, 27, 27))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 27, 7))
+>unregister : Symbol(u.unregister, Decl(ttttExpandoAssignmentsUnion.ts, 27, 27))
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 27, 7))
+
+  return u;
+>u : Symbol(u, Decl(ttttExpandoAssignmentsUnion.ts, 27, 7))
+}
+

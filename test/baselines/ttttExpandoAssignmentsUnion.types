@@ -1,0 +1,94 @@
+//// [test/cases/ttttExpandoAssignmentsUnion.ts] ////
+
+=== ttttExpandoAssignmentsUnion.ts ===
+// An expando member assigned in several places is the literal-reduced union of what they assign (tsgo's
+// getWidenedTypeForAssignmentDeclaration: getUnionType(types)); subtype reduction would relate `typeof u` to NU and
+// read u's own `unregister` while it is being computed (tsx's register.ts, TS7022). And an unbraced `if` branch is no
+// block scope container: `if (ns) u.unregister = u;` in a block finds that block's `u` (tsgo's
+// bindDeferredExpandoAssignment looks in the blockScopeContainer first), which is no expando host
+type NU = (() => Promise<void>) & { unregister: () => Promise<void> };
+>NU : NU
+>unregister : () => Promise<void>
+
+declare const cond: boolean;
+>cond : boolean
+
+declare const ns: string | undefined;
+>ns : string | undefined
+
+export const register = () => {
+>register : () => NU
+>() => {  if (cond) {    const u = (async () => {}) as NU;    if (ns) {      u.unregister = u;    }    return u;  }  const u = async () => {};  if (ns) {    u.unregister = u;  }  return u;} : () => NU
+
+  if (cond) {
+>cond : boolean
+
+    const u = (async () => {}) as NU;
+>u : NU
+>(async () => {}) as NU : NU
+>(async () => {}) : () => Promise<void>
+>async () => {} : () => Promise<void>
+
+    if (ns) {
+>ns : string | undefined
+
+      u.unregister = u;
+>u.unregister = u : NU
+>u.unregister : () => Promise<void>
+>u : NU
+>unregister : () => Promise<void>
+>u : NU
+    }
+    return u;
+>u : NU
+  }
+  const u = async () => {};
+>u : { (): Promise<void>; unregister: any | NU; }
+>async () => {} : { (): Promise<void>; unregister: any | NU; }
+
+  if (ns) {
+>ns : string | undefined
+
+    u.unregister = u;
+>u.unregister = u : { (): Promise<void>; unregister: any | NU; }
+>u.unregister : { (): Promise<void>; unregister: any | NU; } | NU
+>u : { (): Promise<void>; unregister: any | NU; }
+>unregister : { (): Promise<void>; unregister: any | NU; } | NU
+>u : { (): Promise<void>; unregister: any | NU; }
+  }
+  return u;
+>u : { (): Promise<void>; unregister: any | NU; }
+}
+export const register2 = () => {
+>register2 : () => { (): Promise<void>; unregister: any; }
+>() => {  {    const u = (async () => {}) as NU;    if (ns) u.unregister = u;  }  const u = async () => {};  u.unregister = u;  return u;} : () => { (): Promise<void>; unregister: any; }
+  {
+    const u = (async () => {}) as NU;
+>u : NU
+>(async () => {}) as NU : NU
+>(async () => {}) : () => Promise<void>
+>async () => {} : () => Promise<void>
+
+    if (ns) u.unregister = u;
+>ns : string | undefined
+>u.unregister = u : NU
+>u.unregister : () => Promise<void>
+>u : NU
+>unregister : () => Promise<void>
+>u : NU
+  }
+  const u = async () => {};
+>u : { (): Promise<void>; unregister: any; }
+>async () => {} : { (): Promise<void>; unregister: any; }
+
+  u.unregister = u;
+>u.unregister = u : { (): Promise<void>; unregister: any; }
+>u.unregister : { (): Promise<void>; unregister: any; }
+>u : { (): Promise<void>; unregister: any; }
+>unregister : { (): Promise<void>; unregister: any; }
+>u : { (): Promise<void>; unregister: any; }
+
+  return u;
+>u : { (): Promise<void>; unregister: any; }
+}
+
