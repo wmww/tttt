@@ -11376,9 +11376,13 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
             if (is_import && span_valid(item.decl_name)) {
                 if (*item.decl_name.buf == '"' || *item.decl_name.buf == '\'') {
                     parse_error(&p, item.decl_name, 1003, "Identifier expected.");
-                    bool renamed = item.source_name.buf != item.decl_name.buf;
-                    item.decl_name = span_make(p.shared->source, item.decl_name.buf, item.decl_name.buf);
-                    if (!renamed) item.source_name = item.decl_name; // (a missing name imports nothing)
+                    // (tsc keeps the string as the name node, which the binder declares as a missing name: shown as
+                    // the string's text, `Duplicate identifier '"a b"'`)
+                    item.decl_name_missing = true;
+                    if (item.source_name.buf == item.decl_name.buf) {
+                        // (a missing name imports nothing)
+                        item.source_name = span_make(p.shared->source, item.decl_name.buf, item.decl_name.buf);
+                    }
                 } else if (is_reserved_word(span_sv(item.decl_name))) {
                     parse_error(&p, item.decl_name, 1003, "Identifier expected.");
                 }

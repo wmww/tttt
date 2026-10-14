@@ -1795,7 +1795,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             scope_declaration_table(container, true) : scope_locals_mut(container);
     }
     bool merged;
-    csview name = port_item_name(item->decl_name);
+    csview name = item->decl_name_missing ? c_sv("") : port_item_name(item->decl_name);
     bool default_export = exported && my container && my container->is_module && csview_equals(name, "default");
     Symbol* symbol = declare_symbol(
         me, table, name, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, default_export, &merged

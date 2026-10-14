@@ -1,0 +1,24 @@
+//// [test/cases/ttttImportStringLocalName.ts] ////
+
+=== a.ts ===
+export const foo = 1;
+>foo : 1
+>1 : 1
+
+=== b.ts ===
+import { "nope" } from "./a";
+>"nope" : any
+
+import { nope2 } from "./a";
+>nope2 : any
+
+import { "foo" } from "./a";
+>"foo" : any
+
+import { foo as "x y" } from "./a";
+>foo : 1
+>"x y" : 1
+
+export { "x y" as z };
+>z : any
+

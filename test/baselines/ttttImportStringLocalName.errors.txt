@@ -1,0 +1,32 @@
+b.ts(1,10): error TS1003: Identifier expected.
+b.ts(1,10): error TS2300: Duplicate identifier '"nope"'.
+b.ts(2,10): error TS2305: Module '"./a"' has no exported member 'nope2'.
+b.ts(3,10): error TS1003: Identifier expected.
+b.ts(3,10): error TS2300: Duplicate identifier '"foo"'.
+b.ts(4,17): error TS1003: Identifier expected.
+b.ts(4,17): error TS2300: Duplicate identifier '"x y"'.
+
+
+==== a.ts (0 errors) ====
+    export const foo = 1;
+==== b.ts (7 errors) ====
+    import { "nope" } from "./a";
+             ~~~~~~
+!!! error TS1003: Identifier expected.
+             ~~~~~~
+!!! error TS2300: Duplicate identifier '"nope"'.
+    import { nope2 } from "./a";
+             ~~~~~
+!!! error TS2305: Module '"./a"' has no exported member 'nope2'.
+    import { "foo" } from "./a";
+             ~~~~~
+!!! error TS1003: Identifier expected.
+             ~~~~~
+!!! error TS2300: Duplicate identifier '"foo"'.
+    import { foo as "x y" } from "./a";
+                    ~~~~~
+!!! error TS1003: Identifier expected.
+                    ~~~~~
+!!! error TS2300: Duplicate identifier '"x y"'.
+    export { "x y" as z };
+    

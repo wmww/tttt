@@ -105,6 +105,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportStringLocalName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportTypeArgumentsResolvedLazily': {
         errors: true,
         symbols: true,
@@ -40872,8 +40877,8 @@ const baselines = {
     },
     'arbitraryModuleNamespaceIdentifiers_syntax': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es2022IntlAPIs': {
         errors: true,

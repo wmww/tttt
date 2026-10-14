@@ -1,0 +1,23 @@
+//// [test/cases/ttttImportStringLocalName.ts] ////
+
+=== a.ts ===
+export const foo = 1;
+>foo : Symbol(foo, Decl(a.ts, 0, 12))
+
+=== b.ts ===
+import { "nope" } from "./a";
+>"nope" : Symbol("nope", Decl(b.ts, 0, 8))
+
+import { nope2 } from "./a";
+>nope2 : Symbol(nope2, Decl(b.ts, 1, 8))
+
+import { "foo" } from "./a";
+>"foo" : Symbol("foo", Decl(b.ts, 2, 8))
+
+import { foo as "x y" } from "./a";
+>foo : Symbol(foo, Decl(a.ts, 0, 12))
+>"x y" : Symbol("x y", Decl(b.ts, 3, 8))
+
+export { "x y" as z };
+>z : Symbol(z, Decl(b.ts, 4, 8))
+

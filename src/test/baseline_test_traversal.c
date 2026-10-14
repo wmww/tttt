@@ -1372,7 +1372,8 @@ static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx,
     ctx->any_keeps_rendering = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
     // (Only an identifier name: a string one, `export type { foo as "a b" }`, isn't a type declaration name to tsc's
     // getTypeOfNode, and is the alias's value)
-    bool string_name = my decl_name.size && (my decl_name.buf[0] == '"' || my decl_name.buf[0] == '\'');
+    // (An import's string name, TS1003, is a declaration name all the same)
+    bool string_name = !my decl_name_missing && my decl_name.size && (my decl_name.buf[0] == '"' || my decl_name.buf[0] == '\'');
     if (type_declaration && !string_name && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
         Symbol const* type_symbol = symbol_for_meaning(my symbol, SYMBOL_TYPE);
         bool declared = type_symbol && !type_symbol->is_placeholder &&

@@ -75,6 +75,8 @@ typedef struct PortItem {
     // Its name conflicted (TS2300): a symbol of its own outside the scope's table (tsc's declareSymbol), which
     // checkUnusedLocalsAndParameters never sees
     bool duplicate;
+    // An import's name that is a string (TS1003): declared with a missing name, decl_name still spans the string
+    bool decl_name_missing;
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
