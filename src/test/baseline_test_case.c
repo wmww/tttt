@@ -1111,9 +1111,9 @@ BaselineTestCase run_baseline_test_case(
         SourceFile const* file = program_source_at(program, k);
         for (u32 r = 0; r < file->module_ref_count; r++) {
             ModuleRef const* ref = file->module_refs[r];
-            if (!ref->redirected_from || !ref->file) continue;
+            if (!module_ref_rare(ref)->redirected_from || !ref->file) continue;
             for_each (i, vec_baseline_test_file, &ret.files) {
-                if (i->source && i->source == ref->redirected_from) i->redirect_to = ref->file;
+                if (i->source && i->source == module_ref_rare(ref)->redirected_from) i->redirect_to = ref->file;
             }
         }
     }

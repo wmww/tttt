@@ -46,18 +46,30 @@ typedef struct ModuleRef {
     bool type_only_import; // Of an `import type` declaration (TS1541 rather than TS1479)
     bool import_type; // Of an import type `import("m")` (TS1542 rather than TS1479)
     SourceFile* file; // What the program's module resolution found, may be null
-    // A module augmentation's: the file its name resolves to, which it doesn't add to the program (tsc's
-    // processImportedModules only loads `file.imports`). `file` is set from it once loading is over
-    cstr augmented_path;
-    // The second copy of a package (same name and version) that `file`, the first, stands in for: messages name it
-    // (tsc's redirect source file keeps its own fileName)
-    SourceFile* redirected_from;
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
     // The file is another project's whose directories aren't placed like this one's: rewriting a `.ts` import path is
     // unsafe (TS2878, program_rewrite_crosses_projects())
     bool rewrite_crosses_projects;
     bool external_library; // Found by a node_modules lookup (tsc's isExternalLibraryImport)
+    // `with { type: "css" }` of the import, export or import type (owned by it), and `import("m", options)`'s call:
+    // which pattern ambient modules it can be (binder_find_module(), tsgo's tryResolvePatternAmbientModule)
+    // (A copy: the AST it was read off may be a speculative parse's, freed since. Owned, null for none)
+    struct ModuleRefAttrs* attrs;
+    struct ModuleRefRare* rare; // Owned, null when all of it is: read through module_ref_rare()
+    Symbol* module; // Memo of binder_module_of_ref()
+    Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
+    AliasState module_state;
+} ModuleRef;
+
+// What only failed, redirected or augmenting module references have (written through module_ref_rare_mut())
+typedef struct ModuleRefRare {
+    // A module augmentation's: the file its name resolves to, which it doesn't add to the program (tsc's
+    // processImportedModules only loads `file.imports`). `file` is set from it once loading is over
+    cstr augmented_path;
+    // The second copy of a package (same name and version) that `file`, the first, stands in for: messages name it
+    // (tsc's redirect source file keeps its own fileName)
+    SourceFile* redirected_from;
     // MODULE_REF_IS_JS in a package (tsc's packageId): what TS7016 suggests (createModuleNotFoundChain), set once the
     // program is loaded
     enum {
@@ -71,14 +83,14 @@ typedef struct ModuleRef {
     cstr alternate_result;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any. MODULE_REF_NOT_BUILT: the source, absolute
     cstr unbuilt_output; // MODULE_REF_NOT_BUILT: the output declaration file, absolute
-    // `with { type: "css" }` of the import, export or import type (owned by it), and `import("m", options)`'s call:
-    // which pattern ambient modules it can be (binder_find_module(), tsgo's tryResolvePatternAmbientModule)
-    // (A copy: the AST it was read off may be a speculative parse's, freed since. Owned, null for none)
-    struct ModuleRefAttrs* attrs;
-    Symbol* module; // Memo of binder_module_of_ref()
-    Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
-    AliasState module_state;
-} ModuleRef;
+} ModuleRefRare;
+
+extern const ModuleRefRare module_ref_no_rare;
+static inline ModuleRefRare const* module_ref_rare(ModuleRef const* me) {
+    return me->rare ? me->rare : &module_ref_no_rare;
+}
+// Allocates it if needed
+ModuleRefRare* module_ref_rare_mut(ModuleRef* me);
 
 // A `// @ts-expect-error` or `// @ts-ignore` comment (tsc's CommentDirective): the diagnostics that start on the next
 // line (blank lines and `//` comment lines in between don't count) are not reported. An unused @ts-expect-error is
@@ -301,7 +313,7 @@ static inline cstr source_file_message_path(SourceFile const* me) {
 
 // How messages name the file a module name found (TS2306)
 static inline cstr module_ref_file_message_path(ModuleRef const* me) {
-    return source_file_message_path(my redirected_from ? my redirected_from : my file);
+    return source_file_message_path(module_ref_rare(me)->redirected_from ? module_ref_rare(me)->redirected_from : my file);
 }
 
 // What there is to say about a module name that did find its file (TS5097)

@@ -3892,7 +3892,7 @@ static void merge_augmentations(Binder* me) {
             continue;
         }
         error_ctx_error_d(decl->inner_scope->binder->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
-            ref->path, "' resolves to an untyped module at '", ref->resolved_path, "', which cannot be augmented.");
+            ref->path, "' resolves to an untyped module at '", module_ref_rare(ref)->resolved_path, "', which cannot be augmented.");
     }
     // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
     // resolved, and augmentations of an `export =` module, which go into what it assigns

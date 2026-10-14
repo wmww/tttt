@@ -124,6 +124,13 @@ unsigned source_file_line_index(SourceFile const* me, const char* pos) {
 
 static_assert(offsetof(SourceFile, id) == 0, "source_file_id() reads the first word");
 
+const ModuleRefRare module_ref_no_rare = {0};
+
+ModuleRefRare* module_ref_rare_mut(ModuleRef* me) {
+    if (!me->rare) me->rare = c_new(ModuleRefRare, {0});
+    return me->rare;
+}
+
 void source_file_drop(SourceFile* me) {
     names_unregister_source(me);
     source_file_unregister(me);
@@ -138,11 +145,9 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my package_json);
     for (u32 i = 0; i < my module_ref_count; i++) {
         cstr_drop(&my module_refs[i]->path);
-        cstr_drop(&my module_refs[i]->resolved_path);
-        cstr_drop(&my module_refs[i]->package_name);
-        cstr_drop(&my module_refs[i]->alternate_result);
-        cstr_drop(&my module_refs[i]->unbuilt_output);
-        cstr_drop(&my module_refs[i]->augmented_path);
+        ModuleRefRare* rare = my module_refs[i]->rare;
+        if (rare) c_drop(cstr, &rare->resolved_path, &rare->package_name, &rare->alternate_result, &rare->unbuilt_output, &rare->augmented_path);
+        free(rare);
         module_ref_attrs_free(my module_refs[i]->attrs);
         free(my module_refs[i]);
     }
@@ -240,17 +245,17 @@ static cstr mangle_scoped_package_name(csview name) {
 // resolution would find (alternateResult), else what the program has of the package (ModuleRef.package_hint)
 static void module_ref_add_not_found_chain(ModuleRef const* me, Error* error, csview package_name) {
     cstr mangled = mangle_scoped_package_name(package_name);
-    if (cstr_size(&my alternate_result)) {
-        bool types = csview_find_sv(cstr_sv(&my alternate_result), c_sv("node_modules/@types/")) != c_NPOS;
+    if (cstr_size(&module_ref_rare(me)->alternate_result)) {
+        bool types = csview_find_sv(cstr_sv(&module_ref_rare(me)->alternate_result), c_sv("node_modules/@types/")) != c_NPOS;
         cstr library = types ? cstr_d("@types/", mangled) : cstr_from_sv(package_name);
-        error_sub_error_d(error, span_null, 6277, "There are types at '", my alternate_result, "', but this "
+        error_sub_error_d(error, span_null, 6277, "There are types at '", module_ref_rare(me)->alternate_result, "', but this "
             "result could not be resolved when respecting package.json \"exports\". The '", library,
             "' library may need to update its package.json or typings.");
         cstr_drop(&library);
         cstr_drop(&mangled);
         return;
     }
-    switch (my package_hint) {
+    switch (module_ref_rare(me)->package_hint) {
         case MODULE_REF_HINT_NONE: break;
         case MODULE_REF_HINT_TYPES_EXIST:
             error_sub_error_d(error, span_null, 7040, "If the '", package_name, "' package actually exposes this module, "
@@ -281,10 +286,10 @@ void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, ErrorCtx* e
     // The import is `any`, which is only worth a word when that has to be explicit
     if (!compiler_options()->no_implicit_any) return;
     Error* error = error_ctx_error_d(errs, at, 7016,
-        "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
+        "Could not find a declaration file for module '", my path, "'. '", module_ref_rare(me)->resolved_path,
         "' implicitly has an 'any' type.");
     // (tsc's errorOnImplicitAnyModule: for a bare name into a package)
-    if (error && cstr_size(&my package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&my package_name));
+    if (error && cstr_size(&module_ref_rare(me)->package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&module_ref_rare(me)->package_name));
 }
 
 static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_effect);
@@ -324,12 +329,12 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
             return;
         case MODULE_REF_ARBITRARY_EXTENSION:
             error_ctx_error_d(errs, my span, 6263,
-                "Module '", my path, "' was resolved to '", my resolved_path,
+                "Module '", my path, "' was resolved to '", module_ref_rare(me)->resolved_path,
                 "', but '--allowArbitraryExtensions' is not set.");
             return;
         case MODULE_REF_JSX_NOT_SET:
             error_ctx_error_d(errs, my span, 6142,
-                "Module '", my path, "' was resolved to '", my resolved_path, "', but '--jsx' is not set.");
+                "Module '", my path, "' was resolved to '", module_ref_rare(me)->resolved_path, "', but '--jsx' is not set.");
             return;
         case MODULE_REF_JSON_WITHOUT_OPTION:
             error_ctx_error_d(errs, my span, 2732,
@@ -337,10 +342,10 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
                 "'. Consider using '--resolveJsonModule' to import module with '.json' extension.");
             return;
         case MODULE_REF_NEEDS_EXTENSION:
-            if (cstr_size(&my resolved_path)) {
+            if (cstr_size(&module_ref_rare(me)->resolved_path)) {
                 error_ctx_error_d(errs, my span, 2835,
                     "Relative import paths need explicit file extensions in ECMAScript imports when "
-                    "'--moduleResolution' is 'node16' or 'nodenext'. Did you mean '", my resolved_path, "'?");
+                    "'--moduleResolution' is 'node16' or 'nodenext'. Did you mean '", module_ref_rare(me)->resolved_path, "'?");
             } else {
                 error_ctx_error_d(errs, my span, 2834,
                     "Relative import paths need explicit file extensions in ECMAScript imports when "
@@ -348,8 +353,8 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
             }
             return;
         case MODULE_REF_NOT_BUILT:
-            error_ctx_error_d(errs, my span, 6305, "Output file '", my unbuilt_output,
-                "' has not been built from source file '", my resolved_path, "'.");
+            error_ctx_error_d(errs, my span, 6305, "Output file '", module_ref_rare(me)->unbuilt_output,
+                "' has not been built from source file '", module_ref_rare(me)->resolved_path, "'.");
             return;
         case MODULE_REF_NOT_FOUND:
             break;
@@ -365,11 +370,11 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
         // (A side-effect import's message is the caller's: tsc's resolveExternalModuleName)
         Error* error = error_ctx_error_d(errs, my span, 2882,
             "Cannot find module or type declarations for side-effect import of '", my path, "'.");
-        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
+        if (error && cstr_size(&module_ref_rare(me)->alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     } else {
         Error* error = error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");
-        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
+        if (error && cstr_size(&module_ref_rare(me)->alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     }
 }
 
@@ -492,7 +497,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
     report_types_package(me, errs);
     if (my failure == MODULE_REF_JSX_NOT_SET) {
         error_ctx_error_d(errs, my span, 6142,
-            "Module '", my path, "' was resolved to '", my resolved_path, "', but '--jsx' is not set.");
+            "Module '", my path, "' was resolved to '", module_ref_rare(me)->resolved_path, "', but '--jsx' is not set.");
     }
     // A declaration file named with its extension (tsc's resolveExternalModule: resolvedUsingTsExtension and
     // isDeclarationFileName), outside a type-only import; the suggestion is getSuggestedImportSource's

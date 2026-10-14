@@ -686,8 +686,8 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     csview unbuilt = program_output_of_resolved(me, &resolved);
     if (unbuilt.size) {
         ref->failure = MODULE_REF_NOT_BUILT;
-        cstr_take(&ref->unbuilt_output, cstr_from_sv(unbuilt));
-        cstr_take(&ref->resolved_path, cstr_clone(resolved.path));
+        cstr_take(&module_ref_rare_mut(ref)->unbuilt_output, cstr_from_sv(unbuilt));
+        cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_clone(resolved.path));
         resolved_module_drop(&resolved);
         return;
     }
@@ -723,13 +723,13 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     bool loadable = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || (resolved.kind == RESOLVED_JS && my options.allow_js);
     if (ref->is_declaration && loadable) {
         ref->file = program_find_source(me, cstr_sv(&resolved.path));
-        cstr_take(&ref->augmented_path, cstr_clone(resolved.path));
+        cstr_take(&module_ref_rare_mut(ref)->augmented_path, cstr_clone(resolved.path));
         resolved_module_drop(&resolved);
         return;
     }
     bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
     if (cstr_size(&resolved.alternate_result)) {
-        cstr_take(&ref->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
+        cstr_take(&module_ref_rare_mut(ref)->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
     }
     ref->external_library = resolved.is_external_library;
     if (resolved.is_external_library) my node_modules_depth++;
@@ -757,10 +757,10 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
         case RESOLVED_DTS:
             if (my options.jsx == JSX_NONE && csview_ends_with(cstr_sv(&resolved.path), ".tsx")) {
                 ref->failure = MODULE_REF_JSX_NOT_SET;
-                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else if (resolved.arbitrary_extension && !my options.allow_arbitrary_extensions && !source->is_declaration) {
                 ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
-                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
                 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
                 // second copy stays in the program, but imports mean the first, and its own imports are the first's
@@ -779,7 +779,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 if (dedup && ref->file) {
                     if (first) {
                         if (first != ref->file) {
-                            ref->redirected_from = ref->file;
+                            module_ref_rare_mut(ref)->redirected_from = ref->file;
                             ref->file->package_redirect = true;
                             ref->file->package_redirect_target = first;
                             ref->file->unchecked = true;
@@ -794,7 +794,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
         case RESOLVED_JS:
             if (my options.jsx == JSX_NONE && csview_ends_with(cstr_sv(&resolved.path), ".jsx")) {
                 ref->failure = MODULE_REF_JSX_NOT_SET;
-                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
                 break;
             }
             // JavaScript of a package is part of the program only down to maxNodeModuleJsDepth (0 by default)
@@ -815,8 +815,8 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 ref->file = program_find_source(me, cstr_sv(&resolved.path));
             } else {
                 ref->failure = MODULE_REF_IS_JS;
-                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
-                if (!module_name_is_relative(cstr_sv(&ref->path))) ref->package_name = cstr_clone(resolved.package_name);
+                cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                if (!module_name_is_relative(cstr_sv(&ref->path))) module_ref_rare_mut(ref)->package_name = cstr_clone(resolved.package_name);
             }
             break;
         case RESOLVED_JSON:
@@ -831,7 +831,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 // (None for a path ending in a separator: tsgo's HasTrailingDirectorySeparator check, `./foo/` isn't
                 // `./foo/.js`)
                 if (cstr_size(&resolved.suggested_extension) && !cstr_ends_with(&ref->path, "/")) {
-                    cstr_take(&ref->resolved_path, cstr_d(ref->path, resolved.suggested_extension));
+                    cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_d(ref->path, resolved.suggested_extension));
                 }
             }
             break;
@@ -1377,11 +1377,13 @@ static bool program_share_redirect_ref(SourceFile const* target, ModuleRef* ref)
         ModuleRef const* own = target->module_refs[i];
         if (own->is_declaration || own->syntax != ref->syntax || !cstr_eq(&own->path, &ref->path)) continue;
         ref->file = own->file;
-        ref->redirected_from = own->redirected_from;
+        if (own->rare || ref->rare) module_ref_rare_mut(ref)->redirected_from = module_ref_rare(own)->redirected_from;
         ref->failure = own->failure;
         ref->used_ts_extension = own->used_ts_extension;
         ref->external_library = own->external_library;
-        cstr_take(&ref->resolved_path, cstr_clone(own->resolved_path));
+        if (cstr_size(&module_ref_rare(own)->resolved_path) || ref->rare) {
+            cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_clone(module_ref_rare(own)->resolved_path));
+        }
         return true;
     }
     return false;
@@ -2776,8 +2778,8 @@ void program_resolve_names(Program* me) {
         // What module augmentations augment, if something else brought it into the program
         for (u32 j = 0; j < source->module_ref_count; j++) {
             ModuleRef* ref = source->module_refs[j];
-            if (ref->is_declaration && !ref->file && cstr_size(&ref->augmented_path)) {
-                ref->file = program_find_source(me, cstr_sv(&ref->augmented_path));
+            if (ref->is_declaration && !ref->file && cstr_size(&module_ref_rare(ref)->augmented_path)) {
+                ref->file = program_find_source(me, cstr_sv(&module_ref_rare(ref)->augmented_path));
             }
             // (A package's second copy is the first to an augmentation too: tsc's redirect source file has the
             // first's symbol)
@@ -2814,15 +2816,15 @@ void program_resolve_names(Program* me) {
             if (ref->failure == MODULE_REF_JSX_NOT_SET && !ref->file) {
                 // A .tsx file that is part of the program anyway (a root) is still what the name means (tsc's
                 // resolveExternalModule: TS6142, and the file)
-                csview shown = cstr_sv(&ref->resolved_path);
+                csview shown = cstr_sv(&module_ref_rare(ref)->resolved_path);
                 cstr absolute = shown.size && shown.buf[0] == '/' ? cstr_from_sv(shown) : cstr_d(program_cwd(me), "/", shown);
                 ref->file = program_find_source(me, cstr_sv(&absolute));
                 ref->used_ts_extension = ref->file && csview_ends_with(cstr_sv(&ref->path), ".tsx");
                 cstr_drop(&absolute);
                 continue;
             }
-            if (ref->failure != MODULE_REF_IS_JS || !cstr_size(&ref->package_name)) continue;
-            csview name = cstr_sv(&ref->package_name);
+            if (ref->failure != MODULE_REF_IS_JS || !cstr_size(&module_ref_rare(ref)->package_name)) continue;
+            csview name = cstr_sv(&module_ref_rare(ref)->package_name);
             cstr types = cstr_lit("@types/");
             if (name.size && name.buf[0] == '@') {
                 isize slash = csview_find_sv(name, c_sv("/"));
@@ -2832,7 +2834,7 @@ void program_resolve_names(Program* me) {
                 cstr_append_sv(&types, name);
             }
             auto bundles = hmap_package_flag_get(&my packages, name);
-            ref->package_hint = hmap_package_flag_get(&my packages, cstr_sv(&types)) ? MODULE_REF_HINT_TYPES_EXIST :
+            module_ref_rare_mut(ref)->package_hint = hmap_package_flag_get(&my packages, cstr_sv(&types)) ? MODULE_REF_HINT_TYPES_EXIST :
                 bundles && bundles->second ? MODULE_REF_HINT_BUNDLES_TYPES : MODULE_REF_HINT_INSTALL_TYPES;
             cstr_drop(&types);
         }
