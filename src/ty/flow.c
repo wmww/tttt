@@ -941,7 +941,9 @@ static Ty const* assignment_reduced_type(Checker* me, Ty const* declared, Ty con
 }
 
 static Ty const* for_each_element_type(Checker* me, ForEachLoopStatement const* for_each) {
-    (void)me;
+    // (A for-in variable is assigned a string, whatever its declared `Extract<keyof X, string>`: tsc's
+    // getInitialTypeOfVariableDeclaration and getAssignedType for a ForInStatement)
+    if (for_each->keyword == FOR_EACH_LOOP_IN) return ty_intrinsic(me, TY_STRING);
     return lazy_type_get((LazyType*)&for_each->var_type);
 }
 
@@ -1020,6 +1022,12 @@ static InitializedBinding const* root_initializer(Binding const* root) {
 // element with a default has the default's type as it is, not widened (`for (var { y = true } of a)` assigns true)
 static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     Checker* me = q->me;
+    // (A for-in variable is a string to begin with, see for_each_element_type())
+    if (!binding->parent && binding->tag == BINDING_IDENTIFIER && binding->source && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR &&
+        c_container_of(binding->source, ForEachLoopStatement, var_type)->keyword == FOR_EACH_LOOP_IN
+    ) {
+        return ty_intrinsic(me, TY_STRING);
+    }
     if (!binding->parent && binding->source && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR &&
         binding->tag != BINDING_IDENTIFIER
     ) {

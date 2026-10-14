@@ -200,7 +200,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 ## Relations and type core (more in `type_core.md`)
 - reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
-  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`), awaitedTypeNoLib,
+  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),
   inferFromGenericFunctionReturnTypes3.
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
   }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target

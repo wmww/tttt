@@ -4562,6 +4562,46 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
     }
 }
 
+// A branch of a conditional type, as instantiated if it is already, else as written: whether it could be never
+static bool cond_branch_may_be_never(TyCondBranch const* branch) {
+    bool done = branch->state == LAZY_STATE_DONE || (!branch->node && !branch->source);
+    if (done) return branch->type && (branch->type->flags & TYF_NEVER);
+    if (branch->source) {
+        Ty const* type = branch->source;
+        // (Something generic other than an object type may instantiate to never)
+        return (type->flags & TYF_NEVER) || ((type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(type->flags & TYF_OBJECT));
+    }
+    switch (branch->node->tag) {
+        case TYPE_UNKNOWN: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER: case TYPE_STRING: case TYPE_SYMBOL:
+        case TYPE_BIGINT: case TYPE_VALUE: case TYPE_UNIQUE_SYMBOL: case TYPE_TEMPLATE: case TYPE_CALLABLE:
+        case TYPE_INTERFACE: case TYPE_ARRAY: case TYPE_TUPLE:
+            return false;
+        default: return true;
+    }
+}
+
+// Whether a branch of a conditional type is (or as written could be) its check type
+static bool cond_branch_may_be_check(Ty const* ty, TyCondBranch const* branch) {
+    bool done = branch->state == LAZY_STATE_DONE || (!branch->node && !branch->source);
+    if (done) return branch->type && actual_type_variable(branch->type) == actual_type_variable(ty->conditional.check);
+    Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
+    if (branch->source) return actual_type_variable(branch->source) == actual_type_variable(root->conditional.check);
+    // (A type parameter's name, not an alias applied to arguments)
+    return branch->node->tag == TYPE_IDENTIFIER && vec_spanned_type_is_empty(&branch->node->identifier->generic_params) &&
+        !identifier_type_namespace_count(branch->node->identifier);
+}
+
+// Whether tsc's getSimplifiedConditionalType could find `T extends U ? T : never` (or `? never : T`) in a conditional
+// type once its branches are instantiated, judged by the branches as written where they aren't yet: instantiating
+// them resolves what they mention, which tsc's lazier types don't (mikro-orm/packages/seeder went 2.3x types).
+// (Approximate: a branch written as another type parameter that the mapper makes the check type is missed)
+static bool may_simplify_conditional(Ty const* ty) {
+    TyCondBranch const* if_false = &ty->conditional.branches[0];
+    TyCondBranch const* if_true = &ty->conditional.branches[1];
+    return (cond_branch_may_be_never(if_false) && cond_branch_may_be_check(ty, if_true)) ||
+        (cond_branch_may_be_never(if_true) && cond_branch_may_be_check(ty, if_false));
+}
+
 // tsc's getResolvedBaseConstraint, without the sentinels: cached like its resolvedBaseConstraint, whatever the stack
 // (React's `T & {}` check types ask again and again)
 static Ty const base_constraint_in_flight, base_constraint_circular, base_constraint_none;
@@ -4597,11 +4637,12 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
         for (ConstraintStack const* s = stack; s && !deep; s = s->up) deep = s->identity == identity;
     }
     ConstraintStack inner = { .up = stack, .identity = identity, .len = len + 1 };
-    // (tsc simplifies every type first; a conditional type's simplification instantiates both its branches, which in
-    // tttt resolves the conditional types inside them: mikro-orm/packages/seeder 2.3x types. HACK: indexed accesses only)
+    // (tsc simplifies every type first: indexed accesses here, conditional types only where their branches as written
+    // could make them simplify, see may_simplify_conditional())
     *intern_slot(me, &my links, key, 2) = &base_constraint_in_flight;
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
-    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED ? ty_simplified(me, ty, false) : ty, &inner);
+    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
+        ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
     void const** slot = intern_slot(me, &my links, key, 2);
     // (The first answer stays: one computed again below the barrier answered already)
