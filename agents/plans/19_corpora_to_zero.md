@@ -225,7 +225,7 @@ a tuple is a variadic element, not a rest array: Schema.ts 9010 (`variadic_gener
 by intersect_unions(), with intersection targets' property types made lazily for 3+ parts as tsc defers them:
 fiberRuntime 1397 (`union_call_cross_product_too_complex.ts`).
 
-Left (TS2578, 3; implemented and measured 2026-10-14, plan 69: costs valibot 1.4%), dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A
+Left (TS2578, 3; implemented and measured 2026-10-14, plan 70: costs valibot 1.4%), dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A
 extends Schema.TaggedClass<_A>()("A", {...}, [undefined, undefined, { pretty: () => (x) => ... }])`. Reduced
 (instrumented tsc stack): getBaseConstructorTypeOfClass checks the call; the annotations tuple related to the
 `readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?]` parameter also goes through indexSignaturesRelatedTo (the

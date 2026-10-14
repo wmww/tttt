@@ -818,11 +818,18 @@ src` finds the code-side markers; every significant one has an entry here.
   Type literals with index signatures still don't. Fix properly by making the TS5115/instantiation accounting not
   depend on such member resolution, or a mapped type's template lazy when its keys are none.
 
-## Content mappers (plan 56, `content_mapper.c`)
+## Content mappers (`content_mapper.c`, documentation.md "Content mappers")
 - `alias_original_names()`: tsgo substitutes an alias segment's original text for the *arguments* of a diagnostic
   that exactly covers it (displayMessageArgs); tttt's messages are formatted already, so the quoted virtual name is
   replaced in the message text. Wrong if the name appears quoted for another reason.
-- No 5 s initialize timeout (a mapper that never answers hangs tttt), utf-16 position encoding is refused with
-  TS18087 instead of converted, the 6th span map element (features) is ignored. Part 2 of plan 56.
 - `span_cmp()` compares a content-mapped file and its original text (ContentMapped.original, same path) by offset:
   tsgo sorts the mapper's (original-coordinate) and the compiler's (virtual-coordinate) diagnostics of a file together.
+- `program_parse_ahead()` leaves content-mapped files to the loader (transformed in program order) so the failure budget
+  (TS18070 after 5) is deterministic; tsgo counts in goroutine order, so with 6+ failing files which 5 it reports
+  differs from run to run (tttt's are the first 5 in program order). Costs the transforms their parallelism.
+- `drop_diagnostic_kind()` (main.c) recognizes a mapper's program diagnostics (TS18099/TS18070 without a location) by
+  code to keep them next to syntactic errors (tsgo's GetDiagnosticsOfAnyProgram appends them there).
+- `append_compiler_options()` sends the options tttt has (booleans, target, module, moduleResolution, jsx, jsx
+  factories), not tsgo's whole CompilerOptions JSON (paths, lib, strings...): a mapper reading those gets nothing.
+- Not done: the `locale` initialize parameter, mapper protocol/stderr logging, declaration emit names for mapped files
+  (tttt doesn't emit), `-b`'s tsbuildinfo `contentMapperIdentities` (tttt writes none).

@@ -30,10 +30,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   one circularity stack, conditional/mapped/indexed/template/substitution types, deferred references, flow graph +
   narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, mixins, decorators, union
   origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them,
-  parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, tsc's laziness and
+  parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, 7.1's content mappers
+  (a real JSON-RPC host; the suite runs tsgo's Go test mappers as a process), tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
-- **Absent or approximated**: pseudo-type builder gaps (plan 55's list), content
-  mappers (plan 56, not started; now scheduled by plan 66, the human wants the suite at 100%), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
+- **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
   member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64, planned, not started).
 
 ## Course correction (insights of 2026-10-14, end of the fifteenth window)

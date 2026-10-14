@@ -14,3 +14,7 @@ From the triage session (2026-10-14, late-bound member merging):
   checker's MembersBuilder, check.c's MemberTables, the symbols baseline's computed_member_symbol_items): the symbols
   baseline should ask the checker's Prop decl spans everywhere, as late_member_declarations() and the object
   literal's ty_object_literal_member_symbol() now do.
+
+- (2026-10-14, content mapper probe) `const __VERSION = "1.0.0"; const __VERSION: number = 1;` in one file with
+  noUnusedLocals: tsgo reports TS2451 twice and no TS6133; tttt also reports TS6133 for one of them. Check a plain TS
+  file (`scripts/filetest.sh`) before blaming the mapper.

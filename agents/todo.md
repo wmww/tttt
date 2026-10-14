@@ -16,14 +16,11 @@ perfsweep check median 0.17x tsgo, worst types ratio 1.62. Instructions: measure
 **This window: the suite to 100% (the human's request, plan 66), `.d.ts` emit to a working writer (plan 64), and the
 checker count following the cores (plan 62).** Memory against bun gets a planning session, not more struct diets.
 
-1. **Plan 66 stage 1: fan-out.** Four Opus agents in worktrees, buckets 3 (display), 4 (missing checks, circularity,
-   type core), 5+8 (JS, binder/modules, the unfiled five), 6+7 (parser, harness quirks); disjoint test lists, 0 lost
-   at every merge, full source sweep match-set diff and flagflip against a session-start run. Each agent writes one
-   line per unfixed test (mechanism, size) into its bugs file. Merge every agent's commits before the session ends.
-2. **Plan 56 (content mappers), part 1.** Update plan 56 to plan 66's design first (tsgo's Go test mappers served by a
-   `test/oracle` overlay binary, tttt implements the real JSON-RPC host), then build the host.
-3. **Plan 56, part 2.** The 10 `contentMapper*` tests and scenarios.py's skipped content-mapper scenario; plan 56
-   deleted when done.
+1. Done (2026-10-14): plan 66 stage 1 fan-out, suite 13520 -> 13604 (agent C's plan 69 stage 1 was found uncommitted
+   in its worktree by the next session and merged then; stale worktrees removed).
+2. Done (2026-10-14, one session for entries 2 and 3): content mappers, `contentMapper*` 15 / 15, suite 13615 / 13660,
+   both content-mapper scenarios pass; plan 56 deleted (documentation.md "Content mappers").
+3. (Merged into 2.)
 4. **Plan 62 stages 2 and 3.** Display independent of K (`order.c` id ties, symbol ids in names), then `--checkers`
    follows the cores with a size cap; the human item asking for `scripts/bench.sh` at K 4/8/12/16 on the 12-core box.
    If stage 2 overruns, stage 3 goes to the next window (don't take a third session).

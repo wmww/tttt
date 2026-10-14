@@ -16,7 +16,8 @@ emitter (plan 64) is how tttt gets the same order honestly.
 ## The 113, by what they need (bucket = the agents file that already describes them)
 Component letters are the *failing* components (E errors, S symbols, T types).
 
-1. **Content mappers (10, plan 56)**: every `contentMapper*` test. Plan 56 said "don't implement now" because nothing
+1. **Done 2026-10-14: content mappers, all 15 pass** (plan 56 deleted, documentation.md "Content mappers").
+   Was: **Content mappers (10, plan 56)**: every `contentMapper*` test. Plan 56 said "don't implement now" because nothing
    real uses the feature; the human's request overrides that. tsgo's harness runs Go test mappers in process
    (`internal/testutil/contentmappertest`, ~1.6k lines: `compiler-test-mapper`, `verbatim-mapper`, failing,
    supplemental...; `spawner.go` serves them over a `net.Pipe` with the real `internal/ipc` JSON-RPC). Don't port
@@ -43,7 +44,7 @@ Component letters are the *failing* components (E errors, S symbols, T types).
 5. **JS (15, bugs/js.md)** and **binder/modules (13, bugs/binder_modules.md)**: expandos (TS7022), CommonJS aliases,
    augmentations, late-bound assignment declarations, merged declarations. Seven of the binder ones are one
    mechanism, cross-file merges involving aliases decided after the aliases resolve: four done, the clone cases
-   left in **plan 69**.
+   left in **plan 69** (the effect TS2578 plan is 70).
 6. **Parser/scanner (~5)**: jsxInvalidEsprimaTestSuite (recovery), scannerUnexpectedNullCharacter1 (a NUL byte ends the
    file in tttt: hacks.md), bigintPropertyName (TS1539 bigint keys), varianceAnnotationsWithCircularlyReferencesError,
    arbitraryModuleNamespaceIdentifiers_syntax, jsxParsingErrorImmediateSpreadInAttributeValue.
@@ -57,7 +58,7 @@ Component letters are the *failing* components (E errors, S symbols, T types).
 1. **Fan-out (one session)**: four Opus agents in worktrees, buckets 3, 4, 5+8, 6+7 (disjoint lists, 0 lost at merge,
    the usual oracles at every merge: vision.md "Fan-out sessions"). Each agent ends by writing, per test it didn't
    fix, one line in its bugs file: the mechanism and the estimated size. Expected: ~40-50 of the ~85 non-feature tests.
-2. **Plan 56 (content mappers, through the Go test mappers as above)**: 10 tests, two sessions. Update plan 56 first.
+2. **Done** (content mappers, 15 / 15, in one session).
 3. **Plan 64** as scheduled; after its stage 2, re-bucket bucket 2 and add the harness's emit-before-diagnostics.
 4. **Second fan-out** on what's left; every remaining test gets either a fix, a plan, or a `tsgo_divergences.md`
    argument (see the rule above).

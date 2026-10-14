@@ -250,7 +250,7 @@ Imported files are discovered while loading, from the parser's list of module na
 `src/tsconfig.{h,c}` reads a tsconfig.json: `extends` (paths and packages; one that can't be found is a diagnostic and the rest goes on, `tsconfig_load_diagnosed()`), `compilerOptions` (path options made absolute, `${configDir}`), and the root files from `files` / `include` / `exclude` (the walk only enters directories an include pattern can match something inside, `glob_may_match_inside()`; a found `a.d.ts` or `a.js` next to `a.ts` is left out, tsc's extension priority; `.json` files only for include patterns ending in `.json`, with resolveJsonModule), and `references` (`tsconfig_load_references()`, see "Project references"). The CLI takes `-p`, or finds the nearest tsconfig.json when it is given no files; the test harness applies a `tsconfig.json` unit under the test's directives and takes its files as the roots, like tsc's `compilerRunner.ts`. The harness also mirrors tsc's virtual filesystem: relative `@Filename`s live in `/.src`, which is the working directory (`@currentDirectory` changes it), `@link` / `@symlink` make symlinks in the mock filesystem.
 
 ### Content mappers
-tsgo 7.1's `contentMappers` (plan 56, `src/content_mapper.{h,c}`): with `--runExternalCode`, a tsconfig names
+tsgo 7.1's `contentMappers` (`src/content_mapper.{h,c}`): with `--runExternalCode`, a tsconfig names
 packages (resolved from the config's directory, their package.json's `typescript.contentMapper` manifest) whose
 program turns files of other extensions into TypeScript. The extensions are root files (`has_source_extension()`) and
 module names that name the file itself (`try_adding_extensions()`). `program_make_source()` sends a mapped file's
@@ -260,7 +260,13 @@ file's own name as `<file><virtual extension>`; `SourceFile.content_mapped` keep
 as a file of its own (`ContentMapped.original`, registered, never in the program). The mapper's diagnostics point into
 that original; the compiler's are mapped back there by `content_mapped_map_error()` just before printing (CLI:
 `print_diagnostics()`; harness: the `.contentmapper` baseline, which the errors component compares, and the errors
-baseline leaves mapped files out like tsgo's runner). The suite runs tsgo's Go test mappers as a process:
+baseline leaves mapped files out like tsgo's runner). Diagnostic directives suppress semantic diagnostics in their
+virtual ranges (`program_apply_content_mapper_directives()`); supplemental outputs are files of their own,
+`<file>.<i><ext>`, added after the file's imports (`program_make_supplementals()`, `program_add_made_source()`), named
+by the canonical file in diagnostics. Failures follow tsgo's fileLoader: an initialization failure is one global TS18099
+and the mapper's files are empty; a transform failure is TS18069 on an empty placeholder, the fifth one adds TS18070 and
+the mapper isn't used any more (counted per tsconfig entry, in program order: the load pool leaves mapped files to the
+loader). The suite runs tsgo's Go test mappers as a process:
 `test/oracle/tttt-test-mapper` (`thirdparty/typescript/built/tttt-test-mapper NAME`) is put in front of a manifest's
 `exec` (`content_mapper_set_launcher()`, `TTTT_CONTENT_MAPPER_LAUNCHER`).
 

@@ -1,4 +1,4 @@
-# Plan 69: effect's 3 spurious TS2578 (a class's base expression that needs the class)
+# Plan 70: effect's 3 spurious TS2578 (a class's base expression that needs the class)
 
 Written 2026-10-14 (agent D). Both halves were implemented and measured, and together they take effect to 0 / 0.
 Part (a) costs 1.4% of valibot's instructions, so neither half is committed. The work left is making (a) cheap.
