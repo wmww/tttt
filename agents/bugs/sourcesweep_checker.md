@@ -60,9 +60,6 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   A copy of the file outside the package (modules unresolved) shows another divergence: tsc infers `Auth<any>` (api
   any) from the error-typed config, tttt `Auth<BetterAuthOptions>` (api `FilteredAPI<Record<string, Endpoint>>`) and
   reports TS2722 there. Not reduced further. lynx-store.ts:65 -TS2345 x2 not looked at.
-- apollo-client docs `@types/react/index.d.ts:4146` +TS2694 `React.React` / -TS2749 (`React.Component` in `declare
-  global { namespace JSX }`): near agent A's b5fcc5fc (TS2749 for value-only members of an `export =` namespace), not
-  looked at further.
 - sequelize connection-options.ts:50 -TS2339 (2 projects): tsc reports TS2339 twice at `const { url, ...rest } =
   options` (`options: RawConnectionOptions<Dialect>`, a generic union with string): once on `RawConnectionOptions<
   Dialect>` (the declaration's check) and once on the constraint `string | (object & { url?: string })`, from the flow
@@ -74,10 +71,6 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   url?: string }) | string; function f<T extends AD>(dialect: T, options: Raw<T>): CO<T> { const { url, ...rest } =
   options; if (url) { return dialect.parse(url); } return rest; }`. Mirroring needs an error-reporting re-read of the
   pattern's parent in initial_binding_type(); not done.
-- msw body-stream.node.test.ts:11 and qwik slot.e2e.tsx:19 -TS2428 (a `declare module 'vitest' { interface
-  Matchers<T = any> }` augmentation of an interface vitest re-exports from a chunk): a standalone copy of the
-  re-export chain (even the `config.d.CU_b-wJj.js` chunk name) reports TS2428 like tsc; something about the real
-  setup (types: vitest/globals?) differs. Not found.
 - sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
   `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
   reports it, so does a probe with IndexOptions alone); connection-options.ts:50 -TS2339: tsc reports TS2339 twice
