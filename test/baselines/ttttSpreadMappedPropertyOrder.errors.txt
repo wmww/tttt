@@ -1,0 +1,32 @@
+ttttSpreadMappedPropertyOrder.ts(5,7): error TS2322: Type '{ s?: string; n?: number | undefined; f: string; }' is not assignable to type 'number'.
+ttttSpreadMappedPropertyOrder.ts(6,7): error TS2322: Type '{ s?: string; f?: string | undefined; n?: number | undefined; }' is not assignable to type 'number'.
+ttttSpreadMappedPropertyOrder.ts(7,7): error TS2322: Type '{ s?: string; f?: string | undefined; n?: number | undefined; q: number; }' is not assignable to type 'number'.
+ttttSpreadMappedPropertyOrder.ts(9,3): error TS2322: Type '{ s?: string; f: string; n: number; }' is not assignable to type 'number'.
+ttttSpreadMappedPropertyOrder.ts(12,3): error TS2322: Type '{ s?: string; f: string; n: number; }' is not assignable to type 'number'.
+
+
+==== ttttSpreadMappedPropertyOrder.ts (5 errors) ====
+    // A spread of a mapped type (Partial<R>): its properties are declared where R's are, which orders them (tsc sorts by first
+    // declaration), and reuse R's annotation only where it says the same with each one's optionality (gemini-cli's makeCase)
+    interface R { s?: string; f: string; n: number; }
+    declare const p: Partial<R>;
+    const x: number = { f: 'a', ...p };
+          ~
+!!! error TS2322: Type '{ s?: string; n?: number | undefined; f: string; }' is not assignable to type 'number'.
+    const y: number = { ...p };
+          ~
+!!! error TS2322: Type '{ s?: string; f?: string | undefined; n?: number | undefined; }' is not assignable to type 'number'.
+    const z: number = { q: 1, ...p };
+          ~
+!!! error TS2322: Type '{ s?: string; f?: string | undefined; n?: number | undefined; q: number; }' is not assignable to type 'number'.
+    function mk(o: Partial<R> = {}): number {
+      return { f: 'a', n: 1, ...o };
+      ~~~~~~
+!!! error TS2322: Type '{ s?: string; f: string; n: number; }' is not assignable to type 'number'.
+    }
+    function mk2(o: { s?: string; f?: string }): number {
+      return { f: 'a', n: 1, ...o };
+      ~~~~~~
+!!! error TS2322: Type '{ s?: string; f: string; n: number; }' is not assignable to type 'number'.
+    }
+    

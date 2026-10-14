@@ -3262,9 +3262,20 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         // (A mapped type's property is declared where the property it maps is, `{ ...(x as Readonly<A>) }`: tsc's mapped
         // symbol's declarations, whose annotation is reused where it says the same)
         Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
-        if (!annotation && mapped_from && declared_type == prop_type(me, mapped_from)) {
+        // (Compared with the optionality of each: the mapped property's type and the annotation's, as declared optional
+        // or not, tsc's addOptionality. Partial's `f?` of a required `f: string` isn't what `string` says, an optional
+        // `s?: string` mapped is)
+        bool same_as_mapped = mapped_from && (prop->flags & PROP_OPTIONAL ? optional_type(me, declared_type) : declared_type) ==
+            (mapped_from->flags & PROP_OPTIONAL ? optional_type(me, prop_type(me, mapped_from)) : prop_type(me, mapped_from));
+        if (!annotation && same_as_mapped) {
             while (mapped_from->target) mapped_from = mapped_from->target;
             annotation = ty_prop_annotation(mapped_from);
+        }
+        // (Declared where the property it maps is, which orders it: tsc's mapped symbol's declarations)
+        Prop const* declared_at = origin;
+        if (!declared_at->decl->decl_span_count && prop_decl_rare(prop->decl)->mapped_from) {
+            declared_at = prop_decl_rare(prop->decl)->mapped_from;
+            while (declared_at->target) declared_at = declared_at->target;
         }
         TypeNode const* annotation_required = nullptr;
         if (annotation && type != declared_type) {
@@ -3281,8 +3292,8 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .name_span = origin->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,
-            .decl_spans = origin->decl->decl_spans,
-            .decl_span_count = origin->decl->decl_span_count,
+            .decl_spans = declared_at->decl->decl_spans,
+            .decl_span_count = declared_at->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,
             .parent = !partial && !setonly && !(prop->flags & PROP_READONLY) ? prop->parent : nullptr,
             .spread_variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable,

@@ -1,0 +1,60 @@
+//// [test/cases/ttttSpreadMappedPropertyOrder.ts] ////
+
+=== ttttSpreadMappedPropertyOrder.ts ===
+// A spread of a mapped type (Partial<R>): its properties are declared where R's are, which orders them (tsc sorts by first
+// declaration), and reuse R's annotation only where it says the same with each one's optionality (gemini-cli's makeCase)
+interface R { s?: string; f: string; n: number; }
+>s : string | undefined
+>f : string
+>n : number
+
+declare const p: Partial<R>;
+>p : Partial<R>
+
+const x: number = { f: 'a', ...p };
+>x : number
+>{ f: 'a', ...p } : { s?: string; n?: number | undefined; f: string; }
+>f : string
+>'a' : "a"
+>p : Partial<R>
+
+const y: number = { ...p };
+>y : number
+>{ ...p } : { s?: string; f?: string | undefined; n?: number | undefined; }
+>p : Partial<R>
+
+const z: number = { q: 1, ...p };
+>z : number
+>{ q: 1, ...p } : { s?: string; f?: string | undefined; n?: number | undefined; q: number; }
+>q : number
+>1 : 1
+>p : Partial<R>
+
+function mk(o: Partial<R> = {}): number {
+>mk : (o?: Partial<R>) => number
+>o : Partial<R>
+>{} : {}
+
+  return { f: 'a', n: 1, ...o };
+>{ f: 'a', n: 1, ...o } : { s?: string; f: string; n: number; }
+>f : string
+>'a' : "a"
+>n : number
+>1 : 1
+>o : Partial<R>
+}
+function mk2(o: { s?: string; f?: string }): number {
+>mk2 : (o: { s?: string; f?: string; }) => number
+>o : { s?: string; f?: string; }
+>s : string | undefined
+>f : string | undefined
+
+  return { f: 'a', n: 1, ...o };
+>{ f: 'a', n: 1, ...o } : { s?: string; f: string; n: number; }
+>f : string
+>'a' : "a"
+>n : number
+>1 : 1
+>o : { s?: string; f?: string; }
+}
+
