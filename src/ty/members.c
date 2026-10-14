@@ -4445,7 +4445,13 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         prop->type = ty_intrinsic(me, TY_ERROR);
         prop->type_state = LAZY_STATE_DONE;
         cstr name = ty_prop_name_cstr(me, prop->name);
-        cstr mapped = ty_to_cstr(me, intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2));
+        Ty const* mapped_type = intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2);
+        // (tsc's getTypeOfMappedSymbol sets containsError where pushTypeResolution fails, before it reports)
+        if (mapped_type && (mapped_type->flags & TYF_OBJECT)) {
+            Members const* expanded = ty_members(me, mapped_type);
+            if (members_rare(expanded)->expanded_from) members_rare_mut(me, (Members*)expanded)->contains_error = true;
+        }
+        cstr mapped = ty_to_cstr(me, mapped_type);
         ty_error_at_current_node_d(me, 2615, "Type of property '", name, "' circularly references itself in mapped type '",
             mapped, "'.");
         c_drop(cstr, &name, &mapped);

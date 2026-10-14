@@ -155,12 +155,6 @@ passing tests).
   tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
   label names, so the two tuples are one type and the union collapses.
 ## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
-- recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
-  TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax. (Re-checked
-  2026-10-07: `type N<T, K> = T | { [P in K]: N<T, K> }[K]`: tsc doesn't cache an alias instantiation while it is
-  being made, so it recurses with fresh types to the instantiation depth limit before the mapped symbol finds itself
-  circular; tttt interns the instance and meets it at once. Matching it means not interning in-flight alias
-  instantiations, not tuning a counter: leave it.)
 - circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
 - Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`

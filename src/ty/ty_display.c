@@ -3607,6 +3607,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         display_mapped(me, d, members->mapped);
         return;
     }
+    // (One whose property's type needed itself, as a mapped type too: tsc's createAnonymousTypeNode, containsError)
+    if (members_rare(members)->contains_error && members_rare(members)->expanded_from) {
+        display_mapped(me, d, members_rare(members)->expanded_from);
+        return;
+    }
     bool only_signatures = !members->prop_count && !members->index_count;
     if (only_signatures && members->call_count == 1 && !members->construct_count) {
         display_signature(me, d, members->call[0], " => ", false);

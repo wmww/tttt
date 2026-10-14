@@ -168,8 +168,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 - circularInlineMappedGenericTupleTypeNoCrash (TS2589), recursiveMappedTypes (TS2502/TS2615 in a mapped type over
   keyof).
 ## Limits
-- TS2589: recursivelyExpandingUnionNoStackoverflow.
-
 - TS2589 by instantiation *count* (valibot under sloppy/nosnc flagflip cells, ~60 diagnostics; investigated
   2026-10-06 against tsc 6, judged plan-sized, not attempted): tsc's hits are the 5M count limit, from cache hits it
   counts anyway (getObjectTypeInstantiation maps type arguments before its cache lookup, composite/merged mappers

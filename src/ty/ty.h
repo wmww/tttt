@@ -785,6 +785,9 @@ typedef struct MembersRare {
     // A generic mapped type whose members are those of the lower bound of its keys (expand_mapped()), maybe none: they
     // are all it has as far as property access goes
     bool generic_keys_known;
+    // A mapped type (expanded_from) one of whose properties' types needed itself (TS2615, tsc's containsError): it
+    // prints in mapped syntax
+    bool contains_error;
     // Only in the raw members of a class or interface (declared_raw_members()) with a base whose members depend on the
     // type arguments (`interface I<T extends object> extends T`, or extending such a type): the bases, in order, with
     // the `this` type as this-argument. The members above are then only the type's own, and whoever instantiates or
