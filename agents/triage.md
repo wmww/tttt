@@ -19,3 +19,6 @@ From plan 61 stage 3 (2026-10-13):
   to `"" | 0 | false` errors), although the prefilter returns the same answers: the earlier branch instantiation was
   a side effect something downstream depends on. Not in base/distributive constraints nor narrowable_type (checked);
   look at the relation of `ZeroOf<T>` to the union. Probe: the test's lines 27-37 under `--strict`.
+- The module resolution cache (`hmap_resolved_module`, module_resolution.c) is one 32 MB block on vscode: 224-byte
+  `ResolvedModule` values inline in the table (five `cstr`s, mostly failure hints). Boxing the rare parts or interning
+  paths would take most of it (plan 63's measurement, 2026-10-14).

@@ -218,7 +218,40 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (plans/60_memory.md has the current breakdown per corpus and the staged diet)
+## Memory (plans/63_ast_allocation.md has the AST and binder; measurements.md "Memory breakdown" the corpus table)
+- Checker-side levers left by plan 60 stage 1 (2026-10-12, vscode numbers; the plan was deleted when plan 63 took over
+  its AST and binder stages):
+  - Where the checker's memory was at plan 60's start (e043e9e2; LazyMemo, CallResolution, PropDecl, Members and the
+    interned lists shrank since):
+    - **Checker malloc** (outside the arena, per checker, so 4x at K4): `lazy_type_evaluate_inner`'s LazyMemo pages
+      **222 MB** (36k zeroed pages of 24-byte memos), the intern tables **202 MB** (3 tables, 16-byte entries, load
+      0.375-0.75, a grow holds old and new at once), relation caches.
+    - **Checker arena** 1.82 GB, diffuse: types 290 MB (2.56M, ~113 B), intern keys 244 MB (KEY_STRUCTURAL 75: object
+      literal keys of 23.5 words; KEY_CALL_RESOLUTION 27), object literal Props with a full PropDecl
+      (`ty_object_literal_alternative`) **212 MB**, instantiated Props (`instantiate_members`, 56 B) 129+29 MB,
+      `CallResolution` (112 B) **127 MB**, `builder_finish` member arrays 104+50+40, `ty_list_copy` duplicate member lists
+      44, plain signatures 44 + instantiated signature copies 31 (Signature 176 B, its spans copied into each instance).
+      effect adds `namespace_export_prop` 49 MB (a 176-byte Prop+PropDecl per namespace export, only `symbol`,
+      `name_span`, `ctx` used); drizzle `expand_mapped` + its `prop_decl_rare_mut` 27 MB.
+  - **The rest of `links`** (2.6M entries on vscode, 4M slots + 24-byte blocks): its kinds hand out slots that callers keep
+    across further interning (`void const** slot = intern_slot(...)`, ~50 sites), which an inline-key table can't. A kind
+    moves to node links once every use of it is a plain get/set: worth it for the next big ones (KEY_FLOW_CALL 400k and
+    KEY_FLOW_EXPR 245k are three words: a second inline table with two-word subjects, or pack (node, id)).
+  - **8-byte intern entries** (hash fragment + compressed block pointer): growing has to rehash from the key blocks, a
+    cache miss per entry (vscode ~12M over the run). Not worth it.
+  - **1.5x growth for intern tables**: +1.2% zod instructions (longer probes, more rehashes) for a few MB either way; only
+    node links grow by half. Peak RSS moves +-30 MB with where the last grow lands (vscode was 4866 vs 4892 between two
+    growth policies): compare corpora as a set, never one.
+  - **Instantiated Prop 56 -> 48** (no `decl` pointer): mapped type props get their PropDecl after the Prop
+    (`expand_mapped()`'s `prop->decl = arena_new(...)` paths), so it can't be found next to the Prop by a flag. Would need a
+    side lookup or allocating mapped props declared up front: ~-25 MB vscode.
+  - **Signature's declaration fields behind a pointer**: saves 72 bytes per instantiation but costs 8 per declared one,
+    vscode ~-11 MB. Not worth the churn alone.
+  - **A compact declaration for object literal props** (1.2M on vscode, Prop 56 + PropDecl 96): PropDecl's sources
+    (`node`/`lazy`/`function`/`symbol`) as one tagged pointer would take PropDecl to ~72, but `decl->node` & co have
+    ~250 readers. -30 MB vscode. Same for `namespace_export_prop()` (effect).
+  - Unexplained: `/proc` VmRSS sampled at the end of typecheck reads ~116 MB below `/usr/bin/time`'s peak on vscode, and
+    strace shows no allocation after typecheck. Probably the kernel's per-CPU RSS counters lagging; use `/usr/bin/time`.
 - 2026-10-12: tuple targets share their element type parameters (`Checker.tuple_params`) and tuple element props a
   read-only `ty_prop_decl_value_name`: type-fest 2.06 -> 0.80 GB. The rest of the old candidate list (a ~40-byte
   instantiated Prop, the `Signature` split, interned lists keyed by their ids) is plan 60 stage 1.
@@ -243,6 +276,10 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   (tttt 361k), 332k on valibot (tttt 385k). On sweep projects they were (section above).
 
 ## Time
+- **`jsdoc_before_ex()` (parser.c) is 3.9% of webpack's whole run** (426 M of 10.87 G instructions, callgrind 2026-10-14,
+  17% of `parse_file`; `hop_whitespace_slow` another 1.4%): it walks back from every JSDoc host over whitespace and line
+  comments to the line start, and over plain block comments char by char. Probably near-quadratic on comment-heavy JS.
+  Check its cost on vscode (TS) too; a forward index of comment ends built once per file would make each lookup O(log n).
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
   four sites; Unmeasurable separate). Probe: zod with its `in`/`out` annotations stripped (sed over a /tmp copy of
   `packages/zod/src`, `.configs/` and `vitest.config.ts` alongside) costs 4.65 G vs 4.33 annotated (was 7.8). To compare

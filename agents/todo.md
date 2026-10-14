@@ -31,17 +31,16 @@ plan 61.
    every gate, TS2313 from the base constraint (members.c's walk deleted), apparent types through it. Suite 13464 (+1
    own), oracles unchanged, source sweep sample: socket.io fixed. Left in hacks.md: conditional simplification and the
    relation's conditional gate (both reach things tttt resolves eagerly), triage.md has an order dependence.
-5. **Planning: plan 63, the AST's allocation.** vscode's AST is 1.9 GB after parsing in ~10M malloc'd boxes (half their
-   words zero); bun's whole run is 1.6-2.1 GB. Measure what malloc itself costs (headers, size-class rounding: memtrack
-   and a counting LD_PRELOAD or glibc's `mallinfo2`), then plan per-file bump arenas for the parser (they'd also delete
-   `reexec_with_huge_pages` and `shrink_list()`'s realloc, hacks.md) and the remaining struct leftovers of plan 60
-   stage 2 (IdentifierExpr, PropertyExpr, CallExpr rare parts) and stage 3 (binder). Target and validation in the plan;
-   if the measurement says malloc overhead is small, say so and plan only the struct work.
-6. **Plan 63 stage 1.**
+5. Done (2026-10-14): plan 63 written (plan 60 folded in and deleted). malloc's per-block overhead is ~5% (vscode
+   105 MB of 2.0 GB, no fragmentation), half the AST's words are zero: stage 1 is the struct diet (PropertyExpr,
+   CallExpr, InitializedBinding, import/export, IdentifierExpr, binder), stage 2 per-file arenas as a time lever
+   (malloc is 11% of parsing's instructions) behind an audit. Side find: `jsdoc_before_ex` is 3.9% of webpack's run.
+6. **Plan 63 stage 1** (the struct diet).
 7. **Fan-out: source sweep + suite tail** (4 agents, like entries 6 and 9 of the last window; disjoint lists, 0 lost at
    merge, full source sweep match-set diff before and after). bugs/sourcesweep_checker.md and the failing suite tests.
 8. **Perf session**: perfsweep and bench re-run (wall times only with nothing else running), instruction creep since
-   this file was written bisected if any corpus is up more than 1%, the worst types ratios (perf_leads.md).
+   this file was written bisected if any corpus is up more than 1%, the worst types ratios, `jsdoc_before_ex`
+   (perf_leads.md "Time").
 9. **Planning: plan 64, scope `.d.ts` emit.** The human left it to us (vision.md). tttt now has tsgo's pseudochecker
    (plan 55) and declaration diagnostics (plan 40): what does tsgo's declaration emitter need beyond them (the
    transformer, the printer, `--emitDeclarationOnly`/`--declarationDir`/maps, `-b` writing outputs)? Size it against
@@ -51,5 +50,5 @@ plan 61.
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages; plan 56 (content
+After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 56 (content
 mappers) only if a corpus or sweep starts using them.

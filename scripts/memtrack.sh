@@ -5,6 +5,8 @@
 # Builds a -g release copy in /tmp/tttt-memtrack (same code otherwise) and runs it with one checker on one thread under
 # bench/memtrack/memtrack.so (LD_PRELOAD, ~10x slower). Dumps stay in $MEMTRACK_DIR (default /tmp/tttt-memtrack/out):
 # rerun bench/memtrack/{an,scan,gcd}.py on them with MEMTRACK_BIN=/tmp/tttt-memtrack/tttt
+# MEMTRACK_STOP=<phase> (load_parse_files, resolve_names) exits after that phase's dump: vscode in ~50 s instead of the
+# whole run. Each phase also prints malloc churn (realloc'd bytes counted apart) and mallinfo on stderr
 set -e
 cd "$(dirname "$0")/.."
 TOP=30

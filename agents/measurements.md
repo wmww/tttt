@@ -174,8 +174,23 @@ unchanged.
 
 ## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
 Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
-"Memory used": the table is in plans/60_memory.md, with vscode's split (AST 2.17 GB, binder ~0.6, checker malloc
-~0.45: LazyMemo pages 222 MB, intern tables 202 MB; arena 1.82 GB) and the top arena sites of vscode, drizzle and effect.
+"Memory used" (Bun-4 from the other machine, below):
+
+| corpus | tttt K1 RSS / bound / arena MB | tttt K4 RSS / arena sum | tsgo 1 thread "Memory used" | Bun-4 RSS (other machine) |
+|---|---|---|---|---|
+| tsc | 254 / 165 / 63 | 320 / 94 | - | 221 |
+| type-fest | 797 / 61 / 695 | 920 / 806 | 3274 | 555 |
+| valibot | 274 / 90 / 160 | 333 / 196 | - | 158 |
+| webpack | 596 / 357 / 185 | 685 / 236 | 805 | 356 |
+| zod | 464 / 132 / 287 | 551 / 360 | - | 325 |
+| drizzle | 470 / 144 / 286 | 665 / 442 | 760 | 347 |
+| vue | 369 / 179 / 149 | 429 / 179 | 457 | 224 |
+| effect | 767 / 310 / 401 | 890 / 467 | 1065 | 307 |
+| excalidraw | 416 / 230 / 155 | 527 / 228 | - | 266 |
+| vscode | 5220 / 2812 / 1818 | 6017 / 2132 | 5941 (parse+bind alone: 2908) | 1557 |
+"bound" = resident after name resolution (AST + binder + libs). Before plan 60 stages 1-2; plan 63 has today's AST numbers.
+vscode's split then (AST 2.17 GB, binder ~0.6, checker malloc
+~0.45: LazyMemo pages 222 MB, intern tables 202 MB; arena 1.82 GB; the top arena sites: bugs/perf_leads.md "Memory").
 The tuple fix (tuple targets share element type parameters, element props a read-only declaration): type-fest K1 arena
 1906 -> 695 MB, RSS 2057 -> 797 MB, types 4.78M -> 217k (type counts on tuple-heavy code are now well below tsgo's,
 which makes fresh parameters per target). No huge-page slack: RSS is the same with `TTTT_NO_REEXEC=1`.

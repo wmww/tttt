@@ -45,8 +45,12 @@ types components) are the oracle, not the goal; real projects that are clean und
   type-id ties), so on a 12-core box bun's every-core default ties our 4-checker one on vscode; (2) **memory**: our
   AST is tsgo-sized (~10M malloc'd boxes on vscode, half their words zero) and each checker duplicates lib and shared
   types (+17..55% arena at K4). This window plans both (62: decouple output from K, or say why not; 63: the AST's
-  allocation) before building either. Plan 60 called a compact index-based AST "not worth it now": plan 63 looks at
-  the cheaper half (arenas instead of malloc, rare fields) and only reopens that question with numbers.
+  allocation) before building either. Plan 63's measurement (2026-10-14): malloc's own overhead
+  is only ~5% of the AST (105 MB on vscode, no fragmentation), so arenas are a *time* lever (11% of parsing's
+  instructions, huge pages without re-exec, freeing in O(chunks)), not a memory one; the memory is in the
+  representation (51% zero words). Plan 63 does the struct diet first (target vscode peak 4.4 -> 4.0 GB), then
+  per-file arenas behind an audit. Reaching Bun's 1.6 GB would take 32-bit node references (indices into per-file
+  arenas): still not planned, but the arenas are its prerequisite.
 - **The last core-rule approximation, the constraint functions, is gone** (plan 61, 2026-10-13): getConstraintOfType /
   getBaseConstraintOfType are tsgo's, circularity included. What remains is where tttt resolves eagerly what tsgo
   defers (alias references, conditional branches): two hacks.md entries name the places it shows.
