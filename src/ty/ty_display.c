@@ -1205,6 +1205,45 @@ static Ty const* instantiate_for(Checker* me, Signature const* sig, Ty const* ty
 }
 
 // The type of an annotation, the way the checker lowered it (and instantiated, see TyDisplay.mapped_by)
+// Whether an annotation names no type parameter (nor `this`) as far as a quick look can tell: reprinting it under an
+// instantiation's mapper then says what the instantiation is (tsgo's node reuse can't keep a mapped `T`). Anything
+// it doesn't look into counts as naming one
+static bool node_names_no_type_params(TypeNode const* node, u32 depth) {
+    if (depth > 16) return false;
+    switch (node->tag) {
+        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
+        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE:
+            return true;
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (!node_names_no_type_params(i, depth + 1)) return false;
+            }
+            return true;
+        case TYPE_ARRAY:
+            return node_names_no_type_params(node->array.element, depth + 1);
+        case TYPE_IDENTIFIER: {
+            IdentifierType const* identifier = node->identifier;
+            if (identifier->keyword || !identifier->target || (identifier->target->flags & SYMBOL_TYPE_PARAMETER)) return false;
+            for_each (i, vec_spanned_type, &identifier->generic_params) {
+                if (!node_names_no_type_params(&i->type, depth + 1)) return false;
+            }
+            return true;
+        }
+        case TYPE_CALLABLE: {
+            FunctionImpl const* function = node->callable->function;
+            if (vec_generic_item_size(&function->generic.items)) return false;
+            for_each (i, vec_function_arg, &function->args) {
+                Binding const* binding = &i->initializer.binding;
+                if (binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type) return false;
+                if (!node_names_no_type_params(binding_type(binding), depth + 1)) return false;
+            }
+            return function->ret_explicit && node_names_no_type_params(&function->ret, depth + 1);
+        }
+        default:
+            return false;
+    }
+}
+
 static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
     return instantiate_for(me, d.mapped_by, ty_from_node(me, node, (LowerCtx){ .generic = true }));
 }
@@ -2402,8 +2441,15 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         bool contextual_jsdoc = function && function->is_expression && param->decl && param->decl->jsdoc_span;
         out(reused_if(d, d.reused), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
+        // (An instantiated one whose annotation instantiates to its type: tsgo's node reuse instantiates the annotation's
+        // type with the signature's mapper, the same instantiation, `p.finally` of a merged `Promise<T>` whose
+        // `() => void` is instantiated with T)
+        TyDisplay mapped_param_d = d;
+        mapped_param_d.mapped_by = sig;
+        bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != root->params[i].type &&
+            node_names_no_type_params(binding_type(binding), 0) && node_type(me, mapped_param_d, binding_type(binding)) == param->type;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
-            !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type) &&
+            (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type))) &&
             !(fresh_anonymous && param->type->kind == TY_ANONYMOUS) &&
             // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
             // would say the undefined its type has: tsc doesn't reuse `T` there)
@@ -2467,7 +2513,9 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
             display_node_plus_undefined(me, param_d, binding_type(binding));
         } else {
-            display_annotated(me, param_d, reused ? binding_type(binding) : nullptr, shown, param->optional);
+            TyDisplay annotated_d = param_d;
+            if (mapped_same) annotated_d.mapped_by = sig;
+            display_annotated(me, annotated_d, reused ? binding_type(binding) : nullptr, shown, param->optional);
         }
         approx_add(d, name_length);
     }
