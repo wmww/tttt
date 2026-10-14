@@ -515,6 +515,45 @@ static cstr lib_reference_file_name(csview path) {
     return ret;
 }
 
+// libReplacement: the `@typescript/lib-*` package that replaces a lib file (tsgo's fileLoader.pathForLibFile and
+// getLibraryNameFromLibFileName: lib.dom.d.ts is @typescript/lib-dom, lib.dom.iterable.d.ts @typescript/lib-dom/iterable,
+// lib.es2015.symbol.wellknown.d.ts @typescript/lib-es2015/symbol-wellknown), resolved as a CommonJS module from the
+// config's directory, else the current one. Never lib.d.ts. Empty when there's no replacement. `name`: "dom.iterable"
+static cstr program_lib_replacement(Program* me, csview name) {
+    if (!my options.lib_replacement || csview_equals(name, "default")) return cstr_null;
+    cstr library = cstr_lit("@typescript/lib-");
+    u32 component = 0;
+    for (csview rest = name; rest.size; component++) {
+        isize dot = csview_find_sv(rest, c_sv("."));
+        csview part = csview_slice(rest, 0, dot);
+        if (component == 1) cstr_append_lit(&library, "/");
+        else if (component > 1) cstr_append_lit(&library, "-");
+        cstr_append_sv(&library, part);
+        if (dot == c_NPOS) break;
+        rest = csview_slice(rest, dot + 1, INTPTR_MAX);
+    }
+    csview base = cstr_size(&my options.config_dir) ? cstr_sv(&my options.config_dir) : program_cwd(me);
+    cstr from = cstr_d(base, "/__lib_node_modules_lookup_lib.", name, ".d.ts__.ts");
+    ResolvedModule resolved = module_resolver_resolve(program_resolver(me), cstr_sv(&library), cstr_sv(&from), RESOLUTION_MODE_COMMONJS);
+    cstr ret = resolved.kind != RESOLVED_NONE ? cstr_clone(resolved.path) : cstr_null;
+    resolved_module_drop(&resolved);
+    c_drop(cstr, &library, &from);
+    return ret;
+}
+
+// Loads a lib file's libReplacement (program_lib_replacement()): true if it has one. It isn't a lib file (the test
+// baselines show it)
+static bool program_load_lib_replacement(Program* me, csview name) {
+    cstr replacement = program_lib_replacement(me, name);
+    if (!cstr_size(&replacement)) return false;
+    bool loading_stdlib = my loading_stdlib;
+    my loading_stdlib = false;
+    program_add_source_idempotent(me, cstr_sv(&replacement));
+    my loading_stdlib = loading_stdlib;
+    cstr_drop(&replacement);
+    return true;
+}
+
 void program_follow_lib_references(Program* me) {
     my follow_lib_references = true;
 }
@@ -950,7 +989,12 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     // unknown name is ignored (TODO: TS2726). The harness keeps libs in a shared program, which a
                     // test's file can't add to (TODO)
                     cstr name = lib_reference_file_name(cstr_sv(&statement->source_directive->path));
-                    if (my loading_stdlib) {
+                    csview lib_name = csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5); // (Without `.d.ts`)
+                    if ((my loading_stdlib || (my follow_lib_references && !my options.no_lib)) &&
+                        program_load_lib_replacement(me, lib_name)
+                    ) {
+                        // (Replaced: libReplacement)
+                    } else if (my loading_stdlib) {
                         program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name), nullptr);
                     } else if (my follow_lib_references && !my options.no_lib) {
                         cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
@@ -1322,10 +1366,11 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
             case SOURCE_DIRECTIVE_REFERENCE_LIB: {
                 if (!file->is_stdlib && !(my follow_lib_references && !my options.no_lib)) break;
                 cstr name = lib_reference_file_name(cstr_sv(&directive->path));
-                cstr path = file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
+                cstr replacement = program_lib_replacement(me, csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5));
+                cstr path = cstr_size(&replacement) ? cstr_clone(replacement) : file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
                     cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
-                program_queue_path(me, pool, cstr_sv(&path), true);
-                cstr_drop(&path);
+                program_queue_path(me, pool, cstr_sv(&path), !cstr_size(&replacement));
+                c_drop(cstr, &path, &replacement);
                 cstr_drop(&name);
             }   break;
         }
@@ -1657,6 +1702,15 @@ SourceFile* program_find_source(Program const* me, csview path) {
 }
 
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
+    cstr replacement = program_lib_replacement(me, name);
+    if (cstr_size(&replacement)) {
+        // (libReplacement: the package's file, not a lib file)
+        try (SourceFile* source, program_load(me, cstr_sv(&replacement), &source)) cleanup {
+            cstr_drop(&replacement);
+        }
+        cstr_drop(&replacement);
+        return ok(source);
+    }
     my loading_stdlib = true;
     cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name, ".d.ts");
     try (SourceFile* source, program_load(me, cstr_sv(&path), &source)) cleanup {
@@ -1673,9 +1727,11 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
     LoadPool* pool = program_pool(me);
     if (!pool) return;
     for (isize i = 0; i < lib_count; i++) {
-        cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", libs[i], ".d.ts");
-        program_queue_path(me, pool, cstr_sv(&path), true);
-        cstr_drop(&path);
+        cstr replacement = program_lib_replacement(me, libs[i]);
+        cstr path = cstr_size(&replacement) ? cstr_clone(replacement) :
+            cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", libs[i], ".d.ts");
+        program_queue_path(me, pool, cstr_sv(&path), !cstr_size(&replacement));
+        c_drop(cstr, &path, &replacement);
     }
     for (isize i = 0; i < root_count; i++) program_queue_path(me, pool, roots[i], false);
     // The automatic types (program_load_automatic_types() resolves them again)

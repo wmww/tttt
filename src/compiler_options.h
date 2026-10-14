@@ -103,6 +103,7 @@ typedef enum ModuleDetectionKind {
     X(isolated_declarations, "isolateddeclarations", false) \
     X(isolated_modules, "isolatedmodules", false) \
     X(keyof_strings_only, "keyofstringsonly", false) \
+    X(lib_replacement, "libreplacement", false) \
     X(no_check, "nocheck", false) \
     X(no_emit, "noemit", false) \
     X(no_emit_on_error, "noemitonerror", false) \

@@ -578,8 +578,8 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     }
     // `/// <reference lib="dom" />` in a test's file adds that lib to the program (tsc's processLibReferenceDirectives).
     // The libs are a cached program of their own that a file can't add to (program_follow_lib_references() is off),
-    // so the harness adds them to the list up front. Not with libReplacement, which tttt doesn't have (the lib comes
-    // from node_modules/@typescript/lib-*)
+    // so the harness adds them to the list up front. Not with libReplacement, whose libs the test's program loads
+    // itself (the lib comes from node_modules/@typescript/lib-*)
     cstr referenced_libs = cstr_null;
     bool lib_replacement = csview_find_sv(contents_sv, c_sv("@libReplacement: true")) != c_NPOS;
     for (csview rest = contents_sv; !lib_replacement;) {
@@ -986,8 +986,11 @@ BaselineTestCase run_baseline_test_case(
     // A test that checks the default library (`@skipDefaultLibCheck: false`) loads it itself, like the CLI: the cached
     // programs' library files are unchecked, and their declarations aren't merged with the test's (a merged interface's
     // first declaration, checked in the library, has to see the test's declarations)
+    // (So does one with libReplacement: its libs come from the test's node_modules/@typescript/lib-*, and its own
+    // `/// <reference lib>` adds to them)
     CompilerOptions const* options = program_options(program);
-    if (!options->skip_default_lib_check && !options->skip_lib_check && !options->no_check) {
+    if (options->lib_replacement) program_follow_lib_references(program);
+    if ((!options->skip_default_lib_check && !options->skip_lib_check && !options->no_check) || options->lib_replacement) {
         // (In the test's file system: a directory of its own that no test path names)
         mount_test_lib_folder(&ret, c_sv("thirdparty/lib"), c_sv("/.tttt-default-lib"));
         program_set_lib_dir(program, c_sv("/.tttt-default-lib"));
