@@ -226,7 +226,7 @@ static void display_binding(Display d, Binding const* me) {
     display_binding_content(d, me);
     if (my has_explicit_type) {
         display_lit(d, ": ");
-        display_type(d, &my explicit_type);
+        display_type(d, binding_type(me));
     }
     // If it has an implicit type that will get displayed with the binding content
 }
@@ -334,7 +334,7 @@ static void display_callable(Display d, FunctionImpl const* me, bool is_interfac
         }
         if (i->initializer.binding.has_explicit_type) {
             display_lit(d, ": ");
-            display_type(d, &i->initializer.binding.explicit_type);
+            display_type(d, binding_type(&i->initializer.binding));
         }
     }
     display_lit(d, ")");

@@ -992,7 +992,7 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     u32 saved_bound = out->bound_len;
     collect_free_params_of_generic(me, &function->generic, out);
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type) collect_free_params(me, &i->initializer.binding.explicit_type, out);
+        if (i->initializer.binding.has_explicit_type) collect_free_params(me, binding_type(&i->initializer.binding), out);
         // Not syntax: the type of an expression, which could be about any type parameter in scope
         if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) out->unknown = true;
     }
@@ -3218,7 +3218,7 @@ static Ty const* binding_element_context(Checker* me, Binding const* element);
 // tsc's getContextualTypeForVariableLikeDeclaration: what a pattern (or one of its elements) is expected to be
 static Ty const* binding_declared_context(Checker* me, Binding const* binding) {
     if (binding->parent) return binding_element_context(me, binding);
-    if (binding->has_explicit_type) return ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+    if (binding->has_explicit_type) return ty_from_node(me, binding_type(binding), (LowerCtx){ .generic = true });
     InitializedBinding const* initialized = root_initialized(binding);
     return initialized && binding_is_parameter(binding) ? ty_contextual_parameter_type(me, initialized) : nullptr;
 }
@@ -3550,7 +3550,7 @@ Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
         return circular;
     }
     ty_resolving_push(me, RESOLVING_BINDING, binding);
-    Ty const* type = binding->has_explicit_type ? ty_from_node(me, &binding->explicit_type, ctx) :
+    Ty const* type = binding->has_explicit_type ? ty_from_node(me, binding_type(binding), ctx) :
         ty_binding_assigned_type(me, binding);
     if (ty_resolving_pop(me)) {
         my circular_bindings = true;
@@ -3581,7 +3581,7 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
             break;
         case TYPE_CALLABLE:
             for_each (i, vec_function_arg, &node->callable->function->args) {
-                if (i->initializer.binding.has_explicit_type) collect_declared_infers(me, &i->initializer.binding.explicit_type, out);
+                if (i->initializer.binding.has_explicit_type) collect_declared_infers(me, binding_type(&i->initializer.binding), out);
             }
             collect_declared_infers(me, &node->callable->function->ret, out);
             // (`(arg: any) => arg is infer R`)

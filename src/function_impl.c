@@ -522,7 +522,7 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
             rare->getter_key = key;
         }
         else if (!getter->ret_explicit) {
-            function_impl_rare_mut(getter)->setter_type = &i->initializer.binding.explicit_type;
+            function_impl_rare_mut(getter)->setter_type = binding_type(&i->initializer.binding);
             function_impl_rare_mut(getter)->setter_key = key;
         }
         return;
@@ -622,7 +622,7 @@ static bool type_node_queries(TypeNode const* node, Symbol const* symbol);
 // in a signature without a body; tttt tracks references only for noUnusedLocals)
 static bool signature_queries(FunctionImpl const* function, Symbol const* symbol) {
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type && type_node_queries(&i->initializer.binding.explicit_type, symbol)) return true;
+        if (i->initializer.binding.has_explicit_type && type_node_queries(binding_type(&i->initializer.binding), symbol)) return true;
     }
     if (function->predicate && function->predicate->has_type && type_node_queries(&function->predicate->type, symbol)) return true;
     return type_node_queries(&function->ret, symbol);
@@ -1180,7 +1180,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // (An overload's or ambient function's initializer is TS2371 and nothing else: tsc's checkVariableLikeDeclaration
         // returns there, after the annotation)
         if (!my has_body && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
-            if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
+            if (i->initializer.binding.has_explicit_type) type_typecheck(binding_type(&i->initializer.binding), errs);
             // (A pattern's elements are checked before that: checkSourceElements of the elements, whose types look at
             // the initializer under a written type, getBindingElementTypeFromParentType)
             Binding* binding = (Binding*)&i->initializer.binding;

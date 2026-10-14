@@ -36,7 +36,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {
         if (!i->initializer.binding.has_explicit_type) continue;
-        type_typecheck(&i->initializer.binding.explicit_type, errs);
+        type_typecheck(binding_type(&i->initializer.binding), errs);
     }
     type_typecheck(&my function->ret, errs);
     if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);

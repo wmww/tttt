@@ -1029,7 +1029,7 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
             // tree): a call's effects resolved from a function's end reachability, before its statements are checked,
             // may read the variable, and `const image: U = { type: E.A, ... }` without its context widens `E.A` to E,
             // which no member of U takes (vscode stateToProgressAdapter.test.ts with node's `assert.deepStrictEqual`)
-            Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+            Ty const* annotated = ty_from_node(me, binding_type(binding), (LowerCtx){ .generic = true });
             return ty_check_expr(me, initialized_binding_value(initialized), annotated);
         }
         return ty_flow_expr_type(me, initialized_binding_value(initialized));

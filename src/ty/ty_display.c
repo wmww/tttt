@@ -1539,7 +1539,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         if (i->explicit_optional) out_lit(d, "?");
         // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
         out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
-        if (binding->has_explicit_type) display_node(me, d, &binding->explicit_type);
+        if (binding->has_explicit_type) display_node(me, d, binding_type(binding));
         else out(reused_if(d, false), c_sv("any")); // tsc gives it a synthesized `any`
     }
     out_lit(d, ")");
@@ -2375,7 +2375,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             binding = &context_this->initializer.binding;
             reused = true;
         }
-        display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, sig->this_type, false);
+        display_annotated(me, reused_if(d, false), reused ? binding_type(binding) : nullptr, sig->this_type, false);
         approx_add(d, 4 + 3); // (After its type, like the parameters)
         if (param_count) out_lit(d, ", ");
     }
@@ -2407,7 +2407,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             !(fresh_anonymous && param->type->kind == TY_ANONYMOUS) &&
             // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
             // would say the undefined its type has: tsc doesn't reuse `T` there)
-            !(function && function->jsdoc_callback && param->decl->explicit_optional && !binding->explicit_type.jsdoc_optional &&
+            !(function && function->jsdoc_callback && param->decl->explicit_optional && !binding_type(binding)->jsdoc_optional &&
                 compiler_options()->strict_null_checks);
         TyDisplay param_d = reused_if(d, false);
         Expr const* initializer = param->decl ? initialized_binding_value(&param->decl->initializer) : nullptr;
@@ -2462,12 +2462,12 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             }
             if (reported) param_d.suppress_fallback = true;
         }
-        if (reused && reuses_nodes(param_d) && !param->optional && annotation_plus_undefined(me, &binding->explicit_type, shown)) {
+        if (reused && reuses_nodes(param_d) && !param->optional && annotation_plus_undefined(me, binding_type(binding), shown)) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
             // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
-            display_node_plus_undefined(me, param_d, &binding->explicit_type);
+            display_node_plus_undefined(me, param_d, binding_type(binding));
         } else {
-            display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
+            display_annotated(me, param_d, reused ? binding_type(binding) : nullptr, shown, param->optional);
         }
         approx_add(d, name_length);
     }
@@ -3601,7 +3601,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 }
                 out_lit(d, ": ");
                 TypeNode const* write_node = prop_decl_rare(declared->decl)->setter ?
-                    &vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding.explicit_type : prop_decl_rare(declared->decl)->write_node;
+                    binding_type(&vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding) : prop_decl_rare(declared->decl)->write_node;
                 display_annotated(me, d, fresh ? nullptr : write_node, write, false);
                 out_lit(d, "); ");
                 continue;
@@ -3683,7 +3683,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable &&
                 binding->has_explicit_type
             ) {
-                annotation = &binding->explicit_type;
+                annotation = binding_type(binding);
             }
         }
         // An accessor: the getter's return annotation, else the setter's parameter's (tsc's typeFromAccessor; an object
@@ -3694,11 +3694,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             Binding const* setter_param = prop_decl_rare(origin->decl)->setter ? setter_value_parameter(prop_decl_rare(origin->decl)->setter) : nullptr;
             if (setter_param && !accessor->ret_explicit) {
                 param = setter_param;
-                if (param->has_explicit_type) annotation = &param->explicit_type;
+                if (param->has_explicit_type) annotation = binding_type(param);
             } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {
                 annotation = &accessor->ret;
             } else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) {
-                annotation = &param->explicit_type;
+                annotation = binding_type(param);
             }
         }
         if (suppress) d.suppress_fallback = true;

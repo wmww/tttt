@@ -635,7 +635,7 @@ void binding_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     Span parameter_property_class = ctx->parameter_property_class;
     ctx->parameter_property_class = span_null;
     if (my has_explicit_type) {
-        type_compile_test_info(&my explicit_type, ctx);
+        type_compile_test_info(binding_type(me), ctx);
     }
     ctx->parameter_property_class = parameter_property_class;
 }
@@ -1200,7 +1200,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             for_each (i, vec_function_arg, &my callable->function->args) {
                 binding_content_compile_test_info(&i->initializer.binding, ctx);
                 if (i->initializer.binding.has_explicit_type) {
-                    type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
+                    type_compile_test_info(binding_type(&i->initializer.binding), ctx);
                 }
                 // (An initializer is an error here, TS2371, but still an expression)
                 if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) expr_compile_test_info(initialized_binding_value(&i->initializer), ctx);
@@ -1578,8 +1578,8 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
         TypeNode const* type_literal = ctx->variable_type_literal;
         Span type_literal_name = ctx->variable_type_literal_name;
         if (i->binding.tag == BINDING_IDENTIFIER && i->binding.has_explicit_type &&
-            i->binding.explicit_type.tag == TYPE_INTERFACE && !i->binding.explicit_type.parenthesized) {
-            ctx->variable_type_literal = &i->binding.explicit_type;
+            binding_type(&i->binding)->tag == TYPE_INTERFACE && !binding_type(&i->binding)->parenthesized) {
+            ctx->variable_type_literal = binding_type(&i->binding);
             ctx->variable_type_literal_name = i->binding.content_span;
         }
         initialized_binding_compile_test_info(i, ctx);

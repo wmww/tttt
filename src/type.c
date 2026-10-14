@@ -197,9 +197,9 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
 
         case TYPE_CALLABLE:
             for_each (i, vec_function_arg, &my callable->function->args) {
-                if (i->initializer.binding.has_explicit_type) {
+                if (i->initializer.binding.has_explicit_type && i->initializer.binding.explicit_type) {
                     InferPosition arg_position = i->rest ? INFER_POSITION_REST : INFER_POSITION_OTHER;
-                    type_add_inferred_names_at(&i->initializer.binding.explicit_type, scope, arg_position, nullptr, 0);
+                    type_add_inferred_names_at(binding_type(&i->initializer.binding), scope, arg_position, nullptr, 0);
                 }
             }
             type_add_inferred_names_at(&my callable->function->ret, scope, INFER_POSITION_OTHER, nullptr, 0);

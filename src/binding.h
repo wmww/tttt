@@ -18,7 +18,9 @@ typedef struct Binding {
     // An object pattern: where its members are read (owned, may be null: see AccessSite). Set by binding_lookup_names()
     struct AccessSite* access_site;
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
-    TypeNode explicit_type; // The type explicitly specified
+    // Owned, the type explicitly specified, null if none was (most declarations): read through binding_type(), write
+    // through binding_set_type()
+    TypeNode* explicit_type;
     // Where the type comes from when there's no explicit type, see ty_binding_type(). Set by binding_add_names()
     struct Binding const* parent; // The pattern this is an element of, null for the root of a pattern
     union {
@@ -46,6 +48,16 @@ typedef struct Binding {
     bool optional_parameter : 1; // `x?: T` of a function: read as `T | undefined`
     bool has_explicit_type : 1; // If the type was explicitly specified and explicit_type is meaningful
 } Binding;
+
+extern const TypeNode type_node_none;
+// The annotation (only meaningful if has_explicit_type), a zeroed node (any) if there is none
+static inline TypeNode* binding_type(Binding const* me) {
+    return me->explicit_type ? me->explicit_type : (TypeNode*)&type_node_none;
+}
+// Takes the type (dropping the one it had)
+void binding_set_type(Binding* me, TypeNode type);
+// Gives the type up (a zeroed one if there was none)
+TypeNode binding_take_type(Binding* me);
 
 // Where the type annotation is (only valid if has_explicit_type, may be invalid then too)
 Span binding_explicit_type_span(Binding const* me);

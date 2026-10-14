@@ -1029,7 +1029,7 @@ static void infer_from_annotated_params_of(Checker* me, Inference* inf, Function
         if (!binding->has_explicit_type) continue;
         Ty const* target = ty_signature_param_type_at(me, contextual, (u32)i_index);
         if (!target) break;
-        Ty const* source = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+        Ty const* source = ty_from_node(me, binding_type(binding), (LowerCtx){ .generic = true });
         if (i->explicit_optional) source = ty_optional_param_type(me, source);
         infer_types(me, inf, source, target, INFER_PRIORITY_NORMAL);
     }
@@ -2653,8 +2653,8 @@ static bool signature_has_literal_types(Signature const* sig) {
     if (!sig->function) return false;
     for_each (arg, vec_function_arg, &sig->function->args) {
         Binding const* binding = &arg->initializer.binding;
-        if (binding->has_explicit_type && binding->explicit_type.tag == TYPE_VALUE &&
-            binding->explicit_type.value.tag != VALUE_UNDEFINED
+        if (binding->has_explicit_type && binding_type(binding)->tag == TYPE_VALUE &&
+            binding_type(binding)->value.tag != VALUE_UNDEFINED
         ) {
             return true;
         }

@@ -205,7 +205,7 @@ static TypeNode const* setter_annotation(FunctionImpl const* setter) {
     if (!setter || !vec_function_arg_size(&setter->args)) return nullptr;
     // (Not its `this` parameter: the first one, as tsgo's getTypeAnnotationFromAccessor takes)
     FunctionArg const* arg = vec_function_arg_at(&setter->args, 0);
-    return arg->initializer.binding.has_explicit_type ? &arg->initializer.binding.explicit_type : nullptr;
+    return arg->initializer.binding.has_explicit_type ? binding_type(&arg->initializer.binding) : nullptr;
 }
 
 static TypeNode const* getter_annotation(FunctionImpl const* getter) {
@@ -507,7 +507,7 @@ static Pseudo const* type_from_parameter_worker(Build* me, FunctionImpl const* f
     Expr const* init = initialized_binding_value(&arg->initializer);
     bool initialized = init->tag != EXPR_IMPLICIT_ANY;
     if (binding->has_explicit_type) {
-        Pseudo const* pseudo = direct(me, &binding->explicit_type);
+        Pseudo const* pseudo = direct(me, binding_type(binding));
         // (An initialized parameter before a required one: tsgo's getTypeOfParameter adds optionality)
         if (me->strict_null_checks && initialized && required_after) return add_undefined_if_definitely_required(me, pseudo);
         return pseudo;
@@ -581,7 +581,7 @@ Pseudo const* pseudo_of_object_member(Checker* me, ObjectExprItem const* item) {
 
 Pseudo const* pseudo_of_variable(Checker* me, InitializedBinding const* binding, bool is_const, PseudoPlace place) {
     Build build = build_for(me);
-    if (binding->binding.has_explicit_type) return direct(&build, &binding->binding.explicit_type);
+    if (binding->binding.has_explicit_type) return direct(&build, binding_type(&binding->binding));
     Expr const* init = initialized_binding_value(binding);
     if (init->tag != EXPR_IMPLICIT_ANY && !place.contextual) {
         // (A const's template literal stays inferred, for template literal freshness later)

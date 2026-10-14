@@ -1402,7 +1402,7 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
 static TypeNode const* setter_type(FunctionImpl const* setter) {
     if (!setter || !vec_function_arg_size(&setter->args)) return nullptr;
     FunctionArg const* arg = vec_function_arg_at(&setter->args, 0);
-    return arg->initializer.binding.has_explicit_type ? &arg->initializer.binding.explicit_type : nullptr;
+    return arg->initializer.binding.has_explicit_type ? binding_type(&arg->initializer.binding) : nullptr;
 }
 
 // tsc's isOptionalParameter: `?`, or an initializer with no required parameter after it
@@ -1436,7 +1436,7 @@ static bool requires_adding_undefined(Walk* me, FunctionImpl const* fn, Function
     Binding const* binding = &arg->initializer.binding;
     if (!binding->has_explicit_type) return true;
     // declaredParameterTypeContainsUndefined (an error type counts)
-    Ty const* type = ty_from_node(my checker, &binding->explicit_type, (LowerCtx){0});
+    Ty const* type = ty_from_node(my checker, binding_type(binding), (LowerCtx){0});
     if (type->flags & (TYF_ERROR | TYF_UNDEFINED)) return false;
     if (type->kind == TY_UNION) {
         for (u32 i = 0; i < type->composite.types.len; i++) {
@@ -1689,7 +1689,7 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
         return;
     }
     if (binding->has_explicit_type) {
-        check_written_type(me, &binding->explicit_type);
+        check_written_type(me, binding_type(binding));
         return;
     }
     Ty const* type = binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr;
@@ -2058,7 +2058,7 @@ static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig si
         Span name = i->initializer.binding.content_span;
         Emitting saved = declaration ? emit_enter(me, EMIT_PARAMETER, sig, name, name) :
             emit_enter_nested(me, EMIT_PARAMETER, sig, name, name);
-        check_written_type(me, &i->initializer.binding.explicit_type);
+        check_written_type(me, binding_type(&i->initializer.binding));
         emit_leave(me, saved);
     }
     Emitting saved = my emitting;

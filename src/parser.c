@@ -4362,7 +4362,7 @@ static void jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
     Span type_span;
-    binding->explicit_type = jsdoc_take_type(tag, &type_span);
+    binding_set_type(binding, jsdoc_take_type(tag, &type_span));
     binding_set_explicit_type_span(binding, type_span);
     binding->has_explicit_type = true;
 }
@@ -4484,7 +4484,7 @@ static u32 jsdoc_required_param_count(FunctionImpl const* function) {
         Binding const* binding = &i->initializer.binding;
         if (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
         if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY ||
-            (binding->has_explicit_type && binding->explicit_type.jsdoc_optional)
+            (binding->has_explicit_type && binding_type(binding)->jsdoc_optional)
         ) {
             break;
         }
@@ -4535,12 +4535,11 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
             .tag = BINDING_IDENTIFIER,
             .content_span = signature_this->initializer.binding.content_span,
             .has_explicit_type = true,
-            .explicit_type = signature_this->initializer.binding.explicit_type,
         };
+        binding_set_type(&arg.initializer.binding, binding_take_type(&signature_this->initializer.binding));
         binding_set_explicit_type_span(&arg.initializer.binding, binding_explicit_type_span(&signature_this->initializer.binding));
-        arg.initializer.binding.explicit_type.from_jsdoc = true;
+        arg.initializer.binding.explicit_type->from_jsdoc = true;
         signature_this->initializer.binding.has_explicit_type = false;
-        signature_this->initializer.binding.explicit_type = (TypeNode){0};
         vec_function_arg_insert_n(&function->args, 0, &arg, 1);
         has_this = true;
     }
@@ -4557,13 +4556,12 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         FunctionArg* from = vec_function_arg_at_mut(&signature->args, at);
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type || !from->initializer.binding.has_explicit_type || from->rest != i->rest) continue;
-        binding->explicit_type = from->initializer.binding.explicit_type;
-        binding->explicit_type.from_jsdoc = true;
+        binding_set_type(binding, binding_take_type(&from->initializer.binding));
+        binding->explicit_type->from_jsdoc = true;
         i->jsdoc_span = c_new(Span, from->span);
         binding_set_explicit_type_span(binding, tag->type_span);
         binding->has_explicit_type = true;
         from->initializer.binding.has_explicit_type = false;
-        from->initializer.binding.explicit_type = (TypeNode){0};
         if (from->explicit_optional && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
     }
     if (!function->ret_explicit && signature->ret_explicit && !function->is_constructor) {
@@ -4968,11 +4966,11 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         };
         if (this_tag->has_type) {
             Span type_span;
-            arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &type_span);
+            binding_set_type(&arg.initializer.binding, jsdoc_take_type(this_tag, &type_span));
             binding_set_explicit_type_span(&arg.initializer.binding, type_span);
         } else {
-            arg.initializer.binding.explicit_type = jsdoc_synthesized(type_any);
-            arg.initializer.binding.explicit_type.from_jsdoc = true;
+            binding_set_type(&arg.initializer.binding, jsdoc_synthesized(type_any));
+            arg.initializer.binding.explicit_type->from_jsdoc = true;
         }
         vec_function_arg_insert_n(&function->args, 0, &arg, 1);
     }
@@ -5017,14 +5015,16 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         }
         Span type_span = tag->type_span;
         if (tag->has_type) {
-            binding->explicit_type = jsdoc_take_type(tag, &type_span);
-        } else if (!jsdoc_reparse_type(p, tag, &binding->explicit_type)) {
-            continue;
+            binding_set_type(binding, jsdoc_take_type(tag, &type_span));
+        } else {
+            TypeNode reparsed = {0};
+            if (!jsdoc_reparse_type(p, tag, &reparsed)) continue;
+            binding_set_type(binding, reparsed);
         }
-        binding->explicit_type.from_jsdoc = true;
+        binding->explicit_type->from_jsdoc = true;
         binding_set_explicit_type_span(binding, type_span);
         binding->has_explicit_type = true;
-        if (binding->explicit_type.jsdoc_optional || bracketed) {
+        if (binding->explicit_type->jsdoc_optional || bracketed) {
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
             else i->jsdoc_optional_initialized = true;
@@ -5032,7 +5032,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         }
         // `{...T=}` on a rest parameter makes it optional, which it can't be (tsgo's reparser gives it a question
         // token: checkGrammarParameterList's TS1047 at the whole tag)
-        if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {
+        if (variadic && i->rest && binding->explicit_type->jsdoc_optional) {
             const char* at = tag->tag_name.buf - 1;
             const char* end = tag + 1 < tags->data + tags->size && tag[1].comment == tag->comment ? tag[1].tag_name.buf - 1 :
                 strstr(at, "*/");
@@ -5040,7 +5040,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         }
         // `{...T}` is only `T[]` (tsgo's JSDocVariadicType): it makes no parameter a rest parameter. `{...T=}` is the
         // optional of it, `T[] | undefined`
-        TypeNode* variadic_type = &binding->explicit_type;
+        TypeNode* variadic_type = binding->explicit_type;
         if (variadic && variadic_type->jsdoc_optional && variadic_type->tag == TYPE_UNION &&
             vec_type_size(&variadic_type->composite) == 2
         ) {
@@ -5050,7 +5050,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             *variadic_type = type_array(c_new(TypeNode, *variadic_type), false);
             variadic_type->parsed = true;
         }
-        binding->explicit_type.from_jsdoc = true;
+        binding->explicit_type->from_jsdoc = true;
     }
     // A getter's `@type` is the property's, its return type (tsc's getAnnotatedAccessorType; a setter's isn't looked at)
     JsDocTag* type_tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
@@ -5114,10 +5114,10 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             arg.initializer.binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = tag->tag_name, .has_explicit_type = true };
             if (tag->has_type) {
                 Span type_span;
-                arg.initializer.binding.explicit_type = jsdoc_take_type(tag, &type_span);
+                binding_set_type(&arg.initializer.binding, jsdoc_take_type(tag, &type_span));
                 binding_set_explicit_type_span(&arg.initializer.binding, type_span);
             } else {
-                arg.initializer.binding.explicit_type = jsdoc_synthesized(type_any);
+                binding_set_type(&arg.initializer.binding, jsdoc_synthesized(type_any));
             }
             vec_function_arg_insert_n(&function.args, 0, &arg, 1);
             continue;
@@ -5150,7 +5150,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             .tag = BINDING_IDENTIFIER,
             .content_span = tag->name,
             .has_explicit_type = true,
-            .explicit_type = type,
+            .explicit_type = c_new(TypeNode, type),
         };
         list_push(vec_function_arg, &function.args, arg);
     }
@@ -5569,7 +5569,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             FunctionArg* arg = &item.method.func.args.data[0];
                             typed_setter = arg->initializer.binding.has_explicit_type;
                             if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
-                            type = type_move(&arg->initializer.binding.explicit_type);
+                            type = binding_take_type(&arg->initializer.binding);
                         }
                         InterfaceMember* target = existing;
                         if (existing) {
@@ -8177,14 +8177,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             p.shared->unique_annotation_next = true;
             bool has_type = parse_binding_type_ex(&p, &binding, !is_type);
             p.shared->unique_annotation_next = false;
-            if (has_type && is_type && binding.explicit_type.tag == TYPE_UNIQUE_SYMBOL && !modifiers.includes[MODIFIER_READONLY]) {
+            if (has_type && is_type && binding_type(&binding)->tag == TYPE_UNIQUE_SYMBOL && !modifiers.includes[MODIFIER_READONLY]) {
                 // (tsc's checkGrammarTypeOperatorNode for a PropertySignature; a class property's is TS1331)
                 grammar_error(&p, name_span, 1330, "A property of an interface or type literal whose type is a 'unique "
                     "symbol' type must be 'readonly'.");
             }
             if (has_type) {
-                ret->field.explicit_type = binding.explicit_type;
                 ret->field.explicit_type_span = binding_explicit_type_span(&binding);
+                ret->field.explicit_type = binding_take_type(&binding);
                 ret->field.has_explicit_type = binding.has_explicit_type;
                 is_definitely_field = true;
                 hop_whitespace(&p);
@@ -8323,7 +8323,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     if (arg->initializer.binding.tag == BINDING_IDENTIFIER) {
                         interface_member_accessor(member)->setter_param = arg->initializer.binding.content_span;
                     }
-                    if (arg->initializer.binding.has_explicit_type) type = type_move(&arg->initializer.binding.explicit_type);
+                    if (arg->initializer.binding.has_explicit_type) type = binding_take_type(&arg->initializer.binding);
                 }
                 type_drop(&member->type);
                 member->type = type;
@@ -12164,7 +12164,7 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
         expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     }
     ret->has_explicit_type = true;
-    ret->explicit_type = type;
+    ret->explicit_type = c_new(TypeNode, type);
     binding_set_explicit_type_span(ret, span_from(a));
     if (report_js) {
         js_syntax_skip_since(parent, mark);
@@ -12184,7 +12184,7 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
     } else {
         ret->has_explicit_type_span = false;
         ret->has_explicit_type = false;
-        ret->explicit_type = (TypeNode){0};
+        ret->explicit_type = nullptr;
             return false;
     }
 }
@@ -12424,7 +12424,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         p.shared->unique_annotation_next = false;
         if (has_type) {
             typed = true;
-            if (initializer.binding.explicit_type.tag == TYPE_UNIQUE_SYMBOL) {
+            if (binding_type(&initializer.binding)->tag == TYPE_UNIQUE_SYMBOL) {
                 // (tsc's checkGrammarTypeOperatorNode for a VariableDeclaration)
                 Span node = binding_explicit_type_span(&initializer.binding);
                 if (initializer.binding.tag != BINDING_IDENTIFIER) {

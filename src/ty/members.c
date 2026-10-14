@@ -440,7 +440,7 @@ static bool function_is_thisless(FunctionImpl const* function) {
     if (function->predicate) return false;
     for_each (i, vec_function_arg, &function->args) {
         InitializedBinding const* binding = &i->initializer;
-        if (!binding_is_thisless(binding->binding.has_explicit_type, &binding->binding.explicit_type,
+        if (!binding_is_thisless(binding->binding.has_explicit_type, binding_type(&binding->binding),
                 initialized_binding_value(binding)->tag != EXPR_IMPLICIT_ANY)) {
             return false;
         }
@@ -1490,7 +1490,7 @@ static void builder_add_class_items(
                         if (other->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
                             func->args.data[0].initializer.binding.has_explicit_type
                         ) {
-                            setter_type = &func->args.data[0].initializer.binding.explicit_type;
+                            setter_type = binding_type(&func->args.data[0].initializer.binding);
                         }
                         if (other != i) prop_add_shared_decl_spans(me, prop, &other->span, 1);
                         if (other->method.accessor == CLASS_ACCESSOR_GET) get_access = access_prop_flags(other->access);
@@ -1629,11 +1629,11 @@ static void builder_add_class_items(
                     prop->decl->parameter_property = true;
                     prop_add_shared_decl_spans(me, prop, &arg->span, 1);
                     if (binding->has_explicit_type) {
-                        prop->decl->node = &binding->explicit_type;
+                        prop->decl->node = binding_type(binding);
                     } else {
                         prop->decl->lazy = &arg->initializer.lazy_type;
                     }
-                    prop->thisless = binding_is_thisless(binding->has_explicit_type, &binding->explicit_type,
+                    prop->thisless = binding_is_thisless(binding->has_explicit_type, binding_type(binding),
                         initialized_binding_value(&arg->initializer)->tag != EXPR_IMPLICIT_ANY);
                     if (arg->explicit_optional) prop->flags |= PROP_OPTIONAL;
                     if (arg->is_readonly_property) prop->flags |= PROP_READONLY;
@@ -4345,7 +4345,7 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
     if (!file || !file->is_js || function->is_type || function->is_iife || typed) return false;
     // (Nor with a parameter of its own JSDoc type, `@param {T} x` or `/** @type {string} */ message`)
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type && i->initializer.binding.explicit_type.from_jsdoc) return false;
+        if (i->initializer.binding.has_explicit_type && binding_type(&i->initializer.binding)->from_jsdoc) return false;
     }
     return true;
 }

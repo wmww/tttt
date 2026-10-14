@@ -38,6 +38,25 @@ void binding_set_element_span(Binding* me, Span span) {
     if (my has_element_span) span_to_offsets(me, span, &my element_start, &my element_length);
 }
 
+const TypeNode type_node_none = {0};
+
+void binding_set_type(Binding* me, TypeNode type) {
+    if (my explicit_type) {
+        type_drop(my explicit_type);
+        free(my explicit_type);
+        my explicit_type = nullptr;
+    }
+    my explicit_type = c_new(TypeNode, type);
+}
+
+TypeNode binding_take_type(Binding* me) {
+    if (!my explicit_type) return (TypeNode){0};
+    TypeNode ret = *my explicit_type;
+    free(my explicit_type);
+    my explicit_type = nullptr;
+    return ret;
+}
+
 void binding_drop(Binding* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -46,7 +65,8 @@ void binding_drop(Binding* me) {
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
     free(my access_site);
-    type_drop(&my explicit_type);
+    if (my explicit_type) type_drop(my explicit_type);
+    free(my explicit_type);
     if (my default_value) {
         expr_drop(my default_value);
         free(my default_value);
@@ -137,8 +157,8 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     if (names->flow && !my parent) names->flow->binding_root = me;
     // The type, then the default, then the pattern: a default is evaluated before the elements it is destructured
     // into (tsc's bindParameterFlow / bindBindingElementFlow)
-    if (my has_explicit_type) {
-        type_lookup_names(&my explicit_type, names, errs);
+    if (my has_explicit_type && my explicit_type) {
+        type_lookup_names(my explicit_type, names, errs);
     }
     if (my default_value) {
         // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
@@ -468,7 +488,7 @@ static bool is_js_expando_object_initializer(Binding const* me, Expr const* init
 // `bodiless`: a parameter of a signature without a body, whose elements' initializers are only TS2371
 static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, bool bodiless,
     ErrorCtx* errs) {
-    if (my has_explicit_type && !type_checked) type_typecheck(&my explicit_type, errs);
+    if (my has_explicit_type && !type_checked) type_typecheck(binding_type(me), errs);
     // A pattern without elements is checked for null and undefined instead: the initializer's type, and the pattern's
     // (tsc's checkVariableLikeDeclaration: checkNonNullNonVoidType, both are one diagnostic if they say the same)
     bool empty_pattern = my tag == BINDING_OBJECT && !vec_object_binding_item_size(&my object);
@@ -506,7 +526,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
         Ty const* assigned_type = padded || rejected_new ? ty_expr_type(current_checker, initializer) :
             ty_binding_assigned_type(current_checker, me);
         // (`x?: T = v`, TS1015: against the parameter's type, which has undefined, tsc's addOptionality)
-        Ty const* target = ty_of_node(&my explicit_type);
+        Ty const* target = ty_of_node(binding_type(me));
         if (my optional_parameter && compiler_options()->strict_null_checks && !(target->flags & TYF_ANY)) {
             Ty const* types[2] = { target, ty_intrinsic(current_checker, TY_UNDEFINED) };
             target = ty_union(current_checker, types, 2, nullptr, (TyList){0});
@@ -772,7 +792,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my binding.symbol->is_const) {
         unique_symbol_decl_mark(
             (UniqueSymbolDecl){ .key = my binding.symbol, .owner = my binding.symbol },
-            &my binding.explicit_type, initialized_binding_value(me)
+            binding_type(&my binding), initialized_binding_value(me)
         );
     }
     if (initialized_binding_rare(me)->require_port_count) module_ref_report(initialized_binding_rare(me)->require_ports[0].module_ref, names, errs);
@@ -791,7 +811,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     }
     if (my value) expr_lookup_names(my value, names, errs);
     if (my binding.has_explicit_type && my value && my value->tag == EXPR_UNARY_OP && my value->unary_op->op == UNARY_OP_YIELD) {
-        my value->unary_op->declared_context = &my binding.explicit_type;
+        my value->unary_op->declared_context = binding_type(&my binding);
     }
     names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;
@@ -829,7 +849,7 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     Checker* checker = current_checker;
     Ty const* contextual = nullptr;
     if (my binding.has_explicit_type) {
-        contextual = ty_from_node(checker, &my binding.explicit_type, (LowerCtx){ .generic = true });
+        contextual = ty_from_node(checker, binding_type(&my binding), (LowerCtx){ .generic = true });
     } else if (binding_is_parameter(&my binding) && ty_contextual_parameter_type(checker, me)) {
         // A parameter's contextual type (an immediately invoked function's argument: tsc's
         // getContextuallyTypedParameterType), before what its pattern implies
@@ -1082,7 +1102,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
     CurrentNode saved = ty_enter_node(checker, my binding.content_span);
     // (The annotation is walked first, which makes the types of the literals in it: tsc's checkVariableLikeDeclaration)
-    if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
+    if (my binding.has_explicit_type) type_typecheck(binding_type(&my binding), errs);
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_CALL) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
@@ -1098,7 +1118,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
-    if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
+    if (my binding.has_explicit_type) type_typecheck(binding_type(&my binding), errs);
     binding_check_computed_names_first(&my binding);
     initialized_binding_check_value(me);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)

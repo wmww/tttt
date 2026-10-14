@@ -1993,7 +1993,7 @@ static void check_decorator_metadata_type(TypeNode const* node, ErrorCtx* errs) 
 
 static void check_decorator_metadata_signature(FunctionImpl const* function, bool with_return, ErrorCtx* errs) {
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type) check_decorator_metadata_type(&i->initializer.binding.explicit_type, errs);
+        if (i->initializer.binding.has_explicit_type) check_decorator_metadata_type(binding_type(&i->initializer.binding), errs);
     }
     if (with_return && function->ret_explicit) check_decorator_metadata_type(&function->ret, errs);
 }
@@ -2251,7 +2251,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 else if (i->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
                     vec_function_arg_back(&func->args)->initializer.binding.has_explicit_type
                 ) {
-                    check_decorator_metadata_type(&vec_function_arg_back(&func->args)->initializer.binding.explicit_type, errs);
+                    check_decorator_metadata_type(binding_type(&vec_function_arg_back(&func->args)->initializer.binding), errs);
                 }
             } else if (i->tag == CLASS_ITEM_METHOD) {
                 check_decorator_metadata_signature(&i->method.func, true, errs);
