@@ -1,0 +1,45 @@
+//// [test/cases/ttttExpandoFunctionTypeNamespace.ts] ////
+
+=== ttttExpandoFunctionTypeNamespace.ts ===
+// A function with expandos and a merged namespace that isn't instantiated prints structurally (tsc's createAnonymousTypeNode wants SymbolFlags.ValueModule for typeof): nodemailer's nmfetch
+function nmfetch(url: string): number { return 1; }
+>nmfetch : Symbol(nmfetch, Decl(ttttExpandoFunctionTypeNamespace.ts, 0, 0), Decl(ttttExpandoFunctionTypeNamespace.ts, 2, 28))
+>url : Symbol(url, Decl(ttttExpandoFunctionTypeNamespace.ts, 1, 17))
+
+nmfetch.DEFAULT_TIMEOUT = 1;
+>nmfetch.DEFAULT_TIMEOUT : Symbol(nmfetch.DEFAULT_TIMEOUT, Decl(ttttExpandoFunctionTypeNamespace.ts, 1, 51))
+>nmfetch : Symbol(nmfetch, Decl(ttttExpandoFunctionTypeNamespace.ts, 0, 0), Decl(ttttExpandoFunctionTypeNamespace.ts, 2, 28))
+>DEFAULT_TIMEOUT : Symbol(nmfetch.DEFAULT_TIMEOUT, Decl(ttttExpandoFunctionTypeNamespace.ts, 1, 51))
+
+declare namespace nmfetch { export type O = string; }
+>nmfetch : Symbol(nmfetch, Decl(ttttExpandoFunctionTypeNamespace.ts, 0, 0), Decl(ttttExpandoFunctionTypeNamespace.ts, 2, 28))
+>O : Symbol(O, Decl(ttttExpandoFunctionTypeNamespace.ts, 3, 27))
+
+nmfetch.Nope;
+>nmfetch : Symbol(nmfetch, Decl(ttttExpandoFunctionTypeNamespace.ts, 0, 0), Decl(ttttExpandoFunctionTypeNamespace.ts, 2, 28))
+
+function g(url: string): number { return 1; }
+>g : Symbol(g, Decl(ttttExpandoFunctionTypeNamespace.ts, 4, 13), Decl(ttttExpandoFunctionTypeNamespace.ts, 5, 45))
+>url : Symbol(url, Decl(ttttExpandoFunctionTypeNamespace.ts, 5, 11))
+
+declare namespace g { export type O = string; }
+>g : Symbol(g, Decl(ttttExpandoFunctionTypeNamespace.ts, 4, 13), Decl(ttttExpandoFunctionTypeNamespace.ts, 5, 45))
+>O : Symbol(O, Decl(ttttExpandoFunctionTypeNamespace.ts, 6, 21))
+
+g.Nope;
+>g : Symbol(g, Decl(ttttExpandoFunctionTypeNamespace.ts, 4, 13), Decl(ttttExpandoFunctionTypeNamespace.ts, 5, 45))
+
+function h(url: string): number { return 1; }
+>h : Symbol(h, Decl(ttttExpandoFunctionTypeNamespace.ts, 7, 7), Decl(ttttExpandoFunctionTypeNamespace.ts, 8, 45))
+>url : Symbol(url, Decl(ttttExpandoFunctionTypeNamespace.ts, 8, 11))
+
+namespace h { export const x = 1; }
+>h : Symbol(h, Decl(ttttExpandoFunctionTypeNamespace.ts, 7, 7), Decl(ttttExpandoFunctionTypeNamespace.ts, 8, 45))
+>x : Symbol(x, Decl(ttttExpandoFunctionTypeNamespace.ts, 9, 26))
+
+h.Nope;
+>h : Symbol(h, Decl(ttttExpandoFunctionTypeNamespace.ts, 7, 7), Decl(ttttExpandoFunctionTypeNamespace.ts, 8, 45))
+
+export default nmfetch;
+>nmfetch : Symbol(nmfetch, Decl(ttttExpandoFunctionTypeNamespace.ts, 0, 0), Decl(ttttExpandoFunctionTypeNamespace.ts, 2, 28))
+

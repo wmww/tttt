@@ -258,10 +258,13 @@ static bool is_nested_expando_function(Ty const* ty) {
     Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
     if (!symbol) symbol = ty->declared.symbol;
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION)) return false;
+    // (A namespace merged in makes it `typeof f` only when it's instantiated, tsc's createAnonymousTypeNode asking
+    // for SymbolFlags.ValueModule: nodemailer's `declare namespace nmfetch { export type Options = ... }`)
+    if (symbol->flags & SYMBOL_VALUE_MODULE) return false;
     bool expando = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_NAMESPACE || decl->kind == SYMBOL_DECL_CLASS) return false;
+        if (decl->kind == SYMBOL_DECL_CLASS) return false;
         expando |= decl->kind == SYMBOL_DECL_EXPANDO;
     }
     return expando;

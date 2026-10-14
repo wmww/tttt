@@ -1,0 +1,55 @@
+//// [test/cases/ttttExpandoFunctionTypeNamespace.ts] ////
+
+=== ttttExpandoFunctionTypeNamespace.ts ===
+// A function with expandos and a merged namespace that isn't instantiated prints structurally (tsc's createAnonymousTypeNode wants SymbolFlags.ValueModule for typeof): nodemailer's nmfetch
+function nmfetch(url: string): number { return 1; }
+>nmfetch : { (url: string): number; DEFAULT_TIMEOUT: number; }
+>url : string
+>1 : 1
+
+nmfetch.DEFAULT_TIMEOUT = 1;
+>nmfetch.DEFAULT_TIMEOUT = 1 : 1
+>nmfetch.DEFAULT_TIMEOUT : number
+>nmfetch : { (url: string): number; DEFAULT_TIMEOUT: number; }
+>DEFAULT_TIMEOUT : number
+>1 : 1
+
+declare namespace nmfetch { export type O = string; }
+>O : string
+
+nmfetch.Nope;
+>nmfetch.Nope : any
+>nmfetch : { (url: string): number; DEFAULT_TIMEOUT: number; }
+>Nope : any
+
+function g(url: string): number { return 1; }
+>g : (url: string) => number
+>url : string
+>1 : 1
+
+declare namespace g { export type O = string; }
+>O : string
+
+g.Nope;
+>g.Nope : any
+>g : (url: string) => number
+>Nope : any
+
+function h(url: string): number { return 1; }
+>h : typeof h
+>url : string
+>1 : 1
+
+namespace h { export const x = 1; }
+>h : typeof h
+>x : 1
+>1 : 1
+
+h.Nope;
+>h.Nope : any
+>h : typeof h
+>Nope : any
+
+export default nmfetch;
+>nmfetch : { (url: string): number; DEFAULT_TIMEOUT: number; }
+
