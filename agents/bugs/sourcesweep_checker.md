@@ -20,9 +20,6 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - **-TS5115 (13 projects: zod 4's `schemas.d.cts:804`, postcss-selector-parser through vitepress)**: tsgo's eager
   base instantiation in resolveObjectTypeMembers re-entering a reference's members; mechanism, prototype and why it
   isn't committed in plan 65 (agents/plans/65_eager_base_runaway.md).
-- **trpc examples/nuxt -TS2416 in vite 8.3's `dist/node/index.d.ts:1512`** (`MinimalPluginContext$1 extends
-  BasicMinimalPluginContext implements MinimalPluginContext`): not looked at; the project mixes several vite/rollup/
-  @types/node copies.
 - **redux-toolkit query/core/module.ts:182/185/205 (+TS2344 x3) and :656, react/module.ts:216 (+TS2322)**, all
   `Definitions[EndpointName] & { type: "query" }` against `QueryDefinition<any, ...>`. tsc accepts it because its
   getReducedType looks through type variables: getPropertiesOfUnionOrIntersectionType takes each member's apparent
@@ -81,6 +78,11 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   Matchers<T = any> }` augmentation of an interface vitest re-exports from a chunk): a standalone copy of the
   re-export chain (even the `config.d.CU_b-wJj.js` chunk name) reports TS2428 like tsc; something about the real
   setup (types: vitest/globals?) differs. Not found.
+- sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
+  `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
+  reports it, so does a probe with IndexOptions alone); connection-options.ts:50 -TS2339: tsc reports TS2339 twice
+  there, once on `RawConnectionOptions<Dialect>` and once on its constraint `string | (object & { url?: string })`
+  (the binding pattern's contextual type makes the initializer's `options` substitute constraints); tttt only the first.
 - folo renderer +TS2883 x7: declaration diagnostics tsc doesn't report, hidden until the TS2345s there were fixed
   (tttt's CLI drops them while other errors exist).
 
@@ -129,12 +131,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   namespace (TS2709) and pixijs's const conflicts with the namespace (TS2451; lookupOrIssueError keeps the first
   diagnostic at a node). tttt's binder merges declaration by declaration (declare_symbol): the interface merges into
   the lib symbol, only the var is rejected. Architectural (the binder's cross-file merge unit); rare (conflicts only).
-- **soybean-admin** root: +TS2503 x17 `Cannot find namespace 'JSX'` in naive-ui's .d.ts (`() => JSX.Element`), no
-  skipLibCheck. tsc's full program doesn't report them, but a probe project with only Close.d.ts (types []) does, and
-  no file in tsc's program declares a global JSX that I could find. tttt's program has one file more:
-  `vue/jsx-runtime/index.d.ts` (the jsxImportSource implicit import; tsc's list doesn't have it). Lead: how tsc
-  resolves `JSX` there (maybe through the jsx-runtime/jsxImportSource namespace for a file without JSX). Also
-  -TS2502 in bumpp's index.d.mts:331 (2 projects), not looked at.
 - **tiptap** demos +TS2345 x9 `VueNodeViewRenderer.test.ts:58,69,122...`: `ReturnType<typeof defineComponent>`
   (vue's overloaded defineComponent). tsc: `typeof defineComponent extends (...args: any) => infer R ? R : 2` is 2
   (definitely false), tttt defers it; underneath, tttt finds `DefineSetupFnComponent<any, any, any, any, PublicProps>`
@@ -181,6 +177,24 @@ string config options), tsx cache.ts (no flow narrowing of a non-variable module
   import type's type arguments). Reduced: three packages under node_modules (pkga's index.d.ts `export declare const
   x: import("pkgc").F<import("pkgc").I & { a(o?: import("pkgb/deep/x").T): void }>`, pkgb with an exports map
   without `./deep/x`).
+- **tsx `esm/api/register.ts:151` +TS7022**: two `const unregister`s in one arrow, the first in an `if` block
+  (`(async () => {}) as NU`), the second at function level (an expando host, `async () => {}`). tsc's binder, like
+  tttt's, binds the first block's `unregister.unregister = unregister` (inside a nested `if`) as an expando member of
+  the *outer* const (lookupSymbolForName searches the container's locals). tttt then reports TS7022 on that member;
+  tsc doesn't (its member type is computed lazily, and its initializer resolves to the inner const). Reduced:
+  `const register = () => { if (cond) { const u = (async () => {}) as NU; if (ns) { u.unregister = u; } return u; }
+  const u = async () => {}; if (ns) { u.unregister = u; } return u; }` with `NU = (() => Promise<void>) & {
+  unregister: () => Promise<void> }`. Not found which evaluation is circular (TTTT_DEBUG_CYCLE prints nothing: a
+  member type cycle).
+- **vueuse `createEventHook/index.ts:63` +TS2556**: `fn(...args)` with `fn: Callback<T>` (a conditional whose branches
+  are rest-parameter signatures, one `(...param: [T, ...unknown[]])`) and `args: Parameters<Callback<T>>`. Reduced in
+  one file (IsAny + Callback + EventHookTrigger, 15 lines). Suspect: the union signature of the conditional's apparent
+  type combines `min_args` from the expanded rest tuple (relate.c combine_signatures, param optionality from
+  signature_min_args) where tsc's combineUnionParameters keeps `minArgumentCount` raw (0 for a rest-only signature).
+- **es-toolkit `compat/array/sampleSize.ts:68` +TS2578**: needs `Record<string, T>[never]` to be T (tsc reads the
+  index signature); never_index_read()'s HACK makes any anonymous object's never index never. Letting a mapped type
+  over string/number/symbol keys through fixes it but made xstate's flagflip sloppy cells +14 TS5115 (the template
+  instantiation the hack avoids): reverted.
 - **tiptap/demos `VueNodeViewRenderer.test.ts` +TS2345 x9**: `ReturnType<typeof defineComponent>` (overloaded,
   generic) prints as `DefineComponent<unknown, unknown, ...>` in tttt's message and isn't a Component<NodeViewProps>;
   not reduced.

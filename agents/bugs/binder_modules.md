@@ -55,8 +55,6 @@ mergeSymbol, which resolves an alias target first.
   binder; tsc's checker-time mergeSymbol resolves the alias first (unresolved: the source wins the table; resolved:
   merges into a clone of the target). Needs a deferred pass at binder_link() over cross-file global merges involving
   aliases (ex plan 35).
-- Module elements in a function/block (moduleElementsInWrongContext2, plainJSGrammarErrors: types): tsc binds them
-  anyway (TS1232/TS1233); tttt's `PortItem.wrong_context` declares nothing.
 
 ## Symbol display of duplicates and merged members
 - genericClassesRedeclaration: two `declare module TypeScript {}` blocks each declare `class StringHashTable<T>`

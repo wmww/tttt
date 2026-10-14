@@ -34,16 +34,17 @@ what remains is below, each with what was found.
 - lateBoundAssignmentDeclarationSupport5/7: a unique-symbol key printed from another file is `[_sym]` in tsgo (the
   declaration's name, not accessible there), `[x.S]` in tttt (an accessible chain through the require alias), and
   the symbol `x.F[F[_str]]` vs `x.F[_str]`. Not reduced further.
-- plainJSGrammarErrors (TYP): `function nestedExports() { export default 12 }` in a file full of grammar errors is
-  `() => void` to tsgo; tttt `{ (): void; default: 12; }`. But in small probes (a module or a script, checkJs or not)
-  tsgo gives the function the `default` member (bindExportAssignment declares into the function's exports) and tttt
-  doesn't: two opposite divergences, neither understood. Probe: `/tmp`-style `function f() { export default 12 } f;`.
 
 ## Types
 - Returned object literals aren't widened in tsgo: `function f() { return { x: [] } }` is `() => { x: undefined[] }`
   with strict off (tttt: any[]), but `{ x: [], y: null }` widens both and `const o = { x: [] }` is any[]
   (argumentsReferenceInObjectLiteral_Js and probes). Some object flag (ContainsObjectOrArrayLiteral /
-  RequiresWidening) propagates differently in tsgo; find which and port it.
+  RequiresWidening) propagates differently in tsgo; find which and port it. Odd harness detail (2026-10-14): the
+  suite test fails only with `@alwaysStrict: true` set after other options; a filetest copy with the option earlier
+  in the header passes, and the CLI with strict false gives any[] either way: something in option application order.
+- Binder: an `export =`/`export default` in a function expression, arrow or method body (not a declaration) isn't a
+  member of its value in tttt (declare_function_export() only knows a function declaration's symbol); tsgo's
+  bindExportAssignment declares it in any container symbol's exports.
 - A JS variable with both a TS annotation (TS8010) and a JSDoc `@type` on a function initializer: tsgo's reparser
   makes the `@type` the function's FullSignature, so the function prints as the tag's signature (`(this: Foo) =>
   void`); tttt keeps the contextual typing. Artificial.

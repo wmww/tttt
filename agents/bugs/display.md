@@ -97,13 +97,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests (members
   aren't binder symbols, hacks.md). (A class property followed by accessors of its name is one symbol typed by the
   accessors since 2026-10-12: ClassField.joined_accessor.)
-- **Wrongly placed `export =`/`export default` in a function** (exportInFunction, moduleElementsInWrongContext2): tsgo's
-  bindExportAssignment declares it in the container's symbol's exports when the container has a symbol (a function,
-  function expression, arrow, method), as a Property (`export = 0`) or an Alias (`export default v`), so the function's
-  type grows a `"export=": 0` / `default: number` member (`{ (): void; "export=": 0; }`, also in TS2339 messages). An
-  alias to a non-value (`export = M` of an uninstantiated namespace) isn't a member (isNamedMember's symbolIsValue).
-  tttt drops them. Needs the binder to add them to the function's exports (as JS expandos are) and arrows/function
-  expressions a symbol to hang them on. Error recovery only.
 - es6ExportEqualsInterop/nodeModulesJson: fixed in the harness only (export_equals_property_alias()); the checker's
   symbol chains still can't name a member through an import alias (member identity).
 - **Spread doesn't keep the property's identity**: tsc's getSpreadSymbol returns the same symbol when readonly-ness
@@ -206,11 +199,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   assumes one).
 
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
-- **Anonymous types inside generic declarations are instantiated even when they reference no outer type parameter**
-  (tsc filters getOuterTypeParameters by isTypeParameterPossiblyReferenced): `Promise<number>.finally`'s parameter type
-  is a new union, so its annotation `(() => void) | undefined | null` isn't reused and prints `| null | undefined`
-  (es2018ObjectAssign, usePromiseFinally). Also an identity/perf question. Reusing parameter annotations with the
-  signature's mapper (tsgo does) was tried: 94 regressions (`this` must map, `then` isn't reused by tsgo).
 - **Generic methods of a class or non-thisless interface get fresh type parameters in tsgo when accessed through the
   type** (resolveObjectTypeMembers instantiates every member that isn't syntactically thisless with the `this` mapper;
   instantiateSignature clones type parameters), so an annotation mentioning them isn't reused: `Iterator.from` (lib
@@ -304,6 +292,6 @@ Looked at, root cause where found, not fixed (one test each unless named):
   without `| undefined` (`enabled?: boolean;`, reused annotations through a mapped type?) and `readonly ["entries"]`
   for an object literal's `['entries'] as const` while the declaration line keeps `['entries']`.
 - jsonRawJSON2, duplicateIdentifierChecks, typeAliasesDoNotMerge, the cross-file alias merges: see "Symbols
-  baseline" above. exportInFunction, moduleElementsInWrongContext2: see "Duplicate class/interface members" above.
+  baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
