@@ -48,7 +48,8 @@ Component letters are the *failing* components (E errors, S symbols, T types).
 7. **Harness quirks (3)**: augmentExportEquals2 (tsgo's harness writes the only root first, so a repeated
    `@filename` keeps the *first* copy: harness.md has the mechanism, mirror it), largeControlFlowGraph (check order).
 8. Unfiled when this was written: moduleExportsAliasLoop2, circularTypeofWithVarOrFunc, fixSignatureCaching,
-   jsxNamespacePrefixInNameReact, objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier: the first fan-out files them.
+   jsxNamespacePrefixInNameReact, objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier: since filed (display.md, js.md, first differing
+   line only).
 
 ## Stages
 1. **Fan-out (one session)**: four Opus agents in worktrees, buckets 3, 4, 5+8, 6+7 (disjoint lists, 0 lost at merge,
