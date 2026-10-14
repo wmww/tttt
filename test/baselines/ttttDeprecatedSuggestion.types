@@ -1,0 +1,44 @@
+//// [test/cases/ttttDeprecatedSuggestion.ts] ////
+
+=== ttttDeprecatedSuggestion.ts ===
+// References to a declaration whose JSDoc says @deprecated are TS6385 suggestions (tsc's checkIdentifier)
+/** @deprecated */
+declare const oldValue: { value: number };
+>oldValue : { value: number; }
+>value : number
+
+export const a = oldValue.value;
+>a : number
+>oldValue.value : number
+>oldValue : { value: number; }
+>value : number
+
+export enum Values {
+>Values : Values
+
+    [oldValue.value] = 1,
+>[oldValue.value] : Values
+>oldValue.value : number
+>oldValue : { value: number; }
+>value : number
+>1 : 1
+}
+/**
+ * Not this one: the tag is in the text
+ * see the deprecated notes
+ */
+declare const fine: number;
+>fine : number
+
+export const b = fine;
+>b : number
+>fine : number
+
+/** @deprecated use something else */
+declare let older: string;
+>older : string
+
+export const c = older;
+>c : string
+>older : string
+

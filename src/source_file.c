@@ -153,6 +153,7 @@ void source_file_drop(SourceFile* me) {
     }
     free(my module_refs);
     free(my comment_directives);
+    free(my deprecated_jsdoc_ends);
     free(my expando_containers);
     free(my unused);
     free(my parse_error_starts);
@@ -567,4 +568,32 @@ Span source_file_first_token(SourceFile const* file) {
     while (token_end < end && (isalnum((unsigned char)*token_end) || *token_end == '_' || *token_end == '$')) token_end++;
     if (token_end == c && c < end) token_end++;
     return span_make(file, c, token_end);
+}
+
+void source_file_add_deprecated_jsdoc(SourceFile* me, const char* end) {
+    // (Almost always past every one seen so far: an append)
+    u32 index = my deprecated_jsdoc_count;
+    while (index && my deprecated_jsdoc_ends[index - 1] >= end) {
+        if (my deprecated_jsdoc_ends[index - 1] == end) return;
+        index--;
+    }
+    if (my deprecated_jsdoc_count == my deprecated_jsdoc_cap) {
+        my deprecated_jsdoc_cap = my deprecated_jsdoc_cap ? my deprecated_jsdoc_cap * 2 : 8;
+        my deprecated_jsdoc_ends = realloc(my deprecated_jsdoc_ends, sizeof(const char*) * my deprecated_jsdoc_cap);
+        panic_if(!my deprecated_jsdoc_ends, "out of memory");
+    }
+    memmove(my deprecated_jsdoc_ends + index + 1, my deprecated_jsdoc_ends + index,
+        sizeof(const char*) * (my deprecated_jsdoc_count - index));
+    my deprecated_jsdoc_ends[index] = end;
+    my deprecated_jsdoc_count++;
+}
+
+bool source_file_deprecated_jsdoc_ends_at(SourceFile const* me, const char* end) {
+    u32 low = 0, high = my deprecated_jsdoc_count;
+    while (low < high) {
+        u32 mid = low + (high - low) / 2;
+        if (my deprecated_jsdoc_ends[mid] < end) low = mid + 1;
+        else high = mid;
+    }
+    return low < my deprecated_jsdoc_count && my deprecated_jsdoc_ends[low] == end;
 }

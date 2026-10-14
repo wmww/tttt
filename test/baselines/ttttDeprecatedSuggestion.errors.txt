@@ -1,0 +1,32 @@
+ttttDeprecatedSuggestion.ts(4,18): suggestion TS6385: 'oldValue' is deprecated.
+ttttDeprecatedSuggestion.ts(6,5): error TS1164: Computed property names are not allowed in enums.
+ttttDeprecatedSuggestion.ts(6,6): suggestion TS6385: 'oldValue' is deprecated.
+ttttDeprecatedSuggestion.ts(16,18): suggestion TS6385: 'older' is deprecated.
+
+
+==== ttttDeprecatedSuggestion.ts (4 errors) ====
+    // References to a declaration whose JSDoc says @deprecated are TS6385 suggestions (tsc's checkIdentifier)
+    /** @deprecated */
+    declare const oldValue: { value: number };
+    export const a = oldValue.value;
+                     ~~~~~~~~
+!!! suggestion TS6385: 'oldValue' is deprecated.
+    export enum Values {
+        [oldValue.value] = 1,
+        ~~~~~~~~~~~~~~~~
+!!! error TS1164: Computed property names are not allowed in enums.
+         ~~~~~~~~
+!!! suggestion TS6385: 'oldValue' is deprecated.
+    }
+    /**
+     * Not this one: the tag is in the text
+     * see the deprecated notes
+     */
+    declare const fine: number;
+    export const b = fine;
+    /** @deprecated use something else */
+    declare let older: string;
+    export const c = older;
+                     ~~~~~
+!!! suggestion TS6385: 'older' is deprecated.
+    

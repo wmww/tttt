@@ -1,0 +1,43 @@
+//// [test/cases/ttttDeprecatedSuggestion.ts] ////
+
+=== ttttDeprecatedSuggestion.ts ===
+// References to a declaration whose JSDoc says @deprecated are TS6385 suggestions (tsc's checkIdentifier)
+/** @deprecated */
+declare const oldValue: { value: number };
+>oldValue : Symbol(oldValue, Decl(ttttDeprecatedSuggestion.ts, 2, 13))
+>value : Symbol(value, Decl(ttttDeprecatedSuggestion.ts, 2, 25))
+
+export const a = oldValue.value;
+>a : Symbol(a, Decl(ttttDeprecatedSuggestion.ts, 3, 12))
+>oldValue.value : Symbol(value, Decl(ttttDeprecatedSuggestion.ts, 2, 25))
+>oldValue : Symbol(oldValue, Decl(ttttDeprecatedSuggestion.ts, 2, 13))
+>value : Symbol(value, Decl(ttttDeprecatedSuggestion.ts, 2, 25))
+
+export enum Values {
+>Values : Symbol(Values, Decl(ttttDeprecatedSuggestion.ts, 3, 32))
+
+    [oldValue.value] = 1,
+>[oldValue.value] : Symbol(Values[oldValue.value], Decl(ttttDeprecatedSuggestion.ts, 4, 20))
+>oldValue.value : Symbol(value, Decl(ttttDeprecatedSuggestion.ts, 2, 25))
+>oldValue : Symbol(oldValue, Decl(ttttDeprecatedSuggestion.ts, 2, 13))
+>value : Symbol(value, Decl(ttttDeprecatedSuggestion.ts, 2, 25))
+}
+/**
+ * Not this one: the tag is in the text
+ * see the deprecated notes
+ */
+declare const fine: number;
+>fine : Symbol(fine, Decl(ttttDeprecatedSuggestion.ts, 11, 13))
+
+export const b = fine;
+>b : Symbol(b, Decl(ttttDeprecatedSuggestion.ts, 12, 12))
+>fine : Symbol(fine, Decl(ttttDeprecatedSuggestion.ts, 11, 13))
+
+/** @deprecated use something else */
+declare let older: string;
+>older : Symbol(older, Decl(ttttDeprecatedSuggestion.ts, 14, 11))
+
+export const c = older;
+>c : Symbol(c, Decl(ttttDeprecatedSuggestion.ts, 15, 12))
+>older : Symbol(older, Decl(ttttDeprecatedSuggestion.ts, 14, 11))
+

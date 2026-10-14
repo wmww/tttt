@@ -834,8 +834,53 @@ bool identifier_is_invalid_assignment_target(IdentifierExpr const* me) {
     return !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_const;
 }
 
+// tsc's IsDeprecatedDeclaration: a `@deprecated` JSDoc comment before the declaration's statement (the combined node
+// flags of a variable declaration include its statement's), found by going back from the declaration over its
+// keywords and modifiers
+static bool declaration_deprecated(SymbolDecl const* decl) {
+    Span at = span_valid(decl->full) ? decl->full : decl->name;
+    SourceFile const* file = span_source(at);
+    if (!file || !file->deprecated_jsdoc_count) return false;
+    const char* begin = source_file_start(file);
+    const char* p = at.buf;
+    static const char* const keywords[] = { "export", "declare", "default", "const", "let", "var", "function", "class",
+        "interface", "enum", "namespace", "module", "type", "abstract", "async", "using" };
+    while (true) {
+        while (p > begin && (p[-1] == ' ' || p[-1] == '\t' || p[-1] == '\n' || p[-1] == '\r')) p--;
+        const char* word = p;
+        while (word > begin && (isalnum((unsigned char)word[-1]) || word[-1] == '_' || word[-1] == '$')) word--;
+        bool keyword = false;
+        for (u32 i = 0; i < c_arraylen(keywords) && !keyword && word < p; i++) {
+            keyword = (size_t)(p - word) == strlen(keywords[i]) && !memcmp(word, keywords[i], (size_t)(p - word));
+        }
+        if (!keyword) break;
+        p = word;
+    }
+    return source_file_deprecated_jsdoc_ends_at(file, p);
+}
+
+// tsc's isDeprecatedSymbol: its value declaration is deprecated, or every declaration is
+static bool symbol_deprecated(Symbol const* symbol) {
+    if (!symbol->decl_count) return false;
+    bool every = true;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        bool deprecated = declaration_deprecated(&symbol->decls[i]);
+        if (deprecated && (symbol->decls[i].flags & SYMBOL_VALUE)) return true;
+        every &= deprecated;
+    }
+    return every;
+}
+
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     report_invalid_assignment_target(me, errs);
+    // A reference to a deprecated declaration: a suggestion (tsc's checkIdentifier, addDeprecatedSuggestion). Not a
+    // function's, which tsc decides by the call's signature (isUncalledFunctionReference, TS6387): not done
+    if (compiler_options()->capture_suggestions && my target && !my keyword && !my target->is_placeholder &&
+        !(my target->flags & (SYMBOL_FUNCTION | SYMBOL_METHOD)) && symbol_deprecated(my target)
+    ) {
+        Error* e = error_ctx_error_d(errs, identifier_expr_name(me), 6385, "'", identifier_expr_name(me), "' is deprecated.");
+        if (e) e->suggestion = true;
+    }
     IdentifierFlowIssue issue = ty_identifier_flow_issue(current_checker, me);
     switch (issue) {
         case IDENTIFIER_FLOW_OK: break;

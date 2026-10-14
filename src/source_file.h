@@ -252,6 +252,11 @@ typedef struct SourceFile {
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;
     u32 comment_directive_cap;
+    // Where the JSDoc comments with a `@deprecated` tag end, sorted (only recorded with capture_suggestions, the
+    // harness's: TS6385 is a suggestion). Owned
+    const char** deprecated_jsdoc_ends;
+    u32 deprecated_jsdoc_count;
+    u32 deprecated_jsdoc_cap;
     // Declarations that may be unused (noUnusedLocals/noUnusedParameters), registered by the resolve walk, see unused.h
     struct UnusedCandidate* unused; // Owned
     u32 unused_count;
@@ -279,6 +284,9 @@ cstr source_file_jsx_runtime_import(SourceFile const* me);
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error);
 // The directive that the comment ending on `line` is, if any. Two on one line: the last one, like tsc's map by line
 CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line);
+// A JSDoc comment with a `@deprecated` tag the parser came across (again, possibly), and whether one ends at `end`
+void source_file_add_deprecated_jsdoc(SourceFile* me, const char* end);
+bool source_file_deprecated_jsdoc_ends_at(SourceFile const* me, const char* end);
 
 // Whether the checker walks the file: a checked one, or a plain JavaScript one for the errors that are reported there
 static inline bool source_file_is_checked(SourceFile const* me) {

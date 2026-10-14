@@ -975,6 +975,20 @@ static void note_jsdoc_comment(Parser* parent, const char* start, const char* en
     vec_jsdoc_range_push(comments, (JsDocRange){ .start = start, .end = end });
 }
 
+// A JSDoc comment's `@deprecated` tag, for TS6385 (tsc's NodeFlags.Deprecated from parseJSDocComment): only the
+// harness asks (capture_suggestions)
+static void note_deprecated_jsdoc(Parser* parent, const char* start, const char* end) {
+    for (const char* at = start; (at = memchr(at, '@', (size_t)(end - at))); at++) {
+        if (end - at < 11 || memcmp(at, "@deprecated", 11) != 0) continue;
+        char before = at > start ? at[-1] : ' ';
+        char after = at + 11 < end ? at[11] : ' ';
+        // (A tag: past blanks or the comment's `*`s, and a whole word)
+        if ((before == ' ' || before == '\t' || before == '*' || before == '\n') && !is_identifier_char(after)) {
+            source_file_add_deprecated_jsdoc((SourceFile*)parent->shared->source, end);
+            return;
+        }
+    }
+}
 
 // strchr() that goes on past NUL bytes inside the file
 static char const* find_char_in_file(Parser const* p, char const* from, char c) {
@@ -1037,6 +1051,7 @@ static inline bool hop_comment(Parser* parent) {
             }
             parent->pos = pos;
             if (start[2] == '*' && start[3] != '/' && parent->shared->source->is_js) note_jsdoc_comment(parent, start, pos);
+            if (start[2] == '*' && start[3] != '/' && compiler_options()->capture_suggestions) note_deprecated_jsdoc(parent, start, pos);
             // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
             const char* c = last_line_start;
             while (is_js_ascii_space(*c)) c++;

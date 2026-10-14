@@ -350,14 +350,12 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     spreads of an array literal against a union element type): neither reproduced in a probe.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
-- **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with
-  noUnused* off (unused_enabled() is false then; plain JS too) and TS6385 'x' is
-  deprecated (deprecatedReferenceInEnumComputedNameNoFlake). The CLI never prints suggestions; only the harness wants them.
-  For TS6385 (small-medium): a declaration's JSDoc `@deprecated` (tsgo's IsDeprecatedDeclaration: combined node flags,
-  a variable's comes from its statement) kept past parsing (the parser's jsdoc_comments are Parser-only now), and
-  checkIdentifier's addDeprecatedSuggestion when capture_suggestions (isDeprecatedSymbol: every declaration deprecated,
-  or the value declaration; isUncalledFunctionReference for functions). The test's reference is an enum member's
-  computed name, which tttt checks (TS1164) but must also resolve as an expression there.
+- **Suggestion diagnostics** (harness only, `@captureSuggestions`): TS6807 overshifts and TS6385 'x' is deprecated for
+  identifier references (expr.c identifier_expr_typecheck(), 2026-10-14) are done. Not: TS6133 unused suggestions with
+  noUnused* off (unused_enabled() is false then; plain JS too), TS6385 for property accesses, imports and JSX, TS6387 for
+  deprecated signatures (a function's reference is decided by the call's signature in tsc: isUncalledFunctionReference),
+  `@deprecated` on a declaration whose statement isn't right after the comment (declaration_deprecated() goes back over
+  keywords only: the second declarator of `const a = 1, b = 2`). The CLI never prints suggestions.
 - syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the
   synthetic property a parent when its members have one value declaration (`hasNonUniformValueDeclaration`, a
   synthetic member without one skipped): `w2.content` of `(Mock & Base) | (Mock & Dummy)` is `Mock.content` in the
