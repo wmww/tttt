@@ -322,3 +322,62 @@ csview json_get_string(JsonValue const* me, const char* key) {
     JsonValue const* found = json_get_tagged(me, key, JSON_STRING);
     return found ? cstr_sv(&found->string) : c_sv("");
 }
+
+void json_append_string(cstr* out, csview text) {
+    cstr_append_lit(out, "\"");
+    for (isize i = 0; i < text.size; i++) {
+        unsigned char c = (unsigned char)text.buf[i];
+        if (c == '"') cstr_append_lit(out, "\\\"");
+        else if (c == '\\') cstr_append_lit(out, "\\\\");
+        else if (c == '\n') cstr_append_lit(out, "\\n");
+        else if (c == '\r') cstr_append_lit(out, "\\r");
+        else if (c == '\t') cstr_append_lit(out, "\\t");
+        else if (c < 0x20) {
+            char buf[8];
+            snprintf(buf, sizeof(buf), "\\u%04x", c);
+            cstr_append(out, buf);
+        } else {
+            cstr_append_n(out, (char const*)&text.buf[i], 1);
+        }
+    }
+    cstr_append_lit(out, "\"");
+}
+
+void json_write(cstr* out, JsonValue const* value) {
+    switch (value->tag) {
+    case JSON_BOOL:
+        cstr_append(out, value->boolean ? "true" : "false");
+        break;
+    case JSON_NUMBER: {
+        char buf[32];
+        if (value->number == (double)(i64)value->number) snprintf(buf, sizeof(buf), "%lld", (long long)value->number);
+        else snprintf(buf, sizeof(buf), "%.17g", value->number);
+        cstr_append(out, buf);
+        break;
+    }
+    case JSON_STRING:
+        json_append_string(out, cstr_sv(&value->string));
+        break;
+    case JSON_ARRAY:
+        cstr_append_lit(out, "[");
+        for (isize i = 0; i < value->count; i++) {
+            if (i) cstr_append_lit(out, ",");
+            json_write(out, &value->items[i]);
+        }
+        cstr_append_lit(out, "]");
+        break;
+    case JSON_OBJECT:
+        cstr_append_lit(out, "{");
+        for (isize i = 0; i < value->count; i++) {
+            if (i) cstr_append_lit(out, ",");
+            json_append_string(out, cstr_sv(&value->members[i].key));
+            cstr_append_lit(out, ":");
+            json_write(out, &value->members[i].value);
+        }
+        cstr_append_lit(out, "}");
+        break;
+    default:
+        cstr_append_lit(out, "null");
+        break;
+    }
+}

@@ -1,4 +1,5 @@
 #include "compiler_options.h"
+#include "content_mapper.h"
 #include "string_helpers.h"
 #include "lib_names.h"
 
@@ -109,6 +110,8 @@ void compiler_options_drop(CompilerOptions* me) {
     str_list_drop(&my config_include_patterns);
     str_list_drop(&my config_include_shown);
     str_list_drop(&my config_exclude_shown);
+    for (u32 i = 0; i < my content_mapper_count; i++) content_mapper_drop(&my content_mappers[i]);
+    free(my content_mappers);
 }
 
 void str_list_push(StrList* me, csview item) {

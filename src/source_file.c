@@ -1,4 +1,5 @@
 #include "source_file.h"
+#include "content_mapper.h"
 #include "import_attributes.h"
 #include "module_resolution.h"
 #include "scope.h"
@@ -157,6 +158,7 @@ void source_file_drop(SourceFile* me) {
     free(my expando_containers);
     free(my unused);
     free(my parse_error_starts);
+    if (my content_mapped) content_mapped_free(my content_mapped);
 }
 
 // tsc's containsParseError: whether a parse error starts in the node's text or right after it (a missing `,` or `}` is

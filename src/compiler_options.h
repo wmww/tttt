@@ -217,6 +217,9 @@ typedef struct CompilerOptions {
     StrList config_include_shown, config_exclude_shown;
     bool config_exclude_given;
     bool base_url_set, paths_set, type_roots_set, types_set;
+    // The config's `contentMappers` (content_mapper.h), only with runExternalCode and when valid. Owned
+    struct ContentMapper* content_mappers;
+    u32 content_mapper_count;
     // How deep into packages the program follows JavaScript imports (tsc's maxNodeModuleJsDepth, default 0)
     u32 max_node_module_js_depth;
 

@@ -8,6 +8,7 @@
 #include <sys/resource.h>
 
 #include "ty/ty.h"
+#include "content_mapper.h"
 #include "type.h"
 #include "program.h"
 #include "engine.h"
@@ -274,6 +275,11 @@ static char const* cli_file_name(SourceFile const* source) {
 // printed in the format asked for, then the files with --listFiles. Returns how many were printed
 static intptr_t print_diagnostics(Options const* opts, Output* out, Program* program, VecError* shown) {
     error_vec_sort_and_dedupe(shown, source_file_message_path);
+    // (Content-mapped files' diagnostics are shown in their original text, plan 56)
+    for (isize i = 0; i < vec_error_size(shown);) {
+        if (content_mapped_map_error(&shown->data[i])) i++;
+        else vec_error_erase_n(shown, i, 1);
+    }
     cstr text = cstr_null;
     if (!opts->quiet) {
         for_each (i, vec_error, shown) {

@@ -1,5 +1,6 @@
 #include "module_resolution.h"
 #include "json.h"
+#include "content_mapper.h"
 #include "project.h"
 #include <pthread.h>
 
@@ -360,6 +361,13 @@ static bool try_adding_extensions(State* me, csview stem, int extensions, csview
             (extensions & EXT_JS && (
                 try_extension(me, stem, ".js", RESOLVED_JS, out) || try_extension(me, stem, ".jsx", RESOLVED_JS, out)));
     }
+    // A content mapper's extension (tsgo's extraExtensions) names the file itself
+    if (original.size && content_mapper_has_extension(my resolver->options, original)) {
+        cstr extension = cstr_from_sv(original);
+        bool found = try_extension(me, stem, cstr_str(&extension), RESOLVED_TS, out);
+        cstr_drop(&extension);
+        if (found) return true;
+    }
     // `import "./style.css"` finds style.d.css.ts
     if (extensions & EXT_DTS) {
         cstr extension = cstr_d(".d", original, ".ts");
@@ -404,6 +412,7 @@ static bool load_file_no_implicit_extensions(State* me, csview candidate, int ex
     }
     if (dot == c_NPOS) return false;
     csview extension = script_extension_of(candidate);
+    if (!extension.size) extension = content_mapper_extension_of(my resolver->options, name);
     if (!extension.size) extension = csview_slice(name, dot, name.size);
     if (csview_equals(extension, ".json") && !my resolver->options->resolve_json_module) {
         // Found only to tell the caller why not

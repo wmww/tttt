@@ -25,6 +25,7 @@ core_files = files(
     'parser.c',
     'error.c',
     'compiler_options.c',
+    'content_mapper.c',
     'source_file.c',
     'program.c',
     'json.c',

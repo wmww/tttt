@@ -262,6 +262,11 @@ typedef struct SourceFile {
     u32 unused_count;
     u32 unused_cap;
     bool escaped_names; // names_register_source() registered it
+    // A content mapper's output (plan 56, content_mapper.h): contents is the transformed text. Owned, null for a file
+    // read as written
+    struct ContentMapped* content_mapped;
+    // A content-mapped file's original text (ContentMapped.original), not a file of the program
+    bool content_original;
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);

@@ -45,11 +45,16 @@ typedef struct Error {
     // (the index of the file being checked), which is the one a single checker reports
     u64 once_key;
     u32 once_order;
+    // A content mapper's own diagnostic (tsgo's external diagnostic, plan 56): its diagnostic source, printed in
+    // place of `TS` (`box1000`); owned by the file's ContentMapped. Null for tttt's own
+    char const* source;
     VecError sub_errors;
 } Error;
 
 // tsc's DiagnosticCategory of a diagnostic as the baselines print it: "error", "message" (TS1450) or "suggestion"
 char const* error_category_name(Error const* error);
+// What the code is printed after: `TS`, or a content mapper's diagnostic source
+static inline char const* error_code_prefix(Error const* error) { return error->source ? error->source : "TS"; }
 
 void error_drop(Error* me);
 Error error_clone(Error me);

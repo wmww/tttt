@@ -5,6 +5,7 @@
 #include <strings.h>
 
 #include "tsconfig.h"
+#include "content_mapper.h"
 #include "json.h"
 
 typedef uint8_t PathKind; // PathSet: 1 a literal (`files`) root, 2 one include patterns found
@@ -190,6 +191,51 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
     }
 }
 
+// tsgo's resolveContentMapperManifest: the package found like bundler resolution's ResolvePackageDirectory from the
+// config's directory (node_modules up the tree), its package.json's name, version and `typescript.contentMapper`
+// TODO(plan 56 part 2): TS18075-18079 when that fails (the mapper stays unresolved and maps nothing)
+static void resolve_content_mapper(ConfigLoad* me, csview config, ContentMapper* mapper) {
+    for (csview dir = parent_of(config);; dir = parent_of(dir)) {
+        cstr package_dir = path_join(dir, c_sv("node_modules"));
+        cstr_take(&package_dir, path_join(cstr_sv(&package_dir), cstr_sv(&mapper->package)));
+        cstr package_json = path_join(cstr_sv(&package_dir), c_sv("package.json"));
+        cstr contents = cstr_null;
+        bool found = fs_is_reg_file(my fs, cstr_sv(&package_json));
+        if (found) {
+            try (fs_read_file(my fs, cstr_sv(&package_json), &contents)) if_err (e) {
+                ignore e;
+                current_error_destroy();
+            }
+            JsonValue document = {0};
+            json_parse_strict(cstr_sv(&contents), &document);
+            JsonValue const* typescript = json_get_tagged(&document, "typescript", JSON_OBJECT);
+            JsonValue const* manifest = typescript ? json_get_tagged(typescript, "contentMapper", JSON_OBJECT) : nullptr;
+            JsonValue const* exec = manifest ? json_get_tagged(manifest, "exec", JSON_ARRAY) : nullptr;
+            bool strings = exec && exec->count;
+            for (isize i = 0; strings && i < exec->count; i++) strings = exec->items[i].tag == JSON_STRING;
+            csview name = json_get_string(&document, "name");
+            if (name.size && strings) {
+                mapper->resolved = true;
+                mapper->name = cstr_from_sv(name);
+                mapper->version = cstr_from_sv(json_get_string(&document, "version"));
+                for (isize i = 0; i < exec->count; i++) str_list_push(&mapper->exec, cstr_sv(&exec->items[i].string));
+                JsonValue const* options = json_get_tagged(manifest, "compilerOptions", JSON_ARRAY);
+                for (isize i = 0; options && i < options->count; i++) {
+                    if (options->items[i].tag == JSON_STRING) {
+                        str_list_push(&mapper->compiler_options, cstr_sv(&options->items[i].string));
+                    }
+                }
+                JsonValue const* dynamic = json_get_tagged(manifest, "dynamicConfig", JSON_BOOL);
+                mapper->dynamic_config = dynamic && dynamic->boolean;
+                cstr_take(&mapper->package_dir, cstr_clone(package_dir));
+            }
+            json_drop(&document);
+        }
+        c_drop(cstr, &package_dir, &package_json, &contents);
+        if (found || !dir.size || csview_equals(dir, "/") || csview_equals_sv(dir, parent_of(dir))) return;
+    }
+}
+
 // tsgo's content mappers (`contentMappers`: packages that turn other files, `.mdx`, into TypeScript), of the config
 // asked for: each one's shape (parseContentMapper, TS5024 at it) and extensions (TS18065-18067 at them), then TS18068 at
 // the key without --runExternalCode (tsgo then drops them all: their files stay unknown). tttt runs no mappers either way
@@ -236,6 +282,8 @@ static void check_content_mappers(ConfigLoad* me, csview path, JsonValue const* 
         }
         if (!valid) continue;
         any = true;
+        ContentMapper entry = { .package = cstr_clone(package->string) };
+        if (options) json_write(&entry.options_json, options);
         for (isize j = 0; j < extensions->count; j++) {
             csview ext = cstr_sv(&extensions->items[j].string);
             // (At the first element with that text: getContentMapperExtensionSyntax)
@@ -263,7 +311,16 @@ static void check_content_mappers(ConfigLoad* me, csview path, JsonValue const* 
                     "' is registered by more than one content mapper."), path, extension->start, extension->end);
             } else {
                 str_list_push(&seen, ext);
+                str_list_push(&entry.extensions, ext);
             }
+        }
+        if (my options->run_external_code) {
+            resolve_content_mapper(me, path, &entry);
+            my options->content_mappers = realloc(my options->content_mappers,
+                sizeof(ContentMapper) * (my options->content_mapper_count + 1));
+            my options->content_mappers[my options->content_mapper_count++] = entry;
+        } else {
+            content_mapper_drop(&entry);
         }
     }
     str_list_drop(&seen);
@@ -785,6 +842,7 @@ static bool has_source_extension(ConfigLoad* me, csview name) {
     for (isize i = 0; i < (isize)c_arraylen(ts); i++) {
         if (csview_ends_with(name, ts[i])) return true;
     }
+    if (content_mapper_for_path(my options, name)) return true;
     if (!allows_js(my options)) return false;
     if (csview_ends_with(name, ".min.js")) return false;
     for (isize i = 0; i < (isize)c_arraylen(js); i++) {

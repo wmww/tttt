@@ -142,9 +142,17 @@ int span_cmp(Span a, Span b) {
             break;
     }
     if (span_source(a) != span_source(b)) {
-        int cmp = cstr_cmp(&span_source(a)->canonical_path, &span_source(b)->canonical_path);
-        panic_if(!cmp, "Two different source files both have path ", span_source(a)->canonical_path);
-        return cmp;
+        SourceFile const* fa = span_source(a);
+        SourceFile const* fb = span_source(b);
+        int cmp = cstr_cmp(&fa->canonical_path, &fb->canonical_path);
+        if (cmp) return cmp;
+        // A content-mapped file and its original text (ContentMapped.original): one file to tsgo, whose diagnostics
+        // sort by their offsets, whichever text they are in
+        panic_if(!fa->content_mapped && !fb->content_mapped, "Two different source files both have path ", fa->canonical_path);
+        isize pa = a.buf - cstr_str(&fa->contents), pb = b.buf - cstr_str(&fb->contents);
+        if (pa != pb) return pa > pb ? 1 : -1;
+        if (a.size != b.size) return a.size > b.size ? 1 : -1;
+        return fa->content_mapped ? 1 : -1;
     } else if (a.buf != b.buf) {
         return a.buf > b.buf ? 1 : -1;
     } else if (a.size != b.size) {

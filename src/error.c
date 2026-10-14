@@ -224,7 +224,7 @@ void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorF
         pretty_location(out, my span, file_name);
         cstr_append_lit(out, " - ");
     }
-    cstr_append_d(out, DEFAULT_DISPLAY, PRETTY_RED "error" PRETTY_RESET PRETTY_GREY " TS", my ts_code, ": " PRETTY_RESET);
+    cstr_append_d(out, DEFAULT_DISPLAY, PRETTY_RED "error" PRETTY_RESET PRETTY_GREY " ", error_code_prefix(me), my ts_code, ": " PRETTY_RESET);
     pretty_message(out, me, newline, 0);
     if (located) {
         cstr_append(out, newline);
@@ -242,7 +242,7 @@ void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFi
         cstr_append_d(out, DEFAULT_DISPLAY, file_name(span_source(my span)), "(", span_line_index(my span) + 1, ",",
             span_col_index(my span) + 1, "): ");
     }
-    cstr_append_d(out, DEFAULT_DISPLAY, error_category_name(me), " TS", my ts_code, ": ");
+    cstr_append_d(out, DEFAULT_DISPLAY, error_category_name(me), " ", error_code_prefix(me), my ts_code, ": ");
     pretty_message(out, me, newline, 0);
     cstr_append(out, newline);
 }
@@ -257,6 +257,9 @@ void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer 
         char const* name = file_name(source);
         isize j = 0;
         while (j < my file_count && strcmp(cstr_str(&my files[j].name), name)) j++;
+        // (tsgo's diagnosticwriter shows each diagnostic of a content-mapped file against an original text object of
+        // its own, and its summary groups by that object: one row each)
+        if (source->content_original) j = my file_count;
         if (j == my file_count) {
             my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
             my files[my file_count++] = (ErrorSummaryFile){ cstr_from(name), source_file_message_path(source),

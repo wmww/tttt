@@ -249,6 +249,21 @@ Imported files are discovered while loading, from the parser's list of module na
 
 `src/tsconfig.{h,c}` reads a tsconfig.json: `extends` (paths and packages; one that can't be found is a diagnostic and the rest goes on, `tsconfig_load_diagnosed()`), `compilerOptions` (path options made absolute, `${configDir}`), and the root files from `files` / `include` / `exclude` (the walk only enters directories an include pattern can match something inside, `glob_may_match_inside()`; a found `a.d.ts` or `a.js` next to `a.ts` is left out, tsc's extension priority; `.json` files only for include patterns ending in `.json`, with resolveJsonModule), and `references` (`tsconfig_load_references()`, see "Project references"). The CLI takes `-p`, or finds the nearest tsconfig.json when it is given no files; the test harness applies a `tsconfig.json` unit under the test's directives and takes its files as the roots, like tsc's `compilerRunner.ts`. The harness also mirrors tsc's virtual filesystem: relative `@Filename`s live in `/.src`, which is the working directory (`@currentDirectory` changes it), `@link` / `@symlink` make symlinks in the mock filesystem.
 
+### Content mappers
+tsgo 7.1's `contentMappers` (plan 56, `src/content_mapper.{h,c}`): with `--runExternalCode`, a tsconfig names
+packages (resolved from the config's directory, their package.json's `typescript.contentMapper` manifest) whose
+program turns files of other extensions into TypeScript. The extensions are root files (`has_source_extension()`) and
+module names that name the file itself (`try_adding_extensions()`). `program_make_source()` sends a mapped file's
+text to the mapper (`ContentMapperHost`, one per program: a child process per mapper speaking JSON-RPC with LSP
+framing over a socket that is its stdin and stdout, behind a lock for the load pool) and parses the reply under the
+file's own name as `<file><virtual extension>`; `SourceFile.content_mapped` keeps the span map and the original text
+as a file of its own (`ContentMapped.original`, registered, never in the program). The mapper's diagnostics point into
+that original; the compiler's are mapped back there by `content_mapped_map_error()` just before printing (CLI:
+`print_diagnostics()`; harness: the `.contentmapper` baseline, which the errors component compares, and the errors
+baseline leaves mapped files out like tsgo's runner). The suite runs tsgo's Go test mappers as a process:
+`test/oracle/tttt-test-mapper` (`thirdparty/typescript/built/tttt-test-mapper NAME`) is put in front of a manifest's
+`exec` (`content_mapper_set_launcher()`, `TTTT_CONTENT_MAPPER_LAUNCHER`).
+
 ### Project references
 `src/project.{h,c}` is the only code that knows about more than one tsconfig (plan 41). A `ProjectSet` loads a config
 and, recursively, every config its `references` name (`tsconfig_load_references()`; references aren't inherited

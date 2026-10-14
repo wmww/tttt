@@ -4,6 +4,7 @@
 #include <strings.h>
 #include "mock_fs.h"
 #include "../tsconfig.h"
+#include "../content_mapper.h"
 #include "program.h"
 
 #include "source_file.h"
@@ -538,9 +539,9 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
                 apply_setting(me, tag_key, tag_value);
             }
         } else {
-            // tsc's makeUnitsFromTest: a unit's lines joined by line breaks, leading empty lines dropped (so there's
-            // no line break before the next `@filename`)
-            if (cstr_size(&source_contents)) cstr_append(&source_contents, "\r\n");
+            // tsgo's makeUnitsFromTest: a unit's lines joined by `\n`, leading empty lines dropped (so there's no line
+            // break before the next `@filename`)
+            if (cstr_size(&source_contents)) cstr_append(&source_contents, "\n");
             cstr_append_sv(&source_contents, whole);
         }
     }
@@ -549,7 +550,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     // which tsc's harness keeps, breaks a line when rendered)
     bool ends_with_break = csview_ends_with(contents_sv, "\n");
     if (cstr_size(&source_contents) && ends_with_break) {
-        cstr_append(&source_contents, "\r\n");
+        cstr_append(&source_contents, "\n");
     }
 
     PUSH_UNIT(current_filename, source_contents);
@@ -850,6 +851,96 @@ static unsigned js_whitespace_length(const char* c, const char* end) {
     bool space = cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200A) || cp == 0x2028 || cp == 0x2029 || cp == 0x202F ||
         cp == 0x205F || cp == 0x3000 || cp == 0xFEFF;
     return space ? 3 : 0;
+}
+
+// A diagnostic of a content-mapped file: in the transformed text, or the mapper's own in the original
+static bool error_in_content_mapped_file(Program const* program, Error const* error) {
+    SourceFile const* file = span_valid(error->span) ? span_source(error->span) : nullptr;
+    if (!file) return false;
+    if (file->content_mapped) return true;
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        ContentMapped const* mapped = program_source_at(program, i)->content_mapped;
+        if (mapped && mapped->original == file) return true;
+    }
+    return false;
+}
+
+// Strips the ANSI colours error_format_pretty() writes (tsgo's baseline formats with colour and strips it too)
+static void strip_ansi(cstr* text) {
+    cstr out = cstr_null;
+    char const* s = cstr_str(text);
+    for (isize i = 0; i < cstr_size(text); i++) {
+        if (s[i] == 0x1b && i + 1 < cstr_size(text) && s[i + 1] == '[') {
+            i += 2;
+            while (i < cstr_size(text) && ((s[i] >= '0' && s[i] <= '9') || s[i] == ';')) i++;
+            continue;
+        }
+        cstr_append_n(&out, s + i, 1);
+    }
+    cstr_take(text, out);
+}
+
+// tsgo's DoContentMapperBaseline (tsbaseline/contentmapper_baseline.go): each content-mapped file's original and
+// transformed text, then their diagnostics as FormatDiagnosticsWithColorAndContext prints them (mapped back to the
+// original text, content_mapped_map_error()). Those diagnostics leave the errors baseline, and so do the files
+static void render_content_mapper_baseline(BaselineTestCase* me) {
+    Program const* program = my program;
+    cstr* out = &my content_mapper_baseline;
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        SourceFile const* file = program_source_at(program, i);
+        ContentMapped* mapped = file->content_mapped;
+        if (!mapped) continue;
+        mapped->original->display_path_override = file->display_path_override;
+        for_each (f, vec_baseline_test_file, &my files) {
+            if (f->source == file) f->content_mapped = true;
+        }
+        // (The ScriptKind of the virtual extension; Go's %v of the mapper's extensions)
+        csview ext = cstr_sv(&mapped->virtual_extension);
+        char const* kind = csview_equals(ext, ".json") ? "ScriptKindJSON" : csview_equals(ext, ".tsx") ? "ScriptKindTSX" :
+            csview_equals(ext, ".jsx") ? "ScriptKindJSX" : csview_ends_with(ext, "js") ? "ScriptKindJS" : "ScriptKindTS";
+        isize from = cstr_size(out);
+        cstr_append_d(out, DEFAULT_DISPLAY, "//// [", error_file_name(file), "] (ScriptKind: ", kind, ", ContentMapper: [");
+        for (isize j = 0; j < mapped->mapper->extensions.count; j++) {
+            if (j) cstr_append_lit(out, " ");
+            cstr_append_s(out, mapped->mapper->extensions.items[j]);
+        }
+        cstr_append_lit(out, "])\n--- Original ---\n");
+        remove_test_path_prefixes(out, from);
+        cstr_append_s(out, mapped->original->contents);
+        if (cstr_size(&mapped->original->contents) && !cstr_ends_with(&mapped->original->contents, "\n")) {
+            cstr_append_lit(out, "\n");
+        }
+        cstr_append_lit(out, "--- Transformed ---\n");
+        cstr_append_s(out, file->contents);
+        if (cstr_size(&file->contents) && !cstr_ends_with(&file->contents, "\n")) cstr_append_lit(out, "\n");
+        cstr_append_lit(out, "\n");
+    }
+    if (!cstr_size(out)) return;
+    cstr_append_lit(out, "=== Diagnostics ===\n\n");
+    VecError* errors = &my error_ctx->errors;
+    cstr rendered = cstr_null;
+    for (isize i = 0; i < vec_error_size(errors);) {
+        Error* error = &errors->data[i];
+        if (!error_in_content_mapped_file(program, error)) {
+            i++;
+            continue;
+        }
+        if (content_mapped_map_error(error)) {
+            if (cstr_size(&rendered)) cstr_append_lit(&rendered, "\n");
+            error_format_pretty(&rendered, error, "\n", error_file_name);
+        }
+        vec_error_erase_n(errors, i, 1);
+    }
+    my content_mapper_errors = cstr_size(&rendered) > 0;
+    if (!cstr_size(&rendered)) {
+        cstr_append_lit(out, "<no content>\n");
+    } else {
+        strip_ansi(&rendered);
+        isize from = cstr_size(out);
+        cstr_append_s(out, rendered);
+        remove_test_path_prefixes(out, from);
+    }
+    cstr_drop(&rendered);
 }
 
 static void process_errors(BaselineTestCase* me) {
@@ -1192,6 +1283,7 @@ BaselineTestCase run_baseline_test_case(
     }
     error_ctx_drop(&walk_errs);
 
+    render_content_mapper_baseline(&ret);
     process_errors(&ret);
 
     logger_config.threshold = prev_threshold;
@@ -1209,6 +1301,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     cstr_drop(&my lib_files);
     cstr_drop(&my formatted_errors);
     cstr_drop(&my formatted_pretty_errors);
+    cstr_drop(&my content_mapper_baseline);
     cstr_drop(&my formatted_global_errors);
     vec_baseline_test_file_drop(&my files);
     vec_cstr_drop(&my links);
@@ -1458,6 +1551,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     }
 
     for_each (i, vec_baseline_test_file, &my files) {
+        if (i->content_mapped) continue;
         cstr_append_lit(target, "\r\n==== ");
         // (tsc's harness removes the test path prefixes from the name: `/.src/a.ts` is `a.ts`)
         isize header = cstr_size(target);

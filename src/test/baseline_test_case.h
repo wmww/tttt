@@ -51,6 +51,7 @@ typedef struct BaselineTestFile {
     VecLineNumberedStr types;
     VecLineNumberedStr errors;
     intptr_t error_count;
+    bool content_mapped; // A content mapper's file: in the .contentmapper baseline, not the errors one
 } BaselineTestFile;
 
 void baseline_test_file_drop(BaselineTestFile* me);
@@ -62,6 +63,9 @@ void baseline_test_file_drop(BaselineTestFile* me);
 typedef struct BaselineTestCase {
     csview source_path; // Not owned, path to real file on disk that may describe several virtual files
     bool did_run;
+    // tsgo's `.contentmapper` baseline (plan 56): the content-mapped files and their diagnostics, empty without any
+    cstr content_mapper_baseline;
+    bool content_mapper_errors; // It has diagnostics (they count as the test's for its types baseline)
     // A configuration tsgo's harness doesn't run (SkipUnsupportedCompilerOptions: an option 7.0 removed), so it has no
     // baselines: not checked, and not a test at all
     bool skipped;

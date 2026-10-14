@@ -6532,8 +6532,8 @@ const baselines = {
     },
     'contentMapperAliasDiagnostic': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contentMapperDeclarationEmit': {
         errors: false,
@@ -6542,21 +6542,21 @@ const baselines = {
     },
     'contentMapperDeclarationEmitFailure': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contentMapperDiagnosticDirectives': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
     'contentMapperDiagnostics': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contentMapperInvalidDiagnosticDirectives': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -6572,28 +6572,28 @@ const baselines = {
     },
     'contentMapperSupplementalDiagnostics': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contentMapperSupplementalFileCollision': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'contentMapperSupplementalGlobals': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'contentMapperSupplementalModule': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contentMapperSymlink': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contentMapperSynthesizedUnusedDiagnostics': {
         errors: true,
@@ -6601,9 +6601,9 @@ const baselines = {
         types: true,
     },
     'contentMapperTransform': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contextSensitiveReturnTypeInference': {
         errors: true,

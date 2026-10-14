@@ -1,61 +1,68 @@
 # Plan 56: content mappers (TS 7.1 `contentMappers`)
 
-Status: not started. Written 2026-10-09 by the 7.1 fan-out (agent B) after reading tsgo; its decision "don't implement
-now" is **reversed** (2026-10-14): the human wants the suite at 100%, plan 66 schedules it and says how the suite
-should run tsgo's Go test mappers. 10 suite tests (`contentMapper*`, 15 in tsgo's tree) and nothing in the corpora or sweeps uses the feature yet.
+Rewritten 2026-10-14 to plan 66's design (todo entry 2). 15 `contentMapper*` suite tests (10 failing a component at
+the rewrite) and scenarios.py's skipped content-mapper scenario. Nothing in the corpora or sweeps uses the feature.
 
 ## What it is
-A tsconfig option that lets an external program turn files TypeScript can't read (`.vue`, `.box`...) into virtual
-TypeScript at program construction:
-
+A tsconfig option letting an external program turn files TypeScript can't read (`.vue`, `.box`) into virtual
+TypeScript at program construction, gated on the command-line-only `--runExternalCode` (tsconfig.c's
+check_content_mappers() already reports TS5024/TS18065-18068):
 ```json
 "contentMappers": [{ "package": "mapper", "extensions": [".box"], "options": {...} }]
 ```
-`package` is resolved like a module (node resolution from the config's directory); its package.json's
-`"typescript": { "contentMapper": { "exec": [argv...], "compilerOptions": ["target", "jsx"], "dynamicConfig": ... } }`
-is the manifest (`internal/contentmapper/contentmapper.go`: Definition, Manifest, Mapper; resolution in
-`internal/tsoptions`). Files with a registered extension become root/importable files; each is sent to the mapper and
-the reply parsed in its place.
+`package` resolves from the config's directory (tsoptions/contentmappers.go: bundler resolution's
+ResolvePackageDirectory, then its package.json): `"typescript": { "contentMapper": { "exec": [argv...],
+"compilerOptions": ["target", "jsx"], "dynamicConfig": bool } }`, plus `name` and `version` (identity `name@version`).
 
-## What tsgo does
-- `internal/contentmapper/hostimpl.go` (1.4k lines): spawns `exec` in the package directory (one process per mapper
-  identity `name@version`, shared by projects), talks JSON-RPC over stdin/stdout (`internal/ipc`): `initialize`
-  (position encoding, diagnostic source name), `openProject` (the declared compiler options' values, the mapper's
-  `options`; may return option diagnostics), `transform` (file name + content -> text, virtual extension, span map,
-  diagnostics, diagnostic directives, supplemental files), `closeProject`.
-- `transform.go` `ParseResult`: validates the span map (`internal/spanmap`: segments verbatim/synthesized with
-  feature flags), parses the text as `<file><virtual ext>` (forced module for .mts/.cts...), attaches the mapper's
-  diagnostics, and parses each supplemental output as `<file>.<i><ext>` (collision with a real file is an error).
-- Diagnostics in the mapped file are mapped back to the original text through the span map, filtered by the
-  segments' features and the directives (suppress/expect-unused); failures (`failing-mapper`, bad mappings, unknown
-  extension) become dedicated diagnostics and a placeholder file. Declaration emit and `.d.ts` naming follow the
-  virtual name. The LS side (go-to-def, completions through span maps) is out of scope for tttt.
-- Tests: `// @runExternalCode: true`; the harness doesn't exec anything, `internal/testutil/contentmappertest`
-  registers ~18 in-process Go mappers by argv[0] (`compiler-test-mapper` = `transforming.go`: prepends
-  `const __VERSION = "1.0.0";`, substitutes `#{option}` by the option's value, TS1000-style diagnostic for an
-  unclosed `#{`; `verbatim-mapper`, `supplemental-*-mapper`, `failing-mapper`, `lisp-mapper`...). Baselines: an extra
-  `.contentmapper` file per test (original, transformed, mapped diagnostics); the `.types`/`.symbols` show the
-  *transformed* text under the original file name.
+## Protocol (internal/contentmapper/hostimpl.go, internal/ipc, internal/jsonrpc)
+JSON-RPC 2.0 over the child's stdin/stdout with LSP `Content-Length:` framing; the child runs `exec` in the package
+directory, one process per mapper identity. Requests, in order:
+- `initialize {positionEncodings: ["utf-8","utf-16"], locale?}` -> `{positionEncoding, diagnosticSource}` (5 s
+  timeout; failure kinds in host.go InitializeError).
+- `openProject {configFileName, projectHandle, options?, compilerOptions}` -> `{configIdentity, watchedFiles?,
+  optionDiagnostics?}`; `compilerOptions` holds only the manifest's declared options that are set, as tsgo's Go JSON
+  encoding (`target` es2020 is `7`: the ScriptTarget enum value), in declared order. projectHandle `name@version:N`.
+- `transform {fileName (absolute), content, projectHandle}` -> `{text, extension, mappings, diagnosticDirectives?,
+  diagnostics?, supplemental?}`. `mappings` is the span map: tuples `[virtualStart, virtualLength, originalStart,
+  originalLength, kind(0 verbatim,1 atom,2 alias), features?]` (spanmap.go Unmarshal/Validate/VirtualToOriginalSpan).
+- `closeProject {projectHandle}`.
 
-## How tttt would do it
-1. tsconfig: parse `contentMappers` (tsconfig.c), resolve the package and read the manifest (module_resolution.c has
-   node resolution); extensions join the supported ones for root file discovery and import resolution.
-2. A mapper host: posix_spawn + pipes, a minimal JSON-RPC client (json.c exists), synchronous per file is enough for
-   the CLI (tsgo batches/parallelizes; tttt's load pool could call it from its threads with one connection per
-   mapper behind a lock).
-3. SourceFile: keep the original text and a span map next to the transformed text the parser sees; map diagnostic
-   spans back when reporting (error.c's position printing), apply directives.
-4. Test harness: the suite can't run tsgo's Go mappers. Either reimplement the test mappers in C inside
-   `baseline_tests` (a table keyed by argv[0], like tsgo's spawner; transforming/verbatim/supplemental are small, the
-   whole set ~1.5k lines of Go) or build a tiny external `tttt-test-mapper` executable speaking the protocol. The
-   `.contentmapper` baseline component would need a fourth comparison in the harness (or be ignored, comparing only
-   errors/types/symbols, which already show the transformed text).
+## Results (transform.go ParseResult)
+The text parses as `<file><extension>` (script kind from it; `.mts/.cts/.mjs/.cjs` force a module) under the original
+name; the mapper's diagnostics (original coordinates, code shown as `<diagnosticSource><code>`, e.g. `box1000`) attach
+to the file; supplemental outputs parse as `<file>.<i><ext>` (a real file of that name: SupplementalFileCollision).
+Failures (no/invalid mappings, unsupported extension, failing process) become TS18069 "The content mapper 'X' failed
+to transform this file." + a chained reason, and an empty placeholder file. Diagnostics in mapped files are mapped
+back through the span map (directives may suppress/expect them) and printed against the original text.
 
-Effort: 2-3 sessions (host + protocol + span maps ~1 session, harness mappers ~1, diagnostics mapping/directives and
-the long tail of failure diagnostics ~1). Value today: 10-15 suite tests; real projects (Vue/Svelte tooling) would
-adopt it only once mapper packages ship manifests.
+## The suite
+tsgo's harness (harnessutil.CompileFiles) serves ~18 Go test mappers in process (contentmappertest's registry, by
+`exec[0]`: `compiler-test-mapper`, `verbatim-mapper`, `failing-mapper`, `supplemental-*`...). We don't port them:
+`test/oracle/tttt-test-mapper` (overlay: `cmd/tttt-test-mapper/main.go` + `internal/testutil/contentmappertest/
+tttt_stdio.go`) is a binary serving the mapper named by its argv[1] on stdin/stdout, built by
+`thirdparty/ensure-typescript.sh` into `typescript/built/tttt-test-mapper`. The harness (`baseline_tests`) runs a
+manifest's exec as `[that binary, exec...]` (`TTTT_CONTENT_MAPPER_LAUNCHER`, see content_mapper.h); the CLI runs exec as
+written. Baselines (compiler_runner.go): the `.errors.txt` leaves out mapped files and their diagnostics; a
+`.contentmapper` baseline (tsbaseline/contentmapper_baseline.go: original, transformed, the mapped diagnostics in
+pretty format against the original text) holds them; `.types`/`.symbols` show the transformed text. tttt compares
+the `.contentmapper` file as part of the errors component.
+
+## Stages
+1. **Done 2026-10-14** (8 of 15 pass; documentation.md "Content mappers"). (Part 1) Go test mapper binary; `src/content_mapper.{h,c}`: manifest resolution, the host (posix_spawn, framing,
+   JSON writer/reader on json.c, initialize/openProject/transform/closeProject, one process per identity behind a
+   lock: the load pool calls it from workers), span map parse/validate/map; tsconfig's mappers onto CompilerOptions;
+   program_make_source() transforms a mapped file and parses the result; root discovery and module resolution see
+   the extensions; the harness's `.contentmapper` comparison. Target: contentMapperTransform and the plain
+   diagnostics tests.
+2. (Part 2) Left: diagnosticDirectives (contentMapperDiagnosticDirectives, ...InvalidDiagnosticDirectives),
+   supplemental outputs (...SupplementalDiagnostics/FileCollision/Globals/Module), contentMapperDeclarationEmit,
+   initialization failures as tsgo's one global TS18099 with the chained reason (a probe with a nonexistent exec:
+   tttt says TS18069 per file), TS18075-18079 for a package that doesn't resolve (resolve_content_mapper()), the
+   failure budget (maxContentMapperFailures 5, TS18070), option diagnostics from openProject, the 5 s initialize
+   timeout, utf-16 positions, span map features (hacks.md "Content mappers"). Also failure diagnostics (TS18069 family, initialize errors, option diagnostics), diagnostic directives,
+   supplemental files and collisions, declaration emit names, symlinks, the scenario; plan deleted when done.
 
 ## Validation
-The 15 `contentMapper*` suite tests pass (errors/types/symbols), `tttt -p` on a probe project with a real mapper
-script (e.g. a 30-line Node or Python JSON-RPC mapper) matches `thirdparty/typescript/built/tsc -p --noEmit`, and no
-cost when `contentMappers` is absent (gate on the option).
+The 15 `contentMapper*` tests pass; `tttt -p` on a probe project with a real mapper script (any language speaking
+the protocol) matches `thirdparty/typescript/built/tsc -p --noEmit --runExternalCode`; nothing changes without
+`contentMappers` (the oracles unchanged, no instructions spent: everything is gated on the option).

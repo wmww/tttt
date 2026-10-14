@@ -817,3 +817,12 @@ src` finds the code-side markers; every significant one has an entry here.
   maps to string/number/symbol: `Record<string, T>[never]` is T, es-toolkit's sampleSize) reads its index signature.
   Type literals with index signatures still don't. Fix properly by making the TS5115/instantiation accounting not
   depend on such member resolution, or a mapped type's template lazy when its keys are none.
+
+## Content mappers (plan 56, `content_mapper.c`)
+- `alias_original_names()`: tsgo substitutes an alias segment's original text for the *arguments* of a diagnostic
+  that exactly covers it (displayMessageArgs); tttt's messages are formatted already, so the quoted virtual name is
+  replaced in the message text. Wrong if the name appears quoted for another reason.
+- No 5 s initialize timeout (a mapper that never answers hangs tttt), utf-16 position encoding is refused with
+  TS18087 instead of converted, the 6th span map element (features) is ignored. Part 2 of plan 56.
+- `span_cmp()` compares a content-mapped file and its original text (ContentMapped.original, same path) by offset:
+  tsgo sorts the mapper's (original-coordinate) and the compiler's (virtual-coordinate) diagnostics of a file together.

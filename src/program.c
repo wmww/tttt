@@ -18,6 +18,7 @@
 #include "ty/ty.h"
 #include "module_resolution.h"
 #include "json.h"
+#include "content_mapper.h"
 #include "load_pool.h"
 #include "project.h"
 #include "symbol_chain.h"
@@ -81,6 +82,9 @@ static const char* program_phase_get_str(ProgramPhase phase) {
 
 typedef struct Program {
     ProgramPhase phase;
+    // The content mappers' processes (plan 56), made by the first mapped file program_make_source() reads (a load
+    // pool worker's maybe: hence atomic)
+    ContentMapperHost* _Atomic content_mapper_host;
     bool loading_stdlib; // If we're loading standard library files instead of normal files
     bool follow_lib_references; // program_follow_lib_references()
     cstr lib_dir; // cstr_null: default_lib_dir
@@ -230,6 +234,7 @@ static void drop_source_files(Program* me) {
 
 static void program_drop(Program* me) {
     load_pool_destroy(my pool);
+    content_mapper_host_drop(atomic_load(&my content_mapper_host));
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
     free(my file_shares);
@@ -1194,6 +1199,78 @@ static void source_jsx_pragmas(SourceFile* file) {
     }
 }
 
+// A content-mapped file's text through its mapper (plan 56): *contents becomes the transformed text, empty on a failure
+static ContentMapperOutput program_content_map(Program const* me, ContentMapper const* mapper, csview canonical_path,
+    cstr* contents) {
+    ContentMapperHost* host = atomic_load(&my content_mapper_host);
+    if (!host) {
+        cstr config = my config_source ? absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path)) :
+            cstr_null;
+        ContentMapperHost* made = content_mapper_host_new(cstr_sv(&config), &my options);
+        cstr_drop(&config);
+        if (atomic_compare_exchange_strong(&((Program*)me)->content_mapper_host, &host, made)) host = made;
+        else content_mapper_host_drop(made);
+    }
+    ContentMapperOutput ret = {0};
+    if (!mapper->resolved) {
+        // TODO(plan 56 part 2): what tsgo does with a mapper whose package didn't resolve (TS18075-18079)
+        ret.failure_code = 18069;
+        ret.failure = cstr_d("The content mapper '", mapper->package, "' failed to transform this file.");
+    } else {
+        cstr absolute = absolute_path_of(program_cwd(me), canonical_path);
+        ret = content_mapper_host_transform(host, mapper, cstr_sv(&absolute), cstr_sv(contents));
+        cstr_drop(&absolute);
+    }
+    // The original text is kept by program_attach_content_mapped() (in ret.text's place: they swap)
+    cstr transformed = ret.failure_code ? cstr_null : ret.text;
+    ret.text = *contents;
+    *contents = transformed;
+    return ret;
+}
+
+// The mapper's output on the file made from its transformed text: the original text as a file of its own, the span
+// map, the mapper's diagnostics (in the original text) or its failure (at the start of the empty placeholder)
+static void program_attach_content_mapped(SourceFile* file, ContentMapper const* mapper, ContentMapperOutput* out,
+    ErrorCtx* errs) {
+    ContentMapped* mapped = c_new(ContentMapped, {
+        .mapper = mapper,
+        .identity = content_mapper_identity(mapper),
+        .original = c_new(SourceFile, source_file_make(cstr_clone(file->canonical_path), out->text)),
+        .segments = out->segments,
+        .segment_count = out->segment_count,
+        .has_map = !out->failure_code,
+        .diagnostic_source = out->diagnostic_source,
+        .virtual_extension = out->failure_code || !cstr_size(&out->extension) ? cstr_from(".ts") : cstr_clone(out->extension),
+    });
+    out->text = cstr_null;
+    out->segments = nullptr;
+    out->diagnostic_source = cstr_null;
+    source_file_register(mapped->original);
+    mapped->original->content_original = true;
+    file->content_mapped = mapped;
+    if (out->failure_code) {
+        char const* start = cstr_str(&file->contents);
+        Error error = { .message = out->failure, .span = span_make(file, start, start), .ts_code = out->failure_code,
+            .phase = ERROR_PHASE_PARSE };
+        out->failure = cstr_null;
+        if (out->detail_code) {
+            error_sub_error_s(&error, span_null, out->detail_code, out->detail);
+            out->detail = cstr_null;
+        }
+        error_ctx_append_error(errs, error);
+        return;
+    }
+    char const* original = cstr_str(&mapped->original->contents);
+    for (u32 i = 0; i < out->diagnostic_count; i++) {
+        ContentMapperDiagnostic* d = &out->diagnostics[i];
+        Error error = { .message = d->message, .ts_code = d->code, .phase = ERROR_PHASE_PARSE,
+            .span = span_make(mapped->original, original + d->start, original + d->start + d->length),
+            .source = cstr_str(&mapped->diagnostic_source) };
+        d->message = cstr_null;
+        error_ctx_append_error(errs, error);
+    }
+}
+
 // A new SourceFile for the file at canonical_path, parsed (its errors into errs), null if it can't be read. On the
 // loader's thread or on a load pool worker: it only reads the program
 static SourceFile* program_make_source(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
@@ -1206,9 +1283,24 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     }
     text_decode(&contents);
 
+    ContentMapper const* mapper = my options.content_mapper_count && !is_stdlib ?
+        content_mapper_for_path(&my options, canonical_path) : nullptr;
+    ContentMapperOutput mapped = {0};
+    if (mapper) {
+        // (Parsed as its virtual name, tsgo's ParseResult; a failure is an empty TypeScript file)
+        mapped = program_content_map(me, mapper, canonical_path, &contents);
+    }
     SourceFile* source_file = c_new(SourceFile, source_file_make(cstr_from_sv(canonical_path), contents));
     source_file_register(source_file);
     csview path = cstr_sv(&source_file->canonical_path);
+    cstr virtual_path = cstr_null;
+    if (mapper) {
+        program_attach_content_mapped(source_file, mapper, &mapped, errs);
+        virtual_path = cstr_d(path, cstr_size(&mapped.extension) && !mapped.failure_code ? cstr_sv(&mapped.extension) :
+            c_sv(".ts"));
+        path = cstr_sv(&virtual_path);
+        content_mapper_output_drop(&mapped);
+    }
 
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
         source_file->is_declaration = true;
@@ -1300,6 +1392,7 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     }
 
     parse_file(source_file, errs);
+    cstr_drop(&virtual_path);
     return source_file;
 }
 
@@ -1619,6 +1712,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     static const char* const scripts[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json" };
     bool script = false;
     for (isize i = 0; i < c_countof(scripts) && !script; i++) script = csview_ends_with(path, scripts[i]);
+    script = script || (my options.content_mapper_count && content_mapper_for_path(&my options, path));
     if (!path_has_extension(path)) {
         // The first group of supported extensions completes it (getSourceFileFromReferenceWorker)
         static const char* const completions[] = { ".ts", ".tsx", ".d.ts" };

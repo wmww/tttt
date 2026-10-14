@@ -10,6 +10,7 @@ says where each file goes) and rebuilds both tools whenever a file here is newer
 | `testdata.go` | `internal/repo/tttt_testdata.go` | (both) `TTTT_TESTDATA=DIR` moves the harness's test data root to DIR |
 | `probe_test.go` | `internal/testrunner/tttt_probe_test.go` | `typescript/built/tttt-probe.test` |
 | `tttt-oracle/main.go` | `cmd/tttt-oracle/main.go` | `typescript/built/tttt-oracle` |
+| `tttt-test-mapper/main.go`, `stdio.go` | `cmd/tttt-test-mapper/`, `internal/testutil/contentmappertest/tttt_stdio.go` | `typescript/built/tttt-test-mapper` |
 
 - **The probe** (`scripts/tsgoprobe.sh DIR`): tsgo's own compiler test runner on every `DIR/tests/cases/
   {compiler,conformance}/**.ts(x)`, the baselines written to `DIR/baselines/local/SUITE`, byte for byte what the
@@ -22,6 +23,11 @@ says where each file goes) and rebuilds both tools whenever a file here is newer
   the drop-in definition (option errors stop it; emit-only option errors never appear). `--expect`: DefinitelyTyped's
   `$ExpectType` assertions, the type printed by one checker after checking every non-lib file. Validated: identical
   to `built/tsc` on 30 DT packages and 30 source sweep projects (diagnostics, order, exit codes).
+
+- **tttt-test-mapper** (plan 56): tsgo's suite serves its content mappers in process (contentmappertest's registry,
+  by a manifest's `exec[0]`); `tttt-test-mapper NAME` serves the same handler on stdin/stdout, so baseline_tests runs
+  a test's mapper as `[tttt-test-mapper, exec...]` against tttt's real host. Also usable as a real mapper by tsgo's
+  CLI (`exec: ["/abs/tttt-test-mapper", "compiler-test-mapper"]`), which is how CLI probes compare the two.
 
 To instrument the oracle (what `_tsc.js` patching was for with tsc 6): add a patched copy of a tsgo file to the
 `OVERLAY` list (replacing the original) in a scratch branch; never commit an instrumented copy.

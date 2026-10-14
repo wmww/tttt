@@ -150,6 +150,16 @@ void baseline_test_result_run(
             show_errs
         );
         cstr_drop(&our_result);
+        // tsgo's `.contentmapper` baseline (plan 56) is part of the errors component: the content-mapped files'
+        // diagnostics are there instead
+        cstr content_mapper_path = cstr_d(cstr_sv(&errors_path), "");
+        cstr_replace(&content_mapper_path, ".errors.txt", ".contentmapper");
+        if (cstr_size(&test_case.content_mapper_baseline) || fs_is_reg_file(fs, cstr_sv(&content_mapper_path))) {
+            dump_output(suite, name, ".contentmapper", cstr_sv(&test_case.content_mapper_baseline));
+            my errors_passed &= compare_outputs(name, "contentmapper", cstr_sv(&content_mapper_path),
+                cstr_sv(&test_case.content_mapper_baseline), show_errs);
+        }
+        cstr_drop(&content_mapper_path);
     }
 
     if (my did_run && my errors_only) {
@@ -169,7 +179,9 @@ void baseline_test_result_run(
         );
         cstr_clear(&our_result);
 
-        baseline_test_case_render_types(&our_result, &test_case, fs_is_reg_file(fs, cstr_sv(&errors_path)));
+        // (tsgo's hasErrorBaseline: the program has diagnostics, the content-mapped files' too)
+        baseline_test_case_render_types(&our_result, &test_case,
+            fs_is_reg_file(fs, cstr_sv(&errors_path)) || test_case.content_mapper_errors);
         dump_output(suite, name, ".types", cstr_sv(&our_result));
         my types_passed = compare_outputs(
             name,

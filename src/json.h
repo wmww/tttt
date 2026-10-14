@@ -56,3 +56,8 @@ JsonValue const* json_get(JsonValue const* me, const char* key);
 JsonValue const* json_get_tagged(JsonValue const* me, const char* key, JsonTag tag);
 // The string member of that name, an empty view if there is none
 csview json_get_string(JsonValue const* me, const char* key);
+
+// Appends text as a JSON string literal (quoted, escaped)
+void json_append_string(cstr* out, csview text);
+// Appends value as compact JSON text (no whitespace; members in their order; integral numbers without a fraction)
+void json_write(cstr* out, JsonValue const* value);
