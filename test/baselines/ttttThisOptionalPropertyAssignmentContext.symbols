@@ -1,0 +1,70 @@
+//// [test/cases/ttttThisOptionalPropertyAssignmentContext.ts] ////
+
+=== ttttThisOptionalPropertyAssignmentContext.ts ===
+// `this.x = v` with an optional property x gives v the target's type as its contextual type, undefined included
+// (tsgo's getContextualTypeForAssignmentExpression ends in getTypeOfExpression(left)): adonis' `this.stack = await
+// this.prompt.choice(...)` infers Result from it, so the narrowed `this.stack` still holds undefined afterwards
+declare function choice<Choice extends string, Result extends any = Choice>(title: string, choices: readonly Choice[]): Promise<Result>;
+>choice : Symbol(choice, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 0, 0))
+>Choice : Symbol(Choice, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 24))
+>Result : Symbol(Result, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 46))
+>Choice : Symbol(Choice, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 24))
+>title : Symbol(title, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 76))
+>choices : Symbol(choices, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 90))
+>Choice : Symbol(Choice, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 24))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Result : Symbol(Result, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 46))
+
+declare function $<T extends HTMLElement>(d: string): T;
+>$ : Symbol($, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 136))
+>T : Symbol(T, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 19))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>d : Symbol(d, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 42))
+>T : Symbol(T, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 19))
+
+class C {
+>C : Symbol(C, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 56))
+
+  declare stack?: 'server' | 'named' | 'router'
+>stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+
+  t?: HTMLDivElement;
+>t : Symbol(C.t, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 6, 47))
+>HTMLDivElement : Symbol(HTMLDivElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+  async run() {
+>run : Symbol(C.run, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 7, 21))
+
+    const stackChoices = ['server', 'router', 'named']
+>stackChoices : Symbol(stackChoices, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 9, 9))
+
+    if (!this.stack) {
+>this.stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+>this : Symbol(C, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 56))
+>stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+
+      this.stack = await choice('x', stackChoices)
+>this.stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+>this : Symbol(C, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 56))
+>stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+>choice : Symbol(choice, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 0, 0))
+>stackChoices : Symbol(stackChoices, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 9, 9))
+    }
+    if (!stackChoices.includes(this.stack)) {
+>stackChoices.includes : Symbol(Array.includes, Decl(lib.es2016.array.include.d.ts, --, --))
+>stackChoices : Symbol(stackChoices, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 9, 9))
+>includes : Symbol(Array.includes, Decl(lib.es2016.array.include.d.ts, --, --))
+>this.stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+>this : Symbol(C, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 56))
+>stack : Symbol(C.stack, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 5, 9))
+
+      return
+    }
+    this.t = $('.x');
+>this.t : Symbol(C.t, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 6, 47))
+>this : Symbol(C, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 4, 56))
+>t : Symbol(C.t, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 6, 47))
+>$ : Symbol($, Decl(ttttThisOptionalPropertyAssignmentContext.ts, 3, 136))
+  }
+}
+

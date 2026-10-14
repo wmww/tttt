@@ -2860,9 +2860,10 @@ static bool is_bindable_static_name(Expr const* expr) {
 }
 
 // `this.b = v`, or `x.b = v` where x isn't a dotted name (or another operator than `=`): when b is a property declared
-// with a type annotation (in a class or a type literal/interface), that annotation is v's contextual type, rather than
-// the type of `a.b` (tsc's getContextualTypeForAssignmentDeclaration, for AssignmentDeclarationKind.None and
-// ThisProperty). Unlike the target's type, it doesn't hold the undefined of an optional property. Null otherwise
+// with a type annotation (in a class or a type literal/interface), that annotation's type (a JavaScript class field's
+// JSDoc type, for the expando case of assignment_value_context()). Null otherwise. (tsgo's
+// getContextualTypeForAssignmentExpression otherwise gives a TypeScript `this.b = v` the target's type, an optional
+// property's undefined included: tsc 6's getContextualTypeForAssignmentDeclaration took the annotation)
 static Ty const* annotated_property_context(Checker* me, BinaryOpExpr const* binary) {
     PropertyExpr const* access = binary->left.property;
     // (`a.b = v` is AssignmentDeclarationKind.Property: the type of `a.b`)
@@ -2901,13 +2902,6 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
     if (is_literal_this_declaration(binary)) return nullptr;
     Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
-    // (Only an optional property's type differs from its annotation's: don't look further for others)
-    if (assigned_context && binary->left.tag == EXPR_PROPERTY && compiler_options()->strict_null_checks &&
-        ty_can_be_undefined(me, assigned_context)
-    ) {
-        Ty const* annotated = annotated_property_context(me, binary);
-        if (annotated) assigned_context = annotated;
-    }
     // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
     // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
     if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && span_source(binary->right.inner_span) &&

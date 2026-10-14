@@ -1,0 +1,74 @@
+//// [test/cases/ttttThisOptionalPropertyAssignmentContext.ts] ////
+
+=== ttttThisOptionalPropertyAssignmentContext.ts ===
+// `this.x = v` with an optional property x gives v the target's type as its contextual type, undefined included
+// (tsgo's getContextualTypeForAssignmentExpression ends in getTypeOfExpression(left)): adonis' `this.stack = await
+// this.prompt.choice(...)` infers Result from it, so the narrowed `this.stack` still holds undefined afterwards
+declare function choice<Choice extends string, Result extends any = Choice>(title: string, choices: readonly Choice[]): Promise<Result>;
+>choice : <Choice extends string, Result extends unknown = Choice>(title: string, choices: readonly Choice[]) => Promise<Result>
+>title : string
+>choices : readonly Choice[]
+
+declare function $<T extends HTMLElement>(d: string): T;
+>$ : <T extends HTMLElement>(d: string) => T
+>d : string
+
+class C {
+>C : C
+
+  declare stack?: 'server' | 'named' | 'router'
+>stack : "named" | "router" | "server" | undefined
+
+  t?: HTMLDivElement;
+>t : HTMLDivElement | undefined
+
+  async run() {
+>run : () => Promise<void>
+
+    const stackChoices = ['server', 'router', 'named']
+>stackChoices : string[]
+>['server', 'router', 'named'] : string[]
+>'server' : "server"
+>'router' : "router"
+>'named' : "named"
+
+    if (!this.stack) {
+>!this.stack : boolean
+>this.stack : "named" | "router" | "server" | undefined
+>this : this
+>stack : "named" | "router" | "server" | undefined
+
+      this.stack = await choice('x', stackChoices)
+>this.stack = await choice('x', stackChoices) : "named" | "router" | "server" | undefined
+>this.stack : "named" | "router" | "server" | undefined
+>this : this
+>stack : "named" | "router" | "server" | undefined
+>await choice('x', stackChoices) : "named" | "router" | "server" | undefined
+>choice('x', stackChoices) : Promise<"named" | "router" | "server" | undefined>
+>choice : <Choice extends string, Result extends unknown = Choice>(title: string, choices: readonly Choice[]) => Promise<Result>
+>'x' : "x"
+>stackChoices : string[]
+    }
+    if (!stackChoices.includes(this.stack)) {
+>!stackChoices.includes(this.stack) : boolean
+>stackChoices.includes(this.stack) : boolean
+>stackChoices.includes : (searchElement: string, fromIndex?: number) => boolean
+>stackChoices : string[]
+>includes : (searchElement: string, fromIndex?: number) => boolean
+>this.stack : "named" | "router" | "server" | undefined
+>this : this
+>stack : "named" | "router" | "server" | undefined
+
+      return
+    }
+    this.t = $('.x');
+>this.t = $('.x') : HTMLDivElement
+>this.t : HTMLDivElement | undefined
+>this : this
+>t : HTMLDivElement | undefined
+>$('.x') : HTMLDivElement
+>$ : <T extends HTMLElement>(d: string) => T
+>'.x' : ".x"
+  }
+}
+
