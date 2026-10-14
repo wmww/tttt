@@ -1,0 +1,38 @@
+//// [test/cases/ttttJsxClosingTagOwnName.tsx] ////
+
+=== ttttJsxClosingTagOwnName.tsx ===
+// A closing tag is checked by its own name (an intrinsic one looked up in JSX.IntrinsicElements), `</` is one token in a JSX file
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxClosingTagOwnName.tsx, 0, 0))
+
+    interface IntrinsicElements { div: {}; span: {} }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxClosingTagOwnName.tsx, 1, 23))
+>div : Symbol(IntrinsicElements.div, Decl(ttttJsxClosingTagOwnName.tsx, 2, 33))
+>span : Symbol(IntrinsicElements.span, Decl(ttttJsxClosingTagOwnName.tsx, 2, 42))
+}
+declare const a: { b: any };
+>a : Symbol(a, Decl(ttttJsxClosingTagOwnName.tsx, 4, 13))
+>b : Symbol(b, Decl(ttttJsxClosingTagOwnName.tsx, 4, 18))
+
+const e1 = <a.b></div>;
+>e1 : Symbol(e1, Decl(ttttJsxClosingTagOwnName.tsx, 5, 5))
+>a.b : Symbol(b, Decl(ttttJsxClosingTagOwnName.tsx, 4, 18))
+>a : Symbol(a, Decl(ttttJsxClosingTagOwnName.tsx, 4, 13))
+>b : Symbol(b, Decl(ttttJsxClosingTagOwnName.tsx, 4, 18))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxClosingTagOwnName.tsx, 2, 33))
+
+const e2 = <div></nope>;
+>e2 : Symbol(e2, Decl(ttttJsxClosingTagOwnName.tsx, 6, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxClosingTagOwnName.tsx, 2, 33))
+
+const e3 = <span></a.b>;
+>e3 : Symbol(e3, Decl(ttttJsxClosingTagOwnName.tsx, 7, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxClosingTagOwnName.tsx, 2, 42))
+>a.b : Symbol(b, Decl(ttttJsxClosingTagOwnName.tsx, 4, 18))
+>a : Symbol(a, Decl(ttttJsxClosingTagOwnName.tsx, 4, 13))
+>b : Symbol(b, Decl(ttttJsxClosingTagOwnName.tsx, 4, 18))
+
+const e4 = x </y;
+>e4 : Symbol(e4, Decl(ttttJsxClosingTagOwnName.tsx, 8, 5))
+>y : Symbol(y, Decl(ttttJsxClosingTagOwnName.tsx, 8, 15))
+

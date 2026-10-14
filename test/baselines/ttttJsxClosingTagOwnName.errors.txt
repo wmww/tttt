@@ -1,0 +1,34 @@
+ttttJsxClosingTagOwnName.tsx(6,19): error TS17002: Expected corresponding JSX closing tag for 'a.b'.
+ttttJsxClosingTagOwnName.tsx(7,17): error TS2339: Property 'nope' does not exist on type 'JSX.IntrinsicElements'.
+ttttJsxClosingTagOwnName.tsx(7,19): error TS17002: Expected corresponding JSX closing tag for 'div'.
+ttttJsxClosingTagOwnName.tsx(8,20): error TS17002: Expected corresponding JSX closing tag for 'span'.
+ttttJsxClosingTagOwnName.tsx(9,12): error TS2304: Cannot find name 'x'.
+ttttJsxClosingTagOwnName.tsx(9,14): error TS1005: ',' expected.
+ttttJsxClosingTagOwnName.tsx(9,16): error TS7005: Variable 'y' implicitly has an 'any' type.
+
+
+==== ttttJsxClosingTagOwnName.tsx (7 errors) ====
+    // A closing tag is checked by its own name (an intrinsic one looked up in JSX.IntrinsicElements), `</` is one token in a JSX file
+    declare namespace JSX {
+        interface IntrinsicElements { div: {}; span: {} }
+    }
+    declare const a: { b: any };
+    const e1 = <a.b></div>;
+                      ~~~
+!!! error TS17002: Expected corresponding JSX closing tag for 'a.b'.
+    const e2 = <div></nope>;
+                    ~~~~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'JSX.IntrinsicElements'.
+                      ~~~~
+!!! error TS17002: Expected corresponding JSX closing tag for 'div'.
+    const e3 = <span></a.b>;
+                       ~~~
+!!! error TS17002: Expected corresponding JSX closing tag for 'span'.
+    const e4 = x </y;
+               ~
+!!! error TS2304: Cannot find name 'x'.
+                 ~~
+!!! error TS1005: ',' expected.
+                   ~
+!!! error TS7005: Variable 'y' implicitly has an 'any' type.
+    

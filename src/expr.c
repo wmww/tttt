@@ -1149,10 +1149,10 @@ void jsx_element_drop(JsxElement* me) {
     expr_drop(&my closing_name);
 }
 
-bool jsx_element_is_intrinsic(JsxElement const* me) {
-    if (my namespaced) return true;
-    if (my tag_name.tag != EXPR_IDENTIFIER || my tag_name.identifier.keyword) return false;
-    csview name = span_sv(my tag_name.inner_span);
+static bool jsx_tag_is_intrinsic(Expr const* tag_name, bool namespaced) {
+    if (namespaced) return true;
+    if (tag_name->tag != EXPR_IDENTIFIER || tag_name->identifier.keyword) return false;
+    csview name = span_sv(tag_name->inner_span);
     u32 first = name.size ? (uint8_t)name.buf[0] : 0;
     if (first == '\\' && name.size > 2) {
         // `\u0061` / `\u{61}` (TS17021, but the name is still `a`)
@@ -1163,6 +1163,14 @@ bool jsx_element_is_intrinsic(JsxElement const* me) {
         }
     }
     return (first >= 'a' && first <= 'z') || csview_contains(name, "-");
+}
+
+bool jsx_element_is_intrinsic(JsxElement const* me) {
+    return jsx_tag_is_intrinsic(&my tag_name, my namespaced);
+}
+
+bool jsx_closing_is_intrinsic(JsxElement const* me) {
+    return jsx_tag_is_intrinsic(&my closing_name, my closing_namespaced);
 }
 
 // `x as const` / `<const>x`: `const` isn't a type name (the new core checks the same, see is_const_assertion())
@@ -1674,17 +1682,17 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_lookup_names(&i->expr, names, errs);
             }
-            IdentifierExpr* closing = &my jsx->closing_name.identifier;
-            if (intrinsic && my tag == EXPR_JSX_ELEMENT && !my jsx->namespaced && my jsx->closing_name.tag == EXPR_IDENTIFIER &&
-                !closing->keyword
+            // (The closing tag by its own name: tsc's checkJsxElementDeferred)
+            if (my tag == EXPR_JSX_ELEMENT && my jsx->closing_name.tag != EXPR_IMPLICIT_ANY &&
+                span_valid(my jsx->closing_name.inner_span) && my jsx->closing_name.inner_span.size
             ) {
-                closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
-                closing->flow = flow_builder_reference(names->flow, my jsx->closing_name.inner_span);
-            }
-            if (!intrinsic && my jsx->closing_name.tag != EXPR_IMPLICIT_ANY && span_valid(my jsx->closing_name.inner_span) &&
-                my jsx->closing_name.inner_span.size
-            ) {
-                expr_lookup_names(&my jsx->closing_name, names, errs);
+                IdentifierExpr* closing = &my jsx->closing_name.identifier;
+                if (!jsx_closing_is_intrinsic(my jsx)) {
+                    expr_lookup_names(&my jsx->closing_name, names, errs);
+                } else if (!my jsx->closing_namespaced && my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
+                    closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
+                    closing->flow = flow_builder_reference(names->flow, my jsx->closing_name.inner_span);
+                }
             }
         }   break;
 

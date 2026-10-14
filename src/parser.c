@@ -1498,6 +1498,8 @@ typedef struct Tok {
 // The end of the token at c, tsc's scanner's idea of it but cheap: no values
 static const char* tok_scan_end(Parser const* p, const char* c) {
     if (!*c) return at_eof(p, c) ? c : c + 1;
+    // (A JSX file's `</`: tsc's scanner's LessThanSlashToken, wherever it is)
+    if (c[0] == '<' && c[1] == '/' && c[2] != '*' && p->shared->source && p->shared->source->is_jsx) return c + 2;
     // (`#!` past the start of the file is one Unknown token, tsc's scanner after its TS18026)
     if (c[0] == '#' && c[1] == '!') return c + 2;
     int size = identifier_char_size(c + (*c == '#'), true);
@@ -8805,6 +8807,8 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
             if (hop_start(&p, "<<=")) *op = BINARY_OP_LESS_LESS_EQUAL;
             else if (hop_start(&p, "<<")) *op = BINARY_OP_LESS_LESS;
             else if (hop_start(&p, "<=")) *op = BINARY_OP_LESS_EQUAL;
+            // (In a JSX file `</` is one token, tsc's LessThanSlashToken, which is no operator)
+            else if (p.pos[1] == '/' && p.pos[2] != '*' && p.shared->source->is_jsx) matched = false;
             else { p.pos++; *op = BINARY_OP_LESS; }
             break;
         case '=':
@@ -10260,7 +10264,8 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
     while (true) {
         Parser dot = parser(p);
         hop_whitespace(&dot);
-        if (!hop_char(&dot, '.')) {
+        // (`...` is a token of its own, no dot: `<a ...x />`)
+        if ((dot.pos[0] == '.' && dot.pos[1] == '.' && dot.pos[2] == '.') || !hop_char(&dot, '.')) {
             parse_fail(&dot);
             break;
         }
@@ -10280,6 +10285,12 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
                 break;
             } else {
                 parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
+                // (a property access all the same, of a missing name: `<a.>` is no intrinsic element, tsc's
+                // parseJsxElementName)
+                Span missing = span_from_pos(&dot);
+                parse_success(&dot);
+                *ret = expr_property(span_from(a), property_dot_new(&(PropertyExpr){ .expr = *ret, .name_ = missing }));
+                break;
             }
             parse_success(&dot);
             break;
@@ -10677,8 +10688,10 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             // An unclosed child took our closing tag: `<div>(...<span>...</div>)` is `<div>(...<span>...</>)</div>`
             // (the child reported it)
             el->closing_name = inner->closing_name;
+            el->closing_namespaced = inner->closing_namespaced;
             el->closing_span = inner->closing_span;
             inner->closing_name = expr_identifier(span_from_pos(&p), (IdentifierExpr){0});
+            inner->closing_namespaced = false;
             inner->closing_span = span_from_pos(&p);
             // (and ends with its children)
             last->expr.inner_span = span_make(p.shared->source, span_start_ptr(last->expr.inner_span), span_start_ptr(el->closing_span));
@@ -10698,10 +10711,15 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 el->closing_span = span_from(closing_a);
             } else {
                 hop_whitespace(&p);
-                bool namespaced, broken = false;
-                parse_jsx_tag_name(&p, &el->closing_name, &namespaced, &broken);
+                bool broken = false;
+                parse_jsx_tag_name(&p, &el->closing_name, &el->closing_namespaced, &broken);
+                const char* name_end = p.pos;
                 hop_whitespace(&p);
-                if (!hop_char(&p, '>')) parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
+                if (!hop_char(&p, '>')) {
+                    parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
+                    // (The closing element, and the element, end with its name: tsc's parseExpected doesn't advance)
+                    p.pos = name_end;
+                }
                 el->closing_span = span_from(closing_a);
                 if (!jsx_tag_names_equal(&el->tag_name, &el->closing_name)) {
                     if (enclosing && jsx_tag_names_equal(&el->closing_name, &enclosing->tag_name)) {
@@ -14294,7 +14312,10 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
                 return parse_fail(&p);
             }
         }
-    } else if (strchr("|&^=!>*%?i", c) && c && tok_is_binary_operator(tok_peek(&p))) {
+    } else if (((strchr("|&^=!>*%?i", c) && c) || (c == '<' && p.shared->source->is_jsx && p.pos[1] != '/')) &&
+        tok_is_binary_operator(tok_peek(&p))
+    ) {
+        // (In a JSX file a `<` that starts no element too, tsc's parseUpdateExpression: `<:a />`)
         // A binary operator starts an expression with a missing left operand (tsc's isStartOfExpression): `|| a;`
         ret->tag = STATEMENT_EXPR;
         ret->expr_jsdoc_type = nullptr;

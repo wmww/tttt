@@ -945,6 +945,7 @@ typedef struct JsxElement {
     Span opening_span; // `<a x="1">` / `<a />` / `<>`
     // The name in the closing tag, like tag_name (EXPR_IMPLICIT_ANY when self closing, a fragment, or missing)
     Expr closing_name;
+    bool closing_namespaced; // closing_name is `a:b` (see namespaced)
     Span closing_span; // `</a>` / `</>`, invalid when self closing
     // What the factory's first name (`React` of `React.createElement`, tsc's getJsxNamespace) finds where the element
     // is, as a namespace (where `JSX` is looked up first, tsc's getJsxNamespaceAt) and as a value (the reference every
@@ -966,3 +967,6 @@ static inline JsxElement const* jsx_attributes_element(Expr const* attributes) {
 }
 // tsc's isJsxIntrinsicTagName: `<div>`, `<my-elem>`, `<a:b>` name an entry of JSX.IntrinsicElements, not a value
 bool jsx_element_is_intrinsic(JsxElement const* me);
+// Of the closing tag's own name, which tsc checks for itself (checkJsxElementDeferred): `<a.b></a>` closes with an
+// intrinsic name
+bool jsx_closing_is_intrinsic(JsxElement const* me);

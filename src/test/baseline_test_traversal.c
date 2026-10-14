@@ -2702,6 +2702,10 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
 // The opening or closing tag name of an element: a value tag is a reference, an intrinsic one is `any` and names a
 // member of JSX.IntrinsicElements (its property, or its index signature: `__index`)
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
+    // (The closing tag by its own name: `<a.b></a>` closes with an intrinsic one)
+    bool closing = name == &element->closing_name;
+    bool intrinsic_tag = closing ? jsx_closing_is_intrinsic(element) : jsx_element_is_intrinsic(element);
+    bool namespaced = closing ? element->closing_namespaced : element->namespaced;
     if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span)) return;
     if (!name->inner_span.size) {
         // A missing name (`<` at the end of the file, a missing closing tag): an error type, shown where the next token
@@ -2711,16 +2715,17 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         baseline_test_case_add_type(ctx, span_make_in(name->inner_span, at, at), ty_intrinsic(current_checker, TY_ANY));
         return;
     }
-    if (!jsx_element_is_intrinsic(element)) {
+    if (!intrinsic_tag) {
         expr_compile_test_info(name, ctx);
         return;
     }
-    if (element->namespaced) {
+    if (namespaced) {
         jsx_namespaced_name_compile_test_info(name->inner_span, ctx);
         return;
     }
     Checker* checker = current_checker;
-    JsxIntrinsic intrinsic = ty_jsx_intrinsic(checker, element);
+    JsxIntrinsic intrinsic = closing ? ty_jsx_intrinsic_named(checker, element, span_sv(name->inner_span)) :
+        ty_jsx_intrinsic(checker, element);
     if (intrinsic.prop) {
         PropSymbolInfo info = {0};
         collect_prop_symbol(checker, intrinsic.elements, intrinsic.prop->name, &info, 0);

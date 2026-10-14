@@ -1,0 +1,40 @@
+//// [test/cases/ttttJsxClosingTagOwnName.tsx] ////
+
+=== ttttJsxClosingTagOwnName.tsx ===
+// A closing tag is checked by its own name (an intrinsic one looked up in JSX.IntrinsicElements), `</` is one token in a JSX file
+declare namespace JSX {
+    interface IntrinsicElements { div: {}; span: {} }
+>div : {}
+>span : {}
+}
+declare const a: { b: any };
+>a : { b: any; }
+>b : any
+
+const e1 = <a.b></div>;
+>e1 : any
+><a.b></div> : any
+>a.b : any
+>a : { b: any; }
+>b : any
+>div : any
+
+const e2 = <div></nope>;
+>e2 : any
+><div></nope> : any
+>div : any
+>nope : any
+
+const e3 = <span></a.b>;
+>e3 : any
+><span></a.b> : any
+>span : any
+>a.b : any
+>a : { b: any; }
+>b : any
+
+const e4 = x </y;
+>e4 : any
+>x : any
+>y : any
+

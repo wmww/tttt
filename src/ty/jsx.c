@@ -246,16 +246,29 @@ JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
 }
 
 // The errors of looking an intrinsic tag up, at the opening or closing tag (tsc checks both)
-static void report_intrinsic_lookup(Checker* me, JsxElement const* element, JsxIntrinsic const* intrinsic, Span at, ErrorCtx* errs) {
+static void report_intrinsic_lookup(Checker* me, csview name, JsxIntrinsic const* intrinsic, Span at, ErrorCtx* errs) {
     if (!intrinsic->elements) {
         if (compiler_options()->no_implicit_any) {
             error_ctx_error_d(errs, at, 7026, "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.");
         }
     } else if (!intrinsic->props) {
-        error_ctx_error_d(errs, at, 2339, "Property '", span_sv(element->tag_name.inner_span),
-            "' does not exist on type 'JSX.IntrinsicElements'.");
+        error_ctx_error_d(errs, at, 2339, "Property '", name, "' does not exist on type 'JSX.IntrinsicElements'.");
     }
     (void)me;
+}
+
+// The closing tag of an intrinsic name, looked up by that name (tsc's checkJsxElementDeferred: getIntrinsicTagSymbol
+// of the closing element, whatever the opening tag is)
+static void check_closing_tag(Checker* me, JsxElement const* element, ErrorCtx* errs) {
+    if (element->self_closing || !span_valid(element->closing_span) || !element->closing_name.inner_span.size ||
+        element->closing_name.tag == EXPR_IMPLICIT_ANY || !jsx_closing_is_intrinsic(element)
+    ) {
+        return;
+    }
+    csview name = span_sv(element->closing_name.inner_span);
+    JsxIntrinsic intrinsic = element->closing_name.tag == EXPR_IDENTIFIER ? ty_jsx_intrinsic_named(me, element, name) :
+        (JsxIntrinsic){ .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
+    report_intrinsic_lookup(me, name, &intrinsic, element->closing_span, errs);
 }
 
 // What createJsxAttributesTypeFromAttributesProperty and checkJsxExpression report, whatever the tag resolves to
@@ -426,6 +439,7 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
         return;
     }
     if (!element->tag_name.inner_span.size) return;
+    check_closing_tag(me, element, errs);
     if (!jsx_element_is_intrinsic(element)) {
         check_value_tag(me, element, errs);
         return;
@@ -440,10 +454,7 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
         error_ctx_error_d(errs, span, 2558, "Expected 0 type arguments, but got ", vec_spanned_type_size(&element->type_args), ".");
     }
     JsxIntrinsic intrinsic = ty_jsx_intrinsic(me, element);
-    report_intrinsic_lookup(me, element, &intrinsic, element->opening_span, errs);
-    if (!element->self_closing && span_valid(element->closing_span)) {
-        report_intrinsic_lookup(me, element, &intrinsic, element->closing_span, errs);
-    }
+    report_intrinsic_lookup(me, span_sv(element->tag_name.inner_span), &intrinsic, element->opening_span, errs);
     if (!intrinsic.props) return;
     Ty const* context = intrinsic.props;
     Ty const* intrinsic_attributes = ty_jsx_type(me, element, c_sv("IntrinsicAttributes"));

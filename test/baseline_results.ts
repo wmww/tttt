@@ -185,6 +185,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxClosingTagOwnName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxDuplicateAttributeTypes': {
         errors: true,
         symbols: true,
@@ -53761,9 +53766,9 @@ const baselines = {
         types: true,
     },
     'jsxInvalidEsprimaTestSuite': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxParsingError1': {
         errors: true,
