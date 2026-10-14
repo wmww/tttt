@@ -5673,6 +5673,17 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             target = vec_interface_member_back_mut(&members);
                         }
                         InterfaceAccessor* sides = interface_member_accessor(target);
+                        if (is_getter && item.method.func.has_body && !sides->getter_body) {
+                            // (Kept, TS1183: tsc binds and checks the body, and infers the getter's type from it)
+                            FunctionImpl* body = c_new(FunctionImpl, item.method.func);
+                            bool explicit_ret = body->ret_explicit;
+                            body->ret_explicit = false;
+                            sides->getter_body = c_new(Expr, expr_function(body->full_span, body));
+                            sides->getter_body_infers = !explicit_ret;
+                            item.method.func = (FunctionImpl){0};
+                            item.method.func.ret_explicit = explicit_ret;
+                            item.method.func.has_body = true;
+                        }
                         if (is_getter) {
                             if (!span_valid(sides->getter_name)) sides->getter_name = item.method.name_span;
                             sides->annotated |= item.method.func.ret_explicit || item.method.func.has_body;

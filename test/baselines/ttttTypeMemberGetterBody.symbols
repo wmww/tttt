@@ -1,0 +1,45 @@
+//// [test/cases/ttttTypeMemberGetterBody.ts] ////
+
+=== ttttTypeMemberGetterBody.ts ===
+// A getter with a body in a type (TS1183) is bound, walked and checked, and its unannotated type is what it returns
+type A = { get foo() { return 0 } };
+>A : Symbol(A, Decl(ttttTypeMemberGetterBody.ts, 0, 0))
+>foo : Symbol(foo, Decl(ttttTypeMemberGetterBody.ts, 1, 10))
+
+declare const a: A;
+>a : Symbol(a, Decl(ttttTypeMemberGetterBody.ts, 2, 13))
+>A : Symbol(A, Decl(ttttTypeMemberGetterBody.ts, 0, 0))
+
+const n: string = a.foo;
+>n : Symbol(n, Decl(ttttTypeMemberGetterBody.ts, 3, 5))
+>a.foo : Symbol(foo, Decl(ttttTypeMemberGetterBody.ts, 1, 10))
+>a : Symbol(a, Decl(ttttTypeMemberGetterBody.ts, 2, 13))
+>foo : Symbol(foo, Decl(ttttTypeMemberGetterBody.ts, 1, 10))
+
+interface X { get foo() { return "s" }; set foo(v) { } }
+>X : Symbol(X, Decl(ttttTypeMemberGetterBody.ts, 3, 24))
+>foo : Symbol(X.foo, Decl(ttttTypeMemberGetterBody.ts, 4, 13), Decl(ttttTypeMemberGetterBody.ts, 4, 39))
+>foo : Symbol(X.foo, Decl(ttttTypeMemberGetterBody.ts, 4, 13), Decl(ttttTypeMemberGetterBody.ts, 4, 39))
+>v : Symbol(v, Decl(ttttTypeMemberGetterBody.ts, 4, 48))
+
+declare const x: X;
+>x : Symbol(x, Decl(ttttTypeMemberGetterBody.ts, 5, 13))
+>X : Symbol(X, Decl(ttttTypeMemberGetterBody.ts, 3, 24))
+
+x.foo = 1;
+>x.foo : Symbol(X.foo, Decl(ttttTypeMemberGetterBody.ts, 4, 13), Decl(ttttTypeMemberGetterBody.ts, 4, 39))
+>x : Symbol(x, Decl(ttttTypeMemberGetterBody.ts, 5, 13))
+>foo : Symbol(X.foo, Decl(ttttTypeMemberGetterBody.ts, 4, 13), Decl(ttttTypeMemberGetterBody.ts, 4, 39))
+
+type C = { set baz(v: number); get baz() { return 1 } };
+>C : Symbol(C, Decl(ttttTypeMemberGetterBody.ts, 6, 10))
+>baz : Symbol(baz, Decl(ttttTypeMemberGetterBody.ts, 7, 10), Decl(ttttTypeMemberGetterBody.ts, 7, 30))
+>v : Symbol(v, Decl(ttttTypeMemberGetterBody.ts, 7, 19))
+>baz : Symbol(baz, Decl(ttttTypeMemberGetterBody.ts, 7, 10), Decl(ttttTypeMemberGetterBody.ts, 7, 30))
+
+interface D { get q() { const r = this; return r; } }
+>D : Symbol(D, Decl(ttttTypeMemberGetterBody.ts, 7, 56))
+>q : Symbol(D.q, Decl(ttttTypeMemberGetterBody.ts, 8, 13))
+>r : Symbol(r, Decl(ttttTypeMemberGetterBody.ts, 8, 29))
+>r : Symbol(r, Decl(ttttTypeMemberGetterBody.ts, 8, 29))
+

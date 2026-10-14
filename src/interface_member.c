@@ -50,6 +50,10 @@ void interface_member_drop(InterfaceMember* me) {
             expr_drop(my accessor->initializer);
             free(my accessor->initializer);
         }
+        if (my accessor->getter_body) {
+            expr_drop(my accessor->getter_body);
+            free(my accessor->getter_body);
+        }
         free(my accessor);
     }
 }
@@ -118,6 +122,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     if (my has_write_type) type_lookup_names(&my accessor->write_type, names, errs);
     // (Resolved silently: the grammar error said it all)
     if (my accessor && my accessor->initializer) expr_lookup_names(my accessor->initializer, names, nullptr);
+    if (my accessor && my accessor->getter_body) expr_lookup_names(my accessor->getter_body, names, nullptr);
 }
 
 // A method signature (written as one: not a property of a function type)
@@ -179,6 +184,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                     "Private identifiers are not allowed outside class bodies.");
             }
             interface_member_check_implicit_any(me, errs);
+            // (A getter's body, TS1183, is checked all the same: tsc's checkAccessorDeclaration)
+            if (my accessor && my accessor->getter_body) function_impl_typecheck(my accessor->getter_body->function, errs);
             // (tsc's checkVariableLikeDeclaration of a property signature)
             if (!my is_method && !my key.name_is_member_function && span_is_bigint_name(my key.span, my key.name_is_value)) {
                 error_ctx_error_d(errs, my key.span, 1539, "A 'bigint' literal cannot be used as a property name.");

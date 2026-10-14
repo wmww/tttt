@@ -572,6 +572,8 @@ typedef struct PropDeclRare {
     // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
     Symbol const* spread_variable;
     Symbol const* spread_namespace; // The namespace or module whose export spread_variable is (symbols baseline)
+    // A type member getter with a body (TS1183) and no return annotation: its type is the body's return type
+    FunctionImpl const* getter_body;
 } PropDeclRare;
 
 typedef struct PropDecl {

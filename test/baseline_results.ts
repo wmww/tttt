@@ -365,6 +365,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeMemberGetterBody': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeParamHoistedConstraintToUnion': {
         errors: true,
         symbols: true,
@@ -628,7 +633,7 @@ const baselines = {
     'accessorBodyInTypeContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorDeclarationEmitJs': {
         errors: true,

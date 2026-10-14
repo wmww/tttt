@@ -1,0 +1,25 @@
+ttttTypeMemberGetterBody.ts(4,7): error TS2322: Type 'number' is not assignable to type 'string'.
+ttttTypeMemberGetterBody.ts(5,39): error TS1131: Property or signature expected.
+ttttTypeMemberGetterBody.ts(7,1): error TS2322: Type 'number' is not assignable to type 'string'.
+ttttTypeMemberGetterBody.ts(9,35): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+
+
+==== ttttTypeMemberGetterBody.ts (4 errors) ====
+    // A getter with a body in a type (TS1183) is bound, walked and checked, and its unannotated type is what it returns
+    type A = { get foo() { return 0 } };
+    declare const a: A;
+    const n: string = a.foo;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    interface X { get foo() { return "s" }; set foo(v) { } }
+                                          ~
+!!! error TS1131: Property or signature expected.
+    declare const x: X;
+    x.foo = 1;
+    ~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    type C = { set baz(v: number); get baz() { return 1 } };
+    interface D { get q() { const r = this; return r; } }
+                                      ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+    

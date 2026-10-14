@@ -635,6 +635,9 @@ static void builder_add_interface_member(
                 prop->name = name;
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
                 prop->decl->node = &i->type;
+                if (i->accessor && i->accessor->getter_body && i->accessor->getter_body_infers) {
+                    prop_decl_rare_mut(me, prop->decl)->getter_body = i->accessor->getter_body->function;
+                }
                 if (i->has_write_type) {
                     prop_decl_rare_mut(me, prop->decl)->write_node = &i->accessor->write_type;
                     prop_decl_rare_mut(me, prop->decl)->setter_param = i->accessor->setter_param;
@@ -4413,6 +4416,9 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         type = ty_function_type(me, prop->decl->function);
     } else if (prop->decl->lazy) {
         type = lazy_type_get((LazyType*)prop->decl->lazy);
+    } else if (prop_decl_rare(prop->decl)->getter_body) {
+        // (tsc's getTypeOfAccessors: the getter's inferred return type, from its body)
+        type = ty_object_literal_accessor_type(me, prop_decl_rare(prop->decl)->getter_body, true);
     } else if (prop_decl_rare(prop->decl)->template_of) {
         type = ty_mapped_template(me, prop_decl_rare(prop->decl)->template_of);
     } else if (prop_decl_rare(prop->decl)->reverse_of) {

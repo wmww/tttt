@@ -760,6 +760,7 @@ static void index_initializers_compile_test_info(InterfaceIndexKey const* key, c
     }
 }
 
+void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx);
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: {
@@ -838,6 +839,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // (Optional if any declaration is: the symbol's flags)
             Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
                 optional_member_type(ty_of_node(&my type), my optional);
+            // (A getter with a body and no annotation, TS1183: what it returns, tsc's getTypeOfAccessors)
+            if (!merged && my accessor && my accessor->getter_body && my accessor->getter_body_infers) {
+                type = optional_member_type(ty_object_literal_accessor_type(current_checker, my accessor->getter_body->function, true), my optional);
+            }
             // (Optional as its first declaration is: tsc's addOptionality of the symbol's valueDeclaration)
             if (redeclared) type = optional_member_type(prop_type(current_checker, redeclared), redeclared->flags & PROP_OPTIONAL);
             // A property declared after an accessor of its name is that accessor's symbol (after a method it conflicts:
@@ -860,7 +865,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             Span second_name = interface_member_second_name(me), setter_param = interface_member_setter_param(me);
             bool pair = span_valid(second_name);
             bool setter_first = pair && span_valid(setter_param) && setter_param.buf < second_name.buf;
+            // (A getter's body, TS1183: what's in it, after the getter's type)
+            FunctionImpl* getter_body = my accessor && my accessor->getter_body ? my accessor->getter_body->function : nullptr;
             if (pair && !setter_first) type_compile_test_info(&my type, ctx);
+            if (pair && !setter_first && getter_body) function_impl_compile_test_info(getter_body, ctx);
             if (span_valid(setter_param) && setter_first) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
                 baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
@@ -887,6 +895,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             if (pair) {
                 if (setter_first) type_compile_test_info(&my type, ctx);
+                if (setter_first && getter_body) function_impl_compile_test_info(getter_body, ctx);
                 return;
             }
         }   break;
@@ -967,6 +976,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
     type_compile_test_info(&my type, ctx);
     if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
     if (my accessor && my accessor->initializer) expr_compile_test_info(my accessor->initializer, ctx);
+    // (A getter's body, TS1183: what's in it, not the function)
+    if (my accessor && my accessor->getter_body) function_impl_compile_test_info(my accessor->getter_body->function, ctx);
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {

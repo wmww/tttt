@@ -1,0 +1,47 @@
+//// [test/cases/ttttTypeMemberGetterBody.ts] ////
+
+=== ttttTypeMemberGetterBody.ts ===
+// A getter with a body in a type (TS1183) is bound, walked and checked, and its unannotated type is what it returns
+type A = { get foo() { return 0 } };
+>A : A
+>foo : number
+>0 : 0
+
+declare const a: A;
+>a : A
+
+const n: string = a.foo;
+>n : string
+>a.foo : number
+>a : A
+>foo : number
+
+interface X { get foo() { return "s" }; set foo(v) { } }
+>foo : string
+>"s" : "s"
+>foo : string
+>v : string
+
+declare const x: X;
+>x : X
+
+x.foo = 1;
+>x.foo = 1 : 1
+>x.foo : string
+>x : X
+>foo : string
+>1 : 1
+
+type C = { set baz(v: number); get baz() { return 1 } };
+>C : C
+>baz : number
+>v : number
+>baz : number
+>1 : 1
+
+interface D { get q() { const r = this; return r; } }
+>q : any
+>r : any
+>this : any
+>r : any
+

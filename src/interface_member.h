@@ -57,6 +57,10 @@ typedef struct InterfaceAccessor {
     // Not an accessor's: `a: T = v` (TS1246/TS1247), an initializer tsc's parser keeps and its types baseline shows.
     // Owned, null if none (the rare parts of a member live here)
     struct Expr* initializer;
+    // A getter with a body (TS1183): the body as a function expression (EXPR_FUNCTION, owned, null if none), which tsc
+    // binds and walks like any, and whose return type is the getter's type when it has no annotation
+    struct Expr* getter_body;
+    bool getter_body_infers; // The getter has no return annotation: its type is getter_body's return type
 } InterfaceAccessor;
 
 // PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these
