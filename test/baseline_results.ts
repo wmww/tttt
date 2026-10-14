@@ -55,6 +55,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExpandoFunctionTypeNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -206,6 +211,11 @@ const baselines = {
         types: true,
     },
     'ttttRestUnionGenericCallArg': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSignatureMessageTruncation': {
         errors: true,
         symbols: true,
         types: true,

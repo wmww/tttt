@@ -2145,10 +2145,11 @@ static void append_binding_pattern(cstr* out, Binding const* binding);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 
 // (A message's signature counts tsc's approximateLength like a type, one count per signatureToString, so what comes
-// after 160 is elided: `Promise<...>`. No overall cut, unlike typeToString)
+// after 160 is elided: `Promise<...>`. No overall cut, unlike typeToString, and noErrorTruncation doesn't reach it:
+// tsgo's signatureToString never sets NoTruncation)
 static void display_signature_top(Checker* me, TyDisplay d, Signature const* sig, char const* separator) {
     u32 approximate_length = 0;
-    if (!d.depth && !d.approx && truncating(d)) {
+    if (!d.depth && !d.approx && (!d.enclosing || d.reuse_nodes) && !d.types_baseline && !d.tracker) {
         d.cut_off = true;
         d.approx = &approximate_length;
     }
