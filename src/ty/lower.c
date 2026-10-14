@@ -3970,13 +3970,17 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 
         case TYPE_INDEXED: {
             Ty const* index = ty_from_node(me, &node->indexed->index, ctx);
-            Ty const* ret = ty_indexed_written(me, ty_from_node(me, &node->indexed->interface, ctx), index);
+            Ty const* object = ty_from_node(me, &node->indexed->interface, ctx);
+            Ty const* ret = ty_indexed_written(me, object, index);
             // `T["a"]` written as a type reads an optional property's missing as a real undefined (tsc's
             // getPropertyTypeForIndexType with an IndexedAccessTypeNode)
             if (ty_contains_missing(me, ret)) ret = ty_union(me, (Ty const*[]){ ret, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
             // With a union index the result is the union of what each member accesses, made under the alias's name
             // (tsc's getIndexedAccessType passes the alias symbol to getUnionType)
-            bool renames = ret->kind == TY_INDEXED || (ret->kind == TY_UNION && index->kind == TY_UNION);
+            // (An indexed access this one made, not one it read out of a property: `{ a: X[K] }["a"]` is X[K] as it is,
+            // tsc's getIndexedAccessType only names the IndexedAccessType it creates for a generic object or index)
+            bool renames = (ret->kind == TY_INDEXED && ret->indexed.object == object && ret->indexed.index == index) ||
+                (ret->kind == TY_UNION && index->kind == TY_UNION);
             // (boolean too, which ty_realias() leaves alone for `type B = boolean`)
             if (alias && ret->kind == TY_UNION && index->kind == TY_UNION && (ret->flags & TYF_BOOLEAN) && ret->alias != alias) {
                 return ty_union(me, ret->composite.types.data, ret->composite.types.len, alias, alias_args);
