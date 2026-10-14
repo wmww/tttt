@@ -65,6 +65,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDistributedBooleanAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDistributiveConstraintImmediateContextual': {
         errors: true,
         symbols: true,
@@ -64046,9 +64051,9 @@ const baselines = {
         types: true,
     },
     'conditionalTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypes2': {
         errors: true,
