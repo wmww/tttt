@@ -1,0 +1,76 @@
+//// [test/cases/ttttTypeParamHoistedConstraintToUnion.ts] ////
+
+=== ttttTypeParamHoistedConstraintToUnion.ts ===
+// A type parameter against a union also relates as its constraint hoisted into an intersection with it (tsc's
+// structuredTypeRelatedTo, getEffectiveConstraintOfIntersection): `Value extends A | L1 | L2` to `(A & Value) | (L1 & Value) |
+// (L2 & Value)`, where L1 and L2 share a discriminant (svelte's builders.js prop(), ESTree's literals)
+interface A { type: "A"; a: 1 } interface L1 { type: "L"; value: string } interface L2 { type: "L"; value: bigint; bigint: string }
+>A : Symbol(A, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 0, 0))
+>type : Symbol(A.type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 13))
+>a : Symbol(A.a, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 24))
+>L1 : Symbol(L1, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 31))
+>type : Symbol(L1.type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 46))
+>value : Symbol(L1.value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 57))
+>L2 : Symbol(L2, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 73))
+>type : Symbol(L2.type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 88))
+>value : Symbol(L2.value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 99))
+>bigint : Symbol(L2.bigint, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 114))
+
+interface P1 { type: "P" }
+>P1 : Symbol(P1, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 131))
+>type : Symbol(P1.type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 4, 14))
+
+type Expression = A | L1 | L2;
+>Expression : Symbol(Expression, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 4, 26))
+>A : Symbol(A, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 0, 0))
+>L1 : Symbol(L1, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 31))
+>L2 : Symbol(L2, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 73))
+
+interface Property { type: "Property"; value: Expression | P1; key: string }
+>Property : Symbol(Property, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 5, 30))
+>type : Symbol(Property.type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 6, 20))
+>value : Symbol(Property.value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 6, 38))
+>Expression : Symbol(Expression, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 4, 26))
+>P1 : Symbol(P1, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 3, 131))
+>key : Symbol(Property.key, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 6, 62))
+
+function prop<Value extends Expression>(key: string, value: Value): Property & { value: Value } {
+>prop : Symbol(prop, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 6, 76))
+>Value : Symbol(Value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 14))
+>Expression : Symbol(Expression, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 4, 26))
+>key : Symbol(key, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 40))
+>value : Symbol(value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 52))
+>Value : Symbol(Value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 14))
+>Property : Symbol(Property, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 5, 30))
+>value : Symbol(value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 80))
+>Value : Symbol(Value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 7, 14))
+
+    return { type: "Property", key, value };
+>type : Symbol(type, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 8, 12))
+>key : Symbol(key, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 8, 30))
+>value : Symbol(value, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 8, 35))
+}
+
+interface Shape { name: string; width: number; }
+>Shape : Symbol(Shape, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 9, 1))
+>name : Symbol(Shape.name, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 11, 17))
+>width : Symbol(Shape.width, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 11, 31))
+
+declare function f<K extends keyof Shape>(k: K): void;
+>f : Symbol(f, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 11, 48))
+>K : Symbol(K, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 12, 19))
+>Shape : Symbol(Shape, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 9, 1))
+>k : Symbol(k, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 12, 42))
+>K : Symbol(K, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 12, 19))
+
+function g<T extends string | number>(t: T) { f(t); let k: keyof Shape = t; }
+>g : Symbol(g, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 12, 54))
+>T : Symbol(T, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 11))
+>t : Symbol(t, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 38))
+>T : Symbol(T, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 11))
+>f : Symbol(f, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 11, 48))
+>t : Symbol(t, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 38))
+>k : Symbol(k, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 55))
+>Shape : Symbol(Shape, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 9, 1))
+>t : Symbol(t, Decl(ttttTypeParamHoistedConstraintToUnion.ts, 13, 38))
+

@@ -1,0 +1,57 @@
+//// [test/cases/ttttTypeParamHoistedConstraintToUnion.ts] ////
+
+=== ttttTypeParamHoistedConstraintToUnion.ts ===
+// A type parameter against a union also relates as its constraint hoisted into an intersection with it (tsc's
+// structuredTypeRelatedTo, getEffectiveConstraintOfIntersection): `Value extends A | L1 | L2` to `(A & Value) | (L1 & Value) |
+// (L2 & Value)`, where L1 and L2 share a discriminant (svelte's builders.js prop(), ESTree's literals)
+interface A { type: "A"; a: 1 } interface L1 { type: "L"; value: string } interface L2 { type: "L"; value: bigint; bigint: string }
+>type : "A"
+>a : 1
+>type : "L"
+>value : string
+>type : "L"
+>value : bigint
+>bigint : string
+
+interface P1 { type: "P" }
+>type : "P"
+
+type Expression = A | L1 | L2;
+>Expression : Expression
+
+interface Property { type: "Property"; value: Expression | P1; key: string }
+>type : "Property"
+>value : P1 | Expression
+>key : string
+
+function prop<Value extends Expression>(key: string, value: Value): Property & { value: Value } {
+>prop : <Value extends Expression>(key: string, value: Value) => Property & { value: Value; }
+>key : string
+>value : Value
+>value : Value
+
+    return { type: "Property", key, value };
+>{ type: "Property", key, value } : { type: "Property"; key: string; value: Value; }
+>type : "Property"
+>"Property" : "Property"
+>key : string
+>value : Value
+}
+
+interface Shape { name: string; width: number; }
+>name : string
+>width : number
+
+declare function f<K extends keyof Shape>(k: K): void;
+>f : <K extends keyof Shape>(k: K) => void
+>k : K
+
+function g<T extends string | number>(t: T) { f(t); let k: keyof Shape = t; }
+>g : <T extends string | number>(t: T) => void
+>t : T
+>f(t) : void
+>f : <K extends keyof Shape>(k: K) => void
+>t : string | number
+>k : keyof Shape
+>t : string | number
+

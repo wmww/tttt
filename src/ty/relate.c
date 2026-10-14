@@ -4671,8 +4671,15 @@ static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
 // against a union target, and the members of disjoint domains or empty object types. Only against a union target or
 // with such a member, else null. `V[K] & {}` (NonNullable) is `V[keyof V] & {}` there, not the `{}` its base constraint
 // may come to
+static Ty const* effective_constraint_of_members(Checker* me, Ty const* source, TyList members, bool target_is_union);
+
 static Ty const* effective_intersection_constraint(Checker* me, Ty const* source, bool target_is_union) {
-    TyList members = source->composite.types;
+    return effective_constraint_of_members(me, source, source->composite.types, target_is_union);
+}
+
+// (A type parameter against a union target is its own list of one: tsc's structuredTypeRelatedTo, `T extends A | B`
+// is `(A & T) | (B & T)` there)
+static Ty const* effective_constraint_of_members(Checker* me, Ty const* source, TyList members, bool target_is_union) {
     TyBuf parts = {0};
     bool disjoint = false;
     u32 disjoint_flags = TYF_NON_PRIMITIVE | TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_BIGINT |
@@ -5899,6 +5906,19 @@ static Ternary structured_related_members(
             // (Against the target as tsc's isRelatedTo normalized it: a deferred reference without its alias, so the
             // lines below print `[unknown, ...unknown[]]` where the head said `AnyTuple`)
             if (report_constraint) target = normalized_reference(me, target);
+            if (target->kind == TY_UNION) {
+                // Against a union, the constraint hoisted into an intersection with the type parameter too, which can
+                // then match its own intersections in the target (tsc's structuredTypeRelatedTo,
+                // getEffectiveConstraintOfIntersection): `V extends A | B` to `(A & V) | (B & V)`
+                Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
+                if (!related && with_this != constraint) related = is_related_to_side(me, st, with_this, target, false, 2);
+                if (related) return related;
+                // (Only a definite answer: tttt relates a generic intersection to a union by its members, so `string & T`
+                // finds this very relation of T in flight, a Maybe tsc's whole-intersection comparison never sees)
+                Ty const* effective = effective_constraint_of_members(me, source, (TyList){ .data = &source, .len = 1 }, true);
+                if (effective && is_related_to_side(me, st, effective, target, false, 2) == TERNARY_TRUE) return TERNARY_TRUE;
+                if (!report_constraint) return TERNARY_FALSE;
+            }
             if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
             Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
             if (related) return related;
