@@ -481,6 +481,10 @@ src` finds the code-side markers; every significant one has an entry here.
   types?) may wrongly relate to index signatures.
 
 ## Type core (`src/ty/`)
+- A type parameter source against a union target takes its hoisted constraint (`constraint & T`, tsc's
+  getEffectiveConstraintOfIntersection in structuredTypeRelatedTo) only when that relation is a definite True
+  (`structured_related_impl()`, TY_TYPE_PARAM): tttt relates a generic intersection to a union by its members, so
+  `string & T` meets the outer T relation in flight as Maybe, which tsc's whole-intersection comparison never does.
 - Function expression types are instantiated by what their resolved signature mentions (`ty_function_type_mentions()`,
   a `mentions_type_variables` collect walk), where tsc keys by the outer type parameters: tttt's contextually typed
   parameters can carry a call's type parameters (plan 51), so the syntactic set isn't safe. Asked before the signature

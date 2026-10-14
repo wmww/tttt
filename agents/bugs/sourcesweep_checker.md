@@ -9,6 +9,7 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 - svelte `deriveds.js:352`, `runtime.js:672` (`unknown` to `T`/`V`), `sources.js:90` (`Value<unknown>` to
   `Source<V>`), `Identifier.js:50` (`name += ...` string to the runes union), `builders.js:376` (`Value` to an
   estree union): JS/JSDoc, not reduced.
+- +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses): contextual typing miss, not reduced.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
@@ -44,6 +45,29 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - Perf: knip/packages/knip/test (3.4 s at the session start), postiz-app (36 s) and tabby (1.5 s) were checking that tsc
   gates (options diagnostics hidden by spurious syntax errors) or load noise; now 0.46 s, 5.4 s and 0.27 s (tsc 0.41,
   25.8, 0.46).
+
+## Source sweep fan-out 2026-10-14 leftovers (agent A, relations list)
+Fixed that round: vencord (TS2589 at the template, intersection any-before-unions, never-reduction against generic
+references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
+dependencies in package ids, landed by agent D). Left:
+- **base-ui test/performance `CheckboxRoot.tsx:320/379` +TS2322**: reproduces in a copy of CheckboxRoot.tsx outside
+  the repo (imports made absolute, a tsconfig extending test/performance's with `paths` for react and @base-ui/*;
+  same file list as tsc). The `props: [ {...onKeyDown(event: BaseUIEvent<React.KeyboardEvent>) {...}}, elementProps,
+  otherGroupProps, ... ]` array of useRenderElement: tsc errors at 320 with any one of the other elements alone, but
+  not with elementProps and otherGroupProps both there; tttt errors in every variant. Suspect the array literal's
+  subtype reduction (tsc's getUnionType(elementTypes, UnionReduction.Subtype): the object literal, otherGroupProps
+  and elementProps (rest objects of the component props, all optional) removing each other with method bivariance)
+  or the contextual type that results. The test/performance project also lists 10 more files than tsc: a second
+  vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
+  the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
+- **arktype** (fn.test.ts:286, this.test.ts:190, type.test.ts:138/140), **redux-toolkit** (module.ts:182/185/205
+  TS2344 and :656, react/module.ts:216: see agent A 2026-10-12 above), **mikro-orm** EntityManager.mongo.test.ts:1268
+  +TS2769 (and -TS5088/-TS2883 declaration diagnostics in mikro-orm/tests), **monkeytype** SearchableAutoSetting.tsx,
+  **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
+  looked at this round.
+- Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
+  origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
+  never_reduced_prop() type-variable member gap of the redux-toolkit entry).
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent B)
 Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union target's leftover, reverse comparable
