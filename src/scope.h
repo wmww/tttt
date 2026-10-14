@@ -181,7 +181,7 @@ typedef struct SymbolDecl {
     uint8_t jsdoc_modifiers; // SYMBOL_DECL_ASSIGNMENT: JsDocModifiers
     // A `var` (or sloppy mode function) hoisted out of the nested statement it is written in: `block` is where it was
     // hoisted to, not the statement list it is in
-    bool hoisted;
+    bool hoisted : 1;
     // Written with `export` / `declare` (a declaration file's export context: tsc's getEffectiveDeclarationFlags)
     bool written_export : 1;
     bool written_declare : 1;

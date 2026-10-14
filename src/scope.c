@@ -478,6 +478,8 @@ SymbolTable* scope_locals_mut(Scope* me) {
 // Over a million on a big program, in the binder arena
 static_assert(sizeof(Scope) == 96, "Scope grew");
 
+static_assert(sizeof(SymbolDecl) == 64, "SymbolDecl grew");
+
 Scope* scope_new(Scope* parent, ScopeKind kind) {
     Scope* ret = arena_new(binder_arena(parent->binder), Scope);
     ret->parent = parent;
