@@ -3802,7 +3802,14 @@ Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty) {
 static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFrame const* stack) {
     Symbol const* awaited = awaited_alias(me);
     if (awaited && ty->alias == awaited) return ty;
-    if (wrap && awaited && awaited_type_needed(me, ty, awaited)) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
+    if (wrap && awaited_type_needed(me, ty, awaited)) {
+        if (awaited) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
+        // (Needed but missing: reported once, without a position, tsc's tryCreateAwaitedType)
+        if (!my awaited_reported) {
+            my awaited_reported = true;
+            error_ctx_global_error_d(my errs, 2318, "Cannot find global type 'Awaited'.");
+        }
+    }
     if (ty->kind == TY_UNION) {
         // `type T = string | Promise<T>` awaits T again (a deferred reference makes it an infinite structure)
         if (awaited_in_progress(stack, ty)) return awaited_cycle(me);

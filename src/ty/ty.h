@@ -1128,6 +1128,7 @@ struct Checker {
     // using` initializer must be (ty_check_using_initializer()), made on first use. Null: not yet
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
+    bool awaited_reported; // TS2318 for a missing Awaited (tsc's getGlobalAwaitedSymbol(/*reportErrors*/ true))
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
     bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
 };
