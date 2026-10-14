@@ -1,0 +1,30 @@
+//// [test/cases/ttttForceTupleObjectLiteral.ts] ////
+
+=== ttttForceTupleObjectLiteral.ts ===
+// forceTuple reaches an object literal's property values (checkObjectLiteral passes the check mode on), and the element's
+// message names the literal as checked again with that type as context: `options: [{...}, {...}]` (gemini-cli)
+interface Q { question: string; options: { label: string }[]; type: 'a' | 'b' }
+>question : string
+>options : { label: string; }[]
+>label : string
+>type : "a" | "b"
+
+const qs: Q[] = [
+>qs : Q[]
+>[  { question: 'x', options: [{ label: 'a' }, { label: 'b' }] },] : { question: string; options: { label: string; }[]; }[]
+
+  { question: 'x', options: [{ label: 'a' }, { label: 'b' }] },
+>{ question: 'x', options: [{ label: 'a' }, { label: 'b' }] } : { question: string; options: { label: string; }[]; }
+>question : string
+>'x' : "x"
+>options : { label: string; }[]
+>[{ label: 'a' }, { label: 'b' }] : { label: string; }[]
+>{ label: 'a' } : { label: string; }
+>label : string
+>'a' : "a"
+>{ label: 'b' } : { label: string; }
+>label : string
+>'b' : "b"
+
+];
+

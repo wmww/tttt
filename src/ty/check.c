@@ -265,7 +265,11 @@ static bool elaborate_element(
     if (ty_is_related(me, source_prop, target_prop, TY_RELATION_ASSIGNABLE)) return false;
     if (item->inner && elaborate_error(me, HEAD_TYPE, item->inner, source_prop, target_prop, errs)) return true;
     // The expression's own type, if it's the one that doesn't fit
-    Ty const* specific = item->inner ? ty_mutable_location_type(me, item->inner, source_prop) : source_prop;
+    // (A literal is checked again with that type as its context, tsc's checkExpressionForMutableLocationWithContext
+    // ualType: what a forceTuple re-read made a tuple stays one, `options: [{...}, {...}]`; that's the type itself)
+    bool literal = item->inner && (item->inner->tag == EXPR_OBJECT || item->inner->tag == EXPR_ARRAY) &&
+        !expr_is_perenthisized(item->inner);
+    Ty const* specific = !item->inner || literal ? source_prop : ty_mutable_location_type(me, item->inner, source_prop);
     if (specific != source_prop && ((specific->flags & TYF_ANY) ||
         ty_is_related(me, specific, target_prop, TY_RELATION_ASSIGNABLE))
     ) {

@@ -4718,8 +4718,59 @@ Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* cont
 // An element or spread operand checked with tsc's forceTuple check mode, which reaches nested array literals and the
 // array literals of a conditional's branches too: `[...(c ? r : [r])]` spreads `R | [r]` (checkConditionalExpression's
 // subtype-reduced union), `[["a", f]]` is `[[string, F]]`
+static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* contextual, u32 depth);
+
+// An object literal checked with forceTuple: checkObjectLiteral passes the check mode on to its properties' values, so
+// their array literals are tuples (gemini-cli's `options: [{...}, {...}]` in a TS2741 elaboration). The literal's type
+// itself when nothing changes
+static Ty const* object_literal_as_tuples(Checker* me, Expr const* expr, Ty const* contextual, u32 depth) {
+    Ty const* ty = ty_expr_type(me, expr);
+    if (ty->kind != TY_ANONYMOUS || !ty->anonymous.object_literal || ty->anonymous.jsx_attributes || depth >= 8) return ty;
+    Members const* members = ty_members(me, ty);
+    ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
+    bool changed = false;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        props[i] = (ObjectLiteralProp){ .reuse = prop };
+        ObjectExprItem const* item = prop->decl->item;
+        if (!item || item->tag != OBJECT_ITEM_PROPERTY || prop->decl->function || !prop->decl->literal_own) continue;
+        Expr const* value = &item->value;
+        if (value->tag != EXPR_ARRAY && value->tag != EXPR_TERNARY && value->tag != EXPR_OBJECT) continue;
+        Ty const* element_context = contextual ? contextual_named_prop_type(me, contextual, prop->name) : nullptr;
+        Ty const* forced = force_tuple_operand(me, value, element_context, depth + 1);
+        if (forced == ty_expr_type(me, value) || forced == prop_type(me, prop)) continue;
+        changed = true;
+        props[i] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags,
+            .type = forced,
+            .name_span = prop->decl->name_span,
+            .decl_spans = prop->decl->decl_spans,
+            .decl_span_count = prop->decl->decl_span_count,
+            .name_is_value = prop->decl->name_is_value,
+            .asserted = prop->decl->asserted,
+            .item = item,
+            .own = true,
+            .name_form = ty_prop_name_form_of(prop),
+            .name_type = prop_decl_rare(prop->decl)->name_type,
+        };
+    }
+    Ty const* ret = ty;
+    if (changed) {
+        IndexInfo index[8] = {0};
+        u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+        for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
+        ObjectLiteralKind kind = (ty_is_fresh_object(ty) ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
+            (ty->anonymous.js_literal ? OBJECT_JS : 0);
+        ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count, kind, nullptr, 0);
+    }
+    free(props);
+    return ret;
+}
+
 static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* contextual, u32 depth) {
     if (expr->tag == EXPR_ARRAY) return ty_array_literal_as_tuple(me, expr, contextual);
+    if (expr->tag == EXPR_OBJECT) return object_literal_as_tuples(me, expr, contextual, depth);
     if (expr->tag == EXPR_TERNARY && depth < 8) {
         Ty const* yes = force_tuple_operand(me, &expr->ternary->yes, contextual, depth + 1);
         Ty const* no = force_tuple_operand(me, &expr->ternary->no, contextual, depth + 1);
@@ -4749,7 +4800,8 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
         }
         Ty const* element_context = contextual_array_element_type(me, contextual, expr, (u32)i_index);
         // (tsc's checkExpressionForMutableLocation(e, checkMode) passes forceTuple on)
-        Ty const* forced = i->tag == EXPR_ARRAY || i->tag == EXPR_TERNARY ? force_tuple_operand(me, i, element_context, 0) : nullptr;
+        Ty const* forced = i->tag == EXPR_ARRAY || i->tag == EXPR_TERNARY || i->tag == EXPR_OBJECT ?
+            force_tuple_operand(me, i, element_context, 0) : nullptr;
         elements[i_index] = forced && forced != ty_expr_type(me, i) ? forced : ty_mutable_location_type(me, i, element_context);
     }
     ret = tuple_of(me, elements, flags, len, false);
