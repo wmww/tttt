@@ -14,6 +14,7 @@
 #include "several_types.h"
 #include "expr.h"
 #include "ty/pseudo.h"
+#include "import_attributes.h"
 
 // tsc's declaration transformer walks what a `.d.ts` would contain: the visible statements (everything in a script,
 // the exported ones and what `export { x }` names in a module), and in them the members that are emitted. Wherever a
@@ -3154,11 +3155,14 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
     }
     // (`namespace A.B {}` is a namespace B exported from A: written as it was)
     NamespaceDecl const* body = decl;
-    while (vec_statement_size(&body->contents.statements) == 1) {
+    while (!decl->is_ambient_module && !decl->is_global && vec_statement_size(&body->contents.statements) == 1) {
         Statement const* only = vec_statement_at(&body->contents.statements, 0);
         if (only->tag != STATEMENT_DECL_NAMESPACE) break;
         NamespaceDecl const* inner = only->decl.namespace;
-        if (!(inner->name.buf > decl->name.buf && inner->name.buf < span_end_ptr(decl->name))) break;
+        char const* after = span_end_ptr(body->name);
+        if (inner->name.buf != after + 1 || *after != '.') break;
+        w_lit(me, ".");
+        w(me, span_sv(inner->name));
         body = inner;
     }
     w_lit(me, " {\n");
@@ -3190,6 +3194,15 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
     my has_scope_marker = outer_marker, my needs_scope_fix = outer_fix, my has_module_indicator = outer_indicator;
     w_indent(me);
     w_lit(me, "}\n");
+}
+
+// ` from "m" with { ... }`: the specifier and attributes as written
+static void w_specifier(Walk* me, PortStatement const* port) {
+    w(me, span_sv(port->target_path_span));
+    if (port->attributes) {
+        w_lit(me, " ");
+        w(me, span_sv(port->attributes->span));
+    }
 }
 
 // An import or export declaration (transformImportDeclaration: an import keeps the names emitted declarations use)
@@ -3238,7 +3251,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         }
         if (specifier.size) {
             w_lit(me, " from ");
-            w(me, specifier);
+            w_specifier(me, port);
         }
         w_lit(me, ";\n");
         return;
@@ -3247,7 +3260,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     if (port->side_effect_only) {
         w_indent(me);
         w_lit(me, "import ");
-        w(me, specifier);
+        w_specifier(me, port);
         w_lit(me, ";\n");
         if (is_file) my has_module_indicator = true;
         return;
@@ -3262,7 +3275,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_lit(me, " = ");
         if (port->is_import_require) {
             w_lit(me, "require(");
-            w(me, specifier);
+            w_specifier(me, port);
             w_lit(me, ")");
             if (is_file) my has_module_indicator = true;
         } else {
@@ -3279,10 +3292,12 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     u32 named = 0;
     for_each (i, vec_port_item, &port->items) named += was_painted(me, i->symbol);
     if (!default_kept && !gather_kept && !named) {
-        if (port->module_ref && port->module_ref->file && import_required_by_augmentation(me, port->module_ref->file)) {
+        if (port->module_ref && port->module_ref->file && port->module_ref->file != my file &&
+            import_required_by_augmentation(me, port->module_ref->file)
+        ) {
             w_indent(me);
             w_lit(me, "import ");
-            w(me, specifier);
+            w_specifier(me, port);
             w_lit(me, ";\n");
             if (is_file) my has_module_indicator = true;
         }
@@ -3315,7 +3330,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_lit(me, " }");
     }
     w_lit(me, " from ");
-    w(me, specifier);
+    w_specifier(me, port);
     w_lit(me, ";\n");
 }
 
@@ -3398,8 +3413,42 @@ static void emit_statements(Walk* me, VecStatement const* statements, Container 
     for_each (i, vec_statement, statements) emit_statement(me, i, container);
 }
 
+// The `/// <reference ... preserve="true" />` directives (tsc's getReferencedFiles, getTypeReferences, getLibReferences:
+// only preserved ones are kept), paths, types, then libs. A path names the referenced file's declaration file
+static void emit_directives(Walk* me) {
+    static char const* const kinds[] = { "path", "types", "lib" };
+    static int const tags[] = { SOURCE_DIRECTIVE_REFERENCE_PATH, SOURCE_DIRECTIVE_REFERENCE_TYPES, SOURCE_DIRECTIVE_REFERENCE_LIB };
+    for (u32 k = 0; k < 3; k++) {
+        for_each (i, vec_statement, &my file->ast.statements) {
+            if (i->tag != STATEMENT_SOURCE_DIRECTIVE) continue;
+            SourceDirectiveStatement const* directive = i->source_directive;
+            if ((int)directive->tag != tags[k] || !directive->preserve) continue;
+            csview path = cstr_sv(&directive->path);
+            while (csview_starts_with(path, "./")) path = csview_slice(path, 2, path.size);
+            w_lit(me, "/// <reference ");
+            w(me, csview_from(kinds[k]));
+            w_lit(me, "=\"");
+            bool declaration = csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts");
+            if (tags[k] == SOURCE_DIRECTIVE_REFERENCE_PATH && !declaration && (csview_ends_with(path, ".ts") || csview_ends_with(path, ".tsx"))) {
+                w(me, csview_slice(path, 0, path.size - (csview_ends_with(path, ".ts") ? 3 : 4)));
+                w_lit(me, ".d.ts");
+            } else if (tags[k] == SOURCE_DIRECTIVE_REFERENCE_PATH && !declaration && (csview_ends_with(path, ".mts") || csview_ends_with(path, ".cts"))) {
+                w(me, csview_slice(path, 0, path.size - 4));
+                w(me, csview_ends_with(path, ".mts") ? c_sv(".d.mts") : c_sv(".d.cts"));
+            } else {
+                w(me, path);
+            }
+            w_lit(me, "\" ");
+            if (directive->resolution_override == IMPORT_RESOLUTION_IMPORT) w_lit(me, "resolution-mode=\"import\" ");
+            if (directive->resolution_override == IMPORT_RESOLUTION_REQUIRE) w_lit(me, "resolution-mode=\"require\" ");
+            w_lit(me, "preserve=\"true\" />\n");
+        }
+    }
+}
+
 // The second walk: the file's `.d.ts`
 static void emit_file(Walk* me, Container top) {
+    emit_directives(me);
     emit_statements(me, &my file->ast.statements, top);
     // (A module whose declarations wouldn't say so, or one with a declaration that isn't exported and nothing that says
     // which are: `export {};`)
