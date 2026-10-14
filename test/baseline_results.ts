@@ -35,6 +35,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExpandoAssignmentsUnion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -75,6 +80,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInterfaceMergeFirstDeclarationUnchecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionOfManyMembersProperty': {
         errors: true,
         symbols: true,
@@ -85,7 +95,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'ttttJsxFactoryImportedAsType': {
+    'ttttJsxFactoryImportedAsType(jsx=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxFactoryImportedAsType(jsx=react)': {
         errors: true,
         symbols: true,
         types: true,
@@ -106,6 +121,11 @@ const baselines = {
         types: true,
     },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNarrowMissingElementAccess': {
         errors: true,
         symbols: true,
         types: true,
@@ -161,6 +181,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionMemberNormalizedTargetName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionRestSignaturesCombined': {
         errors: true,
         symbols: true,
         types: true,
