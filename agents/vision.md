@@ -42,11 +42,14 @@ types components) are the oracle, not the goal; real projects that are clean und
   everywhere but 4 source sweep projects; a fan-out took the suite 13464 -> 13515 and the source sweep 3310 -> 3332
   with 0 lost; scaling probes found and fixed five quadratic paths no corpus showed. Plans 63 (AST memory), 64 (`.d.ts`
   emit, verdict yes) and 66 (the last ~113 tests) were written. hacks.md 771 -> 804 lines, mostly notes, not debt.
-- **The miss is memory.** Plan 63's struct diet got vscode's single-threaded peak 4.40 -> 4.16 GB against a 4.0
-  target, and what's left of it (stage 1b) is ~-90 MB of increments. Bun is at 2.1 GB at defaults on the same
-  project. More diets won't close a 2x gap: the next window spends one *planning* session (plan 67) measuring where
-  the peak is (AST, binder, checker, per-checker duplication) and costing the structural options (32-bit node
-  references in per-file arenas, a shared lib type layer) before any more memory code.
+- **The miss is memory, and most of it is the checker never forgetting.** Plan 63's struct diet got vscode's
+  single-threaded peak 4.40 -> 4.16 GB; plan 67's measurement (2026-10-14) found why diets can't close bun's gap:
+  bun's RSS is flat while it checks (it bounds checker state), tttt's checker grows linearly (~190 KB per checked
+  file, 1.9 GB on vscode). Since plan 62 made the output independent of any checker's history, **recycling checkers
+  at a memory budget** is byte-identical (even a fresh checker per file) and takes vscode 4.26 -> 2.51 GB at K1,
+  4.90 -> 3.03 GB at the defaults, for ~+3% wall (plan 67 stage 1, next window's first session). What's left is the
+  program (AST 1.7 GB, 38% zero words; binder 0.55): plan 67 stage 2 trims it incrementally; a compact AST
+  (~-450 MB, a multi-session rewrite) is costed and deferred until stage 2's numbers are in.
 - **The human asked for 100% of the suite.** Plan 66 is the route: two fan-outs, content mappers (plan 56, 10
   tests, reversing its "not now"), and the emit-order tests that ride on plan 64's writer, because tsgo's harness
   emits before it collects diagnostics. The no-special-casing rule holds: a test that can't pass honestly gets a
@@ -140,7 +143,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
 - **Competition**: bun check (a Rust tsgo port, 2026-10) beats tttt on memory and, on many cores, ties it on wall time
   (it uses every core; tttt did too only from plan 62 stage 3). If tsgo itself gets a similar pass, our margin is single-threaded speed
-  (2-6x) minus what core scaling and memory cost us: plans 62 and 63.
+  (2-6x) minus what core scaling and memory cost us: plans 62 (done) and 67.
 - **Determinism vs scaling**: the output must stay byte-identical at any checker and thread count, so across machines
   (`scripts/kdiff.py`, `scripts/checkerdiff.py`, `scripts/threadcheck.sh`; `scripts/oracles.py` runs kdiff).
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
@@ -175,5 +178,5 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 16. **Now**: the suite to 100% (plan 66: fan-outs, content mappers 56), the checker count following the cores (plan
    62 stages 2-3), planning memory against bun (plan 67), `.d.ts` emit to a working writer (plan 64 stages 1-2).
    Plan 58 (7.1.0 stable re-pin) once it's on npm (after 2026-11-24).
-17. Then: plan 64 stages 3-5, plan 67's execution, parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
+17. Then: plan 67 (checker recycling first, then the program's memory), plan 64 stages 3-5, parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
    cache in the parser.

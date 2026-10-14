@@ -1,0 +1,115 @@
+# Plan 67: memory against bun (checker recycling, then the AST)
+Written 2026-10-14 by todo entry 5 (planning). It takes over plan 63's question ("is the struct diet the path?") and
+plan 62 stage 4 ("what is the duplication across checkers?"). Numbers are this machine's (4 vCPU, GCC 15.2) at
+70ffccdc; K1 = `--checkers 1 --threads 1`, T4 = the defaults; MB are `/usr/bin/time` peaks.
+
+## The measurement (what decided the plan)
+**Bun checks a file in "a clean state"** (its docs: results don't depend on file order), and its RSS shows it: on
+vscode at one thread it is 1.36 GB when loading ends (2.7 s) and stays flat for the whole 17.5 s check; on effect it
+*drops* mid-check (344 -> 264 MB); its type-fest peak is lower at 4 threads (577 MB) than at 1 (1035). Bun bounds the
+checker's memory and keeps only the program. Bun 1.4.3 (`npm pack @oven/bun-linux-x64@1.4.3`, untar, `bun check -p P
+--threads=N`) runs on this machine, so the comparison is like for like now.
+
+**tttt's checker grows linearly** (vscode K1 RSS sampled every 0.1 s: +150-170 MB/s from start to end of the check, no
+levelling off): ~190 KB per checked file that is never read again. vscode K1: 1727 MB after load+parse, 2281 after
+names, **4261** peak (checker arena 1534 MB, 2.4M types, the rest its malloc tables). At T4 the arena sum is 1.82 GB
+(+19% over K1: the duplication across checkers is small next to what each one accumulates).
+
+**Recycling the checker** (prototype: `67_recycling_prototype.diff`, env `TTTT_RECYCLE_MB=B`: at a file boundary,
+once the checker's arena passes B MB, run the unused/declaration pass for the files it checked, drop it, continue
+the share in a fresh `checker_new()`): output **byte-identical on every corpus tried, at every budget, even B=0** (a
+fresh checker per file: tsc 49 recycles, effect 574, webpack 367, drizzle 281; valgrind clean on a small project with
+92). That is plan 62's work paying off: the output depends on no checker's history. A fresh checker's warm-up
+(`ty_init_global_types` and the lib/global types a file pulls in again) is ~16 ms on vscode.
+
+| corpus | K1 | K1 B=128 | T4 | T4 B=128 | T4 B=64 | T4 B=32 | bun-1 | bun-4 |
+|---|---|---|---|---|---|---|---|---|
+| vscode | 13.67 s / 4261 | 13.38 / **2513** | 5.82 / 4900 | 5.98 / **3027** | 6.09 / 2717 | 6.34 / 2535 | 20.3 / 1443 | 7.76 / 1590 |
+| type-fest | 1.41 / 734 | 1.67 / 263 | 0.77 / 854 | 0.82 / 560 | 0.82 / 469 | 0.82 / 393 | 3.72 / 1035 | 2.03 / 577 |
+| effect | 1.48 / 709 | 1.49 / 454 | 0.73 / 804 | 0.73 / 769 | 0.72 / 575 | 0.71 / 457 | 3.13 / 381 | 1.37 / 317 |
+| drizzle | 0.80 / 457 | 0.98 / 290 | 0.50 / 656 | 0.51 / 637 | 0.56 / 468 | 0.70 / 330 | 1.62 / 385 | 1.01 / 340 |
+| webpack | 1.35 / 541 | 1.36 / 478 | 0.71 / 641 | 0.71 / 642 | 0.69 / 597 | 0.70 / 490 | 2.29 / 383 | 1.11 / 362 |
+| zod | 0.68 / 450 | 0.74 / 274 | 0.37 / 533 | 0.37 / 530 | 0.40 / 420 | 0.43 / 287 | 1.40 / 402 | 0.68 / 320 |
+| vue | 0.76 / 338 | 0.76 / 334 | 0.41 / 390 | 0.41 / 390 | - | - | 1.21 / 292 | 0.56 / 228 |
+| tsc | 0.57 / 224 | 0.57 / 225 | 0.31 / 277 | 0.30 / 277 | - | - | 0.83 / 219 | 0.46 / 224 |
+
+Warm-up cost varies by project: drizzle's files each pull in a big shared type graph (K1 B=128 +23%, T4 B=32 +40%),
+type-fest's too at K1 (+18%); vscode, effect, webpack, zod pay ~0-3%. vscode at B=256: K1 2683, T4 3718.
+
+**What's left after recycling is the program**: vscode's floor is ~2.45 GB (K1, many recycles) against 2.28 GB
+resident after names. The malloc heap after names is 1736 MB (`scripts/memtrack.sh --phase resolve_names`), **38%
+all-zero words (657 MB)**; the source text ~170 MB, the `ResolvedModule` table 33 MB; the binder arena ~550 MB
+(`scripts/arenasites.sh`: Symbol 144, Scope 123 for 1.28M scopes, SymbolDecl 60, symbol tables 50, flow nodes ~80).
+Bun's whole vscode run (program included) is 1.44 GB.
+
+### The options, costed
+- **Checker recycling** (stage 1): vscode -1.75 GB at K1, -1.9 GB at T4; type-fest -64% K1; one session. Do it.
+- **A shared frozen lib/global type layer** (plan 62 stage 4's idea): **no**. With recycling the per-checker memory is
+  bounded anyway, the K duplication is +19% of the arena at T4, and a fresh checker's warm-up is milliseconds. It
+  would only buy time back on drizzle-like projects, against type ids, interning and LazyMemo being per checker
+  (hacks.md "LazyMemo holds type ids"). Revisit only if stage 1's budget can't be tuned without a time cost.
+- **Plan 63 stage 1b** (Expr 72 -> 64, Binding element fields, Symbol bit fields, ResolvedModule hints): ~-90 MB on
+  vscode, small sessions each. Stage 2 (folded into this plan).
+- **Binder scopes**: 1.28M scopes for 138 MB of source (one per ~108 bytes); tsgo has locals only on containers and
+  blocks that declare something. An audit of which scopes are kept but never declare anything may be worth ~-100 MB.
+  Stage 2.
+- **Plan 63 stage 2, per-file parse arenas**: a time lever (~11% of parse instructions, the huge-page re-exec), ~-5%
+  RSS at most (malloc's headers). Stays plan 63's, after this plan's stage 2.
+- **A compact AST** (exact-size node variants in per-file arenas, 32-bit references, 8-byte spans): the zero words
+  bound it at ~-650 MB; realistically -400..-500 MB (vscode K1 with recycling ~2.5 -> ~2.0 GB). It is a rewrite of
+  the AST's representation under ~1700 `EXPR_*` sites, ~600 statement-kind sites and every walk: several sessions,
+  and tsgo doesn't do it. **Not now.** Insights decides after stages 1-2 whether bun's remaining gap (program memory,
+  ~1.4x) is worth it; the competitive picture after stage 1 is the table above with tttt at 0.7-1.9x bun's memory.
+
+## Stage 1: checker recycling (one session)
+Productise the prototype (the diff applies to 70ffccdc's program.c; read it, don't apply it blind):
+1. **The segment loop** in `check_share()`: files are checked as now; after a file, if the checker's memory is over
+   the budget and the share has files left, run the unused/declaration pass for the segment's files
+   (`unused_report` reads member marks the checker made while checking them, so it must run in that checker, before
+   the drop), drop the checker, `checker_new()` + `ty_init_global_types()` and go on. Recycling depends only on the
+   checker's own allocations on its own fixed file sequence, so it is deterministic whatever the threads do.
+2. **The budget**: measure arena + the malloc tables (LazyMemo pages, intern tables, relation caches; a
+   `checker_memory()` summing them) rather than the arena alone. Pick the policy from the table above and a perfsweep
+   run: a total checker budget split across the checkers (T4 at 4 x 32-64 MB is where effect/webpack/zod get near
+   bun) with a floor, and something for drizzle-like warm-ups (e.g. recycle only once the checker holds more than a
+   few times what it held after its segment's first file). Expose it as a tttt-own option (`--checker-memory MB`, 0 =
+   never recycle; like `--checkers`, not in tsc's CLI) and record the choice in documentation.md.
+3. **Consumers of a file's checker after the check**: `program_checker_of()` (expect_types.c, the suite harness's
+   types/symbols walk: "expression types are only complete in the checker that walked the file") needs the checker
+   that checked the file, which recycling dropped. Don't recycle when the run needs them (the harness, `--expect-types`;
+   a flag on the Program set by those callers). Plan 64's declaration writer must run inside the segment like
+   `declaration_diagnostics_check()` does (say so in plan 64). `my checker` is replaced by checker 0's last one:
+   check every reader of `Program.checker` and of `checkers[]` after typecheck (`--time` prints per checker: print
+   the sum of the dropped ones' times and the recycle count too).
+4. **Errors and painted state**: each share's ErrorCtx outlives its checkers; audit that nothing in an Error points
+   into checker memory (the prototype's valgrind run says no for one project; run `scripts/test.sh -d`-style valgrind
+   on two or three multi-file corpora-like probes with `--checker-memory 0`), and the `painted_kept` bookkeeping.
+
+### Validation
+- Output: `scripts/checkerdiff.py`-style and kdiff-style comparisons with the budget forced to 0 (a fresh checker per
+  file) against no recycling: every corpus byte-identical, `scripts/kdiff.py`'s source sweep and `--dt` with
+  `--checker-memory 0` instead of K (add the mode; it is a stronger order-independence oracle than K=16 and worth
+  keeping in `scripts/oracles.py`). `scripts/threadcheck.sh`, the suite (0 lost: the harness doesn't recycle).
+- Memory/time: the table above rerun at the chosen default (`scripts/bench.sh`), perfsweep (no project slower than
+  ~5% in check time, peak RSS ratio median against tsgo recorded), `scripts/instrcount.sh` (instructions may move
+  either way: fewer caches but warm-ups). Targets: vscode K1 <= 2.6 GB and T4 <= 3.1 GB at <= +5% wall; no corpus
+  above its current peak; type-fest, effect, zod, drizzle at T4 within 1.5x of bun-4.
+
+## Stage 2: the program's memory (one or two sessions)
+Re-measure first (memtrack after names, arenasites, vscode and webpack): stage 1 makes the program ~90% of vscode's
+peak, so the ranking is by MB of the program now.
+1. **Binder scopes**: count scopes by kind and by whether they ever get locals or children that need them; drop the
+   ones tsgo doesn't have (tsc's container/block-scoped-container rules: `ContainerFlags`), or make them walk-only
+   (popped off the binder arena, hacks.md has the rules). Target ~-100 MB on vscode.
+2. **Plan 63 stage 1b** items by MB per effort (its list; Expr 72 -> 64 is the big one and a session alone).
+3. Write down vscode's breakdown after it (measurements.md "Memory breakdown"), with bun's numbers next to it, so the
+   insights session can decide on the compact AST with data.
+
+### Validation
+Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react
+and nest are the sensitive ones: plan 63 stage 1 cost them 0.6-0.8%), the K1/T4 table rerun.
+
+## Not doing
+- Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer
+  return types from bodies anywhere, in any later checker.
+- The compact AST and the shared lib layer, until insights decides on stage 2's numbers (above).

@@ -9,6 +9,24 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## tttt vs bun on this machine, checker recycling (2026-10-14, plan 67 planning, 70ffccdc)
+Bun 1.4.3 runs here (`npm pack @oven/bun-linux-x64@1.4.3`). Peak MB / wall s, `/usr/bin/time`; B = the prototype's
+recycle budget (`agents/plans/67_recycling_prototype.diff`, not in the tree). The full table (B=32..256, T4) is in
+plans/67_memory_against_bun.md.
+| corpus | tttt K1 | K1 B=128 | tttt T4 | T4 B=128 | bun-1 | bun-4 |
+|---|---|---|---|---|---|---|
+| vscode | 4261 / 13.67 | 2513 / 13.38 | 4900 / 5.82 | 3027 / 5.98 | 1443 / 20.3 | 1590 / 7.76 |
+| type-fest | 734 / 1.41 | 263 / 1.67 | 854 / 0.77 | 560 / 0.82 | 1035 / 3.72 | 577 / 2.03 |
+| effect | 709 / 1.48 | 454 / 1.49 | 804 / 0.73 | 769 / 0.73 | 381 / 3.13 | 317 / 1.37 |
+| drizzle | 457 / 0.80 | 290 / 0.98 | 656 / 0.50 | 637 / 0.51 | 385 / 1.62 | 340 / 1.01 |
+| webpack | 541 / 1.35 | 478 / 1.36 | 641 / 0.71 | 642 / 0.71 | 383 / 2.29 | 362 / 1.11 |
+| zod | 450 / 0.68 | 274 / 0.74 | 533 / 0.37 | 530 / 0.37 | 402 / 1.40 | 320 / 0.68 |
+| vue | 338 / 0.76 | 334 / 0.76 | 390 / 0.41 | 390 / 0.41 | 292 / 1.21 | 228 / 0.56 |
+| tsc | 224 / 0.57 | 225 / 0.57 | 277 / 0.31 | 277 / 0.30 | 219 / 0.83 | 224 / 0.46 |
+vscode K1 phases: 1727 MB resident after load+parse, 2281 after names, checker arena 1534 MB / 2.41M types; T4 arena
+sum 1819 MB. RSS sampled during the check: tttt +150-170 MB/s throughout, bun flat at 1.36 GB from the end of its
+2.7 s load. Malloc heap after names 1736 MB, 38% zero words.
+
 ## Plan 62 stages 2-3 (2026-10-14, todo entry 4): output independent of K, K follows the cores
 kdiff (1 vs 16 checkers): source sweep 4 -> **1** / 3363 (inbox-zero's undefinedProperties order, tsgo's too), DT
 0 / 8595, suite dumps 0 / 39870, every corpus byte-identical (`scripts/checkerdiff.py -k 16`, now exact), threadcheck

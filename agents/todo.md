@@ -24,12 +24,11 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
 4. Done (2026-10-14): plan 62 stages 2 and 3. kdiff K=16 4 -> 1 / 3363 (inbox-zero, tsgo's too), DT 0, corpora and
    suite dumps byte-identical; `--checkers` defaults to one per thread, at most one per 64 KB of checked source. The
    12-core bench is a human item (triage.md); stage 4 (what the duplication is) folds into entry 5.
-5. **Planning: plan 67, memory against bun.** vscode peaks at 4.2 GB single-threaded (bun 2.1 GB at defaults), and plan
-   63's struct diet missed its targets. Measure where the peak is (AST, binder, checker arenas, per-checker
-   duplication: plan 62 stage 4's question) and cost the structural options: 32-bit node references in per-file
-   arenas (plan 63 stage 2 is their prerequisite), a shared frozen lib type layer, freeing the AST's
-   checker-irrelevant parts. Prototype the most promising far enough to measure; the plan may say "stay incremental"
-   (then plan 63 stage 1b/2 are the path) with numbers. Fold plan 63 into it or keep it, as the evidence says.
+5. Done (2026-10-14): plan 67 written. Bun bounds its checker's memory (flat RSS while checking); tttt's checker
+   grows linearly, and **recycling checkers at a memory budget** (prototype, byte-identical output on every corpus
+   even with a fresh checker per file) takes vscode 4.26 -> 2.51 GB at K1, 4.90 -> 3.03 GB at the defaults, ~+3%
+   wall. Plan 62 stage 4 answered (duplication +19%, no shared lib layer); plan 63 folded in (1b = plan 67 stage 2);
+   the compact AST costed (~-450 MB, deferred to insights).
 6. **Plan 64 stage 1 + start of stage 2**: the suite `dts` component, `scripts/dtsdiff.py`, then the writer.
 7. **Plan 64 stage 2**: the writer on declaration_diagnostics.c's walk, TS sources, no comments.
 8. **Plan 64 stage 2 finished + plan 66 stage 3**: the harness emits declarations before collecting diagnostics like
@@ -40,5 +39,6 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): plan 64 stages 3-5 (comments, CLI/`-b`, declarationMap); plan 67's
-first stage (or plan 63 stage 1b/2); plan 58 if not done; plan 65 if not done.
+After the insights entry (for the next window): **plan 67 stage 1 first** (checker recycling: one session, the
+biggest memory win on the table, -40% of vscode's peak), then plan 67 stage 2; plan 64 stages 3-5 (comments,
+CLI/`-b`, declarationMap); plan 58 if not done; plan 65 if not done.

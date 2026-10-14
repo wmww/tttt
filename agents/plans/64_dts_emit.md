@@ -54,7 +54,9 @@ it.** Nothing is built yet.
    the source AST and `Ty`s, the way the types baseline already does. tsc's transformer output depends on the source
    node shape plus a handful of emit flags, and the printer's d.ts layout is regular (4-space indent, `;` after
    members, one declaration per line). The suite tells us where that's wrong.
-2. **One walk, two sinks.** Extend `declaration_diagnostics.c`'s `Walk` with an optional output writer (null under
+2. **One walk, two sinks** (and inside `check_share()`: plan 67 drops checkers mid-share once their memory passes a
+   budget, so the writer, like `declaration_diagnostics_check()`, must run in the checker that checked the file,
+   before it is recycled). Extend `declaration_diagnostics.c`'s `Walk` with an optional output writer (null under
    `--noEmit`: zero cost to today's checking), not a second walker. That walk's visibility, late painting and
    serialization decisions *are* emit's, and two copies would drift. Rename the file/module once it emits
    (`declaration_emit.c`), keeping its diagnostics entry points. Late-painted statements are written in tsc's place

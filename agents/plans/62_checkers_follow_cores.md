@@ -120,7 +120,10 @@ save time there, cap the default (e.g. at 8) rather than at the cores.
 - Validation: every oracle at the new default unchanged; bench (this box) no slower at the default; RSS growth
   recorded in measurements.md.
 
-### Stage 4 (measurement only): what the duplication is
+### Stage 4 (measurement only): what the duplication is — answered 2026-10-14 by plan 67
+Answer: small. vscode's arena sum at T4 is 1.82 GB against 1534 MB at K1 (+19%); what grows is each checker's own
+per-file state (linear in files checked), which plan 67 bounds by recycling checkers. No shared lib layer. The
+original question:
 More checkers multiply the per-checker arena (vscode +45% at K=16 against K=1). Attribute it: of the types K checkers
 make beyond one checker's, how many are lib/global types (every declaration in a default lib or `@types` global) and
 how many come from the program's own modules? If lib/global types are most of it, write a follow-up plan for a shared,

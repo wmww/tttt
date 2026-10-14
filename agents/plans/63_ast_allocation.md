@@ -1,7 +1,8 @@
 # Plan 63: the AST's allocation (struct diet first, then per-file arenas)
 
-**On hold (insights 2026-10-14):** plan 67 (memory against bun, todo entry 5 of the sixteenth window) measures where
-vscode's peak is and decides whether stage 1b and stage 2 below still run, as written or folded into it.
+**Folded into plan 67 (2026-10-14):** stage 1b below is plan 67 stage 2's list (after checker recycling, plan 67
+stage 1); stage 2 (per-file parse arenas) stays here as a *time* lever, after plan 67 stage 2. The compact AST this
+plan ruled out is costed in plan 67 (~-400..-500 MB on vscode, deferred to insights).
 
 Written 2026-10-14 by todo entry 5 (planning). It replaces plan 60 (deleted: its checker-side leftovers are in
 bugs/perf_leads.md "Memory", its corpus table in measurements.md "Memory breakdown"). Numbers are this machine's (4 vCPU,

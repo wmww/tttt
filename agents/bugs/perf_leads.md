@@ -218,7 +218,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (plans/63_ast_allocation.md has the AST and binder; measurements.md "Memory breakdown" the corpus table)
+## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/63_ast_allocation.md has the AST and binder; measurements.md "Memory breakdown" the corpus table)
 - Checker-side levers left by plan 60 stage 1 (2026-10-12, vscode numbers; the plan was deleted when plan 63 took over
   its AST and binder stages):
   - Where the checker's memory was at plan 60's start (e043e9e2; LazyMemo, CallResolution, PropDecl, Members and the
@@ -255,7 +255,8 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - 2026-10-12: tuple targets share their element type parameters (`Checker.tuple_params`) and tuple element props a
   read-only `ty_prop_decl_value_name`: type-fest 2.06 -> 0.80 GB. The rest of the old candidate list (a ~40-byte
   instantiated Prop, the `Signature` split, interned lists keyed by their ids) is plan 60 stage 1.
-- **Duplication across checkers**: files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
+- **Duplication across checkers** (plan 67, 2026-10-14: small, +19% of vscode's arena at T4; each checker's own
+  linear growth is the problem, which recycling bounds; no shared lib layer): files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
   lib/global types between checkers would take the rest.
