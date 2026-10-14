@@ -461,6 +461,36 @@ static Symbol const* export_equals_property_alias(BaselineTestCase* ctx, PropSym
     return nullptr;
 }
 
+// An alias the enclosing CommonJS module exports of this very property, `exports.fn2 = Math.min` (tsgo's
+// getAccessibleSymbolChain finds the alias in the module's exports: `Math.min` is named `fn2` there)
+static Symbol const* commonjs_property_alias(BaselineTestCase* ctx, PropSymbolInfo const* info, csview name) {
+    if (info->member_count != 1 || !span_valid(info->first_declaration) || !ctx->enclosing) return nullptr;
+    SourceFile const* file = ctx->enclosing->file;
+    Symbol const* module = file && file->is_js && file->scope ? file->scope->container : nullptr;
+    // (The export of that name itself is found first, trySymbolTable's direct lookup)
+    if (!module || !module->exports || symbol_table_get(module->exports, name)) return nullptr;
+    Checker* checker = current_checker;
+    Atom const* atom = nullptr;
+    for (u32 i = 0; i < module->exports->count; i++) {
+        Symbol const* alias = module->exports->entries[i].symbol;
+        if (!(alias->flags & SYMBOL_ALIAS) || !alias->alias) continue;
+        csview alias_name = symbol_entry_name(&module->exports->entries[i]);
+        if (csview_equals(alias_name, "export=") || csview_equals(alias_name, "default")) continue;
+        Expr const* entity = alias->alias->entity;
+        if (!entity || entity->tag != EXPR_PROPERTY || entity->property->form != PROPERTY_EXPR_DOT ||
+            !csview_equals_sv(span_sv(property_name(entity->property)), name)
+        ) {
+            continue;
+        }
+        if (!atom) atom = checker_atom(checker, name);
+        Ty const* object = ty_expr_type(checker, &entity->property->expr);
+        Prop const* prop = object ? ty_get_prop(checker, ty_apparent_type(checker, object), atom) : nullptr;
+        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+        if (prop && prop->decl->decl_span_count && span_eq(prop->decl->decl_spans[0], info->first_declaration)) return alias;
+    }
+    return nullptr;
+}
+
 // The name of a property's symbol from here: a namespace's or module's export by its own chain, a member by the chain
 // of its container (tsc's getContainersOfSymbol of a member), else bare
 static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
@@ -486,6 +516,7 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     csview accessed = span_sv(fallback);
     if (accessed.size >= 2 && (accessed.buf[0] == '"' || accessed.buf[0] == '\'')) accessed = csview_slice(accessed, 1, accessed.size - 1);
     Symbol const* import_alias = export_equals_property_alias(ctx, info, accessed);
+    if (!import_alias) import_alias = commonjs_property_alias(ctx, info, accessed);
     if (import_alias) {
         cstr_append_sv(&ret, import_alias->name);
         return ret;
