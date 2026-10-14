@@ -79,6 +79,15 @@ src` finds the code-side markers; every significant one has an entry here.
   type is measured first, which follows the files a checker saw. (vue's vModel.ts:446 used to depend on it; it is
   stable at every `--checkers` since an in-flight measurement answers Unknown like tsgo, not Maybe: 2026-10-12)
 
+- **Lazy name indexes trust their owners' discipline** (2026-10-14 perf session): `MembersBuilder.by_name`
+  (ty/members.c) maps names to positions in `props`, so whatever reorders `props` must call `builder_unindex()`
+  (builder_late_bound_last, builder_sort_stable_from, builder_prototype_last do; the tuple reorder in the tuple members
+  is followed only by builder_finish). A new reordering site that forgets it makes `builder_find_prop()` miss a member
+  in classes/interfaces past 16 members. `LiteralBuilder.slots` (ty/expr.c) relies on `props` only growing through
+  literal_builder_add() and copies going through literal_builder_clone(); `ClassDecl.namesake_*` (class_decl.c) are
+  built once when names are looked up and assume the items never change after. ttttLargeDeclarationDuplicates is the
+  regression test.
+
 ## Parser
 - `unique symbol` placement (TS1335, `parse_type_inner` and `expect_annotation_type`): checked by the parser through
   `unique_allowed_at`, not on the tree like tsc's checkGrammarTypeOperatorNode, and never in JSDoc, where tsc goes to

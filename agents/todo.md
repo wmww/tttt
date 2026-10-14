@@ -43,9 +43,11 @@ plan 61.
 7. Done (2026-10-14): fan-out, 71 picks, 0 lost. Suite 13464 -> 13515, source sweep 3310 -> 3332 (0 lost),
    `$ExpectType` 68637, flagflip 42 / 6 / 3, scenarios 210 / 0 failed. Plan 65 written (the TS5115 bucket, not done).
    Instructions +0.2..0.6% (type-fest +1.2%, accepted): measurements.md.
-8. **Perf session**: perfsweep and bench re-run (wall times only with nothing else running), instruction creep since
-   this file was written bisected if any corpus is up more than 1%, the worst types ratios, `jsdoc_before_ex`
-   (perf_leads.md "Time").
+8. Done (2026-10-14): perf session. Bench within drift (2.5-9.6x tsgo at defaults), perfsweep check median 0.16x,
+   types worst 1.62 (date-fns docs, 35 ms: left); its "RSS above tsgo's" was wait4 inheriting Python's RSS (filtered).
+   `jsdoc_before_ex` fixed (minified lines), and `scripts/scaleprobe.py` (new) found five quadratic paths, fixed
+   (array literals, statements, object literal / interface / class members). webpack -8.6% instructions, tsc/react/
+   vscode -1.6..2%; no creep to bisect (type-fest +1.4% since the window's start is the accepted TS2574).
 9. **Planning: plan 64, scope `.d.ts` emit.** The human left it to us (vision.md). tttt now has tsgo's pseudochecker
    (plan 55) and declaration diagnostics (plan 40): what does tsgo's declaration emitter need beyond them (the
    transformer, the printer, `--emitDeclarationOnly`/`--declarationDir`/maps, `-b` writing outputs)? Size it against

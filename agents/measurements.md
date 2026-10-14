@@ -9,6 +9,45 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Perf session (2026-10-14, todo entry 8)
+`scripts/bench.sh --runs 3` at the session start (0d243c6c, nothing else running; best wall s / peak RSS MB;
+defaults = 4 checkers on every core for both, single = `--singleThreaded`):
+| corpus | tttt | tsgo | tttt single | tsgo single |
+|---|---|---|---|---|
+| TypeScript6 compiler | 0.30 / 270 | 0.97 / 492 | 0.57 / 218 | 1.38 / 409 |
+| type-fest | 0.76 / 832 | 7.28 / 5664 | 1.41 / 716 | 8.22 / 4233 |
+| valibot | 0.23 / 316 | 1.29 / 815 | 0.45 / 257 | 1.92 / 631 |
+| react | 0.11 / 195 | 0.68 / 448 | 0.18 / 144 | 0.65 / 279 |
+| nest | 0.10 / 141 | 0.24 / 233 | 0.17 / 127 | 0.34 / 192 |
+| webpack | 0.72 / 627 | 2.08 / 1164 | 1.35 / 529 | 3.22 / 913 |
+| zod | 0.36 / 519 | 2.02 / 1401 | 0.68 / 440 | 2.66 / 937 |
+| xstate | 0.18 / 263 | 0.73 / 463 | 0.35 / 210 | 1.00 / 353 |
+| drizzle | 0.49 / 641 | 2.59 / 1671 | 0.78 / 444 | 2.71 / 902 |
+| vue | 0.40 / 382 | 1.44 / 837 | 0.75 / 335 | 2.27 / 666 |
+| effect | 0.71 / 784 | 2.60 / 1579 | 1.46 / 691 | 4.19 / 1216 |
+| vscode | 5.85 / 4782 | 14.58 / 7982 | 12.96 / 4160 | 26.50 / 6756 |
+| excalidraw | 0.50 / 464 | 2.90 / 2023 | 0.95 / 366 | 2.78 / 897 |
+| tanstack-router | 0.34 / 385 | 2.01 / 963 | 0.65 / 327 | 2.55 / 668 |
+| TypeScript6 `-b` | 1.12 / - | 2.00 / 576 | - | 2.97 / 513 |
+2.5-9.6x faster than tsgo at defaults (vscode 2.5x, type-fest 9.6x), 2.0-5.8x single-threaded, 0.15-0.6x its RSS;
+within drift of 2026-10-12's (vscode peak 5000 -> 4782 MB at defaults: plan 63 stage 1).
+- perfsweep (quiet machine, `oracles.py`'s): check median **0.16x** tsgo, types median 0.68, worst 1.62 (date-fns/pkgs/docs,
+  34k vs 21k types, 35 ms: not worth chasing), peak RSS median 0.64, worst 0.80. 14 small projects showed tttt's RSS
+  above tsgo's: an artifact (wait4's ru_maxrss carries the forked Python's ~45 MB over exec, both sides); the RSS ratios
+  now leave out projects under 64 MB.
+- Scaling probes (`scripts/scaleprobe.py`, new): five quadratic paths fixed (array literal contexts, statement
+  reachability, object literal / interface / class member checks), e.g. 64k-member object literal 5.5 -> 0.05 s, 64k-member
+  interface 13.7 -> 0.03 s, 32k-member class 7.4 -> 0.03 s, 64k statements 4.0 -> 0.07 s (tsgo 0.1-0.2 s). Full list
+  in perf_leads.md "Time".
+- Instructions (callgrind), session start -> end: tsc 4.766 -> **4.681** (-1.8%), type-fest 19.258 -> 19.254, valibot
+  3.450 -> 3.445, react 1.525 -> **1.494** (-2.0%), nest 1.183 -> 1.174, webpack 10.898 -> **9.964** (-8.6%: JSDoc host
+  lookup on minified lines 3.5%, array literal contexts 3%, the reachability memo the rest), zod 5.065 -> 5.049, xstate
+  2.711 -> 2.712, drizzle 6.019 -> 5.952 (-1.1%), vue 6.601 -> 6.581, effect 10.153 -> 10.151, vscode 90.442 -> **89.035**
+  (-1.6%), excalidraw 7.940 -> 7.830 (-1.4%), tanstack-router 5.420 -> 5.375 G. Against the window's start (Triage
+  2026-10-13) only type-fest is up more than 1% (+1.4%: TS2574's generic variadic check +0.84%, accepted in entry 7).
+- Every oracle unchanged: suite 13516 (+1 own test), corpora, DT sweep 8594, `$ExpectType` 68637, flagflip 42 / 6 / 3,
+  source sweep sample 811 / 822, kdiff 4 / 3363.
+
 ## Source sweep + suite tail fan-out (2026-10-14, todo entry 7)
 4 agents (A source sweep relations + the TS5115 bucket, B source sweep calls/inference/flow, C suite errors tail, D
 suite symbols/types tail + module/declaration sweep projects), then second tasks (B scenarios/clidiff/DT sweep, C
@@ -164,47 +203,6 @@ check 153 s vs tsgo's 1159 s (0.13). Its *wall* column was inflated in the load/
 11 s) right after the oracle run's sweeps; rerun alone, those projects were faster than at stage 1 (nest 0.19 vs 0.28 s,
 renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py`'s other oracles. tsgo's side is cached in
 `test/perfsweep/tsgo.jsonl.gz`, each incremental project measured cold (its own `--tsBuildInfoFile`).
-
-## Bench on tsgo 7.1, and plan 60 stage 2 (2026-10-12, todo entry 5)
-`scripts/bench.sh --runs 3` (best wall s / peak RSS MB), nothing else running. tttt default = 4 checkers on every core
-(4 here), tsgo default = its 4 checkers on every core; single = tttt `--singleThreaded`, tsgo `--singleThreaded`:
-| corpus | tttt | tsgo | tttt single | tsgo single |
-|---|---|---|---|---|
-| TypeScript6 compiler | 0.31 / 276 | 0.98 / 522 | 0.57 / 224 | 1.38 / 405 |
-| type-fest | 0.69 / 818 | 7.34 / 5403 | 1.33 / 704 | 8.11 / 4204 |
-| valibot | 0.23 / 310 | 1.27 / 829 | 0.44 / 260 | 1.88 / 651 |
-| react | 0.11 / 195 | 0.68 / 449 | 0.18 / 146 | 0.64 / 283 |
-| nest | 0.09 / 146 | 0.25 / 232 | 0.17 / 128 | 0.34 / 192 |
-| webpack | 0.71 / 611 | 2.09 / 1163 | 1.31 / 527 | 3.15 / 963 |
-| zod | 0.35 / 516 | 2.01 / 1388 | 0.65 / 426 | 2.64 / 958 |
-| xstate | 0.18 / 265 | 0.68 / 472 | 0.34 / 211 | 0.99 / 338 |
-| drizzle | 0.48 / 636 | 2.74 / 1688 | 0.76 / 448 | 2.73 / 900 |
-| vue | 0.40 / 387 | 1.47 / 826 | 0.73 / 340 | 2.22 / 660 |
-| effect | 0.71 / 790 | 2.57 / 1614 | 1.43 / 699 | 4.14 / 1237 |
-| vscode | 5.87 / 5000 | 15.02 / 7962 | 12.98 / 4381 | 26.37 / 6500 |
-| excalidraw | 0.48 / 470 | 2.91 / 2026 | 0.91 / 374 | 2.69 / 865 |
-| tanstack-router | 0.32 / 378 | 1.97 / 964 | 0.63 / 328 | 2.52 / 681 |
-| TypeScript6 `-b` | 1.09 / 477 | 1.96 / 749 | - | 2.97 / 483 |
-tttt is 2.6-10.6x faster than tsgo at defaults (vscode 2.6x, type-fest 10.6x) and 2.0-6.1x single-threaded, at
-0.4-0.8x its RSS (type-fest 0.15x). The thread cap is gone (`--threads` = cores; vision.md "Thread defaults").
-Plan 60 stage 2 (Span 24 -> 16, Expr 88 -> 72), peak RSS MB `/usr/bin/time` at `--threads 4`, stage 1's end -> now:
-| corpus | K1 | K4 |
-|---|---|---|
-| tsc | 244 -> 226 | 293 -> 275 |
-| type-fest | 711 -> 702 | 823 -> 817 |
-| valibot | 276 -> 268 | 321 -> 311 |
-| webpack | 573 -> 533 | 647 -> 611 |
-| zod | 446 -> 430 | 531 -> 517 |
-| drizzle | 468 -> 452 | 650 -> 637 |
-| vue | 357 -> 337 | 406 -> 387 |
-| effect | 743 -> 702 | 828 -> 789 |
-| excalidraw | 400 -> 379 | 494 -> 470 |
-| vscode | 4839 -> 4387 | 5438 -> 4992 |
-Plan 60 from its start (e043e9e2): vscode K1 5189 -> 4387 (-15%), K4 5966 -> 4992 (-16%). vscode load+parse resident
-2181 -> 1918 MB, checker arena 1660 -> 1524. Instructions (callgrind, flat: -0.1..+0.4% from span_source()'s table
-lookup): tsc 4.680, type-fest 18.595, valibot 3.498, react 1.498, nest 1.159, webpack 10.385, zod 4.949, xstate 2.668,
-drizzle 5.944, vue 6.545, effect 10.051, vscode 90.546, excalidraw 7.930, tanstack-router 5.305 G. Every oracle
-unchanged.
 
 ## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
 Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
@@ -393,24 +391,6 @@ and zod-root 53, sweep 8594 / 8595, `$ExpectType` 68631, flagflip 18 -> 16 / 10 
 react 1.557 (+0.84%: `base_constraint()` of an invalid indexed access is none like tsc's, react-hook-form paths),
 nest 1.150, webpack 10.455, zod 4.996, xstate 3.199, drizzle 8.077, vue 6.752, effect 10.088, vscode 91.291 (+0.09%),
 excalidraw 7.833, tanstack-router 5.889 G.
-
-## Perf session (2026-10-08, twelfth window's todo entry 6)
-**vscode's check phase**: four checkers at `--threads 1` take 10.28 s in total against one checker's 10.06 s (3.28M vs
-2.66M types: the redone work costs ~2%), balance is even (3.7-4.2 s per checker at 4 threads), 2 threads give 1.88x
-and the SMT siblings ~1.3x more: sharing types between checkers isn't a lever (plan 36). Wall 6.1 s before and after
-(load+parse 1.0, resolve 0.7, typecheck 4.2), 6.0 GB peak.
-**Source sweep pathologies** (single-threaded, tsc's time from the oracle): karakeep/packages/api 54.7 -> 0.57 s and
-karakeep/apps/web 55.3 -> 1.7 s (tsc 12 / 34 s; `typeof` in a top-level literal made it generic, the 5M instantiation
-limit hit: spurious TS2589s), remix/demos/bookstore 8.8 -> 0.38 s, headlessui-react 16.1 -> 1.18 s (tsc 11.4; keyof of
-70 unions quadratic), mcp-sdk/packages/server 1.13 -> 0.37 s and 1.16M -> 178k types (tsc 209k; top-level object
-literal types instantiated per mapper), babel-traverse 1.60 -> 1.34 s (union property reads memoized). `scripts/sourcesweep.py`
-2241 -> **2244 / 3359** match, 47 -> 48 repos, tttt 1112 -> 834 s single-threaded in total; median tttt/tsc time 0.075
-over projects tsc takes >= 2 s on. Open: docmost 2.27M types vs tsc's 185k, immutable-js 997k vs 203k
-(bugs/perf_leads.md). Suite 14832 -> 14833, every other oracle flat.
-Instructions (callgrind, vs plan 52 stage 1's): tsc 4.782 -> 4.682 (-2.1%), type-fest 19.756 -> 19.561 (-1.0%), valibot
-4.249 -> 4.155 (-2.2%), react 1.544, nest 1.151, webpack 10.631 -> 10.452 (-1.7%), zod 5.108 -> 4.996 (-2.2%), xstate
-3.206 -> 3.199, drizzle 8.063 -> 8.077 (+0.2%), vue 7.070 -> 6.751 (-4.5%), effect 10.093 -> 10.085, vscode 92.895 ->
-91.206 (-1.8%), excalidraw 7.982 -> 7.827 (-1.9%), tanstack-router 5.895 -> 5.887 G.
 
 ## Source sweep (2026-10-08, plan 52 stage 2 drain, twelfth window's todo entry 8)
 `scripts/sourcesweep.py` (174 repos, 3359 projects compared; tttt now with `--keep-going=options`): **2997 / 3359 match (746

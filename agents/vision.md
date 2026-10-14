@@ -16,10 +16,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Corpora** 0 spurious everywhere; missing: webpack 1, vue 3; effect 3 spurious. **DT sweep** 8594 / 8595,
   **`$ExpectType`** 68631 / 68640, **flagflip** 46 / 8 / 3, **scenarios** 209 / 213, **source sweep** 3307 / 3363
   (129 / 174 repos fully matching).
-- **Perf**: single-threaded tttt is 2.0-6.1x faster than single-threaded tsgo 7.1 on the corpora, 2.6-10.6x at both
-  defaults, at 0.4-0.8x its RSS (measurements.md "Bench on tsgo 7.1"). **At breadth** (`scripts/perfsweep.py`, 1779
-  source sweep projects): check time median 0.16x tsgo's, types 0.66x, worst types ratio 1.56 (was 16.4), no project
-  above tsgo's peak RSS. **Bun's `bun check`** (a Rust port of tsgo 7.0.2): tttt is 1.1-2.7x faster at equal threads,
+- **Perf**: single-threaded tttt is 2.0-5.8x faster than single-threaded tsgo 7.1 on the corpora, 2.5-9.6x at both
+  defaults, at 0.15-0.6x its RSS (measurements.md "Perf session (2026-10-14)"). **At breadth** (`scripts/perfsweep.py`,
+  1786 source sweep projects): check time median 0.16x tsgo's, types 0.68x, worst types ratio 1.62, no project above
+  tsgo's peak RSS. **At scale** (`scripts/scaleprobe.py`): no single declaration, block or expression shape is
+  superlinear in tttt where tsgo is linear (five quadratic paths fixed 2026-10-14). **Bun's `bun check`** (a Rust port of tsgo 7.0.2): tttt is 1.1-2.7x faster at equal threads,
   but bun uses every core and 2-3x less memory (vscode at defaults on 12 cores: bun 3.3 s / 2.1 GB, tttt 4.4 s / 6.0
   GB, tttt at 12 checkers 3.1 s / 7.6 GB). Plan 60 took vscode's peak -16%; the rest is representation.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
