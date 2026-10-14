@@ -67776,9 +67776,9 @@ const baselines = {
         types: true,
     },
     'genericCallWithGenericSignatureArguments3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithNonSymmetricSubtypes': {
         errors: true,
