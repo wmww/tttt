@@ -205,6 +205,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLocalAliasAfterExport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
         errors: true,
         symbols: true,
@@ -66413,7 +66418,7 @@ const baselines = {
     'typeAliasesDoNotMerge': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAliasesForObjectTypes': {
         errors: true,

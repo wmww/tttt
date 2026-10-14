@@ -1,0 +1,20 @@
+//// [test/cases/ttttLocalAliasAfterExport.ts] ////
+
+=== ttttLocalAliasAfterExport.ts ===
+// A local type alias after an exported one of its name merges into the export's local symbol: its type is the export's
+export type A = {}
+>A : import("./ttttLocalAliasAfterExport").A
+
+type A = {}
+>A : import("./ttttLocalAliasAfterExport").A
+
+let x: A;
+>x : import("./ttttLocalAliasAfterExport").A
+
+export interface I {}
+interface I { a: 1 }
+>a : 1
+
+let y: I;
+>y : I
+

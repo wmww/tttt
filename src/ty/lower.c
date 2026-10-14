@@ -226,6 +226,26 @@ static bool is_intrinsic_body(TypeNode const* body) {
     return body->tag == TYPE_IDENTIFIER && body->identifier->intrinsic_keyword;
 }
 
+// A block's local type alias after an exported one of its name (`export type A = {}; type A = {}`, no error): tsc
+// declares the export in the block's locals too (declareModuleMember's local symbol, no meaning of its own), so the
+// local declaration merges into that local symbol, whose first type alias declaration is the export's. That export,
+// else null
+static Symbol const* exported_alias_twin(Symbol const* symbol, SymbolDecl const* decl) {
+    if (!symbol->is_local || decl->kind != SYMBOL_DECL_TYPE_ALIAS || !decl->block) return nullptr;
+    Symbol const* container = decl->block->container;
+    Symbol const* twin = container && container->exports ? symbol_table_get(container->exports, symbol->name) : nullptr;
+    if (!twin || twin == symbol) return nullptr;
+    for (u32 i = 0; i < twin->decl_count; i++) {
+        SymbolDecl const* other = &twin->decls[i];
+        if (other->kind == SYMBOL_DECL_TYPE_ALIAS && (other->flags & SYMBOL_TYPE_ALIAS) && other->block == decl->block &&
+            span_source(other->full) == span_source(decl->full) && span_start_ptr(other->full) < span_start_ptr(decl->full)
+        ) {
+            return twin;
+        }
+    }
+    return nullptr;
+}
+
 // The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what
 // identifiers keep as `target`). Everything about a placeholder is any
 Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
@@ -261,7 +281,12 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         for (u32 i = symbol->decl_count; i--;) {
             if (symbol->decls[i].flags & SYMBOL_TYPE_ALIAS) decl = &symbol->decls[i];
         }
-        if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) {
+        Symbol const* twin = exported_alias_twin(symbol, decl);
+        if (twin) {
+            // tsc's local symbol has the export's declaration first: its type is the export's (the type of that
+            // declaration's node, whose alias symbol is the export)
+            ret = ty_declared_type_of(me, twin);
+        } else if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) {
             TypeDecl const* type_decl = decl->node;
             TyList params = ty_type_params_of(me, &type_decl->generic);
             // (A local alias can mention the type parameters around it too, through `typeof` of a contextually typed

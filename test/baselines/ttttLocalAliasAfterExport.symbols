@@ -1,0 +1,25 @@
+//// [test/cases/ttttLocalAliasAfterExport.ts] ////
+
+=== ttttLocalAliasAfterExport.ts ===
+// A local type alias after an exported one of its name merges into the export's local symbol: its type is the export's
+export type A = {}
+>A : Symbol(A, Decl(ttttLocalAliasAfterExport.ts, 0, 0))
+
+type A = {}
+>A : Symbol(A, Decl(ttttLocalAliasAfterExport.ts, 0, 0), Decl(ttttLocalAliasAfterExport.ts, 1, 18))
+
+let x: A;
+>x : Symbol(x, Decl(ttttLocalAliasAfterExport.ts, 3, 3))
+>A : Symbol(A, Decl(ttttLocalAliasAfterExport.ts, 0, 0), Decl(ttttLocalAliasAfterExport.ts, 1, 18))
+
+export interface I {}
+>I : Symbol(I, Decl(ttttLocalAliasAfterExport.ts, 3, 9))
+
+interface I { a: 1 }
+>I : Symbol(I, Decl(ttttLocalAliasAfterExport.ts, 3, 9), Decl(ttttLocalAliasAfterExport.ts, 4, 21))
+>a : Symbol(I.a, Decl(ttttLocalAliasAfterExport.ts, 5, 13))
+
+let y: I;
+>y : Symbol(y, Decl(ttttLocalAliasAfterExport.ts, 6, 3))
+>I : Symbol(I, Decl(ttttLocalAliasAfterExport.ts, 3, 9), Decl(ttttLocalAliasAfterExport.ts, 4, 21))
+
