@@ -1,0 +1,44 @@
+//// [test/cases/ttttJsxDuplicateAttributeTypes.tsx] ////
+
+=== ttttJsxDuplicateAttributeTypes.tsx ===
+// Attributes of one name are one symbol: each name is typed by the first one (its value declaration)
+declare const React: any
+>React : any
+
+declare namespace JSX {
+    interface IntrinsicElements {
+        [k: string]: any
+>k : string
+    }
+}
+const X: any
+>X : any
+
+const a: any
+>a : any
+
+const e1 = <X a={1} a />;
+>e1 : any
+><X a={1} a /> : any
+>X : any
+>a : number
+>1 : 1
+>a : number
+
+const e2 = <X b b={"s"} />;
+>e2 : any
+><X b b={"s"} /> : any
+>X : any
+>b : true
+>b : true
+>"s" : "s"
+
+const e3 = <X c={1} c={"s"} />;
+>e3 : any
+><X c={1} c={"s"} /> : any
+>X : any
+>c : number
+>1 : 1
+>c : number
+>"s" : "s"
+

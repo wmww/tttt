@@ -160,6 +160,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxDuplicateAttributeTypes': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxFactoryImportedAsType(jsx=preserve)': {
         errors: true,
         symbols: true,
@@ -53743,7 +53748,7 @@ const baselines = {
     'jsxParsingErrorImmediateSpreadInAttributeValue': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxReactTestSuite': {
         errors: true,

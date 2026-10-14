@@ -1,0 +1,41 @@
+//// [test/cases/ttttJsxDuplicateAttributeTypes.tsx] ////
+
+=== ttttJsxDuplicateAttributeTypes.tsx ===
+// Attributes of one name are one symbol: each name is typed by the first one (its value declaration)
+declare const React: any
+>React : Symbol(React, Decl(ttttJsxDuplicateAttributeTypes.tsx, 1, 13))
+
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxDuplicateAttributeTypes.tsx, 1, 24))
+
+    interface IntrinsicElements {
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxDuplicateAttributeTypes.tsx, 2, 23))
+
+        [k: string]: any
+>k : Symbol(k, Decl(ttttJsxDuplicateAttributeTypes.tsx, 4, 9))
+    }
+}
+const X: any
+>X : Symbol(X, Decl(ttttJsxDuplicateAttributeTypes.tsx, 7, 5))
+
+const a: any
+>a : Symbol(a, Decl(ttttJsxDuplicateAttributeTypes.tsx, 8, 5))
+
+const e1 = <X a={1} a />;
+>e1 : Symbol(e1, Decl(ttttJsxDuplicateAttributeTypes.tsx, 9, 5))
+>X : Symbol(X, Decl(ttttJsxDuplicateAttributeTypes.tsx, 7, 5))
+>a : Symbol(a, Decl(ttttJsxDuplicateAttributeTypes.tsx, 9, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 9, 19))
+>a : Symbol(a, Decl(ttttJsxDuplicateAttributeTypes.tsx, 9, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 9, 19))
+
+const e2 = <X b b={"s"} />;
+>e2 : Symbol(e2, Decl(ttttJsxDuplicateAttributeTypes.tsx, 10, 5))
+>X : Symbol(X, Decl(ttttJsxDuplicateAttributeTypes.tsx, 7, 5))
+>b : Symbol(b, Decl(ttttJsxDuplicateAttributeTypes.tsx, 10, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 10, 15))
+>b : Symbol(b, Decl(ttttJsxDuplicateAttributeTypes.tsx, 10, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 10, 15))
+
+const e3 = <X c={1} c={"s"} />;
+>e3 : Symbol(e3, Decl(ttttJsxDuplicateAttributeTypes.tsx, 11, 5))
+>X : Symbol(X, Decl(ttttJsxDuplicateAttributeTypes.tsx, 7, 5))
+>c : Symbol(c, Decl(ttttJsxDuplicateAttributeTypes.tsx, 11, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 11, 19))
+>c : Symbol(c, Decl(ttttJsxDuplicateAttributeTypes.tsx, 11, 13), Decl(ttttJsxDuplicateAttributeTypes.tsx, 11, 19))
+

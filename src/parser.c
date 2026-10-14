@@ -10322,9 +10322,12 @@ static bool parse_jsx_braced_expr(Parser* p, bool allow_spread, bool* spread, Ex
     if (*p->pos != '}') {
         if (!allow_spread && !strncmp(p->pos, "...", 3)) {
             // `x={...a}`: no spread in an attribute value, the `...` is left for the attribute list to skip
+            // (The JSX expression's is tsc's missing identifier)
             parse_error(p, span_make(p->shared->source, p->pos, p->pos + 3), 1109, "Expression expected.");
             parse_error(p, span_from_pos(p), 1005, "'}' expected.");
-            return false;
+            *ret = expr_implicit_any(span_from_pos(p));
+            ret->missing = true;
+            return true;
         }
         if (allow_spread && hop_start(p, "...")) {
             *spread = true;

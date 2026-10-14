@@ -3253,12 +3253,17 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (i->tag != JSX_ATTRIBUTE_SPREAD) {
                     // An attribute declares a property of the attributes object (its members: attributes of one name
                     // are one symbol)
+                    // (whose type is the first one's, the symbol's value declaration: `<X a={1} a />` is number twice)
                     VecSpan declarations = vec_span_init();
+                    JsxAttribute const* first = nullptr;
                     for_each (j, vec_jsx_attribute, &my jsx_attributes) {
-                        if (j->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(span_sv(j->name), span_sv(i->name))) vec_span_push(&declarations, j->span);
+                        if (j->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(span_sv(j->name), span_sv(i->name))) {
+                            vec_span_push(&declarations, j->span);
+                            if (!first) first = j;
+                        }
                     }
                     baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = declarations, .span = i->name });
-                    baseline_test_case_add_type(ctx, i->name, ty_jsx_attribute_type(current_checker, me, i));
+                    baseline_test_case_add_type(ctx, i->name, ty_jsx_attribute_type(current_checker, me, first));
                     jsx_namespaced_name_compile_test_info(i->name, ctx);
                 }
                 // (tsc has no line for a string attribute's value)
