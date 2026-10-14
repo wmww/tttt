@@ -25,6 +25,14 @@ RED="\x1b[1;31m"
 
 HERE="$PWD"
 GOENV="export PATH=\"$HERE/go/bin:\$PATH\" GOPATH=\"$HERE/typescript-gopath\" GOCACHE=\"$HERE/typescript-gopath/cache\" GOTOOLCHAIN=local GOFLAGS= GOWORK="
+
+# Every instrumented tsgo build (an overlay patching internal/checker) adds hundreds of MB to the build cache, and Go
+# only trims entries unused for 5 days: it reached 50 GB and filled the disk (2026-10-14). Cap it at 4 GB.
+if test -d typescript-gopath/cache && test "$(du -sm typescript-gopath/cache | cut -f1)" -gt 4096; then
+    echo "ensure-typescript: Go build cache above 4 GB, cleaning it" >&2
+    (eval "$GOENV" && go clean -cache) >&2
+fi
+
 if test "${1:-}" = --env; then
     echo "$GOENV"
     exit 0
