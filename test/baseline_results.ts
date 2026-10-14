@@ -8843,7 +8843,7 @@ const baselines = {
     'declarationEmitHigherOrderRetainedGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitImportInExportAssignmentModule': {
         errors: true,

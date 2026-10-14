@@ -1167,6 +1167,19 @@ static void append_binding_pattern(cstr* out, Binding const* binding);
 
 // What a type parameter is called where it's printed, see TyParamNames
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n);
+
+// Whether `function` declares the type parameter `param` and a value parameter called `name`
+static bool declares_value_param_named(FunctionImpl const* function, Ty const* param, Atom const* name) {
+    if (!param->param.state->item) return false;
+    bool declared = false;
+    for_each (i, vec_generic_item, &function->generic.items) declared |= i == param->param.state->item;
+    if (!declared) return false;
+    for_each (i, vec_function_arg, &function->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(binding->content_span), atom_sv(name))) return true;
+    }
+    return false;
+}
 static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
     TyParamNames* names = d.param_names;
     if (!names || param->param.state->is_this) return param->param.name;
@@ -1182,8 +1195,11 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
         bool taken = false;
         for (u32 i = 0; i < names->len && !taken; i++) taken = names->given[i].name == name;
         for (u32 i = 0; i < names->value_param_count && !taken; i++) taken = names->value_params[i].name == name;
-        // (tsc's typeParameterShadowsOtherTypeParameterInScope)
-        for (u32 i = names->in_scope.len; i-- && !taken;) {
+        // (tsc's typeParameterShadowsOtherTypeParameterInScope. A type parameter of the signature being named that
+        // has a value parameter of its name is found first, in the signature's fake scope: tsc's binder makes one
+        // symbol of both, which is the type parameter's own. Not a copy of the parameter, see value_params)
+        bool merged = !taken && names->params_of && declares_value_param_named(names->params_of, declared, name);
+        for (u32 i = names->in_scope.len; i-- && !taken && !merged;) {
             Ty const* other = names->in_scope.data[i];
             if (other->param.name != name) continue;
             taken = other != declared;
@@ -2497,7 +2513,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         d.param_names->value_params = copies;
         d.param_names->value_param_count = copy_count;
     }
+    FunctionImpl const* saved_params_of = d.param_names ? d.param_names->params_of : nullptr;
+    if (d.param_names) d.param_names->params_of = root->function;
     display_type_params(me, d, sig->type_params, reusable, instantiated ? sig : nullptr);
+    if (d.param_names) d.param_names->params_of = saved_params_of;
     if (copy_count) {
         d.param_names->value_params = nullptr;
         d.param_names->value_param_count = 0;
