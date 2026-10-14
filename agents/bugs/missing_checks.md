@@ -100,6 +100,15 @@ Each one mutant:
   `bodiless && renaming`). Reporting from lazy type computation (ty_error_at) needs care with several checkers each
   computing it; one test. (2026-10-14 probe: `declare function f({y1: string})` never called, or only named in
   `typeof f`, has no TS7031 in tsgo; called once, it has.)
+- awaitedTypeNoLib (2026-10-12): the narrowing matches (both keep the union); the difference is inference. With
+  `PromiseLike` unresolved (noLib: the nested `T extends PromiseLike<unknown> ? never : T` extends an error type; the
+  same with lib and `T extends any ? never : T`), tsgo infers `R = TResult` for `rp<R>(result: Thenable<R>, resolve:
+  Receiver<R>)` called with `Thenable<NotPromise<T>> | NotPromise<T>` and `Receiver<T>`, tttt `NotPromise<T>` (no
+  TS2345). Not when the argument is `Thenable<NotPromise<T>>` alone. Likely the union source's NotPromise<T> member
+  adds a candidate (its apparent type through the any-extends conditional) or makes the covariant candidate fail
+  isTypeAssignableTo(..., contra candidate). The TS2318 'Awaited' follows from the TS2345 (the missing-await
+  suggestion's getAwaitedTypeOfPromise). Reduce with `type NotPromise<T> = T extends
+  Thenable<unknown> ? T : T extends any ? never : T`.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
   self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
   tttt. Still so.
@@ -178,7 +187,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 ## Relations and type core (more in `type_core.md`)
 - reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
-  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),
+  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`), awaitedTypeNoLib,
   inferFromGenericFunctionReturnTypes3.
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
   }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target

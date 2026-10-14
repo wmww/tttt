@@ -438,10 +438,9 @@ src` finds the code-side markers; every significant one has an entry here.
   hasNonCircularBaseConstraint(source) gate: computing that base constraint inside an alias's resolution lowers branches
   that reach the alias in flight (spurious TS2456 in type-fest's `_ConditionalPickDeep`, sourcesweep: crawlee and 3 more).
   tsc's alias references are lazier. Real fix: deferred alias references, or that gate after the alias is resolved.
-- `resolved_base_constraint()` simplifies indexed accesses before computing (tsc: every type), and conditional types
-  only when `may_simplify_conditional()` says their branches as written could make them `T extends U ? T : never`-shaped
-  (simplifying every conditional instantiates both branches, which resolves what they mention: mikro-orm/seeder 2.3x
-  types). Misses a branch written as another type parameter that the mapper turns into the check type.
+- `resolved_base_constraint()` simplifies only indexed accesses before computing (tsc: every type). A conditional's
+  simplification instantiates both branches, which resolves the conditional types in them: mikro-orm/packages/seeder
+  went 2.3x types (bugs/type_core.md has the order dependence a cheaper prefilter exposed).
 - Base constraints of types without type variables are themselves (`resolved_base_constraint()`) except string mappings,
   template literals and substitution types: tsc also computes unions/intersections containing those
   (`Uppercase<string> | number` is `string | number` to tsc, itself to tttt).
