@@ -483,6 +483,10 @@ typedef struct ScopeRare {
     // symbol of their own that isn't in the exports, which a value name in this block finds (tsc's local symbol of
     // declareModuleMember, an ExportValue whose exportSymbol is the duplicate)
     struct DuplicateExport* duplicate_exports;
+    // A script's declarations that conflict with another file's global (TS2451, TS2300): a symbol of their own, which
+    // tsgo's binder still has in the file's locals (the checker merges them into the globals later), so an expando
+    // assignment `A.d = v` in the file declares into it
+    struct DuplicateExport* script_duplicates;
 } ScopeRare;
 
 typedef struct DuplicateExport {

@@ -1,0 +1,55 @@
+//// [test/cases/ttttScriptConflictExpandoHost.ts] ////
+
+=== a.d.ts ===
+declare class A {}
+>A : A
+
+declare var B: number;
+>B : number
+
+=== b.js ===
+const A = { };
+>A : { d: {}; }
+>{ } : { d: {}; }
+
+A.d = { };
+>A.d = { } : {}
+>A.d : any
+>A : typeof A
+>d : any
+>{ } : {}
+
+function B() {}
+>B : { (): void; e: number; }
+
+B.e = 1;
+>B.e = 1 : 1
+>B.e : any
+>B : number
+>e : any
+>1 : 1
+
+=== c.js ===
+const D = {};
+>D : { h: number; }
+>{} : { h: number; }
+
+D.h = 1;
+>D.h = 1 : 1
+>D.h : number
+>D : { h: number; }
+>h : number
+>1 : 1
+
+=== d.js ===
+const D = {};
+>D : { i: number; }
+>{} : { i: number; }
+
+D.i = 2;
+>D.i = 2 : 2
+>D.i : any
+>D : { h: number; }
+>i : any
+>2 : 2
+

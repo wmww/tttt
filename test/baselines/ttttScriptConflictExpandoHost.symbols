@@ -1,0 +1,38 @@
+//// [test/cases/ttttScriptConflictExpandoHost.ts] ////
+
+=== a.d.ts ===
+declare class A {}
+>A : Symbol(A, Decl(a.d.ts, 0, 0))
+
+declare var B: number;
+>B : Symbol(B, Decl(a.d.ts, 1, 11))
+
+=== b.js ===
+const A = { };
+>A : Symbol(A, Decl(b.js, 0, 5))
+
+A.d = { };
+>A : Symbol(A, Decl(a.d.ts, 0, 0))
+
+function B() {}
+>B : Symbol(B, Decl(b.js, 1, 10))
+
+B.e = 1;
+>B : Symbol(B, Decl(a.d.ts, 1, 11))
+
+=== c.js ===
+const D = {};
+>D : Symbol(D, Decl(c.js, 0, 5))
+
+D.h = 1;
+>D.h : Symbol(h, Decl(c.js, 0, 13))
+>D : Symbol(D, Decl(c.js, 0, 5))
+>h : Symbol(h, Decl(c.js, 0, 13))
+
+=== d.js ===
+const D = {};
+>D : Symbol(D, Decl(d.js, 0, 5))
+
+D.i = 2;
+>D : Symbol(D, Decl(c.js, 0, 5))
+

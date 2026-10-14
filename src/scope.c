@@ -1316,6 +1316,13 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         *duplicate = (DuplicateExport){ symbol, scope_rare(scope)->duplicate_exports };
         scope_rare_mut(scope)->duplicate_exports = duplicate;
     }
+    if (!merged && scope->kind == SCOPE_SCRIPT && table == &scope->binder->globals &&
+        symbol_table_get_own(table, name, symbol_name_hash(name)) != symbol
+    ) {
+        DuplicateExport* duplicate = arena_new(binder_arena(scope->binder), DuplicateExport);
+        *duplicate = (DuplicateExport){ symbol, scope_rare(scope)->script_duplicates };
+        scope_rare_mut(scope)->script_duplicates = duplicate;
+    }
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
@@ -5244,6 +5251,15 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
         if (scope != block && !scope_is_var_container(scope)) continue;
         bool global = scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION;
         Symbol* found = symbol_table_lookup(global ? &my binder->globals : scope_locals(scope), name, hash);
+        // (A global another file declared, which this script's declaration of the name conflicts with: the script's
+        // own, tsgo's binder looks in the file's locals)
+        if (found && scope->kind == SCOPE_SCRIPT && scope_rare(scope)->script_duplicates) {
+            bool here = false;
+            for (u32 i = 0; i < found->decl_count && !here; i++) here = span_source(found->decls[i].full) == my file;
+            for (DuplicateExport const* i = scope_rare(scope)->script_duplicates; i && !here; i = i->next) {
+                if (csview_equals_sv(i->symbol->name, name)) found = i->symbol;
+            }
+        }
         Symbol* container = scope->container;
         if (!found && container && container->exports && !container->is_global_this) {
             found = symbol_table_lookup(container->exports, name, hash);

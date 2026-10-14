@@ -1,0 +1,50 @@
+a.d.ts(1,15): error TS2451: Cannot redeclare block-scoped variable 'A'.
+a.d.ts(2,13): error TS2300: Duplicate identifier 'B'.
+b.js(1,7): error TS2451: Cannot redeclare block-scoped variable 'A'.
+b.js(2,3): error TS2339: Property 'd' does not exist on type 'typeof A'.
+b.js(3,10): error TS2300: Duplicate identifier 'B'.
+b.js(4,3): error TS2339: Property 'e' does not exist on type 'number'.
+c.js(1,7): error TS2451: Cannot redeclare block-scoped variable 'D'.
+d.js(1,7): error TS2451: Cannot redeclare block-scoped variable 'D'.
+d.js(2,3): error TS2339: Property 'i' does not exist on type '{ h: number; }'.
+
+
+==== a.d.ts (2 errors) ====
+    declare class A {}
+                  ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'A'.
+!!! related TS6203 b.js:1:7: 'A' was also declared here.
+    declare var B: number;
+                ~
+!!! error TS2300: Duplicate identifier 'B'.
+!!! related TS6203 b.js:3:10: 'B' was also declared here.
+==== b.js (4 errors) ====
+    const A = { };
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'A'.
+!!! related TS6203 a.d.ts:1:15: 'A' was also declared here.
+    A.d = { };
+      ~
+!!! error TS2339: Property 'd' does not exist on type 'typeof A'.
+    function B() {}
+             ~
+!!! error TS2300: Duplicate identifier 'B'.
+!!! related TS6203 a.d.ts:2:13: 'B' was also declared here.
+    B.e = 1;
+      ~
+!!! error TS2339: Property 'e' does not exist on type 'number'.
+==== c.js (1 errors) ====
+    const D = {};
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'D'.
+!!! related TS6203 d.js:1:7: 'D' was also declared here.
+    D.h = 1;
+==== d.js (2 errors) ====
+    const D = {};
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'D'.
+!!! related TS6203 c.js:1:7: 'D' was also declared here.
+    D.i = 2;
+      ~
+!!! error TS2339: Property 'i' does not exist on type '{ h: number; }'.
+    
