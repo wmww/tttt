@@ -5482,7 +5482,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET && tuple_past_the_end(me, object, key)) {
                 return ty_intrinsic(me, TY_UNDEFINED); // TS2493/TS2514 (tsc's getPropertyTypeForIndexType)
             }
-            if (!ret) return missing_property_type(me, expr, object);
+            if (!ret) {
+                // (Of an element access, the error type is narrowed by control flow like any other: tsc's
+                // checkElementAccessExpression calls getFlowTypeOfAccessExpression with errorType, `isObj(c['k'])`)
+                Ty const* missing = missing_property_type(me, expr, object);
+                if (expr->property->form != PROPERTY_EXPR_BRACKET) return missing;
+                return access_flow_type(me, expr, object, key, missing, ctx.contextual);
+            }
             // (A generic object whose apparent type is never, `never[keyof T]`, has no properties either: TS2339 and the
             // error type, not never, tsc's checkPropertyAccessExpressionOrQualifiedName)
             if (expr->property->form == PROPERTY_EXPR_DOT && (ret->flags & TYF_NEVER) && !(object->flags & TYF_NEVER) &&

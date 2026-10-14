@@ -1,0 +1,85 @@
+//// [test/cases/ttttNarrowMissingElementAccess.ts] ////
+
+=== ttttNarrowMissingElementAccess.ts ===
+// An element access of a property that isn't there (TS7053) is the error type, which control flow narrows like any
+// other reference (tsc's checkElementAccessExpression: getFlowTypeOfAccessExpression with errorType): renovate's
+// `isNonEmptyArray(cfg['pip-compile'].managerFilePatterns)` guards a `.map(p => ...)` whose p is then unknown
+declare function isNonEmptyArray<T = unknown, Item = unknown>(value: T | Item[]): value is [Item, ...Item[]];
+>isNonEmptyArray : <T = unknown, Item = unknown>(value: T | Item[]) => value is [Item, ...Item[]]
+>value : T | Item[]
+
+declare function isNonEmptyObject(value: unknown): value is Record<string, unknown>;
+>isNonEmptyObject : (value: unknown) => value is Record<string, unknown>
+>value : unknown
+
+interface Cfg { a?: string; [k: number]: string }
+>a : string | undefined
+>k : number
+
+declare const c: Cfg;
+>c : Cfg
+
+if (
+  // @ts-expect-error
+  isNonEmptyObject(c['pip-compile']) &&
+>isNonEmptyObject(c['pip-compile']) &&  // @ts-expect-error  isNonEmptyArray(c['pip-compile'].m) : boolean
+>isNonEmptyObject(c['pip-compile']) : boolean
+>isNonEmptyObject : (value: unknown) => value is Record<string, unknown>
+>c['pip-compile'] : error
+>c : Cfg
+>'pip-compile' : "pip-compile"
+
+  // @ts-expect-error
+  isNonEmptyArray(c['pip-compile'].m)
+>isNonEmptyArray(c['pip-compile'].m) : boolean
+>isNonEmptyArray : <T = unknown, Item = unknown>(value: T | Item[]) => value is [Item, ...Item[]]
+>c['pip-compile'].m : unknown
+>c['pip-compile'] : Record<string, unknown>
+>c : Cfg
+>'pip-compile' : "pip-compile"
+>m : unknown
+
+) {
+  // @ts-expect-error
+  c['pip-compile'].m = c['pip-compile'].m.map((f) => {
+>c['pip-compile'].m = c['pip-compile'].m.map((f) => {    return f as string;  }) : string[]
+>c['pip-compile'].m : unknown
+>c['pip-compile'] : Record<string, unknown>
+>c : Cfg
+>'pip-compile' : "pip-compile"
+>m : unknown
+>c['pip-compile'].m.map((f) => {    return f as string;  }) : string[]
+>c['pip-compile'].m.map : <U>(callbackfn: (value: unknown, index: number, array: unknown[]) => U, thisArg?: any) => U[]
+>c['pip-compile'].m : [unknown, ...unknown[]]
+>c['pip-compile'] : Record<string, unknown>
+>c : Cfg
+>'pip-compile' : "pip-compile"
+>m : [unknown, ...unknown[]]
+>map : <U>(callbackfn: (value: unknown, index: number, array: unknown[]) => U, thisArg?: any) => U[]
+>(f) => {    return f as string;  } : (f: unknown) => string
+>f : unknown
+
+    return f as string;
+>f as string : string
+>f : unknown
+
+  });
+}
+declare const f: {};
+>f : {}
+
+// @ts-expect-error
+if (isNonEmptyObject(f['p-c'])) {
+>isNonEmptyObject(f['p-c']) : boolean
+>isNonEmptyObject : (value: unknown) => value is Record<string, unknown>
+>f['p-c'] : error
+>f : {}
+>'p-c' : "p-c"
+
+  // @ts-expect-error
+  f['p-c'];
+>f['p-c'] : Record<string, unknown>
+>f : {}
+>'p-c' : "p-c"
+}
+

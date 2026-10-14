@@ -1,0 +1,70 @@
+//// [test/cases/ttttNarrowMissingElementAccess.ts] ////
+
+=== ttttNarrowMissingElementAccess.ts ===
+// An element access of a property that isn't there (TS7053) is the error type, which control flow narrows like any
+// other reference (tsc's checkElementAccessExpression: getFlowTypeOfAccessExpression with errorType): renovate's
+// `isNonEmptyArray(cfg['pip-compile'].managerFilePatterns)` guards a `.map(p => ...)` whose p is then unknown
+declare function isNonEmptyArray<T = unknown, Item = unknown>(value: T | Item[]): value is [Item, ...Item[]];
+>isNonEmptyArray : Symbol(isNonEmptyArray, Decl(ttttNarrowMissingElementAccess.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNarrowMissingElementAccess.ts, 3, 33))
+>Item : Symbol(Item, Decl(ttttNarrowMissingElementAccess.ts, 3, 45))
+>value : Symbol(value, Decl(ttttNarrowMissingElementAccess.ts, 3, 62))
+>T : Symbol(T, Decl(ttttNarrowMissingElementAccess.ts, 3, 33))
+>Item : Symbol(Item, Decl(ttttNarrowMissingElementAccess.ts, 3, 45))
+>value : Symbol(value, Decl(ttttNarrowMissingElementAccess.ts, 3, 62))
+>Item : Symbol(Item, Decl(ttttNarrowMissingElementAccess.ts, 3, 45))
+>Item : Symbol(Item, Decl(ttttNarrowMissingElementAccess.ts, 3, 45))
+
+declare function isNonEmptyObject(value: unknown): value is Record<string, unknown>;
+>isNonEmptyObject : Symbol(isNonEmptyObject, Decl(ttttNarrowMissingElementAccess.ts, 3, 109))
+>value : Symbol(value, Decl(ttttNarrowMissingElementAccess.ts, 4, 34))
+>value : Symbol(value, Decl(ttttNarrowMissingElementAccess.ts, 4, 34))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+interface Cfg { a?: string; [k: number]: string }
+>Cfg : Symbol(Cfg, Decl(ttttNarrowMissingElementAccess.ts, 4, 84))
+>a : Symbol(Cfg.a, Decl(ttttNarrowMissingElementAccess.ts, 5, 15))
+>k : Symbol(k, Decl(ttttNarrowMissingElementAccess.ts, 5, 29))
+
+declare const c: Cfg;
+>c : Symbol(c, Decl(ttttNarrowMissingElementAccess.ts, 6, 13))
+>Cfg : Symbol(Cfg, Decl(ttttNarrowMissingElementAccess.ts, 4, 84))
+
+if (
+  // @ts-expect-error
+  isNonEmptyObject(c['pip-compile']) &&
+>isNonEmptyObject : Symbol(isNonEmptyObject, Decl(ttttNarrowMissingElementAccess.ts, 3, 109))
+>c : Symbol(c, Decl(ttttNarrowMissingElementAccess.ts, 6, 13))
+
+  // @ts-expect-error
+  isNonEmptyArray(c['pip-compile'].m)
+>isNonEmptyArray : Symbol(isNonEmptyArray, Decl(ttttNarrowMissingElementAccess.ts, 0, 0))
+>c : Symbol(c, Decl(ttttNarrowMissingElementAccess.ts, 6, 13))
+
+) {
+  // @ts-expect-error
+  c['pip-compile'].m = c['pip-compile'].m.map((f) => {
+>c : Symbol(c, Decl(ttttNarrowMissingElementAccess.ts, 6, 13))
+>c['pip-compile'].m.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>c : Symbol(c, Decl(ttttNarrowMissingElementAccess.ts, 6, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(ttttNarrowMissingElementAccess.ts, 14, 47))
+
+    return f as string;
+>f : Symbol(f, Decl(ttttNarrowMissingElementAccess.ts, 14, 47))
+
+  });
+}
+declare const f: {};
+>f : Symbol(f, Decl(ttttNarrowMissingElementAccess.ts, 18, 13))
+
+// @ts-expect-error
+if (isNonEmptyObject(f['p-c'])) {
+>isNonEmptyObject : Symbol(isNonEmptyObject, Decl(ttttNarrowMissingElementAccess.ts, 3, 109))
+>f : Symbol(f, Decl(ttttNarrowMissingElementAccess.ts, 18, 13))
+
+  // @ts-expect-error
+  f['p-c'];
+>f : Symbol(f, Decl(ttttNarrowMissingElementAccess.ts, 18, 13))
+}
+
