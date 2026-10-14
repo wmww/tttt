@@ -6,6 +6,9 @@
 #include "lib_names.h"
 
 #include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <time.h>
 #include <pthread.h>
 #include <signal.h>
 #include <spawn.h>
@@ -55,7 +58,7 @@ bool content_mapper_has_extension(CompilerOptions const* options, csview extensi
 }
 
 void content_mapper_output_drop(ContentMapperOutput* me) {
-    c_drop(cstr, &my text, &my extension, &my diagnostic_source, &my failure, &my detail);
+    c_drop(cstr, &my text, &my extension, &my diagnostic_source, &my failure, &my detail, &my global, &my global_detail);
     free(my segments);
     for (u32 i = 0; i < my diagnostic_count; i++) cstr_drop(&my diagnostics[i].message);
     free(my diagnostics);
@@ -132,6 +135,13 @@ static void append_compiler_options(cstr* out, CompilerOptions const* options) {
 
 // ---- A mapper process
 
+static bool json_int(JsonValue const* value, i64* out) {
+    if (!value || value->tag != JSON_NUMBER || value->number != (double)(i64)value->number) return false;
+    *out = (i64)value->number;
+    return true;
+}
+
+
 typedef struct MapperConn {
     cstr key; // Identity and exec
     pid_t pid;
@@ -139,16 +149,33 @@ typedef struct MapperConn {
     cstr read_buffer;
     isize read_at;
     bool failed; // Couldn't start or initialize: not tried again
-    unsigned failure_code; // Its TS18069 detail (TS18084 and friends)
+    bool failure_reported; // Its TS18099 went to a program
+    bool utf16; // It chose utf-16 positions
+    struct timespec deadline; // While initializing (tsgo's 5 s): reads give up after it
+    bool timed_out;
+    u32 transform_failures;
+    unsigned failure_code; // The reason chained under TS18099 (TS18100 and friends)
     cstr failure;
     cstr diagnostic_source;
     cstr project_handle; // Opened for the program's project, empty until then
     bool project_failed;
+    unsigned project_failure_code; // Why (TS18090-18095), 0 for TS18091
     unsigned next_id;
 } MapperConn;
 
+// What tsgo's fileLoader keeps per mapper entry (its *Mapper): failures counted, initialization failure reported
+typedef struct MapperState {
+    ContentMapper const* mapper;
+    u32 transform_failures;
+    bool failure_reported;
+} MapperState;
+
 struct ContentMapperHost {
     pthread_mutex_t lock;
+    MapperState* states;
+    u32 state_count;
+    ContentMapperOptionDiagnostic** option_diagnostics;
+    u32 option_diagnostic_count;
     cstr config_file;
     CompilerOptions const* options;
     MapperConn* conns;
@@ -180,9 +207,19 @@ static bool send_message(MapperConn* conn, csview body) {
     return sent;
 }
 
-// More bytes into the read buffer, false at the end of the stream
+// More bytes into the read buffer, false at the end of the stream (or past conn->deadline: timed_out)
 static bool fill(MapperConn* conn) {
     char buf[65536];
+    if (conn->deadline.tv_sec) {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        i64 left = (conn->deadline.tv_sec - now.tv_sec) * 1000 + (conn->deadline.tv_nsec - now.tv_nsec) / 1000000;
+        struct pollfd pfd = { .fd = conn->fd, .events = POLLIN };
+        if (left <= 0 || poll(&pfd, 1, (int)left) == 0) {
+            conn->timed_out = true;
+            return false;
+        }
+    }
     for (;;) {
         ssize_t n = read(conn->fd, buf, sizeof(buf));
         if (n < 0 && errno == EINTR) continue;
@@ -300,6 +337,8 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_adddup2(&actions, fds[1], STDIN_FILENO);
     posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+    // (tsgo discards a mapper's stderr unless it logs)
+    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
     struct stat st;
     if (cstr_size(&mapper->package_dir) && stat(cstr_str(&mapper->package_dir), &st) == 0 && S_ISDIR(st.st_mode)) {
         posix_spawn_file_actions_addchdir_np(&actions, cstr_str(&mapper->package_dir));
@@ -311,24 +350,52 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
     close(fds[1]);
     if (spawned != 0) {
         close(fds[0]);
-        conn_fail(conn, 18084, cstr_from("The content mapper process could not be started or initialized."));
+        // (Go's exec.Cmd.Start errors, as tsgo's CLI spawner reports them)
+        csview command = cstr_sv(&mapper->exec.items[0]);
+        cstr detail = cstr_null;
+        if (!launcher && !csview_contains(command, "/") && spawned == ENOENT) {
+            detail = cstr_d("exec: \"", command, "\": executable file not found in $PATH");
+        } else {
+            char reason[128];
+            snprintf(reason, sizeof(reason), "%s", strerror(spawned));
+            if (reason[0] >= 'A' && reason[0] <= 'Z') reason[0] = (char)(reason[0] - 'A' + 'a');
+            detail = cstr_d("fork/exec ", command, ": ", reason);
+        }
+        conn_fail(conn, 18100, cstr_d("The content mapper command '", command, "' could not be started: ", detail));
+        cstr_drop(&detail);
         return;
     }
     conn->pid = pid;
     conn->fd = fds[0];
 
     JsonValue response, result;
+    clock_gettime(CLOCK_MONOTONIC, &conn->deadline);
+    conn->deadline.tv_sec += 5;
     CallResult called = call(conn, "initialize", c_sv("{\"positionEncodings\":[\"utf-8\",\"utf-16\"]}"), &result,
         &response);
+    conn->deadline = (struct timespec){0};
     if (called != CALL_OK) {
-        if (called == CALL_ERROR) json_drop(&response);
-        conn_fail(conn, 18084, cstr_from("The content mapper process could not be started or initialized."));
+        int status;
+        if (conn->timed_out) {
+            conn_fail(conn, 18102, cstr_from("The content mapper did not respond to the 'initialize' request within 5 seconds."));
+        } else if (called == CALL_ERROR) {
+            csview message = json_get_string(json_get(&response, "error"), "message");
+            conn_fail(conn, 18104, cstr_d("The content mapper's 'initialize' request failed: ", message));
+            json_drop(&response);
+        } else if (waitpid(conn->pid, &status, 0) == conn->pid) {
+            conn->pid = 0;
+            int code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+            conn_fail(conn, 18101, cstr_d("The content mapper process exited before responding to the 'initialize' "
+                "request (exit code ", code, ")."));
+        } else {
+            conn_fail(conn, 18084, cstr_from("The content mapper process could not be started or initialized."));
+        }
         return;
     }
     csview encoding = json_get_string(&result, "positionEncoding");
     csview source = json_get_string(&result, "diagnosticSource");
-    if (!csview_equals(encoding, "utf-8")) {
-        // TODO(plan 56 part 2): utf-16 positions
+    conn->utf16 = csview_equals(encoding, "utf-16");
+    if (!csview_equals(encoding, "utf-8") && !conn->utf16) {
         conn_fail(conn, 18087, cstr_d("The content mapper selected unsupported position encoding '", encoding, "'."));
     } else if (!csview_trim(source).size) {
         conn_fail(conn, 18088, cstr_from("The content mapper diagnostic source must not be empty."));
@@ -338,6 +405,15 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
         conn->diagnostic_source = cstr_from_sv(source);
     }
     json_drop(&response);
+}
+
+static MapperState* state_for(ContentMapperHost* me, ContentMapper const* mapper) {
+    for (u32 i = 0; i < my state_count; i++) {
+        if (my states[i].mapper == mapper) return &my states[i];
+    }
+    my states = realloc(my states, sizeof(MapperState) * (my state_count + 1));
+    my states[my state_count] = (MapperState){ .mapper = mapper };
+    return &my states[my state_count++];
 }
 
 // The connection for mapper, started (and its project opened) on first use; null after a failure (*conn has why)
@@ -371,8 +447,44 @@ static MapperConn* conn_for(ContentMapperHost* me, ContentMapper const* mapper) 
         JsonValue response, result;
         CallResult called = call(conn, "openProject", cstr_sv(&params), &result, &response);
         cstr_drop(&params);
-        if (called == CALL_OK) {
-            // TODO(plan 56 part 2): optionDiagnostics, configIdentity/watchedFiles against dynamicConfig
+        // (tsgo's openProjectLocked: what the response may hold depends on the manifest's dynamicConfig)
+        JsonValue const* identity_value = called == CALL_OK ? json_get(&result, "configIdentity") : nullptr;
+        JsonValue const* watched = called == CALL_OK ? json_get(&result, "watchedFiles") : nullptr;
+        bool has_identity = identity_value && identity_value->tag == JSON_STRING && cstr_size(&identity_value->string);
+        bool has_watched = watched && watched->tag == JSON_ARRAY && watched->count;
+        if (called == CALL_OK && result.tag != JSON_OBJECT) {
+            conn->project_failure_code = 18090;
+        } else if (called == CALL_OK && mapper->dynamic_config && !has_identity) {
+            conn->project_failure_code = 18092;
+        } else if (called == CALL_OK && !mapper->dynamic_config && has_identity) {
+            conn->project_failure_code = 18094;
+        } else if (called == CALL_OK && !mapper->dynamic_config && has_watched) {
+            conn->project_failure_code = 18095;
+        } else if (called == CALL_OK && has_watched) {
+            for (isize i = 0; i < watched->count; i++) {
+                JsonValue const* file = &watched->items[i];
+                if (file->tag != JSON_STRING || !cstr_size(&file->string) || cstr_str(&file->string)[0] != '/') {
+                    conn->project_failure_code = 18093;
+                }
+            }
+        }
+        if (conn->project_failure_code) {
+            conn->project_failed = true;
+        } else if (called == CALL_OK) {
+            JsonValue const* diagnostics = json_get_tagged(&result, "optionDiagnostics", JSON_ARRAY);
+            for (isize i = 0; diagnostics && i < diagnostics->count; i++) {
+                JsonValue const* d = &diagnostics->items[i];
+                i64 code = 0;
+                json_int(json_get(d, "code"), &code);
+                cstr path = cstr_null;
+                JsonValue const* segments = json_get_tagged(d, "path", JSON_ARRAY);
+                if (segments) json_write(&path, segments);
+                my option_diagnostics = realloc(my option_diagnostics,
+                    sizeof(ContentMapperOptionDiagnostic*) * (my option_diagnostic_count + 1));
+                my option_diagnostics[my option_diagnostic_count++] = c_new(ContentMapperOptionDiagnostic, {
+                    .mapper = mapper, .path = path, .code = (unsigned)code,
+                    .message = cstr_from_sv(json_get_string(d, "messageText")), .source = cstr_clone(conn->diagnostic_source) });
+            }
             cstr_take(&conn->project_handle, handle);
             handle = cstr_null;
         } else {
@@ -401,9 +513,21 @@ void content_mapper_host_drop(ContentMapperHost* me) {
         c_drop(cstr, &conn->key, &conn->read_buffer, &conn->failure, &conn->diagnostic_source, &conn->project_handle);
     }
     free(my conns);
+    free(my states);
+    for (u32 i = 0; i < my option_diagnostic_count; i++) {
+        ContentMapperOptionDiagnostic* d = my option_diagnostics[i];
+        c_drop(cstr, &d->path, &d->message, &d->source);
+        free(d);
+    }
+    free(my option_diagnostics);
     cstr_drop(&my config_file);
     pthread_mutex_destroy(&my lock);
     free(me);
+}
+
+ContentMapperOptionDiagnostic* const* content_mapper_host_option_diagnostics(ContentMapperHost* me, u32* count) {
+    *count = me ? my option_diagnostic_count : 0;
+    return me ? my option_diagnostics : nullptr;
 }
 
 // ---- Transform
@@ -433,9 +557,27 @@ static void fail_detail(ContentMapperOutput* out, cstr label, unsigned detail_co
     cstr_drop(&label);
 }
 
-static bool json_int(JsonValue const* value, i64* out) {
-    if (!value || value->tag != JSON_NUMBER || value->number != (double)(i64)value->number) return false;
-    *out = (i64)value->number;
+
+// tsgo's positionNormalizer: a position in the mapper's encoding (utf-16 code units if it chose them) to a byte offset
+// of text; false if it is negative, past the end or inside a character
+static bool normalize_position(ContentMapperOutput const* out, i64 position, csview text, u32* at) {
+    if (position < 0) return false;
+    if (!out->utf16) {
+        if (position > text.size) return false;
+        if (position < text.size && ((unsigned char)text.buf[position] & 0xC0) == 0x80) return false;
+        *at = (u32)position;
+        return true;
+    }
+    i64 units = 0;
+    isize i = 0;
+    while (units < position && i < text.size) {
+        unsigned char c = (unsigned char)text.buf[i];
+        isize length = c < 0x80 ? 1 : c < 0xE0 ? 2 : c < 0xF0 ? 3 : 4;
+        units += length == 4 ? 2 : 1;
+        i += length;
+    }
+    if (units != position || i > text.size) return false;
+    *at = (u32)i;
     return true;
 }
 
@@ -458,10 +600,17 @@ static bool read_mappings(ContentMapperOutput* out, ContentMapSegment** segments
             fail_detail(out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
             return false;
         }
-        (*segments_out)[(*count_out)++] = (ContentMapSegment){ .virtual_start = (u32)v[0],
-            .virtual_end = (u32)(v[0] + v[1]), .original_start = (u32)v[2], .original_end = (u32)(v[2] + v[3]),
-            .kind = (uint8_t)v[4] };
-        // TODO(plan 56 part 2): features (the 6th element), checked against the mask
+        // (normalizeMappings: every position in the mapper's encoding, within its text)
+        ContentMapSegment segment = { .kind = v[4] >= 0 && v[4] <= 2 ? (uint8_t)v[4] : 3,
+            .features = tuple->count == 6 ? v[5] : (1 << 20) - 1 };
+        if (!normalize_position(out, v[0], virtual_text, &segment.virtual_start) ||
+            !normalize_position(out, v[0] + v[1], virtual_text, &segment.virtual_end) ||
+            !normalize_position(out, v[2], original, &segment.original_start) ||
+            !normalize_position(out, v[2] + v[3], original, &segment.original_end)) {
+            fail_detail(out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
+            return false;
+        }
+        (*segments_out)[(*count_out)++] = segment;
     }
     qsort((*segments_out), (*count_out), sizeof(ContentMapSegment), segment_cmp);
     u32 previous_end = 0;
@@ -490,14 +639,13 @@ static bool read_mappings(ContentMapperOutput* out, ContentMapSegment** segments
                 ", original offset ", s->original_start, ")."));
             return false;
         }
+        if (s->features & ~(i64)((1 << 20) - 1)) {
+            fail(out, 18082, cstr_d("The content mapper '", label, "' produced invalid mapping features near original offset ",
+                s->original_start, "."));
+            return false;
+        }
     }
     return true;
-}
-
-// tsgo's positionNormalizer for utf-8: within the text, not inside a code point
-static bool normalize_position(i64 position, csview text) {
-    if (position < 0 || position > text.size) return false;
-    return position == text.size || ((unsigned char)text.buf[position] & 0xC0) != 0x80;
 }
 
 static int directive_cmp(void const* a, void const* b) {
@@ -552,21 +700,20 @@ static bool read_directives(ContentMapperOutput* out, ContentMapDirective** dire
             valid = false;
             break;
         }
-        bool original_valid = v[0] >= 0 && v[1] >= 0 && normalize_position(v[0], original) &&
-            normalize_position(v[0] + v[1], original);
-        if (v[2] < 0 || v[3] < v[2] || !normalize_position(v[2], virtual_text) || !normalize_position(v[3], virtual_text) ||
-            (directive.expect && !original_valid)) {
+        u32 original_start = 0, original_end = 0;
+        bool original_valid = v[0] >= 0 && v[1] >= 0 && normalize_position(out, v[0], original, &original_start) &&
+            normalize_position(out, v[0] + v[1], original, &original_end);
+        if (v[2] < 0 || v[3] < v[2] || !normalize_position(out, v[2], virtual_text, &directive.virtual_start) ||
+            !normalize_position(out, v[3], virtual_text, &directive.virtual_end) || (directive.expect && !original_valid)) {
             cstr_drop(&directive.unused_message);
             fail_detail(out, cstr_from_sv(label), 18105, cstr_d("Diagnostic directive ", i,
                 " returned by the content mapper has an invalid range."));
             valid = false;
             break;
         }
-        directive.virtual_start = (u32)v[2];
-        directive.virtual_end = (u32)v[3];
         if (original_valid) {
-            directive.original_start = (u32)v[0];
-            directive.original_end = (u32)(v[0] + v[1]);
+            directive.original_start = original_start;
+            directive.original_end = original_end;
         }
         (*directives_out)[(*count_out)++] = directive;
     }
@@ -609,6 +756,17 @@ static bool decode_output(ContentMapperOutput* out, csview extension, JsonValue 
     return read_directives(out, directives_out, directive_count, directives, text, content, label, supplemental);
 }
 
+// tsgo's recordContentMapperFailure: the fifth failed transform of a mapper adds TS18070, and it isn't used any more
+void content_mapper_count_failure(ContentMapperHost* me, ContentMapper const* mapper, ContentMapperOutput* out) {
+    pthread_mutex_lock(&my lock);
+    if (++state_for(me, mapper)->transform_failures == 5) {
+        out->global_code = 18070;
+        out->global = cstr_d("The content mapper '", cstr_size(&mapper->name) ? cstr_sv(&mapper->name) :
+            cstr_sv(&mapper->package), "' failed 5 times and will not be used.");
+    }
+    pthread_mutex_unlock(&my lock);
+}
+
 ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, ContentMapper const* mapper, csview file,
     csview content) {
     ContentMapperOutput out = {0};
@@ -616,13 +774,42 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
     pthread_mutex_lock(&my lock);
     MapperConn* conn = conn_for(me, mapper);
     if (conn->failed) {
-        fail_detail(&out, cstr_from_sv(label), conn->failure_code, cstr_clone(conn->failure));
+        // (tsgo's recordContentMapperInitializationFailure: one program diagnostic, then the mapper isn't used: its
+        // files are empty)
+        out.failure_code = 18069;
+        out.silent = true;
+        MapperState* state = state_for(me, mapper);
+        if (!state->failure_reported) {
+            state->failure_reported = true;
+            out.global_code = 18099;
+            out.global = cstr_d("The content mapper '", label, "' could not be initialized.");
+            out.global_detail_code = conn->failure_code;
+            out.global_detail = cstr_clone(conn->failure);
+        }
+        pthread_mutex_unlock(&my lock);
+        return out;
+    }
+    if (state_for(me, mapper)->transform_failures >= 5) {
+        out.failure_code = 18069;
+        out.silent = true;
         pthread_mutex_unlock(&my lock);
         return out;
     }
     if (conn->project_failed) {
-        fail_detail(&out, cstr_from_sv(label), 18091,
-            cstr_from("The content mapper process failed while handling the project request."));
+        // (tsgo's ContentMapperProjectErrorDiagnostic)
+        static char const* const messages[] = {
+            "The content mapper returned a project response that could not be decoded.",
+            "The content mapper process failed while handling the project request.",
+            "The content mapper did not return 'configIdentity', which is required when the content mapper has "
+                "'\"dynamicConfig\": true' in its package.json.",
+            "The content mapper returned a non-absolute path in 'watchedFiles'.",
+            "The content mapper returned 'configIdentity', which is only allowed when it declares '\"dynamicConfig\": true' "
+                "in its package.json.",
+            "The content mapper returned 'watchedFiles', which is only allowed when it declares '\"dynamicConfig\": true' in "
+                "its package.json.",
+        };
+        unsigned code = conn->project_failure_code ? conn->project_failure_code : 18091;
+        fail_detail(&out, cstr_from_sv(label), code, cstr_from(messages[code - 18090]));
         pthread_mutex_unlock(&my lock);
         return out;
     }
@@ -637,11 +824,13 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
     CallResult called = call(conn, "transform", cstr_sv(&params), &result, &response);
     cstr_drop(&params);
     out.diagnostic_source = cstr_clone(conn->diagnostic_source);
+    out.utf16 = conn->utf16;
     pthread_mutex_unlock(&my lock);
     if (called != CALL_OK) {
         if (called == CALL_ERROR) json_drop(&response);
         fail_detail(&out, cstr_from_sv(label), 18085,
             cstr_from("The content mapper process failed while handling the transform request."));
+        content_mapper_count_failure(me, mapper, &out);
         return out;
     }
     JsonValue const* text = json_get_tagged(&result, "text", JSON_STRING);
@@ -649,6 +838,7 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
     if (result.tag != JSON_OBJECT || !text || !extension) {
         fail_detail(&out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
         json_drop(&response);
+        content_mapper_count_failure(me, mapper, &out);
         return out;
     }
     out.text = cstr_clone(text->string);
@@ -678,14 +868,16 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
             json_int(json_get(d, "start"), &start);
             json_int(json_get(d, "length"), &length);
             json_int(json_get(d, "code"), &code);
-            if (!normalize_position(start, content) || length < 0 || !normalize_position(start + length, content)) {
+            u32 from = 0, to = 0;
+            if (!normalize_position(&out, start, content, &from) || length < 0 ||
+                !normalize_position(&out, start + length, content, &to)) {
                 fail_detail(&out, cstr_from_sv(label), 18086,
                     cstr_from("The content mapper returned an invalid transform response."));
                 valid = false;
                 break;
             }
-            out.diagnostics[out.diagnostic_count++] = (ContentMapperDiagnostic){ .start = (u32)start,
-                .length = (u32)length, .code = (unsigned)code, .message = cstr_from_sv(json_get_string(d, "messageText")) };
+            out.diagnostics[out.diagnostic_count++] = (ContentMapperDiagnostic){ .start = from,
+                .length = to - from, .code = (unsigned)code, .message = cstr_from_sv(json_get_string(d, "messageText")) };
         }
     }
     valid = valid && read_mappings(&out, &out.segments, &out.segment_count, json_get(&result, "mappings"),
@@ -696,6 +888,7 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
             json_get(&supplementals->items[i], "mappings"), cstr_sv(&supplemental->text), content, label);
     }
     json_drop(&response);
+    if (out.failure_code) content_mapper_count_failure(me, mapper, &out);
     return out;
 }
 

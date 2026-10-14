@@ -53,6 +53,18 @@ static void append_utf8(cstr* out, unsigned code) {
     cstr_append_n(out, buf, len);
 }
 
+static unsigned parse_hex4(JsonParser* me) {
+    unsigned code = 0;
+    for (int i = 0; i < 4 && my at < my end; i++, my at++) {
+        char h = *my at;
+        unsigned digit = h >= '0' && h <= '9' ? (unsigned)(h - '0') :
+            h >= 'a' && h <= 'f' ? (unsigned)(h - 'a' + 10) :
+            h >= 'A' && h <= 'F' ? (unsigned)(h - 'A' + 10) : 0;
+        code = code * 16 + digit;
+    }
+    return code;
+}
+
 // An unterminated string (at a line break or the end) is what it has so far, like tsc's scanner's
 static void parse_string(JsonParser* me, cstr* out) {
     char quote = *my at; // tsc's config parser takes single quotes too
@@ -80,13 +92,14 @@ static void parse_string(JsonParser* me, cstr* out) {
             case 'b': cstr_append_lit(out, "\b"); break;
             case 'f': cstr_append_lit(out, "\f"); break;
             case 'u': {
-                unsigned code = 0;
-                for (int i = 0; i < 4 && my at < my end; i++, my at++) {
-                    char h = *my at;
-                    unsigned digit = h >= '0' && h <= '9' ? (unsigned)(h - '0') :
-                        h >= 'a' && h <= 'f' ? (unsigned)(h - 'a' + 10) :
-                        h >= 'A' && h <= 'F' ? (unsigned)(h - 'A' + 10) : 0;
-                    code = code * 16 + digit;
+                unsigned code = parse_hex4(me);
+                // (A surrogate pair is one character: `\ud83d\ude00`)
+                if (code >= 0xD800 && code < 0xDC00 && my end - my at >= 6 && my at[0] == '\\' && my at[1] == 'u') {
+                    char const* save = my at;
+                    my at += 2;
+                    unsigned low = parse_hex4(me);
+                    if (low >= 0xDC00 && low < 0xE000) code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+                    else my at = save;
                 }
                 append_utf8(out, code);
             }   break;

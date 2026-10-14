@@ -192,29 +192,45 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
 }
 
 // tsgo's resolveContentMapperManifest: the package found like bundler resolution's ResolvePackageDirectory from the
-// config's directory (node_modules up the tree), its package.json's name, version and `typescript.contentMapper`
-// TODO(plan 56 part 2): TS18075-18079 when that fails (the mapper stays unresolved and maps nothing)
-static void resolve_content_mapper(ConfigLoad* me, csview config, ContentMapper* mapper) {
+// config's directory (node_modules up the tree), its package.json's name, version and `typescript.contentMapper`.
+// Returns why it couldn't (TS18075-18079, *message set), 0 if it could
+static unsigned resolve_content_mapper(ConfigLoad* me, csview config, ContentMapper* mapper, cstr* message) {
     for (csview dir = parent_of(config);; dir = parent_of(dir)) {
         cstr package_dir = path_join(dir, c_sv("node_modules"));
         cstr_take(&package_dir, path_join(cstr_sv(&package_dir), cstr_sv(&mapper->package)));
         cstr package_json = path_join(cstr_sv(&package_dir), c_sv("package.json"));
-        cstr contents = cstr_null;
         bool found = fs_is_reg_file(my fs, cstr_sv(&package_json));
+        unsigned code = 0;
         if (found) {
+            cstr contents = cstr_null;
             try (fs_read_file(my fs, cstr_sv(&package_json), &contents)) if_err (e) {
                 ignore e;
                 current_error_destroy();
             }
             JsonValue document = {0};
-            json_parse_strict(cstr_sv(&contents), &document);
+            bool parsed = json_parse_strict(cstr_sv(&contents), &document) && document.tag == JSON_OBJECT;
             JsonValue const* typescript = json_get_tagged(&document, "typescript", JSON_OBJECT);
             JsonValue const* manifest = typescript ? json_get_tagged(typescript, "contentMapper", JSON_OBJECT) : nullptr;
             JsonValue const* exec = manifest ? json_get_tagged(manifest, "exec", JSON_ARRAY) : nullptr;
             bool strings = exec && exec->count;
             for (isize i = 0; strings && i < exec->count; i++) strings = exec->items[i].tag == JSON_STRING;
             csview name = json_get_string(&document, "name");
-            if (name.size && strings) {
+            if (!parsed) {
+                code = 18076;
+                *message = cstr_d("The 'package.json' of the content mapper package '", mapper->package, "' could not be parsed.");
+            } else if (!name.size) {
+                code = 18077;
+                *message = cstr_d("The 'package.json' of the content mapper package '", mapper->package,
+                    "' does not specify a 'name'.");
+            } else if (!manifest) {
+                code = 18078;
+                *message = cstr_d("The 'package.json' of the content mapper package '", mapper->package,
+                    "' does not declare a 'typescript.contentMapper' object.");
+            } else if (!strings) {
+                code = 18079;
+                *message = cstr_d("The 'typescript.contentMapper.exec' of the content mapper package '", mapper->package,
+                    "' must be a non-empty array of strings.");
+            } else {
                 mapper->resolved = true;
                 mapper->name = cstr_from_sv(name);
                 mapper->version = cstr_from_sv(json_get_string(&document, "version"));
@@ -230,10 +246,14 @@ static void resolve_content_mapper(ConfigLoad* me, csview config, ContentMapper*
                 cstr_take(&mapper->package_dir, cstr_clone(package_dir));
             }
             json_drop(&document);
+            cstr_drop(&contents);
         }
-        c_drop(cstr, &package_dir, &package_json, &contents);
-        if (found || !dir.size || csview_equals(dir, "/") || csview_equals_sv(dir, parent_of(dir))) return;
+        c_drop(cstr, &package_dir, &package_json);
+        if (found) return code;
+        if (!dir.size || csview_equals(dir, "/") || csview_equals_sv(dir, parent_of(dir))) break;
     }
+    *message = cstr_d("The content mapper package '", mapper->package, "' could not be resolved.");
+    return 18075;
 }
 
 // tsgo's content mappers (`contentMappers`: packages that turn other files, `.mdx`, into TypeScript), of the config
@@ -282,7 +302,7 @@ static void check_content_mappers(ConfigLoad* me, csview path, JsonValue const* 
         }
         if (!valid) continue;
         any = true;
-        ContentMapper entry = { .package = cstr_clone(package->string) };
+        ContentMapper entry = { .index = (u32)i, .package = cstr_clone(package->string) };
         if (options) json_write(&entry.options_json, options);
         for (isize j = 0; j < extensions->count; j++) {
             csview ext = cstr_sv(&extensions->items[j].string);
@@ -314,8 +334,13 @@ static void check_content_mappers(ConfigLoad* me, csview path, JsonValue const* 
                 str_list_push(&entry.extensions, ext);
             }
         }
-        if (my options->run_external_code) {
-            resolve_content_mapper(me, path, &entry);
+        cstr message = cstr_null;
+        unsigned code = my options->run_external_code ? resolve_content_mapper(me, path, &entry, &message) : 0;
+        if (code) {
+            // (At the entry's `package`, and the mapper isn't registered: tsgo drops it)
+            config_diagnostic(me, code, message, path, package->start, package->end);
+            content_mapper_drop(&entry);
+        } else if (my options->run_external_code) {
             my options->content_mappers = realloc(my options->content_mappers,
                 sizeof(ContentMapper) * (my options->content_mapper_count + 1));
             my options->content_mappers[my options->content_mapper_count++] = entry;

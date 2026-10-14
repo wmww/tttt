@@ -34,8 +34,6 @@ SKIP = {
         "Windows drive-letter paths (`D:/work/...` in paths: rooted to tsgo's virtual fs, a relative name here)",
     r"^tsbuild/libraryResolution/with-config$":
         "tsc's fake lib.dom/lib.webworker stubs; the real ones conflict (tsc -b on the tree: TS2300/TS2403/TS2374 too)",
-    r"^tsbuild/contentMapperOptionDiagnostics/rebuild-to-report-mapper-option-diagnostics":
-        "runs the harness's fake `verbatim-mapper` content mapper (--runExternalCode; tttt runs none, plan 56)",
     r"^tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file":
         "TS6377 (two projects writing one .tsbuildinfo; tttt writes no build info)",
 }
@@ -174,7 +172,9 @@ def run(name, scenario, tttt, keep, verbose):
         os.makedirs(root + cwd, exist_ok=True)
         args = translate(command, root)
         proc = subprocess.run([tttt] + args, cwd=root + cwd, capture_output=True, text=True,
-                              timeout=60, env=dict(os.environ, TTTT_NO_REEXEC="1"))
+                              timeout=60, env=dict(os.environ, TTTT_NO_REEXEC="1",
+                                  # (tsgo's harness serves its Go content mappers in process: test/oracle, plan 56)
+                                  TTTT_CONTENT_MAPPER_LAUNCHER=os.path.join(ROOT, "thirdparty/typescript/built/tttt-test-mapper")))
         out = proc.stdout + proc.stderr
         # Paths tttt prints relative to the current directory, tsc too
         expected = expected_diagnostics(output)

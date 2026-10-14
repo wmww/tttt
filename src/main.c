@@ -368,7 +368,10 @@ static void drop_diagnostic_kind(ErrorCtx* errs, DiagnosticKind kind) {
     intptr_t kept = 0;
     for (intptr_t i = 0; i < vec_error_size(errors); i++) {
         Error* error = vec_error_at_mut(errors, i);
-        if (diagnostic_kind(error) == kind) {
+        // (A content mapper's program diagnostics, TS18099/TS18070, are options ones, but tsgo's
+        // GetDiagnosticsOfAnyProgram reports them next to the syntactic ones those come with)
+        bool content_mapper = !span_valid(error->span) && (error->ts_code == 18099 || error->ts_code == 18070);
+        if (diagnostic_kind(error) == kind && !(kind == DIAGNOSTIC_OPTIONS && content_mapper)) {
             error_drop(error);
             continue;
         }
@@ -1172,6 +1175,8 @@ static void raise_stack_limit(void) {
 }
 
 int main(int argc, const char** argv) {
+    // (Tools that compare with tsgo's own harness run its test content mappers through this, plan 56)
+    content_mapper_set_launcher(getenv("TTTT_CONTENT_MAPPER_LAUNCHER"));
     raise_stack_limit();
     reexec_with_huge_pages(argv);
     return run(argc, argv);

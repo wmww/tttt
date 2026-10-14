@@ -10,6 +10,7 @@
 
 typedef struct ContentMapper {
     // The tsconfig entry
+    u32 index; // In the config's `contentMappers`
     cstr package;
     StrList extensions; // As written, each beginning with '.'
     cstr options_json; // The entry's `options` as JSON text, empty if absent
@@ -35,7 +36,8 @@ bool content_mapper_has_extension(CompilerOptions const* options, csview extensi
 // [original_start, original_end); a verbatim one (kind 0) position by position, an atom (1) or alias (2) as a whole
 typedef struct ContentMapSegment {
     u32 virtual_start, virtual_end, original_start, original_end;
-    uint8_t kind;
+    uint8_t kind; // 3: not one tsgo knows (only while validating)
+    i64 features; // tsgo's spanmap.Feature mask (only validated: tttt has no language service)
 } ContentMapSegment;
 
 typedef struct ContentMapperDiagnostic {
@@ -84,6 +86,13 @@ typedef struct ContentMapperOutput {
     cstr detail_sub;
     ContentMapperSupplemental* supplemental;
     u32 supplemental_count;
+    bool utf16; // The mapper's positions are utf-16 code units (converted to byte offsets here)
+    bool silent; // A failure without a diagnostic of its own (the mapper isn't used: it didn't start, or failed 5 times)
+    // A diagnostic of the program (no location) that comes with this output: TS18099 with its reason, TS18070
+    unsigned global_code;
+    cstr global;
+    unsigned global_detail_code;
+    cstr global_detail;
 } ContentMapperOutput;
 
 void content_mapper_output_drop(ContentMapperOutput* me);
@@ -98,6 +107,20 @@ void content_mapper_host_drop(ContentMapperHost* me);
 // Transforms a file (absolute path, its text)
 ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, ContentMapper const* mapper, csview file,
     csview content);
+// A failed transform the host didn't see fail (a supplemental output's name collision) counts towards the mapper's 5
+void content_mapper_count_failure(ContentMapperHost* me, ContentMapper const* mapper, ContentMapperOutput* out);
+
+// What openProject reported about a mapper's `options` (tsgo's OptionDiagnostic): at path (JSON array text of member
+// names and indexes, relative to the entry's `options`)
+typedef struct ContentMapperOptionDiagnostic {
+    ContentMapper const* mapper;
+    cstr path;
+    unsigned code;
+    cstr message;
+    cstr source; // The mapper's diagnostic source
+} ContentMapperOptionDiagnostic;
+// The option diagnostics of every project opened so far; the host owns them (each stays where it is)
+ContentMapperOptionDiagnostic* const* content_mapper_host_option_diagnostics(ContentMapperHost* me, u32* count);
 
 // The program a manifest's `exec` runs under: null runs it as written. The harness sets tsgo's Go test mappers'
 // (`thirdparty/typescript/built/tttt-test-mapper`, test/oracle), so `exec: ["compiler-test-mapper"]` runs

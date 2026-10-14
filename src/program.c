@@ -1232,6 +1232,7 @@ static ContentMapperOutput program_content_map(Program const* me, ContentMapper 
                 ret.detail_code = 18096;
                 ret.detail = cstr_d("Content mapper supplemental output file '", shown, "' conflicts with an existing file.");
                 cstr_drop(&shown);
+                content_mapper_count_failure(host, mapper, &ret);
             }
             cstr_drop(&name);
         }
@@ -1270,6 +1271,15 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
     source_file_register(mapped->original);
     mapped->original->content_original = true;
     file->content_mapped = mapped;
+    if (out->global_code) {
+        Error* error = error_ctx_global_error_s(errs, out->global_code, out->global);
+        out->global = cstr_null;
+        if (out->global_detail_code) {
+            error_sub_error_s(error, span_null, out->global_detail_code, out->global_detail);
+            out->global_detail = cstr_null;
+        }
+    }
+    if (out->silent) return;
     if (out->failure_code) {
         char const* start = cstr_str(&file->contents);
         Error error = { .message = out->failure, .span = span_make(file, start, start), .ts_code = out->failure_code,
@@ -1541,6 +1551,9 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
 // A load pool worker's job
 static SourceFile* program_parse_ahead(void* ctx, LoadPool* pool, csview path, bool is_stdlib, ErrorCtx* errs) {
     Program* me = ctx;
+    // (Content-mapped files are transformed by the loader, in program order: a mapper's failure budget counts
+    // them in that order, tsgo's maxContentMapperFailures)
+    if (my options.content_mapper_count && content_mapper_for_path(&my options, path)) return nullptr;
     // (The loader runs jobs too, with the options set)
     bool own_options = !compiler_options_private;
     if (own_options) set_compiler_options(&my options);
@@ -2800,6 +2813,36 @@ static void program_report_unused_expect_errors(Program* me) {
     }
 }
 
+// What content mappers said about their `options` when their projects opened (tsgo's Project.Diagnostics()): at the
+// node the path names inside the config's contentMappers[i].options (the options object if it isn't there)
+static void program_report_content_mapper_options(Program* me) {
+    u32 count;
+    ContentMapperOptionDiagnostic* const* diagnostics =
+        content_mapper_host_option_diagnostics(atomic_load(&my content_mapper_host), &count);
+    for (u32 i = 0; i < count; i++) {
+        ContentMapperOptionDiagnostic const* d = diagnostics[i];
+        JsonValue const* mappers = json_get_tagged(&my config_json, "contentMappers", JSON_ARRAY);
+        JsonValue const* at = mappers && d->mapper->index < mappers->count ?
+            json_get(&mappers->items[d->mapper->index], "options") : nullptr;
+        JsonValue path = {0};
+        json_parse(cstr_sv(&d->path), &path);
+        for (isize j = 0; at && path.tag == JSON_ARRAY && j < path.count; j++) {
+            JsonValue const* segment = &path.items[j];
+            JsonValue const* next = nullptr;
+            if (segment->tag == JSON_STRING) next = json_get(at, cstr_str(&segment->string));
+            else if (segment->tag == JSON_NUMBER && at->tag == JSON_ARRAY && segment->number >= 0 && segment->number < at->count) {
+                next = &at->items[(isize)segment->number];
+            }
+            if (!next) break;
+            at = next;
+        }
+        json_drop(&path);
+        Error* error = at ? program_config_error(me, at->start, at->end, d->code, cstr_clone(d->message)) :
+            error_ctx_global_error_s(my errs, d->code, cstr_clone(d->message));
+        if (error) error->source = cstr_str(&d->source);
+    }
+}
+
 // tsgo's applyContentMapperDiagnosticDirectives: a content mapper's directives suppress the semantic diagnostics that
 // start in their virtual range (not the parser's, not the mapper's own); an `expect` one that suppressed nothing is the
 // mapper's unused-directive diagnostic at its original range
@@ -3044,6 +3087,7 @@ void program_verify_options(Program* me) {
 }
 
 void program_resolve_names(Program* me) {
+    program_report_content_mapper_options(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
     load_pool_destroy(my pool);
