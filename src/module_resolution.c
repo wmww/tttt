@@ -461,6 +461,51 @@ static PackageJson const* package_json_of(State* me, csview directory) {
     return known->exists ? known : nullptr;
 }
 
+static int compare_csview(void const* a, void const* b) {
+    csview const* x = a;
+    csview const* y = b;
+    int c = memcmp(x->buf, y->buf, (size_t)(x->size < y->size ? x->size : y->size));
+    return c ? c : (x->size > y->size) - (x->size < y->size);
+}
+
+// tsgo's readPackageJsonPeerDependencies: `+name@version` for each peer dependency (sorted by name) installed next to
+// the package's real directory, so that two installs of one version with other peers (pnpm's `vite@8.3.0_esbuild@...`
+// directories) are two packages to deduplication
+static void append_peer_dependencies(State* me, csview package_dir, PackageJson const* package, cstr* out) {
+    JsonValue const* peers = json_get_tagged(&package->json, "peerDependencies", JSON_OBJECT);
+    if (!peers || !peers->count) return;
+    cstr real = module_resolver_real_path_lenient(my resolver, package_dir);
+    csview dir = cstr_size(&real) ? cstr_sv(&real) : package_dir;
+    // (The directory up to its last node_modules component)
+    isize at = -1;
+    for (isize i = 0; i + (isize)strlen("/node_modules") <= dir.size; i++) {
+        if (!memcmp(dir.buf + i, "/node_modules", strlen("/node_modules")) &&
+            (i + (isize)strlen("/node_modules") == dir.size || dir.buf[i + strlen("/node_modules")] == '/')
+        ) {
+            at = i + (isize)strlen("/node_modules");
+        }
+    }
+    if (at >= 0) {
+        csview node_modules = csview_from_n(dir.buf, at);
+        csview* names = malloc(sizeof(csview) * (size_t)peers->count);
+        for (isize i = 0; i < peers->count; i++) names[i] = cstr_sv(&peers->members[i].key);
+        qsort(names, (size_t)peers->count, sizeof(csview), compare_csview);
+        for (isize i = 0; i < peers->count; i++) {
+            if (i && csview_equals_sv(names[i], names[i - 1])) continue; // (a repeated key is one map entry)
+            cstr peer_dir = cstr_d(node_modules, "/", names[i]);
+            PackageJson const* peer = package_json_of(me, cstr_sv(&peer_dir));
+            cstr_drop(&peer_dir);
+            if (!peer) continue;
+            cstr_append_sv(out, c_sv("+"));
+            cstr_append_sv(out, names[i]);
+            cstr_append_sv(out, c_sv("@"));
+            cstr_append_sv(out, json_get_string(&peer->json, "version"));
+        }
+        free(names);
+    }
+    cstr_drop(&real);
+}
+
 // tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
 // for a scoped one) and what its package.json says
 static cstr package_id_of(State* me, csview path, cstr* package_name) {
@@ -484,7 +529,9 @@ static cstr package_id_of(State* me, csview path, cstr* package_name) {
     csview version = json_get_string(&package->json, "version");
     if (!name.size || !version.size) return cstr_null;
     *package_name = cstr_from_sv(name);
-    return cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
+    cstr ret = cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
+    append_peer_dependencies(me, csview_from_n(path.buf, end), package, &ret);
+    return ret;
 }
 
 // The nearest package.json at or above directory, and where it is

@@ -1,0 +1,45 @@
+/main.ts(4,14): error TS2322: Type 'import("/a/node_modules/pkg/index").C' is not assignable to type 'import("/b/node_modules/pkg/index").C'.
+  Types have separate declarations of a private property 'p'.
+
+
+==== /a/node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "types": "index.d.ts", "peerDependencies": { "peer": "*", "absent": "*" } }
+==== /a/node_modules/pkg/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== /a/node_modules/peer/package.json (0 errors) ====
+    { "name": "peer", "version": "1.0.0" }
+==== /a/node_modules/same/package.json (0 errors) ====
+    { "name": "same", "version": "1.0.0", "types": "index.d.ts", "peerDependencies": { "peer2": "*" } }
+==== /a/node_modules/same/index.d.ts (0 errors) ====
+    export declare class D { private p; }
+==== /a/node_modules/peer2/package.json (0 errors) ====
+    { "name": "peer2", "version": "1.0.0" }
+==== /a/index.ts (0 errors) ====
+    export { C } from "pkg";
+    export { D } from "same";
+==== /b/node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "types": "index.d.ts", "peerDependencies": { "peer": "*", "absent": "*" } }
+==== /b/node_modules/pkg/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== /b/node_modules/peer/package.json (0 errors) ====
+    { "name": "peer", "version": "2.0.0" }
+==== /b/node_modules/same/package.json (0 errors) ====
+    { "name": "same", "version": "1.0.0", "types": "index.d.ts", "peerDependencies": { "peer2": "*" } }
+==== /b/node_modules/same/index.d.ts (0 errors) ====
+    export declare class D { private p; }
+==== /b/node_modules/peer2/package.json (0 errors) ====
+    { "name": "peer2", "version": "1.0.0" }
+==== /b/index.ts (0 errors) ====
+    export { C } from "pkg";
+    export { D } from "same";
+==== /main.ts (1 errors) ====
+    import * as a from "./a";
+    import * as b from "./b";
+    declare const c: a.C;
+    export const c2: b.C = c;
+                 ~~
+!!! error TS2322: Type 'import("/a/node_modules/pkg/index").C' is not assignable to type 'import("/b/node_modules/pkg/index").C'.
+!!! error TS2322:   Types have separate declarations of a private property 'p'.
+    declare const d: a.D;
+    export const d2: b.D = d;
+    

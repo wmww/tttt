@@ -1,0 +1,61 @@
+//// [test/cases/ttttPackageIdPeerDependencies.ts] ////
+
+=== /a/node_modules/pkg/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+
+=== /a/node_modules/same/index.d.ts ===
+export declare class D { private p; }
+>D : D
+>p : any
+
+=== /a/index.ts ===
+export { C } from "pkg";
+>C : typeof import("pkg").C
+
+export { D } from "same";
+>D : typeof import("same").D
+
+=== /b/node_modules/pkg/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+
+=== /b/node_modules/same/index.d.ts ===
+export declare class D { private p; }
+>D : D
+>p : any
+
+=== /b/index.ts ===
+export { C } from "pkg";
+>C : typeof import("pkg").C
+
+export { D } from "same";
+>D : typeof import("same").D
+
+=== /main.ts ===
+import * as a from "./a";
+>a : typeof a
+
+import * as b from "./b";
+>b : typeof b
+
+declare const c: a.C;
+>c : a.C
+>a : any
+
+export const c2: b.C = c;
+>c2 : b.C
+>b : any
+>c : a.C
+
+declare const d: a.D;
+>d : a.D
+>a : any
+
+export const d2: b.D = d;
+>d2 : a.D
+>b : any
+>d : a.D
+
