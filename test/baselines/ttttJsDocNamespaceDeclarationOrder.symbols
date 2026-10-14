@@ -1,0 +1,19 @@
+//// [test/cases/ttttJsDocNamespaceDeclarationOrder.ts] ////
+
+=== file.js ===
+const myTypes = {};
+>myTypes : Symbol(myTypes, Decl(file.js, 0, 5), Decl(file.js, 1, 22), Decl(file.js, 3, 22), Decl(file.js, 5, 22))
+
+/** @typedef {string} myTypes.typeA */
+export {myTypes};
+>myTypes : Symbol(myTypes, Decl(file.js, 1, 22), Decl(file.js, 2, 8), Decl(file.js, 3, 22), Decl(file.js, 5, 22))
+
+/** @typedef {number} myTypes.typeB */
+const x = 1;
+>x : Symbol(x, Decl(file.js, 4, 5))
+
+/** @typedef {number} myTypes.typeC */
+=== file2.js ===
+import {myTypes} from './file.js';
+>myTypes : Symbol(myTypes, Decl(file2.js, 0, 8))
+

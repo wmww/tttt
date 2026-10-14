@@ -1,0 +1,21 @@
+//// [test/cases/ttttJsDocNamespaceDeclarationOrder.ts] ////
+
+=== file.js ===
+const myTypes = {};
+>myTypes : {}
+>{} : {}
+
+/** @typedef {string} myTypes.typeA */
+export {myTypes};
+>myTypes : {}
+
+/** @typedef {number} myTypes.typeB */
+const x = 1;
+>x : 1
+>1 : 1
+
+/** @typedef {number} myTypes.typeC */
+=== file2.js ===
+import {myTypes} from './file.js';
+>myTypes : {}
+

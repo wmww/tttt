@@ -406,7 +406,7 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
         if (seen) continue;
         for (u32 pass = 0; pass < 2; pass++) {
             isize from = vec_span_size(&ret);
-            bool assignments = false, jsdoc = false;
+            bool assignments = false, jsdoc = false, jsdoc_namespace = false, jsdoc_alias = false;
             for (u32 j = i; j < my decl_count; j++) {
                 if (!same_block(my decls[j], my decls[i]) || !span_valid(my decls[j].full)) continue;
                 // (The namespace of a JSDoc `@enum` or `@typedef` on `A.B.C = v` is the declaration the assignment's
@@ -433,9 +433,14 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
                     vec_span_push(&ret, my decls[j].full);
                     assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;
                     jsdoc |= span_is_jsdoc_tag(my decls[j].full) || is_delayed_jsdoc_decl(&my decls[j]);
+                    jsdoc_namespace |= my decls[j].kind == SYMBOL_DECL_NAMESPACE && is_delayed_jsdoc_decl(&my decls[j]);
+                    jsdoc_alias |= my decls[j].kind == SYMBOL_DECL_TYPE_ALIAS && is_delayed_jsdoc_decl(&my decls[j]);
                 }
             }
-            if (!assignments || jsdoc) continue;
+            // (The namespace of a dotted `@typedef A.b` isn't deferred like a top-level typedef, tsgo's reparsed
+            // ModuleDeclaration: in source order with the rest, `export {A}` after the typedefs before it)
+            bool by_position = jsdoc_namespace && !jsdoc_alias;
+            if (!by_position && (!assignments || jsdoc)) continue;
             // (The rest in source order: an expando assignment is declared after the namespaces it is between by
             // tttt's resolve walk, by tsc's binder where it is)
             for (isize a = from + 1; a < vec_span_size(&ret); a++) {
