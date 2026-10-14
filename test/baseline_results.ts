@@ -90,6 +90,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionAnyBeforeUnions': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionOfManyMembersProperty': {
         errors: true,
         symbols: true,
@@ -135,6 +140,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIndexRecord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNullIdentifierName': {
         errors: true,
         symbols: true,
@@ -165,6 +175,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRestUnionGenericCallArg': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSignatureParameterTypeofItself': {
         errors: true,
         symbols: true,
@@ -176,6 +191,11 @@ const baselines = {
         types: true,
     },
     'ttttSpreadGenericArrayLike': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
         symbols: true,
         types: true,
@@ -12188,7 +12208,7 @@ const baselines = {
     'es2018ObjectAssign': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5-asyncFunction(target=es2015)': {
         errors: true,
@@ -13783,7 +13803,7 @@ const baselines = {
     'exportInFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportInterfaceClassAndValue': {
         errors: true,
@@ -22983,7 +23003,7 @@ const baselines = {
     'moduleElementsInWrongContext2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleElementsInWrongContext3': {
         errors: true,
@@ -40278,7 +40298,7 @@ const baselines = {
     'usePromiseFinally(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useRegexpGroups': {
         errors: true,
@@ -61523,7 +61543,7 @@ const baselines = {
     'plainJSGrammarErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'plainJSGrammarErrors2': {
         errors: true,
