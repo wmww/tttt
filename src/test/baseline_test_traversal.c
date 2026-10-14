@@ -2451,6 +2451,20 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             }
         }
     }
+    // (A function expression's type, `this` of `module.exports.F = function () { this }` when module.exports is one:
+    // its symbol, `__function` named as tsc's getNameOfSymbolAsWritten names it, by getAssignedName)
+    if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me)) {
+        Ty const* type = ty_contextual_this_type(checker, identifier_this_function(me));
+        FunctionImpl const* function = type && type->kind == TY_ANONYMOUS && !type->anonymous.target ? type->anonymous.function : nullptr;
+        if (function && function->is_expression && !function_impl_is_arrow(function) && span_valid(function->full_span)) {
+            Span name = span_valid(function->name) ? function->name : function_impl_rare(function)->assigned_name;
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_single(function->full_span), .span = identifier_expr_name(me),
+                .text = span_valid(name) ? cstr_from_sv(span_sv(name)) : cstr_lit("__function"),
+            });
+            return;
+        }
+    }
     // (A file's module, `this` of `module.exports.F = function () { this }`: declared by the file, at its start)
     if (symbol && !symbol->decl_count && symbol->is_module && symbol->module && symbol->module->file) {
         SourceFile const* file = symbol->module->file;
