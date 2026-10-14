@@ -1,0 +1,28 @@
+ttttAutoAccessorModifiers.ts(4,14): error TS2687: All declarations of 'x' must have identical modifiers.
+ttttAutoAccessorModifiers.ts(7,5): error TS2687: All declarations of 'x' must have identical modifiers.
+ttttAutoAccessorModifiers.ts(7,5): error TS2717: Subsequent property declarations must have the same type.  Property 'x' must be of type 'string', but here has type 'string | undefined'.
+
+
+==== ttttAutoAccessorModifiers.ts (3 errors) ====
+    // An auto-accessor is a property declaration to checkVariableLikeDeclaration: its optionality and modifiers must
+    // match the interface declarations merged with it (TS2687)
+    class Foo1 {
+        accessor x: string = "abc"
+                 ~
+!!! error TS2687: All declarations of 'x' must have identical modifiers.
+    }
+    interface Foo1 {
+        x?: string
+        ~
+!!! error TS2687: All declarations of 'x' must have identical modifiers.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'x' must be of type 'string', but here has type 'string | undefined'.
+!!! related TS6203 ttttAutoAccessorModifiers.ts:4:14: 'x' was also declared here.
+    }
+    class Foo2 {
+        accessor y: string = "abc"
+    }
+    interface Foo2 {
+        y: string
+    }
+    

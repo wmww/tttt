@@ -3781,7 +3781,7 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
                 });
             }
         }
-        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.computed_key || i->field.is_auto_accessor) continue;
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.computed_key) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
             .name = cstr_sv(&i->field.name_string), .span = i->field.name_span, .optional = i->field.is_optional,
             .modifiers = access_modifier_bits(i->access) | (i->field.is_readonly ? PROPERTY_MOD_READONLY : 0) |

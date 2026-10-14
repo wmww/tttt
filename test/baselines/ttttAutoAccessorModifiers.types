@@ -1,0 +1,28 @@
+//// [test/cases/ttttAutoAccessorModifiers.ts] ////
+
+=== ttttAutoAccessorModifiers.ts ===
+// An auto-accessor is a property declaration to checkVariableLikeDeclaration: its optionality and modifiers must
+// match the interface declarations merged with it (TS2687)
+class Foo1 {
+>Foo1 : Foo1
+
+    accessor x: string = "abc"
+>x : string
+>"abc" : "abc"
+}
+interface Foo1 {
+    x?: string
+>x : string
+}
+class Foo2 {
+>Foo2 : Foo2
+
+    accessor y: string = "abc"
+>y : string
+>"abc" : "abc"
+}
+interface Foo2 {
+    y: string
+>y : string
+}
+
