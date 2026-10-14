@@ -3756,9 +3756,9 @@ const baselines = {
         types: true,
     },
     'circularInlineMappedGenericTupleTypeNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularInstantiationExpression': {
         errors: true,
@@ -28416,7 +28416,7 @@ const baselines = {
         types: true,
     },
     'recursivelyExpandingUnionNoStackoverflow': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
