@@ -1,0 +1,27 @@
+ttttOverrideSymbolMemberName.ts(8,5): error TS2425: Class 'Base' defines instance member property '[Symbol.iterator]', but extended class 'Derived' defines it as instance member function.
+ttttOverrideSymbolMemberName.ts(9,5): error TS2425: Class 'Base' defines instance member property 'm', but extended class 'Derived' defines it as instance member function.
+ttttOverrideSymbolMemberName.ts(14,7): error TS2515: Non-abstract class 'B' does not implement inherited abstract member [Symbol.toPrimitive] from class 'A'.
+
+
+==== ttttOverrideSymbolMemberName.ts (3 errors) ====
+    // A member named by a well-known symbol is printed as symbolToString does in checkKindsOfPropertyMemberOverrides'
+    // messages, `[Symbol.iterator]`, not as its escaped name (`__@iterator@<id>`, which depends on the checker)
+    declare class Base {
+        [Symbol.iterator]: () => Iterator<number>;
+        m: () => void;
+    }
+    declare class Derived extends Base {
+        [Symbol.iterator](): Iterator<number>;
+        ~~~~~~~~~~~~~~~~~
+!!! error TS2425: Class 'Base' defines instance member property '[Symbol.iterator]', but extended class 'Derived' defines it as instance member function.
+        m(): void;
+        ~
+!!! error TS2425: Class 'Base' defines instance member property 'm', but extended class 'Derived' defines it as instance member function.
+    }
+    abstract class A {
+        abstract [Symbol.toPrimitive](): number;
+    }
+    class B extends A {}
+          ~
+!!! error TS2515: Non-abstract class 'B' does not implement inherited abstract member [Symbol.toPrimitive] from class 'A'.
+    

@@ -998,8 +998,8 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
     CompilerOptions const* options = compiler_options();
     cstr missing = cstr_null; // The first four (all five when there are five), quoted
     u32 missing_count = 0;
-    Atom const* first_missing = nullptr;
-    Atom const* five = nullptr; // The fifth: listed when it is the last
+    cstr first_missing = cstr_null;
+    cstr five = cstr_null; // The fifth: listed when it is the last
     // (A mixin's base is an intersection: the properties of every part, each name once)
     TyList parts = base->kind == TY_INTERSECTION ? base->composite.types : (TyList){ .data = &base, .len = 1 };
     for (u32 part = 0; part < parts.len; part++) {
@@ -1045,10 +1045,15 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                 // (Not when another part of an intersection base has it too: that synthetic property has no abstract
                 // modifier, tsc's getDeclarationModifierFlagsFromSymbol keeps only accessibility and static)
                 if (base_info.is_abstract && !several && !my is_abstract && !merged_interface_base_has(checker, me, base_prop)) {
-                    if (!missing_count) first_missing = base_prop->name;
+                    // (Names as symbolToString prints them: `[Symbol.iterator]`, not the escaped `__@iterator@12`)
+                    if (!missing_count) first_missing = ty_prop_name_cstr(checker, base_prop->name);
                     if (missing_count < 5) {
-                        if (missing_count == 4) five = base_prop->name;
-                        else cstr_append_d(&missing, DEFAULT_DISPLAY, missing_count ? ", '" : "'", atom_sv(base_prop->name), "'");
+                        if (missing_count == 4) five = ty_prop_name_cstr(checker, base_prop->name);
+                        else {
+                            cstr name = ty_prop_name_cstr(checker, base_prop->name);
+                            cstr_append_d(&missing, DEFAULT_DISPLAY, missing_count ? ", '" : "'", name, "'");
+                            cstr_drop(&name);
+                        }
                     }
                     missing_count++;
                 }
@@ -1063,12 +1068,15 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             if (base_property_like && derived_property_like) {
                 if (base_info.is_abstract && (base_info.kind != MEMBER_PROPERTY || base_info.uninitialized_field)) continue;
                 if (synthetic && (synthetic_exempt || base_info.is_abstract)) continue;
+            }
+            cstr name = ty_prop_name_cstr(checker, base_prop->name);
+            if (base_property_like && derived_property_like) {
                 if (synthetic) base_info.kind = MEMBER_PROPERTY;
                 if (base_info.kind == MEMBER_ACCESSOR && derived_info.kind == MEMBER_PROPERTY) {
-                    error_ctx_error_d(errs, at, 2610, "'", atom_sv(base_prop->name), "' is defined as an accessor in class '",
+                    error_ctx_error_d(errs, at, 2610, "'", name, "' is defined as an accessor in class '",
                         base, "', but is overridden here in '", type, "' as an instance property.");
                 } else if (base_info.kind == MEMBER_PROPERTY && derived_info.kind == MEMBER_ACCESSOR) {
-                    error_ctx_error_d(errs, at, 2611, "'", atom_sv(base_prop->name), "' is defined as a property in class '",
+                    error_ctx_error_d(errs, at, 2611, "'", name, "' is defined as a property in class '",
                         base, "', but is overridden here in '", type, "' as an accessor.");
                 } else if (options->use_define_for_class_fields && derived_info.uninitialized_field && !base_info.is_abstract &&
                     !derived_info.is_abstract && !derived_info.is_declare && !my is_ambient && !derived_info.late_bound
@@ -1079,7 +1087,7 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                     if (derived_info.definite || !constructor || !derived_info.identifier_name || !options->strict_null_checks ||
                         !field_initialized_in_constructor(checker, me, derived_info.field, type, constructor)
                     ) {
-                        error_ctx_error_d(errs, at, 2612, "Property '", atom_sv(base_prop->name), "' will overwrite the base "
+                        error_ctx_error_d(errs, at, 2612, "Property '", name, "' will overwrite the base "
                             "property in '", base, "'. If this is intentional, add an initializer. Otherwise, add a 'declare' "
                             "modifier or remove the redundant declaration.");
                     }
@@ -1087,18 +1095,19 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             } else if (base_info.kind == MEMBER_METHOD) {
                 if (derived_info.kind == MEMBER_ACCESSOR) {
                     error_ctx_error_d(errs, at, 2423, "Class '", base, "' defines instance member function '",
-                        atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member accessor.");
+                        name, "', but extended class '", type, "' defines it as instance member accessor.");
                 }
             } else if (base_info.kind == MEMBER_ACCESSOR) {
                 error_ctx_error_d(errs, at, 2426, "Class '", base, "' defines instance member accessor '",
-                    atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member function.");
+                    name, "', but extended class '", type, "' defines it as instance member function.");
             } else {
                 error_ctx_error_d(errs, at, 2425, "Class '", base, "' defines instance member property '",
-                    atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member function.");
+                    name, "', but extended class '", type, "' defines it as instance member function.");
             }
+            cstr_drop(&name);
         }
     }
-    if (missing_count == 5) cstr_append_d(&missing, DEFAULT_DISPLAY, ", '", atom_sv(five), "'");
+    if (missing_count == 5) cstr_append_d(&missing, DEFAULT_DISPLAY, ", '", five, "'");
     if (missing_count > 5) {
         Span at = span_valid(my name) ? my name : block_first_token(my full_span);
         if (my is_expression && !span_valid(my name)) {
@@ -1113,14 +1122,14 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
         if (my is_expression && !span_valid(my name)) {
             if (missing_count == 1) {
                 error_ctx_error_d(errs, at, 2653, "Non-abstract class expression does not implement inherited abstract "
-                    "member '", atom_sv(first_missing), "' from class '", base, "'.");
+                    "member '", first_missing, "' from class '", base, "'.");
             } else {
                 error_ctx_error_d(errs, at, 2656, "Non-abstract class expression is missing implementations for the "
                     "following members of '", base, "': ", missing, ".");
             }
         } else if (missing_count == 1) {
             error_ctx_error_d(errs, at, 2515, "Non-abstract class '", type, "' does not implement inherited abstract "
-                "member ", atom_sv(first_missing), " from class '", base, "'.");
+                "member ", first_missing, " from class '", base, "'.");
         } else {
             error_ctx_error_d(errs, at, 2654, "Non-abstract class '", type, "' is missing implementations for the "
                 "following members of '", base, "': ", missing, ".");

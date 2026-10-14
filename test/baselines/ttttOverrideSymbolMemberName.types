@@ -1,0 +1,43 @@
+//// [test/cases/ttttOverrideSymbolMemberName.ts] ////
+
+=== ttttOverrideSymbolMemberName.ts ===
+// A member named by a well-known symbol is printed as symbolToString does in checkKindsOfPropertyMemberOverrides'
+// messages, `[Symbol.iterator]`, not as its escaped name (`__@iterator@<id>`, which depends on the checker)
+declare class Base {
+>Base : Base
+
+    [Symbol.iterator]: () => Iterator<number>;
+>[Symbol.iterator] : () => Iterator<number>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+    m: () => void;
+>m : () => void
+}
+declare class Derived extends Base {
+>Derived : Derived
+>Base : Base
+
+    [Symbol.iterator](): Iterator<number>;
+>[Symbol.iterator] : () => Iterator<number>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+    m(): void;
+>m : () => void
+}
+abstract class A {
+>A : A
+
+    abstract [Symbol.toPrimitive](): number;
+>[Symbol.toPrimitive] : () => number
+>Symbol.toPrimitive : unique symbol
+>Symbol : SymbolConstructor
+>toPrimitive : unique symbol
+}
+class B extends A {}
+>B : B
+>A : A
+
