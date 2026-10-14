@@ -19,8 +19,18 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
   base instantiation in resolveObjectTypeMembers re-entering a reference's members; mechanism, prototype and why it
   isn't committed in plan 65 (agents/plans/65_eager_base_runaway.md).
 - **redux-toolkit query/core/module.ts:656, react/module.ts:216 (+TS2322)**: `Api<BaseQuery, EndpointDefinitions,
-  ReducerPath, TagTypes, keyof ApiModules<...>>` to `Api<any, EndpointDefinitions, any, any, unique symbol>`: not
-  looked at. (The TS2344 x3 there went with never-reduction through type variables' constraints, 2026-10-14.)
+  ReducerPath, TagTypes, keyof ApiModules<...>>` to `Api<any, EndpointDefinitions, any, any, unique symbol>`. tttt's
+  chain ends in `util.getRunningQueryThunk()`: the target's result is `InfiniteQueryActionCreatorResult<never> |
+  QueryActionCreatorResult<never>`, i.e. tttt reduced the target's `Definitions[EndpointName] & { type: "query" }`
+  (Definitions = EndpointDefinitions, a Record of the definition union whose `type` is a DefinitionType member) to
+  never, where the source keeps `EndpointDefinition<any, ...> & { type: "query" }` unreduced. Either tsc doesn't
+  reduce that instance (getReducedType is only asked in some places) or it compares the two references by variance
+  before reaching it. Not reduced further. (The TS2344 x3 there went with never-reduction through type variables'
+  constraints, 2026-10-14.)
+- **mikro-orm EntityManager.mongo.test.ts:1268 +TS2769** (mikro-orm and mikro-orm/tests): `orm.em.create(Author,
+  cache, { managed: true })` with `cache = wrap(jon).toObject()` (an EntityDTO<Author>): tsc takes the first overload
+  (`data: Data & IsSubset<RequiredEntityData<Entity, never, Convert>, Data>`), tttt rejects it and reports the last
+  (`{ partial: true }` missing). Inference of Data from an EntityDTO through IsSubset; not reduced.
 - **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
   type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
   across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
@@ -47,8 +57,8 @@ dependencies in package ids, landed by agent D). Left:
   vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
 - **arktype** (fn.test.ts:286, this.test.ts:190, type.test.ts:138/140), **redux-toolkit** (module.ts:656, react/module.ts:216:
-  see agent A 2026-10-12 above), **mikro-orm** EntityManager.mongo.test.ts:1268
-  +TS2769 (and -TS5088/-TS2883 declaration diagnostics in mikro-orm/tests), **monkeytype** SearchableAutoSetting.tsx,
+  see agent A 2026-10-12 above), **mikro-orm** (the -TS5088/-TS2883 declaration
+  diagnostics in mikro-orm/tests), **monkeytype** SearchableAutoSetting.tsx,
   **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
   looked at this round.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
