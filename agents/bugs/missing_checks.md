@@ -165,7 +165,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
     are in flight); tttt reports TS2310 and keeps `bar`.
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
   n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
-- circularInlineMappedGenericTupleTypeNoCrash (TS2589), recursiveMappedTypes (TS2502/TS2615 in a mapped type over
+- recursiveMappedTypes (TS2502/TS2615 in a mapped type over
   keyof).
 ## Limits
 - TS2589 by instantiation *count* (valibot under sloppy/nosnc flagflip cells, ~60 diagnostics; investigated

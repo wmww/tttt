@@ -339,7 +339,17 @@ static Ty const* mapped_over_array_or_tuple(
             bool rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
             flags[i] = shape->flags[i];
             if (rest && element->kind == TY_TYPE_PARAM) {
-                mapped_elements[i] = ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, element));
+                // (tsc's prependTypeMapping is a merged mapper, the outer mapper applied to what the variable maps to:
+                // a variadic element that the outer mapper maps again is mapped again, `Foo<[...E, "abc"]>` over
+                // `{ [P in keyof E]: ... }` recursing until TS2589)
+                Ty const* target = element;
+                for (u32 j = 0; mapper && j < mapper->len; j++) {
+                    if (mapper->sources[j] == element) {
+                        target = mapper->targets[j];
+                        break;
+                    }
+                }
+                mapped_elements[i] = ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, target));
                 continue;
             }
             Ty const* array = rest ? element : ty_array(me, element, false);

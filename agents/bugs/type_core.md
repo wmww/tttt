@@ -18,7 +18,7 @@ passing tests).
   contextual type.
 - (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
-  "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
+  "abc"; }` where tttt prints `{ bar: string; }`.
 - (2026-10-07) map-to-obj (DefinitelyTyped, 2 `$ExpectType`): `id(new Map([["a", 1]]))` with `id<K extends
   string>(m: Map<K, V>)`: tsc's return mapper for the inner `new Map` comes from the contextual type with the outer K
   as createOuterReturnMapper has it (nothing inferred: its constraint string), so "a" widens; tttt's inner return
