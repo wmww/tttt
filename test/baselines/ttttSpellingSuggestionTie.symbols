@@ -1,0 +1,21 @@
+//// [test/cases/ttttSpellingSuggestionTie.ts] ////
+
+=== ttttSpellingSuggestionTie.ts ===
+// Of the property suggestions at the best distance, the first declared wins (tsgo's getSpellingSuggestion breaks ties
+// with compareSymbols): an inherited member declared earlier beats the class's own
+class X { propertyX: any; }
+>X : Symbol(X, Decl(ttttSpellingSuggestionTie.ts, 0, 0))
+>propertyX : Symbol(X.propertyX, Decl(ttttSpellingSuggestionTie.ts, 2, 9))
+
+class A extends X { propertyA: number; }
+>A : Symbol(A, Decl(ttttSpellingSuggestionTie.ts, 2, 27))
+>X : Symbol(X, Decl(ttttSpellingSuggestionTie.ts, 0, 0))
+>propertyA : Symbol(A.propertyA, Decl(ttttSpellingSuggestionTie.ts, 3, 19))
+
+declare const a: A;
+>a : Symbol(a, Decl(ttttSpellingSuggestionTie.ts, 4, 13))
+>A : Symbol(A, Decl(ttttSpellingSuggestionTie.ts, 2, 27))
+
+a.propertyAX;
+>a : Symbol(a, Decl(ttttSpellingSuggestionTie.ts, 4, 13))
+

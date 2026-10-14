@@ -144,6 +144,21 @@ int ty_compare_symbols(Symbol const* a, Symbol const* b) {
     return cmp_sv(escaped_name(a), escaped_name(b));
 }
 
+// tsc's compareSymbols of two declared things known by their first declaration's span (invalid: none) and name
+int ty_compare_declarations(Span a, csview a_name, Span b, csview b_name) {
+    OrderPos pa = {0}, pb = {0};
+    bool ha = span_pos(a, &pa), hb = span_pos(b, &pb);
+    if (ha && hb) {
+        int c = cmp_pos(pa, pb);
+        if (c) return c;
+    } else if (ha) {
+        return -1;
+    } else if (hb) {
+        return 1;
+    }
+    return cmp_sv(a_name, b_name);
+}
+
 // The symbol tsc's compareTypeNames orders by (getTypeNameSymbol): a name, and the symbol for the identity test
 typedef struct TypeName {
     bool named;

@@ -1257,6 +1257,7 @@ Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, At
 bool ty_param_is_bounded(Ty const* param);
 // tsc's compareSymbols minus symbol ids: by first declaration (file order, position), then name; 0 a tie
 int ty_compare_symbols(Symbol const* a, Symbol const* b);
+int ty_compare_declarations(Span a, csview a_name, Span b, csview b_name);
 bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth);
 // tsc's isValidConstAssertionArgument, as far as a const context changes what these check to (expr.c)
 bool ty_is_const_context_kind(struct Expr const* expr);

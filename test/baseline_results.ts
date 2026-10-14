@@ -215,6 +215,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpellingSuggestionTie': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpreadCrossProductTooComplex': {
         errors: true,
         symbols: true,

@@ -1438,6 +1438,14 @@ static ClassDecl const* class_decl_of(Symbol const* symbol);
 static bool is_within_class(ClassDecl const* enclosing, ClassDecl const* class_decl);
 
 // tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`). A #private member only
+static int compare_suggested_props(void* ctx, isize a, isize b) {
+    Prop const* const* props = ctx;
+    PropDecl const* da = props[a]->decl;
+    PropDecl const* db = props[b]->decl;
+    return ty_compare_declarations(da->decl_span_count ? da->decl_spans[0] : span_null, atom_sv(props[a]->name),
+        db->decl_span_count ? db->decl_spans[0] : span_null, atom_sv(props[b]->name));
+}
+
 // inside its class, outside an optional chain (tsc's isPropertyAccessible)
 static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop const* prop, Ty const* containing) {
     PropertyContext const* site = property_context(access);
@@ -1503,7 +1511,8 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
         if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
         names[i] = everywhere ? candidate : (csview){0};
     }
-    isize best = spelling_suggestion(name, names, count);
+    // (Of the candidates at the best distance, the first declared: tsgo's getSpellingSuggestion with compareSymbols)
+    isize best = spelling_suggestion_ex(name, names, count, compare_suggested_props, props);
     Prop const* ret = best >= 0 ? props[best] : nullptr;
     free(names);
     free(props);

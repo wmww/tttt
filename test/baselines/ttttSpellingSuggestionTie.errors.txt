@@ -1,0 +1,17 @@
+ttttSpellingSuggestionTie.ts(4,21): error TS2564: Property 'propertyA' has no initializer and is not definitely assigned in the constructor.
+ttttSpellingSuggestionTie.ts(6,3): error TS2551: Property 'propertyAX' does not exist on type 'A'. Did you mean 'propertyX'?
+
+
+==== ttttSpellingSuggestionTie.ts (2 errors) ====
+    // Of the property suggestions at the best distance, the first declared wins (tsgo's getSpellingSuggestion breaks ties
+    // with compareSymbols): an inherited member declared earlier beats the class's own
+    class X { propertyX: any; }
+    class A extends X { propertyA: number; }
+                        ~~~~~~~~~
+!!! error TS2564: Property 'propertyA' has no initializer and is not definitely assigned in the constructor.
+    declare const a: A;
+    a.propertyAX;
+      ~~~~~~~~~~
+!!! error TS2551: Property 'propertyAX' does not exist on type 'A'. Did you mean 'propertyX'?
+!!! related TS2728 ttttSpellingSuggestionTie.ts:3:11: 'propertyX' is declared here.
+    
