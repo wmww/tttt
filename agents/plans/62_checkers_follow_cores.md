@@ -85,7 +85,15 @@ K; `scripts/oracles.py --only kdiff` is the K oracle (suite dumps + source sweep
 - Validation: `scripts/kdiff.py -k 4` and `-k 16` list only inbox-zero (undefinedProperties) and the class 3 display
   differences; the source sweep's match count at the default K is at least today's K=1 count (3307); suite 0 lost.
 
-### Stage 2: display independent of K
+### Stage 2: display independent of K — done 2026-10-14
+Result: kdiff at K=16 **4 -> 2** / 3363 (inbox-zero's undefinedProperties order, which tsgo shares; mermaid, see
+below), DT 0 / 8595, suite dumps 0 / 39870 differing, every corpus byte-identical at 1 and 16 (checkerdiff compares
+exactly now). babel-traverse had already gone. openapi-typescript: checkKindsOfPropertyMemberOverrides' messages
+printed a member's escaped name (`__@iterator@<type id>`), now symbolToString's `[Symbol.iterator]`; redux-toolkit:
+signature_return_code() read the parameter count of a not yet resolved (lazily instantiated) signature, so
+`get(...)` became `get()` unless something had resolved it first.
+MERMAID_RESULT
+
 - Finish `ty/order.c`'s id tie-breaks against tsgo's `CompareTypes` (hacks.md "Stable type ordering" lists the
   remaining ones: roots without `outer`, deferred references without a cheap position, same-symbol anonymous types with
   equal mappers, intrinsic variants), babel-traverse first.
@@ -94,7 +102,13 @@ K; `scripts/oracles.py --only kdiff` is the K oracle (suite dumps + source sweep
   undefinedProperties class. Then delete checkerdiff's "may differ inside quotes" allowance (its `modulo` column
   becomes `exact`).
 
-### Stage 3: the default follows the machine
+### Stage 3: the default follows the machine — done 2026-10-14 (but the 12-core numbers)
+Result: `--checkers` defaults to `auto_checker_count()`: one per thread, at most one per 64 KB of checked non-lib
+source (a twelfth of the source sweep at K 1/2/4: below 64 KB the extra checkers saved a few ms and cost 4-9% RSS;
+bytes are a rough proxy, nest checks 240 KB in 110 ms). On this 4-vCPU box only react (4 -> 2 checkers, 196 -> 165 MB,
+0.11 -> 0.12 s) and nest (4 -> 3) change among the corpora. The cap above 4 cores waits on the human's
+`scripts/bench.sh --checkers "4 8 12 16"` on the 12-core machine (triage.md): if 12 checkers cost more RSS than they
+save time there, cap the default (e.g. at 8) rather than at the cores.
 - `--checkers` defaults to `--threads` (cores), capped by program size so small projects don't pay K copies of lib
   types for nothing: e.g. at most one checker per N bytes (or files) of checked non-lib source, N chosen from the
   kdiff/perfsweep data so that ~95% of the source sweep projects keep today's speed. Keep `--checkers` explicit

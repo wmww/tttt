@@ -2121,10 +2121,10 @@ static Ternary compare_signatures(
     return result & related;
 }
 
-// The return_code of compare_signatures() for signatures_related()
+// The return_code of compare_signatures() for signatures_related(), only asked when reporting
 static unsigned signature_return_code(Checker* me, Signature const* source, Signature const* target, bool construct) {
     // (Resolved first: an unresolved signature has no parameters yet, which made the message depend on what was
-    // checked before)
+    // checked before. Only reports pay for it: resolving every compared instantiation costs drizzle 16%)
     signature_resolve(me, source);
     signature_resolve(me, target);
     bool no_params = !source->param_count && !target->param_count;
@@ -2327,7 +2327,7 @@ static Ternary signatures_related(
         for (u32 i = 0; i < target_count; i++) {
             Ternary related = compare_signatures(
                 me, st, ty_erased_signature(me, source_sigs[i]), ty_erased_signature(me, target_sigs[i]), CALLBACK_NONE, report,
-                signature_return_code(me, source_sigs[i], target_sigs[i], construct)
+                report ? signature_return_code(me, source_sigs[i], target_sigs[i], construct) : 0
             );
             if (!related) return TERNARY_FALSE;
             result &= related;
@@ -2338,7 +2338,7 @@ static Ternary signatures_related(
         result = compare_signatures(
             me, st, erase ? ty_erased_signature(me, source_sigs[0]) : source_sigs[0],
             erase ? ty_erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report,
-            signature_return_code(me, source_sigs[0], target_sigs[0], construct)
+            report ? signature_return_code(me, source_sigs[0], target_sigs[0], construct) : 0
         );
     } else {
         // Every target signature needs a source signature, type parameters erased. Only the first failure explains
@@ -2349,7 +2349,7 @@ static Ternary signatures_related(
             Ternary related = TERNARY_FALSE;
             for (u32 j = 0; j < source_count && !related; j++) {
                 related = compare_signatures(me, st, ty_erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate,
-                    signature_return_code(me, source_sigs[j], target_sigs[i], construct));
+                    elaborate ? signature_return_code(me, source_sigs[j], target_sigs[i], construct) : 0);
                 elaborate = false;
             }
             if (related) {
