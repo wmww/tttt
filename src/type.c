@@ -327,8 +327,20 @@ static thread_local struct {
     u32 len;
 } distributing;
 
+thread_local bool type_lookup_lazy_silent;
+
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
     my flow = current_flow;
+    // What tsc only resolves when a type's members are (a type literal's, a signature's), under an import type's type
+    // arguments, which tsc's checkImportType doesn't check: nothing to say (see type_lookup_lazy_silent)
+    if (type_lookup_lazy_silent && errs && (my tag == TYPE_INTERFACE || my tag == TYPE_CALLABLE)) {
+        ErrorCtx silent = error_ctx_scratch(errs);
+        type_lookup_lazy_silent = false;
+        type_lookup_names(me, names, &silent);
+        type_lookup_lazy_silent = true;
+        error_ctx_drop(&silent);
+        return;
+    }
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:

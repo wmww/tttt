@@ -1,0 +1,31 @@
+//// [test/cases/ttttImportTypeArgumentsResolvedLazily.ts] ////
+
+=== m.ts ===
+export type F<T> = { t: T };
+>F : F<T>
+>t : T
+
+export interface I { i: 1 }
+>i : 1
+
+=== b.ts ===
+export declare const x: import("./m").F<import("./m").I & { a(o?: import("./nope").T): void; b: Missing; c: import("./nope2").U }>;
+>x : import("./m").F<import("./m").I & { a(o?: import("./nope").T): void; b: Missing; c: import("./nope2").U; }>
+>a : (o?: import("./nope").T) => void
+>o : any
+>b : Missing
+>c : any
+
+export declare const y: import("./m").F<Missing2>;
+>y : import("./m").F<Missing2>
+
+export declare const z: import("./m").F<import("./nope3").V>;
+>z : import("./m").F<any>
+
+export declare const w: import("./m").F<Array<import("./nope4").V>>;
+>w : import("./m").F<any[]>
+
+export declare const v: import("./m").F<(a: import("./nope5").V) => void>;
+>v : import("./m").F<(a: import("./nope5").V) => void>
+>a : any
+

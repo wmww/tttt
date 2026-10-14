@@ -1,0 +1,21 @@
+b.ts(2,41): error TS2304: Cannot find name 'Missing2'.
+b.ts(3,48): error TS2307: Cannot find module './nope3' or its corresponding type declarations.
+b.ts(4,54): error TS2307: Cannot find module './nope4' or its corresponding type declarations.
+
+
+==== m.ts (0 errors) ====
+    export type F<T> = { t: T };
+    export interface I { i: 1 }
+==== b.ts (3 errors) ====
+    export declare const x: import("./m").F<import("./m").I & { a(o?: import("./nope").T): void; b: Missing; c: import("./nope2").U }>;
+    export declare const y: import("./m").F<Missing2>;
+                                            ~~~~~~~~
+!!! error TS2304: Cannot find name 'Missing2'.
+    export declare const z: import("./m").F<import("./nope3").V>;
+                                                   ~~~~~~~~~
+!!! error TS2307: Cannot find module './nope3' or its corresponding type declarations.
+    export declare const w: import("./m").F<Array<import("./nope4").V>>;
+                                                         ~~~~~~~~~
+!!! error TS2307: Cannot find module './nope4' or its corresponding type declarations.
+    export declare const v: import("./m").F<(a: import("./nope5").V) => void>;
+    

@@ -298,6 +298,9 @@ static inline TypeNode type_move(TypeNode* me) {
 }
 
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
+// Set while looking up an import type's type arguments: tsc's checkImportType doesn't check them, getTypeFromTypeNode
+// only resolves what isn't deferred, so the names in type literals and signatures in there say nothing
+extern thread_local bool type_lookup_lazy_silent;
 // Parameter positions flip the variance of the true branches around them (TypeNode.flow): call around the walk of a
 // parameter's type, then restore with the result
 TypeFlow const* type_flow_enter_parameter(void);

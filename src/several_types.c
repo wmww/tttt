@@ -299,9 +299,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         bool unresolved = !span_valid(my name) && !my rare->import_typeof && my target && !my target->is_placeholder &&
             (my target->flags & SYMBOL_TYPE) && (!several_types_is_generic(my target) || my rare->import_export_equals_alias);
         unused_marking_suppressed += unresolved;
+        bool saved_lazy_silent = type_lookup_lazy_silent;
+        type_lookup_lazy_silent = true;
         for_each (i, vec_spanned_type, &my generic_params) {
             type_lookup_names(&i->type, names, found ? errs : &silent);
         }
+        type_lookup_lazy_silent = saved_lazy_silent;
         unused_marking_suppressed -= unresolved;
         error_ctx_drop(&silent);
         return;

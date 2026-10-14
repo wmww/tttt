@@ -1,0 +1,43 @@
+//// [test/cases/ttttImportTypeArgumentsResolvedLazily.ts] ////
+
+=== m.ts ===
+export type F<T> = { t: T };
+>F : Symbol(F, Decl(m.ts, 0, 0))
+>T : Symbol(T, Decl(m.ts, 0, 14))
+>t : Symbol(t, Decl(m.ts, 0, 20))
+>T : Symbol(T, Decl(m.ts, 0, 14))
+
+export interface I { i: 1 }
+>I : Symbol(I, Decl(m.ts, 0, 28))
+>i : Symbol(I.i, Decl(m.ts, 1, 20))
+
+=== b.ts ===
+export declare const x: import("./m").F<import("./m").I & { a(o?: import("./nope").T): void; b: Missing; c: import("./nope2").U }>;
+>x : Symbol(x, Decl(b.ts, 0, 20))
+>F : Symbol(F, Decl(m.ts, 0, 0))
+>I : Symbol(I, Decl(m.ts, 0, 28))
+>a : Symbol(a, Decl(b.ts, 0, 59))
+>o : Symbol(o, Decl(b.ts, 0, 62))
+>b : Symbol(b, Decl(b.ts, 0, 92))
+>Missing : Symbol(Missing)
+>c : Symbol(c, Decl(b.ts, 0, 104))
+
+export declare const y: import("./m").F<Missing2>;
+>y : Symbol(y, Decl(b.ts, 1, 20))
+>F : Symbol(F, Decl(m.ts, 0, 0))
+>Missing2 : Symbol(Missing2)
+
+export declare const z: import("./m").F<import("./nope3").V>;
+>z : Symbol(z, Decl(b.ts, 2, 20))
+>F : Symbol(F, Decl(m.ts, 0, 0))
+
+export declare const w: import("./m").F<Array<import("./nope4").V>>;
+>w : Symbol(w, Decl(b.ts, 3, 20))
+>F : Symbol(F, Decl(m.ts, 0, 0))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+export declare const v: import("./m").F<(a: import("./nope5").V) => void>;
+>v : Symbol(v, Decl(b.ts, 4, 20))
+>F : Symbol(F, Decl(m.ts, 0, 0))
+>a : Symbol(a, Decl(b.ts, 4, 41))
+
