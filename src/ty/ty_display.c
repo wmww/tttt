@@ -2012,9 +2012,9 @@ static bool annotation_is_d(Checker* me, TyDisplay d, TypeNode const* node, Ty c
     // (A `unique symbol` where it can't be one is plain symbol, which it says as well as any annotation: tsc reuses it)
     if (!node->parsed || (node->tag == TYPE_UNIQUE_SYMBOL && node->unique_symbol.key)) return false;
     Ty const* annotated = node_type(me, d, node);
-    // (An annotation that is the error type is reused whatever the type is: tsc's canReuseTypeNodeAnnotation)
+    // (A type that is the error type is taken to be whatever the annotation says: tsgo's pseudoTypeEquivalentToType)
     return annotated == ty || (optional && annotated == ty_without_undefined(me, ty)) ||
-        (annotated->flags & TYF_ERROR);
+        (ty->flags & TYF_ERROR);
 }
 
 // Prints `ty` by reprinting its declaration's annotation when that's allowed and says the same, else as a type
