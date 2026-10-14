@@ -39,9 +39,9 @@ clone is a *different* symbol than the one a later lookup finds:
   different files. Needs: the JS export= assignment symbol as an augmentable namespace, the union with the
   cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
-## Merges tsc decides after aliases resolve (plan 67)
+## Merges tsc decides after aliases resolve (plan 69)
 tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
-mergeSymbol, which resolves an alias target first. Plan 67 has the mechanism and the route; the tests below
+mergeSymbol, which resolves an alias target first. Plan 69 has the mechanism and the route; the tests below
 (duplicateVarsAcrossFileBoundaries, importEqualsError45874, checkerInitializationCrash,
 globalArrayAugmentationWithAmbientModuleReexportMerge1, declarationEmitAugmentationUsesCorrectSourceFile,
 moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck) are its validation.

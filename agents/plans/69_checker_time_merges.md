@@ -1,4 +1,4 @@
-# Plan 67: cross-file merges that involve aliases, decided after the aliases resolve (tsgo's mergeSymbol)
+# Plan 69: cross-file merges that involve aliases, decided after the aliases resolve (tsgo's mergeSymbol)
 
 Written 2026-10-14 by plan 66's fan-out agent C (bucket "binder/modules"). Seven suite tests, one mechanism; size ~1
 session (stage 1) + a probe sweep.
