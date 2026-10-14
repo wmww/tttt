@@ -594,7 +594,17 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
 }
 
 static bool last_error_starts_at(Parser* me, Span span);
-static int invalid_char_size(const char* c);
+// Whether at (a NUL byte) is a character of the file rather than its end (tsc's scanner reads past it)
+static bool nul_at_inside_file(Parser const* p, char const* at) {
+    char const* file_start = cstr_str(&p->shared->source->contents);
+    return at >= file_start && at < file_start + cstr_size(&p->shared->source->contents);
+}
+// The end of the text being parsed. A NUL byte inside the file is a character like any other (an Unknown token with
+// TS1127 to tsc's scanner)
+static inline bool at_eof(Parser const* p, char const* at) {
+    return !*at && !nul_at_inside_file(p, at);
+}
+static int invalid_char_size(Parser const* p, const char* c);
 // A checker's code (TS2xxx) the parser reports in tttt: not one of tsc's parse diagnostics, which parseErrorAtPosition
 // compares with
 static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000; }
@@ -604,7 +614,7 @@ static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
 static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr message, bool in_literal) {
     my shared->errors_attempted++;
-    int invalid = span_source(span) && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
+    int invalid = span_source(span) && !in_literal ? invalid_char_size(me, span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
         return parse_error_inner(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
@@ -965,11 +975,6 @@ static void note_jsdoc_comment(Parser* parent, const char* start, const char* en
     vec_jsdoc_range_push(comments, (JsDocRange){ .start = start, .end = end });
 }
 
-// Whether at (a NUL byte) is a character of the file rather than its end (tsc's scanner reads past it)
-static bool nul_at_inside_file(Parser const* p, char const* at) {
-    char const* file_start = cstr_str(&p->shared->source->contents);
-    return at >= file_start && at < file_start + cstr_size(&p->shared->source->contents);
-}
 
 // strchr() that goes on past NUL bytes inside the file
 static char const* find_char_in_file(Parser const* p, char const* from, char c) {
@@ -1110,8 +1115,9 @@ static int identifier_char_size_slow(const char* c, bool start) {
 }
 
 // A character at c that starts no token (tsc's scanner: TS1127 Invalid character): its length, else 0
-static int invalid_char_size(const char* c) {
+static int invalid_char_size(Parser const* p, const char* c) {
     unsigned char b = (unsigned char)c[0];
+    if (!b) return nul_at_inside_file(p, c) ? 1 : 0;
     if (b >= 0x80) return unicode_whitespace_size(c) || identifier_char_size_slow(c, true) ? 0 : utf8_char_size(c);
     if (b == '\\') return identifier_char_size_slow(c, true) ? 0 : 1;
     if (b && b < 0x20 && !is_js_ascii_space((char)b)) return 1;
@@ -1261,7 +1267,7 @@ ws_end:
     parent->whitespace_end = parent->pos;
     parent->shared->last_trivia_start = start;
     parent->shared->last_trivia_end = parent->pos;
-    if (!*parent->pos && !parent->shared->in_jsdoc &&
+    if (at_eof(parent, parent->pos) && !parent->shared->in_jsdoc &&
         (!parent->shared->eof_full_start || start < parent->shared->eof_full_start)) {
         parent->shared->eof_full_start = start;
     }
@@ -1328,7 +1334,7 @@ static void relate_last_expected_to_open(Parser* parent, const char* open, char 
 // At the end of the file tsc reports at the end of the last token (createIdentifier's reportAtCurrentPosition)
 static Span span_from_token_or_eof(Parser* parent) {
     const char* eof_start = parent->shared->eof_full_start;
-    if (!*parent->pos && eof_start && !parent->shared->in_jsdoc) return span_make(parent->shared->source, eof_start, eof_start);
+    if (at_eof(parent, parent->pos) && eof_start && !parent->shared->in_jsdoc) return span_make(parent->shared->source, eof_start, eof_start);
     return span_from_token(parent);
 }
 
@@ -1402,7 +1408,9 @@ static bool yield_await_is_keyword_here(Parser* parent) {
 static bool hop_token(Parser* parent) {
     switch (*parent->pos) {
         case '\0':
-            return false;
+            if (at_eof(parent, parent->pos)) return false;
+            parent->pos++;
+            return true;
 
         case '(':
         case ')':
@@ -1488,8 +1496,8 @@ typedef struct Tok {
 } Tok;
 
 // The end of the token at c, tsc's scanner's idea of it but cheap: no values
-static const char* tok_scan_end(const char* c) {
-    if (!*c) return c;
+static const char* tok_scan_end(Parser const* p, const char* c) {
+    if (!*c) return at_eof(p, c) ? c : c + 1;
     // (`#!` past the start of the file is one Unknown token, tsc's scanner after its TS18026)
     if (c[0] == '#' && c[1] == '!') return c + 2;
     int size = identifier_char_size(c + (*c == '#'), true);
@@ -1546,7 +1554,7 @@ static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
     p.whitespace = newline_before ? WHITESPACE_NEWLINE : WHITESPACE_NONE;
     p.whitespace_end = nullptr;
     hop_whitespace(&p);
-    Tok t = { .start = p.pos, .end = tok_scan_end(p.pos), .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
+    Tok t = { .start = p.pos, .end = tok_scan_end(&p, p.pos), .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
     parse_fail(&p);
     return t;
 }
@@ -1566,7 +1574,8 @@ static bool tok_is(Tok t, const char* text) {
 }
 
 static bool tok_is_eof(Tok t) {
-    return !*t.start;
+    // (A NUL inside the file is a token of one character)
+    return !*t.start && t.end == t.start;
 }
 
 // tsc's tokenIsIdentifierOrKeyword, which private names (`#x`) pass too
@@ -2433,7 +2442,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
         grammar_error(&p, span_make(p.shared->source, open, p.pos + 1), 1098, "Type parameter list cannot be empty.");
     }
 
-    while (*p.pos && *p.pos != '>') {
+    while (!at_eof(&p, p.pos) && *p.pos != '>') {
         GenericItem item;
         if (parse_generic_decl_item(&p, owner, &item)) {
             list_push(vec_generic_item, &ret->items, item);
@@ -2482,7 +2491,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     hop_whitespace(&p);
 
     Span trailing_comma_span = span_null;
-    while (*p.pos && *p.pos != '>') {
+    while (!at_eof(&p, p.pos) && *p.pos != '>') {
         trailing_comma_span = span_null;
         TypeNode t;
         Anchor type_a = anchor(&p);
@@ -2581,7 +2590,7 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
     }
     hop_whitespace(&p);
 
-    while (*p.pos && *p.pos != ']') {
+    while (!at_eof(&p, p.pos) && *p.pos != ']') {
         TupleElement elem = {0};
         char const* element_start = p.pos;
 
@@ -5548,7 +5557,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
     bool outer_no_mapped_member = p.shared->no_mapped_member;
 
     u32 saved_context = list_enter(&p, PARSING_TYPE_MEMBERS);
-    while (*p.pos && *p.pos != '}' && p.pos != prev_s) {
+    while (!at_eof(&p, p.pos) && *p.pos != '}' && p.pos != prev_s) {
         prev_s = p.pos;
         hop_whitespace(&p);
 
@@ -6350,7 +6359,7 @@ static bool parse_function_args_inner(
             unambiguous_function_type = true;
         }
 
-        while (*p.pos && *p.pos != ')') {
+        while (!at_eof(&p, p.pos) && *p.pos != ')') {
             if (hop_char(&p, ',')) {
                 parse_error(&p, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {
@@ -7086,7 +7095,7 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
 
     if (skip_typed_body(&p, ret) || parse_block(&p, false, &ret->body)) {
         ret->has_body = true;
-    } else if (*p.pos == ';' || *p.pos == '}' || !*p.pos || p.whitespace == WHITESPACE_NEWLINE) {
+    } else if (*p.pos == ';' || *p.pos == '}' || at_eof(&p, p.pos) || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
     } else {
         // tsc's parseFunctionBlock: a body whose `{` is missing, empty
@@ -7458,7 +7467,7 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
 
     // tsc's parseDelimitedList with considerSemicolonAsDelimiter
     u32 saved_context = list_enter(&p, PARSING_OBJECT_LITERAL_MEMBERS);
-    while (*p.pos && *p.pos != '}') {
+    while (!at_eof(&p, p.pos) && *p.pos != '}') {
         ObjectExprItem item;
         const char* start = p.pos;
         if (!parse_object_item(&p, &item)) {
@@ -7467,7 +7476,7 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
         }
         list_push(vec_object_expr_item, ret, item);
         hop_whitespace(&p);
-        if (hop_char(&p, ',') || !*p.pos || *p.pos == '}') {
+        if (hop_char(&p, ',') || at_eof(&p, p.pos) || *p.pos == '}') {
             hop_whitespace(&p);
             continue;
         }
@@ -7517,7 +7526,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
     // tsc's parseDelimitedList(ArrayLiteralMembers): an element at `,` is omitted
     u32 saved_context = list_enter(&p, PARSING_ARRAY_LITERAL_MEMBERS);
-    while (*p.pos && *p.pos != ']') {
+    while (!at_eof(&p, p.pos) && *p.pos != ']') {
         const char* start = p.pos;
         Expr expr;
         if (*p.pos == ',') {
@@ -7535,7 +7544,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
             hop_whitespace(&p);
             continue;
         }
-        if (!*p.pos || *p.pos == ']') break;
+        if (at_eof(&p, p.pos) || *p.pos == ']') break;
         expect_char(&p, ',');
         if (p.pos == start) hop_token(&p);
         hop_whitespace(&p);
@@ -7680,7 +7689,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     Span trailing_comma = span_null;
     Span first_rest = span_null, first_modifier_name = span_null, first_question = span_null;
     bool first_has_initializer = false, first_has_type = false;
-    while (*p.pos && *p.pos != ']') {
+    while (!at_eof(&p, p.pos) && *p.pos != ']') {
         const char* before = p.pos;
         Anchor param_start = anchor(&p);
         VecExpr decorators = {0};
@@ -8505,7 +8514,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
 
     ClassItem item;
     u32 saved_context = list_enter(&p, PARSING_CLASS_MEMBERS);
-    while (*p.pos && *p.pos != '}') {
+    while (!at_eof(&p, p.pos) && *p.pos != '}') {
         if (hop_char(&p, ';')) {
             hop_whitespace(&p);
             continue;
@@ -8536,7 +8545,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
         list_push(vec_class_item, &ret->items, item);
         hop_whitespace(&p);
 
-        if (!*p.pos || *p.pos == '}') {
+        if (at_eof(&p, p.pos) || *p.pos == '}') {
             break;
         }
 
@@ -8563,7 +8572,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     // tsc's parseDelimitedList(ArgumentExpressions)
     *args = vec_expr_init();
     u32 saved_context = list_enter(&p, PARSING_ARGUMENT_EXPRESSIONS);
-    while (*p.pos && *p.pos != ')' && *p.pos != ';') {
+    while (!at_eof(&p, p.pos) && *p.pos != ')' && *p.pos != ';') {
         const char* start = p.pos;
         Expr arg = {0};
         // (A lone `=>` starts no element: the list checks isStartOfExpression before parsing one)
@@ -8582,7 +8591,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
             hop_whitespace(&p);
             continue;
         }
-        if (!*p.pos || *p.pos == ')' || *p.pos == ';') break;
+        if (at_eof(&p, p.pos) || *p.pos == ')' || *p.pos == ';') break;
         expect_char(&p, ',');
         if (p.pos == start) hop_token(&p);
         hop_whitespace(&p);
@@ -10510,7 +10519,7 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
         }
         // Text (tsc's scanJsxToken). Whitespace only with a line break before anything else is JsxTextAllWhiteSpaces
         int first_non_whitespace = 0;
-        while (*p->pos && *p->pos != '{' && *p->pos != '<') {
+        while (!at_eof(p, p->pos) && *p->pos != '{' && *p->pos != '<') {
             // (A `<` conflict marker ends the text, which is part of its token: tsc's scanJsxToken)
             const char* next_line = p->pos + 1 + (p->pos[0] == '\r' && p->pos[1] == '\n');
             if (jsx_is_line_break(*p->pos) && *next_line == '<' && is_conflict_marker(p, next_line)) {
@@ -11524,7 +11533,7 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
     const char* open = p->pos;
     if (!expect_char(p, '{')) return;
     hop_whitespace(p);
-    while (*p->pos && *p->pos != '}') {
+    while (!at_eof(p, p->pos) && *p->pos != '}') {
         ImportAttribute attribute = {0};
         Anchor name_anchor = anchor(p);
         cstr ignored = cstr_null;
@@ -11536,7 +11545,7 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
             parse_error(p, span_from_token(p), 1478, "Identifier or string literal expected.");
             // A token no list being parsed wants is skipped (tsc's abortParsingListOrMoveToNextToken): `{ a: 1,, }`
             Tok t = tok_peek(p);
-            if (!*p->pos || list_token_wanted(p, p->shared->parsing_context, t)) break;
+            if (at_eof(p, p->pos) || list_token_wanted(p, p->shared->parsing_context, t)) break;
             p->pos = t.end;
             hop_whitespace(p);
             continue;
@@ -11966,7 +11975,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         ret->tag = BINDING_ARRAY;
         ret->array = vec_binding_init();
         u32 saved_context = list_enter(&p, PARSING_ARRAY_BINDING_ELEMENTS);
-        while (*p.pos && *p.pos != ']') {
+        while (!at_eof(&p, p.pos) && *p.pos != ']') {
             binding = (Binding){0};
             if (parse_binding_element(&p, &binding)) {
                 vec_binding_push(&ret->array, binding);
@@ -11991,7 +12000,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         ret->tag = BINDING_OBJECT;
         ret->object = vec_object_binding_item_init();
         u32 saved_context = list_enter(&p, PARSING_OBJECT_BINDING_ELEMENTS);
-        while (*p.pos && *p.pos != '}') {
+        while (!at_eof(&p, p.pos) && *p.pos != '}') {
             Anchor key_anchor = anchor(&p);
             Span name;
             Value key;
@@ -12524,7 +12533,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
 
         if (*p.pos == ';' ||
             *p.pos == '}' ||
-            *p.pos == '\0' ||
+            at_eof(&p, p.pos) ||
             (*p.pos == '=' && p.pos[1] == '>') || // (tsc's isVariableDeclaratorListTerminator)
             hop_start_if_ends_on_word_break(&p, "in") ||
             hop_start_if_ends_on_word_break(&p, "of")
@@ -12928,7 +12937,7 @@ static void parse_jump_target(Parser* parent, Span* ret) {
 static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
     Tok t = tok_peek(p);
     // (Unknown tokens have their scanner errors, tsc says nothing more)
-    bool unknown = invalid_char_size(t.start) != 0;
+    bool unknown = invalid_char_size(p, t.start) != 0;
     Span token = span_make(p->shared->source, t.start, t.end);
     if (span_equals(name, "const") || span_equals(name, "let") || span_equals(name, "var")) {
         parse_error(p, name, 1440, "Variable declaration not allowed at this location.");
@@ -13017,7 +13026,7 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
         return;
     }
     // (a do-while's `;` is optional: tsc's parseOptional)
-    if (p.whitespace == WHITESPACE_NEWLINE || !*p.pos || *p.pos == '}' || statement->tag == STATEMENT_FOR_LOOP) {
+    if (p.whitespace == WHITESPACE_NEWLINE || at_eof(&p, p.pos) || *p.pos == '}' || statement->tag == STATEMENT_FOR_LOOP) {
         parse_fail(&p);
         return;
     }
@@ -13099,7 +13108,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         MODIFIED_IN_MODULE_BLOCK;
     bool file_level = ctx == PARSING_SOURCE_ELEMENTS;
     while(
-        *p.pos &&
+        !at_eof(&p, p.pos) &&
         (ctx == PARSING_SOURCE_ELEMENTS || *p.pos != '}') &&
         !(ctx == PARSING_SWITCH_CLAUSE_STATEMENTS && (
             starts_with_followed_by_word_break(&p, "default") ||
@@ -13194,7 +13203,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         }
         hop_whitespace(&p); // TODO: is this needed?
     }
-    if (p.shared->binary_marker && !*p.pos) {
+    if (p.shared->binary_marker && at_eof(&p, p.pos)) {
         char const* marker = p.shared->binary_marker;
         p.shared->binary_marker = nullptr;
         // (Not TS1127 for its first character: the scanner made the whole marker one token)
@@ -13205,7 +13214,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
     if (p.shared->source->is_js) {
-        bool eof = ctx == PARSING_SOURCE_ELEMENTS && toplevel && !*p.pos;
+        bool eof = ctx == PARSING_SOURCE_ELEMENTS && toplevel && at_eof(&p, p.pos);
         jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, eof, ret);
     }
 
@@ -14533,7 +14542,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
             Statement statement = { .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = value, .export_equals = true };
             statement.span = span_from(a);
             vec_statement_push(&source->ast.statements, statement);
-        } else if (!*p.pos) {
+        } else if (at_eof(&p, p.pos)) {
             // An empty file is `{}` (tsc's getTypeOfVariableOrParameterOrPropertyWorker: emptyObjectType), an empty
             // span that the baselines don't show
             Statement statement = {
