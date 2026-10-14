@@ -1,0 +1,33 @@
+ttttQualifiedNameValueThroughShadowingNamespace.ts(8,23): error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+ttttQualifiedNameValueThroughShadowingNamespace.ts(9,12): error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+ttttQualifiedNameValueThroughShadowingNamespace.ts(10,12): error TS2749: 'N.M.D' refers to a value, but is being used as a type here. Did you mean 'typeof N.M.D'?
+ttttQualifiedNameValueThroughShadowingNamespace.ts(11,22): error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+ttttQualifiedNameValueThroughShadowingNamespace.ts(12,20): error TS2694: Namespace 'O.N' has no exported member 'Nope'.
+
+
+==== ttttQualifiedNameValueThroughShadowingNamespace.ts (5 errors) ====
+    // `N.C` where the N found as a namespace (an inner, non-instantiated one) has no member C, but N's value (the outer
+    // namespace) does: TS2749 for the whole name (tsc's resolveEntityName: canSuggestTypeof, tryGetQualifiedNameAsValue),
+    // not TS2694. @types/react's `React.Component` once a `declare module "react" { namespace React {...} }` augmentation
+    // merged a namespace React into React (apollo-client/docs)
+    namespace N { export class C {} export const v = 1; export namespace M { export class D {} } }
+    namespace O { export namespace N { export interface Q {} } }
+    namespace O {
+      interface J extends N.C {}
+                          ~~~
+!!! error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+      type U = N.C;
+               ~~~
+!!! error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+      type W = N.M.D;
+               ~~~~~
+!!! error TS2749: 'N.M.D' refers to a value, but is being used as a type here. Did you mean 'typeof N.M.D'?
+      class L implements N.C {}
+                         ~~~
+!!! error TS2749: 'N.C' refers to a value, but is being used as a type here. Did you mean 'typeof N.C'?
+      type Missing = N.Nope;
+                       ~~~~
+!!! error TS2694: Namespace 'O.N' has no exported member 'Nope'.
+      type Q = N.Q;
+    }
+    

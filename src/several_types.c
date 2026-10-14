@@ -60,6 +60,20 @@ static Symbol const* get_symbol_from_namespace(
     return decl;
 }
 
+// A name of `A.b.c` (b's index `at` in the namespaces, theirs count for c) that isn't a member of the namespace before
+// it at all: when A means a value too, whether `A.b.c` reads as properties of it decides between TS2749 and TS2694
+// when checking (tsc's resolveEntityName: canSuggestTypeof, tryGetQualifiedNameAsValue). A namespace of the same
+// name merged inside one hides the outer one's members from the qualified name, not from A's value
+static bool note_value_missing(IdentifierTypeRare* rare, Scope* names, Symbol const* namespace, u32 at) {
+    Symbol const* first_found = nullptr;
+    rare->first_value = scope_get_value(names, span_sv(rare->namespaces.data[0]), &first_found);
+    if (!rare->first_value) return false;
+    rare->value_missing = true;
+    rare->value_member_of = namespace;
+    rare->value_member_at = at;
+    return true;
+}
+
 static cstr identifier_type_make_name_str(IdentifierType const* me) {
     cstr ret = cstr_null;
     for_each (i, vec_span, identifier_type_namespaces(me)) {
@@ -337,6 +351,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                         "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                         "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
                     decl = nullptr;
+                } else if (!member && namespace && note_value_missing(rare, names, namespace, (u32)(i - rare->namespaces.data))) {
+                    decl = nullptr;
                 } else {
                     decl = get_symbol_from_namespace(namespace, nullptr, *i, SYMBOL_NAMESPACE, true, &found, errs);
                 }
@@ -347,6 +363,11 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 break;
             }
             vec_symbol_cptr_push(&rare->namespace_symbols, found);
+        }
+        if (namespace && !symbol_namespace_member(namespace, span_sv(my name)) &&
+            note_value_missing(rare, names, namespace, (u32)vec_span_size(&rare->namespaces))
+        ) {
+            namespace = nullptr;
         }
         if (namespace) {
             my target = get_symbol_from_namespace(namespace, nullptr, my name, SYMBOL_TYPE, true, &my symbol, errs);
@@ -740,7 +761,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
             error_ctx_error_d(errs, left, 2702, "'", left, "' only refers to a type, but is being used as a namespace here.");
         }
     }
-    if (rare && rare->value_member) {
+    if (rare && (rare->value_member || rare->value_missing)) {
         Checker* checker = current_checker;
         isize count = vec_span_size(&rare->namespaces);
         // (tsc's tryGetQualifiedNameAsValue: the names after the first are properties of the value)
@@ -750,7 +771,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
             value = ty_prop_type_of(checker, ty_apparent_type(checker, value), checker_atom(checker, span_sv(part)));
         }
         u32 at = rare->value_member_at;
-        Span member = rare->namespaces.data[at];
+        Span member = (isize)at < count ? rare->namespaces.data[at] : my name;
         Span right = (isize)at + 1 < count ? rare->namespaces.data[at + 1] : my name;
         // (tsc's resolveEntityName: a close enough export's name first)
         cstr container_name = symbol_fully_qualified_name(rare->value_member_of);
@@ -762,7 +783,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
             error_ctx_error_d(errs, span_between(rare->namespaces.data[0], my name), 2749, "'", name, "' refers to a value, "
                 "but is being used as a type here. Did you mean 'typeof ", name, "'?");
             cstr_drop(&name);
-        } else if (symbol_for_meaning(rare->value_member, SYMBOL_TYPE)) {
+        } else if (rare->value_member && symbol_for_meaning(rare->value_member, SYMBOL_TYPE)) {
             error_ctx_error_d(errs, right, 2713, "Cannot access '", member, ".", right, "' because '", member,
                 "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                 "' in '", member, "' with '", member, "[\"", right, "\"]'?");

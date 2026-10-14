@@ -37,11 +37,15 @@ typedef struct IdentifierTypeRare {
     // `A.b.c` where b is a value but not a namespace (tsc's resolveEntityName of a qualified name): said when checking,
     // TS2749 for the whole name if it reads as a value (`A.b.c` as properties of A's value, tryGetQualifiedNameAsValue),
     // else TS2713 if b is a type too, else TS2694. `value_member_at`: b's index in namespaces, `value_member_of` the
-    // namespace it is a member of, `first_value` what the first name means as a value
+    // namespace it is a member of, `first_value` what the first name means as a value. `value_missing`: a name
+    // isn't a member of the namespace before it at all (value_member null, value_member_at its index), but
+    // the first name means a value too (a namespace merged inside a namespace of the same name hides the outer one's
+    // members from `A.b`, not from A's value): TS2749 if the name reads as a value, else TS2694
     Symbol const* value_member;
     Symbol const* value_member_of;
     Symbol const* first_value;
     u32 value_member_at;
+    bool value_missing;
 } IdentifierTypeRare;
 
 typedef struct IdentifierType {

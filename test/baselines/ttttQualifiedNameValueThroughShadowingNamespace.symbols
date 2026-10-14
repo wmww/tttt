@@ -1,0 +1,52 @@
+//// [test/cases/ttttQualifiedNameValueThroughShadowingNamespace.ts] ////
+
+=== ttttQualifiedNameValueThroughShadowingNamespace.ts ===
+// `N.C` where the N found as a namespace (an inner, non-instantiated one) has no member C, but N's value (the outer
+// namespace) does: TS2749 for the whole name (tsc's resolveEntityName: canSuggestTypeof, tryGetQualifiedNameAsValue),
+// not TS2694. @types/react's `React.Component` once a `declare module "react" { namespace React {...} }` augmentation
+// merged a namespace React into React (apollo-client/docs)
+namespace N { export class C {} export const v = 1; export namespace M { export class D {} } }
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 0, 0))
+>C : Symbol(C, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 13))
+>v : Symbol(v, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 44))
+>M : Symbol(M, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 51))
+>D : Symbol(D, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 72))
+
+namespace O { export namespace N { export interface Q {} } }
+>O : Symbol(O, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 94), Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 60))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+>Q : Symbol(Q, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 34))
+
+namespace O {
+>O : Symbol(O, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 4, 94), Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 60))
+
+  interface J extends N.C {}
+>J : Symbol(J, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 6, 13))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+
+  type U = N.C;
+>U : Symbol(U, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 7, 28))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+>C : Symbol(N.C)
+
+  type W = N.M.D;
+>W : Symbol(W, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 8, 15))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+>M : Symbol(N.M)
+>D : Symbol(N.M.D)
+
+  class L implements N.C {}
+>L : Symbol(L, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 9, 17))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+
+  type Missing = N.Nope;
+>Missing : Symbol(Missing, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 10, 27))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+>Nope : Symbol(N.Nope)
+
+  type Q = N.Q;
+>Q : Symbol(Q, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 11, 24))
+>N : Symbol(N, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 13))
+>Q : Symbol(N.Q, Decl(ttttQualifiedNameValueThroughShadowingNamespace.ts, 5, 34))
+}
+
