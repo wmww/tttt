@@ -254,9 +254,13 @@ static ObjectSym object_symbol(Ty const* t) {
         case TY_REFERENCE:
             return object_symbol(t->reference.target);
         case TY_ANONYMOUS:
-            // (An instantiation expression's type has a symbol of its own without declarations: tsc's
-            // getInstantiatedTypePart, `__instantiationExpression`)
-            if (t->anonymous.applies_type_args) return (ObjectSym){ .has = true, .identity = t, .created = t->id + 1 };
+            // (An instantiation expression's type has a symbol of its own, `__instantiationExpression`, with the
+            // declarations of the type it instantiates: tsc's getInstantiatedTypePart. Placed where those are)
+            if (t->anonymous.applies_type_args) {
+                ObjectSym source = t->anonymous.target ? object_symbol(t->anonymous.target) : (ObjectSym){0};
+                return (ObjectSym){ .has = true, .positioned = source.positioned, .pos = source.pos, .identity = t,
+                    .created = t->id + 1 };
+            }
             if (t->anonymous.target) return object_symbol(t->anonymous.target);
             if (t->anonymous.is_reverse) return (ObjectSym){0};
             if (t->anonymous.merged_value) return sym_of_symbol(t->anonymous.merged_value);

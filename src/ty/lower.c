@@ -4086,7 +4086,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // `typeof f<T>`: the printer reuses the node for that very type (tsc's InstantiationExpressionType.node)
             // and each node has a type of its own (tsc's getInstantiationExpressionType caches per node): never the
             // interned one the expression `f<T>` itself has, which prints structurally
-            if (ret->kind == TY_ANONYMOUS && ret->anonymous.applies_type_args) {
+            // (Only a query with type arguments of its own: `typeof f0` of `const f0 = f<T>` is f0's type, whose
+            // instantiation node is an expression, printed structurally)
+            if (ret->kind == TY_ANONYMOUS && ret->anonymous.applies_type_args && node->typeof_->expr->tag == EXPR_GENERIC_PARAMS) {
                 u64 node_key[3] = { KEY_INSTANTIATION_QUERY, (u64)(uintptr_t)node, ret->id };
                 Ty const* own = intern_get(&my links, node_key, 3);
                 if (own) return own;

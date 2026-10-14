@@ -1,0 +1,27 @@
+//// [test/cases/ttttEmptyInstantiationExpression.ts] ////
+
+=== ttttEmptyInstantiationExpression.ts ===
+// `fx<>` instantiates with the defaults (unknown), `typeof fx<>` too and reprints as `typeof fx`; `typeof f0` of an instantiated f0 prints structurally
+declare function fx<T>(x: T): T;
+>fx : Symbol(fx, Decl(ttttEmptyInstantiationExpression.ts, 0, 0))
+>T : Symbol(T, Decl(ttttEmptyInstantiationExpression.ts, 1, 20))
+>x : Symbol(x, Decl(ttttEmptyInstantiationExpression.ts, 1, 23))
+>T : Symbol(T, Decl(ttttEmptyInstantiationExpression.ts, 1, 20))
+>T : Symbol(T, Decl(ttttEmptyInstantiationExpression.ts, 1, 20))
+
+type T10 = typeof fx<>;
+>T10 : Symbol(T10, Decl(ttttEmptyInstantiationExpression.ts, 1, 32))
+>fx : Symbol(fx, Decl(ttttEmptyInstantiationExpression.ts, 0, 0))
+
+type T11 = typeof fx;
+>T11 : Symbol(T11, Decl(ttttEmptyInstantiationExpression.ts, 2, 23))
+>fx : Symbol(fx, Decl(ttttEmptyInstantiationExpression.ts, 0, 0))
+
+const f0 = fx<>;
+>f0 : Symbol(f0, Decl(ttttEmptyInstantiationExpression.ts, 4, 5))
+>fx : Symbol(fx, Decl(ttttEmptyInstantiationExpression.ts, 0, 0))
+
+type T12 = typeof f0;
+>T12 : Symbol(T12, Decl(ttttEmptyInstantiationExpression.ts, 4, 16))
+>f0 : Symbol(f0, Decl(ttttEmptyInstantiationExpression.ts, 4, 5))
+

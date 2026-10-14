@@ -1,0 +1,25 @@
+//// [test/cases/ttttEmptyInstantiationExpression.ts] ////
+
+=== ttttEmptyInstantiationExpression.ts ===
+// `fx<>` instantiates with the defaults (unknown), `typeof fx<>` too and reprints as `typeof fx`; `typeof f0` of an instantiated f0 prints structurally
+declare function fx<T>(x: T): T;
+>fx : <T>(x: T) => T
+>x : T
+
+type T10 = typeof fx<>;
+>T10 : typeof fx
+>fx : <T>(x: T) => T
+
+type T11 = typeof fx;
+>T11 : <T>(x: T) => T
+>fx : <T>(x: T) => T
+
+const f0 = fx<>;
+>f0 : (x: unknown) => unknown
+>fx<> : (x: unknown) => unknown
+>fx : <T>(x: T) => T
+
+type T12 = typeof f0;
+>T12 : (x: unknown) => unknown
+>f0 : (x: unknown) => unknown
+

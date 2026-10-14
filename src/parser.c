@@ -9815,7 +9815,8 @@ binary_rest:
             // without type arguments, but it is a node of its own in the types baseline. Not a call's)
             Parser after = parser(&generic_p);
             hop_whitespace(&after);
-            bool instantiation = *after.pos != '(' && *after.pos != '`' && !ctx.reject_operators;
+            // (A type query's `typeof f<>` too: tsc's parseTypeQuery keeps the empty list, which instantiates)
+            bool instantiation = (*after.pos != '(' && *after.pos != '`' && !ctx.reject_operators) || ctx.entity_name;
             parse_fail(&after);
             if (vec_spanned_type_size(&parsed.generic_params) || import_keyword || instantiation) {
                 *left_and_ret = expr_generic_params(

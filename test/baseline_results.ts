@@ -75,6 +75,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEmptyInstantiationExpression': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,
@@ -66508,7 +66513,7 @@ const baselines = {
     'instantiationExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterAsTypeParameterConstraint': {
         errors: true,

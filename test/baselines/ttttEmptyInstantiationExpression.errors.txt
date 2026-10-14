@@ -1,0 +1,16 @@
+ttttEmptyInstantiationExpression.ts(3,21): error TS1099: Type argument list cannot be empty.
+ttttEmptyInstantiationExpression.ts(5,14): error TS1099: Type argument list cannot be empty.
+
+
+==== ttttEmptyInstantiationExpression.ts (2 errors) ====
+    // `fx<>` instantiates with the defaults (unknown), `typeof fx<>` too and reprints as `typeof fx`; `typeof f0` of an instantiated f0 prints structurally
+    declare function fx<T>(x: T): T;
+    type T10 = typeof fx<>;
+                        ~~
+!!! error TS1099: Type argument list cannot be empty.
+    type T11 = typeof fx;
+    const f0 = fx<>;
+                 ~~
+!!! error TS1099: Type argument list cannot be empty.
+    type T12 = typeof f0;
+    
