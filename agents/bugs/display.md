@@ -206,21 +206,9 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
 
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
-- **Generic methods of a class or non-thisless interface get fresh type parameters in tsgo when accessed through the
-  type** (resolveObjectTypeMembers instantiates every member that isn't syntactically thisless with the `this` mapper;
-  instantiateSignature clones type parameters), so an annotation mentioning them isn't reused: `Iterator.from` (lib
-  `IteratorConstructor extends typeof Iterator`) prints its `Iterator<T, ...> | Iterable<T, ...>` sorted
-  (builtinIterator, awaitUsingDeclarationsWithIteratorObject, usingDeclarationsWithIteratorObject). Verified with an
-  instrumented tsgo. tttt's ty_instantiate() returns the method's type unchanged for a `this`-only mapper it doesn't
-  mention, so ty_display can't tell; a display-only emulation needs the access path; making the instantiation real is
-  a checker identity change (perf, caches). Same family as the item above. (2026-10-14, agent D: which members are
-  thisless is syntactic, tsc's isThislessFunctionLikeDeclaration/isThislessType: a parameter or return annotation
-  that is a union, intersection, function type... is never thisless, only keywords, literals, arrays of thisless
-  types and references with thisless arguments are; `from<T>(value: Iterator<T> | Iterable<T>)` is not, hence the
-  clone. The interface has a this-type because it has a base (`extends typeof Iterator`), isThislessInterface. The
-  visible effect is limited to unions in such signatures printing sorted instead of as written; an emulation would
-  mark the instantiated member's signature "cloned" when the access goes through a this-instantiated reference of a
-  non-thisless interface and its declaration isn't thisless. Plan-sized: the three tests share it.)
+- `Iterator.from` prints its union sorted in tsgo (builtinIterator, awaitUsingDeclarationsWithIteratorObject,
+  usingDeclarationsWithIteratorObject): not the fresh-type-parameter mechanism this entry used to claim, which tsgo
+  probes refute; see plan 68 (an instrumented tsgo is the next step).
 - Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
   `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
   newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
