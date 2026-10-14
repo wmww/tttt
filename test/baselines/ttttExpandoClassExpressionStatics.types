@@ -1,0 +1,151 @@
+//// [test/cases/ttttExpandoClassExpressionStatics.ts] ////
+
+=== a.js ===
+// An assignment to a static member a class expression declares isn't an expando declaration (tsgo's
+// bindDeferredExpandoAssignment declares only names nothing but expandos declare, in the initializer's symbol): the
+// member's annotation is the assigned value's contextual type, like for a class declaration's statics.
+var ns = {};
+>ns : { sub: typeof sub; }
+>{} : { sub: typeof sub; }
+
+ns.sub = class {
+>ns.sub = class {    /** @type {(y: number) => void} */    static cb;} : typeof sub
+>ns.sub : typeof sub
+>ns : { sub: typeof sub; }
+>sub : typeof sub
+>class {    /** @type {(y: number) => void} */    static cb;} : typeof sub
+
+    /** @type {(y: number) => void} */
+    static cb;
+>cb : (y: number) => void
+
+};
+ns.sub.cb = y => { y; };
+>ns.sub.cb = y => { y; } : (y: number) => void
+>ns.sub.cb : (y: number) => void
+>ns.sub : typeof sub
+>ns : { sub: typeof sub; }
+>sub : typeof sub
+>cb : (y: number) => void
+>y => { y; } : (y: number) => void
+>y : number
+>y : number
+
+ns.sub.zz = 1;
+>ns.sub.zz = 1 : 1
+>ns.sub.zz : number
+>ns.sub : typeof sub
+>ns : { sub: typeof sub; }
+>sub : typeof sub
+>zz : number
+>1 : 1
+
+ns.sub.zz;
+>ns.sub.zz : number
+>ns.sub : typeof sub
+>ns : { sub: typeof sub; }
+>sub : typeof sub
+>zz : number
+
+var K = class {
+>K : typeof K
+>class {    /** @type {(x: number) => void} */    static cb;} : typeof K
+
+    /** @type {(x: number) => void} */
+    static cb;
+>cb : (x: number) => void
+
+};
+K.cb = x => { x; };
+>K.cb = x => { x; } : (x: number) => void
+>K.cb : (x: number) => void
+>K : typeof K
+>cb : (x: number) => void
+>x => { x; } : (x: number) => void
+>x : number
+>x : number
+
+K.other = 2;
+>K.other = 2 : 2
+>K.other : number
+>K : typeof K
+>other : number
+>2 : 2
+
+K.other;
+>K.other : number
+>K : typeof K
+>other : number
+
+class L {
+>L : L
+
+    /** @type {(w: number) => void} */
+    static cb;
+>cb : (w: number) => void
+}
+L.cb = w => { w; };
+>L.cb = w => { w; } : (w: number) => void
+>L.cb : (w: number) => void
+>L : typeof L
+>cb : (w: number) => void
+>w => { w; } : (w: number) => void
+>w : number
+>w : number
+
+L.inner = class {
+>L.inner = class {    /** @type {(u: number) => void} */    static cb;} : typeof inner
+>L.inner : typeof inner
+>L : typeof L
+>inner : typeof inner
+>class {    /** @type {(u: number) => void} */    static cb;} : typeof inner
+
+    /** @type {(u: number) => void} */
+    static cb;
+>cb : (u: number) => void
+
+};
+L.inner.cb = u => { u; };
+>L.inner.cb = u => { u; } : (u: number) => void
+>L.inner.cb : (u: number) => void
+>L.inner : typeof inner
+>L : typeof L
+>inner : typeof inner
+>cb : (u: number) => void
+>u => { u; } : (u: number) => void
+>u : number
+>u : number
+
+// Nested expandos still declare, without a contextual type from an earlier assignment's annotation
+var o = {};
+>o : { p: { r: ((a: number) => void) | ((a: any) => void); }; }
+>{} : { p: { r: ((a: number) => void) | ((a: any) => void); }; }
+
+o.p = {};
+>o.p = {} : { r: ((a: number) => void) | ((a: any) => void); }
+>o.p : { r: ((a: number) => void) | ((a: any) => void); }
+>o : { p: { r: ((a: number) => void) | ((a: any) => void); }; }
+>p : { r: ((a: number) => void) | ((a: any) => void); }
+>{} : { r: ((a: number) => void) | ((a: any) => void); }
+
+o.p.r = /** @type {(a: number) => void} */ (undefined);
+>o.p.r = /** @type {(a: number) => void} */ (undefined) : (a: number) => void
+>o.p.r : ((a: number) => void) | ((a: any) => void)
+>o.p : { r: ((a: number) => void) | ((a: any) => void); }
+>o : { p: { r: ((a: number) => void) | ((a: any) => void); }; }
+>p : { r: ((a: number) => void) | ((a: any) => void); }
+>r : ((a: number) => void) | ((a: any) => void)
+>(undefined) : (a: number) => void
+>undefined : undefined
+
+o.p.r = a => { a; };
+>o.p.r = a => { a; } : (a: any) => void
+>o.p.r : ((a: number) => void) | ((a: any) => void)
+>o.p : { r: ((a: number) => void) | ((a: any) => void); }
+>o : { p: { r: ((a: number) => void) | ((a: any) => void); }; }
+>p : { r: ((a: number) => void) | ((a: any) => void); }
+>r : ((a: number) => void) | ((a: any) => void)
+>a => { a; } : (a: any) => void
+>a : any
+>a : any
+

@@ -1,0 +1,126 @@
+//// [test/cases/ttttExpandoClassExpressionStatics.ts] ////
+
+=== a.js ===
+// An assignment to a static member a class expression declares isn't an expando declaration (tsgo's
+// bindDeferredExpandoAssignment declares only names nothing but expandos declare, in the initializer's symbol): the
+// member's annotation is the assigned value's contextual type, like for a class declaration's statics.
+var ns = {};
+>ns : Symbol(ns, Decl(a.js, 3, 3))
+
+ns.sub = class {
+>ns.sub : Symbol(sub, Decl(a.js, 3, 12))
+>ns : Symbol(ns, Decl(a.js, 3, 3))
+>sub : Symbol(sub, Decl(a.js, 3, 12))
+
+    /** @type {(y: number) => void} */
+    static cb;
+>cb : Symbol(sub.cb, Decl(a.js, 4, 16))
+
+};
+ns.sub.cb = y => { y; };
+>ns.sub.cb : Symbol(sub.cb, Decl(a.js, 4, 16))
+>ns.sub : Symbol(sub, Decl(a.js, 3, 12))
+>ns : Symbol(ns, Decl(a.js, 3, 3))
+>sub : Symbol(sub, Decl(a.js, 3, 12))
+>cb : Symbol(sub.cb, Decl(a.js, 4, 16))
+>y : Symbol(y, Decl(a.js, 8, 11))
+>y : Symbol(y, Decl(a.js, 8, 11))
+
+ns.sub.zz = 1;
+>ns.sub.zz : Symbol(sub.zz, Decl(a.js, 8, 24))
+>ns.sub : Symbol(sub, Decl(a.js, 3, 12))
+>ns : Symbol(ns, Decl(a.js, 3, 3))
+>sub : Symbol(sub, Decl(a.js, 3, 12))
+>zz : Symbol(sub.zz, Decl(a.js, 8, 24))
+
+ns.sub.zz;
+>ns.sub.zz : Symbol(sub.zz, Decl(a.js, 8, 24))
+>ns.sub : Symbol(sub, Decl(a.js, 3, 12))
+>ns : Symbol(ns, Decl(a.js, 3, 3))
+>sub : Symbol(sub, Decl(a.js, 3, 12))
+>zz : Symbol(sub.zz, Decl(a.js, 8, 24))
+
+var K = class {
+>K : Symbol(K, Decl(a.js, 12, 3))
+
+    /** @type {(x: number) => void} */
+    static cb;
+>cb : Symbol(K.cb, Decl(a.js, 12, 15))
+
+};
+K.cb = x => { x; };
+>K.cb : Symbol(K.cb, Decl(a.js, 12, 15))
+>K : Symbol(K, Decl(a.js, 12, 3))
+>cb : Symbol(K.cb, Decl(a.js, 12, 15))
+>x : Symbol(x, Decl(a.js, 16, 6))
+>x : Symbol(x, Decl(a.js, 16, 6))
+
+K.other = 2;
+>K.other : Symbol(K.other, Decl(a.js, 16, 19))
+>K : Symbol(K, Decl(a.js, 12, 3))
+>other : Symbol(K.other, Decl(a.js, 16, 19))
+
+K.other;
+>K.other : Symbol(K.other, Decl(a.js, 16, 19))
+>K : Symbol(K, Decl(a.js, 12, 3))
+>other : Symbol(K.other, Decl(a.js, 16, 19))
+
+class L {
+>L : Symbol(L, Decl(a.js, 18, 8))
+
+    /** @type {(w: number) => void} */
+    static cb;
+>cb : Symbol(L.cb, Decl(a.js, 20, 9))
+}
+L.cb = w => { w; };
+>L.cb : Symbol(L.cb, Decl(a.js, 20, 9))
+>L : Symbol(L, Decl(a.js, 18, 8))
+>cb : Symbol(L.cb, Decl(a.js, 20, 9))
+>w : Symbol(w, Decl(a.js, 24, 6))
+>w : Symbol(w, Decl(a.js, 24, 6))
+
+L.inner = class {
+>L.inner : Symbol(L.inner, Decl(a.js, 24, 19))
+>L : Symbol(L, Decl(a.js, 18, 8))
+>inner : Symbol(L.inner, Decl(a.js, 24, 19))
+
+    /** @type {(u: number) => void} */
+    static cb;
+>cb : Symbol(inner.cb, Decl(a.js, 25, 17))
+
+};
+L.inner.cb = u => { u; };
+>L.inner.cb : Symbol(inner.cb, Decl(a.js, 25, 17))
+>L.inner : Symbol(L.inner, Decl(a.js, 24, 19))
+>L : Symbol(L, Decl(a.js, 18, 8))
+>inner : Symbol(L.inner, Decl(a.js, 24, 19))
+>cb : Symbol(inner.cb, Decl(a.js, 25, 17))
+>u : Symbol(u, Decl(a.js, 29, 12))
+>u : Symbol(u, Decl(a.js, 29, 12))
+
+// Nested expandos still declare, without a contextual type from an earlier assignment's annotation
+var o = {};
+>o : Symbol(o, Decl(a.js, 32, 3))
+
+o.p = {};
+>o.p : Symbol(p, Decl(a.js, 32, 11))
+>o : Symbol(o, Decl(a.js, 32, 3))
+>p : Symbol(p, Decl(a.js, 32, 11))
+
+o.p.r = /** @type {(a: number) => void} */ (undefined);
+>o.p.r : Symbol(r, Decl(a.js, 33, 9), Decl(a.js, 34, 55))
+>o.p : Symbol(p, Decl(a.js, 32, 11))
+>o : Symbol(o, Decl(a.js, 32, 3))
+>p : Symbol(p, Decl(a.js, 32, 11))
+>r : Symbol(r, Decl(a.js, 33, 9), Decl(a.js, 34, 55))
+>undefined : Symbol(undefined)
+
+o.p.r = a => { a; };
+>o.p.r : Symbol(r, Decl(a.js, 33, 9), Decl(a.js, 34, 55))
+>o.p : Symbol(p, Decl(a.js, 32, 11))
+>o : Symbol(o, Decl(a.js, 32, 3))
+>p : Symbol(p, Decl(a.js, 32, 11))
+>r : Symbol(r, Decl(a.js, 33, 9), Decl(a.js, 34, 55))
+>a : Symbol(a, Decl(a.js, 35, 7))
+>a : Symbol(a, Decl(a.js, 35, 7))
+

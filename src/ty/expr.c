@@ -2865,7 +2865,9 @@ static bool is_bindable_static_name(Expr const* expr) {
         Expr const* key = &expr->property->index;
         if (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER)) return false;
     } else {
-        return false; // TODO: meant for `a.#x`, but the name of a dot access never was an identifier (hacks.md)
+        // (Not `a.#x`: tsc's isIdentifier(node.name))
+        Span name = property_name(expr->property);
+        if (span_valid(name) && span_sv(name).size && span_sv(name).buf[0] == '#') return false;
     }
     return is_bindable_static_name(&expr->property->expr);
 }

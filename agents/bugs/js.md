@@ -95,3 +95,6 @@ whole (JS declaration emit's walk); the TS9013 part alone is ~60 lines.
 - moduleExportsAliasLoop2 (symbols): `Foo.min` is `Symbol(fn2, Decl(x.js, 0, 13))` to tsgo (the alias loop resolves
   `min` to the `exports.fn2` symbol, keeping min's declaration), `Symbol(min, ...)` to tttt. moduleExportsAliasLoop1
   (binder_modules.md) is the same loop.
+- Assigning a function to a class's static method (`class L { static m() {} }` then `L.m = function (q) {}`; a class
+  expression's too, `var K = class {...}`, `ns.sub = class {...}`) misses tsgo's TS2322 "Type '(q: any) => void' is
+  not assignable to type '() => void'" (found next to ttttExpandoClassExpressionStatics, triage 2026-10-14).

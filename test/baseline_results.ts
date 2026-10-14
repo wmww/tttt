@@ -65,6 +65,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExpandoClassExpressionStatics': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoFunctionTypeNamespace': {
         errors: true,
         symbols: true,
