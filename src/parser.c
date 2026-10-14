@@ -11408,7 +11408,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             Value path;
             if (parse_literal(&require_p, &path)) {
                 if (path.tag == VALUE_STRING) {
-                    statement->target_path = cstr_move(&path.string);
+                    port_statement_rare_mut(statement)->target_path = cstr_move(&path.string);
                     statement->target_path_span = span_from(path_anchor);
                 } else {
                     parse_error(&require_p, span_from(path_anchor), 1141, "String literal expected.");
@@ -11420,7 +11420,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 if (parse_expr(&require_p, expr_ctx_null, &skipped)) {
                     parse_comma_ops_right_side(&require_p, &skipped); // (An Expression: commas too)
                     parse_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
-                    if (skipped.tag == EXPR_IDENTIFIER) statement->missing_specifier = skipped.inner_span;
+                    if (skipped.tag == EXPR_IDENTIFIER) port_statement_rare_mut(statement)->missing_specifier = skipped.inner_span;
                     expr_drop(&skipped);
                 } else {
                     parse_error(&require_p, span_from_token(&require_p), 1141, "String literal expected.");
@@ -11606,7 +11606,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 statement.main.tag = PORT_NOOP;
                 statement.side_effect_only = true;
                 statement.requires_target = true;
-                statement.target_path = cstr_move(&path.string);
+                port_statement_rare_mut(&statement)->target_path = cstr_move(&path.string);
                 statement.target_path_span = span_from(path_anchor);
                 statement.attributes = parse_import_attributes(&p, true);
                 statement.main.full_span = span_from(a);
@@ -11653,7 +11653,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 !tok_is(t, ",") && !tok_is(t, "=");
             if (is_defer) {
                 hop_whitespace(&defer_p);
-                statement.phase_clause = span_from(defer_start);
+                port_statement_rare_mut(&statement)->phase_clause = span_from(defer_start);
                 statement.source_phase = is_source;
                 parse_success(&defer_p);
             } else {
@@ -11724,7 +11724,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         }
     } else if (parse_import_item_list(&p, !is_export, &statement)) {
         statement.main.tag = PORT_NOOP; // Only the item list is imported, no main import
-    } else if (span_valid(statement.phase_clause) && (*p.pos == '"' || *p.pos == '\'')) {
+    } else if (span_valid(port_statement_rare(&statement)->phase_clause) && (*p.pos == '"' || *p.pos == '\'')) {
         // `import source "m"`: a phase modifier and no bindings (tsc's tryParseImportClause makes an empty clause)
         statement.main.tag = PORT_NOOP;
         no_clause = true;
@@ -11741,10 +11741,10 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         while (end > span_start_ptr(statement.main.decl_name) && isspace((unsigned char)end[-1])) end--;
         statement.main.clause = span_make_in(statement.main.decl_name, span_start_ptr(statement.main.decl_name), end);
     }
-    if (span_valid(statement.phase_clause)) {
+    if (span_valid(port_statement_rare(&statement)->phase_clause)) {
         char const* end = p.pos;
-        while (end > span_start_ptr(statement.phase_clause) && isspace((unsigned char)end[-1])) end--;
-        statement.phase_clause = span_make_in(statement.phase_clause, span_start_ptr(statement.phase_clause), end);
+        while (end > span_start_ptr(port_statement_rare(&statement)->phase_clause) && isspace((unsigned char)end[-1])) end--;
+        port_statement_rare_mut(&statement)->phase_clause = span_make_in(port_statement_rare(&statement)->phase_clause, span_start_ptr(port_statement_rare(&statement)->phase_clause), end);
     }
     hop_whitespace(&p);
 
@@ -11769,17 +11769,17 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         // (tsc's parseModuleSpecifier parses an expression: commas included, after a missing one too)
         if (!parsed) parse_comma_ops_right_side(&p, &path_expr);
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-            statement.target_path = cstr_move(&path_expr.literal.string);
+            port_statement_rare_mut(&statement)->target_path = cstr_move(&path_expr.literal.string);
             statement.target_path_span = path_expr.inner_span;
         } else if (path_expr.tag == EXPR_IMPLICIT_ANY) {
-            statement.missing_specifier = path_expr.inner_span;
+            port_statement_rare_mut(&statement)->missing_specifier = path_expr.inner_span;
         } else {
-            if (path_expr.tag == EXPR_IDENTIFIER) statement.missing_specifier = path_expr.inner_span;
+            if (path_expr.tag == EXPR_IDENTIFIER) port_statement_rare_mut(&statement)->missing_specifier = path_expr.inner_span;
             // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
             // missing operand's binary expression `* }` included)
-            statement.non_string_specifier = path_expr.inner_span;
+            port_statement_rare_mut(&statement)->non_string_specifier = path_expr.inner_span;
             if (path_expr.tag != EXPR_IDENTIFIER) {
-                statement.bad_specifier = c_new(Expr, path_expr);
+                port_statement_rare_mut(&statement)->bad_specifier = c_new(Expr, path_expr);
                 path_expr = expr_implicit_any(span_null);
             }
         }
@@ -11824,11 +11824,12 @@ done:
     }
     // (A source phase import resolves nothing, no module to load: tsgo's fileloader skips IsSourcePhaseImport)
     if (span_valid(statement.target_path_span) && !statement.source_phase) {
-        statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
+        statement.module_ref = add_module_ref(&p, cstr_move(&port_statement_rare_mut(&statement)->target_path), statement.target_path_span);
+        port_statement_rare_trim(&statement);
         if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
         // A relative name in an ambient module declaration is never resolved to a file (tsc's collectModuleReferences
         // skips it: only an ambient module can be it)
-        if (p.shared->ambient_module_depth && is_relative_module_name(cstr_sv(&statement.target_path))) {
+        if (p.shared->ambient_module_depth && is_relative_module_name(port_statement_target_path(&statement))) {
             statement.module_ref->ambient_only = true;
         }
         statement.main.module_ref = statement.module_ref;
@@ -13854,7 +13855,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (ret->tag == STATEMENT_IMPORT_EXPORT) {
-                ret->import_export->decorators = decorators;
+                port_statement_rare_mut(ret->import_export)->decorators = decorators;
                 decorators = (VecExpr){0};
             }
         }

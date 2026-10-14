@@ -42,21 +42,21 @@ typedef struct PortItem {
     Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
     Span keyword_span; // The statement's `import` or `export` (set when the item is declared)
-    bool type_only; // Has the "type" keyword for the main import
-    bool type_modifier; // A specifier with its own `type` (`{ type a }`)
     Span source_name; // Only used for _SPECIFIC ports
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
     VecSymbolCPtr alias_path_symbols; // What each item of alias_path found (maybe an alias), shorter if resolution failed
-    bool export_import; // `export import foo = ...`
-    bool declared; // `declare import foo = ...` (TS1029 or so, but ambient)
-    bool not_top_level; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
     Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
     Span clause; // PORT_IMPORT_DEFAULT: the import clause, `A, { b }` (tsc's error node for the default import)
-    bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
-    bool require_binding; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)
     ModuleRef* module_ref; // The module to import from, null for forms that have none
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
+    bool type_only; // Has the "type" keyword for the main import
+    bool type_modifier; // A specifier with its own `type` (`{ type a }`)
+    bool export_import; // `export import foo = ...`
+    bool declared; // `declare import foo = ...` (TS1029 or so, but ambient)
+    bool not_top_level; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
+    bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
+    bool require_binding; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)
     bool jsdoc; // Of an `@import` tag (PortStatement.jsdoc)
     // Of a source phase import (PortStatement.source_phase): its module isn't resolved, the default binding is the
     // module's source (tsgo's getTargetOfImportClause), the others nothing (TS18112)
@@ -116,27 +116,14 @@ typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
-    // `import defer * as ns from "m"`, `import source s from "m"`: the import clause, from the phase modifier to the
-    // bindings' end (tsc's ImportClause with a defer or source PhaseModifier, TS18058-TS18060, TS18111-TS18115)
-    Span phase_clause;
     // The phase modifier is `source` (a source phase import: nothing is resolved, the default binding is an
-    // AbstractModuleSource), else `defer` when phase_clause is valid
+    // AbstractModuleSource), else `defer` when the rare part's phase_clause is valid
     bool source_phase;
     bool side_effect_only; // `import "./abc"`
     bool is_import_require; // `import a = require("m")`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes
         // a compile error
-    cstr target_path; // Path of the module to import from
-    Span target_path_span; // Span of the path string
-    // A module specifier tsc's types baseline shows as any: a missing expression (`import` then a reserved word), or
-    // a name (`from Aaa`, `require(x)`: an identifier outside an expression context, errorType)
-    Span missing_specifier;
-    // Any other expression as the module specifier (TS1141 from the checker: `import { * } from` parses `* }`): owned,
-    // walked by the baselines
-    struct Expr* bad_specifier;
-    // A module specifier that isn't a string literal: TS1141, the checker's (tsc's checkExternalImportOrExportDeclaration),
-    // so not in a statement in the wrong context, which only says that (port_statement_add_names())
-    Span non_string_specifier;
+    Span target_path_span; // Span of the path string (read the path with port_statement_target_path())
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)
@@ -148,8 +135,40 @@ typedef struct PortStatement {
     // relative module (TS2439)
     bool in_ambient_module;
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
-    VecExpr decorators; // `@dec import x = y`: TS1206, only resolved (silently) for the baselines
+    struct PortStatementRare* rare; // Owned, null when all of it is: read through port_statement_rare()
 } PortStatement;
+
+// What few import/export statements have (written through port_statement_rare_mut())
+typedef struct PortStatementRare {
+    // `import defer * as ns from "m"`, `import source s from "m"`: the import clause, from the phase modifier to the
+    // bindings' end (tsc's ImportClause with a defer or source PhaseModifier, TS18058-TS18060, TS18111-TS18115)
+    Span phase_clause;
+    // The path of the module to import from while there is no module_ref (which takes it): read it with
+    // port_statement_target_path()
+    cstr target_path;
+    // A module specifier tsc's types baseline shows as any: a missing expression (`import` then a reserved word), or
+    // a name (`from Aaa`, `require(x)`: an identifier outside an expression context, errorType)
+    Span missing_specifier;
+    // Any other expression as the module specifier (TS1141 from the checker: `import { * } from` parses `* }`): owned,
+    // walked by the baselines
+    struct Expr* bad_specifier;
+    // A module specifier that isn't a string literal: TS1141, the checker's (tsc's checkExternalImportOrExportDeclaration),
+    // so not in a statement in the wrong context, which only says that (port_statement_add_names())
+    Span non_string_specifier;
+    VecExpr decorators; // `@dec import x = y`: TS1206, only resolved (silently) for the baselines
+} PortStatementRare;
+
+extern const PortStatementRare port_statement_no_rare;
+static inline PortStatementRare const* port_statement_rare(PortStatement const* me) {
+    return my rare ? my rare : &port_statement_no_rare;
+}
+// Allocates it if needed
+PortStatementRare* port_statement_rare_mut(PortStatement* me);
+// Frees the rare part if nothing in it is set any more
+void port_statement_rare_trim(PortStatement* me);
+
+// The module specifier (empty if there is none)
+csview port_statement_target_path(PortStatement const* me);
 
 void port_statement_drop(PortStatement* me);
 void port_statement_add_names(PortStatement* me, Scope* scope);

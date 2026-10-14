@@ -28,16 +28,44 @@ void import_attribute_drop(ImportAttribute* me) {
     expr_drop(&my value);
 }
 
-void port_statement_drop(PortStatement* me) {
-    port_item_drop(&my main);
-    vec_port_item_drop(&my items);
+const PortStatementRare port_statement_no_rare = {0};
+
+PortStatementRare* port_statement_rare_mut(PortStatement* me) {
+    if (!my rare) my rare = c_new(PortStatementRare, {0});
+    return my rare;
+}
+
+static void port_statement_rare_drop(PortStatementRare* me) {
     cstr_drop(&my target_path);
-    import_attributes_free(my attributes);
-    vec_expr_drop(&my decorators);
     if (my bad_specifier) {
         expr_drop(my bad_specifier);
         free(my bad_specifier);
     }
+    vec_expr_drop(&my decorators);
+}
+
+void port_statement_rare_trim(PortStatement* me) {
+    PortStatementRare const* r = my rare;
+    if (!r || span_valid(r->phase_clause) || cstr_size(&r->target_path) || span_valid(r->missing_specifier) ||
+        r->bad_specifier || span_valid(r->non_string_specifier) || vec_expr_size(&r->decorators)
+    ) {
+        return;
+    }
+    port_statement_rare_drop(my rare);
+    free(my rare);
+    my rare = nullptr;
+}
+
+csview port_statement_target_path(PortStatement const* me) {
+    return my module_ref ? cstr_sv(&my module_ref->path) : cstr_sv(&port_statement_rare(me)->target_path);
+}
+
+void port_statement_drop(PortStatement* me) {
+    port_item_drop(&my main);
+    vec_port_item_drop(&my items);
+    import_attributes_free(my attributes);
+    if (my rare) port_statement_rare_drop(my rare);
+    free(my rare);
 }
 
 void import_attributes_free(ImportAttributes* me) {
@@ -98,7 +126,7 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         scope->parent && scope->parent->kind != SCOPE_MODULE;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(span_sv(my keyword_span), "import");
     if (!my jsdoc && !top && !my in_namespace &&
-        (my module_ref || span_valid(my non_string_specifier) || is_import_alias || port_statement_is_export_declaration(me))
+        (my module_ref || span_valid(port_statement_rare(me)->non_string_specifier) || is_import_alias || port_statement_is_export_declaration(me))
     ) {
         my wrong_context = true;
         bool is_export = csview_equals(span_sv(my keyword_span), "export");
@@ -115,8 +143,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         // (Declared all the same, in the block: tsc's binder doesn't mind, its checker stops at the grammar error)
         my main.wrong_context = true;
         for_each (i, vec_port_item, &my items) i->wrong_context = true;
-    } else if (span_valid(my non_string_specifier)) {
-        error_ctx_error_d(binder_errs(scope->binder), my non_string_specifier, 1141, "String literal expected.");
+    } else if (span_valid(port_statement_rare(me)->non_string_specifier)) {
+        error_ctx_error_d(binder_errs(scope->binder), port_statement_rare(me)->non_string_specifier, 1141, "String literal expected.");
     }
 
     if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
@@ -136,12 +164,12 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 // What tsc's checkGrammarImportClause says about a phase modifier (`import defer`, `import source`), 0 if nothing
 static unsigned phase_clause_error(PortStatement const* me) {
-    if (!span_valid(my phase_clause)) return 0;
+    if (!span_valid(port_statement_rare(me)->phase_clause)) return 0;
     ModuleKind module = compiler_options()->module;
     bool name = my main.tag == PORT_IMPORT_DEFAULT;
     // (The clause is the modifier alone when there are no bindings: `import source "m"`)
     bool bindings = my main.tag == PORT_IMPORT_GATHER || vec_port_item_size(&my items) ||
-        my phase_clause.size > (my source_phase ? 6 : 5);
+        port_statement_rare(me)->phase_clause.size > (my source_phase ? 6 : 5);
     bindings &= !(name && !vec_port_item_size(&my items));
     if (my source_phase) {
         if (bindings) return 18112;
@@ -149,7 +177,7 @@ static unsigned phase_clause_error(PortStatement const* me) {
         if (module == MODULE_KIND_ESNEXT || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE) {
             // (tsc's getEmitSyntaxForModuleSpecifierExpression, of a string literal specifier)
             bool string_specifier = span_valid(my target_path_span);
-            return string_specifier && source_file_emit_module_kind(span_source(my phase_clause)) == MODULE_KIND_COMMONJS ? 18115 : 0;
+            return string_specifier && source_file_emit_module_kind(span_source(port_statement_rare(me)->phase_clause)) == MODULE_KIND_COMMONJS ? 18115 : 0;
         }
         return 18113;
     }
@@ -162,8 +190,8 @@ static unsigned phase_clause_error(PortStatement const* me) {
 }
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
-    for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
-    if (my bad_specifier) expr_lookup_names(my bad_specifier, scope, nullptr);
+    for_each (i, vec_expr, &port_statement_rare(me)->decorators) expr_lookup_names(i, scope, nullptr);
+    if (port_statement_rare(me)->bad_specifier) expr_lookup_names(port_statement_rare(me)->bad_specifier, scope, nullptr);
     // (the values of `with { type: "json" }` are expressions like any other: checkImportAttribute checks them)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) expr_lookup_names(&i->value, scope, errs);
@@ -289,7 +317,7 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
         }
     } else {
         csview name = port_item_name(at);
-        csview specifier = my module_ref ? cstr_sv(&my target_path) : c_sv("...");
+        csview specifier = my module_ref ? port_statement_target_path(me) : c_sv("...");
         // (`import("m").T` for a named import, `import("m")` for a default one: tsgo's checkAliasSymbol)
         bool named = item->tag == PORT_IMPORT_SPECIFIC;
         error_ctx_error_d(errs, at, 18042, "'", name, "' is a type and cannot be imported in JavaScript files. Use 'import(\"",
@@ -449,7 +477,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         cstr_drop(&shown);
     }
     // tsc's checkExternalImportOrExportDeclaration
-    if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(cstr_sv(&my target_path))) {
+    if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(port_statement_target_path(me))) {
         error_ctx_error_d(errs, span_with_semicolon(span), 2439, "Import or export declaration in an ambient module "
             "declaration cannot reference module through relative module name.");
     } else if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
@@ -539,31 +567,31 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // source phase import is of a default binding alone, where the module format has them
     switch (phase_clause_error(me)) {
         case 18058:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18058, "Default imports are not allowed in a deferred import.");
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18058, "Default imports are not allowed in a deferred import.");
             break;
         case 18117:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18117, "A deferred import must specify a namespace binding.");
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18117, "A deferred import must specify a namespace binding.");
             break;
         case 18059:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18059, "Named imports are not allowed in a deferred import.");
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18059, "Named imports are not allowed in a deferred import.");
             break;
         case 18060:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18060,
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18060,
                 "Deferred imports are only supported when the '--module' flag is set to 'esnext' or 'preserve'.");
             break;
         case 18112:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18112,
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18112,
                 "Named and namespace imports are not allowed in a source phase import.");
             break;
         case 18111:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18111, "A source phase import must specify a local binding.");
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18111, "A source phase import must specify a local binding.");
             break;
         case 18115:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18115,
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18115,
                 "Source phase imports are not allowed on statements that compile to CommonJS 'require' calls.");
             break;
         case 18113:
-            error_ctx_grammar_error_d(errs, my phase_clause, 18113, "Source phase imports are only supported when the "
+            error_ctx_grammar_error_d(errs, port_statement_rare(me)->phase_clause, 18113, "Source phase imports are only supported when the "
                 "'--module' option is set to 'esnext', 'nodenext', or 'preserve'.");
             break;
     }

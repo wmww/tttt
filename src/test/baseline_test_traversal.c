@@ -1552,12 +1552,12 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
         }
         port_item_add_alias(i, ctx, my main.type_only);
     }
-    if (span_valid(my missing_specifier)) baseline_test_case_add_type(ctx, my missing_specifier, ty_intrinsic(current_checker, TY_ANY));
+    if (span_valid(port_statement_rare(me)->missing_specifier)) baseline_test_case_add_type(ctx, port_statement_rare(me)->missing_specifier, ty_intrinsic(current_checker, TY_ANY));
     // (A literal there isn't an expression to tsc's writer: isInExpressionContext is false under an import)
-    Expr const* bad = my bad_specifier;
+    Expr const* bad = port_statement_rare(me)->bad_specifier;
     bool bad_literal = bad && bad->tag == EXPR_LITERAL && *bad->inner_span.buf != '-' &&
         (bad->literal.tag == VALUE_NUMBER || bad->literal.tag == VALUE_BIGINT);
-    if (bad && !bad_literal) expr_compile_test_info(my bad_specifier, ctx);
+    if (bad && !bad_literal) expr_compile_test_info(port_statement_rare(me)->bad_specifier, ctx);
     // `with { type: "json" }`: the keys written as identifiers are errorType (tsc resolves them as nothing)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {
@@ -3545,7 +3545,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_CONTINUE: break;
 
         case STATEMENT_IMPORT_EXPORT:
-            for_each (i, vec_expr, &my import_export->decorators) expr_compile_test_info(i, ctx);
+            for_each (i, vec_expr, &port_statement_rare(my import_export)->decorators) expr_compile_test_info(i, ctx);
             port_statement_compile_test_info(my import_export, ctx);
             break;
 
