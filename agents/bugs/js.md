@@ -4,6 +4,10 @@
 what remains is below, each with what was found.
 
 ## Binding and merging
+- Merged `var`s of several scripts each have their own `{}` container to tsgo's binder (`var C = {}; C.f = 1` in b.js,
+  `var C = {}; C.g = 2` in c.js: C is `{ f: number }`, c.js's literal `{ g: number }`, TS2403 and TS2339 for `C.g`);
+  tttt's one global symbol collects both expandos. Conflicting declarations already work (ScopeRare.script_duplicates,
+  ttttScriptConflictExpandoHost); merged ones would need the expando host to be the file's own initializer's symbol.
 - `obj.y = Object.values(obj)` of a JS `{}` container (expandoNoInferredIndex, expandoObjectIndexSignatures): tsgo
   reports TS7022 for the cycle through the container's type inside the call's inference (y any); tttt's
   guarded_assignment_symbol_type() is entered for y, but resolving `Object.values(obj)` never asks for y's type again
@@ -14,48 +18,41 @@ what remains is below, each with what was found.
   second evaluation, inside getResolvedSignature's reset resolutionStart, checks the call again
   (checkExpressionCached has no in-flight guard; the cached resolvingSignature keeps resolutionStart) and that
   inference meets y pushed twice. tttt's second evaluation likely gets the in-flight call expression's lazy type
-  without re-resolving: the fix is in lazy_type_get()'s reentrancy, broad.)
-- jsContainerMergeTsDeclaration3 (TYP): `declare class A {}` in a.d.ts and `const A = {}; A.d = {}` in b.js (TS2451
-  between them): tsgo's binder makes d a member of the `{}` literal's symbol (b.js's own local, before the global
-  merge), so the literal prints `{ d: {}; }`; tttt's host is the merged global, the literal prints `{}`. Conflict-only.
-- `exports.fn2 = Math.min`: tsgo's symbols baseline names `Math.min` `Symbol(fn2, Decl(lib.es5.d.ts...))` (an alias
-  declaration's entity name shows the alias's name with the target's declarations: moduleExportsAliasLoop1/2). Quirk.
+  without re-resolving: the fix is in lazy_type_get()'s reentrancy, broad.) (2026-10-14, agent C: traced it. The
+  check of `obj.buzz = ...` asks buzz's namespace Prop (prop_type: IN_FLIGHT), guarded_assignment_symbol_type pushes
+  buzz, the call infers T from the container's implied index signature, reads every Prop, buzz's included: prop_type
+  finds it IN_FLIGHT and returns circular at once, and ty_resolving_cycle(RESOLVING_PROP) below the call's barrier
+  marks nothing above it: no TS7022, buzz `any[]`. Re-evaluating the Prop once from below the barrier, like
+  lazy_type_evaluate_inner() does for declarations, wasn't enough (still no cycle reported: the second evaluation of
+  the call's lazy type doesn't reach buzz's DECLARATION entry again). Needs tsgo's exact re-entry: which of
+  getResolvedSignature's cached resolvingSignature / checkExpressionCached re-checks the call. ~1 session with an
+  instrumented tsgo, scripts/variancetrace.py's build() shows how.)
 - A module augmentation's module in the types baseline (`declare module "./test"` of a JS module): tsgo prints
   `typeof import("./test")` from the augmenting file, tttt `typeof import(".")`
   (jsExportMemberMergedWithModuleAugmentation2); naming it from outside the augmentation lost two TS tests.
-- numericExportNameDeclaration (TYP): JS `module.exports[1] = 2` is `error` to tsgo's types baseline (any in tttt);
-  `exports[1]` is any.
-- jsDeclarationsImportAliasExposedWithinNamespace (SYM): the declarations of `myTypes` through `export {myTypes}`
-  (a const merged with `@typedef myTypes.x` namespaces): tsgo lists the namespace declarations first and the export
-  specifier last; tttt's baseline_symbol_declaration_spans() puts the specifier first.
-- jsDeclarationsExportAssignedConstructorFunctionWithSub (SYM only): `this` in `module.exports.Sub = function () {
-  this }` where `module.exports = function (p) {}`: tsgo names it `Symbol(exports, Decl(..., 3, 16))` (the function
-  expression's symbol, named after the assignment?). Quirk.
-- lateBoundAssignmentDeclarationSupport5/7: a unique-symbol key printed from another file is `[_sym]` in tsgo (the
-  declaration's name, not accessible there), `[x.S]` in tttt (an accessible chain through the require alias), and
-  the symbol `x.F[F[_str]]` vs `x.F[_str]`. Not reduced further.
+- numericExportNameDeclaration (TYP): JS `module.exports[1] = 2` is `error` to tsgo's types baseline (any in tttt):
+  only with `@declaration`/`@emitDeclarationOnly`, without them tsgo says any too (probe 2026-10-14): tsgo's harness
+  emits declarations before it collects diagnostics and that emit caches errorType on the node. Plan 64's bucket.
 
 ## Types
-- Returned object literals aren't widened in tsgo: `function f() { return { x: [] } }` is `() => { x: undefined[] }`
-  with strict off (tttt: any[]), but `{ x: [], y: null }` widens both and `const o = { x: [] }` is any[]
-  (argumentsReferenceInObjectLiteral_Js and probes). Some object flag (ContainsObjectOrArrayLiteral /
-  RequiresWidening) propagates differently in tsgo; find which and port it. Odd harness detail (2026-10-14): the
-  suite test fails only with `@alwaysStrict: true` set after other options; a filetest copy with the option earlier
-  in the header passes, and the CLI with strict false gives any[] either way: something in option application order.
+- argumentsReferenceInObjectLiteral_Js(alwaysstrict=true) (TYP): with strict off `() => { return { x: [] } }` prints
+  `() => { x: undefined[] }` in tsgo (TS too, and in a TS2322 message, so not node reuse), but `{ x: [], y: null }`
+  prints widened (`{ x: any[]; y: any }`) and `const v = f()` is `{ x: any[] }`. tttt prints any[]. Instrumented tsgo
+  (2026-10-14, getReturnTypeFromBody): the body's type before getWidenedType is `{ x: undefined[] }` with
+  ObjectFlags 0x232090 and after it `{ x: any[] }`, and getReturnTypeOfSignature stores that (`{ x: any[] }`, nothing
+  set before it), twice per function (two signatures?). So the printer's return type isn't that signature's: find
+  which signature/type the message's `() => { x: undefined[] }` prints (serializeReturnTypeForSignature reads
+  ctx.enclosingSymbolTypes first; a second signature made from the unwidened body type?). The earlier note that
+  option order mattered was wrong: filetest fails the same way. ~half a session with the instrumented tsgo.
 - Binder: an `export =`/`export default` in a function expression, arrow or method body (not a declaration) isn't a
   member of its value in tttt (declare_function_export() only knows a function declaration's symbol); tsgo's
   bindExportAssignment declares it in any container symbol's exports.
 - A JS variable with both a TS annotation (TS8010) and a JSDoc `@type` on a function initializer: tsgo's reparser
   makes the `@type` the function's FullSignature, so the function prints as the tag's signature (`(this: Foo) =>
   void`); tttt keeps the contextual typing. Artificial.
-- exportDefaultWithJSDoc1 (TYP): `/** @type {NumberLike[]} */export default ([ ]);` prints `([ ]) : NumberLike[]`
-  in the test (with a b.ts importing the default) but `never[]` in probes without b.ts (tsgo, checkJs or not): the
-  import's resolution changes the cached type of the parenthesized expression. Check order / tsgo artifact, left.
 - importTypeInJSDoc (TYP): `constructor(x: MyClass.Bar)` in a .d.ts with `export = MyClass` (class + namespace) prints
   `import("./externs").Bar` in tttt, `MyClass.Bar` as written in tsgo.
-- jsFunctionWithPrototypeNoErrorTruncationNoCrash (TYP): `Color.prototype = { negate: function () { return this }, ...}`:
-  the `this` of each method is the literal's type, whose printing nests one level more in tsgo (each method's return
-  shows the literal again with itself as `any`): tttt prints `negate: () => any` where tsgo expands it once.
+- jsFunctionWithPrototypeNoErrorTruncationNoCrash (TYP): see bugs/display.md "Fresh object literal types".
 
 ## JSDoc diagnostics
 - An earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every
@@ -92,9 +89,6 @@ whole (JS declaration emit's walk); the TS9013 part alone is ~60 lines.
   moduleExportAlias5 TS2339, jsDeclarationsFunctions TS2323 (`export { j }` twice).
 
 ## Unfiled suite failure (triage 2026-10-14, plan 66)
-- moduleExportsAliasLoop2 (symbols): `Foo.min` is `Symbol(fn2, Decl(x.js, 0, 13))` to tsgo (the alias loop resolves
-  `min` to the `exports.fn2` symbol, keeping min's declaration), `Symbol(min, ...)` to tttt. moduleExportsAliasLoop1
-  (binder_modules.md) is the same loop.
 - Assigning a function to a class's static method (`class L { static m() {} }` then `L.m = function (q) {}`; a class
   expression's too, `var K = class {...}`, `ns.sub = class {...}`) misses tsgo's TS2322 "Type '(q: any) => void' is
   not assignable to type '() => void'" (found next to ttttExpandoClassExpressionStatics, triage 2026-10-14).

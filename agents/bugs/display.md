@@ -322,3 +322,20 @@ Looked at, root cause where found, not fixed (one test each unless named):
   (`grep '^[-+]>'` and compare the tails; the first lines are identical for >1 KB).
 - circularTypeofWithVarOrFunc (types): `func : () => typeAlias3` where tsgo prints `() => any` (the circular
   `typeof` alias resolves to any; tttt keeps the alias name).
+- jsxNamespacePrefixInNameReact (types): `>a : any` where tsgo prints `undefined` (jsxNamespacePrefixInName passes
+  everything but a similar types line).
+
+## Fresh object literal types vs their widened/regular types (identity)
+tsgo's object literal expression has a fresh type of its own; the declared type of what it initializes is another
+type (getWidenedType / getRegularTypeOfObjectLiteral make new types, cached per source type), so printing one shows
+the other expanded one more level before visitedTypes stops it. tttt has one type for both, so it stops a level
+earlier:
+- jsFunctionWithPrototypeNoErrorTruncationNoCrash (types): `Color.prototype = { negate: function () { return this } }`:
+  `this` in each method is the literal's own (fresh) type, the prototype property's type the widened one, so tsgo's
+  `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`.
+- A JavaScript `{}` container's initializer (`var o = {}; o.self = o`): tsgo prints `>{} : { self: { self: any; }; }`,
+  tttt `{ self: any; }` (the variable's lines agree). In ttttLocalExpandoCyclicPrint's probe, left out of the test.
+Size: a fresh/regular distinction for object literal types at display (or a real fresh type identity, which
+relations and widening already approximate with flags): investigate how far tttt's TYF_FRESH/regular handling goes
+for object literals before choosing; ~1 session.
+

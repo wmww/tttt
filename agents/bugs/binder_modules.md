@@ -30,8 +30,8 @@ clone is a *different* symbol than the one a later lookup finds:
   alias export, no export= (tsc's bindModuleExportsAssignment); the augmentation merges into the file's module
   symbol (a clone recorded as its merged symbol), printed `Symbol("./test", Decl(test.js, 0, 0), Decl(index.ts, 0,
   31))` and `typeof module."./test"` where tttt says `module.exports`.
-- es6ExportEqualsInterop (`z2.a` named `a2`) and lateBoundAssignmentDeclarationSupport7 (`x.F.F[_str]`) involve no
-  clone at all (stage 0 logged none): symbol-chain naming bugs of their own.
+- es6ExportEqualsInterop (`z2.a` named `a2`) involves no clone at all (stage 0 logged none): a symbol-chain naming
+  bug of its own.
 - jsExportMemberMergedWithModuleAugmentation2: `module.exports = { a: "ok" }` is a Property|ValueModule export= to
   tsc's binder (bindModuleExportsAssignment), so `declare module "./test" { export const a: number }` merges into it
   (tttt: TS2671, merge_augmentations() wants SYMBOL_NAMESPACE), and getInitializerTypeFromAssignmentDeclaration unions
@@ -39,17 +39,20 @@ clone is a *different* symbol than the one a later lookup finds:
   different files. Needs: the JS export= assignment symbol as an augmentable namespace, the union with the
   cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
-## Merges tsc decides after aliases resolve
+## Merges tsc decides after aliases resolve (plan 67)
 tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
-mergeSymbol, which resolves an alias target first.
+mergeSymbol, which resolves an alias target first. Plan 67 has the mechanism and the route; the tests below
+(duplicateVarsAcrossFileBoundaries, importEqualsError45874, checkerInitializationCrash,
+globalArrayAugmentationWithAmbientModuleReexportMerge1, declarationEmitAugmentationUsesCorrectSourceFile,
+moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck) are its validation.
+- moduleAugmentationWithNonExistentNamedImport (symbols): bar.d.ts's `import { Bar } from './foo'` (foo is `export =
+  Foo`, no member Bar) and its `export as namespace Bar` against foo.d.ts's `declare global { namespace Bar {} }`:
+  tsgo lists `Bar` at the import as the global namespace alone and at `export = Bar` as the import alone, tttt both
+  merged.
 - importEqualsError45874: a global `import Foo = globals.toString.Blah` (resolves to unknownSymbol) and another
   file's `const Foo`: mergeSymbol returns the source, so the const replaces the alias in globals and they stay two
   symbols (no error, `Foo : any` at the import). tttt merges them in declare_symbol(). A fix would split them in
   binder_link() once the alias resolves to nothing.
-- expandoFunctionContextualTypesNoValue: `import Foo from "blah"` (unresolved) and `export function Foo() {}` share
-  the module's local (Alias|ExportValue to tsc's binder); a reference `Foo` reaches the export through
-  getExportSymbolOfValueSymbolIfExported, `typeof import("./x").Foo` with the expando `Foo.bar`. tttt's references
-  find the unresolved alias (any); tsgo's lookupName finds the function for `Foo.bar = v` (TS2440).
 
 - duplicateVarsAcrossFileBoundaries (symbols): a global alias and a `var` of another file are one symbol in tttt's
   binder; tsc's checker-time mergeSymbol resolves the alias first (unresolved: the source wins the table; resolved:
@@ -57,22 +60,10 @@ mergeSymbol, which resolves an alias target first.
   aliases (ex plan 35).
 
 ## Symbol display of duplicates and merged members
-- genericClassesRedeclaration: two `declare module TypeScript {}` blocks each declare `class StringHashTable<T>`
-  (TS2300). In the second block tsc's name resolves to the block's local, whose exportSymbol is the duplicate class
-  (parent TypeScript, not in the exports table), so it prints qualified `TypeScript.StringHashTable<T>` (from the
-  declaration name and from `extends StringHashTable<T>`); tttt finds the first export and prints it bare.
-- mergedClassWithNamespacePrototype: `declare class Foo {}` and in another file `declare namespace Foo { namespace
-  prototype { function f(): void } }`. The namespace conflicts with the class's `prototype` (TS2300, already
-  reported by declare_prototype()); mergeSymbolTable then stores the source (the namespace) in Foo's merged exports
-  with parent Foo, and tsc prints it `typeof Foo.prototype` where a non-conflicting name prints `typeof proto`. Why
-  the accessible chain needs qualification there wasn't found (instrument getAccessibleSymbolChain on the probe).
 - nodeModulesJson (symbols, x4): `config3.version` through `import * as config3 from "./config.json"` in a .cts
   prints `Symbol(version, ...)` unquoted, the JSON property's own declaration line `"version"` quoted. The property
   reaches the namespace import through getTypeWithSyntheticDefaultImportType's spread; which symbol on that path
   lacks the declarations (getNameOfSymbolAsWritten would quote them) wasn't found.
-- moduleExportsAliasLoop1/2 (symbols): `exports.fn2 = Math.min` is an alias whose accessible chain names lib's
-  `Math.min` member `fn2` from the file (tsc's getAccessibleSymbolChain over the module's exports). tttt's interface
-  members aren't Symbols, so the chain can't reach it (vision.md: member identity).
 
 ## Bigint property names
 - Done 2026-10-14 by syntax: span_is_bigint_name() (span.h) is what the member builders, duplicate checks and symbol
@@ -107,9 +98,6 @@ skipped silently, where tsc reports it against the resolved target. (Moved from 
 - declarationEmitAugmentationUsesCorrectSourceFile (SYM/TYP): an augmentation merging into an `export { Knex }` alias's
   target merges into a clone in tsgo 7.1 (mergeSymbol's resolveSymbol + cloneSymbol), leaving the original namespace
   uninstantiated (`any`) and naming it `knex.Knex`; tttt's merge_into_exports merges into the target itself.
-- jsonRawJSON2 (symbols): a script's `interface RawJSON` merged with lib.es2026.json's `declare global` one lists the
-  script's declaration first in tsgo (global augmentations merge after every file's globals, initializeTypeChecker);
-  tttt's shared-lib program has the lib's augmentation merged into the globals already. Harness/lib-sharing work.
 
 ## Escaped identifiers: what's left
 Names with unicode escapes (`\u0061`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`

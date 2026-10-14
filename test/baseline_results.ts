@@ -105,6 +105,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportDefaultJsDocParenthesized': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -396,6 +401,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionRestSignaturesCombined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnresolvedImportMergedExport': {
         errors: true,
         symbols: true,
         types: true,
@@ -13412,8 +13422,8 @@ const baselines = {
     },
     'expandoFunctionContextualTypesNoValue': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'expandoFunctionExpressionsWithDynamicNames': {
         errors: true,
@@ -13863,7 +13873,7 @@ const baselines = {
     'exportDefaultWithJSDoc1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultWithJSDoc2': {
         errors: true,
