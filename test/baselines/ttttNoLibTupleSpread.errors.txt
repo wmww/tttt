@@ -1,0 +1,57 @@
+error TS2318: Cannot find global type 'Array'.
+error TS2318: Cannot find global type 'Boolean'.
+error TS2318: Cannot find global type 'CallableFunction'.
+error TS2318: Cannot find global type 'Function'.
+error TS2318: Cannot find global type 'IArguments'.
+error TS2318: Cannot find global type 'NewableFunction'.
+error TS2318: Cannot find global type 'Number'.
+error TS2318: Cannot find global type 'Object'.
+error TS2318: Cannot find global type 'RegExp'.
+error TS2318: Cannot find global type 'String'.
+ttttNoLibTupleSpread.ts(17,4): error TS2339: Property 'map' does not exist on type '[number] | [string, boolean]'.
+  Property 'map' does not exist on type '[number]'.
+ttttNoLibTupleSpread.ts(23,4): error TS2339: Property 'forEach' does not exist on type '[number] | [string, boolean]'.
+  Property 'forEach' does not exist on type '[number]'.
+
+
+!!! error TS2318: Cannot find global type 'Array'.
+!!! error TS2318: Cannot find global type 'Boolean'.
+!!! error TS2318: Cannot find global type 'CallableFunction'.
+!!! error TS2318: Cannot find global type 'Function'.
+!!! error TS2318: Cannot find global type 'IArguments'.
+!!! error TS2318: Cannot find global type 'NewableFunction'.
+!!! error TS2318: Cannot find global type 'Number'.
+!!! error TS2318: Cannot find global type 'Object'.
+!!! error TS2318: Cannot find global type 'RegExp'.
+!!! error TS2318: Cannot find global type 'String'.
+==== ttttNoLibTupleSpread.ts (2 errors) ====
+    // Without lib there is no global Array: arrays are `{}` (tsc's emptyGenericType fallback), but tuples are still tuples,
+    // and spreading, destructuring or iterating one must not assume its array base type is a reference to Array (it is
+    // the empty object type, whose number index tsc reads as any).
+    declare const u: [number, string];
+    function h(a: number, ...b: string[]) {}
+    h(...u);
+    declare function k<T extends any[]>(...a: T): T;
+    const kr = k(...u);
+    const [p, ...qs] = u;
+    const spread = [...u, true];
+    for (const z of u) {}
+    function m(...a: [number, string]) { return a; }
+    m(1, "x");
+    m(...u);
+    const len = u.length;
+    declare const tu: [number] | [string, boolean];
+    tu.map;
+       ~~~
+!!! error TS2339: Property 'map' does not exist on type '[number] | [string, boolean]'.
+!!! error TS2339:   Property 'map' does not exist on type '[number]'.
+    const tuSpread = [...tu];
+    declare const ro: readonly [number, string];
+    const [r0, ...rs] = ro;
+    for (const z of ro) {}
+    h(...ro);
+    tu.forEach(() => {});
+       ~~~~~~~
+!!! error TS2339: Property 'forEach' does not exist on type '[number] | [string, boolean]'.
+!!! error TS2339:   Property 'forEach' does not exist on type '[number]'.
+    

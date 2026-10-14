@@ -2624,7 +2624,9 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
             // An interface extending Array (RegExpMatchArray): the method is Array's, at its element type (tsc goes
             // by the method's declaring symbol and mapper)
             Prop const* prop = ty_get_prop(me, array, method);
-            Symbol const* array_symbol = ty_array(me, ty_intrinsic(me, TY_ANY), false)->reference.target->declared.symbol;
+            // (Without a global Array (noLib) an array is the empty object type, which has no target)
+            Ty const* any_array = ty_array(me, ty_intrinsic(me, TY_ANY), false);
+            Symbol const* array_symbol = any_array->kind == TY_REFERENCE ? any_array->reference.target->declared.symbol : nullptr;
             Symbol const* readonly_symbol = ty_readonly_array_target(me)->declared.symbol;
             if (prop && prop->parent && (prop->parent == array_symbol || prop->parent == readonly_symbol)) {
                 readonly |= prop->parent == readonly_symbol;

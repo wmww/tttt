@@ -1676,8 +1676,10 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
         return ty_reference_args(me, rest).data[0];
     }
     if (is_tuple(rest)) {
+        // (Without a global Array (noLib) the tuple's array base is the empty object type, which has no number index:
+        // tsc's getIndexedAccessType of it gives any)
         Ty const* array = tuple_as_array(me, rest);
-        return ty_reference_args(me, array).data[0];
+        return array->kind == TY_REFERENCE ? ty_reference_args(me, array).data[0] : ty_intrinsic(me, TY_ANY);
     }
     // (Indexing never is never, the silent one included: tsc's getPropertyTypeForIndexType returns an any or never
     // object type as it is, so `(...args: A)` with an outer A silenced infers nothing)

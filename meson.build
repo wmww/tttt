@@ -11,6 +11,10 @@ if get_option('buildtype').startswith('debug')
     add_project_arguments('-DINCLUDE_VALGRIND', language : 'c')
 endif
 
+# Where main.c's set_lib_dir() finds the standard library when the binary isn't in a build directory of the repo
+# (`meson setup /tmp/x`): the source tree's thirdparty/lib
+add_project_arguments('-DTTTT_SOURCE_LIB_DIR="' + meson.current_source_dir() / 'thirdparty' / 'lib' + '"', language : 'c')
+
 # Must come after the add_project_arguments() above so cleat gets the same defines. cleat's meson.build declares
 # cleat_dep and cleat_c_args (the recommended set of warnings/errors); cleat_c_args can't go through
 # add_project_arguments() because by this point cleat has already declared its own build targets, so each of our

@@ -1,0 +1,109 @@
+//// [test/cases/ttttNoLibTupleSpread.ts] ////
+
+=== ttttNoLibTupleSpread.ts ===
+// Without lib there is no global Array: arrays are `{}` (tsc's emptyGenericType fallback), but tuples are still tuples,
+// and spreading, destructuring or iterating one must not assume its array base type is a reference to Array (it is
+// the empty object type, whose number index tsc reads as any).
+declare const u: [number, string];
+>u : [number, string]
+
+function h(a: number, ...b: string[]) {}
+>h : (a: number, ...b: string[]) => void
+>a : number
+>b : {}
+
+h(...u);
+>h(...u) : void
+>h : (a: number, ...b: string[]) => void
+>...u : any
+>u : [number, string]
+
+declare function k<T extends any[]>(...a: T): T;
+>k : <T extends any[]>(...a: T) => T
+>a : T
+
+const kr = k(...u);
+>kr : [number, string]
+>k(...u) : [number, string]
+>k : <T extends any[]>(...a: T) => T
+>...u : any
+>u : [number, string]
+
+const [p, ...qs] = u;
+>p : number
+>qs : [string]
+>u : [number, string]
+
+const spread = [...u, true];
+>spread : {}
+>[...u, true] : {}
+>...u : any
+>u : [number, string]
+>true : true
+
+for (const z of u) {}
+>z : any
+>u : [number, string]
+
+function m(...a: [number, string]) { return a; }
+>m : (a_0: number, a_1: string) => [number, string]
+>a : [number, string]
+>a : [number, string]
+
+m(1, "x");
+>m(1, "x") : [number, string]
+>m : (a_0: number, a_1: string) => [number, string]
+>1 : 1
+>"x" : "x"
+
+m(...u);
+>m(...u) : [number, string]
+>m : (a_0: number, a_1: string) => [number, string]
+>...u : any
+>u : [number, string]
+
+const len = u.length;
+>len : 2
+>u.length : 2
+>u : [number, string]
+>length : 2
+
+declare const tu: [number] | [string, boolean];
+>tu : [number] | [string, boolean]
+
+tu.map;
+>tu.map : any
+>tu : [number] | [string, boolean]
+>map : any
+
+const tuSpread = [...tu];
+>tuSpread : {}
+>[...tu] : {}
+>...tu : any
+>tu : [number] | [string, boolean]
+
+declare const ro: readonly [number, string];
+>ro : readonly [number, string]
+
+const [r0, ...rs] = ro;
+>r0 : number
+>rs : [string]
+>ro : readonly [number, string]
+
+for (const z of ro) {}
+>z : any
+>ro : readonly [number, string]
+
+h(...ro);
+>h(...ro) : void
+>h : (a: number, ...b: string[]) => void
+>...ro : any
+>ro : readonly [number, string]
+
+tu.forEach(() => {});
+>tu.forEach(() => {}) : any
+>tu.forEach : any
+>tu : [number] | [string, boolean]
+>forEach : any
+>() => {} : () => void
+

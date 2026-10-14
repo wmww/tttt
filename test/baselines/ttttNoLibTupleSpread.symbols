@@ -1,0 +1,90 @@
+//// [test/cases/ttttNoLibTupleSpread.ts] ////
+
+=== ttttNoLibTupleSpread.ts ===
+// Without lib there is no global Array: arrays are `{}` (tsc's emptyGenericType fallback), but tuples are still tuples,
+// and spreading, destructuring or iterating one must not assume its array base type is a reference to Array (it is
+// the empty object type, whose number index tsc reads as any).
+declare const u: [number, string];
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+function h(a: number, ...b: string[]) {}
+>h : Symbol(h, Decl(ttttNoLibTupleSpread.ts, 3, 34))
+>a : Symbol(a, Decl(ttttNoLibTupleSpread.ts, 4, 11))
+>b : Symbol(b, Decl(ttttNoLibTupleSpread.ts, 4, 21))
+
+h(...u);
+>h : Symbol(h, Decl(ttttNoLibTupleSpread.ts, 3, 34))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+declare function k<T extends any[]>(...a: T): T;
+>k : Symbol(k, Decl(ttttNoLibTupleSpread.ts, 5, 8))
+>T : Symbol(T, Decl(ttttNoLibTupleSpread.ts, 6, 19))
+>a : Symbol(a, Decl(ttttNoLibTupleSpread.ts, 6, 36))
+>T : Symbol(T, Decl(ttttNoLibTupleSpread.ts, 6, 19))
+>T : Symbol(T, Decl(ttttNoLibTupleSpread.ts, 6, 19))
+
+const kr = k(...u);
+>kr : Symbol(kr, Decl(ttttNoLibTupleSpread.ts, 7, 5))
+>k : Symbol(k, Decl(ttttNoLibTupleSpread.ts, 5, 8))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+const [p, ...qs] = u;
+>p : Symbol(p, Decl(ttttNoLibTupleSpread.ts, 8, 7))
+>qs : Symbol(qs, Decl(ttttNoLibTupleSpread.ts, 8, 9))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+const spread = [...u, true];
+>spread : Symbol(spread, Decl(ttttNoLibTupleSpread.ts, 9, 5))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+for (const z of u) {}
+>z : Symbol(z, Decl(ttttNoLibTupleSpread.ts, 10, 10))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+function m(...a: [number, string]) { return a; }
+>m : Symbol(m, Decl(ttttNoLibTupleSpread.ts, 10, 21))
+>a : Symbol(a, Decl(ttttNoLibTupleSpread.ts, 11, 11))
+>a : Symbol(a, Decl(ttttNoLibTupleSpread.ts, 11, 11))
+
+m(1, "x");
+>m : Symbol(m, Decl(ttttNoLibTupleSpread.ts, 10, 21))
+
+m(...u);
+>m : Symbol(m, Decl(ttttNoLibTupleSpread.ts, 10, 21))
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+
+const len = u.length;
+>len : Symbol(len, Decl(ttttNoLibTupleSpread.ts, 14, 5))
+>u.length : Symbol(length)
+>u : Symbol(u, Decl(ttttNoLibTupleSpread.ts, 3, 13))
+>length : Symbol(length)
+
+declare const tu: [number] | [string, boolean];
+>tu : Symbol(tu, Decl(ttttNoLibTupleSpread.ts, 15, 13))
+
+tu.map;
+>tu : Symbol(tu, Decl(ttttNoLibTupleSpread.ts, 15, 13))
+
+const tuSpread = [...tu];
+>tuSpread : Symbol(tuSpread, Decl(ttttNoLibTupleSpread.ts, 17, 5))
+>tu : Symbol(tu, Decl(ttttNoLibTupleSpread.ts, 15, 13))
+
+declare const ro: readonly [number, string];
+>ro : Symbol(ro, Decl(ttttNoLibTupleSpread.ts, 18, 13))
+
+const [r0, ...rs] = ro;
+>r0 : Symbol(r0, Decl(ttttNoLibTupleSpread.ts, 19, 7))
+>rs : Symbol(rs, Decl(ttttNoLibTupleSpread.ts, 19, 10))
+>ro : Symbol(ro, Decl(ttttNoLibTupleSpread.ts, 18, 13))
+
+for (const z of ro) {}
+>z : Symbol(z, Decl(ttttNoLibTupleSpread.ts, 20, 10))
+>ro : Symbol(ro, Decl(ttttNoLibTupleSpread.ts, 18, 13))
+
+h(...ro);
+>h : Symbol(h, Decl(ttttNoLibTupleSpread.ts, 3, 34))
+>ro : Symbol(ro, Decl(ttttNoLibTupleSpread.ts, 18, 13))
+
+tu.forEach(() => {});
+>tu : Symbol(tu, Decl(ttttNoLibTupleSpread.ts, 15, 13))
+

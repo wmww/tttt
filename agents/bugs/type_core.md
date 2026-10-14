@@ -368,3 +368,12 @@ to `"" | 0 | false` errors), although the prefilter returns the same answers: th
 effect something downstream depends on (an order dependence). Not in base/distributive constraints nor
 narrowable_type (checked); look at the relation of `ZeroOf<T>` to the union. Probe: the test's lines 27-37 under
 `--strict`.
+
+## Without a global Array (noLib or a missing lib; triage 2026-10-14)
+- A tuple's rest element is stored as its array type, which is `{}` then: `[number, ...string[]]` prints
+  `[number, ...{}]` (tsgo: `...string[]`, tsc stores the rest element's element type, getTypeFromRestTypeNode), its
+  slices `[...{}]` (tsgo `{}`), `k(...t)` infers `[number, ...{}]` (tsgo `[number, ...any[]]`). Only noLib tests can see
+  it (tsgo's CLI stops at TS2318). The crash itself is fixed (ttttNoLibTupleSpread).
+- type-fest checked without lib (`--keep-going`) overflows the 64 MB stack in conditional tail recursion
+  (test-d/union-max.ts: `InternalUnionMax`, each of its ~1000 tail steps lowers type arguments inside the recursion):
+  hacks.md's "Real fix: a loop" for `ty_instantiate_tail`.

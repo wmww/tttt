@@ -205,6 +205,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNoLibTupleSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNullIdentifierName': {
         errors: true,
         symbols: true,

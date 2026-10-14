@@ -126,16 +126,28 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
 }
 
 // The standard library is the repo's thirdparty/lib: relative to the working directory when that's the repo root, else
-// found from the executable (release/tttt: its directory's parent is the repo root)
+// found from the executable (release/tttt: its directory's parent is the repo root), else the source tree it was built
+// from (a build directory outside the repo, `meson setup /tmp/x`)
 static void set_lib_dir(Program* program) {
     if (access("thirdparty/lib/es5.d.ts", R_OK) == 0) return;
     char exe[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
-    if (len <= 0) return;
-    exe[len] = 0;
-    cstr dir = cstr_d(dirname(exe), "/../thirdparty/lib");
-    program_set_lib_dir(program, cstr_sv(&dir));
-    cstr_drop(&dir);
+    if (len > 0) {
+        exe[len] = 0;
+        cstr dir = cstr_d(dirname(exe), "/../thirdparty/lib");
+        cstr probe = cstr_d(cstr_sv(&dir), "/es5.d.ts");
+        bool found = access(cstr_str(&probe), R_OK) == 0;
+        cstr_drop(&probe);
+        if (found) {
+            program_set_lib_dir(program, cstr_sv(&dir));
+            cstr_drop(&dir);
+            return;
+        }
+        cstr_drop(&dir);
+    }
+#ifdef TTTT_SOURCE_LIB_DIR
+    program_set_lib_dir(program, c_sv(TTTT_SOURCE_LIB_DIR));
+#endif
 }
 
 static_failable load_stdlib(Program* program) {
