@@ -60,6 +60,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeprecatedSuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,
@@ -10406,7 +10411,7 @@ const baselines = {
         types: true,
     },
     'deprecatedReferenceInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
