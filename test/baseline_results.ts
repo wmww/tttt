@@ -21603,7 +21603,7 @@ const baselines = {
     'largeControlFlowGraph': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'largeStringLiteralUnionSuggestion': {
         errors: true,

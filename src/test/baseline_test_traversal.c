@@ -3410,6 +3410,12 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         // tsc prints an expression's regular type (getRegularTypeOfExpression), a call's quick type if it has one
         // (getTypeOfExpression: `new A()` of an abstract class is A, though checking it gives the error type)
         Ty const* quick = my tag == EXPR_CALL ? ty_quick_expr_type(current_checker, me, false) : nullptr;
+        // tsc's types walk asks for a reference's type again, after the check: when a body too large for control flow
+        // analysis disabled it at the top level (getTypeAtFlowNode at 2000 recursions, which only a function body's
+        // check restores), that answer is the error type, where the check may have narrowed it before the limit
+        if (!quick && my tag == EXPR_IDENTIFIER && my identifier.flow && current_checker->flow_analysis_disabled) {
+            quick = ty_compute_expr_without_context(current_checker, me);
+        }
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span,
             ty_regular(current_checker, quick ? quick : expr_get_type(me)));
     }
