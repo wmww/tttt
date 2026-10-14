@@ -178,6 +178,20 @@ typedef struct Walk {
     // node_modules, and that specifier
     struct SpecifierMemo* specifiers;
     u32 specifier_count, specifier_cap;
+    // Declaration emit (plan 64): the second walk writes the `.d.ts` into `out` (null in the first, which only reports).
+    // `indent` levels of 4 spaces, `type_out`: where serialize_*() write the type they decide on (null: nowhere)
+    cstr* out;
+    u32 indent;
+    cstr* type_out;
+    cstr* pseudo_out; // The pseudo type serialize_*() print, kept until they know whether it falls back
+    // The statements written so far in the statement list being written (tsc's transformAndReplaceLatePaintedStatements
+    // bookkeeping): one is an export declaration or assignment (resultHasScopeMarker), one is a declaration without
+    // `export` (needsScopeFixMarker), one is an import or export (resultHasExternalModuleIndicator, the file's level).
+    // `export_offsets`: where in `out` the `export ` modifiers of a namespace body's statements are, which tsc strips
+    // when every statement has one
+    bool has_scope_marker, needs_scope_fix, has_module_indicator;
+    u32* export_offsets;
+    u32 export_offset_count, export_offset_cap;
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -444,7 +458,18 @@ static void print_type(Walk* me, Ty const* type, bool reports);
 static void print_inferred(Walk* me, Ty const* type) { print_type(me, type, my print_reports); }
 
 // ... `reports`: what the printer prints from syntax reports (tsgo's typeToTypeNode without suppressReportInferenceFallback)
+static TyDisplay emit_display(Walk* me, cstr* target);
+
 static void print_type(Walk* me, Ty const* type, bool reports) {
+    if (type && my type_out) {
+        TyParamNames names = {0};
+        TyDisplay d = emit_display(me, my type_out);
+        d.param_names = &names;
+        d.suppress_fallback = !reports;
+        ty_display(my checker, d, type);
+        ty_param_names_drop(&names);
+        return;
+    }
     if (!type || my emitting.kind == EMIT_NONE) return;
     my tracker.truncated = false;
     // (With the types baseline's node reuse: tsc's declaration emit reuses annotations the same way, naming what a
@@ -1330,10 +1355,18 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
     }
 }
 
-// pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type
-static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo) {
+// pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type (`type`)
+static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo, Ty const* type) {
     if (pseudo->kind != PSEUDO_INFERRED) {
         pseudo_to_node(me, pseudo);
+        if (my pseudo_out) {
+            cstr_clear(my pseudo_out);
+            TyParamNames names = {0};
+            TyDisplay d = emit_display(me, my pseudo_out);
+            d.param_names = &names;
+            ty_display_pseudo(my checker, d, pseudo, type);
+            ty_param_names_drop(&names);
+        }
         return;
     }
     PseudoReporter reporter = walk_reporter(me);
@@ -1356,8 +1389,11 @@ static void serialize_declaration(Walk* me, Pseudo const* pseudo, Ty const* type
         type = ty_union(my checker, (Ty const*[]){ type, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
     }
     bool outer = fallback_begin(me);
+    cstr pseudo_text = cstr_init();
+    cstr* outer_pseudo = my pseudo_out;
+    my pseudo_out = my type_out ? &pseudo_text : nullptr;
     if (pseudo_equivalent_reporting(me, pseudo, type, optional && !add_undefined)) {
-        pseudo_to_node_with_fallback(me, pseudo);
+        pseudo_to_node_with_fallback(me, pseudo, type);
     } else {
         my fell_back = true;
         // (Its error nodes reported: the printed type doesn't report again)
@@ -1371,10 +1407,12 @@ static void serialize_declaration(Walk* me, Pseudo const* pseudo, Ty const* type
         Pseudo const* with_undefined = should_add ? pseudo_add_undefined(my checker, pseudo) : nullptr;
         if (with_undefined && pseudo_equivalent_reporting(me, with_undefined, type, false)) {
             my fell_back = my print_reports = false;
-            pseudo_to_node_with_fallback(me, with_undefined);
+            pseudo_to_node_with_fallback(me, with_undefined, type);
         }
     }
-    fallback_end(me, outer, type);
+    my pseudo_out = outer_pseudo;
+    if (!fallback_end(me, outer, type) && my type_out) cstr_append_s(my type_out, pseudo_text);
+    cstr_drop(&pseudo_text);
 }
 
 // tsgo's serializeReturnTypeForSignature of a function without a return type: its pseudo type where that says the
@@ -1384,6 +1422,9 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
     if (!sig) return;
     Ty const* type = signature_return_type(my checker, sig);
     bool outer = fallback_begin(me);
+    cstr pseudo_text = cstr_init();
+    cstr* outer_pseudo = my pseudo_out;
+    my pseudo_out = my type_out ? &pseudo_text : nullptr;
     if (pseudo_equivalent_reporting(me, pseudo, type, false)) {
         // (The pseudochecker doesn't know inferred type predicates: one is reported at the function)
         TyPredicate const* predicate = signature_predicate(my checker, sig);
@@ -1391,12 +1432,14 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
             report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = fn });
             my fell_back = true;
         } else {
-            pseudo_to_node_with_fallback(me, pseudo);
+            pseudo_to_node_with_fallback(me, pseudo, type);
         }
     } else {
         my fell_back = true;
     }
-    fallback_end(me, outer, type);
+    my pseudo_out = outer_pseudo;
+    if (!fallback_end(me, outer, type) && my type_out) cstr_append_s(my type_out, pseudo_text);
+    cstr_drop(&pseudo_text);
 }
 
 static TypeNode const* setter_type(FunctionImpl const* setter) {
@@ -2513,6 +2556,815 @@ static void collect_exported_locals(Walk* me, VecStatement const* statements) {
     }
 }
 
+// Declaration emit's writer (plan 64)
+//
+// A second walk over what the first one found to be emitted: the first walk reports, painting what emitted
+// declarations name (late painting), the second writes the `.d.ts` text, a painted declaration where it is (tsc's
+// transformAndReplaceLatePaintedStatements), its diagnostics into a scratch ErrorCtx. The types it writes are those the
+// serialize_*() functions decide on (`type_out`): a declaration's pseudo type where it says its type, else its type.
+// The layout is tsc's printer's for declaration files: 4 spaces of indentation, one declaration or member per line.
+//
+// Not done yet (plan 64 stage 2 and on): comments, triple-slash references, import attributes, `stripInternal` beyond
+// what the walk skips, expandos, class expressions as bases (`_base` variables), JavaScript
+
+static TyDisplay emit_display(Walk* me, cstr* target) {
+    return (TyDisplay){
+        .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
+        .multiline = true, .indent = my indent,
+    };
+}
+
+static void w(Walk* me, csview text) { cstr_append_sv(my out, text); }
+#define w_lit(me, s) w(me, c_sv(s))
+
+static void w_indent(Walk* me) {
+    for (u32 i = 0; i < my indent; i++) w_lit(me, "    ");
+}
+
+static void w_node(Walk* me, TypeNode const* node) {
+    TyParamNames names = {0};
+    TyDisplay d = emit_display(me, my out);
+    d.param_names = &names;
+    ty_display_node(my checker, d, node);
+    ty_param_names_drop(&names);
+}
+
+static void w_type(Walk* me, Ty const* type) {
+    TyParamNames names = {0};
+    TyDisplay d = emit_display(me, my out);
+    d.param_names = &names;
+    ty_display(my checker, d, type);
+    ty_param_names_drop(&names);
+}
+
+static void w_type_params(Walk* me, Generic const* generic) {
+    TyParamNames names = {0};
+    TyDisplay d = emit_display(me, my out);
+    d.param_names = &names;
+    ty_display_type_params(my checker, d, generic);
+    ty_param_names_drop(&names);
+}
+
+// What a serialize_*() call decided to write, written (`any` when nothing: tsc's ensureType without a type node)
+static void w_serialized(Walk* me, cstr* text) {
+    w(me, cstr_size(text) ? cstr_sv(text) : c_sv("any"));
+    cstr_drop(text);
+}
+
+static bool emit_visible(Walk* me, Statement const* statement, Container container, Symbol const* symbol) {
+    return statement_visible_at_first(me, statement, container, symbol) || was_painted(me, symbol);
+}
+
+// Whether the statement list is a file's (else a namespace body's)
+static bool container_is_file(Container container) { return container.global || container.module_top_level; }
+
+// A top-level declaration's modifiers (tsc's ensureModifiers): its `export` and `default`, and `declare` at a file's top
+// level unless it is a type or a default export (needsDeclare). In a namespace body, where each `export ` is written
+// is remembered (see Walk.export_offsets)
+static void w_statement_modifiers(Walk* me, Statement const* statement, Container container, bool always_type) {
+    DeclExported exported = statement_declares_name(statement->tag) || statement->tag == STATEMENT_DECL_VARIABLE ?
+        statement->decl.props.exported : DECL_EXPORTED_NO;
+    bool is_file = container_is_file(container);
+    if (exported != DECL_EXPORTED_NO) {
+        if (!is_file) {
+            if (my export_offset_count == my export_offset_cap) {
+                my export_offset_cap = my export_offset_cap ? my export_offset_cap * 2 : 8;
+                my export_offsets = realloc(my export_offsets, my export_offset_cap * sizeof(u32));
+            }
+            my export_offsets[my export_offset_count++] = (u32)cstr_size(my out);
+        }
+        w_lit(me, "export ");
+        if (is_file) my has_module_indicator = true;
+    } else {
+        my needs_scope_fix = true;
+    }
+    if (exported == DECL_EXPORTED_YES_DEFAULT) {
+        w_lit(me, "default ");
+        return;
+    }
+    if (is_file && !always_type) w_lit(me, "declare ");
+}
+
+// A parameter (ensureParameter): its name without initializers, `?` where it is optional, its type
+static void w_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool private_member) {
+    Binding const* binding = &arg->initializer.binding;
+    if (arg->rest) w_lit(me, "...");
+    if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
+        cstr pattern = cstr_init();
+        ty_append_binding_pattern(&pattern, binding);
+        w(me, cstr_sv(&pattern));
+        cstr_drop(&pattern);
+    } else {
+        w(me, span_sv(binding->content_span));
+    }
+    bool is_this = binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this");
+    if (!is_this && is_optional_parameter(fn, arg)) w_lit(me, "?");
+    if (private_member) return;
+    w_lit(me, ": ");
+    if (binding->has_explicit_type && (is_this || !requires_adding_undefined(me, fn, arg, true))) {
+        w_node(me, binding_type(binding));
+        return;
+    }
+    cstr text = cstr_init();
+    cstr* outer = my type_out;
+    my type_out = &text;
+    Emitting saved = emit_enter(me, EMIT_PARAMETER, SIG_FUNCTION, binding->content_span, binding->content_span);
+    serialize_parameter(me, fn, arg, true);
+    emit_leave(me, saved);
+    my type_out = outer;
+    w_serialized(me, &text);
+}
+
+static void w_parameters(Walk* me, FunctionImpl const* fn, bool private_member) {
+    w_lit(me, "(");
+    if (!private_member) {
+        for_each (i, vec_function_arg, &fn->args) {
+            if (i_index) w_lit(me, ", ");
+            w_parameter(me, fn, i, false);
+        }
+    }
+    w_lit(me, ")");
+}
+
+// A signature's return type (ensureType of a function-like): as written, else serialized
+static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
+    w_lit(me, ": ");
+    if (fn->predicate) {
+        TypePredicateNode const* predicate = fn->predicate;
+        if (predicate->asserts) w_lit(me, "asserts ");
+        w(me, span_sv(predicate->name));
+        if (predicate->has_type) {
+            w_lit(me, " is ");
+            w_node(me, &predicate->type);
+        }
+        return;
+    }
+    if (fn->ret_explicit) {
+        w_node(me, &fn->ret);
+        return;
+    }
+    cstr text = cstr_init();
+    cstr* outer = my type_out;
+    my type_out = &text;
+    Emitting saved = emit_enter(me, EMIT_RETURN, SIG_FUNCTION, fn->name, fn->name);
+    Pseudo const* pseudo = getter_pair ? pseudo_of_accessors(my checker, fn, my class_pair.setter, false) :
+        pseudo_of_return(my checker, fn);
+    serialize_return(me, fn, pseudo);
+    emit_leave(me, saved);
+    my type_out = outer;
+    w_serialized(me, &text);
+}
+
+// `<T>(a: A): R` of a function declaration or method
+static void w_signature(Walk* me, FunctionImpl const* fn, bool private_member) {
+    if (private_member) {
+        w_lit(me, "()");
+        return;
+    }
+    w_type_params(me, &fn->generic);
+    w_parameters(me, fn, false);
+    if (!fn->is_constructor) w_return(me, fn, false);
+}
+
+// The type a variable is written with (ensureType, or its literal initializer: shouldPrintWithInitializer)
+static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
+    Binding const* binding = &decl->binding;
+    Expr const* init = initialized_binding_value(decl);
+    if (is_const && init->tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol)) {
+        w_lit(me, " = ");
+        w_type(me, ty_type_of_symbol(my checker, binding->symbol));
+        return;
+    }
+    w_lit(me, ": ");
+    if (binding->has_explicit_type) {
+        w_node(me, binding_type(binding));
+        return;
+    }
+    cstr text = cstr_init();
+    cstr* outer = my type_out;
+    my type_out = &text;
+    Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, binding->content_span, binding->content_span);
+    serialize_variable(me, decl, is_const);
+    emit_leave(me, saved);
+    my type_out = outer;
+    w_serialized(me, &text);
+}
+
+// The names a binding pattern declares, each a declaration of its own type (walkBindingPattern)
+static void w_binding_elements(Walk* me, Binding const* pattern, Container container, bool visible, u32* written) {
+    if (pattern->tag == BINDING_IDENTIFIER) {
+        if (!visible && !was_painted(me, pattern->symbol) && !is_exported_local(me, pattern->symbol)) return;
+        if ((*written)++) w_lit(me, ", ");
+        w(me, span_sv(pattern->content_span));
+        w_lit(me, ": ");
+        w_type(me, pattern->symbol ? ty_type_of_symbol(my checker, pattern->symbol) : ty_intrinsic(my checker, TY_ANY));
+    } else if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) w_binding_elements(me, i, container, visible, written);
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) w_binding_elements(me, &i->target, container, visible, written);
+    }
+}
+
+static void emit_variable_statement(Walk* me, Statement const* statement, Container container) {
+    VariableStatement const* variable = &statement->decl.variable;
+    bool visible = container.global || container.ambient || statement->decl.props.exported != DECL_EXPORTED_NO;
+    bool is_const = variable_statement_is_const(variable);
+    cstr declarations = cstr_init();
+    cstr* outer = my out;
+    my out = &declarations;
+    u32 written = 0;
+    for_each (i, vec_initialized_binding, &variable->initializers) {
+        Binding const* binding = &i->binding;
+        if (binding->tag != BINDING_IDENTIFIER) {
+            w_binding_elements(me, binding, container, visible, &written);
+            continue;
+        }
+        if (!visible && !was_painted(me, binding->symbol) && !(container.module_top_level && is_exported_local(me, binding->symbol))) {
+            continue;
+        }
+        if (written++) w_lit(me, ", ");
+        w(me, span_sv(binding->content_span));
+        w_variable_type(me, i, is_const);
+    }
+    my out = outer;
+    if (written) {
+        w_indent(me);
+        w_statement_modifiers(me, statement, container, false);
+        bool const_like = variable->keyword == VAR_INIT_USING || variable->keyword == VAR_INIT_AWAIT_USING;
+        w(me, const_like ? c_sv("const") : csview_from(variable_statement_keyword_str(variable)));
+        w_lit(me, " ");
+        w(me, cstr_sv(&declarations));
+        w_lit(me, ";\n");
+    }
+    cstr_drop(&declarations);
+}
+
+static void emit_function_declaration(Walk* me, Statement const* statement, Container container) {
+    FunctionImpl const* fn = statement->decl.function.impl;
+    if (is_overload_implementation(fn)) return;
+    w_indent(me);
+    w_statement_modifiers(me, statement, container, false);
+    w_lit(me, "function ");
+    w(me, span_sv(fn->name));
+    w_signature(me, fn, false);
+    w_lit(me, ";\n");
+}
+
+// A class member's modifiers in tsc's order (createModifiersFromModifierFlags; `public`, `async` and `override` aren't
+// written, nor `declare`)
+static void w_member_modifiers(Walk* me, AccessModifier access, bool is_abstract, bool is_static, bool readonly, bool accessor) {
+    if (access == ACCESS_MODIFIER_PRIVATE) w_lit(me, "private ");
+    if (access == ACCESS_MODIFIER_PROTECTED) w_lit(me, "protected ");
+    if (is_abstract) w_lit(me, "abstract ");
+    if (is_static) w_lit(me, "static ");
+    if (readonly) w_lit(me, "readonly ");
+    if (accessor) w_lit(me, "accessor ");
+}
+
+static csview item_name(ClassItem const* item) {
+    return span_sv(item->tag == CLASS_ITEM_METHOD ? item->method.name_span : item->field.name_span);
+}
+
+static void emit_field(Walk* me, ClassItem const* item) {
+    w_indent(me);
+    w_member_modifiers(me, item->access, item->field.is_abstract, item->field.is_static, item->field.is_readonly,
+        item->field.is_auto_accessor);
+    w(me, item_name(item));
+    if (item->field.is_optional) w_lit(me, "?");
+    if (item->access == ACCESS_MODIFIER_PRIVATE) {
+        w_lit(me, ";\n");
+        return;
+    }
+    Expr const* init = &item->field.value;
+    if (item->field.is_readonly && init->tag != EXPR_IMPLICIT_ANY && is_literal_const_field(item) && !item->field.has_explicit_type) {
+        w_lit(me, " = ");
+        w_type(me, lazy_type_get((LazyType*)&item->field.lazy_type));
+        w_lit(me, ";\n");
+        return;
+    }
+    w_lit(me, ": ");
+    if (item->field.has_explicit_type) {
+        w_node(me, &item->field.explicit_type);
+    } else {
+        cstr text = cstr_init();
+        cstr* outer = my type_out;
+        my type_out = &text;
+        check_field(me, item);
+        my type_out = outer;
+        w_serialized(me, &text);
+    }
+    w_lit(me, ";\n");
+}
+
+static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, FunctionArg const* arg) {
+    Binding const* binding = &arg->initializer.binding;
+    if (binding->tag != BINDING_IDENTIFIER) return; // TODO: binding patterns (an error, walkBindingPattern)
+    w_indent(me);
+    w_member_modifiers(me, arg->access, false, false, arg->is_readonly_property, false);
+    w(me, span_sv(binding->content_span));
+    if (arg->explicit_optional) w_lit(me, "?");
+    if (arg->access == ACCESS_MODIFIER_PRIVATE) {
+        w_lit(me, ";\n");
+        return;
+    }
+    w_lit(me, ": ");
+    if (binding->has_explicit_type && !requires_adding_undefined(me, ctor, arg, false)) {
+        w_node(me, binding_type(binding));
+    } else {
+        cstr text = cstr_init();
+        cstr* outer = my type_out;
+        my type_out = &text;
+        Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_CONSTRUCTOR, binding->content_span, binding->content_span);
+        serialize_parameter(me, ctor, arg, false);
+        emit_leave(me, saved);
+        my type_out = outer;
+        w_serialized(me, &text);
+    }
+    w_lit(me, ";\n");
+}
+
+static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container) {
+    w_indent(me);
+    w_statement_modifiers(me, statement, container, false);
+    if (cls->is_abstract) w_lit(me, "abstract ");
+    w_lit(me, "class");
+    if (span_valid(cls->name)) {
+        w_lit(me, " ");
+        w(me, span_sv(cls->name));
+    }
+    w_type_params(me, &cls->generic);
+    Expr const* base = &cls->extends;
+    if (base->tag != EXPR_IMPLICIT_ANY) {
+        w_lit(me, " extends ");
+        Expr const* name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
+        w(me, span_sv(expr_outer_span(name)));
+        if (base->tag == EXPR_GENERIC_PARAMS) {
+            w_lit(me, "<");
+            for_each (i, vec_spanned_type, &base->generic_params->params) {
+                if (i_index) w_lit(me, ", ");
+                w_node(me, &i->type);
+            }
+            w_lit(me, ">");
+        }
+    }
+    for_each (i, vec_spanned_type, &cls->implements) {
+        w(me, i_index ? c_sv(", ") : c_sv(" implements "));
+        w_node(me, &i->type);
+    }
+    w_lit(me, " {\n");
+    Scope const* outer_scope = my scope;
+    my indent++;
+    bool private_names = false;
+    for_each (i, vec_class_item, &cls->items) {
+        if ((i->tag == CLASS_ITEM_METHOD || i->tag == CLASS_ITEM_FIELD) && item_has_private_name(i)) private_names = true;
+    }
+    if (private_names) {
+        w_indent(me);
+        w_lit(me, "#private;\n");
+    }
+    // The parameter properties, as properties
+    for_each (i, vec_class_item, &cls->items) {
+        if (i->tag != CLASS_ITEM_CONSTRUCTOR || !i->constructor.func.has_body) continue;
+        for_each (j, vec_function_arg, &i->constructor.func.args) {
+            if (is_parameter_property(j)) emit_parameter_property(me, &i->constructor.func, j);
+        }
+    }
+    bool outer_static = my member_static, outer_in_class = my member_in_class;
+    my member_in_class = true;
+    for_each (i, vec_class_item, &cls->items) {
+        if (is_internal_declaration(i->span)) continue;
+        my member_static = class_item_is_static((ClassItem*)i);
+        switch (i->tag) {
+            case CLASS_ITEM_CONSTRUCTOR: {
+                FunctionImpl const* ctor = &i->constructor.func;
+                if (is_class_overload_implementation(cls, ctor)) break;
+                w_indent(me);
+                w_member_modifiers(me, i->access, false, false, false, false);
+                w_lit(me, "constructor");
+                w_parameters(me, ctor, i->access == ACCESS_MODIFIER_PRIVATE);
+                w_lit(me, ";\n");
+                break;
+            }
+            case CLASS_ITEM_METHOD: {
+                if (item_has_private_name(i)) break;
+                FunctionImpl const* fn = &i->method.func;
+                bool private_member = i->access == ACCESS_MODIFIER_PRIVATE;
+                if (i->method.accessor == CLASS_ACCESSOR_NONE) {
+                    if (is_class_overload_implementation(cls, fn) || interface_declares_method(cls, i)) break;
+                    // (A private method is a property without a type: omitPrivateMethodType, once per name)
+                    if (private_member && i->symbol_first && i->symbol_first != i) break;
+                    w_indent(me);
+                    w_member_modifiers(me, i->access, i->method.is_abstract, i->method.is_static, false, false);
+                    w(me, item_name(i));
+                    if (i->method.is_optional) w_lit(me, "?");
+                    if (!private_member) w_signature(me, fn, false);
+                    w_lit(me, ";\n");
+                    break;
+                }
+                bool getter = i->method.accessor == CLASS_ACCESSOR_GET;
+                w_indent(me);
+                w_member_modifiers(me, i->access, i->method.is_abstract, i->method.is_static, false, false);
+                w(me, getter ? c_sv("get ") : c_sv("set "));
+                w(me, item_name(i));
+                if (getter) {
+                    w_lit(me, "()");
+                    if (!private_member) {
+                        Accessors pair = class_accessors(i);
+                        find_setter(cls, i, &pair);
+                        Accessors outer_pair = my class_pair;
+                        my class_pair = pair;
+                        w_return(me, fn, true);
+                        my class_pair = outer_pair;
+                    }
+                } else {
+                    w_lit(me, "(");
+                    for_each (j, vec_function_arg, &fn->args) {
+                        Binding const* binding = &j->initializer.binding;
+                        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                        w_parameter(me, fn, j, private_member);
+                        break;
+                    }
+                    w_lit(me, ")");
+                }
+                w_lit(me, ";\n");
+                break;
+            }
+            case CLASS_ITEM_FIELD:
+                if (item_has_private_name(i)) break;
+                emit_field(me, i);
+                break;
+            case CLASS_ITEM_INTERFACE_MEMBER: {
+                // An index signature, as written
+                InterfaceMember const* member = &i->interface_memeber;
+                if (member->key.tag != INTERFACE_KEY_INDEX) break;
+                w_indent(me);
+                if (i->interface_member_static) w_lit(me, "static ");
+                if (member->readonly) w_lit(me, "readonly ");
+                w_lit(me, "[");
+                w(me, span_sv(member->key.index->name));
+                w_lit(me, ": ");
+                w_node(me, &member->key.index->type);
+                w_lit(me, "]: ");
+                w_node(me, &member->type);
+                w_lit(me, ";\n");
+                break;
+            }
+            default: break;
+        }
+    }
+    my member_static = outer_static, my member_in_class = outer_in_class;
+    my indent--;
+    my scope = outer_scope;
+    w_indent(me);
+    w_lit(me, "}\n");
+}
+
+// A type literal's members, one per line, braces and all (an interface's body: `{` and `}` on lines of their own even
+// when empty)
+static void w_members(Walk* me, TypeNode const* type) {
+    bool empty = type->tag != TYPE_INTERFACE || !vec_interface_member_size(&type->interface.members);
+    if (empty) {
+        w_lit(me, "{\n");
+        w_indent(me);
+        w_lit(me, "}");
+        return;
+    }
+    w_node(me, type);
+}
+
+static void emit_interface(Walk* me, InterfaceDecl const* decl, Statement const* statement, Container container) {
+    w_indent(me);
+    w_statement_modifiers(me, statement, container, true);
+    w_lit(me, "interface ");
+    w(me, span_sv(decl->name));
+    w_type_params(me, &decl->generic);
+    for_each (i, vec_spanned_type, &decl->extends) {
+        w(me, i_index ? c_sv(", ") : c_sv(" extends "));
+        w_node(me, &i->type);
+    }
+    w_lit(me, " ");
+    w_members(me, &decl->type);
+    w_lit(me, "\n");
+}
+
+static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* statement, Container container) {
+    w_indent(me);
+    w_statement_modifiers(me, statement, container, true);
+    w_lit(me, "type ");
+    w(me, span_sv(decl->name));
+    w_type_params(me, &decl->generic);
+    w_lit(me, " = ");
+    w_node(me, &decl->type);
+    w_lit(me, ";\n");
+}
+
+static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement, Container container) {
+    w_indent(me);
+    w_statement_modifiers(me, statement, container, false);
+    if (decl->is_const) w_lit(me, "const ");
+    w_lit(me, "enum ");
+    w(me, span_sv(decl->name));
+    w_lit(me, " {\n");
+    my indent++;
+    u32 written = 0;
+    for_each (i, vec_enum_case, &decl->cases) {
+        if (is_internal_declaration(i->full_name)) continue;
+        if (written++) w_lit(me, ",\n");
+        w_indent(me);
+        w(me, span_sv(i->full_name));
+        // (Its value where it has one: getEnumMemberValue)
+        Ty const* type = i->symbol ? ty_type_of_symbol(my checker, i->symbol) : nullptr;
+        double number;
+        bool constant = i->value.tag == EXPR_IMPLICIT_ANY || ty_enum_member_constant(my checker, i, &number) != 0;
+        if (constant && type && type->kind == TY_LITERAL && type->literal.enum_decl) {
+            w_lit(me, " = ");
+            Ty const* value = type->literal.string ? ty_string_literal(my checker, atom_sv(type->literal.string)) :
+                ty_literal(my checker, &type->literal.value);
+            w_type(me, value);
+        }
+    }
+    if (written) w_lit(me, "\n");
+    my indent--;
+    w_indent(me);
+    w_lit(me, "}\n");
+}
+
+static void emit_statements(Walk* me, VecStatement const* statements, Container container);
+
+static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const* statement, Container container) {
+    w_indent(me);
+    bool augmentation = decl->is_augmentation || decl->is_global;
+    if (augmentation) {
+        if (container_is_file(container)) w_lit(me, "declare ");
+    } else {
+        w_statement_modifiers(me, statement, container, false);
+    }
+    if (decl->is_global) {
+        w_lit(me, "global");
+    } else {
+        w(me, decl->is_ambient_module ? c_sv("module ") : c_sv("namespace "));
+        w(me, span_sv(decl->name));
+    }
+    if (decl->is_shorthand) {
+        w_lit(me, ";\n");
+        return;
+    }
+    // (`namespace A.B {}` is a namespace B exported from A: written as it was)
+    NamespaceDecl const* body = decl;
+    while (vec_statement_size(&body->contents.statements) == 1) {
+        Statement const* only = vec_statement_at(&body->contents.statements, 0);
+        if (only->tag != STATEMENT_DECL_NAMESPACE) break;
+        NamespaceDecl const* inner = only->decl.namespace;
+        if (!(inner->name.buf > decl->name.buf && inner->name.buf < span_end_ptr(decl->name))) break;
+        body = inner;
+    }
+    w_lit(me, " {\n");
+    bool ambient = container.ambient || statement->decl.props.declared || decl->is_ambient_module || decl->is_global;
+    Scope const* outer_scope = my scope;
+    if (body->inner_scope) my scope = body->inner_scope;
+    bool outer_marker = my has_scope_marker, outer_fix = my needs_scope_fix, outer_indicator = my has_module_indicator;
+    u32 outer_offsets = my export_offset_count;
+    my has_scope_marker = my needs_scope_fix = false;
+    my indent++;
+    u32 body_start = (u32)cstr_size(my out);
+    emit_statements(me, &body->contents.statements, (Container){ .ambient = ambient });
+    if (ambient) my needs_scope_fix = false;
+    if (!decl->is_global && !my has_scope_marker) {
+        if (my needs_scope_fix) {
+            w_indent(me);
+            w_lit(me, "export {};\n");
+        } else {
+            // (Every statement is exported: the modifiers are left out, from the last one back)
+            for (u32 i = my export_offset_count; i-- > outer_offsets;) {
+                if (my export_offsets[i] < body_start) continue;
+                cstr_erase(my out, my export_offsets[i], 7);
+            }
+        }
+    }
+    my export_offset_count = outer_offsets;
+    my indent--;
+    my scope = outer_scope;
+    my has_scope_marker = outer_marker, my needs_scope_fix = outer_fix, my has_module_indicator = outer_indicator;
+    w_indent(me);
+    w_lit(me, "}\n");
+}
+
+// An import or export declaration (transformImportDeclaration: an import keeps the names emitted declarations use)
+static void emit_port(Walk* me, Statement const* statement, Container container) {
+    PortStatement const* port = statement->import_export;
+    if (port->jsdoc) return;
+    bool is_file = container_is_file(container);
+    csview specifier = span_sv(port->target_path_span);
+    if (span_equals(port->keyword_span, "export")) {
+        if (!vec_port_item_size(&port->items) && port->main.tag == PORT_NOOP && !port->module_ref) {
+            // `export {}`
+            w_indent(me);
+            w_lit(me, "export {};\n");
+            my has_scope_marker = true;
+            if (is_file) my has_module_indicator = true;
+            return;
+        }
+        w_indent(me);
+        if (port->main.tag == PORT_EXPORT_AS_NAMESPACE) {
+            w_lit(me, "export as namespace ");
+            w(me, span_sv(port->main.decl_name));
+            w_lit(me, ";\n");
+            return;
+        }
+        my has_scope_marker = true;
+        if (is_file) my has_module_indicator = true;
+        w_lit(me, "export ");
+        if (port->main.type_only) w_lit(me, "type ");
+        if (port->main.tag == PORT_REEXPORT_SPLAT) {
+            w_lit(me, "*");
+        } else if (port->main.tag == PORT_REEXPORT_GATHER) {
+            w_lit(me, "* as ");
+            w(me, span_sv(port->main.decl_name));
+        } else {
+            w_lit(me, "{ ");
+            for_each (i, vec_port_item, &port->items) {
+                if (i_index) w_lit(me, ", ");
+                if (i->type_modifier) w_lit(me, "type ");
+                w(me, span_sv(i->source_name));
+                if (!span_eq(i->source_name, i->decl_name) && span_valid(i->decl_name)) {
+                    w_lit(me, " as ");
+                    w(me, span_sv(i->decl_name));
+                }
+            }
+            w(me, vec_port_item_size(&port->items) ? c_sv(" }") : c_sv("}"));
+        }
+        if (specifier.size) {
+            w_lit(me, " from ");
+            w(me, specifier);
+        }
+        w_lit(me, ";\n");
+        return;
+    }
+    // Imports
+    if (port->side_effect_only) {
+        w_indent(me);
+        w_lit(me, "import ");
+        w(me, specifier);
+        w_lit(me, ";\n");
+        if (is_file) my has_module_indicator = true;
+        return;
+    }
+    if (port->main.tag == PORT_IMPORT_ALIAS || port->is_import_require) {
+        PortItem const* item = &port->main;
+        if (!item->export_import && !was_painted(me, item->symbol) && !(container.ambient || container.global)) return;
+        w_indent(me);
+        if (item->export_import) w_lit(me, "export ");
+        w_lit(me, "import ");
+        w(me, span_sv(item->decl_name));
+        w_lit(me, " = ");
+        if (port->is_import_require) {
+            w_lit(me, "require(");
+            w(me, specifier);
+            w_lit(me, ")");
+            if (is_file) my has_module_indicator = true;
+        } else {
+            for_each (i, vec_span, &item->alias_path) {
+                if (i_index) w_lit(me, ".");
+                w(me, span_sv(*i));
+            }
+        }
+        w_lit(me, ";\n");
+        return;
+    }
+    bool default_kept = port->main.tag == PORT_IMPORT_DEFAULT && was_painted(me, port->main.symbol);
+    bool gather_kept = port->main.tag == PORT_IMPORT_GATHER && was_painted(me, port->main.symbol);
+    u32 named = 0;
+    for_each (i, vec_port_item, &port->items) named += was_painted(me, i->symbol);
+    if (!default_kept && !gather_kept && !named) {
+        if (port->module_ref && port->module_ref->file && import_required_by_augmentation(me, port->module_ref->file)) {
+            w_indent(me);
+            w_lit(me, "import ");
+            w(me, specifier);
+            w_lit(me, ";\n");
+            if (is_file) my has_module_indicator = true;
+        }
+        return;
+    }
+    if (is_file) my has_module_indicator = true;
+    w_indent(me);
+    w_lit(me, "import ");
+    if (port->main.type_only) w_lit(me, "type ");
+    if (default_kept) {
+        w(me, span_sv(port->main.decl_name));
+        if (gather_kept || named) w_lit(me, ", ");
+    }
+    if (gather_kept) {
+        w_lit(me, "* as ");
+        w(me, span_sv(port->main.decl_name));
+    } else if (named) {
+        w_lit(me, "{ ");
+        u32 written = 0;
+        for_each (i, vec_port_item, &port->items) {
+            if (!was_painted(me, i->symbol)) continue;
+            if (written++) w_lit(me, ", ");
+            if (i->type_modifier) w_lit(me, "type ");
+            w(me, span_sv(i->source_name));
+            if (!span_eq(i->source_name, i->decl_name)) {
+                w_lit(me, " as ");
+                w(me, span_sv(i->decl_name));
+            }
+        }
+        w_lit(me, " }");
+    }
+    w_lit(me, " from ");
+    w(me, specifier);
+    w_lit(me, ";\n");
+}
+
+static void emit_export_default(Walk* me, Statement const* statement, Container container) {
+    Expr const* expr = &statement->expr;
+    bool is_file = container_is_file(container);
+    if (is_file) my has_module_indicator = true;
+    my has_scope_marker = true;
+    if (expr->tag == EXPR_IDENTIFIER) {
+        w_indent(me);
+        w(me, statement->export_equals ? c_sv("export = ") : c_sv("export default "));
+        w(me, span_sv(expr_outer_span(expr)));
+        w_lit(me, ";\n");
+        return;
+    }
+    // `declare const _default: T; export default _default;`
+    cstr text = cstr_init();
+    cstr* outer = my type_out;
+    my type_out = &text;
+    Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
+    Root outer_root = my root;
+    my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
+    Ty const* type = lazy_type_get((LazyType*)&expr->lazy_type);
+    type = ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))));
+    serialize_declaration(me, pseudo_of_expression(my checker, expr, (PseudoPlace){0}), type, false, false);
+    my root = outer_root;
+    emit_leave(me, saved);
+    my type_out = outer;
+    w_indent(me);
+    w(me, is_file ? c_sv("declare const _default: ") : c_sv("const _default: "));
+    w_serialized(me, &text);
+    w_lit(me, ";\n");
+    w_indent(me);
+    w(me, statement->export_equals ? c_sv("export = _default;\n") : c_sv("export default _default;\n"));
+}
+
+static void emit_statement(Walk* me, Statement const* statement, Container container) {
+    if (is_internal_declaration(statement->span)) return;
+    switch (statement->tag) {
+        case STATEMENT_IMPORT_EXPORT: emit_port(me, statement, container); return;
+        case STATEMENT_DECL_VARIABLE: emit_variable_statement(me, statement, container); return;
+        case STATEMENT_DECL_FUNCTION:
+            if (emit_visible(me, statement, container, statement->decl.function.impl->symbol)) {
+                emit_function_declaration(me, statement, container);
+            }
+            return;
+        case STATEMENT_DECL_CLASS:
+            if (emit_visible(me, statement, container, statement->decl.class->symbol)) {
+                emit_class(me, statement->decl.class, statement, container);
+            }
+            return;
+        case STATEMENT_DECL_INTERFACE:
+            if (emit_visible(me, statement, container, statement->decl.interface->symbol)) {
+                emit_interface(me, statement->decl.interface, statement, container);
+            }
+            return;
+        case STATEMENT_DECL_TYPE: {
+            TypeDecl const* decl = statement->decl.type;
+            if (decl->jsdoc || decl->jsdoc_check_only) return;
+            if (emit_visible(me, statement, container, decl->symbol)) emit_type_alias(me, decl, statement, container);
+            return;
+        }
+        case STATEMENT_DECL_ENUM:
+            if (emit_visible(me, statement, container, statement->decl.enum_->symbol)) {
+                emit_enum(me, statement->decl.enum_, statement, container);
+            }
+            return;
+        case STATEMENT_DECL_NAMESPACE: {
+            NamespaceDecl const* decl = statement->decl.namespace;
+            bool augmentation = decl->is_augmentation || decl->is_global;
+            if (augmentation || emit_visible(me, statement, container, decl->symbol)) emit_namespace(me, decl, statement, container);
+            return;
+        }
+        case STATEMENT_EXPORT_DEFAULT_EXPR: emit_export_default(me, statement, container); return;
+        default: return;
+    }
+}
+
+static void emit_statements(Walk* me, VecStatement const* statements, Container container) {
+    for_each (i, vec_statement, statements) emit_statement(me, i, container);
+}
+
+// The second walk: the file's `.d.ts`
+static void emit_file(Walk* me, Container top) {
+    emit_statements(me, &my file->ast.statements, top);
+    // (A module whose declarations wouldn't say so, or one with a declaration that isn't exported and nothing that says
+    // which are: `export {};`)
+    if (my file->is_module && (!my has_module_indicator || (my needs_scope_fix && !my has_scope_marker))) {
+        w_lit(me, "export {};\n");
+    }
+}
+
 bool declaration_diagnostics_wanted(SourceFile const* file) {
     CompilerOptions const* options = compiler_options();
     if (!options->declaration && !options->composite) return false;
@@ -2543,10 +3395,7 @@ static void js_declaration_diagnostics_check(SourceFile const* file, ErrorCtx* e
 void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool emit) {
     if (file->is_js) js_declaration_diagnostics_check(file, errs);
     if (!declaration_diagnostics_wanted(file)) return;
-    if (emit) {
-        SourceFile* writable = (SourceFile*)file;
-        if (!writable->declaration_output) writable->declaration_output = c_new(cstr, cstr_init());
-    }
+    isize_t errors_before = vec_error_size(&errs->errors);
     Walk walk = {
         .file = file,
         .errs = errs,
@@ -2574,6 +3423,39 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         for (u32 i = 0; i < count; i++) walk.painted_done[i] = true;
         walked = count;
     }
+    // The second walk writes the file, unless the first reported something about it (tsc doesn't write a declaration
+    // file whose transform has diagnostics)
+    if (emit && vec_error_size(&errs->errors) == errors_before) {
+        ErrorCtx scratch = { .phase = errs->phase, .parent = errs->parent };
+        cstr* output = c_new(cstr, cstr_init());
+        walk.errs = &scratch;
+        walk.out = output;
+        emit_file(&walk, top);
+        walk.out = nullptr;
+        if (compiler_options()->new_line == 1) {
+            cstr crlf = cstr_with_capacity(cstr_size(output) + cstr_size(output) / 16);
+            for (csview rest = cstr_sv(output); rest.size;) {
+                isize_t line = csview_find_sv(rest, c_sv("\n"));
+                if (line == c_NPOS) {
+                    cstr_append_sv(&crlf, rest);
+                    break;
+                }
+                cstr_append_sv(&crlf, csview_slice(rest, 0, line));
+                cstr_append_sv(&crlf, c_sv("\r\n"));
+                rest = csview_slice(rest, line + 1, rest.size);
+            }
+            cstr_take(output, crlf);
+        }
+        walk.errs = errs;
+        error_ctx_drop(&scratch);
+        SourceFile* writable = (SourceFile*)file;
+        if (writable->declaration_output) {
+            cstr_drop(writable->declaration_output);
+            free(writable->declaration_output);
+        }
+        writable->declaration_output = output;
+    }
+    free(walk.export_offsets);
     symbol_chain_set_painted(nullptr, nullptr);
     symbol_chain_set_module_specifier(nullptr, nullptr);
     Checker* checker = walk.checker;

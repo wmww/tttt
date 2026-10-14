@@ -179,6 +179,7 @@ typedef struct CompilerOptions {
     bool case_insensitive_file_names;
     JsxKind jsx;
     ModuleDetectionKind module_detection;
+    uint8_t new_line; // `newLine`: 1 crlf, 2 lf, 0 not set (lf; tsc's harness: crlf). What emitted files end lines with
     cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
     bool lib_set; // `lib` was given: empty means none at all (`"lib": []`, tsc's options.lib of no names)
     // As written, empty if not given

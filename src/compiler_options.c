@@ -46,8 +46,8 @@ static const EnumValue module_detection_values[] = {
 
 static const EnumValue bool_values[] = { {"true", 1}, {"false", 0}, {} };
 
-// Enum options we don't otherwise read, the harness still has to know what "*" means for them
-static const EnumValue new_line_values[] = { {"crlf", 0}, {"lf", 1}, {} };
+// (0: not set, which is lf on the command line and crlf in tsc's harness)
+static const EnumValue new_line_values[] = { {"crlf", 1}, {"lf", 2}, {} };
 
 static const struct { const char* name; EnumValue const* values; } enum_options[] = {
     {"target", target_values},
@@ -200,6 +200,7 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
         my module_resolution_set = true; my module_resolution_removed = MODULE_RESOLUTION_NONE)
     ENUM_OPTION("jsx", jsx_values, jsx, )
     ENUM_OPTION("moduledetection", module_detection_values, module_detection, my module_detection_set = true)
+    ENUM_OPTION("newline", new_line_values, new_line, )
 #undef ENUM_OPTION
 
     if (name_equals(name, "lib")) {

@@ -2467,6 +2467,10 @@ typedef struct TyDisplay {
     // nothing truncates, see display_over()). One per print, made by the entry points
     bool* over;
     TyDisplaySymbolType const* symbol_types;
+    // Declaration emit: object types and type literals are printed one member per line (tsc's MultilineObjectLiterals,
+    // the printer's MultiLineTypeLiteralMembers), `indent` levels of 4 spaces deep where the type starts
+    bool multiline;
+    u32 indent;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;
@@ -2479,6 +2483,13 @@ typedef struct TyDisplayParams {
     struct TyDisplayParams const* outer;
 } TyDisplayParams;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
+// Declaration emit (plan 64): a written type node as tsc's printer reprints it, a declaration's type parameter list
+// (nothing without any), a pseudo type (pseudo.h) where it says the declaration's type `ty`, a binding pattern
+void ty_display_node(Checker* me, TyDisplay d, struct TypeNode const* node);
+void ty_display_type_params(Checker* me, TyDisplay d, struct Generic const* generic);
+struct Pseudo;
+void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
+void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);

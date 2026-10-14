@@ -72,6 +72,38 @@ static void out(TyDisplay d, csview sv) {
 }
 #define out_lit(d, s) out(d, c_sv(s))
 
+// An object type's braces and members: `{ a: T; }` on one line, or declaration emit's one member per line (see
+// TyDisplay.multiline). brace_open() returns what the members are printed with
+static TyDisplay brace_open(TyDisplay d) {
+    out(d, d.multiline ? c_sv("{\n") : c_sv("{ "));
+    d.indent++;
+    return d;
+}
+
+static void out_indent(TyDisplay d) {
+    static char const spaces[] = "                                                                ";
+    for (u32 n = d.indent * 4; n;) {
+        u32 now = n < sizeof spaces - 1 ? n : (u32)sizeof spaces - 1;
+        out(d, (csview){ spaces, now });
+        n -= now;
+    }
+}
+
+// Before a member (with the members' TyDisplay)
+static void member_begin(TyDisplay d) {
+    if (d.multiline) out_indent(d);
+}
+
+static void member_end(TyDisplay d) {
+    out(d, d.multiline ? c_sv(";\n") : c_sv("; "));
+}
+
+// (With the TyDisplay brace_open() was given)
+static void brace_close(TyDisplay d) {
+    if (d.multiline) out_indent(d);
+    out(d, c_sv("}"));
+}
+
 static void out_fmt_more(TyDisplay d, u32 count) {
     char more[48];
     snprintf(more, sizeof more, "... %u more ...; ", count);
@@ -1788,9 +1820,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         out_lit(d, "{}");
         return;
     }
-    out_lit(d, "{ ");
+    TyDisplay outer = d;
+    d = brace_open(d);
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, d, i)) continue;
+        member_begin(d);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
@@ -1844,9 +1878,9 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 break;
         }
-        out_lit(d, "; ");
+        member_end(d);
     }
-    out_lit(d, "}");
+    brace_close(outer);
 }
 
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
@@ -2900,7 +2934,9 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         }
     }
     u32 saved = param_names_enter(d);
-    out_lit(d, "{ ");
+    TyDisplay outer = d;
+    d = brace_open(d);
+    member_begin(d);
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
     TyDisplay name_d = reused_if(d, !fresh_mapper);
@@ -2934,7 +2970,8 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         template = ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     ty_display(me, d, template);
-    out_lit(d, "; }");
+    member_end(d);
+    brace_close(outer);
     approx_add(d, 10); // (tsc's createMappedTypeNodeFromType, after its parts)
     param_names_leave(d, saved);
 }
@@ -3572,14 +3609,14 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             }
             Members const* members = ty && (ty->flags & TYF_OBJECT) ? ty_members(me, ty) : nullptr;
             bool is_const = pseudo->in_const;
-            TyDisplay member_d = reused_if(d, false);
+            TyDisplay member_d = reused_if(brace_open(d), false);
             member_d.in_object_literal = true;
-            out_lit(d, "{ ");
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
                 Prop const* prop = members ? pseudo_member_prop(members, member->item) : nullptr;
                 Ty const* type = prop ? ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0) : nullptr;
                 bool readonly = is_const || (member->kind == PSEUDO_MEMBER_PROPERTY && member->readonly);
+                member_begin(member_d);
                 if (readonly) out_lit(member_d, "readonly ");
                 // (tsgo's reuseName: the name as a property name node would print it, counted as reused)
                 approx_add(member_d, reused_node_length(member->item->name_span));
@@ -3620,9 +3657,9 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         display_pseudo(me, member_d, member->type, type);
                         break;
                 }
-                out_lit(member_d, "; ");
+                member_end(member_d);
             }
-            out_lit(d, "}");
+            brace_close(d);
             return;
         }
     }
@@ -3698,7 +3735,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         out_lit(d, " & ");
     }
-    out_lit(d, "{ ");
+    TyDisplay brace_outer = d;
+    d = brace_open(d);
     d.in_object_literal = true;
     TyDisplay sig_d = d;
     for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.types_baseline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
@@ -3707,13 +3745,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
     }
     for (u32 i = 0; i < members->call_count; i++) {
+        member_begin(d);
         display_signature(me, sig_d, members->call[i], ": ", false);
-        out_lit(d, "; ");
+        member_end(d);
     }
     for (u32 i = 0; i < members->construct_count; i++) {
         if (members->construct[i]->flags & SIGNATURE_ABSTRACT) continue;
+        member_begin(d);
         display_signature(me, d, members->construct[i], ": ", true);
-        out_lit(d, "; ");
+        member_end(d);
     }
     for (u32 i = 0; i < members->index_count; i++) {
         IndexInfo const* info = &members->index[i];
@@ -3728,16 +3768,18 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                     Span name = expr_outer_span(component->name);
                     d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
                 }
+                member_begin(d);
                 if (info->readonly) out_lit(reused, "readonly ");
                 out_lit(reused, "[");
                 out(reused, span_sv(expr_outer_span(component->name)));
                 out_lit(reused, "]: ");
                 ty_display(me, d, component->type);
                 out_lit(reused, ";");
-                out_lit(d, " ");
+                out(d, d.multiline ? c_sv("\n") : c_sv(" "));
             }
             continue;
         }
+        member_begin(d);
         if (info->readonly) out_lit(d, "readonly ");
         out_lit(d, "[");
         out(d, info->param_name ? atom_sv(info->param_name) : c_sv("x"));
@@ -3752,7 +3794,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         else ty_display(me, d, info->value);
         // (tsc's indexInfoToIndexSignatureDeclarationHelper, after the types: the parameter's name and four, readonly nine)
         approx_add(d, (info->param_name ? (u32)atom_sv(info->param_name).size : 1) + 4 + (info->readonly ? 9 : 0));
-        out_lit(d, "; ");
+        member_end(d);
     }
     TyDisplay outer_d = d;
     TyDisplayReverse reverse_frame;
@@ -3794,11 +3836,12 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
                 // (A method named `new` is quoted: it would read as a construct signature)
+                member_begin(d);
                 if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
                 else display_member_name(me, d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
-                out_lit(d, "; ");
+                member_end(d);
             }
             continue;
         }
@@ -3811,6 +3854,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (write && write != type && type != ty_intrinsic(me, TY_ERROR) && write != ty_intrinsic(me, TY_ERROR)) {
                 // (Two signatures: three each, the setter's parameter its name and three)
                 approx_add(d, 3 + 3 + 3 + (prop_decl_rare(declared->decl)->setter ? 5 : (u32)prop_decl_rare(declared->decl)->setter_param.size));
+                member_begin(d);
                 out_lit(d, "get ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(): ");
@@ -3820,7 +3864,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 // (Instantiated, an annotation that still says it: `get done(): true`)
                 bool fresh = prop != declared && (mentions(me, type, d.fresh_params) || mentions(me, write, d.fresh_params));
                 display_annotated(me, d, fresh ? nullptr : read_node, type, false);
-                out_lit(d, "; set ");
+                member_end(d);
+                member_begin(d);
+                out_lit(d, "set ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(");
                 // (The parameter's name is its declaration's, reused)
@@ -3836,7 +3882,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 TypeNode const* write_node = prop_decl_rare(declared->decl)->setter ?
                     binding_type(&vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding) : prop_decl_rare(declared->decl)->write_node;
                 display_annotated(me, d, fresh ? nullptr : write_node, write, false);
-                out_lit(d, "); ");
+                out_lit(d, ")");
+                member_end(d);
                 continue;
             }
         }
@@ -3858,6 +3905,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             }
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
+                member_begin(d);
                 if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
                 TyDisplay name_d = d;
                 name_d.tracker = nullptr; // (named from its own declaration, see track_property())
@@ -3865,12 +3913,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 out_lit(d, ": ");
                 display_pseudo_with_fallback(me, d, pseudo, item_type);
-                out_lit(d, "; ");
+                member_end(d);
                 continue;
             }
             // (Its error nodes reported: its type is printed without reporting again)
             if (pseudo->kind == PSEUDO_INFERRED && pseudo->count) suppress = true;
         }
+        member_begin(d);
         if (prop->flags & PROP_READONLY) {
             approx_add(d, 9);
             out_lit(d, "readonly ");
@@ -3980,10 +4029,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         else if (annotation && reuses_nodes(d) && annotation_is(me, annotation, optional ? type : shown, optional)) display_node(me, d, annotation);
         else display_annotated(me, type_d, annotation, shown, optional);
-        out_lit(d, "; ");
+        member_end(d);
     }
     approx_add(d, 2); // (tsc's createTypeNodeFromObjectType)
-    out_lit(d, "}");
+    brace_close(brace_outer);
 }
 
 static bool anonymous_elided(TyDisplay d, Ty const* ty);
@@ -5037,3 +5086,25 @@ cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node) {
     display_node(me, (TyDisplay){ .target = &ret }, node);
     return ret;
 }
+
+// Declaration emit's entry points (plan 64, declaration_diagnostics.c's writer)
+
+void ty_display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    bool over = false;
+    if (!d.over) d.over = &over;
+    display_node(me, d, node);
+}
+
+void ty_display_type_params(Checker* me, TyDisplay d, Generic const* generic) {
+    bool over = false;
+    if (!d.over) d.over = &over;
+    display_node_type_params(me, d, generic);
+}
+
+void ty_display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
+    bool over = false;
+    if (!d.over) d.over = &over;
+    display_pseudo_with_fallback(me, d, pseudo, ty);
+}
+
+void ty_append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern(out, binding); }

@@ -1264,6 +1264,7 @@ BaselineTestCase run_baseline_test_case(
     program_resolve_names(program);
     // (tsgo's harness emits unless noEmit: the `.js` baseline's declaration files, the dts component)
     program_set_emit_declarations(program, !program_options(program)->no_emit);
+    if (!program_options(program)->new_line) program_options(program)->new_line = 1; // (the harness's default)
     program_typecheck(program);
 
     set_compiler_options(program_options(program));
