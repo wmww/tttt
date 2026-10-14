@@ -35,6 +35,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttForceTupleNestedElaboration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFunctionParsing': {
         errors: true,
         symbols: true,
@@ -46,6 +51,11 @@ const baselines = {
         types: true,
     },
     'ttttImportFromReexport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportTypeArgumentsResolvedLazily': {
         errors: true,
         symbols: true,
         types: true,
@@ -75,6 +85,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxFactoryImportedAsType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,
@@ -100,6 +115,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPackageIdPeerDependencies': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParenthisizedIdentifierFollowedByExpr': {
         errors: true,
         symbols: true,
@@ -110,7 +130,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttQualifiedNameValueThroughShadowingNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRestMappedOverEmptyTuple': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSignatureParameterTypeofItself': {
         errors: true,
         symbols: true,
         types: true,
@@ -126,6 +156,11 @@ const baselines = {
         types: true,
     },
     'ttttThisOptionalPropertyAssignmentContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionMemberNormalizedTargetName': {
         errors: true,
         symbols: true,
         types: true,
