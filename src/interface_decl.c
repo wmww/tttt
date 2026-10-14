@@ -247,11 +247,13 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     if (my symbol) current_checker->walk_merged_owner = ty_merged_owner_index(current_checker, ty_declared_type_of(current_checker, my symbol));
     interface_typecheck(&my type.interface, my symbol, errs);
     current_checker->walk_merged_owner = saved_owner;
-    // Once for all declarations of the interface, by the first one that is checked (a lib's aren't)
+    // Once for all declarations of the interface, by the first one that is checked (a lib's aren't, nor one in a
+    // declaration file under skipLibCheck: a global augmentation in a .d.ts, react-scan's `interface Window`)
     InterfaceDecl const* first_checked = nullptr;
     for (u32 d = 0; my symbol && d < my symbol->decl_count && !first_checked; d++) {
         SymbolDecl const* decl = &my symbol->decls[d];
-        if (decl->kind == SYMBOL_DECL_INTERFACE && span_source(decl->name) && !span_source(decl->name)->is_stdlib) first_checked = decl->node;
+        SourceFile const* file = decl->kind == SYMBOL_DECL_INTERFACE ? span_source(decl->name) : nullptr;
+        if (file && !file->is_stdlib && source_file_is_checked(file)) first_checked = decl->node;
     }
     if (first_checked == me) {
         VecInterfaceMember const* lists[16];

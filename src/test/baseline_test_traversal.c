@@ -798,7 +798,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // (Optional if any declaration is: the symbol's flags)
             Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
                 optional_member_type(ty_of_node(&my type), my optional);
-            if (redeclared) type = prop_type(current_checker, redeclared);
+            // (Optional as its first declaration is: tsc's addOptionality of the symbol's valueDeclaration)
+            if (redeclared) type = optional_member_type(prop_type(current_checker, redeclared), redeclared->flags & PROP_OPTIONAL);
             // A property declared after an accessor of its name is that accessor's symbol (after a method it conflicts:
             // a symbol of its own)
             if (joined) {

@@ -1,0 +1,35 @@
+//// [test/cases/ttttInterfaceMergeFirstDeclarationUnchecked.ts] ////
+
+=== g.d.ts ===
+export {};
+declare global {
+>global : any
+
+  interface W { a: string; a: number; b: string; c(): void; hook?: { renderers: Map<number, ReactRenderer> } }
+>a : string
+>a : string
+>b : string
+>c : () => void
+>hook : { renderers: Map<number, ReactRenderer>; } | undefined
+>renderers : Map<number, ReactRenderer>
+
+  interface M<R = void, T = unknown> {}
+}
+=== t.ts ===
+export {};
+interface Ext { v: string }
+>v : string
+
+declare global {
+>global : any
+
+  interface W { b: number; c: string; d: 1; hook?: { renderers: Map<number, Ext> } }
+>b : string
+>c : string
+>d : 1
+>hook : { renderers: Map<number, ReactRenderer>; } | undefined
+>renderers : Map<number, Ext>
+
+  interface M<T = any> {}
+}
+

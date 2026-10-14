@@ -1,0 +1,31 @@
+t.ts(4,17): error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'string', but here has type 'number'.
+t.ts(4,28): error TS2300: Duplicate identifier 'c'.
+t.ts(4,45): error TS2717: Subsequent property declarations must have the same type.  Property 'hook' must be of type '{ renderers: Map<number, ReactRenderer>; } | undefined', but here has type '{ renderers: Map<number, Ext>; } | undefined'.
+t.ts(5,13): error TS2428: All declarations of 'M' must have identical type parameters.
+
+
+==== g.d.ts (0 errors) ====
+    export {};
+    declare global {
+      interface W { a: string; a: number; b: string; c(): void; hook?: { renderers: Map<number, ReactRenderer> } }
+      interface M<R = void, T = unknown> {}
+    }
+==== t.ts (4 errors) ====
+    export {};
+    interface Ext { v: string }
+    declare global {
+      interface W { b: number; c: string; d: 1; hook?: { renderers: Map<number, Ext> } }
+                    ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'string', but here has type 'number'.
+!!! related TS6203 g.d.ts:3:39: 'b' was also declared here.
+                               ~
+!!! error TS2300: Duplicate identifier 'c'.
+!!! related TS6203 g.d.ts:3:50: 'c' was also declared here.
+                                                ~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'hook' must be of type '{ renderers: Map<number, ReactRenderer>; } | undefined', but here has type '{ renderers: Map<number, Ext>; } | undefined'.
+!!! related TS6203 g.d.ts:3:61: 'hook' was also declared here.
+      interface M<T = any> {}
+                ~
+!!! error TS2428: All declarations of 'M' must have identical type parameters.
+    }
+    

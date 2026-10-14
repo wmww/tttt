@@ -1,0 +1,47 @@
+//// [test/cases/ttttInterfaceMergeFirstDeclarationUnchecked.ts] ////
+
+=== g.d.ts ===
+export {};
+declare global {
+>global : Symbol(global, Decl(g.d.ts, 0, 10))
+
+  interface W { a: string; a: number; b: string; c(): void; hook?: { renderers: Map<number, ReactRenderer> } }
+>W : Symbol(W, Decl(g.d.ts, 1, 16), Decl(t.ts, 2, 16))
+>a : Symbol(W.a, Decl(g.d.ts, 2, 15), Decl(g.d.ts, 2, 26))
+>a : Symbol(W.a, Decl(g.d.ts, 2, 15), Decl(g.d.ts, 2, 26))
+>b : Symbol(W.b, Decl(g.d.ts, 2, 37), Decl(t.ts, 3, 15))
+>c : Symbol(W.c, Decl(g.d.ts, 2, 48))
+>hook : Symbol(W.hook, Decl(g.d.ts, 2, 59), Decl(t.ts, 3, 43))
+>renderers : Symbol(renderers, Decl(g.d.ts, 2, 68))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>ReactRenderer : Symbol(ReactRenderer)
+
+  interface M<R = void, T = unknown> {}
+>M : Symbol(M, Decl(g.d.ts, 2, 110), Decl(t.ts, 3, 84))
+>R : Symbol(R, Decl(g.d.ts, 3, 14))
+>T : Symbol(T, Decl(g.d.ts, 3, 23), Decl(t.ts, 4, 14))
+}
+=== t.ts ===
+export {};
+interface Ext { v: string }
+>Ext : Symbol(Ext, Decl(t.ts, 0, 10))
+>v : Symbol(Ext.v, Decl(t.ts, 1, 15))
+
+declare global {
+>global : Symbol(global, Decl(t.ts, 1, 27))
+
+  interface W { b: number; c: string; d: 1; hook?: { renderers: Map<number, Ext> } }
+>W : Symbol(W, Decl(g.d.ts, 1, 16), Decl(t.ts, 2, 16))
+>b : Symbol(W.b, Decl(g.d.ts, 2, 37), Decl(t.ts, 3, 15))
+>c : Symbol(W.c, Decl(t.ts, 3, 26))
+>d : Symbol(W.d, Decl(t.ts, 3, 37))
+>hook : Symbol(W.hook, Decl(g.d.ts, 2, 59), Decl(t.ts, 3, 43))
+>renderers : Symbol(renderers, Decl(t.ts, 3, 52))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Ext : Symbol(Ext, Decl(t.ts, 0, 10))
+
+  interface M<T = any> {}
+>M : Symbol(M, Decl(g.d.ts, 2, 110), Decl(t.ts, 3, 84))
+>T : Symbol(T, Decl(g.d.ts, 3, 23), Decl(t.ts, 4, 14))
+}
+
