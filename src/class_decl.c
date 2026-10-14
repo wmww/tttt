@@ -2342,11 +2342,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 ClassItem const* getter = i->method.accessor_getter;
                 bool typed = vec_function_arg_size(&func->args) &&
                     vec_function_arg_at(&func->args, 0)->initializer.binding.has_explicit_type;
-                if (!typed && (!getter || (!getter->method.func.ret_explicit && !getter->method.func.has_body))) {
+                if (!typed && (!getter || (!getter->method.func.ret_explicit && !getter->method.func.has_body && !getter->method.func.body_missing))) {
                     error_ctx_error_d(errs, i->method.name_span, 7032, "Property '", i->method.name_span,
                         "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
                 }
-            } else if (!func->ret_explicit && !func->has_body) {
+            } else if (!func->ret_explicit && !func->has_body && !func->body_missing) {
                 bool has_setter = false;
                 for_each (j, vec_class_item, &my items) {
                     has_setter |= j->tag == CLASS_ITEM_METHOD && j->method.accessor == CLASS_ACCESSOR_SET && j->method.accessor_getter == i;

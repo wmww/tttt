@@ -7365,6 +7365,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         if (parse_block(&p, false, &func.body)) func.has_body = true;
         else if (*p.pos == ';') p.pos++; // (parseFunctionBlockOrSemicolon)
+        // (Where no `;` can go, tsc's parseFunctionBlock makes a missing, empty block: a getter's type comes from it)
+        else if (!tok_can_parse_semicolon(tok_peek(&p))) func.body_missing = true;
         if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
         item.value = expr_function(span_from(a), c_new(FunctionImpl, func));

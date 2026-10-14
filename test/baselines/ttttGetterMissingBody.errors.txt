@@ -1,0 +1,52 @@
+ttttGetterMissingBody.ts(3,10): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttGetterMissingBody.ts(3,14): error TS1144: '{' or ';' expected.
+ttttGetterMissingBody.ts(4,16): error TS1005: '(' expected.
+ttttGetterMissingBody.ts(4,25): error TS1005: '{' expected.
+ttttGetterMissingBody.ts(4,31): error TS1005: '{' expected.
+ttttGetterMissingBody.ts(4,31): error TS18004: No value exists in scope for the shorthand property 'x'. Either declare one or provide an initializer.
+ttttGetterMissingBody.ts(4,34): error TS18004: No value exists in scope for the shorthand property 'n'. Either declare one or provide an initializer.
+ttttGetterMissingBody.ts(4,41): error TS7033: Property 'h' implicitly has type 'any', because its get accessor lacks a return type annotation.
+ttttGetterMissingBody.ts(5,1): error TS1005: '(' expected.
+ttttGetterMissingBody.ts(6,11): error TS7010: 'm', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttGetterMissingBody.ts(6,15): error TS1144: '{' or ';' expected.
+ttttGetterMissingBody.ts(6,15): error TS7008: Member 'x' implicitly has an 'any' type.
+ttttGetterMissingBody.ts(6,26): error TS1005: '{' expected.
+ttttGetterMissingBody.ts(6,26): error TS7008: Member 'y' implicitly has an 'any' type.
+
+
+==== ttttGetterMissingBody.ts (14 errors) ====
+    // A getter whose `{` the parser lost has a missing, empty body (tsc's parseFunctionBlock): void, no TS7033. One
+    // where a `;` could go has none: implicitly any. A method's missing body is any (getReturnTypeOfSignature's NodeIsMissing)
+    function f() => 4;
+             ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+                 ~~
+!!! error TS1144: '{' or ';' expected.
+    var o = { get e, get g(), m() x, n, get h
+                   ~
+!!! error TS1005: '(' expected.
+                            ~
+!!! error TS1005: '{' expected.
+                                  ~
+!!! error TS1005: '{' expected.
+                                  ~
+!!! error TS18004: No value exists in scope for the shorthand property 'x'. Either declare one or provide an initializer.
+                                     ~
+!!! error TS18004: No value exists in scope for the shorthand property 'n'. Either declare one or provide an initializer.
+                                            ~
+!!! error TS7033: Property 'h' implicitly has type 'any', because its get accessor lacks a return type annotation.
+    };
+    ~
+!!! error TS1005: '(' expected.
+    class C { m() x; get k() y }
+              ~
+!!! error TS7010: 'm', which lacks return-type annotation, implicitly has an 'any' return type.
+                  ~
+!!! error TS1144: '{' or ';' expected.
+                  ~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+                             ~
+!!! error TS1005: '{' expected.
+                             ~
+!!! error TS7008: Member 'y' implicitly has an 'any' type.
+    

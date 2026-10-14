@@ -371,7 +371,10 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
     if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
-    if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
+    // (A getter whose body the parser lost has an empty one, which tsc's getTypeOfAccessors infers from: void. A
+    // signature's return type is any then, getReturnTypeOfSignature checks NodeIsMissing)
+    bool body = function->has_body || (function->body_missing && function->accessor == 1);
+    if (function->ret_explicit || !body) return ty_from_node(me, &function->ret, function_lower_ctx);
     if (function_impl_rare(function)->jsdoc_signature_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
         if (tagged) return tagged;

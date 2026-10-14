@@ -1,0 +1,27 @@
+//// [test/cases/ttttGetterMissingBody.ts] ////
+
+=== ttttGetterMissingBody.ts ===
+// A getter whose `{` the parser lost has a missing, empty body (tsc's parseFunctionBlock): void, no TS7033. One
+// where a `;` could go has none: implicitly any. A method's missing body is any (getReturnTypeOfSignature's NodeIsMissing)
+function f() => 4;
+>f : () => any
+>4 : 4
+
+var o = { get e, get g(), m() x, n, get h
+>o : { readonly e: void; readonly g: void; m(): any; x: any; n: any; readonly h: any; }
+>{ get e, get g(), m() x, n, get h} : { readonly e: void; readonly g: void; m(): any; x: any; n: any; readonly h: any; }
+>e : void
+>g : void
+>m : () => any
+>x : any
+>n : any
+>h : any
+
+};
+class C { m() x; get k() y }
+>C : C
+>m : () => any
+>x : any
+>k : void
+>y : any
+

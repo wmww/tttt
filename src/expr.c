@@ -4614,7 +4614,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     }
                 }
                 if ((i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
-                    i->value.tag == EXPR_FUNCTION && !i->value.function->has_body
+                    i->value.tag == EXPR_FUNCTION && !i->value.function->has_body && !i->value.function->body_missing
                 ) {
                     // tsc's checkGrammarMethod/checkGrammarAccessor: at the member's last character
                     char const* end = span_end_ptr(i->span);
@@ -4637,6 +4637,20 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     if (value && !value->initializer.binding.has_explicit_type && !initialized_binding_getter(&value->initializer)) {
                         error_ctx_error_d(errs, i->name_span, 7032, "Property '", i->name_span,
                             "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
+                    }
+                }
+                // (A getter without body or annotation and no setter, which only parser recovery makes: TS7033)
+                if (i->tag == OBJECT_ITEM_GETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
+                    span_source(i->name_span) && !object_item_rare(i)->jsdoc_type && !i->value.function->ret_explicit &&
+                    !i->value.function->has_body && !i->value.function->body_missing && !i->computed_key
+                ) {
+                    bool has_setter = false;
+                    for_each (j, vec_object_expr_item, &my object) {
+                        has_setter |= j->tag == OBJECT_ITEM_SETTER && !j->computed_key && cstr_equals_sv(&j->name_string, cstr_sv(&i->name_string));
+                    }
+                    if (!has_setter) {
+                        error_ctx_error_d(errs, i->name_span, 7033, "Property '", i->name_span,
+                            "' implicitly has type 'any', because its get accessor lacks a return type annotation.");
                     }
                 }
                 if (object_item_rare(i)->jsdoc_type) {
