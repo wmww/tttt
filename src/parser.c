@@ -8032,8 +8032,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         name_is_value = false;
     } else if (!is_type && parse_class_computed_key(&p, &computed_key)) {
         // `[k]: T = x`, `[k]() {}`: the name is the key's source text, see ClassItem
+        // (A literal key is bound early by its value, `["kk"]` is `kk`'s namesake: tsc's getDeclarationName)
         name_span = span_from(name_anchor);
-        name_string = cstr_from_span(name_span);
+        name_string = cstr_init();
+        if (!computed_key_early_name(computed_key, &name_string)) name_string = cstr_from_span(name_span);
         name_is_value = false;
     } else if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
         name_span = span_null;
@@ -8080,7 +8082,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
     } else if (span_valid(name_span)) {
         // (Not for `""`, a string literal whose value is empty)
-        if (span_valid(name_span) && cstr_is_empty(&name_string) && !name_is_value) {
+        if (span_valid(name_span) && cstr_is_empty(&name_string) && !name_is_value && !computed_key) {
             name_string = cstr_from_span(name_span);
         }
 

@@ -104,6 +104,12 @@ void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
 /// `#x` (not `"#x"` or `[k]`): the item's name_span, else an invalid span
 Span class_item_private_name(ClassItem const* me);
+// Whether two methods are written with the same name (a computed literal by its value, `["kk"]` is `kk`; a private name
+// is its class's own, `#a` isn't `["#a"]`)
+static inline bool class_methods_same_name(ClassItem const* a, ClassItem const* b) {
+    return cstr_eq(&a->method.name_string, &b->method.name_string) &&
+        span_valid(class_item_private_name(a)) == span_valid(class_item_private_name(b));
+}
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
 Ty const* class_item_get_type(ClassItem* me);

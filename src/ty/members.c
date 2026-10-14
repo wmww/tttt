@@ -1548,7 +1548,7 @@ static void builder_add_class_items(
                 for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
                     ClassItem const* other = it.item;
                     if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
-                        !cstr_eq(&other->method.name_string, &i->method.name_string)
+                        !class_methods_same_name(other, i)
                     ) {
                         continue;
                     }
@@ -1562,7 +1562,7 @@ static void builder_add_class_items(
                         ClassItem const* other = it.item;
                         ClassItem const* before = it.index ? other - 1 : nullptr; // The class item before `other`
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
-                            !cstr_eq(&other->method.name_string, &i->method.name_string)
+                            !class_methods_same_name(other, i)
                         ) {
                             continue;
                         }
@@ -1571,7 +1571,7 @@ static void builder_add_class_items(
                         // static `m` between `m(x: string);` and `m(x) {}`) is a signature of its own
                         if (count && other->method.func.has_body && before && before->tag == CLASS_ITEM_METHOD &&
                             !before->method.accessor && before->method.is_static == static_side &&
-                            cstr_eq(&before->method.name_string, &i->method.name_string) &&
+                            class_methods_same_name(before, i) &&
                             adjacent_methods(before, other)
                         ) {
                             continue;
@@ -1591,7 +1591,7 @@ static void builder_add_class_items(
                     for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
                         ClassItem const* other = it.item;
                         if (other != i && other->tag == CLASS_ITEM_METHOD && !other->method.accessor &&
-                            other->method.is_static == static_side && cstr_eq(&other->method.name_string, &i->method.name_string)
+                            other->method.is_static == static_side && class_methods_same_name(other, i)
                         ) {
                             spans[span_count++] = other->span;
                         }

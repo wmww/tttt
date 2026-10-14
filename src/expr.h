@@ -328,6 +328,11 @@ static inline bool expr_is_perenthisized(Expr const* me) {
     return my paren_before != 0;
 }
 
+// tsc's binder name of a computed property name (getDeclarationName): a string or numeric literal (not parenthesized)
+// is its value, a signed numeric literal `[-1]` its operator and value. Those are early bound like any written name;
+// anything else is late bound (an entity name) or nameless. Appends the name to `out` (when not null) if there is one
+bool computed_key_early_name(Expr const* key, cstr* out);
+
 // What there is to say about a module name that an import-like construct uses (TS2307 & co.)
 void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs);
 

@@ -5098,3 +5098,20 @@ CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span*
     if (!file || !file->is_commonjs) return COMMONJS_TARGET_NONE;
     return expr_commonjs_target(&assignment->left, name_ret);
 }
+
+bool computed_key_early_name(Expr const* key, cstr* out) {
+    if (!key || expr_is_perenthisized(key)) return false;
+    Expr const* literal = key;
+    char const* sign = nullptr;
+    if (key->tag == EXPR_UNARY_OP && (key->unary_op->op == UNARY_OP_MINUS || key->unary_op->op == UNARY_OP_PLUS)) {
+        literal = &key->unary_op->expr;
+        if (expr_is_perenthisized(literal) || literal->tag != EXPR_LITERAL || literal->literal.tag != VALUE_NUMBER) return false;
+        sign = key->unary_op->op == UNARY_OP_MINUS ? "-" : "+";
+    }
+    if (literal->tag != EXPR_LITERAL || (literal->literal.tag != VALUE_STRING && literal->literal.tag != VALUE_NUMBER)) return false;
+    if (!out) return true;
+    if (sign) cstr_append(out, sign);
+    if (literal->literal.tag == VALUE_STRING) cstr_append_s(out, literal->literal.string);
+    else cstr_append_value_js(out, &literal->literal);
+    return true;
+}

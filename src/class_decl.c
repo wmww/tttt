@@ -77,14 +77,21 @@ bool class_item_is_static(ClassItem* me) {
     impossible;
 }
 
+// A member's computed key when it is late bound (tsc's binder leaves it nameless: an entity name, or a dynamic one),
+// null when the member has a name the binder declares: written, or a computed literal (`["kk"]` is `kk`)
+static Expr const* item_late_key(ClassItem const* item) {
+    Expr const* key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : nullptr;
+    return key && !computed_key_early_name(key, nullptr) ? key : nullptr;
+}
+
 ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_static) {
     for_each (i, vec_class_item, &my items) {
-        if (i->tag == CLASS_ITEM_FIELD && !i->field.computed_key && i->field.is_static == is_static &&
+        if (i->tag == CLASS_ITEM_FIELD && !item_late_key(i) && i->field.is_static == is_static &&
             csview_equals_sv(cstr_sv(&i->field.name_string), name)
         ) {
             return (ClassItem*)i;
         }
-        if (i->tag == CLASS_ITEM_METHOD && !i->method.computed_key && i->method.is_static == is_static &&
+        if (i->tag == CLASS_ITEM_METHOD && !item_late_key(i) && i->method.is_static == is_static &&
             csview_equals_sv(cstr_sv(&i->method.name_string), name)
         ) {
             return (ClassItem*)i;
@@ -448,13 +455,13 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
 // A class member's written name, staticness and binder flags, false if it has none (computed names are late bound)
 enum { BIND_PROPERTY = 1, BIND_METHOD = 2, BIND_GET = 4, BIND_SET = 8 };
 static bool member_binding(ClassItem const* item, cstr const** name, bool* is_static, u32* flags) {
-    if (item->tag == CLASS_ITEM_FIELD && !item->field.computed_key) {
+    if (item->tag == CLASS_ITEM_FIELD && !item_late_key(item)) {
         *name = &item->field.name_string;
         *is_static = item->field.is_static;
         *flags = item->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY;
         return true;
     }
-    if (item->tag == CLASS_ITEM_METHOD && !item->method.computed_key) {
+    if (item->tag == CLASS_ITEM_METHOD && !item_late_key(item)) {
         *name = &item->method.name_string;
         *is_static = item->method.is_static;
         *flags = item->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET :
@@ -547,7 +554,12 @@ static void bind_member_symbols(ClassDecl* me) {
             bool other_static;
             u32 other_flags;
             if (!j->symbol_first || !member_binding(j, &other_name, &other_static, &other_flags)) continue;
-            if (other_static != is_static || !cstr_eq(other_name, name)) continue;
+            // (A private name is its class's own, `#a` and `["#a"]` don't meet: tsc's `__#1@#a`)
+            if (other_static != is_static || !cstr_eq(other_name, name) ||
+                span_valid(class_item_private_name(j)) != span_valid(class_item_private_name(i))
+            ) {
+                continue;
+            }
             if (!first) first = j;
             if (j->symbol_first == first) existing |= other_flags;
         }
@@ -565,9 +577,7 @@ static void bind_member_symbols(ClassDecl* me) {
 // by the key's source text the way accessor pairs are matched. `[k]() {}` before `get [k]()` and `set [k](v)` keeps
 // both accessors alone: no pair. Null for a member without a computed name
 static ClassItem const* computed_symbol_first(ClassDecl const* me, ClassItem const* target) {
-    Expr const* key = target->tag == CLASS_ITEM_METHOD ? target->method.computed_key :
-        target->tag == CLASS_ITEM_FIELD ? target->field.computed_key : nullptr;
-    if (!key) return nullptr;
+    if (!item_late_key(target)) return nullptr;
     bool target_static = class_item_is_static((ClassItem*)target);
     cstr const* name = target->tag == CLASS_ITEM_METHOD ? &target->method.name_string : &target->field.name_string;
     // (Each earlier member of the name with the first of its symbol)
@@ -576,7 +586,7 @@ static ClassItem const* computed_symbol_first(ClassDecl const* me, ClassItem con
     u32 seen_count = 0;
     for (ClassItem const* i = my items.data; i <= target; i++) {
         bool method = i->tag == CLASS_ITEM_METHOD;
-        if (!(method ? i->method.computed_key : i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr)) continue;
+        if ((!method && i->tag != CLASS_ITEM_FIELD) || !item_late_key(i)) continue;
         if (class_item_is_static((ClassItem*)i) != target_static) continue;
         if (!cstr_eq(method ? &i->method.name_string : &i->field.name_string, name)) continue;
         u32 flags = i->tag == CLASS_ITEM_FIELD ? (i->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY) :
@@ -704,7 +714,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
             // (A computed name that isn't a literal or an entity name, `["" + ""]`, is a symbol of its own: tsc's
             // isLateBindableName)
-            Expr const* own_key = i->method.computed_key;
+            Expr const* own_key = item_late_key(i);
             bool bindable = !own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key);
             for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it);) {
                 ClassItem* other = it.item;
@@ -712,7 +722,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                 if (other->tag == CLASS_ITEM_METHOD &&
                     other->method.accessor &&
                     other->method.is_static == i->method.is_static &&
-                    cstr_eq(&other->method.name_string, &i->method.name_string) &&
+                    class_methods_same_name(other, i) &&
                     other->symbol_first == i->symbol_first &&
                     (!own_key || computed_symbol_first(me, other) == computed_symbol_first(me, i))
                 ) {
@@ -1489,6 +1499,7 @@ static bool bindable_method(ClassItem const* item) {
 static bool same_member(ClassItem const* a, ClassItem const* b) {
     if (a->tag != b->tag) return false;
     if (a->tag == CLASS_ITEM_CONSTRUCTOR) return true;
+    if (span_valid(class_item_private_name(a)) != span_valid(class_item_private_name(b))) return false;
     if (!a->method.computed_key && !b->method.computed_key) return cstr_eq(&a->method.name_string, &b->method.name_string);
     Atom const* a_name = a->method.computed_key ? bindable_computed_name(a) :
         checker_atom(current_checker, cstr_sv(&a->method.name_string));
