@@ -54,7 +54,8 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 - Sub-agents running in parallel with you or each other must not experiment in the shared tree: give them a worktree (`git worktree add /tmp/wt-x HEAD`, then symlink the untracked `thirdparty/{typescript,typescript-gopath,go,corpora,sources}` into it). The symlinked corpora are shared: probes go elsewhere. Parallel agents must never `git stash` (shared by all worktrees) nor wait on `pgrep -f` patterns (they match each other's builds).
 - Be conservative with Fable sub-agents, don't fan out to many of them.
 - If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.
-- You may edit this file (AGENTS.md/CLAUDE.md), but keep it compact and meaningful. Favor other files which can be read as-needed for all but the most important content.
+- When you are unable to move forward or the project is 100% complete and as performant as its reasonably going to get, create a file `claude-stop` in the project loop to end the dev cycle
+- You may edit this file (CLAUDE.md; AGENTS.md is a symlink to it), but keep it compact and meaningful. Favor other files which can be read as-needed for all but the most important content.
 
 ## Development Scripts
 You will use scripts to help you run tests, but some scripts and options are more useful to AI agents than others. All scripts live in `scripts/` (run them from the repo root: they `cd` there themselves), automatically compile the code in src before running tttt, and abort if there are any compile errors. The main scripts you will use are:
