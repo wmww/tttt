@@ -1,0 +1,54 @@
+ttttBigintMemberNames.ts(2,13): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(2,20): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(2,27): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintMemberNames.ts(2,27): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(3,11): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(4,15): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(5,16): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(8,9): error TS2538: Type 'bigint' cannot be used as an index type.
+ttttBigintMemberNames.ts(9,10): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(10,11): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(10,19): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(11,15): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintMemberNames.ts(11,27): error TS1539: A 'bigint' literal cannot be used as a property name.
+
+
+==== ttttBigintMemberNames.ts (13 errors) ====
+    // Bigint member names declare no member (tsc: __missing outside the table): TS1539, no duplicates, symbols of their own
+    const a = { 1n: 1, 2n: 2, 1n: 3 };
+                ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                              ~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                              ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    class C { 1n = 0; 2n() {} get 3n() { return 1; } }
+              ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    interface I { 1n: string; 2n(): void; }
+                  ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const i: I = { 1n: "a" };
+                   ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const c = new C();
+    declare const o: { a: number };
+    const { 1n: x, ...rest } = o;
+            ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    let y: { 5n?: number } = {};
+             ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    class D { 1n = 0; 1n = 1; }
+              ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                      ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    interface J { 2n: string; 2n: number; }
+                  ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                              ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    

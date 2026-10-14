@@ -4586,6 +4586,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     error_ctx_error_d(errs, i->name_span, 1136, "Property assignment expected.");
                     continue;
                 }
+                // (tsc's checkGrammarObjectLiteralExpression, of a property assignment, reported whatever the file's
+                // parse errors: addErrorOrSuggestion)
+                if (i->tag == OBJECT_ITEM_PROPERTY && !i->computed_key && !my assignment_pattern &&
+                    span_is_bigint_name(i->name_span, i->name_is_value)
+                ) {
+                    error_ctx_error_d(errs, i->name_span, 1539, "A 'bigint' literal cannot be used as a property name.");
+                }
                 if (i->tag != OBJECT_ITEM_SPREAD && !i->computed_key) {
                     written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
                     panic_if(!written, "out of memory");

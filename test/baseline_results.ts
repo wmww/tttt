@@ -20,6 +20,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBigintMemberNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCircularAliasArity': {
         errors: true,
         symbols: true,
@@ -2686,9 +2691,9 @@ const baselines = {
         types: true,
     },
     'bigintPropertyName': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bigintWithLib': {
         errors: true,

@@ -562,6 +562,7 @@ static void builder_add_interface_member(
                 Atom const* name = nullptr;
                 Ty const* key = nullptr;
                 if (interface_member_is_private_name(i)) break;
+                if (i->key.tag == INTERFACE_KEY_NAME && span_is_bigint_name(i->key.span, i->key.name_is_value)) break;
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
@@ -1309,6 +1310,10 @@ static Prop* builder_add_class_prop_joined(
         if (!name) return nullptr;
     } else if (span_valid(class_item_private_name(item)) && parent) {
         name = ty_private_name(me, parent, cstr_sv(name_string));
+    } else if (item->tag == CLASS_ITEM_FIELD ? span_is_bigint_name(item->field.name_span, item->field.name_is_value) :
+        span_is_bigint_name(item->method.name_span, item->method.name_is_value)
+    ) {
+        return nullptr;
     } else {
         name = checker_atom(me, cstr_sv(name_string));
     }

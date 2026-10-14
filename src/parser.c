@@ -12101,7 +12101,8 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 computed_key = c_new(Expr, key_expr);
                 key = value_undefined;
                 name = span_from(key_anchor);
-            } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER)) {
+            } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER || key.tag == VALUE_BIGINT)) {
+                // (A bigint is a property name to tsc's parser too: TS2538 from the checker)
                 name = span_from(key_anchor);
             } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
                 // `{ #a: x }`: TS18064 from the checker, the `:` is expected (not a binding identifier)

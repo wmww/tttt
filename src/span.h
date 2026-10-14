@@ -24,6 +24,12 @@ static inline SourceFile const* span_file_of(u32 file) {
 }
 static inline SourceFile const* span_source(Span me) { return span_file_of(me.file); }
 static inline csview span_sv(Span me) { return (csview){ .buf = me.buf, .size = me.size }; }
+
+// A member name written as a bigint literal (`{ 1n: x }`, TS1539; a value name: name_is_value): tsc's binder declares
+// no member for it (getDeclarationName gives __missing, a symbol outside the table), so types don't have it
+static inline bool span_is_bigint_name(Span name, bool name_is_value) {
+    return name_is_value && name.size > 1 && name.buf[0] >= '0' && name.buf[0] <= '9' && name.buf[name.size - 1] == 'n';
+}
 // A file's index in the table: SourceFile starts with it (static_assert in source_file.h)
 static inline u32 source_file_id(SourceFile const* file) { return file ? *(u32 const*)file : 0; }
 // Gives a file (at its final address) its index, before any span of it is made

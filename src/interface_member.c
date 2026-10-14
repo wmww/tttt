@@ -179,6 +179,10 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                     "Private identifiers are not allowed outside class bodies.");
             }
             interface_member_check_implicit_any(me, errs);
+            // (tsc's checkVariableLikeDeclaration of a property signature)
+            if (!my is_method && !my key.name_is_member_function && span_is_bigint_name(my key.span, my key.name_is_value)) {
+                error_ctx_error_d(errs, my key.span, 1539, "A 'bigint' literal cannot be used as a property name.");
+            }
             // A property signature's initializer (TS1246/TS1247 already) is still checked against its type: tsc's
             // checkVariableLikeDeclaration, at the name
             if (my accessor && my accessor->initializer && !my is_method && !my key.name_is_member_function) {

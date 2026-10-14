@@ -3733,6 +3733,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         Span private_name = class_item_private_name(i);
         bool is_static = class_item_is_static(i);
         Expr const* computed_key = is_field ? i->field.computed_key : i->method.computed_key;
+        // (A bigint name is a symbol of its own outside the table, tsc's __missing: nothing to conflict with)
+        if (!computed_key && span_is_bigint_name(name_span, is_field ? i->field.name_is_value : i->method.name_is_value)) continue;
         Atom const* name = span_valid(private_name) ? checker_atom(me, span_sv(private_name)) :
             ty_member_name(me, is_field ? &i->field.name_string : &i->method.name_string, computed_key);
         if (!name) continue;
@@ -4124,6 +4126,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
     for (u32 l = 0; l < list_count; l++) {
         for_each (i, vec_interface_member, lists[l]) {
             if (i->key.tag != INTERFACE_KEY_NAME && i->key.tag != INTERFACE_KEY_EXPR) continue;
+            if (i->key.tag == INTERFACE_KEY_NAME && span_is_bigint_name(i->key.span, i->key.name_is_value)) continue;
             Atom const* name = type_member_name(me, i);
             if (!name) continue;
             Expr const* key = i->key.tag == INTERFACE_KEY_EXPR ? i->key.expr : nullptr;

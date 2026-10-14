@@ -1,0 +1,62 @@
+//// [test/cases/ttttBigintMemberNames.ts] ////
+
+=== ttttBigintMemberNames.ts ===
+// Bigint member names declare no member (tsc: __missing outside the table): TS1539, no duplicates, symbols of their own
+const a = { 1n: 1, 2n: 2, 1n: 3 };
+>a : {}
+>{ 1n: 1, 2n: 2, 1n: 3 } : {}
+>1n : number
+>1 : 1
+>2n : number
+>2 : 2
+>1n : number
+>3 : 3
+
+class C { 1n = 0; 2n() {} get 3n() { return 1; } }
+>C : C
+>1n : number
+>0 : 0
+>2n : () => void
+>3n : number
+>1 : 1
+
+interface I { 1n: string; 2n(): void; }
+>1n : string
+>2n : () => void
+
+const i: I = { 1n: "a" };
+>i : I
+>{ 1n: "a" } : {}
+>1n : string
+>"a" : "a"
+
+const c = new C();
+>c : C
+>new C() : C
+>C : typeof C
+
+declare const o: { a: number };
+>o : { a: number; }
+>a : number
+
+const { 1n: x, ...rest } = o;
+>x : any
+>rest : { a: number; }
+>o : { a: number; }
+
+let y: { 5n?: number } = {};
+>y : {}
+>5n : number | undefined
+>{} : {}
+
+class D { 1n = 0; 1n = 1; }
+>D : D
+>1n : number
+>0 : 0
+>1n : number
+>1 : 1
+
+interface J { 2n: string; 2n: number; }
+>2n : string
+>2n : number
+

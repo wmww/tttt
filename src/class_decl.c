@@ -455,6 +455,12 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
 // A class member's written name, staticness and binder flags, false if it has none (computed names are late bound)
 enum { BIND_PROPERTY = 1, BIND_METHOD = 2, BIND_GET = 4, BIND_SET = 8 };
 static bool member_binding(ClassItem const* item, cstr const** name, bool* is_static, u32* flags) {
+    // (A bigint name is a symbol of its own outside the table: tsc's binder names it __missing)
+    if (item->tag == CLASS_ITEM_FIELD ? span_is_bigint_name(item->field.name_span, item->field.name_is_value) && !item->field.computed_key :
+        item->tag == CLASS_ITEM_METHOD && span_is_bigint_name(item->method.name_span, item->method.name_is_value) && !item->method.computed_key
+    ) {
+        return false;
+    }
     if (item->tag == CLASS_ITEM_FIELD && !item_late_key(item)) {
         *name = &item->field.name_string;
         *is_static = item->field.is_static;
@@ -2545,6 +2551,10 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(me, i, decorators_rejected, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
+                // (tsc's checkVariableLikeDeclaration)
+                if (!i->field.computed_key && span_is_bigint_name(i->field.name_span, i->field.name_is_value)) {
+                    error_ctx_error_d(errs, i->field.name_span, 1539, "A 'bigint' literal cannot be used as a property name.");
+                }
                 // (tsc's checkPropertyDeclaration)
                 if (i->field.is_abstract && i->field.value.tag != EXPR_IMPLICIT_ANY && span_valid(i->field.name_span)) {
                     error_ctx_error_d(errs, i->field.name_span, 1267, "Property '", i->field.name_span,

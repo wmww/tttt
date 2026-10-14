@@ -4396,6 +4396,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // (A private name in a class body is a property of its text, `{ #a: 1 }` is `{ #a: number; }`; outside of one
         // tsc's binder has no class to name it in, and the literal lacks it)
         if (object_item_is_private_name(i) && !i->private_name_in_class) continue;
+        // (A bigint name declares no member: tsc's binder names it __missing, which the literal's type skips)
+        if (!i->computed_key && span_is_bigint_name(i->name_span, i->name_is_value)) continue;
 
         // What the member adds to index signatures (tsc's isSymbolWithNumericName, isSymbolWithSymbolName: the
         // computed name's type is assignable to number or symbol)
@@ -4613,6 +4615,11 @@ VecSpan ty_object_literal_member_symbol(Checker* me, Expr const* object, ObjectE
     VecSpan ret = vec_span_init();
     *first = item;
     if (item->tag == OBJECT_ITEM_SPREAD) return ret;
+    // (A bigint name is a symbol of its own outside the table: tsc's binder names it __missing)
+    if (!item->computed_key && span_is_bigint_name(item->name_span, item->name_is_value)) {
+        vec_span_push(&ret, item->span);
+        return ret;
+    }
     LiteralBinding binding;
     literal_bind(me, &object->object, &binding);
     u32 index = (u32)(item - object->object.data);
