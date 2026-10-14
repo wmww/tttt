@@ -2630,6 +2630,15 @@ static void program_order_stdlib_first(Program* me) {
 static void resolve_file(SourceFile* source, ErrorCtx* errs) {
     block_lookup_names_container(&source->ast, c_sv("file"), span_null, source->scope, errs);
     if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
+    // (Grown by doubling while the walk registered them: kept until checking ends, so without the slack)
+    if (source->unused_cap > source->unused_count) {
+        UnusedCandidate* trimmed = source->unused_count ? realloc(source->unused, sizeof(UnusedCandidate) * source->unused_count) : nullptr;
+        if (trimmed || !source->unused_count) {
+            if (!source->unused_count) free(source->unused);
+            source->unused = trimmed;
+            source->unused_cap = source->unused_count;
+        }
+    }
 }
 
 // Whether a file's resolve walk can run on a thread of its own (plan 45). A JavaScript file's does too: its assignment
