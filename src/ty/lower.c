@@ -1588,6 +1588,13 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             ) {
                 return ty_intrinsic(me, TY_ERROR);
             }
+            // (A name, an alias to tsc, is its symbol's type, not the flow type there: `export default v` in a function
+            // after `var v;` is any, see declare_function_export(); a file's or namespace's is an alias declaration)
+            if (((Expr const*)decl->node)->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(decl->node) &&
+                ((Expr const*)decl->node)->identifier.target && !((Expr const*)decl->node)->identifier.target->is_placeholder
+            ) {
+                return ty_type_of_symbol(me, ((Expr const*)decl->node)->identifier.target);
+            }
             return export_expression_type(me, symbol, decl);
         case SYMBOL_DECL_ASSIGNMENT:
             // tsgo's getAssignmentDeclarationInitializerType: `module.exports = 1` exports `1` (getWidenedType only widens

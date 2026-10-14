@@ -1832,6 +1832,12 @@ static bool is_unparenthesized_entity_name(Expr const* me) {
     return !expr_is_perenthisized(me);
 }
 
+// `export = v` / `export default v` in a function declaration's body (TS1231/TS1258): tsc's bindExportAssignment
+// declares it in the exports of its container, the function, whose value then has a member `export=` or `default`
+// of the expression's type (getTypeOfVariableOrParameterOrProperty of an ExportAssignment: unwidened). A name is an
+// alias, a member only if it means a value (getNamedMembers: symbolIsValue)
+static void declare_function_export(Scope* me, Expr* expr, bool export_equals);
+
 bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
     // tsc's checkExportAssignment -> checkGrammarModuleElementContext: only in a file or a namespace body (on the
     // first token; nothing is exported)
@@ -1845,6 +1851,7 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         } else {
             error_ctx_grammar_error_d(binder_errs(my binder), first, 1258, "A default export must be at the top level of a file or module declaration.");
         }
+        declare_function_export(me, expr, export_equals);
         return false;
     }
     // (`export default x` in an augmentation merges into the module's default)
@@ -4671,6 +4678,7 @@ typedef enum DeferredKind {
     DEFERRED_JS_EXPANDO, // add_expando()
     DEFERRED_JS_DEFINE_PROPERTY, // add_define_property()
     DEFERRED_JS_THIS_PROPERTY, // add_this_property()
+    DEFERRED_FUNCTION_EXPORT, // add_function_export_member(): `right` the expression, `namespace` whether `export =`
 } DeferredKind;
 
 typedef struct DeferredEvent {
@@ -5439,6 +5447,46 @@ static void add_expando_member(
     });
 }
 
+static void add_function_export_member(Scope* me, Expr* expr, bool export_equals) {
+    Symbol* host = my function ? my function->symbol : nullptr;
+    if (!host) return;
+    csview name = export_equals ? c_sv("export=") : c_sv("default");
+    symbol_ensure_exports(host);
+    mark_expando_host(host, expr);
+    bool merged;
+    Symbol* member = declare_symbol(me, host->exports, name, expr_outer_span(expr), SYMBOL_PROPERTY, 0, false, &merged);
+    if (!merged) {
+        member->name = name;
+        member->name_span = span_null;
+        member->parent = host;
+        member->exported = true;
+    }
+    symbol_add_decl(member, (SymbolDecl){
+        .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_PROPERTY, .node = expr, .name = expr_outer_span(expr),
+        .full = expr_outer_span(expr),
+    });
+}
+
+static void declare_function_export(Scope* me, Expr* expr, bool export_equals) {
+    Symbol* host = my function ? my function->symbol : nullptr;
+    if (!host || !(host->flags & SYMBOL_FUNCTION) || expr->tag == EXPR_IMPLICIT_ANY) return;
+    // (An alias that means no value isn't a member: a namespace without values, a type)
+    Expr const* first = expr;
+    while (first->tag == EXPR_PROPERTY && !expr_is_perenthisized(first)) first = &first->property->expr;
+    bool alias = first->tag == EXPR_IDENTIFIER && !first->identifier.keyword && !expr_is_perenthisized(first) &&
+        (expr == first || is_unparenthesized_entity_name(expr));
+    if (alias && !scope_resolve(me, span_sv(first->inner_span), SYMBOL_VALUE)) return;
+    ResolveShard* shard = binder_shard(my binder);
+    if (shard && !expando_host_is_private(host, my file)) {
+        // (Other files may read the function's members meanwhile: in program order, like an expando)
+        DeferredEvent* event = defer_event(shard, DEFERRED_FUNCTION_EXPORT, me, nullptr);
+        event->right = expr;
+        event->namespace = export_equals;
+        return;
+    }
+    add_function_export_member(me, expr, export_equals);
+}
+
 // Every assignment of a chain (`f.a = f.b = 1`)
 static void add_expando_chain(Scope* me, Expr* e) {
     for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL; e = &e->binary_op->right) {
@@ -5652,6 +5700,9 @@ void resolve_shard_merge(ResolveShard* me) {
             case DEFERRED_JS_THIS_PROPERTY:
                 add_this_property(event->scope, event->left, event->right, event->jsdoc_type, event->jsdoc_modifiers);
                 if (event->link) expr_link_assignment_declaration(event->left, binder);
+                break;
+            case DEFERRED_FUNCTION_EXPORT:
+                add_function_export_member(event->scope, event->right, event->namespace);
                 break;
         }
     }
