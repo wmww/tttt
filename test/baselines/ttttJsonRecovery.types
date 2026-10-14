@@ -1,0 +1,130 @@
+//// [test/cases/ttttJsonRecovery.ts] ////
+
+=== main.ts ===
+import j0 = require('./j0.json');
+>j0 : { a: number; b: boolean[]; }
+
+import j1 = require('./j1.json');
+>j1 : number[][]
+
+import j2 = require('./j2.json');
+>j2 : number
+
+import j3 = require('./j3.json');
+>j3 : { foo: any; }
+
+import j4 = require('./j4.json');
+>j4 : {}
+
+import j5 = require('./j5.json');
+>j5 : number[]
+
+import j6 = require('./j6.json');
+>j6 : ({ a: number; x?: undefined; } | { a?: undefined; x: any; })[]
+
+import j7 = require('./j7.json');
+>j7 : { x: any; }
+
+import j8 = require('./j8.json');
+>j8 : string
+
+import j9 = require('./j9.json');
+>j9 : (boolean | null)[]
+
+import j10 = require('./j10.json');
+>j10 : (string | { b: number; })[]
+
+import j11 = require('./j11.json');
+>j11 : {}
+
+import j12 = require('./j12.json');
+>j12 : { a: number; }
+
+import j13 = require('./j13.json');
+>j13 : { x: any; }
+
+=== j0.json ===
+"a": 1, "b": [true]
+>"a": 1, "b": [true] : { a: number; b: boolean[]; }
+>"a" : number
+>1 : 1
+>"b" : boolean[]
+>[true] : boolean[]
+>true : true
+
+=== j1.json ===
+[1] [2]
+>[1] [2] : number[][]
+>[1] : number[]
+>1 : 1
+>[2] : number[]
+>2 : 2
+
+=== j2.json ===
+-1
+>-1 : -1
+>1 : 1
+
+=== j3.json ===
+foo
+>foo : { foo: any; }
+>foo : any
+
+=== j4.json ===
+}
+>} : {}
+
+=== j5.json ===
+1 2
+>1 2 : number[]
+>1 : 1
+>2 : 2
+
+=== j6.json ===
+{"a": 1} x
+>{"a": 1} x : ({ a: number; } | { x: any; })[]
+>{"a": 1} : { a: number; }
+>"a" : number
+>1 : 1
+>x : { x: any; }
+>x : any
+
+=== j7.json ===
+- "x"
+>- "x" : { x: any; }
+>"x" : any
+> : any
+
+=== j8.json ===
+'s'
+>'s' : "s"
+
+=== j9.json ===
+null true
+>null true : (boolean | null)[]
+>true : true
+
+=== j10.json ===
+"a" "b": 2
+>"a" "b": 2 : (string | { b: number; })[]
+>"a" : "a"
+>"b": 2 : { b: number; }
+>"b" : number
+>2 : 2
+
+=== j11.json ===
+]
+>] : {}
+
+=== j12.json ===
+-a: 1
+>-a: 1 : { a: number; }
+>a : number
+>1 : 1
+
+=== j13.json ===
+{"x"}
+>{"x"} : { x: any; }
+>"x" : any
+> : any
+

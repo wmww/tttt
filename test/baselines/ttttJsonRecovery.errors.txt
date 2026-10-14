@@ -1,0 +1,121 @@
+j0.json(1,1): error TS1005: '{' expected.
+j0.json(1,20): error TS1005: '}' expected.
+j1.json(1,5): error TS1012: Unexpected token.
+j10.json(1,5): error TS1012: Unexpected token.
+j10.json(1,11): error TS1005: '}' expected.
+j11.json(1,1): error TS1005: '{' expected.
+j11.json(1,2): error TS1005: '}' expected.
+j12.json(1,1): error TS1005: '{' expected.
+j12.json(1,2): error TS1327: String literal with double quotes expected.
+j12.json(1,6): error TS1005: '}' expected.
+j13.json(1,5): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+j13.json(1,5): error TS1005: ':' expected.
+j3.json(1,1): error TS1005: '{' expected.
+j3.json(1,1): error TS1136: Property assignment expected.
+j3.json(1,4): error TS1005: '}' expected.
+j4.json(1,1): error TS1005: '{' expected.
+j5.json(1,3): error TS1012: Unexpected token.
+j6.json(1,10): error TS1012: Unexpected token.
+j6.json(1,10): error TS1136: Property assignment expected.
+j6.json(1,11): error TS1005: '}' expected.
+j7.json(1,1): error TS1005: '{' expected.
+j7.json(1,6): error TS1005: ':' expected.
+j7.json(1,6): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+j8.json(1,1): error TS1327: String literal with double quotes expected.
+j9.json(1,6): error TS1012: Unexpected token.
+
+
+==== main.ts (0 errors) ====
+    import j0 = require('./j0.json');
+    import j1 = require('./j1.json');
+    import j2 = require('./j2.json');
+    import j3 = require('./j3.json');
+    import j4 = require('./j4.json');
+    import j5 = require('./j5.json');
+    import j6 = require('./j6.json');
+    import j7 = require('./j7.json');
+    import j8 = require('./j8.json');
+    import j9 = require('./j9.json');
+    import j10 = require('./j10.json');
+    import j11 = require('./j11.json');
+    import j12 = require('./j12.json');
+    import j13 = require('./j13.json');
+==== j0.json (2 errors) ====
+    "a": 1, "b": [true]
+    ~~~
+!!! error TS1005: '{' expected.
+                       
+!!! error TS1005: '}' expected.
+==== j1.json (1 errors) ====
+    [1] [2]
+        ~
+!!! error TS1012: Unexpected token.
+==== j2.json (0 errors) ====
+    -1
+==== j3.json (3 errors) ====
+    foo
+    ~~~
+!!! error TS1005: '{' expected.
+    ~~~
+!!! error TS1136: Property assignment expected.
+       
+!!! error TS1005: '}' expected.
+==== j4.json (1 errors) ====
+    }
+    ~
+!!! error TS1005: '{' expected.
+==== j5.json (1 errors) ====
+    1 2
+      ~
+!!! error TS1012: Unexpected token.
+==== j6.json (3 errors) ====
+    {"a": 1} x
+             ~
+!!! error TS1012: Unexpected token.
+             ~
+!!! error TS1136: Property assignment expected.
+              
+!!! error TS1005: '}' expected.
+==== j7.json (3 errors) ====
+    - "x"
+    ~
+!!! error TS1005: '{' expected.
+         
+!!! error TS1005: ':' expected.
+         
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+==== j8.json (1 errors) ====
+    's'
+    ~~~
+!!! error TS1327: String literal with double quotes expected.
+==== j9.json (1 errors) ====
+    null true
+         ~~~~
+!!! error TS1012: Unexpected token.
+==== j10.json (2 errors) ====
+    "a" "b": 2
+        ~~~
+!!! error TS1012: Unexpected token.
+              
+!!! error TS1005: '}' expected.
+==== j11.json (2 errors) ====
+    ]
+    ~
+!!! error TS1005: '{' expected.
+     
+!!! error TS1005: '}' expected.
+==== j12.json (3 errors) ====
+    -a: 1
+    ~
+!!! error TS1005: '{' expected.
+     ~
+!!! error TS1327: String literal with double quotes expected.
+         
+!!! error TS1005: '}' expected.
+==== j13.json (2 errors) ====
+    {"x"}
+        
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+        ~
+!!! error TS1005: ':' expected.
+    

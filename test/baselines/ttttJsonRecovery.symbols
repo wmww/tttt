@@ -1,0 +1,95 @@
+//// [test/cases/ttttJsonRecovery.ts] ////
+
+=== main.ts ===
+import j0 = require('./j0.json');
+>j0 : Symbol(j0, Decl(main.ts, 0, 0))
+
+import j1 = require('./j1.json');
+>j1 : Symbol(j1, Decl(main.ts, 0, 33))
+
+import j2 = require('./j2.json');
+>j2 : Symbol(j2, Decl(main.ts, 1, 33))
+
+import j3 = require('./j3.json');
+>j3 : Symbol(j3, Decl(main.ts, 2, 33))
+
+import j4 = require('./j4.json');
+>j4 : Symbol(j4, Decl(main.ts, 3, 33))
+
+import j5 = require('./j5.json');
+>j5 : Symbol(j5, Decl(main.ts, 4, 33))
+
+import j6 = require('./j6.json');
+>j6 : Symbol(j6, Decl(main.ts, 5, 33))
+
+import j7 = require('./j7.json');
+>j7 : Symbol(j7, Decl(main.ts, 6, 33))
+
+import j8 = require('./j8.json');
+>j8 : Symbol(j8, Decl(main.ts, 7, 33))
+
+import j9 = require('./j9.json');
+>j9 : Symbol(j9, Decl(main.ts, 8, 33))
+
+import j10 = require('./j10.json');
+>j10 : Symbol(j10, Decl(main.ts, 9, 33))
+
+import j11 = require('./j11.json');
+>j11 : Symbol(j11, Decl(main.ts, 10, 35))
+
+import j12 = require('./j12.json');
+>j12 : Symbol(j12, Decl(main.ts, 11, 35))
+
+import j13 = require('./j13.json');
+>j13 : Symbol(j13, Decl(main.ts, 12, 35))
+
+=== j0.json ===
+"a": 1, "b": [true]
+>"a" : Symbol("a", Decl(j0.json, 0, 0))
+>"b" : Symbol("b", Decl(j0.json, 0, 7))
+
+=== j1.json ===
+
+[1] [2]
+=== j2.json ===
+
+-1
+=== j3.json ===
+foo
+>foo : Symbol(foo, Decl(j3.json, 0, 0))
+
+=== j4.json ===
+}
+=== j5.json ===
+
+1 2
+=== j6.json ===
+{"a": 1} x
+>"a" : Symbol("a", Decl(j6.json, 0, 1))
+>x : Symbol(x, Decl(j6.json, 0, 8))
+
+=== j7.json ===
+- "x"
+>"x" : Symbol("x", Decl(j7.json, 0, 1))
+
+=== j8.json ===
+
+'s'
+=== j9.json ===
+
+null true
+=== j10.json ===
+"a" "b": 2
+>"b" : Symbol("b", Decl(j10.json, 0, 3))
+
+=== j11.json ===
+
+]
+=== j12.json ===
+-a: 1
+>a : Symbol(a, Decl(j12.json, 0, 1))
+
+=== j13.json ===
+{"x"}
+>"x" : Symbol("x", Decl(j13.json, 0, 1))
+

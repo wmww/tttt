@@ -70,6 +70,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsonRecovery': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,
@@ -28536,9 +28541,9 @@ const baselines = {
         types: true,
     },
     'requireOfJsonFileWithoutResolveJsonModule': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'requireTypesOnly': {
         errors: true,

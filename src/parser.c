@@ -7405,13 +7405,23 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     return parse_success(&p);
 }
 
+static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected);
+
 static bool parse_object(Parser* parent, ObjectExpr* ret) {
+    return parse_object_ex(parent, ret, false);
+}
+
+// brace_expected: a missing `{` is TS1005 and the members are parsed anyway (tsc's parseObjectLiteralExpression
+// parseExpected(OpenBraceToken), which parseJsonText gets to for anything that isn't another JSON value)
+static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected) {
     Parser p = parser(parent);
     *ret = vec_object_expr_item_init();
 
     const char* open = p.pos;
-    if (!hop_char(&p, '{')) {
-        return parse_fail(&p);
+    bool open_parsed = hop_char(&p, '{');
+    if (!open_parsed) {
+        if (!brace_expected) return parse_fail(&p);
+        parse_error(&p, span_from_token_or_eof(&p), 1005, "'{' expected.");
     }
     hop_whitespace(&p);
 
@@ -7438,7 +7448,8 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     list_leave(&p, saved_context);
     shrink_list(vec_object_expr_item, ret);
 
-    if (!expect_closing(&p, '}', open)) {
+    // (Without its `{`, no related information: parseExpectedMatchingBrackets with openParsed false)
+    if (open_parsed ? !expect_closing(&p, '}', open) : !expect_char(&p, '}')) {
         // The literal ends with its last token, not the whitespace after it
         while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
     }
@@ -14284,6 +14295,14 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 // tsc's convertToJson over a JSON file's value (parseSourceFile adds its errors to the parse diagnostics): only
 // double-quoted strings, numbers (maybe negated), true, false, null, objects of property assignments and arrays
+// (Appended whatever the last parse error is: tsgo's validateJsonValue adds to p.diagnostics directly, no
+// parseErrorAtPosition deduplication: `{"x"}` is ':' expected and TS1328 at the same position)
+static void json_error_s(Parser* p, Span span, unsigned ts_code, cstr message) {
+    p->shared->errors_attempted++;
+    add_error_to_parser(p, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE });
+}
+#define json_error(me, span, ts_code, ...) json_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
 static void json_check_value(Parser* p, Expr const* value) {
     Span span = expr_outer_span(value);
     bool plain = !expr_is_perenthisized(value);
@@ -14297,7 +14316,7 @@ static void json_check_value(Parser* p, Expr const* value) {
                 if (!span.size || span.buf[0] != '"') {
                     // (A template isn't a string literal)
                     if (span.size && span.buf[0] == '`') break;
-                    parse_error(p, span, 1327, "String literal with double quotes expected.");
+                    json_error(p, span, 1327, "String literal with double quotes expected.");
                 }
                 return;
             default:
@@ -14311,11 +14330,11 @@ static void json_check_value(Parser* p, Expr const* value) {
     } else if (plain && value->tag == EXPR_OBJECT) {
         for_each (i, vec_object_expr_item, &value->object) {
             if (i->tag != OBJECT_ITEM_PROPERTY) {
-                parse_error(p, i->span, 1136, "Property assignment expected.");
+                json_error(p, i->span, 1136, "Property assignment expected.");
                 continue;
             }
             if (i->computed_key || !i->name_span.size || i->name_span.buf[0] != '"') {
-                parse_error(p, i->name_span, 1327, "String literal with double quotes expected.");
+                json_error(p, i->name_span, 1327, "String literal with double quotes expected.");
             }
             json_check_value(p, &i->value);
         }
@@ -14332,8 +14351,53 @@ static void json_check_value(Parser* p, Expr const* value) {
         while (at > file_start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
         span = span_make_in(span, at, at);
     }
-    parse_error(p, span, 1328,
+    json_error(p, span, 1328,
         "Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.");
+}
+
+// One value of a JSON file (tsc's parseJsonText): an array, `true`/`false`/`null`, a (negated) number or a string not
+// followed by a `:`; anything else is an object literal whose `{` may be missing (`contents Not read` is `{ contents,
+// Not, read }`: TS1005 '{' expected, then shorthand members, each TS1136 from json_check_value())
+static bool json_parse_value(Parser* parent, Expr* ret) {
+    Parser p = parser(parent);
+    char c = *p.pos;
+    bool value = c == '[' || hop_start_if_ends_on_word_break(&p, "true") || hop_start_if_ends_on_word_break(&p, "false") ||
+        hop_start_if_ends_on_word_break(&p, "null");
+    if (!value && (c == '-' || c == '"' || c == '\'' || is_number_start_char(c))) {
+        // (Not followed by a `:`: that's a property name)
+        Parser probe = parser(&p);
+        if (c == '-') {
+            probe.pos++;
+            hop_whitespace(&probe);
+        }
+        Value literal;
+        bool number_next = c != '-' || is_number_start_char(*probe.pos);
+        if (number_next && (*probe.pos == '"' || *probe.pos == '\'' || is_number_start_char(*probe.pos)) &&
+            parse_literal(&probe, &literal)
+        ) {
+            value_drop(&literal);
+            hop_whitespace(&probe);
+            value = *probe.pos != ':';
+        }
+        parse_fail(&probe);
+    }
+    p.pos = parent->pos;
+    Anchor a = anchor(&p);
+    if (c == '[') {
+        // (The array alone, `[1] [2]` is two values: parseArrayLiteralExpression)
+        VecExpr elements;
+        if (!parse_array(&p, &elements)) return parse_fail(&p);
+        *ret = (Expr){ .tag = EXPR_ARRAY, .array = elements, .inner_span = span_from(a), .lazy_type.tag = LAZY_TYPE_EXPR };
+        return parse_success(&p);
+    }
+    if (value) {
+        if (!parse_expr(&p, expr_ctx_null, ret)) return parse_fail(&p);
+        return parse_success(&p);
+    }
+    ObjectExpr object;
+    parse_object_ex(&p, &object, true);
+    *ret = expr_object(span_from(a), object);
+    return parse_success(&p);
 }
 
 // Whether the file just parsed is a module, as far as the parser can tell (what the program decides later: tsc's
@@ -14407,7 +14471,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         hop_whitespace(&p);
         Anchor a = anchor(&p);
         Expr value;
-        if (parse_expr(&p, expr_ctx_null, &value)) {
+        if (*p.pos && json_parse_value(&p, &value)) {
             hop_whitespace(&p);
             if (*p.pos) {
                 // More than one value: TS1012 at the second, and the file is an array of them all (tsc's parseJsonText
@@ -14418,7 +14482,14 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
                 char const* end = span_end_ptr(expr_outer_span(&value));
                 while (*p.pos) {
                     Expr more;
-                    if (!parse_expr(&p, expr_ctx_null, &more)) break;
+                    char const* before = p.pos;
+                    if (!json_parse_value(&p, &more)) break;
+                    if (p.pos == before) {
+                        expr_drop(&more);
+                        hop_token(&p);
+                        hop_whitespace(&p);
+                        continue;
+                    }
                     end = span_end_ptr(expr_outer_span(&more));
                     list_push(vec_expr, &values, more);
                     hop_whitespace(&p);
