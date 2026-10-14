@@ -16,22 +16,9 @@ passing tests).
 - Older tsc-corpus findings (a probe each): `visitNode(node, visitor, isExpression)` resolving to the overload without
   the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
   contextual type.
-
-- Laziness artifacts of tsc's inference (triage 2026-09-29, both need lazy return/member types to reproduce):
-  genericCallWithGenericSignatureArguments3's `(n: Object) => 1` keeps its literal because tsc resolves the inner
-  arrow's return type only after U's first candidate is that arrow's own function type: its contextual signature is
-  then its own (`contextualSignature === getSignatureFromDeclaration(func)` in getReturnTypeFromBody, contextual type
-  = the return type itself).
 - (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
   "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
-- (2026-10-07) genericCallWithGenericSignatureArguments3 (strict false; errors and types): `f1<U>(a: () => U, b: () =>
-  U)` called as `f1(() => (n: Object) => 1, () => 2)` gives U = `(n: Object) => 1` in tsc, `(n: Object) => number` in
-  tttt. The inner arrow's return type is computed lazily in tsc, and by then its contextual signature goes through
-  the outer arrow's contextual return type, i.e. the resolved signature's U, which is the inner function itself: its
-  own signature, so the literal stays (getReturnTypeFromBody). tttt's equivalent (`KEY_CONTEXT_NONE` +
-  `ty_late_contextual_return()`) only covers a function that is itself an argument, not one returned from an
-  argument. Extending it means recording the late context for functions nested in argument return expressions.
 - (2026-10-07) map-to-obj (DefinitelyTyped, 2 `$ExpectType`): `id(new Map([["a", 1]]))` with `id<K extends
   string>(m: Map<K, V>)`: tsc's return mapper for the inner `new Map` comes from the contextual type with the outer K
   as createOuterReturnMapper has it (nothing inferred: its constraint string), so "a" widens; tttt's inner return

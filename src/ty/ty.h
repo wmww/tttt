@@ -1052,6 +1052,9 @@ struct Checker {
     // The classes and interfaces whose bases are being lowered, innermost first, with their own members so far (see
     // resolve_declared_members())
     struct BasesFrame* bases_frames;
+    // The call whose arguments are checked against a candidate to report why it doesn't fit: its arguments' contextual
+    // types are that candidate's parameters meanwhile (tsc's getSignatureApplicabilityError pushes them)
+    struct { void const* call; struct Signature const* sig; struct TyMapper const* mapper; } reporting_candidate;
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool creating_from_type_node; // ty_reference_with_this() marks what it makes from_type_node (see lower.c)

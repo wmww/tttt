@@ -1940,6 +1940,15 @@ static Span report_unfit_argument(
     ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
     Ty const* arg_type = nullptr;
     Ty const* param_type = nullptr;
+    // (While it reports, what the arguments' functions ask for their contextual types goes through this candidate:
+    // tsc's checkExpressionWithContextualType pushes the instantiated parameter type, see derive_anchor_context())
+    __typeof__(my reporting_candidate) outer_reporting = my reporting_candidate;
+    if (info->call && !info->tagged_template) {
+        ty_record_call_anchors(me, info->call);
+        my reporting_candidate.call = info->call;
+        my reporting_candidate.sig = candidate->sig;
+        my reporting_candidate.mapper = candidate->mapper;
+    }
     // (The arguments after the first that doesn't fit aren't checked against it: tsc's getSignatureApplicabilityError
     // returns there, so a callback after it is typed by what the failed call is taken to be instead)
     i32 index = check_args_until_unfit(me, &shape, args, TY_RELATION_ASSIGNABLE, false, false, &arg_type, &param_type);
@@ -1964,6 +1973,7 @@ static Span report_unfit_argument(
         if (template_strings) span = info->tagged_template->template_->template_span;
         ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple || template_strings ? nullptr : effective, errs);
     }
+    my reporting_candidate = outer_reporting;
     free(shape.types);
     return span;
 }

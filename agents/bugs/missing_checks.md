@@ -223,8 +223,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   spurious TS2322 (mut2988); elaboration paths mut4551/mut7482. Not looked at.
 ## Inference
 tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get tsc's TS2769 report), variadicTuples1
-(types), genericCallWithGenericSignatureArguments3 (`(n: Object) => 1` returned where the contextual type is the outer
-call's U keeps its literal return type in tsc, `=> 1`; tttt widens to number).
+(types).
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols

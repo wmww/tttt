@@ -1633,6 +1633,13 @@ static Ty const* derive_anchor_context(Checker* me, ContextAnchor const* anchor,
             Signature const* sig = nullptr;
             TyMapper const* mapper = nullptr;
             Ty const* checked = nullptr;
+            if (my reporting_candidate.call && my reporting_candidate.call == anchor->call) {
+                // (Checked against the candidate a failed resolution reports: for now, see report_unfit_argument())
+                read->anchored = true;
+                read->transient = true;
+                Ty const* type = signature_type_at(me, my reporting_candidate.sig, anchor->index, false);
+                return type && my reporting_candidate.mapper ? ty_instantiate(me, type, my reporting_candidate.mapper) : type;
+            }
             if (!ty_call_resolved_candidate(me, anchor->call, anchor->index, &sig, &mapper, &checked)) return nullptr;
             read->anchored = true;
             if (checked) return checked;
