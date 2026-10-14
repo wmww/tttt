@@ -1,0 +1,56 @@
+//// [test/cases/ttttElaborateUnionSourceObjectLiteral.ts] ////
+
+=== ttttElaborateUnionSourceObjectLiteral.ts ===
+// An object literal whose type is a union (a spread of a union in it) against a union target elaborates into the
+// member whose keys overlap the literal's most (tsc's getBestMatchingType -> findMostOverlappyType: a union source's
+// keys are the ones all its members have), so the error is at the offending property (vscode's
+// copilotChatSessionsProvider.ts `return { owner, repo, ...issueInfo, pullRequest: {...} }` against
+// `IGitHubInfo | undefined` under exactOptionalPropertyTypes)
+interface R { readonly owner: string; readonly issues?: string[]; readonly pullRequest?: { readonly number: number; readonly icon?: string } }
+>R : Symbol(R, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 0, 0))
+>owner : Symbol(R.owner, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 5, 13))
+>issues : Symbol(R.issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 5, 37))
+>pullRequest : Symbol(R.pullRequest, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 5, 65))
+>number : Symbol(number, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 5, 90))
+>icon : Symbol(icon, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 5, 115))
+
+declare const issues: string[];
+>issues : Symbol(issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 6, 13))
+
+declare const icon: string | undefined;
+>icon : Symbol(icon, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 7, 13))
+
+const issueInfo = issues.length ? { issues } : {};
+>issueInfo : Symbol(issueInfo, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 8, 5))
+>issues.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>issues : Symbol(issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 6, 13))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>issues : Symbol(issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 8, 35))
+
+export function f(): R | undefined {
+>f : Symbol(f, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 8, 50))
+>R : Symbol(R, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 0, 0))
+
+  return { owner: "a", ...issueInfo, pullRequest: { number: 1, icon } };
+>owner : Symbol(owner, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 10, 10))
+>issueInfo : Symbol(issueInfo, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 8, 5))
+>pullRequest : Symbol(pullRequest, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 10, 36))
+>number : Symbol(number, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 10, 51))
+>icon : Symbol(icon, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 10, 62))
+}
+declare const u: { issues: string[] } | { issues?: never };
+>u : Symbol(u, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 12, 13))
+>issues : Symbol(issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 12, 18))
+>issues : Symbol(issues, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 12, 41))
+
+export function k(): R | undefined {
+>k : Symbol(k, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 12, 59))
+>R : Symbol(R, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 0, 0))
+
+  return { owner: "a", ...u, pullRequest: { number: "1" } };
+>owner : Symbol(owner, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 14, 10))
+>u : Symbol(u, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 12, 13))
+>pullRequest : Symbol(pullRequest, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 14, 28))
+>number : Symbol(number, Decl(ttttElaborateUnionSourceObjectLiteral.ts, 14, 43))
+}
+

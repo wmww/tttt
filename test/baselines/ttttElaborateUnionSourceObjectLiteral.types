@@ -1,0 +1,64 @@
+//// [test/cases/ttttElaborateUnionSourceObjectLiteral.ts] ////
+
+=== ttttElaborateUnionSourceObjectLiteral.ts ===
+// An object literal whose type is a union (a spread of a union in it) against a union target elaborates into the
+// member whose keys overlap the literal's most (tsc's getBestMatchingType -> findMostOverlappyType: a union source's
+// keys are the ones all its members have), so the error is at the offending property (vscode's
+// copilotChatSessionsProvider.ts `return { owner, repo, ...issueInfo, pullRequest: {...} }` against
+// `IGitHubInfo | undefined` under exactOptionalPropertyTypes)
+interface R { readonly owner: string; readonly issues?: string[]; readonly pullRequest?: { readonly number: number; readonly icon?: string } }
+>owner : string
+>issues : string[] | undefined
+>pullRequest : { readonly number: number; readonly icon?: string; } | undefined
+>number : number
+>icon : string | undefined
+
+declare const issues: string[];
+>issues : string[]
+
+declare const icon: string | undefined;
+>icon : string | undefined
+
+const issueInfo = issues.length ? { issues } : {};
+>issueInfo : { issues: string[]; } | { issues?: never; }
+>issues.length ? { issues } : {} : { issues: string[]; } | {}
+>issues.length : number
+>issues : string[]
+>length : number
+>{ issues } : { issues: string[]; }
+>issues : string[]
+>{} : {}
+
+export function f(): R | undefined {
+>f : () => R | undefined
+
+  return { owner: "a", ...issueInfo, pullRequest: { number: 1, icon } };
+>{ owner: "a", ...issueInfo, pullRequest: { number: 1, icon } } : { issues: string[]; owner: string; pullRequest: { number: number; icon: string | undefined; }; } | { issues?: never; owner: string; pullRequest: { number: number; icon: string | undefined; }; }
+>owner : string
+>"a" : "a"
+>issueInfo : { issues: string[]; } | { issues?: never; }
+>pullRequest : { number: number; icon: string | undefined; }
+>{ number: 1, icon } : { number: number; icon: string | undefined; }
+>number : number
+>1 : 1
+>icon : string | undefined
+}
+declare const u: { issues: string[] } | { issues?: never };
+>u : { issues: string[]; } | { issues?: never; }
+>issues : string[]
+>issues : undefined
+
+export function k(): R | undefined {
+>k : () => R | undefined
+
+  return { owner: "a", ...u, pullRequest: { number: "1" } };
+>{ owner: "a", ...u, pullRequest: { number: "1" } } : { issues: string[]; owner: string; pullRequest: { number: string; }; } | { issues?: never; owner: string; pullRequest: { number: string; }; }
+>owner : string
+>"a" : "a"
+>u : { issues: string[]; } | { issues?: never; }
+>pullRequest : { number: string; }
+>{ number: "1" } : { number: string; }
+>number : string
+>"1" : "1"
+}
+

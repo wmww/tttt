@@ -6815,6 +6815,8 @@ static bool is_array_like_type(Checker* me, Ty const* ty) {
     return ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE);
 }
 
+static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* count, u32* cap, u32 depth);
+
 static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if (target->kind != TY_UNION) return nullptr;
     TyList types = target->composite.types;
@@ -6900,6 +6902,30 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             }
         }
         free(props);
+    } else if (source->kind == TY_UNION) {
+        // A union's keys are the names every member has (tsc's getIndexType of a union: the intersection of each
+        // member's), against each structured member's (an object literal with a union spread in it, vscode's
+        // `{ ...issueInfo, pullRequest: {...} }` against `IGitHubInfo | undefined`)
+        csview* names = nullptr;
+        u32 count = 0, cap = 0;
+        collect_prop_names(me, source, &names, &count, &cap, 0);
+        u32 best_count = 0;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* t = types.data[i];
+            if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            u32 overlap = 0;
+            for (u32 p = 0; p < count; p++) {
+                if (!names[p].size) continue;
+                Atom const* name = checker_atom(me, names[p]);
+                overlap += find_prop_in(me, apparent_type(me, t), name, 0, true).found ||
+                    ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
+            }
+            if (overlap && overlap >= best_count) {
+                best = t;
+                best_count = overlap;
+            }
+        }
+        free(names);
     } else if (source->kind == TY_TYPE_PARAM || source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL ||
         source->kind == TY_SUBSTITUTION
     ) {
