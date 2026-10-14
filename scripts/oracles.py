@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
-every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep and perf at breadth
-(scripts/perfsweep.py: check time and type count ratios against tsgo), and the output's independence of the checker count
+every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
+(scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
 (scripts/kdiff.py, the suite's --dump at 1 and 16 checkers).
 
   scripts/oracles.py                  # everything (~15 min)
@@ -72,6 +72,12 @@ def perf():
     out = run(['scripts/perfsweep.py', '--no-build', '-j', '4', '--summary'])
     print('perfsweep (tttt/tsgo): ' + (out.strip().splitlines() or ['?'])[-1], flush=True)
 
+def dts():
+    # (Plan 64: tsgo's .d.ts files on the corpora and the declaration-emitting source sweep projects, byte for byte)
+    out = run(['scripts/dtsdiff.py', '--no-build', '-n', '5'])
+    m = re.search(r'dts: projects (\d+ / \d+) fully match, files (\d+ / \d+) match', out)
+    print(f'dts: projects {m.group(1)}, files {m.group(2)}' if m else 'dts: ?', flush=True)
+
 def kdiff():
     # (Plan 62: tsgo's output doesn't depend on its checker count, tttt's mustn't either. The suite dumped at 1 and 16
     # checkers, then the source sweep's raw CLI output at 1 and 16, ~7 min)
@@ -92,7 +98,7 @@ def kdiff():
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
 
 ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
-           'perf': perf, 'kdiff': kdiff}
+           'perf': perf, 'dts': dts, 'kdiff': kdiff}
 
 def main():
     ap = argparse.ArgumentParser()

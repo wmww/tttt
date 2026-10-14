@@ -47,6 +47,7 @@ typedef struct Options {
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
+    const char* dts_dump; // --dts-dump DIR: write each emitted declaration file to DIR + its source's absolute path
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -447,6 +448,32 @@ static void verify_references(Program* program, ProjectSet* projects, u32 projec
     free(seen);
 }
 
+// --dts-dump DIR (scripts/dtsdiff.py, plan 64): each file's declaration emit output (SourceFile.declaration_output) to
+// DIR + the source's absolute path with the declaration extension (a.ts -> DIR/abs/a.d.ts), whatever the options'
+// outDir/declarationDir say: the script maps them to tsc's outputs. Nothing is written where nothing was emitted (no
+// `declaration`, or checking was gated without it)
+static void dump_declarations(char const* dir, Program const* program) {
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(fs, &cwd)) or_log(warn);
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        SourceFile const* source = program_source_at(program, i);
+        if (!source->declaration_output) continue;
+        cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&source->canonical_path));
+        csview path = cstr_sv(&absolute);
+        csview ext = file_extension_of(path);
+        char const* dts = csview_equals(ext, "mts") || csview_equals(ext, "mjs") ? ".d.mts" :
+            csview_equals(ext, "cts") || csview_equals(ext, "cjs") ? ".d.cts" : ".d.ts";
+        if (ext.size) path = csview_slice(path, 0, path.size - ext.size - 1);
+        cstr out_path = cstr_from(dir);
+        cstr_append_sv(&out_path, path);
+        cstr_append(&out_path, dts);
+        try (fs_mkdir(fs, dirname_of(cstr_sv(&out_path)))) or_log(warn);
+        try (fs_write_file(fs, cstr_sv(&out_path), cstr_sv(source->declaration_output))) or_log(warn);
+        c_drop(cstr, &absolute, &out_path);
+    }
+    cstr_drop(&cwd);
+}
+
 // Checks one program, logically returning the exit code to leave with: the files on the command line (with the
 // config's options if there's a config), else the config's files. With a config the program sees the projects it
 // references through their sources (projects is where they're loaded, project the config's). Problems with the checked
@@ -623,7 +650,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             typecheck = emit_declarations;
         }
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
+        if (opts->dts_dump) program_set_emit_declarations(program, true);
         if (typecheck) program_typecheck(program);
+        if (opts->dts_dump && typecheck) dump_declarations(opts->dts_dump, program);
         // (Global diagnostics the checking itself finds, `using`'s TS2318 for a missing Disposable, hide nothing:
         // tsgo's GetDiagnosticsOfAnyProgram gates on those before checking and sweeps these up after)
         if (gated) {
@@ -1007,6 +1036,7 @@ static void print_help(void) {
         "  --print-ast   print the parsed AST of the last file\n"
         "  --no-lib      don't load the standard library\n"
         "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
+        "  --dts-dump DIR  write each file's declaration emit to DIR + the file's absolute path (.d.ts)\n"
         "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)"
     );
 }
@@ -1088,6 +1118,8 @@ static int run(int argc, const char** argv) {
             single_threaded = true;
         } else if (streq(argv[i], "--expect-types") && i + 1 < argc) {
             opts.expect_types = argv[++i];
+        } else if (streq(argv[i], "--dts-dump") && i + 1 < argc) {
+            opts.dts_dump = argv[++i];
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {

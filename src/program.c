@@ -3494,7 +3494,9 @@ void program_typecheck(Program* me) {
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     my binder->frozen = true;
     my errs->frozen = true;
-    bool declaration_diagnostics = !(program_declaration_diagnostics_gated(me) && my declaration_diagnostics_earlier);
+    // (Declaration emit needs the walk even where its diagnostics won't be reported: --dts-dump under noEmit)
+    bool declaration_diagnostics =
+        my emit_declarations || !(program_declaration_diagnostics_gated(me) && my declaration_diagnostics_earlier);
     my declaration_errs = declaration_diagnostics ? c_new_n(ErrorCtx, count) : nullptr;
     for (u32 c = 0; c < count; c++) {
         if (my declaration_errs) my declaration_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
