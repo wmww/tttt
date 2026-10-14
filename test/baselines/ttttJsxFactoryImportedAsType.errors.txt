@@ -1,0 +1,25 @@
+main.tsx(3,19): error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+main.tsx(4,21): error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+main.tsx(5,19): error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+
+
+==== react.d.ts (0 errors) ====
+    declare namespace React { function createElement(...a: any[]): any; }
+    export = React;
+    declare global { namespace JSX { interface IntrinsicElements { [x: string]: any } } }
+==== main.tsx (3 errors) ====
+    import type React from './react';
+    declare namespace Ns { const Comp: any }
+    export const a = <div />;
+                      ~~~
+!!! error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 main.tsx:1:8: 'React' was imported here.
+    export const b = <><span /></>;
+                        ~~~~
+!!! error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 main.tsx:1:8: 'React' was imported here.
+    export const c = <Ns.Comp>text</Ns.Comp>;
+                      ~~~~~~~
+!!! error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 main.tsx:1:8: 'React' was imported here.
+    

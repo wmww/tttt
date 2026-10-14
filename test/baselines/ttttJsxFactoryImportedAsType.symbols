@@ -1,0 +1,42 @@
+//// [test/cases/ttttJsxFactoryImportedAsType.tsx] ////
+
+=== react.d.ts ===
+declare namespace React { function createElement(...a: any[]): any; }
+>React : Symbol(React, Decl(react.d.ts, 0, 0))
+>createElement : Symbol(createElement, Decl(react.d.ts, 0, 25))
+>a : Symbol(a, Decl(react.d.ts, 0, 49))
+
+export = React;
+>React : Symbol(React, Decl(react.d.ts, 0, 0))
+
+declare global { namespace JSX { interface IntrinsicElements { [x: string]: any } } }
+>global : Symbol(global, Decl(react.d.ts, 1, 15))
+>JSX : Symbol(JSX, Decl(react.d.ts, 2, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(react.d.ts, 2, 32))
+>x : Symbol(x, Decl(react.d.ts, 2, 64))
+
+=== main.tsx ===
+import type React from './react';
+>React : Symbol(React, Decl(main.tsx, 0, 6))
+
+declare namespace Ns { const Comp: any }
+>Ns : Symbol(Ns, Decl(main.tsx, 0, 33))
+>Comp : Symbol(Comp, Decl(main.tsx, 1, 28))
+
+export const a = <div />;
+>a : Symbol(a, Decl(main.tsx, 2, 12))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(react.d.ts, 2, 62))
+
+export const b = <><span /></>;
+>b : Symbol(b, Decl(main.tsx, 3, 12))
+>span : Symbol(JSX.IntrinsicElements.__index, Decl(react.d.ts, 2, 62))
+
+export const c = <Ns.Comp>text</Ns.Comp>;
+>c : Symbol(c, Decl(main.tsx, 4, 12))
+>Ns.Comp : Symbol(Ns.Comp, Decl(main.tsx, 1, 28))
+>Ns : Symbol(Ns, Decl(main.tsx, 0, 33))
+>Comp : Symbol(Ns.Comp, Decl(main.tsx, 1, 28))
+>Ns.Comp : Symbol(Ns.Comp, Decl(main.tsx, 1, 28))
+>Ns : Symbol(Ns, Decl(main.tsx, 0, 33))
+>Comp : Symbol(Ns.Comp, Decl(main.tsx, 1, 28))
+

@@ -437,8 +437,8 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     scope_report_value_not_found(scope, first, false, binder_errs(scope->binder));
 }
 
-static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
-    Symbol const* found = my symbol;
+// (`at` is the name the value use spells: an identifier, or a JSX tag whose factory `found` is)
+static void check_type_only_value_at(Symbol const* found, Span at, csview name, Scope const* names, ErrorCtx* errs) {
     if (!found || !(found->flags & SYMBOL_ALIAS) || found->flags & SYMBOL_VALUE) return;
     if (names->flow && (names->flow->in_type_query || names->flow->type_only_alias_ok)) return;
     for (Scope const* scope = names; scope; scope = scope->parent) {
@@ -450,9 +450,13 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     if (!named) named = found;
     if (!item || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) return;
     bool exported = port_item_is_export(item);
-    Error* error = error_ctx_error_d(errs, identifier_expr_name(me), exported ? 1362 : 1361, "'", identifier_expr_name(me), "' cannot be used as a value "
+    Error* error = error_ctx_error_d(errs, at, exported ? 1362 : 1361, "'", name, "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
-    port_item_add_type_only_related(error, item, span_sv(identifier_expr_name(me)));
+    port_item_add_type_only_related(error, item, name);
+}
+
+static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    check_type_only_value_at(my symbol, identifier_expr_name(me), span_sv(identifier_expr_name(me)), names, errs);
 }
 
 // What there is to say about a module name that an import-like construct uses
@@ -1546,6 +1550,8 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
         unused_mark_referenced(names, found, SYMBOL_VALUE);
         // (The factory is a name like any other: tsc's resolveName)
         if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
+        // (resolveName's type-only check: only a tag name is an expression, a fragment or `a:b` isn't)
+        if (!fragment && el->tag_name.inner_span.size && !el->namespaced) check_type_only_value_at(found, at, name, names, errs);
     } else if (jsx == JSX_REACT && scope_resolve(names, name, SYMBOL_NAMESPACE_MODULE)) {
         // (tsc's resolveName -> checkAndReportErrorForUsingNamespaceAsValue, before any suggestion)
         error_ctx_error_d(errs, at, 2708, "Cannot use namespace '", name, "' as a value.");
