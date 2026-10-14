@@ -304,8 +304,11 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
 // typeAliasLinks.typeParameters, so every reference takes it as not generic (getTypeFromTypeAliasReference)
 bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || symbol->is_placeholder) return false;
-    ty_declared_type_of(me, symbol);
-    return symbol_links(me, canonical(me, symbol))->circular;
+    // (Asked for every alias reference: one lookup when the alias is resolved, as it nearly always is by then. Links are
+    // arena-allocated, the pointer stays valid)
+    SymbolLinks* links = symbol_links(me, canonical(me, symbol));
+    if (links->declared_state != LAZY_STATE_DONE) ty_declared_type_of(me, symbol);
+    return links->circular;
 }
 
 // The static side of a class, the object of an enum: what the symbol is as a value, before any merging
@@ -623,7 +626,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
     // (An alias is resolved first, which is where a reference inside its own body finds it circular: tsc's
     // getTypeFromTypeAliasReference asks getDeclaredTypeOfSymbol before counting type arguments)
-    if (decl->flags & SYMBOL_TYPE_ALIAS) ty_declared_type_of(me, decl);
+    Ty const* declared = decl->flags & SYMBOL_TYPE_ALIAS ? ty_declared_type_of(me, decl) : nullptr;
     // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
     // getTypeFromClassOrInterfaceReference), for a type alias or a type without type parameters in JavaScript too
     // (getTypeFromTypeAliasReference, checkNoTypeArguments)
@@ -635,7 +638,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         return ty_intrinsic(me, TY_ERROR);
     }
 
-    Ty const* declared = ty_declared_type_of(me, decl);
+    if (!declared) declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
             // `this` is the class's or interface's own `this` type parameter
             if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && declared->kind == TY_DECLARED && declared->declared.this_param) {
