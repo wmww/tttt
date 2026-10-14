@@ -166,6 +166,7 @@ void binder_destroy(Binder* me) {
     free(my pending_not_found);
     free(my pending_type_as_value);
     free(my pending_export_merges);
+    free(my pending_alias_merges);
     if (my discarded_errs) {
         error_ctx_drop(my discarded_errs);
         free(my discarded_errs);
@@ -1245,6 +1246,67 @@ static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* ex
     panic("declaration kind ", (i32)props->kind, " can't be declared in a scope");
 }
 
+// A cross-file merge into an alias of the same table (tsc's mergeSymbol, at checker initialization, resolves the
+// alias first and merges into its target, or replaces it if it resolves to nothing): until binder_link() decides it,
+// the declaration is a symbol of its own, the file's own like in tsc's binder, see binder_link_alias_merges().
+// Returns null when this isn't such a merge
+typedef struct PendingAliasMerge {
+    SymbolTable* table;
+    Symbol* source;
+    SourceFile const* file;
+} PendingAliasMerge;
+
+static Symbol* declare_pending_alias_merge(
+    Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, SymbolDeclKind kind,
+    bool* merged, bool* pending
+) {
+    Binder* binder = scope->binder;
+    *merged = false;
+    if (binder->alias_merges_done || resolve_shard || (includes & SYMBOL_ALIAS)) return nullptr;
+    // (Only declarations whose nodes merge_symbol() can point elsewhere)
+    if (kind != SYMBOL_DECL_VARIABLE && kind != SYMBOL_DECL_FUNCTION && kind != SYMBOL_DECL_CLASS &&
+        kind != SYMBOL_DECL_INTERFACE && kind != SYMBOL_DECL_ENUM && kind != SYMBOL_DECL_TYPE_ALIAS &&
+        kind != SYMBOL_DECL_NAMESPACE
+    ) {
+        return nullptr;
+    }
+    SourceFile const* file = span_source(name_span);
+    if (!file) return nullptr;
+    // Another declaration of this file merges into the pending one (tsc's binder declares into the file's own)
+    for (u32 i = 0; i < binder->pending_alias_merge_count; i++) {
+        PendingAliasMerge const* p = &binder->pending_alias_merges[i];
+        if (p->table != table || p->file != file || !csview_equals_sv(p->source->name, name)) continue;
+        Symbol* source = p->source;
+        *pending = true;
+        if (source->flags & excludes) {
+            report_conflicts(binder_errs(binder), source, name_span, includes, false, (csview){0});
+            return binder_new_symbol(binder, name, includes);
+        }
+        source->decl_flags_before = source->flags;
+        source->flags |= includes;
+        *merged = true;
+        return source;
+    }
+    Symbol* existing = symbol_table_get_own(table, name, symbol_name_hash(name));
+    // (A UMD global, `export as namespace`, is merge_into_umd_globals()'s: tsc's first-in-wins globalExports)
+    if (!existing || !(existing->flags & SYMBOL_ALIAS) || existing->binder != binder || (existing->flags & excludes) ||
+        !existing->decl_count || is_umd_global(existing)
+    ) {
+        return nullptr;
+    }
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        if (span_source(existing->decls[i].full) == file) return nullptr;
+    }
+    Symbol* source = binder_new_symbol(binder, name, includes);
+    PendingAliasMerge* p = list_push((void**)&binder->pending_alias_merges, &binder->pending_alias_merge_count,
+        &binder->pending_alias_merge_cap, sizeof(PendingAliasMerge));
+    *p = (PendingAliasMerge){ table, source, file };
+    // (An expando assignment of the script declares into it: scope_init_declaration() records it in script_duplicates)
+    *pending = true;
+    *merged = false;
+    return source;
+}
+
 void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (*ret) {
         // `var`s of nested blocks were declared by statement_hoist_names() already
@@ -1306,8 +1368,11 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
             report_conflicts(binder_errs(scope->binder), local, error_at, includes, false, (csview){0});
         }
     }
-    Symbol* symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
-    if (!merged && !props.default_export && (includes & SYMBOL_VALUE) && scope->container && table == scope->container->exports &&
+    bool pending_alias_merge = false;
+    Symbol* symbol = props.default_export ? nullptr :
+        declare_pending_alias_merge(scope, table, name, error_at, includes, excludes, props.kind, &merged, &pending_alias_merge);
+    if (!symbol) symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
+    if (!merged && !pending_alias_merge && !props.default_export && (includes & SYMBOL_VALUE) && scope->container && table == scope->container->exports &&
         table != scope->locals && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) &&
         symbol_table_get_own(table, name, symbol_name_hash(name)) != symbol
     ) {
@@ -3392,6 +3457,11 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 // exports isn't a value too (tsc's getPropertyOfType of the function's type finds nothing, TS2693)
                 u32 value_flags = symbol_resolved_flags(assigned) & SYMBOL_VALUE;
                 if (from_value && found && (value_flags & ~(u32)(SYMBOL_FUNCTION | SYMBOL_VALUE_MODULE)) == 0) from_value = false;
+                // (A namespace's only properties are its value exports, which the binder knows: one without the name
+                // is tsc's unknownSymbol for it, TS2305)
+                if (from_value && !found && value_flags == SYMBOL_VALUE_MODULE && !(symbol_resolved_flags(assigned) & SYMBOL_ALIAS)) {
+                    from_value = false;
+                }
                 if (from_value && !(found && symbol_resolved_flags(found) & SYMBOL_VALUE)) {
                     Symbol* property = binder_new_symbol(my binder, port_item_name(item->source_name), SYMBOL_PROPERTY);
                     property->name_span = item->source_name;
@@ -4208,7 +4278,13 @@ static void merge_into_umd_globals(Binder* me) {
             augmentation_merges |= global->decls[d].kind != SYMBOL_DECL_ALIAS && global->alias->item &&
                 span_source(global->decls[d].full) == span_source(global->alias->item->full_span);
         }
-        if (target == global && global->alias->item && augmentation_merges) {
+        // (An `export =` naming an alias that resolves to nothing, `import { Bar } from "./foo"` of a module without
+        // Bar: tsc's mergeSymbol resolves the global's alias to the unknown symbol too, the source takes the name)
+        Symbol* resolved_target = target && target != global && (target->flags & SYMBOL_ALIAS) ? symbol_resolve_alias(target) : target;
+        bool unknown = target && target != global && (target->is_placeholder ||
+            ((target->flags & SYMBOL_ALIAS) && (!resolved_target || resolved_target->is_placeholder)));
+        bool circular = target == global && global->alias->item && augmentation_merges;
+        if (circular && !unknown) {
             error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(global->alias->item->full_span), 2303,
                 "Circular definition of import alias '", global->alias->item->decl_name, "'.");
             // (The `export =` resolving to it is on the same cycle: tsgo's resolveAlias fails every alias from the
@@ -4220,6 +4296,8 @@ static void merge_into_umd_globals(Binder* me) {
                 error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(export_equals->decls[0].full), 2303,
                     "Circular definition of import alias '", global->alias->item->decl_name, "'.");
             }
+        }
+        if (circular || unknown) {
             // (mergeSymbol gets the unknown symbol for the alias and returns the source: the global is what merged,
             // the alias is left with its own declaration)
             u32 merged_flags = 0;
@@ -4277,7 +4355,55 @@ static void merge_into_umd_globals(Binder* me) {
     }
 }
 
+// Decides the merges declare_pending_alias_merge() left, in declaration order, like tsc's mergeSymbol: into what the
+// name means now (another pending merge may have replaced it), an alias resolved first. An alias that resolves to
+// nothing gives way to the declaration; one whose target doesn't exclude it merges it into that target (tsc's clone of
+// it, which getMergedSymbol makes what the target is), which the name then means; one whose target excludes it is a
+// conflict, and the declaration takes the name
+static void binder_link_alias_merges(Binder* me) {
+    for (u32 i = 0; i < my pending_alias_merge_count; i++) {
+        PendingAliasMerge const* p = &my pending_alias_merges[i];
+        Symbol* source = p->source;
+        ErrorCtx* errs = binder_errs(me);
+        u64 hash = symbol_name_hash(source->name);
+        i32 at = symbol_table_own_index(p->table, source->name, hash);
+        if (at < 0) {
+            symbol_table_insert(p->table, binder_arena(me), source->name, hash, source);
+            continue;
+        }
+        Symbol* target = p->table->entries[at].symbol;
+        if (target->flags & excluded_flags(source->flags)) {
+            report_conflicts(errs, target, source->decls[0].name, source->flags, false, (csview){0});
+            for (u32 d = 1; d < source->decl_count; d++) report_conflict(errs, source->decls[d].name, 2300);
+            continue;
+        }
+        if (target->flags & SYMBOL_ALIAS) {
+            Symbol* resolved = symbol_resolve_alias(target);
+            if (!resolved || resolved->is_placeholder) {
+                p->table->entries[at].symbol = source;
+                continue;
+            }
+            if (resolved->binder != me) {
+                // (A symbol of the shared lib program: no clone to merge into, the old way)
+                merge_symbol(me, target, source, errs);
+                continue;
+            }
+            if (resolved->flags & excluded_flags(source->flags)) {
+                report_conflicts(errs, target, source->decls[0].name, source->flags, true, (csview){0});
+                for (u32 d = 1; d < source->decl_count; d++) report_conflict(errs, source->decls[d].name, 2300);
+                p->table->entries[at].symbol = source;
+                continue;
+            }
+            target = resolved;
+        }
+        merge_symbol(me, target, source, errs);
+        p->table->entries[at].symbol = target;
+    }
+    my alias_merges_done = true;
+}
+
 void binder_link(Binder* me) {
+    binder_link_alias_merges(me);
     // (tsc's initializeTypeChecker merges the globals, a UMD global's `declare global` namespaces with it, before the
     // module augmentations)
     merge_into_umd_globals(me);

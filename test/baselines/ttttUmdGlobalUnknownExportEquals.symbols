@@ -1,0 +1,20 @@
+//// [test/cases/ttttUmdGlobalUnknownExportEquals.ts] ////
+
+=== foo.d.ts ===
+export {};
+declare global {
+>global : Symbol(global, Decl(foo.d.ts, 0, 10))
+
+    namespace Bar { }
+>Bar : Symbol(Bar, Decl(foo.d.ts, 1, 16))
+}
+=== bar.d.ts ===
+import { Bar } from './nonexistent';
+>Bar : Symbol(Bar, Decl(bar.d.ts, 0, 8))
+
+export = Bar;
+>Bar : Symbol(Bar, Decl(bar.d.ts, 0, 8))
+
+export as namespace Bar;
+>Bar : Symbol(Bar, Decl(bar.d.ts, 1, 13))
+

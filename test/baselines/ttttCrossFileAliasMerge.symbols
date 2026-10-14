@@ -1,0 +1,65 @@
+//// [test/cases/ttttCrossFileAliasMerge.ts] ////
+
+=== a.ts ===
+namespace N { export const x = 1; }
+>N : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 26))
+
+class K {}
+>K : Symbol(K, Decl(a.ts, 0, 35))
+
+import n = N;
+>n : Symbol(n, Decl(a.ts, 1, 10))
+>N : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+
+import k = K;
+>k : Symbol(k, Decl(a.ts, 2, 13))
+
+import u = Missing.Thing;
+>u : Symbol(u, Decl(a.ts, 3, 13))
+
+interface I {}
+>I : Symbol(I, Decl(a.ts, 4, 25))
+
+import i = I;
+>i : Symbol(i, Decl(a.ts, 5, 14))
+
+=== b.ts ===
+namespace n { export const y = 2; }
+>n : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>y : Symbol(y, Decl(b.ts, 0, 26))
+
+var k: number;
+>k : Symbol(k, Decl(b.ts, 1, 3))
+
+function u() {}
+>u : Symbol(u, Decl(b.ts, 1, 14))
+
+interface i { z: number }
+>i : Symbol(i, Decl(b.ts, 2, 15))
+>z : Symbol(i.z, Decl(b.ts, 3, 13))
+
+const r1 = n.y;
+>r1 : Symbol(r1, Decl(b.ts, 4, 5))
+>n.y : Symbol(N.y, Decl(b.ts, 0, 26))
+>n : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>y : Symbol(N.y, Decl(b.ts, 0, 26))
+
+const r2 = u();
+>r2 : Symbol(r2, Decl(b.ts, 5, 5))
+>u : Symbol(u, Decl(b.ts, 1, 14))
+
+=== c.ts ===
+namespace n { export const w = 3; }
+>n : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>w : Symbol(w, Decl(c.ts, 0, 26))
+
+const r3 = n.x + n.w;
+>r3 : Symbol(r3, Decl(c.ts, 1, 5))
+>n.x : Symbol(N.x, Decl(a.ts, 0, 26))
+>n : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>x : Symbol(N.x, Decl(a.ts, 0, 26))
+>n.w : Symbol(N.w, Decl(c.ts, 0, 26))
+>n : Symbol(N, Decl(a.ts, 0, 0), Decl(b.ts, 0, 0), Decl(c.ts, 0, 0))
+>w : Symbol(N.w, Decl(c.ts, 0, 26))
+

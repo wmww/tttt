@@ -1,0 +1,30 @@
+a.ts(4,12): error TS2702: 'K' only refers to a type, but is being used as a namespace here.
+a.ts(5,12): error TS2503: Cannot find namespace 'Missing'.
+a.ts(7,12): error TS2702: 'I' only refers to a type, but is being used as a namespace here.
+
+
+==== a.ts (3 errors) ====
+    namespace N { export const x = 1; }
+    class K {}
+    import n = N;
+    import k = K;
+               ~
+!!! error TS2702: 'K' only refers to a type, but is being used as a namespace here.
+    import u = Missing.Thing;
+               ~~~~~~~
+!!! error TS2503: Cannot find namespace 'Missing'.
+    interface I {}
+    import i = I;
+               ~
+!!! error TS2702: 'I' only refers to a type, but is being used as a namespace here.
+==== b.ts (0 errors) ====
+    namespace n { export const y = 2; }
+    var k: number;
+    function u() {}
+    interface i { z: number }
+    const r1 = n.y;
+    const r2 = u();
+==== c.ts (0 errors) ====
+    namespace n { export const w = 3; }
+    const r3 = n.x + n.w;
+    

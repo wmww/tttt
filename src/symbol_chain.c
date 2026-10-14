@@ -374,8 +374,9 @@ static bool try_locals_with_exports(
         return true;
     }
     // A duplicate declaration (TS2300) has a symbol of its own that isn't in the exports, but the block's local of
-    // that name has it as its exportSymbol (not an `export default` one: tsc looks it up as `default`, which no local is)
-    if (!symbol->is_default_export && merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
+    // that name has it as its exportSymbol (not an `export default` one: tsc looks it up as `default`, which no local is;
+    // nor an exported alias, `export import A = b.c`, which tsc's declareModuleMember declares in the exports only)
+    if (!symbol->is_default_export && !(symbol->alias && symbol->alias->item && symbol->alias->item->export_import) && merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
         merged(me, symbol_table_get(exports, symbol->name)) != merged(me, symbol) &&
         can_qualify(me, symbol, meaning)
     ) {

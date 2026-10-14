@@ -614,6 +614,12 @@ typedef struct Binder {
     struct PendingExportMerge* pending_export_merges; // malloc'd
     u32 pending_export_merge_count;
     u32 pending_export_merge_cap;
+    // Declarations of one file that would merge into an alias another file declared in the same table (tsc's
+    // mergeSymbol at checker initialization resolves the alias first): symbols of their own until binder_link()
+    struct PendingAliasMerge* pending_alias_merges; // malloc'd
+    u32 pending_alias_merge_count;
+    u32 pending_alias_merge_cap;
+    bool alias_merges_done; // binder_link() decided them: later declarations merge as usual
     // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
     // any). Made when first needed
     Symbol* require_symbol;

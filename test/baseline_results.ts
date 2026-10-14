@@ -50,6 +50,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCrossFileAliasMerge': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
@@ -401,6 +406,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParameterMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUmdGlobalUnknownExportEquals': {
         errors: true,
         symbols: true,
         types: true,
@@ -3697,7 +3707,7 @@ const baselines = {
     },
     'checkerInitializationCrash': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkingObjectDefinePropertyOnFunctionNonexistentPropertyNoCrash1': {
@@ -11462,7 +11472,7 @@ const baselines = {
     },
     'duplicateVarsAcrossFileBoundaries': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'dynamicImportEvaluateSpecifier': {
@@ -16593,7 +16603,7 @@ const baselines = {
     'globalArrayAugmentationWithAmbientModuleReexportMerge1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'globalFunctionAugmentationOverload': {
         errors: true,
@@ -17232,8 +17242,8 @@ const baselines = {
     },
     'importEqualsError45874': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importExportInternalComments': {
         errors: true,
@@ -23142,7 +23152,7 @@ const baselines = {
     },
     'moduleAugmentationWithNonExistentNamedImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationsImports1': {

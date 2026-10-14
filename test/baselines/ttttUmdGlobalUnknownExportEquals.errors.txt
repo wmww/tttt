@@ -1,0 +1,15 @@
+bar.d.ts(1,21): error TS2307: Cannot find module './nonexistent' or its corresponding type declarations.
+
+
+==== foo.d.ts (0 errors) ====
+    export {};
+    declare global {
+        namespace Bar { }
+    }
+==== bar.d.ts (1 errors) ====
+    import { Bar } from './nonexistent';
+                        ~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module './nonexistent' or its corresponding type declarations.
+    export = Bar;
+    export as namespace Bar;
+    

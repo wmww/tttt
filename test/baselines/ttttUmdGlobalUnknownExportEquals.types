@@ -1,0 +1,19 @@
+//// [test/cases/ttttUmdGlobalUnknownExportEquals.ts] ////
+
+=== foo.d.ts ===
+export {};
+declare global {
+>global : any
+
+    namespace Bar { }
+}
+=== bar.d.ts ===
+import { Bar } from './nonexistent';
+>Bar : any
+
+export = Bar;
+>Bar : any
+
+export as namespace Bar;
+>Bar : any
+

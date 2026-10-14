@@ -1,66 +1,36 @@
-# Plan 69: cross-file merges that involve aliases, decided after the aliases resolve (tsgo's mergeSymbol)
+# Plan 69: what is left of the cross-file merges through aliases: tsgo's clones
 
-Written 2026-10-14 by plan 66's fan-out agent C (bucket "binder/modules"). Seven suite tests, one mechanism; size ~1
-session (stage 1) + a probe sweep.
+Stage 1 (2026-10-14, agent C) is done: binder_link_alias_merges() decides a cross-file merge into an alias like tsgo's
+mergeSymbol (declare_pending_alias_merge() keeps the declaration a symbol of its own until the aliases resolve; an
+alias resolving to nothing gives way, a target that doesn't exclude the declaration takes it in and the name, a
+conflicting one gives the declaration the name), merge_into_umd_globals() splits a UMD global whose `export =` resolves
+to nothing, a namespace `export =` has no members but its value exports (TS2305 at bind time), and an `export import`
+in a namespace block has no local twin for the symbol chain. Fixed: duplicateVarsAcrossFileBoundaries,
+importEqualsError45874, checkerInitializationCrash, moduleAugmentationWithNonExistentNamedImport, and the types of
+globalArrayAugmentationWithAmbientModuleReexportMerge1 (tests ttttCrossFileAliasMerge, ttttUmdGlobalUnknownExportEquals).
 
-## The mechanism (tsgo)
-tsgo's binder keeps every file's declarations in that file's own tables (a script's in `file.Locals`); the checker's
-initializeTypeChecker merges them: each script's locals into `globals` (`mergeSymbolTable(globals, file.Locals)`, file
-order), then the module augmentations (`declare global` ones, then `declare module "m"` ones, per file in order).
-`mergeSymbol(target, source)` (checker.go):
-- target and source don't exclude each other (or either is an Assignment):
-  - target not transient: `resolvedTarget = resolveSymbol(target)` (an alias's target!).
-    - `resolvedTarget == unknownSymbol` (an import that resolves to nothing): **return source**: the source replaces
-      the target in the table; the alias stays a symbol of its own (importEqualsError45874: `import Foo =
-      globals.toString.Blah` in one script and `const Foo = {}` in another: the table's `Foo` is the const, the alias
-      `Foo` is `any` and lists only its own declaration).
-    - resolvedTarget doesn't exclude the source: `target = cloneSymbol(resolvedTarget)` and the source merges into
-      **the alias's target's clone** (duplicateVarsAcrossFileBoundaries: `import p = P` then another file's `var p`:
-      the var merges into a clone of namespace P, so `P` lists `Decl(_4, 0, 0), Decl(_5, 2, 3)` and the var `p` prints
-      as `Symbol(P, ...)`; getMergedSymbol(P) is the clone).
-    - else: TS2300 etc. (reportMergeSymbolError) and **return source** (checkerInitializationCrash: `export import VNode
-      = react.ReactNode` in a `declare global` namespace and another file's `type VNode`: the table gets the type
-      alias, the import keeps one declaration, `react.ReactNode` is named by its own chain).
-  - target transient (a clone already): merge into it.
-- they exclude each other: TS2300 (or TS2649 for a namespace target), **return target**.
-- `mergeSymbolTable` stores what mergeSymbol returns; a merged symbol whose exports merge gets the merged parent.
-
-tttt instead declares every script's globals straight into `Binder.globals` at declare time (declare_symbol(): one
-table, merging as the binder's declareSymbol would within one file) and merges augmentations into the targets
-themselves in binder_link() (merge_augmentations(), merge_into_exports()). The outcomes match tsgo except where an
-alias is on either side of a cross-file merge: tttt merges the declarations into the alias symbol itself.
-
-## The tests (validation)
-- importEqualsError45874 (symbols, types), duplicateVarsAcrossFileBoundaries (symbols),
-  checkerInitializationCrash (symbols), globalArrayAugmentationWithAmbientModuleReexportMerge1 (symbols, types: an
-  export alias `export { foo }` of an ambient module and a `declare global` const `foo`: mergeSymbol returns source),
-  declarationEmitAugmentationUsesCorrectSourceFile (symbols, types: an augmentation merging into an `export { Knex }`
-  alias's target merges into a clone, the original namespace stays uninstantiated, `knex.Knex` / `any`),
-  moduleAugmentationWithNonExistentNamedImport (symbols: `import { Bar } from './foo'` that resolves to nothing and a
-  UMD/global `Bar`), moduleAugmentationDuringSyntheticDefaultCheck (symbols, types: an augmentation of a module whose
-  `export =` names an esModuleInterop namespace import, which merges into resolveESModuleSymbol's clone; may need the
-  clone as a binder symbol too, see bugs/binder_modules.md "Export= clones").
-  Their entries are in bugs/binder_modules.md ("Merges tsc decides after aliases resolve", "TS 7.1 window leftovers").
-
-## Route
-The link step already runs between declare and the resolve walk (documentation.md "Name resolution"), and alias
-resolution only needs the tables, so the merge can be decided there before anything resolves names through them:
-1. Declare: when declare_symbol() would merge into a global (or, for augmentations, into an export) that came from
-   *another file*, and either side is an alias (SYMBOL_ALIAS), don't merge: keep the newcomer a symbol of its own and
-   record a pending merge (table, name, target, source, in tsgo's order: scripts in file order, then global
-   augmentations, then module augmentations). Same-file merges stay as they are (tsgo's binder makes those).
-2. Link: after aliases resolve, replay the pending merges with mergeSymbol's rules above: replace the table entry
-   (unknown target, or a resolved-target conflict: report TS2300 like reportMergeSymbolError and keep both), merge the
-   source's declarations into the alias's resolved target (tttt has no clones: merging into the target in place is
-   what getMergedSymbol makes observable, check declarationEmitAugmentationUsesCorrectSourceFile, where tsgo's clone
-   leaves the original namespace uninstantiated and that shows), or merge as today when no alias is involved after all.
-3. The resolve walk then sees the final tables; the symbols baseline's declaration lists come from the symbols, so
-   they follow.
-Before coding, probe each test's reduction against tsgo (scripts/tscbaseline.sh) and log the merges tsgo makes with an
-instrumented checker (mergeSymbol's returns; scripts/variancetrace.py's build() shows how to overlay a patched
-checker.go): the clone cases are the uncertain ones.
+Left, all three about the symbols tsgo *clones* rather than merges in place (cloneSymbol in mergeSymbol,
+cloneTypeAsModuleType in resolveESModuleSymbol), which tttt doesn't make. About one session; start with an
+instrumented tsgo (overlay a patched checker.go: wrap mergeSymbol to log target/source/result, like
+scripts/variancetrace.py's build() does for relater.go; ~3 min to build the probe test binary with `go test -overlay
+... -c ./internal/testrunner` and run it with TTTT_TESTDATA, see scripts/tsgoprobe.sh).
+- declarationEmitAugmentationUsesCorrectSourceFile (symbols, types): `declare module "knex" { namespace Knex { function
+  newFunc() } }` augmenting a module whose `export = knex` namespace re-exports a file-local `declare namespace Knex`
+  (`export { Knex }`). Logged: mergeSymbol(alias Knex, augmentation Knex) returns a clone (2 declarations), and the
+  module merge clones knex too, every checker. Yet tsgo's symbols baseline names the original declaration
+  `Symbol(knex.Knex, Decl(index.d.ts, 13, 10))` (one declaration, parent knex) and types it `any`: find which symbol
+  getSymbolAtLocation returns there (getMergedSymbol of the local is recorded to the inner clone by cloneSymbol;
+  something else must win) before modelling it. tttt merges into the namespace in place (merge_into_exports()).
+- globalArrayAugmentationWithAmbientModuleReexportMerge1 (symbols): `foo.items` through `import * as foo from 'foo'`
+  of an `export = foo` function+namespace prints bare `items` in tsgo (probe: also without the test's ambient module
+  merge; `import foo = require` and a namespace-only `export =` print `foo.items`). resolveESModuleSymbol gives the
+  namespace import a clone when the type has signatures (cloneTypeAsModuleType), so the chain can't go through the
+  import; tttt's symbol chain finds `[foo, items]` through the alias's resolved exports (candidate_list() in
+  symbol_chain.c; export_equals_namespace_import_is_clone() already stops is_accessible(), not the exports step).
+  Instrumenting getCandidateListForSymbol on the probe tells why tsgo's exports step doesn't find it either.
+- moduleAugmentationDuringSyntheticDefaultCheck (symbols, types): the augmentation merges into the esModuleInterop
+  clone of a namespace import (bugs/binder_modules.md "Export= clones").
 
 ## Validation
-The seven tests pass; nothing lost in the suite; the corpora, sweep, sourcesweep and `$ExpectType` unchanged (the
-DT sweep has many UMD globals and `export =` merges: run it full). Add a tttt test per rule (unknown target, clone
-target, conflict) from the reductions.
+Each fixed with a cut-down tttt test, 0 lost, the corpora, sweep, `$ExpectType` and full sourcesweep match set
+unchanged. Delete this plan when the three pass or are written up as tsgo artifacts.

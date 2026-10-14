@@ -39,25 +39,10 @@ clone is a *different* symbol than the one a later lookup finds:
   different files. Needs: the JS export= assignment symbol as an augmentable namespace, the union with the
   cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
-## Merges tsc decides after aliases resolve (plan 69)
-tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
-mergeSymbol, which resolves an alias target first. Plan 69 has the mechanism and the route; the tests below
-(duplicateVarsAcrossFileBoundaries, importEqualsError45874, checkerInitializationCrash,
-globalArrayAugmentationWithAmbientModuleReexportMerge1, declarationEmitAugmentationUsesCorrectSourceFile,
-moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck) are its validation.
-- moduleAugmentationWithNonExistentNamedImport (symbols): bar.d.ts's `import { Bar } from './foo'` (foo is `export =
-  Foo`, no member Bar) and its `export as namespace Bar` against foo.d.ts's `declare global { namespace Bar {} }`:
-  tsgo lists `Bar` at the import as the global namespace alone and at `export = Bar` as the import alone, tttt both
-  merged.
-- importEqualsError45874: a global `import Foo = globals.toString.Blah` (resolves to unknownSymbol) and another
-  file's `const Foo`: mergeSymbol returns the source, so the const replaces the alias in globals and they stay two
-  symbols (no error, `Foo : any` at the import). tttt merges them in declare_symbol(). A fix would split them in
-  binder_link() once the alias resolves to nothing.
-
-- duplicateVarsAcrossFileBoundaries (symbols): a global alias and a `var` of another file are one symbol in tttt's
-  binder; tsc's checker-time mergeSymbol resolves the alias first (unresolved: the source wins the table; resolved:
-  merges into a clone of the target). Needs a deferred pass at binder_link() over cross-file global merges involving
-  aliases (ex plan 35).
+## Merges tsc decides after aliases resolve
+Done for cross-file merges into aliases (binder_link_alias_merges(), merge_into_umd_globals()); what is left is the
+clones tsgo makes on the way (plan 69): declarationEmitAugmentationUsesCorrectSourceFile,
+globalArrayAugmentationWithAmbientModuleReexportMerge1 (symbols), moduleAugmentationDuringSyntheticDefaultCheck.
 
 ## Symbol display of duplicates and merged members
 - nodeModulesJson (symbols, x4): `config3.version` through `import * as config3 from "./config.json"` in a .cts
@@ -91,13 +76,6 @@ skipped silently, where tsc reports it against the resolved target. (Moved from 
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
   time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
-- checkerInitializationCrash: a global namespace's `export import VNode = react.ReactNode` merged with another file's
-  `type VNode` lists one declaration in tsgo and doesn't name `react.ReactNode` (tttt merges them into an alias+type).
-- globalArrayAugmentationWithAmbientModuleReexportMerge1 (SYM/TYP): tsgo's failed cross-file merge of an export alias
-  with a const keeps two symbols (mergeSymbol returns source), tttt's binder merged them into one.
-- declarationEmitAugmentationUsesCorrectSourceFile (SYM/TYP): an augmentation merging into an `export { Knex }` alias's
-  target merges into a clone in tsgo 7.1 (mergeSymbol's resolveSymbol + cloneSymbol), leaving the original namespace
-  uninstantiated (`any`) and naming it `knex.Knex`; tttt's merge_into_exports merges into the target itself.
 
 ## Escaped identifiers: what's left
 Names with unicode escapes (`\u0061`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`
