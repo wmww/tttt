@@ -325,6 +325,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttScriptConflictExpandoHost': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSignatureMessageTruncation': {
         errors: true,
         symbols: true,
@@ -3803,7 +3808,7 @@ const baselines = {
     'circularTypeArgumentsLocalAndOuterNoCrash1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularTypeofWithFunctionModule': {
         errors: true,
@@ -61488,7 +61493,7 @@ const baselines = {
     'jsContainerMergeTsDeclaration3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsObjectsMarkedAsOpenEnded': {
         errors: true,
