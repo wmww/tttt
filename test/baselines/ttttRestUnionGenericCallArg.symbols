@@ -1,0 +1,70 @@
+//// [test/cases/ttttRestUnionGenericCallArg.ts] ////
+
+=== ttttRestUnionGenericCallArg.ts ===
+// A generic call returning a function, left out of a generic call's inference (tsc's SkipGenericFunctions), is typed
+// against its element of the instantiated rest parameter in the applicability check (getSpreadArgumentType): a union
+// of tuples gives `produce(v => v)` the union of their elements there (solid's `setStore("a", ..., "h", produce(v =>
+// ({ i: v.i })))` under SetStoreFunction's fallback overload)
+declare function produce<T>(fn: (state: T) => void): (state: T) => T;
+>produce : Symbol(produce, Decl(ttttRestUnionGenericCallArg.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 4, 25))
+>fn : Symbol(fn, Decl(ttttRestUnionGenericCallArg.ts, 4, 28))
+>state : Symbol(state, Decl(ttttRestUnionGenericCallArg.ts, 4, 33))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 4, 25))
+>state : Symbol(state, Decl(ttttRestUnionGenericCallArg.ts, 4, 54))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 4, 25))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 4, 25))
+
+type S<T> = T | ((prev: T, tr: string[]) => T);
+>S : Symbol(S, Decl(ttttRestUnionGenericCallArg.ts, 4, 69))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 5, 7))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 5, 7))
+>prev : Symbol(prev, Decl(ttttRestUnionGenericCallArg.ts, 5, 18))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 5, 7))
+>tr : Symbol(tr, Decl(ttttRestUnionGenericCallArg.ts, 5, 26))
+>T : Symbol(T, Decl(ttttRestUnionGenericCallArg.ts, 5, 7))
+
+declare function g4<K>(k: K, ...rest: ["i", S<number>] | ["i", "a", S<string>]): void;
+>g4 : Symbol(g4, Decl(ttttRestUnionGenericCallArg.ts, 5, 47))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 6, 20))
+>k : Symbol(k, Decl(ttttRestUnionGenericCallArg.ts, 6, 23))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 6, 20))
+>rest : Symbol(rest, Decl(ttttRestUnionGenericCallArg.ts, 6, 28))
+>S : Symbol(S, Decl(ttttRestUnionGenericCallArg.ts, 4, 69))
+>S : Symbol(S, Decl(ttttRestUnionGenericCallArg.ts, 4, 69))
+
+g4(1, "i", produce(v => v));
+>g4 : Symbol(g4, Decl(ttttRestUnionGenericCallArg.ts, 5, 47))
+>produce : Symbol(produce, Decl(ttttRestUnionGenericCallArg.ts, 0, 0))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 7, 19))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 7, 19))
+
+declare function g5<K>(k: K, ...rest: ["i", S<number>]): void;
+>g5 : Symbol(g5, Decl(ttttRestUnionGenericCallArg.ts, 7, 28))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 8, 20))
+>k : Symbol(k, Decl(ttttRestUnionGenericCallArg.ts, 8, 23))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 8, 20))
+>rest : Symbol(rest, Decl(ttttRestUnionGenericCallArg.ts, 8, 28))
+>S : Symbol(S, Decl(ttttRestUnionGenericCallArg.ts, 4, 69))
+
+g5(1, "i", produce(v => v));
+>g5 : Symbol(g5, Decl(ttttRestUnionGenericCallArg.ts, 7, 28))
+>produce : Symbol(produce, Decl(ttttRestUnionGenericCallArg.ts, 0, 0))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 9, 19))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 9, 19))
+
+declare function g6<K>(k: K, a: "i", b: S<number>): void;
+>g6 : Symbol(g6, Decl(ttttRestUnionGenericCallArg.ts, 9, 28))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 10, 20))
+>k : Symbol(k, Decl(ttttRestUnionGenericCallArg.ts, 10, 23))
+>K : Symbol(K, Decl(ttttRestUnionGenericCallArg.ts, 10, 20))
+>a : Symbol(a, Decl(ttttRestUnionGenericCallArg.ts, 10, 28))
+>b : Symbol(b, Decl(ttttRestUnionGenericCallArg.ts, 10, 36))
+>S : Symbol(S, Decl(ttttRestUnionGenericCallArg.ts, 4, 69))
+
+g6(1, "i", produce(v => v));
+>g6 : Symbol(g6, Decl(ttttRestUnionGenericCallArg.ts, 9, 28))
+>produce : Symbol(produce, Decl(ttttRestUnionGenericCallArg.ts, 0, 0))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 11, 19))
+>v : Symbol(v, Decl(ttttRestUnionGenericCallArg.ts, 11, 19))
+

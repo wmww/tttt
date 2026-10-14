@@ -480,6 +480,10 @@ static Ty const* rest_args_tuple_ctx(
             Ty const* type = arg->type ? arg->type :
                 skip_sensitive && arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION ? ty_any_function_type(me) :
                 skip_sensitive && arg->context_sensitive ? ty_check_expr_skipping_sensitive(me, arg->expr, nullptr, false) :
+                // (A generic call left out of the inference is typed against its element of the instantiated rest type,
+                // tsc's getSpreadArgumentType in the applicability check: `produce(v => v)` under `...rest: [K, S<X>] |
+                // [K, "a", S<Y>]`)
+                context_shape && arg->generic_call ? ty_check_expr(me, arg->expr, rest_arg_contextual(me, context_shape, args, from + i, from)) :
                 ty_expr_type(me, arg->expr);
             bool widen_this = widen;
             if (!widen && context_shape && (type->flags & TYF_LITERAL)) {

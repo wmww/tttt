@@ -1,0 +1,67 @@
+//// [test/cases/ttttRestUnionGenericCallArg.ts] ////
+
+=== ttttRestUnionGenericCallArg.ts ===
+// A generic call returning a function, left out of a generic call's inference (tsc's SkipGenericFunctions), is typed
+// against its element of the instantiated rest parameter in the applicability check (getSpreadArgumentType): a union
+// of tuples gives `produce(v => v)` the union of their elements there (solid's `setStore("a", ..., "h", produce(v =>
+// ({ i: v.i })))` under SetStoreFunction's fallback overload)
+declare function produce<T>(fn: (state: T) => void): (state: T) => T;
+>produce : <T>(fn: (state: T) => void) => (state: T) => T
+>fn : (state: T) => void
+>state : T
+>state : T
+
+type S<T> = T | ((prev: T, tr: string[]) => T);
+>S : S<T>
+>prev : T
+>tr : string[]
+
+declare function g4<K>(k: K, ...rest: ["i", S<number>] | ["i", "a", S<string>]): void;
+>g4 : <K>(k: K, ...rest: ["i", S<number>] | ["i", "a", S<string>]) => void
+>k : K
+>rest : ["i", S<number>] | ["i", "a", S<string>]
+
+g4(1, "i", produce(v => v));
+>g4(1, "i", produce(v => v)) : void
+>g4 : <K>(k: K, ...rest: ["i", S<number>] | ["i", "a", S<string>]) => void
+>1 : 1
+>"i" : "i"
+>produce(v => v) : (state: number) => number
+>produce : <T>(fn: (state: T) => void) => (state: T) => T
+>v => v : (v: number) => number
+>v : number
+>v : number
+
+declare function g5<K>(k: K, ...rest: ["i", S<number>]): void;
+>g5 : <K>(k: K, rest_0: "i", rest_1: S<number>) => void
+>k : K
+>rest : ["i", S<number>]
+
+g5(1, "i", produce(v => v));
+>g5(1, "i", produce(v => v)) : void
+>g5 : <K>(k: K, rest_0: "i", rest_1: S<number>) => void
+>1 : 1
+>"i" : "i"
+>produce(v => v) : (state: number) => number
+>produce : <T>(fn: (state: T) => void) => (state: T) => T
+>v => v : (v: number) => number
+>v : number
+>v : number
+
+declare function g6<K>(k: K, a: "i", b: S<number>): void;
+>g6 : <K>(k: K, a: "i", b: S<number>) => void
+>k : K
+>a : "i"
+>b : S<number>
+
+g6(1, "i", produce(v => v));
+>g6(1, "i", produce(v => v)) : void
+>g6 : <K>(k: K, a: "i", b: S<number>) => void
+>1 : 1
+>"i" : "i"
+>produce(v => v) : (state: number) => number
+>produce : <T>(fn: (state: T) => void) => (state: T) => T
+>v => v : (v: number) => number
+>v : number
+>v : number
+
