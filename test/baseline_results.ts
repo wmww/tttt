@@ -190,6 +190,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverReducedTypeVariableConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNullIdentifierName': {
         errors: true,
         symbols: true,

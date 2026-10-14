@@ -1,0 +1,84 @@
+//// [test/cases/ttttNeverReducedTypeVariableConstraint.ts] ////
+
+=== ttttNeverReducedTypeVariableConstraint.ts ===
+// tsc's getReducedType takes a type variable's apparent type among an intersection's properties: D constrained to
+// definitions whose `type` is an enum member intersected with { type: "query" } (a string literal, disjoint from the
+// enum member) is never, which satisfies any constraint (redux-toolkit's `Definitions[EndpointName] & { type: "query" }`)
+enum DT { query = "query", mutation = "mutation" }
+>DT : Symbol(DT, Decl(ttttNeverReducedTypeVariableConstraint.ts, 0, 0))
+>query : Symbol(DT.query, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 9))
+>mutation : Symbol(DT.mutation, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 26))
+
+interface Base { x: 1 }
+>Base : Symbol(Base, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 50))
+>x : Symbol(Base.x, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 16))
+
+type QD = Base & { type: DT.query };
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>Base : Symbol(Base, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 50))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 18))
+>DT : Symbol(DT, Decl(ttttNeverReducedTypeVariableConstraint.ts, 0, 0))
+>query : Symbol(DT.query, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 9))
+
+type MD = Base & { type: DT.mutation };
+>MD : Symbol(MD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 36))
+>Base : Symbol(Base, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 50))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 6, 18))
+>DT : Symbol(DT, Decl(ttttNeverReducedTypeVariableConstraint.ts, 0, 0))
+>mutation : Symbol(DT.mutation, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 26))
+
+type Q<D extends QD> = D;
+>Q : Symbol(Q, Decl(ttttNeverReducedTypeVariableConstraint.ts, 6, 39))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 7, 7))
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 7, 7))
+
+type T2<D extends QD | MD> = Q<D & { type: "query" }>;
+>T2 : Symbol(T2, Decl(ttttNeverReducedTypeVariableConstraint.ts, 7, 25))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 8, 8))
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>MD : Symbol(MD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 36))
+>Q : Symbol(Q, Decl(ttttNeverReducedTypeVariableConstraint.ts, 6, 39))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 8, 8))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 8, 36))
+
+type T5<D extends QD | MD> = Q<D & { type: DT.query }>;
+>T5 : Symbol(T5, Decl(ttttNeverReducedTypeVariableConstraint.ts, 8, 54))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 9, 8))
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>MD : Symbol(MD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 36))
+>Q : Symbol(Q, Decl(ttttNeverReducedTypeVariableConstraint.ts, 6, 39))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 9, 8))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 9, 36))
+>DT : Symbol(DT, Decl(ttttNeverReducedTypeVariableConstraint.ts, 0, 0))
+>query : Symbol(DT.query, Decl(ttttNeverReducedTypeVariableConstraint.ts, 3, 9))
+
+type Defs = Record<string, QD | MD>;
+>Defs : Symbol(Defs, Decl(ttttNeverReducedTypeVariableConstraint.ts, 9, 55))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>MD : Symbol(MD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 36))
+
+type T6<Definitions extends Defs, K extends keyof Definitions> = Q<Definitions[K] & { type: "query" }>;
+>T6 : Symbol(T6, Decl(ttttNeverReducedTypeVariableConstraint.ts, 10, 36))
+>Definitions : Symbol(Definitions, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 8))
+>Defs : Symbol(Defs, Decl(ttttNeverReducedTypeVariableConstraint.ts, 9, 55))
+>K : Symbol(K, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 33))
+>Definitions : Symbol(Definitions, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 8))
+>Q : Symbol(Q, Decl(ttttNeverReducedTypeVariableConstraint.ts, 6, 39))
+>Definitions : Symbol(Definitions, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 8))
+>K : Symbol(K, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 33))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 85))
+
+function f<D extends QD | MD>(d: D & { type: "query" }) { const n: never = d; return n; }
+>f : Symbol(f, Decl(ttttNeverReducedTypeVariableConstraint.ts, 11, 103))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 11))
+>QD : Symbol(QD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 4, 23))
+>MD : Symbol(MD, Decl(ttttNeverReducedTypeVariableConstraint.ts, 5, 36))
+>d : Symbol(d, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 30))
+>D : Symbol(D, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 11))
+>type : Symbol(type, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 38))
+>n : Symbol(n, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 63))
+>d : Symbol(d, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 30))
+>n : Symbol(n, Decl(ttttNeverReducedTypeVariableConstraint.ts, 12, 63))
+

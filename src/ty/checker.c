@@ -1342,17 +1342,93 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
 // type variables elsewhere: `{ type: "next"; value: T } & { type: "error" }` is never (tsc's getReducedType doesn't care
 // whether the members are generic, only isGenericObjectType). Only the literal-like properties of the known members are
 // looked up in the others: comparing every property of every generic instantiation is what made valibot +39% (c2146ada)
+// The type of a required property of a known object type, or of every member of a union of them (tsc's union
+// property); null if some member lacks it or has it optional, or a member isn't known
+static Ty const* apparent_union_prop_type(Checker* me, Ty const* apparent, Atom const* name) {
+    TyList members = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    if (members.len > 64) return nullptr;
+    Ty const* parts[64];
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* m = members.data[i];
+        if (!(m->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (m->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+        Prop const* prop = ty_property_of_type(me, m, name);
+        if (!prop || (prop->flags & PROP_OPTIONAL)) return nullptr;
+        parts[i] = prop_type(me, prop);
+    }
+    return members.len == 1 ? parts[0] : ty_union(me, parts, members.len, nullptr, (TyList){0});
+}
+
+// A type parameter's constraint (known already: resolving it from wherever an intersection is reduced finds
+// circularities tsc doesn't) or an indexed access's apparent type (`Definitions[EndpointName]`, a union of
+// definitions), when it is known object types or a union of them; else null
+static Ty const* known_objects_constraint(Checker* me, Ty const* ty) {
+    Ty const* constraint = nullptr;
+    if (ty->kind == TY_TYPE_PARAM) {
+        TyParamState const* param = ty_non_distributed(ty)->param.state;
+        if (param->constraint_state != LAZY_STATE_DONE) return nullptr;
+        constraint = param->constraint;
+    } else if (ty->kind == TY_INDEXED) {
+        constraint = ty_apparent_type(me, ty);
+    }
+    if (!constraint) return nullptr;
+    TyList members = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* m = members.data[i];
+        if (!(m->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (m->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+    }
+    return constraint;
+}
+
 static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* types, u32 len) {
+    // (A type variable whose constraint is known objects, which a type literal's literal property can conflict with:
+    // see below. Looked for first, it is rare: resolving the members of every type literal next to a type variable
+    // cost zod 1% instructions)
+    bool ready_param = false;
+    for (u32 i = 0; i < len && !ready_param; i++) {
+        Ty const* constraint = known_objects_constraint(me, types[i]);
+        ready_param = constraint != nullptr;
+    }
     for (u32 i = 0; i < len; i++) {
         Ty const* known = types[i];
-        if (!(known->flags & TYF_OBJECT) || (known->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        // (A type literal that may mention type parameters still has literal properties that don't, which a type
+        // parameter's constraint can conflict with. Only then: its property types are resolved for it)
+        bool known_object = is_known_object_for_reduction(me, known);
+        bool literal_object = !known_object && ready_param && known->kind == TY_ANONYMOUS && (known->flags & TYF_OBJECT) &&
+            !ty_is_generic_object(me, known);
+        if (!literal_object && !known_object) continue;
         Members const* members = ty_members(me, known);
         for (u32 p = 0; p < members->prop_count; p++) {
             Prop const* prop = members->props[p];
             Ty const* a_type = nullptr;
             for (u32 j = 0; j < len; j++) {
                 Ty const* other_type = types[j];
-                if ((other_type->kind != TY_ANONYMOUS && other_type->kind != TY_REFERENCE) || !(other_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                if (j == i) continue;
+                bool variable = other_type->kind == TY_TYPE_PARAM || other_type->kind == TY_INDEXED;
+                if (literal_object && !variable) continue;
+                if ((other_type->kind != TY_ANONYMOUS && other_type->kind != TY_REFERENCE && !variable) ||
+                    !(other_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+                ) {
+                    continue;
+                }
+                if (variable) {
+                    // A type parameter takes part through its constraint (tsc's getPropertiesOfUnionOrIntersectionType,
+                    // its apparent type): `D & { type: "query" }` with D constrained to definitions whose `type` is an
+                    // enum member is never. Only a constraint known already and made of known object types: resolving
+                    // one here, from wherever an intersection is reduced, finds circularities tsc doesn't. (Its side
+                    // first: the property's own type is resolved only for a name the constraint has)
+                    Ty const* constraint = ready_param ? known_objects_constraint(me, other_type) : nullptr;
+                    if (!constraint) continue;
+                    Ty const* b_type = apparent_union_prop_type(me, constraint, prop->name);
+                    if (!b_type || (b_type->flags & TYF_NEVER)) continue;
+                    if (!a_type) {
+                        a_type = prop_type(me, prop);
+                        if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                        if (!is_literal_like(a_type) || (a_type->flags & TYF_NEVER)) break;
+                    }
+                    Ty const* both[2] = { a_type, b_type };
+                    if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return prop->name;
+                    continue;
+                }
                 if (!a_type) {
                     a_type = prop_type(me, prop);
                     if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
@@ -1380,7 +1456,7 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
     }
     if (objects < 2) {
         *private_conflict = false;
-        return objects ? never_reduced_literal_prop(me, types, len) : nullptr;
+        return never_reduced_literal_prop(me, types, len);
     }
     Atom const* private_name = nullptr;
     for (u32 i = 0; i < len; i++) {

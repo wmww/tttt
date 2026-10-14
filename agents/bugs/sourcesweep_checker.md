@@ -18,20 +18,9 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - **-TS5115 (13 projects: zod 4's `schemas.d.cts:804`, postcss-selector-parser through vitepress)**: tsgo's eager
   base instantiation in resolveObjectTypeMembers re-entering a reference's members; mechanism, prototype and why it
   isn't committed in plan 65 (agents/plans/65_eager_base_runaway.md).
-- **redux-toolkit query/core/module.ts:182/185/205 (+TS2344 x3) and :656, react/module.ts:216 (+TS2322)**, all
-  `Definitions[EndpointName] & { type: "query" }` against `QueryDefinition<any, ...>`. tsc accepts it because its
-  getReducedType looks through type variables: getPropertiesOfUnionOrIntersectionType takes each member's apparent
-  type, so `D & { type: "query" }` with D's constraint a union of definitions whose `type` is `DefinitionType.x`
-  (an enum literal, disjoint from the string "query") is never. Self-contained reduction (tsc: only T5 errors; tttt
-  both): `enum DT { query = "query", mutation = "mutation" }`, `QD = Base & { type: DT.query }`, `MD = Base & { type:
-  DT.mutation }`, `type T2<D extends QD | MD> = Q<D & { type: "query" }>` with `Q<D extends QD>`. A patch that does
-  this in never_reduced_prop() (checker.c: a type-variable member contributes its apparent type when that's a known
-  object or a union of them, compared lazily) fixed every probe and changed no oracle, but cost +0.3% instructions
-  (zod, valibot, effect) and did NOT fix the real file, where the result is order-dependent: with it, module.ts alone matches
-  tsc, with src/query/react/namedHooks.ts checked first it doesn't (a backtrace showed the apparent type of
-  `Definitions[EndpointName]` coming back unknown during an indexed-access check in another file). Not committed;
-  the patch (described above) was left in /tmp/a-probes/keep/red_lazy.patch, which may be gone. Next: find what
-  namedHooks.ts's checking caches.
+- **redux-toolkit query/core/module.ts:656, react/module.ts:216 (+TS2322)**: `Api<BaseQuery, EndpointDefinitions,
+  ReducerPath, TagTypes, keyof ApiModules<...>>` to `Api<any, EndpointDefinitions, any, any, unique symbol>`: not
+  looked at. (The TS2344 x3 there went with never-reduction through type variables' constraints, 2026-10-14.)
 - **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
   type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
   across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
@@ -57,8 +46,8 @@ dependencies in package ids, landed by agent D). Left:
   or the contextual type that results. The test/performance project also lists 10 more files than tsc: a second
   vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
-- **arktype** (fn.test.ts:286, this.test.ts:190, type.test.ts:138/140), **redux-toolkit** (module.ts:182/185/205
-  TS2344 and :656, react/module.ts:216: see agent A 2026-10-12 above), **mikro-orm** EntityManager.mongo.test.ts:1268
+- **arktype** (fn.test.ts:286, this.test.ts:190, type.test.ts:138/140), **redux-toolkit** (module.ts:656, react/module.ts:216:
+  see agent A 2026-10-12 above), **mikro-orm** EntityManager.mongo.test.ts:1268
   +TS2769 (and -TS5088/-TS2883 declaration diagnostics in mikro-orm/tests), **monkeytype** SearchableAutoSetting.tsx,
   **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
   looked at this round.
