@@ -4177,8 +4177,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 if (!name) type = ty_object_literal_accessor_type(me, i->value.function, i->tag == OBJECT_ITEM_GETTER);
                 break;
             case OBJECT_ITEM_METHOD:
-                if (i->jsdoc_type) {
-                    member_ctx.contextual = ty_of_node(i->jsdoc_type);
+                if (object_item_rare(i)->jsdoc_type) {
+                    member_ctx.contextual = ty_of_node(object_item_rare(i)->jsdoc_type);
                     check_with(me, &i->value, member_ctx);
                     type = member_ctx.contextual;
                     break;
@@ -4186,17 +4186,17 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 type = check_with(me, &i->value, member_ctx);
                 break;
             default:
-                if (i->jsdoc_type) {
+                if (object_item_rare(i)->jsdoc_type) {
                     // The declared type, which the value is checked against (expr_typecheck())
-                    Ty const* declared = ty_of_node(i->jsdoc_type);
+                    Ty const* declared = ty_of_node(object_item_rare(i)->jsdoc_type);
                     member_ctx.contextual = declared;
                     check_for_mutable_location(me, &i->value, member_ctx);
                     type = declared;
                     break;
                 }
                 // `{ x = 1 }` outside a destructuring target (TS1312) is typed by its default (tsc's checkObjectLiteral)
-                if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && !expr->assignment_pattern) {
-                    type = check_for_mutable_location(me, i->shorthand_default, member_ctx);
+                if (i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default && !expr->assignment_pattern) {
+                    type = check_for_mutable_location(me, object_item_rare(i)->shorthand_default, member_ctx);
                     break;
                 }
                 type = check_for_mutable_location(me, &i->value, member_ctx);
@@ -4242,7 +4242,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // is its symbol, typed by its accessors (getTypeOfAccessors). The last member of a name wins
         u32 item_index = (u32)(i - object->data);
         LiteralSymbol const* symbol = binding.symbol_of[item_index] != UINT32_MAX ? &binding.symbols[binding.symbol_of[item_index]] : nullptr;
-        TypeNode const* asserted = i->jsdoc_type;
+        TypeNode const* asserted = object_item_rare(i)->jsdoc_type;
         u32 single = item_index;
         u32 const* member_items = symbol ? binding.members + symbol->member_start : &single;
         u32 decl_span_count = symbol ? symbol->member_count : 1;
@@ -4275,7 +4275,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (ctx.is_const) flags |= PROP_READONLY;
         FunctionImpl const* const* methods = nullptr;
         u32 method_count = 0;
-        if (i->tag == OBJECT_ITEM_METHOD && i->value.tag == EXPR_FUNCTION && !i->jsdoc_type) {
+        if (i->tag == OBJECT_ITEM_METHOD && i->value.tag == EXPR_FUNCTION && !object_item_rare(i)->jsdoc_type) {
             FunctionImpl const** list = arena_new_n(&my arena, FunctionImpl const*, 1);
             list[0] = i->value.function;
             methods = list;
@@ -4287,7 +4287,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;
         }
         // A destructuring target's member with a default is optional (tsc's checkObjectLiteral inDestructuringPattern)
-        if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) ||
+        if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default) ||
             (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL))
         ) {
             flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;

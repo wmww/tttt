@@ -558,8 +558,8 @@ Pseudo const* pseudo_of_object_member(Checker* me, ObjectExprItem const* item) {
     PseudoPlace place = { .contextual = item->pseudo_contextual, .in_const = item->pseudo_const };
     Pseudo const* pseudo = nullptr;
     // typeFromPropertyAssignment (a JSDoc `@type` is the annotation)
-    if (item->jsdoc_type) {
-        pseudo = direct(&build, item->jsdoc_type);
+    if (object_item_rare(item)->jsdoc_type) {
+        pseudo = direct(&build, object_item_rare(item)->jsdoc_type);
     } else if (item->tag == OBJECT_ITEM_PROPERTY) {
         pseudo = type_from_expression(&build, &item->value, place);
         if (inferred_plainly(pseudo)) pseudo = nullptr;

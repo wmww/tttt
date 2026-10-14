@@ -3144,7 +3144,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     }
                     if (i->computed_key) expr_compile_test_info(i->computed_key, ctx);
                     if (i->tag == OBJECT_ITEM_SHORTHAND) {
-                        if (i->shorthand_default) expr_compile_test_info(i->shorthand_default, ctx);
+                        if (object_item_rare(i)->shorthand_default) expr_compile_test_info(object_item_rare(i)->shorthand_default, ctx);
                     } else {
                         expr_compile_test_info(&i->value, ctx);
                     }
@@ -3196,10 +3196,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     // (A method's symbol has its own type, whatever JSDoc `@type` the object literal gives the member)
                     // (`{ x = 1 }` outside a destructuring target: the name's symbol is typed by the name as an expression,
                     // tsc's getTypeOfVariableOrParameterOrProperty, whatever the default made the literal's property)
-                    if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && !my assignment_pattern) {
+                    if (i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default && !my assignment_pattern) {
                         baseline_test_case_add_type(ctx, i->name_span, ty_mutable_location_type(current_checker, &i->value, nullptr));
                     } else {
-                        baseline_test_case_add_type(ctx, i->name_span, method && i->jsdoc_type ?
+                        baseline_test_case_add_type(ctx, i->name_span, method && object_item_rare(i)->jsdoc_type ?
                             ty_function_type(current_checker, i->value.function) : ty_object_literal_member_type(current_checker, me, i));
                     }
                     if (method) baseline_test_case_leave_generic(ctx, saved);
@@ -3211,7 +3211,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 switch (i->tag) {
                     case OBJECT_ITEM_SHORTHAND:
                         // tsc only shows the property, not the identifier expression it's initialized from
-                        if (i->shorthand_default) expr_compile_test_info(i->shorthand_default, ctx);
+                        if (object_item_rare(i)->shorthand_default) expr_compile_test_info(object_item_rare(i)->shorthand_default, ctx);
                         break;
 
                     case OBJECT_ITEM_METHOD:

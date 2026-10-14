@@ -156,7 +156,7 @@ static bool walk_children(Expr const* me, AstExprVisit visit, void* arg) {
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key && ast_walk_expr(i->computed_key, visit, arg)) return true;
-                if (i->shorthand_default && ast_walk_expr(i->shorthand_default, visit, arg)) return true;
+                if (object_item_rare(i)->shorthand_default && ast_walk_expr(object_item_rare(i)->shorthand_default, visit, arg)) return true;
                 if (ast_walk_expr(&i->value, visit, arg)) return true;
             }
             return false;

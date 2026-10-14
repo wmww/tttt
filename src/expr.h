@@ -841,6 +841,11 @@ typedef struct ObjectExprItem {
     uint16_t question_offset;
     Expr* computed_key; // Owned, null unless the key is `[expr]`
     Expr value;
+    struct ObjectExprItemRare* rare; // Owned, null when all of it is: read through object_item_rare()
+} ObjectExprItem;
+
+// What few object literal members have (written through object_item_rare_mut())
+typedef struct ObjectExprItemRare {
     // Owned, `{ a = 1 }` (a destructuring assignment target): the default. Only its names are looked up (TODO: check it
     // and show it in the baselines)
     Expr* shorthand_default;
@@ -848,7 +853,14 @@ typedef struct ObjectExprItem {
     // Owned, a JavaScript property's JSDoc `@type` (`/** @type {T} */ a: v`): the property's declared type, which the
     // value is contextually typed by and checked against (tsc's getTypeForDeclarationFromJSDocComment in checkObjectLiteral)
     TypeNode* jsdoc_type;
-} ObjectExprItem;
+} ObjectExprItemRare;
+
+extern const ObjectExprItemRare object_item_no_rare;
+static inline ObjectExprItemRare const* object_item_rare(ObjectExprItem const* me) {
+    return my rare ? my rare : &object_item_no_rare;
+}
+// Allocates it if needed
+ObjectExprItemRare* object_item_rare_mut(ObjectExprItem* me);
 
 void object_expr_item_drop(ObjectExprItem* me);
 

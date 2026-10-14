@@ -188,7 +188,7 @@ static bool expr_requires_scope_change(Expr const* me) {
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key && expr_requires_scope_change(i->computed_key)) return true;
                 if (i->tag == OBJECT_ITEM_SPREAD && expr_requires_scope_change(&i->value)) return true;
-                if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && expr_requires_scope_change(i->shorthand_default)) {
+                if (i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default && expr_requires_scope_change(object_item_rare(i)->shorthand_default)) {
                     return true;
                 }
             }

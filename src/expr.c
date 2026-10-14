@@ -1329,7 +1329,7 @@ static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAs
                 case OBJECT_ITEM_PROPERTY:
                 case OBJECT_ITEM_SHORTHAND:
                     path.kind = FLOW_PATH_PROPERTY;
-                    path.default_value = i->shorthand_default; // `{ a = 1 } = e`
+                    path.default_value = object_item_rare(i)->shorthand_default; // `{ a = 1 } = e`
                     flow_destructuring_target(flow, &i->value, assign, path);
                     break;
                 case OBJECT_ITEM_SPREAD:
@@ -2235,16 +2235,16 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 i->pseudo_contextual = flow->contextual_depth > 0;
                 i->pseudo_const = flow->const_context;
                 if (object_item_is_private_name(i)) i->private_name_in_class = scope_enclosing_class(names) != nullptr;
-                if (i->jsdoc_type) type_lookup_names(i->jsdoc_type, names, errs);
-                if (i->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
+                if (object_item_rare(i)->jsdoc_type) type_lookup_names(object_item_rare(i)->jsdoc_type, names, errs);
+                if (object_item_rare(i)->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
                     i->value.identifier.shorthand_unchecked = true;
                 }
                 // (A property with a JSDoc type has a type annotation to tsgo's reparser: its value is contextually typed,
                 // isContextuallyTyped)
-                flow->contextual_depth += i->jsdoc_type != nullptr;
+                flow->contextual_depth += object_item_rare(i)->jsdoc_type != nullptr;
                 expr_lookup_names(&i->value, names, errs);
-                flow->contextual_depth -= i->jsdoc_type != nullptr;
-                if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
+                flow->contextual_depth -= object_item_rare(i)->jsdoc_type != nullptr;
+                if (object_item_rare(i)->shorthand_default) expr_lookup_names_initializer(object_item_rare(i)->shorthand_default, names, errs);
             }
             flow->object_literal_depth--;
             break;
@@ -2595,7 +2595,7 @@ static void assignment_target_typecheck_of(
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
                     // that has a default (AccessFlags.AllowMissing)
-                    bool has_default = i->shorthand_default ||
+                    bool has_default = object_item_rare(i)->shorthand_default ||
                         (i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(&i->value));
                     if (!property && !(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_property_access(checker, source, key, span_null, i->name_span, false, true, errs);
@@ -2605,7 +2605,7 @@ static void assignment_target_typecheck_of(
                     // (tsc's checkObjectLiteralDestructuringPropertyAssignment: getIndexedAccessType with the name as
                     // the access node)
                     // (With a default, an object literal may lack it: AccessFlags.AllowMissing)
-                    bool has_default = i->shorthand_default ||
+                    bool has_default = object_item_rare(i)->shorthand_default ||
                         (i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(&i->value));
                     Ty const* key = ty_regular(checker, ty_expr_type(checker, i->computed_key));
                     Span key_span = expr_outer_span(i->computed_key);
@@ -2647,14 +2647,14 @@ static void assignment_target_typecheck_of(
                         }
                         assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, span_null, errs);
                     }
-                } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
+                } else if (i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
                     // and so is the property, without undefined unless the default can be undefined too (tsc's
                     // checkDestructuringAssignment of a ShorthandPropertyAssignment)
                     Ty const* declared = ty_expr_type(checker, &i->value);
-                    Ty const* default_type = ty_check_expr(checker, i->shorthand_default, declared);
-                    expr_typecheck(i->shorthand_default, errs);
-                    assignment_target_typecheck(&i->value, default_type, i->shorthand_default, site, errs);
+                    Ty const* default_type = ty_check_expr(checker, object_item_rare(i)->shorthand_default, declared);
+                    expr_typecheck(object_item_rare(i)->shorthand_default, errs);
+                    assignment_target_typecheck(&i->value, default_type, object_item_rare(i)->shorthand_default, site, errs);
                     if (property && compiler_options()->strict_null_checks &&
                         !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
                         ty_without_undefined(checker, default_type) == default_type
@@ -3186,7 +3186,7 @@ static bool is_destructuring_target(Expr const* me) {
             return false;
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
-                if (i->shorthand_default || is_destructuring_target(&i->value)) return true;
+                if (object_item_rare(i)->shorthand_default || is_destructuring_target(&i->value)) return true;
             }
             return false;
         default:
@@ -4566,8 +4566,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     expr_typecheck(i->computed_key, errs);
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
                 }
-                if (i->shorthand_default && !(i->value.tag == EXPR_IDENTIFIER && i->value.identifier.assignment_target)) {
-                    error_ctx_grammar_error_d(errs, i->shorthand_equals, 1312,
+                if (object_item_rare(i)->shorthand_default && !(i->value.tag == EXPR_IDENTIFIER && i->value.identifier.assignment_target)) {
+                    error_ctx_grammar_error_d(errs, object_item_rare(i)->shorthand_equals, 1312,
                         "Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.");
                 }
                 if (object_item_is_private_name(i) && my assignment_pattern && i->tag == OBJECT_ITEM_PROPERTY) {
@@ -4596,7 +4596,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 // tsc's getTypeOfAccessors: a setter without a parameter annotation or a getter to take the type from is
                 // implicitly any
                 if (i->tag == OBJECT_ITEM_SETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
-                    span_source(i->name_span) && !i->jsdoc_type
+                    span_source(i->name_span) && !object_item_rare(i)->jsdoc_type
                 ) {
                     FunctionArg const* value = nullptr;
                     for_each (arg, vec_function_arg, &i->value.function->args) {
@@ -4610,12 +4610,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                             "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
                     }
                 }
-                if (i->jsdoc_type) {
-                    type_typecheck(i->jsdoc_type, errs);
+                if (object_item_rare(i)->jsdoc_type) {
+                    type_typecheck(object_item_rare(i)->jsdoc_type, errs);
                     // (At the property assignment, tsc's getErrorSpanForNode of it: a method's is its name)
                     // (What the property holds: tsc's checkPropertyAssignment, checkExpressionForMutableLocation, with the
                     // tag's type as the contextual type: `a: "a"` is a string against `@type {42}`)
-                    Ty const* jsdoc = ty_of_node(i->jsdoc_type);
+                    Ty const* jsdoc = ty_of_node(object_item_rare(i)->jsdoc_type);
                     Ty const* held = i->tag == OBJECT_ITEM_METHOD ? expr_get_type(&i->value) :
                         ty_mutable_location_type(current_checker, &i->value, jsdoc);
                     ty_check_assignable_expr(current_checker, held, jsdoc,
@@ -4895,20 +4895,28 @@ zsview unary_op_get_zv(UnaryOp op) {
     return c_zv("<INVALID_OP>");
 }
 
+const ObjectExprItemRare object_item_no_rare = {0};
+
+ObjectExprItemRare* object_item_rare_mut(ObjectExprItem* me) {
+    if (!my rare) my rare = c_new(ObjectExprItemRare, {0});
+    return my rare;
+}
+
 void object_expr_item_drop(ObjectExprItem* me) {
     cstr_drop(&my name_string);
     if (my computed_key) {
         expr_drop(my computed_key);
         free(my computed_key);
     }
-    if (my shorthand_default) {
-        expr_drop(my shorthand_default);
-        free(my shorthand_default);
+    if (my rare && my rare->shorthand_default) {
+        expr_drop(my rare->shorthand_default);
+        free(my rare->shorthand_default);
     }
-    if (my jsdoc_type) {
-        type_drop(my jsdoc_type);
-        free(my jsdoc_type);
+    if (my rare && my rare->jsdoc_type) {
+        type_drop(my rare->jsdoc_type);
+        free(my rare->jsdoc_type);
     }
+    free(my rare);
     expr_drop(&my value);
 }
 

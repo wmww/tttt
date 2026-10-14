@@ -7348,12 +7348,12 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             // `{ a = 1 }` is only valid as a destructuring assignment target
             Anchor equals = anchor(&p);
             hop_char(&p, '=');
-            item.shorthand_equals = span_from(equals);
+            object_item_rare_mut(&item)->shorthand_equals = span_from(equals);
             hop_whitespace(&p);
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
                 mark_named_evaluation(&default_value, false);
-                item.shorthand_default = c_new(Expr, default_value);
+                object_item_rare_mut(&item)->shorthand_default = c_new(Expr, default_value);
             } else {
                 expr_drop(&default_value);
             }
@@ -7375,7 +7375,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
     item.span = span_from(a);
     // (A shorthand property ends with its name, not with the whitespace looked past for a `:`)
-    if (item.tag == OBJECT_ITEM_SHORTHAND && !item.shorthand_default) {
+    if (item.tag == OBJECT_ITEM_SHORTHAND && !object_item_rare(&item)->shorthand_default) {
         item.span = span_make_in(item.span, span_start_ptr(item.span), span_end_ptr(item.name_span));
     }
     if (p.shared->source->is_js) {
@@ -7392,7 +7392,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             // a property's is its declared type only, which a function value is contextually typed by)
             bool method = item.tag == OBJECT_ITEM_METHOD;
             if (tag && (!(function && signature) || item.tag == OBJECT_ITEM_PROPERTY) && !accessor && !method) {
-                item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                object_item_rare_mut(&item)->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
             // (A method's `@type` is its FullSignature, like a declaration's: its signature, not moved into it)
