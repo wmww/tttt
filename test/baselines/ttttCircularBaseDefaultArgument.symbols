@@ -1,0 +1,95 @@
+//// [test/cases/ttttCircularBaseDefaultArgument.ts] ////
+
+=== ttttCircularBaseDefaultArgument.ts ===
+// A default type argument that reads the type's own members while its bases are resolved (tsc's getBaseTypes failing
+// popTypeResolution): TS2310 at the declaration, but the base is kept (only a base leading back is dropped), for
+// interfaces and generic classes alike; an interface cycle drops the bases of both
+interface BaseType<T> {
+>BaseType : Symbol(BaseType, Decl(ttttCircularBaseDefaultArgument.ts, 0, 0))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 3, 19))
+
+    bar: T
+>bar : Symbol(BaseType.bar, Decl(ttttCircularBaseDefaultArgument.ts, 3, 23))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 3, 19))
+}
+interface NextType<C extends { someProp: any }, T = C['someProp']> extends BaseType<T> {
+>NextType : Symbol(NextType, Decl(ttttCircularBaseDefaultArgument.ts, 5, 1))
+>C : Symbol(C, Decl(ttttCircularBaseDefaultArgument.ts, 6, 19))
+>someProp : Symbol(someProp, Decl(ttttCircularBaseDefaultArgument.ts, 6, 30))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 6, 47))
+>C : Symbol(C, Decl(ttttCircularBaseDefaultArgument.ts, 6, 19))
+>BaseType : Symbol(BaseType, Decl(ttttCircularBaseDefaultArgument.ts, 0, 0))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 6, 47))
+
+    baz: string;
+>baz : Symbol(NextType.baz, Decl(ttttCircularBaseDefaultArgument.ts, 6, 88))
+}
+interface Foo extends NextType<Foo> {
+>Foo : Symbol(Foo, Decl(ttttCircularBaseDefaultArgument.ts, 8, 1))
+>NextType : Symbol(NextType, Decl(ttttCircularBaseDefaultArgument.ts, 5, 1))
+>Foo : Symbol(Foo, Decl(ttttCircularBaseDefaultArgument.ts, 8, 1))
+
+    someProp: {
+>someProp : Symbol(Foo.someProp, Decl(ttttCircularBaseDefaultArgument.ts, 9, 37))
+
+        test: true
+>test : Symbol(test, Decl(ttttCircularBaseDefaultArgument.ts, 10, 15))
+    }
+}
+declare const foo: Foo;
+>foo : Symbol(foo, Decl(ttttCircularBaseDefaultArgument.ts, 14, 13))
+>Foo : Symbol(Foo, Decl(ttttCircularBaseDefaultArgument.ts, 8, 1))
+
+foo.bar.test
+>foo.bar.test : Symbol(test, Decl(ttttCircularBaseDefaultArgument.ts, 10, 15))
+>foo.bar : Symbol(BaseType.bar, Decl(ttttCircularBaseDefaultArgument.ts, 3, 23))
+>foo : Symbol(foo, Decl(ttttCircularBaseDefaultArgument.ts, 14, 13))
+>bar : Symbol(BaseType.bar, Decl(ttttCircularBaseDefaultArgument.ts, 3, 23))
+>test : Symbol(test, Decl(ttttCircularBaseDefaultArgument.ts, 10, 15))
+
+class G<T> extends NextTypeC<G<T>> {
+>G : Symbol(G, Decl(ttttCircularBaseDefaultArgument.ts, 15, 12))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 17, 8))
+>NextTypeC : Symbol(NextTypeC, Decl(ttttCircularBaseDefaultArgument.ts, 19, 1))
+>G : Symbol(G, Decl(ttttCircularBaseDefaultArgument.ts, 15, 12))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 17, 8))
+
+    someProp!: { x: T }
+>someProp : Symbol(G.someProp, Decl(ttttCircularBaseDefaultArgument.ts, 17, 36))
+>x : Symbol(x, Decl(ttttCircularBaseDefaultArgument.ts, 18, 16))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 17, 8))
+}
+class NextTypeC<C extends { someProp: any }, T = C['someProp']> {
+>NextTypeC : Symbol(NextTypeC, Decl(ttttCircularBaseDefaultArgument.ts, 19, 1))
+>C : Symbol(C, Decl(ttttCircularBaseDefaultArgument.ts, 20, 16))
+>someProp : Symbol(someProp, Decl(ttttCircularBaseDefaultArgument.ts, 20, 27))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 20, 44))
+>C : Symbol(C, Decl(ttttCircularBaseDefaultArgument.ts, 20, 16))
+
+    bar!: T
+>bar : Symbol(NextTypeC.bar, Decl(ttttCircularBaseDefaultArgument.ts, 20, 65))
+>T : Symbol(T, Decl(ttttCircularBaseDefaultArgument.ts, 20, 44))
+}
+new G<number>().bar.x;
+>new G<number>().bar.x : Symbol(x, Decl(ttttCircularBaseDefaultArgument.ts, 18, 16))
+>new G<number>().bar : Symbol(NextTypeC.bar, Decl(ttttCircularBaseDefaultArgument.ts, 20, 65))
+>G : Symbol(G, Decl(ttttCircularBaseDefaultArgument.ts, 15, 12))
+>bar : Symbol(NextTypeC.bar, Decl(ttttCircularBaseDefaultArgument.ts, 20, 65))
+>x : Symbol(x, Decl(ttttCircularBaseDefaultArgument.ts, 18, 16))
+
+interface A extends B {}
+>A : Symbol(A, Decl(ttttCircularBaseDefaultArgument.ts, 23, 22))
+>B : Symbol(B, Decl(ttttCircularBaseDefaultArgument.ts, 24, 24))
+
+interface B extends A { b: number }
+>B : Symbol(B, Decl(ttttCircularBaseDefaultArgument.ts, 24, 24))
+>A : Symbol(A, Decl(ttttCircularBaseDefaultArgument.ts, 23, 22))
+>b : Symbol(B.b, Decl(ttttCircularBaseDefaultArgument.ts, 25, 23))
+
+declare const a: A;
+>a : Symbol(a, Decl(ttttCircularBaseDefaultArgument.ts, 26, 13))
+>A : Symbol(A, Decl(ttttCircularBaseDefaultArgument.ts, 23, 22))
+
+a.b;
+>a : Symbol(a, Decl(ttttCircularBaseDefaultArgument.ts, 26, 13))
+

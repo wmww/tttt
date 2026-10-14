@@ -1,0 +1,70 @@
+//// [test/cases/ttttCircularBaseDefaultArgument.ts] ////
+
+=== ttttCircularBaseDefaultArgument.ts ===
+// A default type argument that reads the type's own members while its bases are resolved (tsc's getBaseTypes failing
+// popTypeResolution): TS2310 at the declaration, but the base is kept (only a base leading back is dropped), for
+// interfaces and generic classes alike; an interface cycle drops the bases of both
+interface BaseType<T> {
+    bar: T
+>bar : T
+}
+interface NextType<C extends { someProp: any }, T = C['someProp']> extends BaseType<T> {
+>someProp : any
+
+    baz: string;
+>baz : string
+}
+interface Foo extends NextType<Foo> {
+    someProp: {
+>someProp : { test: true; }
+
+        test: true
+>test : true
+>true : true
+    }
+}
+declare const foo: Foo;
+>foo : Foo
+
+foo.bar.test
+>foo.bar.test : true
+>foo.bar : { test: true; }
+>foo : Foo
+>bar : { test: true; }
+>test : true
+
+class G<T> extends NextTypeC<G<T>> {
+>G : G<T>
+>NextTypeC : NextTypeC<G<T>, { x: T; }>
+
+    someProp!: { x: T }
+>someProp : { x: T; }
+>x : T
+}
+class NextTypeC<C extends { someProp: any }, T = C['someProp']> {
+>NextTypeC : NextTypeC<C, T>
+>someProp : any
+
+    bar!: T
+>bar : T
+}
+new G<number>().bar.x;
+>new G<number>().bar.x : number
+>new G<number>().bar : { x: number; }
+>new G<number>() : G<number>
+>G : typeof G
+>bar : { x: number; }
+>x : number
+
+interface A extends B {}
+interface B extends A { b: number }
+>b : number
+
+declare const a: A;
+>a : A
+
+a.b;
+>a.b : any
+>a : A
+>b : any
+

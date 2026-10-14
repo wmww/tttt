@@ -1,0 +1,51 @@
+ttttCircularBaseDefaultArgument.ts(10,11): error TS2310: Type 'Foo' recursively references itself as a base type.
+ttttCircularBaseDefaultArgument.ts(18,7): error TS2310: Type 'G<T>' recursively references itself as a base type.
+ttttCircularBaseDefaultArgument.ts(18,20): error TS2449: Class 'NextTypeC' used before its declaration.
+ttttCircularBaseDefaultArgument.ts(25,11): error TS2310: Type 'A' recursively references itself as a base type.
+ttttCircularBaseDefaultArgument.ts(26,11): error TS2310: Type 'B' recursively references itself as a base type.
+ttttCircularBaseDefaultArgument.ts(28,3): error TS2339: Property 'b' does not exist on type 'A'.
+
+
+==== ttttCircularBaseDefaultArgument.ts (6 errors) ====
+    // A default type argument that reads the type's own members while its bases are resolved (tsc's getBaseTypes failing
+    // popTypeResolution): TS2310 at the declaration, but the base is kept (only a base leading back is dropped), for
+    // interfaces and generic classes alike; an interface cycle drops the bases of both
+    interface BaseType<T> {
+        bar: T
+    }
+    interface NextType<C extends { someProp: any }, T = C['someProp']> extends BaseType<T> {
+        baz: string;
+    }
+    interface Foo extends NextType<Foo> {
+              ~~~
+!!! error TS2310: Type 'Foo' recursively references itself as a base type.
+        someProp: {
+            test: true
+        }
+    }
+    declare const foo: Foo;
+    foo.bar.test
+    
+    class G<T> extends NextTypeC<G<T>> {
+          ~
+!!! error TS2310: Type 'G<T>' recursively references itself as a base type.
+                       ~~~~~~~~~
+!!! error TS2449: Class 'NextTypeC' used before its declaration.
+!!! related TS2728 ttttCircularBaseDefaultArgument.ts:21:7: 'NextTypeC' is declared here.
+        someProp!: { x: T }
+    }
+    class NextTypeC<C extends { someProp: any }, T = C['someProp']> {
+        bar!: T
+    }
+    new G<number>().bar.x;
+    interface A extends B {}
+              ~
+!!! error TS2310: Type 'A' recursively references itself as a base type.
+    interface B extends A { b: number }
+              ~
+!!! error TS2310: Type 'B' recursively references itself as a base type.
+    declare const a: A;
+    a.b;
+      ~
+!!! error TS2339: Property 'b' does not exist on type 'A'.
+    
