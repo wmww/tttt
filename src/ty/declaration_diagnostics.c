@@ -16,6 +16,8 @@
 #include "ty/pseudo.h"
 #include "import_attributes.h"
 
+#include <math.h>
+
 // tsc's declaration transformer walks what a `.d.ts` would contain: the visible statements (everything in a script,
 // the exported ones and what `export { x }` names in a module), and in them the members that are emitted. Wherever a
 // type would be written that the source doesn't spell out, the node builder serializes the declaration's pseudo type
@@ -2689,7 +2691,8 @@ static void w_statement_modifiers(Walk* me, Statement const* statement, Containe
         w_lit(me, "default ");
         return;
     }
-    if (is_file && !always_type) w_lit(me, "declare ");
+    // (A type's `declare` is kept where it is written)
+    if (is_file && (!always_type || span_valid(statement->decl.props.declare_keyword))) w_lit(me, "declare ");
 }
 
 // A parameter (ensureParameter): its name without initializers, `?` where it is optional, its type
@@ -2748,6 +2751,19 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     }
     if (fn->ret_explicit) {
         w_node(me, &fn->ret);
+        return;
+    }
+    // (An inferred type predicate is written as one)
+    Signature const* sig = getter_pair ? nullptr : ty_function_signature(my checker, fn);
+    TyPredicate const* predicate = sig ? signature_predicate(my checker, sig) : nullptr;
+    if (predicate) {
+        SINKS_OFF;
+        TyParamNames names = {0};
+        TyDisplay d = emit_display(me, my out);
+        d.param_names = &names;
+        ty_display_predicate(my checker, d, predicate);
+        ty_param_names_drop(&names);
+        SINKS_ON;
         return;
     }
     cstr text = cstr_init();
@@ -3061,7 +3077,29 @@ static void emit_field(Walk* me, ClassItem const* item) {
 
 static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, FunctionArg const* arg) {
     Binding const* binding = &arg->initializer.binding;
-    if (binding->tag != BINDING_IDENTIFIER) return; // TODO: binding patterns (an error, walkBindingPattern)
+    if (binding->tag != BINDING_IDENTIFIER) {
+        // (An error, but each name is written as a property of its type: walkBindingPattern)
+        Binding const* stack[64];
+        u32 depth = 0;
+        stack[depth++] = binding;
+        while (depth) {
+            Binding const* b = stack[--depth];
+            if (b->tag == BINDING_IDENTIFIER) {
+                w_indent(me);
+                w(me, span_sv(b->content_span));
+                w_lit(me, ": ");
+                w_type(me, b->symbol ? ty_type_of_symbol(my checker, b->symbol) : ty_intrinsic(my checker, TY_ANY));
+                w_lit(me, ";\n");
+            } else if (b->tag == BINDING_ARRAY) {
+                for (isize_t k = vec_binding_size(&b->array); k-- > 0 && depth < 64;) stack[depth++] = vec_binding_at(&b->array, k);
+            } else if (b->tag == BINDING_OBJECT) {
+                for (isize_t k = vec_object_binding_item_size(&b->object); k-- > 0 && depth < 64;) {
+                    stack[depth++] = &vec_object_binding_item_at(&b->object, k)->target;
+                }
+            }
+        }
+        return;
+    }
     w_indent(me);
     w_member_modifiers(me, arg->access, false, false, arg->is_readonly_property, false);
     w(me, span_sv(binding->content_span));
@@ -3206,12 +3244,15 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     if (private_member) {
                         w_lit(me, "value"); // (updateAccessorParamList)
                     } else {
+                        bool written = false;
                         for_each (j, vec_function_arg, &fn->args) {
                             Binding const* binding = &j->initializer.binding;
                             if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
                             w_parameter(me, fn, j, false);
+                            written = true;
                             break;
                         }
+                        if (!written) w_lit(me, "value: any");
                     }
                     w_lit(me, ")");
                 }
@@ -3307,12 +3348,22 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
         w(me, span_sv(i->full_name));
         // (Its value where it has one: getEnumMemberValue)
         Ty const* type = i->symbol ? ty_type_of_symbol(my checker, i->symbol) : nullptr;
-        double number;
-        bool constant = i->value.tag == EXPR_IMPLICIT_ANY || ty_enum_member_constant(my checker, i, &number) != 0;
-        if (constant && type && type->kind == TY_LITERAL && type->literal.enum_decl) {
+        bool literal = type && type->kind == TY_LITERAL && type->literal.enum_decl;
+        double number = 0;
+        int constant = i->value.tag == EXPR_IMPLICIT_ANY ? 0 : ty_enum_member_constant(my checker, i, &number);
+        Ty const* value = nullptr;
+        if (constant == 2 && literal && type->literal.string) {
+            value = ty_string_literal(my checker, atom_sv(type->literal.string));
+        } else if (constant == 1) {
+            Value v = value_number(number);
+            value = ty_literal(my checker, &v);
+        } else if (i->value.tag == EXPR_IMPLICIT_ANY && literal && !type->literal.string && type->literal.value.tag == VALUE_NUMBER &&
+            !isnan(type->literal.value.number)
+        ) {
+            value = ty_literal(my checker, &type->literal.value);
+        }
+        if (value) {
             w_lit(me, " = ");
-            Ty const* value = type->literal.string ? ty_string_literal(my checker, atom_sv(type->literal.string)) :
-                ty_literal(my checker, &type->literal.value);
             w_type(me, value);
         }
     }
@@ -3403,6 +3454,9 @@ static void w_specifier(Walk* me, PortStatement const* port) {
 }
 
 // An import or export declaration (transformImportDeclaration: an import keeps the names emitted declarations use)
+// (An import's name is kept where an emitted declaration names it, or `export { x }` does)
+#define KEPT(symbol) (was_painted(me, symbol) || (container.module_top_level && is_exported_local(me, symbol)))
+
 static void emit_port(Walk* me, Statement const* statement, Container container) {
     PortStatement const* port = statement->import_export;
     if (port->jsdoc) return;
@@ -3464,7 +3518,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     }
     if (port->main.tag == PORT_IMPORT_ALIAS || port->is_import_require) {
         PortItem const* item = &port->main;
-        if (!item->export_import && !was_painted(me, item->symbol) && !(container.ambient || container.global)) return;
+        if (!item->export_import && !KEPT(item->symbol) && !(container.ambient || container.global)) return;
         w_indent(me);
         if (item->export_import) w_lit(me, "export ");
         w_lit(me, "import ");
@@ -3484,10 +3538,10 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_lit(me, ";\n");
         return;
     }
-    bool default_kept = port->main.tag == PORT_IMPORT_DEFAULT && was_painted(me, port->main.symbol);
-    bool gather_kept = port->main.tag == PORT_IMPORT_GATHER && was_painted(me, port->main.symbol);
+    bool default_kept = port->main.tag == PORT_IMPORT_DEFAULT && KEPT(port->main.symbol);
+    bool gather_kept = port->main.tag == PORT_IMPORT_GATHER && KEPT(port->main.symbol);
     u32 named = 0;
-    for_each (i, vec_port_item, &port->items) named += was_painted(me, i->symbol);
+    for_each (i, vec_port_item, &port->items) named += KEPT(i->symbol);
     if (!default_kept && !gather_kept && !named) {
         if (port->module_ref && port->module_ref->file && port->module_ref->file != my file &&
             import_required_by_augmentation(me, port->module_ref->file)
@@ -3516,7 +3570,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_lit(me, "{ ");
         u32 written = 0;
         for_each (i, vec_port_item, &port->items) {
-            if (!was_painted(me, i->symbol)) continue;
+            if (!KEPT(i->symbol)) continue;
             if (written++) w_lit(me, ", ");
             if (i->type_modifier) w_lit(me, "type ");
             w(me, span_sv(i->source_name));
@@ -3544,8 +3598,10 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         w_lit(me, ";\n");
         return;
     }
-    // `declare const _default: T; export default _default;`
+    // `declare const _default: T; export default _default;` (a literal's: `= "x"`)
     cstr text = cstr_init();
+    Ty const* expr_type = lazy_type_get((LazyType*)&expr->lazy_type);
+    bool literal_value = expr_type && ty_is_fresh(expr_type) && is_primitive_literal_value(expr, true);
     cstr* outer = my type_out;
     my type_out = &text;
     Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
@@ -3566,8 +3622,14 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     if (is_file) w_lit(me, "declare ");
     w_lit(me, "const ");
     w(me, cstr_sv(&name));
-    w_lit(me, ": ");
-    w_serialized(me, &text);
+    if (literal_value) {
+        cstr_drop(&text);
+        w_lit(me, " = ");
+        w_type(me, expr_type);
+    } else {
+        w_lit(me, ": ");
+        w_serialized(me, &text);
+    }
     w_lit(me, ";\n");
     w_indent(me);
     w(me, statement->export_equals ? c_sv("export = ") : c_sv("export default "));

@@ -2961,6 +2961,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         }
     }
     u32 saved = param_names_enter(d);
+    d.multiline = false; // (The node builder's mapped type nodes are single line: EmitFlags.SingleLine)
     TyDisplay outer = d;
     d = brace_open(d);
     member_begin(d);
