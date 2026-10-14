@@ -881,13 +881,11 @@ static void process_errors(BaselineTestCase* me) {
             LineNumberedStr item = { .line = line, .str = cstr_null };
             const char* squiggle_start = start > line_start ? start : line_start;
             cstr_append_lit(&item.str, "    ");
-            // (one per code point, like tsgo's harness; its `\S` replacement keeps whitespace, a tab or a no-break space,
-            // as it is)
+            // (one per code point, like tsgo's harness; its `\S` replacement keeps whitespace as it is, which in Go's
+            // RE2 is ASCII only: a tab stays, a no-break space is a space)
             for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
-                unsigned space = js_whitespace_length(c, line_end);
-                if (space) {
-                    cstr_append_n(&item.str, c, space);
-                    c += space - 1;
+                if (*c == '\t' || *c == '\f' || *c == '\r' || *c == ' ') {
+                    cstr_append_n(&item.str, c, 1);
                     continue;
                 }
                 if (((unsigned char)*c & 0xC0) != 0x80) cstr_append_lit(&item.str, " ");
