@@ -857,17 +857,28 @@ static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 
     return context_map(me, contextual, get_element_context, &arg);
 }
 
-// The contextual type of the element at `index` of an array literal
-static Ty const* contextual_array_element_type(Checker* me, Ty const* contextual, Expr const* array, u32 index) {
-    if (!contextual) return nullptr;
-    if (contextual->flags & TYF_ANY) return any_element_context(me);
-    ElementContextArg arg = { index, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX };
+// An array literal's length and spread positions, for the contextual types of its elements (computed once per literal:
+// once per element is quadratic on large literals)
+static ElementContextArg array_element_context_arg(Expr const* array) {
+    ElementContextArg arg = { 0, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX };
     for_each (i, vec_expr, &array->array) {
         if (i->tag != EXPR_SPREAD) continue;
         if (arg.first_spread == UINT32_MAX) arg.first_spread = (u32)i_index;
         arg.last_spread = (u32)i_index;
     }
+    return arg;
+}
+
+// The contextual type of the element at `index` of an array literal (`arg` from array_element_context_arg())
+static Ty const* contextual_array_element_type_at(Checker* me, Ty const* contextual, ElementContextArg arg, u32 index) {
+    if (!contextual) return nullptr;
+    if (contextual->flags & TYF_ANY) return any_element_context(me);
+    arg.index = index;
     return context_map(me, contextual, get_element_context, &arg);
+}
+
+static Ty const* contextual_array_element_type(Checker* me, Ty const* contextual, Expr const* array, u32 index) {
+    return contextual ? contextual_array_element_type_at(me, contextual, array_element_context_arg(array), index) : nullptr;
 }
 
 Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key) {
@@ -4459,9 +4470,10 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     u32 count = 0;
     bool has_omitted = false;
     bool spreads_never = false;
+    ElementContextArg context_arg = array_element_context_arg(expr);
     for_each (i, vec_expr, &expr->array) {
-        Ty const* element_context = contextual_array_element_type(me, ctx.contextual, expr, (u32)i_index);
-        Ty const* element_sig_context = ctx.sig_contextual ? contextual_array_element_type(me, ctx.sig_contextual, expr, (u32)i_index) : nullptr;
+        Ty const* element_context = contextual_array_element_type_at(me, ctx.contextual, context_arg, (u32)i_index);
+        Ty const* element_sig_context = contextual_array_element_type_at(me, ctx.sig_contextual, context_arg, (u32)i_index);
         ExprCtx element_ctx = {
             .contextual = element_context, .sig_contextual = element_sig_context,
             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !element_sig_context),
@@ -4802,6 +4814,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
     unsigned char* flags = calloc(len ? len : 1, 1);
     Ty const* ret = nullptr;
+    ElementContextArg context_arg = array_element_context_arg(expr);
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_SPREAD) {
             // As check_array() makes a spread element of a tuple. An array literal is a tuple too (tsc passes
@@ -4813,7 +4826,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             continue;
         }
-        Ty const* element_context = contextual_array_element_type(me, contextual, expr, (u32)i_index);
+        Ty const* element_context = contextual_array_element_type_at(me, contextual, context_arg, (u32)i_index);
         // (tsc's checkExpressionForMutableLocation(e, checkMode) passes forceTuple on)
         Ty const* forced = i->tag == EXPR_ARRAY || i->tag == EXPR_TERNARY || i->tag == EXPR_OBJECT ?
             force_tuple_operand(me, i, element_context, 0) : nullptr;

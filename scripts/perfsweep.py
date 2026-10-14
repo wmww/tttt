@@ -2,7 +2,8 @@
 """Perf at breadth (plan 59): tttt against tsgo 7.1 on every source sweep project tsgo actually checks (its `Types`
 above --min-types: a program gated by options errors makes ~100), both single-threaded. tttt runs with
 `--checkers 1 --threads 1 --time`, tsgo with `-p P --noEmit --singleThreaded --extendedDiagnostics`; both sides' peak
-RSS comes from wait4.
+RSS comes from wait4. Its ru_maxrss keeps the forked Python parent's resident set across exec (~45 MB on both sides):
+the RSS ratios leave out projects where either side is below RSS_FLOOR_KB.
 
 The type count is the machine-independent number: tttt's and tsgo's agree within ~10% where both do the same work
 (type-fest 4.78M vs 5.10M), so a types ratio far above 1 is a missing cache or a runaway instantiation, found without
@@ -128,6 +129,10 @@ def parallel(fn, items, jobs, label):
     return results
 
 
+# (Below it, wait4's peak RSS is the Python parent's at fork time, not the checker's)
+RSS_FLOOR_KB = 64 << 10
+
+
 def ratio(a, b):
     return a / b if b else float('inf')
 
@@ -140,12 +145,14 @@ def report(rows, n, cache):
     check = sorted(ratio(t['check_s'], g['check_s']) for _, t, g in rows)
     wall = sorted(ratio(t['wall_s'], g['wall_s']) for _, t, g in rows)
     types = sorted(ratio(t['types'], g['types']) for _, t, g in rows)
-    rss = sorted(ratio(t['rss_kb'], g['rss_kb']) for _, t, g in rows)
+    rss = sorted(ratio(t['rss_kb'], g['rss_kb']) for _, t, g in rows
+                 if min(t['rss_kb'], g['rss_kb']) >= RSS_FLOOR_KB)
     q = lambda xs, f: xs[min(len(xs) - 1, int(f * len(xs)))]
     print(f'{len(rows)} projects checked by both (tttt K1 vs tsgo --singleThreaded), ratios tttt / tsgo:')
-    for name, xs in (('check time', check), ('wall', wall), ('types', types), ('peak RSS', rss)):
+    for name, xs in (('check time', check), ('wall', wall), ('types', types), ('peak RSS*', rss)):
         print(f'  {name:11} median {statistics.median(xs):5.2f}  p90 {q(xs, .9):5.2f}  worst {xs[-1]:6.2f}  '
               f'best {xs[0]:5.2f}  (> 1: {sum(1 for x in xs if x > 1)})')
+    print(f'  (*: the {len(rss)} projects with both sides above {RSS_FLOOR_KB >> 10} MB, the forked Python\'s floor)')
     tc, gc = sum(t['check_s'] for _, t, _ in rows), sum(g['check_s'] for _, _, g in rows)
     tw, gw = sum(t['wall_s'] for _, t, _ in rows), sum(g['wall_s'] for _, _, g in rows)
     print(f'  total: check tttt {tc:.0f}s vs tsgo {gc:.0f}s ({ratio(tc, gc):.2f}), wall {tw:.0f}s vs {gw:.0f}s '
