@@ -70,6 +70,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttForceTupleObjectLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFunctionParsing': {
         errors: true,
         symbols: true,
@@ -241,6 +246,11 @@ const baselines = {
         types: true,
     },
     'ttttSpreadGenericArrayLike': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSpreadMappedPropertyOrder': {
         errors: true,
         symbols: true,
         types: true,
