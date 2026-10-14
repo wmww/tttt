@@ -462,12 +462,20 @@ static TyDisplay emit_display(Walk* me, cstr* target);
 
 static void print_type(Walk* me, Ty const* type, bool reports) {
     if (type && my type_out) {
+        cstr* target = my type_out;
+        cstr* outer_pseudo = my pseudo_out;
+        my pseudo_out = my type_out = nullptr;
+        cstr text = cstr_init();
         TyParamNames names = {0};
-        TyDisplay d = emit_display(me, my type_out);
+        TyDisplay d = emit_display(me, &text);
         d.param_names = &names;
         d.suppress_fallback = !reports;
         ty_display(my checker, d, type);
         ty_param_names_drop(&names);
+        cstr_append_s(target, text);
+        cstr_drop(&text);
+        my type_out = target;
+        my pseudo_out = outer_pseudo;
         return;
     }
     if (!type || my emitting.kind == EMIT_NONE) return;
@@ -1358,14 +1366,27 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
 // pseudoTypeToNodeWithCheckerFallback: an Inferred pseudo type reports, and prints the checker's type (`type`)
 static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo, Ty const* type) {
     if (pseudo->kind != PSEUDO_INFERRED) {
+        // (Its reports print the types of its parts for the tracker only)
+        cstr* outer_type = my type_out;
+        cstr* outer_pseudo = my pseudo_out;
+        my type_out = my pseudo_out = nullptr;
         pseudo_to_node(me, pseudo);
+        my type_out = outer_type;
+        my pseudo_out = outer_pseudo;
         if (my pseudo_out) {
-            cstr_clear(my pseudo_out);
+            cstr* target = my pseudo_out;
+            cstr* outer_type = my type_out;
+            // (What the tracker's callbacks serialize meanwhile isn't written)
+            my pseudo_out = my type_out = nullptr;
+            cstr text = cstr_init();
             TyParamNames names = {0};
-            TyDisplay d = emit_display(me, my pseudo_out);
+            TyDisplay d = emit_display(me, &text);
             d.param_names = &names;
             ty_display_pseudo(my checker, d, pseudo, type);
             ty_param_names_drop(&names);
+            cstr_take(target, text);
+            my pseudo_out = target;
+            my type_out = outer_type;
         }
         return;
     }
@@ -2371,6 +2392,14 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
             return;
         }
     }
+    // A painted `import x = A.B` paints A (tsc's isDeclarationVisible of the alias marks what it references)
+    if (statement->tag == STATEMENT_IMPORT_EXPORT && statement->import_export->main.tag == PORT_IMPORT_ALIAS) {
+        PortItem const* item = &statement->import_export->main;
+        if (take_painted(me, item->symbol) && vec_symbol_cptr_size(&item->alias_path_symbols)) {
+            paint(me, *vec_symbol_cptr_at(&item->alias_path_symbols, 0));
+        }
+        return;
+    }
     if (!statement_declares_name(statement->tag)) return;
     Symbol const* symbol = statement_declared_symbol(statement);
     if (!is_painted_pending(me, symbol)) return;
@@ -2511,7 +2540,11 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
         }
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             Expr const* expr = &statement->expr;
-            if (expr->tag == EXPR_IDENTIFIER) return;
+            // (An alias it names is emitted: collectLinkedAliases)
+            if (expr->tag == EXPR_IDENTIFIER) {
+                if (!my late_pass) paint(me, expr->identifier.symbol);
+                return;
+            }
             Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
             Root outer_root = my root;
             my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
@@ -2581,28 +2614,38 @@ static void w_indent(Walk* me) {
     for (u32 i = 0; i < my indent; i++) w_lit(me, "    ");
 }
 
+// (While a w_*() helper prints, what the tracker's callbacks serialize isn't written)
+#define SINKS_OFF cstr* sinks_type = my type_out; cstr* sinks_pseudo = my pseudo_out; my type_out = my pseudo_out = nullptr
+#define SINKS_ON my type_out = sinks_type; my pseudo_out = sinks_pseudo
+
 static void w_node(Walk* me, TypeNode const* node) {
+    SINKS_OFF;
     TyParamNames names = {0};
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display_node(my checker, d, node);
     ty_param_names_drop(&names);
+    SINKS_ON;
 }
 
 static void w_type(Walk* me, Ty const* type) {
+    SINKS_OFF;
     TyParamNames names = {0};
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display(my checker, d, type);
     ty_param_names_drop(&names);
+    SINKS_ON;
 }
 
 static void w_type_params(Walk* me, Generic const* generic) {
+    SINKS_OFF;
     TyParamNames names = {0};
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display_type_params(my checker, d, generic);
     ty_param_names_drop(&names);
+    SINKS_ON;
 }
 
 // What a serialize_*() call decided to write, written (`any` when nothing: tsc's ensureType without a type node)
@@ -3155,7 +3198,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     if (port->jsdoc) return;
     bool is_file = container_is_file(container);
     csview specifier = span_sv(port->target_path_span);
-    if (span_equals(port->keyword_span, "export")) {
+    if (span_equals(port->keyword_span, "export") && !port->main.export_import) {
         if (!vec_port_item_size(&port->items) && port->main.tag == PORT_NOOP && !port->module_ref) {
             // `export {}`
             w_indent(me);
