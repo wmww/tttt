@@ -180,6 +180,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsDocNamespaceDeclarationOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsonRecovery': {
         errors: true,
         symbols: true,
@@ -2551,7 +2556,7 @@ const baselines = {
         types: true,
     },
     'awaitedTypeNoLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41022,7 +41027,7 @@ const baselines = {
     },
     'jsonRawJSON2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsonRawJSON3': {
@@ -52232,7 +52237,7 @@ const baselines = {
     },
     'jsDeclarationsExportAssignedConstructorFunctionWithSub(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportAssignedVisibility(target=es2015)': {
@@ -52342,7 +52347,7 @@ const baselines = {
     },
     'jsDeclarationsImportAliasExposedWithinNamespace': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsImportAliasExposedWithinNamespaceCjs': {
@@ -61513,7 +61518,7 @@ const baselines = {
     'lateBoundAssignmentDeclarationSupport5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundAssignmentDeclarationSupport6': {
         errors: true,
@@ -61522,8 +61527,8 @@ const baselines = {
     },
     'lateBoundAssignmentDeclarationSupport7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS': {
         errors: true,
@@ -61682,12 +61687,12 @@ const baselines = {
     },
     'moduleExportsAliasLoop1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportsAliasLoop2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'multipleDeclarations': {
