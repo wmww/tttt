@@ -1,0 +1,18 @@
+ttttMissingInitializerImplicitAny.ts(2,21): error TS1109: Expression expected.
+ttttMissingInitializerImplicitAny.ts(3,9): error TS1109: Expression expected.
+ttttMissingInitializerImplicitAny.ts(4,15): error TS7005: Variable 'y' implicitly has an 'any' type.
+
+
+==== ttttMissingInitializerImplicitAny.ts (3 errors) ====
+    // `const x = ;` has tsc's missing identifier as its initializer (an error type): no TS7005, unlike `declare const y;`
+    const syntaxError = ;
+                        ~
+!!! error TS1109: Expression expected.
+    let b = ;
+            ~
+!!! error TS1109: Expression expected.
+    declare const y;
+                  ~
+!!! error TS7005: Variable 'y' implicitly has an 'any' type.
+    export {}
+    

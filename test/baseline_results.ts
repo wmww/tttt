@@ -270,6 +270,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMissingInitializerImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
         errors: true,
         symbols: true,
@@ -6536,9 +6541,9 @@ const baselines = {
         types: true,
     },
     'contentMapperDeclarationEmit': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contentMapperDeclarationEmitFailure': {
         errors: true,
@@ -6546,7 +6551,7 @@ const baselines = {
         types: true,
     },
     'contentMapperDiagnosticDirectives': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6556,7 +6561,7 @@ const baselines = {
         types: true,
     },
     'contentMapperInvalidDiagnosticDirectives': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6571,22 +6576,22 @@ const baselines = {
         types: true,
     },
     'contentMapperSupplementalDiagnostics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contentMapperSupplementalFileCollision': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contentMapperSupplementalGlobals': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contentMapperSupplementalModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

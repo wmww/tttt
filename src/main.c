@@ -188,6 +188,17 @@ static i64 file_size_of(void* ctx, csview path) {
     return stat(buf, &info) ? 0 : (i64)info.st_size;
 }
 
+// --runExternalCode given (and not false)
+static bool runs_external_code(Options const* opts) {
+    bool on = false;
+    for (intptr_t i = 0; i < opts->option_count; i++) {
+        if (!strcasecmp(opts->option_names[i], "runExternalCode")) {
+            on = !opts->option_values[i] || strcasecmp(opts->option_values[i], "false");
+        }
+    }
+    return on;
+}
+
 // The tsconfig if there is one, then whatever was on the command line
 static_failable apply_compiler_options(Options const* opts, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
@@ -267,6 +278,8 @@ static intptr_t report_errors(VecError* shown, ErrorCtx* errs) {
 static char const* cli_file_name(SourceFile const* source) {
     // (A default lib by tsgo's URL for it, source_file_message_path())
     if (source->is_stdlib && cstr_size(&source->bundled_path)) return cstr_str(&source->bundled_path);
+    // (A content mapper's supplemental output is named by the file it comes from)
+    if (source->content_mapped && source->content_mapped->canonical) source = source->content_mapped->canonical;
     char const* name = cstr_str(&source->canonical_path);
     return strncmp(name, "./", 2) == 0 ? name + 2 : name;
 }
@@ -700,6 +713,7 @@ static_failable check_command_line(Options const* opts, returns int) {
         opts->path_count ? cstr_null : tsconfig_find(fs, c_sv("."));
     if (cstr_size(&config) && fs_is_directory(fs, cstr_sv(&config))) cstr_append_lit(&config, "/tsconfig.json");
     ProjectSet* projects = project_set_new(fs);
+    project_set_run_external_code(projects, runs_external_code(opts));
     u32 project = cstr_size(&config) ? project_set_load(projects, cstr_sv(&config)) : 0;
     ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project) : nullptr;
     Output out = {0};
@@ -781,6 +795,7 @@ static void* build_thread(void* arg) {
 // at once on two threads each (opts->build_jobs), their output printed in build order, so it doesn't depend on that
 static_failable build(Options const* opts, returns int) {
     ProjectSet* projects = project_set_new(fs);
+    project_set_run_external_code(projects, runs_external_code(opts));
     isize root_count = opts->path_count ? opts->path_count : 1;
     u32* roots = c_new_n(u32, root_count);
     for (isize i = 0; i < root_count; i++) {

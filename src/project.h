@@ -30,6 +30,8 @@ typedef struct Project {
 typedef struct ProjectSet ProjectSet;
 
 ProjectSet* project_set_new(Fs const* fs);
+// --runExternalCode: the configs' content mappers count when listing root files (their extensions are roots)
+void project_set_run_external_code(ProjectSet* me, bool on);
 void project_set_destroy(ProjectSet* me);
 
 // The project of the tsconfig at path (a file, or a directory with a tsconfig.json), loaded with everything it

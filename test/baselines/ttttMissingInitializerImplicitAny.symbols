@@ -1,0 +1,15 @@
+//// [test/cases/ttttMissingInitializerImplicitAny.ts] ////
+
+=== ttttMissingInitializerImplicitAny.ts ===
+// `const x = ;` has tsc's missing identifier as its initializer (an error type): no TS7005, unlike `declare const y;`
+const syntaxError = ;
+>syntaxError : Symbol(syntaxError, Decl(ttttMissingInitializerImplicitAny.ts, 1, 5))
+
+let b = ;
+>b : Symbol(b, Decl(ttttMissingInitializerImplicitAny.ts, 2, 3))
+
+declare const y;
+>y : Symbol(y, Decl(ttttMissingInitializerImplicitAny.ts, 3, 13))
+
+export {}
+

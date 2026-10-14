@@ -44,6 +44,26 @@ typedef struct ContentMapperDiagnostic {
     cstr message;
 } ContentMapperDiagnostic;
 
+// A diagnostic directive (tsgo's MappedDiagnosticDirective): the semantic diagnostics starting in the virtual range
+// aren't reported; an `expect` one nothing was suppressed by reports unused_code at its original range
+typedef struct ContentMapDirective {
+    u32 virtual_start, virtual_end, original_start, original_end;
+    bool expect;
+    bool used; // program_apply_content_mapper_directives()
+    unsigned unused_code;
+    cstr unused_message;
+} ContentMapDirective;
+
+// A supplemental output (tsgo's MappedResult): another file of the program, `<file>.<i><extension>`
+typedef struct ContentMapperSupplemental {
+    cstr text;
+    cstr extension;
+    ContentMapSegment* segments;
+    u32 segment_count;
+    ContentMapDirective* directives;
+    u32 directive_count;
+} ContentMapperSupplemental;
+
 // What a transform returned (tsgo's contentmapper.Result), or why it failed (failure_code non-zero: tsgo's
 // contentMapperTransformDiagnostic, at the start of an empty placeholder file; detail_code the chained reason, if any)
 typedef struct ContentMapperOutput {
@@ -53,11 +73,17 @@ typedef struct ContentMapperOutput {
     u32 segment_count;
     ContentMapperDiagnostic* diagnostics;
     u32 diagnostic_count;
+    ContentMapDirective* directives;
+    u32 directive_count;
     cstr diagnostic_source; // The mapper's prefix for its codes (`box` in `box1000`)
     unsigned failure_code;
     cstr failure;
     unsigned detail_code;
     cstr detail;
+    unsigned detail_sub_code; // Chained under detail (TS18109: which supplemental output's directive)
+    cstr detail_sub;
+    ContentMapperSupplemental* supplemental;
+    u32 supplemental_count;
 } ContentMapperOutput;
 
 void content_mapper_output_drop(ContentMapperOutput* me);
@@ -93,12 +119,19 @@ typedef struct ContentMapped {
     ContentMapper const* mapper; // The program's options own it
     cstr identity; // name@version: what TS18074 names
     // The untransformed text as a file of its own (registered, never in the program): diagnostics that map back
-    // are shown against it. Owned
+    // are shown against it. Owned by the canonical file's
     struct SourceFile* original;
+    // Of a supplemental output: the file it comes from (tsgo's CanonicalSourceFile), whose name its diagnostics show
+    struct SourceFile const* canonical;
+    // Of the canonical file: its supplemental outputs, which the loader adds to the program (which then owns them)
+    struct SourceFile** supplementals;
+    u32 supplemental_count;
     // The span map. has_map false: a failure's empty placeholder, whose diagnostics stay in the transformed text
     ContentMapSegment* segments;
     u32 segment_count;
     bool has_map;
+    ContentMapDirective* directives;
+    u32 directive_count;
     cstr diagnostic_source;
     cstr virtual_extension; // What the text parsed as (`.ts` for a failure's placeholder)
 } ContentMapped;

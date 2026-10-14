@@ -3,6 +3,7 @@
 #include "json.h"
 #include "error.h"
 #include "source_file.h"
+#include "lib_names.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -58,6 +59,17 @@ void content_mapper_output_drop(ContentMapperOutput* me) {
     free(my segments);
     for (u32 i = 0; i < my diagnostic_count; i++) cstr_drop(&my diagnostics[i].message);
     free(my diagnostics);
+    for (u32 i = 0; i < my directive_count; i++) cstr_drop(&my directives[i].unused_message);
+    free(my directives);
+    for (u32 i = 0; i < my supplemental_count; i++) {
+        ContentMapperSupplemental* supplemental = &my supplemental[i];
+        c_drop(cstr, &supplemental->text, &supplemental->extension);
+        free(supplemental->segments);
+        for (u32 j = 0; j < supplemental->directive_count; j++) cstr_drop(&supplemental->directives[j].unused_message);
+        free(supplemental->directives);
+    }
+    free(my supplemental);
+    cstr_drop(&my detail_sub);
     *me = (ContentMapperOutput){0};
 }
 
@@ -69,9 +81,9 @@ void content_mapper_set_launcher(char const* path) {
 
 // ---- JSON text
 
-// tsgo's MarshalDeclaredOptions: the options the mapper declared, in its order, the ones that are set, as Go's JSON
-// encoding of tsgo's CompilerOptions has them (enums as their numbers)
-static void append_declared_options(cstr* out, ContentMapper const* mapper, CompilerOptions const* options) {
+// The value of tsgo's json.Marshal(CompilerOptions) for openProject: the options that are set, by their names (enums
+// as tsgo's numbers). Not every option tttt has (paths, lib...): TODO(plan 56) if a mapper ever needs them
+static void append_compiler_options(cstr* out, CompilerOptions const* options) {
     static char const* const bool_names[] = {
 #define X(field, name, strict_family) name,
         COMPILER_BOOL_OPTIONS(X)
@@ -79,43 +91,42 @@ static void append_declared_options(cstr* out, ContentMapper const* mapper, Comp
     };
     cstr_append_lit(out, "{");
     bool first = true;
-    for (isize i = 0; i < mapper->compiler_options.count; i++) {
-        cstr const* name = &mapper->compiler_options.items[i];
-        char const* n = cstr_str(name);
-        cstr value = cstr_null;
-        if (!strcasecmp(n, "target") && options->target_set) {
-            // (tsgo's ScriptTarget: ES5 1 ... ES2026 13, ESNext 99)
-            int target = options->target == SCRIPT_TARGET_ESNEXT ? 99 : (int)options->target + 1;
-            cstr_take(&value, cstr_d(target));
-        } else if (!strcasecmp(n, "module") && options->module_set) {
-            static int const kinds[] = { 0, 1, 2, 3, 4, 5, 6, 7, 99, 100, 101, 102, 199, 200 };
-            cstr_take(&value, cstr_d(kinds[options->module]));
-        } else if (!strcasecmp(n, "moduleResolution") && options->module_resolution_set) {
-            static int const kinds[] = { 0, 1, 2, 3, 99, 100 };
-            cstr_take(&value, cstr_d(kinds[options->module_resolution]));
-        } else if (!strcasecmp(n, "jsx") && options->jsx != JSX_NONE) {
-            cstr_take(&value, cstr_d((int)options->jsx));
-        } else if (!strcasecmp(n, "jsxFactory") && cstr_size(&options->jsx_factory)) {
-            json_append_string(&value, cstr_sv(&options->jsx_factory));
-        } else if (!strcasecmp(n, "jsxFragmentFactory") && cstr_size(&options->jsx_fragment_factory)) {
-            json_append_string(&value, cstr_sv(&options->jsx_fragment_factory));
-        } else if (!strcasecmp(n, "jsxImportSource") && cstr_size(&options->jsx_import_source)) {
-            json_append_string(&value, cstr_sv(&options->jsx_import_source));
-        } else {
-            for (u32 j = 0; j < c_arraylen(bool_names); j++) {
-                if (!strcasecmp(n, bool_names[j]) && options->is_set[j]) {
-                    bool on = ((bool const*)options)[j];
-                    cstr_take(&value, cstr_from(on ? "true" : "false"));
-                }
-            }
+#define OPTION(name, ...) do { \
+        if (!first) cstr_append_lit(out, ","); \
+        first = false; \
+        json_append_string(out, csview_from(name)); \
+        cstr_append_lit(out, ":"); \
+        __VA_ARGS__; \
+    } while (0)
+    for (u32 j = 0; j < c_arraylen(bool_names); j++) {
+        if (!options->is_set[j]) continue;
+        for (u32 k = 0; k < tsc_option_names_count; k++) {
+            if (strcasecmp(bool_names[j], tsc_option_names[k])) continue;
+            OPTION(tsc_option_names[k], cstr_append(out, ((bool const*)options)[j] ? "true" : "false"));
+            break;
         }
-        if (!cstr_size(&value)) continue;
-        if (!first) cstr_append_lit(out, ",");
-        first = false;
-        json_append_string(out, cstr_sv(name));
-        cstr_append_lit(out, ":");
-        cstr_append_s(out, value);
     }
+    if (options->target_set) {
+        // (tsgo's ScriptTarget: ES5 1 ... ES2026 13, ESNext 99)
+        OPTION("target", cstr_append_d(out, DEFAULT_DISPLAY, options->target == SCRIPT_TARGET_ESNEXT ? 99 : (int)options->target + 1));
+    }
+    if (options->module_set) {
+        static int const kinds[] = { 0, 1, 2, 3, 4, 5, 6, 7, 99, 100, 101, 102, 199, 200 };
+        OPTION("module", cstr_append_d(out, DEFAULT_DISPLAY, kinds[options->module]));
+    }
+    if (options->module_resolution_set) {
+        static int const kinds[] = { 0, 1, 2, 3, 99, 100 };
+        OPTION("moduleResolution", cstr_append_d(out, DEFAULT_DISPLAY, kinds[options->module_resolution]));
+    }
+    if (options->jsx != JSX_NONE) OPTION("jsx", cstr_append_d(out, DEFAULT_DISPLAY, (int)options->jsx));
+    if (cstr_size(&options->jsx_factory)) OPTION("jsxFactory", json_append_string(out, cstr_sv(&options->jsx_factory)));
+    if (cstr_size(&options->jsx_fragment_factory)) {
+        OPTION("jsxFragmentFactory", json_append_string(out, cstr_sv(&options->jsx_fragment_factory)));
+    }
+    if (cstr_size(&options->jsx_import_source)) {
+        OPTION("jsxImportSource", json_append_string(out, cstr_sv(&options->jsx_import_source)));
+    }
+#undef OPTION
     cstr_append_lit(out, "}");
 }
 
@@ -355,7 +366,7 @@ static MapperConn* conn_for(ContentMapperHost* me, ContentMapper const* mapper) 
         json_append_string(&params, cstr_sv(&handle));
         if (cstr_size(&mapper->options_json)) cstr_append_d(&params, DEFAULT_DISPLAY, ",\"options\":", mapper->options_json);
         cstr_append_lit(&params, ",\"compilerOptions\":");
-        append_declared_options(&params, mapper, my options);
+        append_compiler_options(&params, my options);
         cstr_append_lit(&params, "}");
         JsonValue response, result;
         CallResult called = call(conn, "openProject", cstr_sv(&params), &result, &response);
@@ -429,15 +440,15 @@ static bool json_int(JsonValue const* value, i64* out) {
 }
 
 // tsgo's spanmap Unmarshal and Validate against the texts; false (and out failed) if the map is malformed
-static bool read_mappings(ContentMapperOutput* out, JsonValue const* mappings, csview virtual_text, csview original,
-    csview label) {
+static bool read_mappings(ContentMapperOutput* out, ContentMapSegment** segments_out, u32* count_out,
+    JsonValue const* mappings, csview virtual_text, csview original, csview label) {
     // (Absent or empty: fully synthesized text, decodeMappedOutput's empty map)
     if (!mappings || mappings->tag == JSON_NULL) return true;
     if (mappings->tag != JSON_ARRAY) {
         fail_detail(out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
         return false;
     }
-    out->segments = calloc((size_t)mappings->count + 1, sizeof(ContentMapSegment));
+    (*segments_out) = calloc((size_t)mappings->count + 1, sizeof(ContentMapSegment));
     for (isize i = 0; i < mappings->count; i++) {
         JsonValue const* tuple = &mappings->items[i];
         i64 v[6] = { 0 };
@@ -447,15 +458,15 @@ static bool read_mappings(ContentMapperOutput* out, JsonValue const* mappings, c
             fail_detail(out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
             return false;
         }
-        out->segments[out->segment_count++] = (ContentMapSegment){ .virtual_start = (u32)v[0],
+        (*segments_out)[(*count_out)++] = (ContentMapSegment){ .virtual_start = (u32)v[0],
             .virtual_end = (u32)(v[0] + v[1]), .original_start = (u32)v[2], .original_end = (u32)(v[2] + v[3]),
             .kind = (uint8_t)v[4] };
         // TODO(plan 56 part 2): features (the 6th element), checked against the mask
     }
-    qsort(out->segments, out->segment_count, sizeof(ContentMapSegment), segment_cmp);
+    qsort((*segments_out), (*count_out), sizeof(ContentMapSegment), segment_cmp);
     u32 previous_end = 0;
-    for (u32 i = 0; i < out->segment_count; i++) {
-        ContentMapSegment const* s = &out->segments[i];
+    for (u32 i = 0; i < (*count_out); i++) {
+        ContentMapSegment const* s = &(*segments_out)[i];
         if (s->virtual_start < previous_end || s->virtual_end < s->virtual_start || s->virtual_end > virtual_text.size) {
             fail(out, 18081, cstr_d("The content mapper '", label,
                 "' produced overlapping or out-of-order position mappings (near virtual offset ", s->virtual_start, ")."));
@@ -481,6 +492,121 @@ static bool read_mappings(ContentMapperOutput* out, JsonValue const* mappings, c
         }
     }
     return true;
+}
+
+// tsgo's positionNormalizer for utf-8: within the text, not inside a code point
+static bool normalize_position(i64 position, csview text) {
+    if (position < 0 || position > text.size) return false;
+    return position == text.size || ((unsigned char)text.buf[position] & 0xC0) != 0x80;
+}
+
+static int directive_cmp(void const* a, void const* b) {
+    u32 x = ((ContentMapDirective const*)a)->virtual_start, y = ((ContentMapDirective const*)b)->virtual_start;
+    return x < y ? -1 : x > y;
+}
+
+// tsgo's normalizeDiagnosticDirectives: false (and out failed with the reason) if a directive is malformed
+static bool read_directives(ContentMapperOutput* out, ContentMapDirective** directives_out, u32* count_out,
+    JsonValue const* value, csview virtual_text, csview original, csview label, isize supplemental) {
+    if (!value || value->tag == JSON_NULL) return true;
+    JsonValue const* unused = json_get_tagged(value, "unusedExpectDirectiveDiagnostics", JSON_ARRAY);
+    JsonValue const* directives = json_get_tagged(value, "directives", JSON_ARRAY);
+    isize unused_count = unused ? unused->count : 0;
+    if (!directives || !directives->count) return true;
+    (*directives_out) = calloc((size_t)directives->count, sizeof(ContentMapDirective));
+    bool valid = true;
+    for (isize i = 0; i < directives->count && valid; i++) {
+        JsonValue const* tuple = &directives->items[i];
+        i64 v[6] = { 0 };
+        bool decoded = tuple->tag == JSON_ARRAY && (tuple->count == 5 || tuple->count == 6);
+        for (isize j = 0; decoded && j < tuple->count; j++) decoded = json_int(&tuple->items[j], &v[j]);
+        if (!decoded) {
+            fail_detail(out, cstr_from_sv(label), 18086, cstr_from("The content mapper returned an invalid transform response."));
+            valid = false;
+            break;
+        }
+        ContentMapDirective directive = {0};
+        if (v[4] == 1) {
+            directive.expect = true;
+            i64 index = tuple->count == 6 ? v[5] : 0;
+            if (tuple->count != 6 && unused_count != 1) {
+                fail_detail(out, cstr_from_sv(label), 18107, cstr_d("Diagnostic directive ", i, " returned by the content "
+                    "mapper must specify 'unusedExpectDirectiveIndex' when there is not exactly one "
+                    "'unusedExpectDirectiveDiagnostics' entry."));
+                valid = false;
+                break;
+            }
+            if (index < 0 || index >= unused_count) {
+                fail_detail(out, cstr_from_sv(label), 18110, cstr_d("Diagnostic directive ", i,
+                    " returned by the content mapper has an invalid 'unusedExpectDirectiveIndex'."));
+                valid = false;
+                break;
+            }
+            i64 code = 0;
+            json_int(json_get(&unused->items[index], "code"), &code);
+            directive.unused_code = (unsigned)code;
+            directive.unused_message = cstr_from_sv(json_get_string(&unused->items[index], "messageText"));
+        } else if (v[4] != 0) {
+            fail_detail(out, cstr_from_sv(label), 18106, cstr_d("The content mapper returned a diagnostic directive with "
+                "invalid policy '", v[4], "'."));
+            valid = false;
+            break;
+        }
+        bool original_valid = v[0] >= 0 && v[1] >= 0 && normalize_position(v[0], original) &&
+            normalize_position(v[0] + v[1], original);
+        if (v[2] < 0 || v[3] < v[2] || !normalize_position(v[2], virtual_text) || !normalize_position(v[3], virtual_text) ||
+            (directive.expect && !original_valid)) {
+            cstr_drop(&directive.unused_message);
+            fail_detail(out, cstr_from_sv(label), 18105, cstr_d("Diagnostic directive ", i,
+                " returned by the content mapper has an invalid range."));
+            valid = false;
+            break;
+        }
+        directive.virtual_start = (u32)v[2];
+        directive.virtual_end = (u32)v[3];
+        if (original_valid) {
+            directive.original_start = (u32)v[0];
+            directive.original_end = (u32)(v[0] + v[1]);
+        }
+        (*directives_out)[(*count_out)++] = directive;
+    }
+    if (!valid && supplemental >= 0 && out->detail_code != 18086) {
+        out->detail_sub_code = 18109;
+        out->detail_sub = cstr_d("The invalid diagnostic directive is in supplemental output ", supplemental,
+            " returned by the content mapper.");
+    }
+    if (valid) {
+        // (Ordered by virtual start, none may begin before the previous one ends)
+        ContentMapDirective* sorted = malloc(sizeof(ContentMapDirective) * (*count_out));
+        memcpy(sorted, (*directives_out), sizeof(ContentMapDirective) * (*count_out));
+        qsort(sorted, (*count_out), sizeof(ContentMapDirective), directive_cmp);
+        for (u32 i = 1; i < (*count_out) && valid; i++) {
+            if (sorted[i].virtual_start < sorted[i - 1].virtual_end) {
+                fail_detail(out, cstr_from_sv(label), 18108,
+                    cstr_from("The content mapper returned diagnostic directives with overlapping virtual ranges."));
+                valid = false;
+                if (supplemental >= 0) {
+                    out->detail_sub_code = 18109;
+                    out->detail_sub = cstr_d("The invalid diagnostic directive is in supplemental output ", supplemental,
+                        " returned by the content mapper.");
+                }
+            }
+        }
+        free(sorted);
+    }
+    return valid;
+}
+
+// tsgo's decodeMappedOutput of one output: its extension, then its directives
+static bool decode_output(ContentMapperOutput* out, csview extension, JsonValue const* directives,
+    ContentMapDirective** directives_out, u32* directive_count, csview text, csview content, csview label,
+    isize supplemental) {
+    if (!supported_virtual_extension(extension)) {
+        fail_detail(out, cstr_from_sv(label), 18098,
+            cstr_d("The content mapper returned an output with unsupported virtual extension '", extension, "'."));
+        return false;
+    }
+    return read_directives(out, directives_out, directive_count, directives, text, content, label, supplemental);
 }
 
 ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, ContentMapper const* mapper, csview file,
@@ -527,37 +653,48 @@ ContentMapperOutput content_mapper_host_transform(ContentMapperHost* me, Content
     }
     out.text = cstr_clone(text->string);
     out.extension = cstr_clone(extension->string);
-    // (decodeMappedOutput: the extension, then the mappings; ParseResult validates them against the texts)
-    if (!supported_virtual_extension(cstr_sv(&out.extension))) {
-        fail_detail(&out, cstr_from_sv(label), 18098,
-            cstr_d("The content mapper returned an output with unsupported virtual extension '", out.extension, "'."));
-        json_drop(&response);
-        return out;
-    }
-    if (!read_mappings(&out, json_get(&result, "mappings"), cstr_sv(&out.text), content, label)) {
-        json_drop(&response);
-        return out;
+    // tsgo's decodeTransformResult: each output's extension and directives (the canonical one's, then the
+    // supplementals'), the diagnostics; then ParseResult validates each output's mappings against the texts
+    JsonValue const* supplementals = json_get_tagged(&result, "supplemental", JSON_ARRAY);
+    bool valid = decode_output(&out, cstr_sv(&out.extension), json_get(&result, "diagnosticDirectives"),
+        &out.directives, &out.directive_count, cstr_sv(&out.text), content, label, -1);
+    if (valid && supplementals && supplementals->count) {
+        out.supplemental = calloc((size_t)supplementals->count, sizeof(ContentMapperSupplemental));
+        for (isize i = 0; i < supplementals->count && valid; i++) {
+            JsonValue const* item = &supplementals->items[i];
+            ContentMapperSupplemental* supplemental = &out.supplemental[out.supplemental_count++];
+            supplemental->text = cstr_from_sv(json_get_string(item, "text"));
+            supplemental->extension = cstr_from_sv(json_get_string(item, "extension"));
+            valid = decode_output(&out, cstr_sv(&supplemental->extension), json_get(item, "diagnosticDirectives"),
+                &supplemental->directives, &supplemental->directive_count, cstr_sv(&supplemental->text), content, label, i);
+        }
     }
     JsonValue const* diagnostics = json_get_tagged(&result, "diagnostics", JSON_ARRAY);
-    if (diagnostics && diagnostics->count) {
+    if (valid && diagnostics && diagnostics->count) {
         out.diagnostics = calloc((size_t)diagnostics->count, sizeof(ContentMapperDiagnostic));
-        for (isize i = 0; i < diagnostics->count; i++) {
+        for (isize i = 0; i < diagnostics->count && valid; i++) {
             JsonValue const* d = &diagnostics->items[i];
             i64 start = 0, length = 0, code = 0;
             json_int(json_get(d, "start"), &start);
             json_int(json_get(d, "length"), &length);
             json_int(json_get(d, "code"), &code);
-            if (start < 0 || length < 0 || start + length > content.size) {
+            if (!normalize_position(start, content) || length < 0 || !normalize_position(start + length, content)) {
                 fail_detail(&out, cstr_from_sv(label), 18086,
                     cstr_from("The content mapper returned an invalid transform response."));
-                json_drop(&response);
-                return out;
+                valid = false;
+                break;
             }
             out.diagnostics[out.diagnostic_count++] = (ContentMapperDiagnostic){ .start = (u32)start,
                 .length = (u32)length, .code = (unsigned)code, .message = cstr_from_sv(json_get_string(d, "messageText")) };
         }
     }
-    // TODO(plan 56 part 2): diagnosticDirectives, supplemental outputs
+    valid = valid && read_mappings(&out, &out.segments, &out.segment_count, json_get(&result, "mappings"),
+        cstr_sv(&out.text), content, label);
+    for (isize i = 0; valid && supplementals && i < supplementals->count; i++) {
+        ContentMapperSupplemental* supplemental = &out.supplemental[i];
+        valid = read_mappings(&out, &supplemental->segments, &supplemental->segment_count,
+            json_get(&supplementals->items[i], "mappings"), cstr_sv(&supplemental->text), content, label);
+    }
     json_drop(&response);
     return out;
 }
@@ -640,12 +777,15 @@ csview content_mapper_extension_of(CompilerOptions const* options, csview name) 
 // ---- Mapped files
 
 void content_mapped_free(ContentMapped* me) {
-    if (my original) {
+    free(my supplementals);
+    if (my original && !my canonical) {
         source_file_drop(my original);
         free(my original);
     }
     c_drop(cstr, &my identity, &my diagnostic_source, &my virtual_extension);
     free(my segments);
+    for (u32 i = 0; i < my directive_count; i++) cstr_drop(&my directives[i].unused_message);
+    free(my directives);
     free(me);
 }
 

@@ -176,6 +176,7 @@ static void program_add_builtins(Program* me) {
 }
 
 static SourceFile* program_add_source_idempotent(Program* me, csview path);
+static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file);
 
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     check(errs);
@@ -1219,6 +1220,21 @@ static ContentMapperOutput program_content_map(Program const* me, ContentMapper 
     } else {
         cstr absolute = absolute_path_of(program_cwd(me), canonical_path);
         ret = content_mapper_host_transform(host, mapper, cstr_sv(&absolute), cstr_sv(contents));
+        // (tsgo's CheckSupplementalFileNameCollisions: a supplemental output can't be named like a real file)
+        for (u32 i = 0; !ret.failure_code && i < ret.supplemental_count; i++) {
+            cstr name = cstr_d(absolute, ".", i, ret.supplemental[i].extension);
+            if (fs_exists(my fs, cstr_sv(&name))) {
+                cstr shown = program_path_for_message(me, cstr_sv(&name));
+                content_mapper_output_drop(&ret);
+                ret.failure_code = 18069;
+                ret.failure = cstr_d("The content mapper '", cstr_size(&mapper->name) ? cstr_sv(&mapper->name) :
+                    cstr_sv(&mapper->package), "' failed to transform this file.");
+                ret.detail_code = 18096;
+                ret.detail = cstr_d("Content mapper supplemental output file '", shown, "' conflicts with an existing file.");
+                cstr_drop(&shown);
+            }
+            cstr_drop(&name);
+        }
         cstr_drop(&absolute);
     }
     // The original text is kept by program_attach_content_mapped() (in ret.text's place: they swap)
@@ -1238,6 +1254,8 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
         .original = c_new(SourceFile, source_file_make(cstr_clone(file->canonical_path), out->text)),
         .segments = out->segments,
         .segment_count = out->segment_count,
+        .directives = out->failure_code ? nullptr : out->directives,
+        .directive_count = out->failure_code ? 0 : out->directive_count,
         .has_map = !out->failure_code,
         .diagnostic_source = out->diagnostic_source,
         .virtual_extension = out->failure_code || !cstr_size(&out->extension) ? cstr_from(".ts") : cstr_clone(out->extension),
@@ -1245,6 +1263,10 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
     out->text = cstr_null;
     out->segments = nullptr;
     out->diagnostic_source = cstr_null;
+    if (!out->failure_code) {
+        out->directives = nullptr;
+        out->directive_count = 0;
+    }
     source_file_register(mapped->original);
     mapped->original->content_original = true;
     file->content_mapped = mapped;
@@ -1256,6 +1278,10 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
         if (out->detail_code) {
             error_sub_error_s(&error, span_null, out->detail_code, out->detail);
             out->detail = cstr_null;
+            if (out->detail_sub_code) {
+                error_sub_error_s(vec_error_back_mut(&error.sub_errors), span_null, out->detail_sub_code, out->detail_sub);
+                out->detail_sub = cstr_null;
+            }
         }
         error_ctx_append_error(errs, error);
         return;
@@ -1273,6 +1299,9 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
 
 // A new SourceFile for the file at canonical_path, parsed (its errors into errs), null if it can't be read. On the
 // loader's thread or on a load pool worker: it only reads the program
+static SourceFile* program_make_source_text(Program const* me, csview canonical_path, cstr contents,
+    ContentMapper const* mapper, ContentMapperOutput* mapped, bool is_stdlib, ErrorCtx* errs);
+
 static SourceFile* program_make_source(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
     cstr contents;
     try (fs_read_file(my fs, canonical_path, &contents)) if_err (e) {
@@ -1290,16 +1319,55 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         // (Parsed as its virtual name, tsgo's ParseResult; a failure is an empty TypeScript file)
         mapped = program_content_map(me, mapper, canonical_path, &contents);
     }
+    return program_make_source_text(me, canonical_path, contents, mapper, mapper ? &mapped : nullptr, is_stdlib, errs);
+}
+
+// A content mapper's supplemental outputs as files of their own, `<file>.<i><extension>` (tsgo's ParseResult), made
+// with the file they come from: the loader adds them after what it imports (ContentMapped.supplementals)
+static void program_make_supplementals(Program const* me, SourceFile* file, ContentMapperOutput* out, ErrorCtx* errs) {
+    ContentMapped* mapped = file->content_mapped;
+    if (!out->supplemental_count || out->failure_code) return;
+    mapped->supplementals = calloc(out->supplemental_count, sizeof(SourceFile*));
+    for (u32 i = 0; i < out->supplemental_count; i++) {
+        ContentMapperSupplemental* supplemental = &out->supplemental[i];
+        cstr path = cstr_d(file->canonical_path, ".", i, supplemental->extension);
+        SourceFile* made = program_make_source_text(me, cstr_sv(&path), supplemental->text, nullptr, nullptr, false, errs);
+        supplemental->text = cstr_null;
+        cstr_drop(&path);
+        made->content_mapped = c_new(ContentMapped, {
+            .mapper = mapped->mapper,
+            .identity = cstr_clone(mapped->identity),
+            .original = mapped->original,
+            .canonical = file,
+            .segments = supplemental->segments,
+            .segment_count = supplemental->segment_count,
+            .has_map = true,
+            .directives = supplemental->directives,
+            .directive_count = supplemental->directive_count,
+            .diagnostic_source = cstr_clone(mapped->diagnostic_source),
+            .virtual_extension = cstr_clone(supplemental->extension),
+        });
+        supplemental->segments = nullptr;
+        supplemental->directives = nullptr;
+        supplemental->directive_count = 0;
+        mapped->supplementals[mapped->supplemental_count++] = made;
+    }
+}
+
+// A new SourceFile of the given text (the file's, or what its content mapper made of it: mapped)
+static SourceFile* program_make_source_text(Program const* me, csview canonical_path, cstr contents,
+    ContentMapper const* mapper, ContentMapperOutput* mapped, bool is_stdlib, ErrorCtx* errs) {
     SourceFile* source_file = c_new(SourceFile, source_file_make(cstr_from_sv(canonical_path), contents));
     source_file_register(source_file);
     csview path = cstr_sv(&source_file->canonical_path);
     cstr virtual_path = cstr_null;
     if (mapper) {
-        program_attach_content_mapped(source_file, mapper, &mapped, errs);
-        virtual_path = cstr_d(path, cstr_size(&mapped.extension) && !mapped.failure_code ? cstr_sv(&mapped.extension) :
+        program_attach_content_mapped(source_file, mapper, mapped, errs);
+        virtual_path = cstr_d(path, cstr_size(&mapped->extension) && !mapped->failure_code ? cstr_sv(&mapped->extension) :
             c_sv(".ts"));
         path = cstr_sv(&virtual_path);
-        content_mapper_output_drop(&mapped);
+        program_make_supplementals(me, source_file, mapped, errs);
+        content_mapper_output_drop(mapped);
     }
 
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
@@ -1569,6 +1637,12 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // (Its imports for the pool, which the loader is about to resolve anyway)
         if (my pool) program_load_ahead_from(me, my pool, source_file);
     }
+    return program_add_made_source(me, canonical_path, source_file);
+}
+
+// The rest of program_add_source_idempotent() for a file just made (canonical_path is taken): it and what it refers to
+// join the program, it after them
+static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file) {
     if (source_file->is_json) source_file->is_module = true;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
@@ -1662,6 +1736,13 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // file it finds is part of the program, and checked)
         if (redirect_target && program_share_redirect_ref(redirect_target, ref)) continue;
         program_load_module_ref(me, source_file, ref);
+    }
+    // A content mapper's supplemental outputs, after what the file imports (tsgo's parse subtasks)
+    ContentMapped const* mapped = source_file->content_mapped;
+    for (u32 i = 0; mapped && i < mapped->supplemental_count; i++) {
+        SourceFile* supplemental = mapped->supplementals[i];
+        if (hmap_box_source_file_get(&my source_files_map, cstr_sv(&supplemental->canonical_path))) continue;
+        program_add_made_source(me, cstr_clone(supplemental->canonical_path), supplemental);
     }
 
     // Add here so imports come before importing file
@@ -2719,6 +2800,48 @@ static void program_report_unused_expect_errors(Program* me) {
     }
 }
 
+// tsgo's applyContentMapperDiagnosticDirectives: a content mapper's directives suppress the semantic diagnostics that
+// start in their virtual range (not the parser's, not the mapper's own); an `expect` one that suppressed nothing is the
+// mapper's unused-directive diagnostic at its original range
+static void program_apply_content_mapper_directives(Program* me) {
+    bool any = false;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) any |= (*i)->content_mapped && (*i)->content_mapped->directive_count;
+    if (!any) return;
+    VecError* errors = &my errs->errors;
+    for (isize i = 0; i < vec_error_size(errors);) {
+        Error* error = &errors->data[i];
+        SourceFile const* file = span_valid(error->span) ? span_source(error->span) : nullptr;
+        ContentMapped* mapped = file ? file->content_mapped : nullptr;
+        bool semantic = error->phase == ERROR_PHASE_RESOLVE_NAMES || error->phase == ERROR_PHASE_TYPECHECK ||
+            (error->phase == ERROR_PHASE_PARSE && error->grammar);
+        bool suppressed = false;
+        if (mapped && semantic && !error->source) {
+            u32 pos = (u32)(error->span.buf - cstr_str(&file->contents));
+            for (u32 j = 0; j < mapped->directive_count && !suppressed; j++) {
+                ContentMapDirective* directive = &mapped->directives[j];
+                if (pos >= directive->virtual_start && pos < directive->virtual_end) {
+                    directive->used = true;
+                    suppressed = true;
+                }
+            }
+        }
+        if (suppressed) vec_error_erase_n(errors, i, 1);
+        else i++;
+    }
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        ContentMapped* mapped = (*i)->content_mapped;
+        for (u32 j = 0; mapped && j < mapped->directive_count; j++) {
+            ContentMapDirective const* directive = &mapped->directives[j];
+            if (!directive->expect || directive->used) continue;
+            char const* original = cstr_str(&mapped->original->contents);
+            error_ctx_append_error(my errs, (Error){ .message = cstr_clone(directive->unused_message),
+                .span = span_make(mapped->original, original + directive->original_start, original + directive->original_end),
+                .ts_code = directive->unused_code, .phase = ERROR_PHASE_TYPECHECK,
+                .source = cstr_str(&mapped->diagnostic_source) });
+        }
+    }
+}
+
 // tsc's addUndefinedToGlobalsOrErrorOnRedeclaration and the `globalThis` check of initializeTypeChecker: a global value
 // can't be named `undefined`, a script can't declare `globalThis` (TS2397)
 static void program_check_builtin_global_names(Program* me) {
@@ -3342,6 +3465,7 @@ void program_typecheck(Program* me) {
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);
     program_report_unused_expect_errors(me);
+    program_apply_content_mapper_directives(me);
     // (Comment directives don't apply to them: tsc's getDeclarationDiagnostics is apart from the checker's)
     if (my declaration_errs) {
         bool keep = !program_declaration_diagnostics_gated(me) || error_ctx_empty(my errs);

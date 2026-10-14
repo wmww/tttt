@@ -159,7 +159,8 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
         // An ambient, exported or const variable without a type has nothing for control flow to type it by (tsc's
         // getTypeForVariableLikeDeclaration: no autoType)
         if ((declared || exported || variable_statement_is_const(me)) && compiler_options()->no_implicit_any && i->binding.tag == BINDING_IDENTIFIER &&
-            !i->binding.has_explicit_type && initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY
+            !i->binding.has_explicit_type && initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY &&
+            !initialized_binding_value(i)->missing // (`const x = ;`: tsc's missing identifier, an error type)
         ) {
             error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,
                 "' implicitly has an 'any' type.");

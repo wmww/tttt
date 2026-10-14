@@ -857,10 +857,11 @@ static unsigned js_whitespace_length(const char* c, const char* end) {
 static bool error_in_content_mapped_file(Program const* program, Error const* error) {
     SourceFile const* file = span_valid(error->span) ? span_source(error->span) : nullptr;
     if (!file) return false;
-    if (file->content_mapped) return true;
+    // (A supplemental output's are the errors baseline's: tsgo leaves out the canonical files only)
+    if (file->content_mapped) return !file->content_mapped->canonical;
     for (u32 i = 0; i < program_source_count(program); i++) {
         ContentMapped const* mapped = program_source_at(program, i)->content_mapped;
-        if (mapped && mapped->original == file) return true;
+        if (mapped && !mapped->canonical && mapped->original == file) return true;
     }
     return false;
 }
@@ -889,7 +890,7 @@ static void render_content_mapper_baseline(BaselineTestCase* me) {
     for (u32 i = 0; i < program_source_count(program); i++) {
         SourceFile const* file = program_source_at(program, i);
         ContentMapped* mapped = file->content_mapped;
-        if (!mapped) continue;
+        if (!mapped || mapped->canonical) continue;
         mapped->original->display_path_override = file->display_path_override;
         for_each (f, vec_baseline_test_file, &my files) {
             if (f->source == file) f->content_mapped = true;
@@ -916,6 +917,12 @@ static void render_content_mapper_baseline(BaselineTestCase* me) {
         cstr_append_lit(out, "\n");
     }
     if (!cstr_size(out)) return;
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        SourceFile* file = program_source_at(program, i);
+        if (file->content_mapped && file->content_mapped->canonical) {
+            file->display_path_override = file->content_mapped->canonical->display_path_override;
+        }
+    }
     cstr_append_lit(out, "=== Diagnostics ===\n\n");
     VecError* errors = &my error_ctx->errors;
     cstr rendered = cstr_null;
@@ -941,6 +948,11 @@ static void render_content_mapper_baseline(BaselineTestCase* me) {
         remove_test_path_prefixes(out, from);
     }
     cstr_drop(&rendered);
+    // The supplemental outputs' diagnostics stay in the errors baseline, mapped back the same way
+    for (isize i = 0; i < vec_error_size(errors);) {
+        if (content_mapped_map_error(&errors->data[i])) i++;
+        else vec_error_erase_n(errors, i, 1);
+    }
 }
 
 static void process_errors(BaselineTestCase* me) {
@@ -980,7 +992,15 @@ static void process_errors(BaselineTestCase* me) {
             current_test_file = find_file(me, current_source);
         }
 
-        if (!current_test_file) continue;
+        if (!current_test_file) {
+            // (A content mapper's supplemental output, or its original text: listed, but no file of the test)
+            if (current_source && (current_source->content_original || current_source->content_mapped)) {
+                cstr discarded = cstr_null;
+                format_error_tree(&my formatted_errors, &discarded, error, error, current_source, 0);
+                cstr_drop(&discarded);
+            }
+            continue;
+        }
 
         // Like tsc's harness (iterateErrorBaseline): a squiggle under every line the error covers, the message after
         // the last one. Lines of several errors interleave, so items are kept ordered by line

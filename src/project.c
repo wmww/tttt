@@ -13,7 +13,12 @@ typedef struct ProjectSet {
     u32 count;
     u32 cap;
     HMapProjectIndex by_config;
+    bool run_external_code;
 } ProjectSet;
+
+void project_set_run_external_code(ProjectSet* me, bool on) {
+    my run_external_code = on;
+}
 
 ProjectSet* project_set_new(Fs const* fs) {
     return c_new(ProjectSet, { .fs = fs });
@@ -44,6 +49,7 @@ StrList const* project_set_root_files(ProjectSet* me, u32 index) {
     Project* project = &my projects[index];
     if (!project->root_files_listed && project->readable) {
         CompilerOptions scratch = compiler_options_init();
+        scratch.run_external_code = my run_external_code;
         try (tsconfig_load(my fs, cstr_sv(&project->config), &scratch, &project->root_files)) if_err (e) {
             ignore e;
             current_error_destroy();
