@@ -75,14 +75,9 @@ mergeSymbol, which resolves an alias target first.
   members aren't Symbols, so the chain can't reach it (vision.md: member identity).
 
 ## Bigint property names
-- bigintPropertyName: TypeScript 6 parses `1n` as a property name everywhere (object literals, interfaces, classes,
-  destructuring). tsc's binder declares no member for it (getPropertyNameForPropertyNameNode is undefined: the
-  symbol is a detached `__missing`), so `{ 1n: 123 }` is `{}` and `const h: H = { 3n: "" }` is TS2741 for "3n";
-  TS1539 at the name from checkVariableLikeDeclaration (properties) and checkGrammarObjectLiteralExpression
-  (property assignments); `const { 0n: f } = arr` is TS2538 'bigint' as an index type. tttt's parse_name_or_value()
-  turns the bigint into its number text (`{ 1: number }`). Needs a "no name" flag through PropertyName parsing,
-  the member builders (object literal, interface, class) skipping such members, and the two grammar checks. Enum
-  members with a bigint name are done (`__missing`, EnumCase.canonical_name).
+- Done 2026-10-14 by syntax: span_is_bigint_name() (span.h) is what the member builders, duplicate checks and symbol
+  merges skip; the members keep their number text as name_string (a JS name lookup of `"1"` won't find them either,
+  since nothing declares them). A computed `[1n]` is TS2464, unchanged.
 
 ## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate scripts/mutate.py --tests multi,js -n 3000 --seed 16`)
 22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to plan 26 (since retired; bugs/js.md). TypeScript ones (mut0806 and mut2320 rechecked as probes 2026-10-09: still differ):

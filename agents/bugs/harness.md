@@ -10,10 +10,6 @@
   but `unknown` in the CLI. tttt (noEmit) checks in the CLI's order; the mechanism (record the current node when
   the constraint walk finds the cycle, relate it in generic_typecheck()) was tried 2026-10-12 and dropped: it can't
   match without emulating the emit resolver's queries.
-- augmentExportEquals2 repeats `// @filename: file3.ts`; its last file uses `require`, so tsgo's harness makes it the
-  only root and writes it first, then the other units (toBeCompiled, then otherFiles): the earlier, empty file3.ts
-  overwrites it and the program checks nothing (no errors, symbols without any). tttt's add_virtual_source_file()
-  keeps the last copy. Mirroring means the root-first write order when last_is_only_root; one test.
 - `FAST=1 scripts/test.sh -f '.*import[A-Z].*'` (some test in that set) ends with valgrind's "131 bytes in 3 blocks
   definitely lost" from symbol_text() in namespace_decl_compile_test_info (baseline_test_traversal.c), at the
   base commit too: a leaked cstr in the symbols walk.
@@ -53,9 +49,10 @@
   CompilerOptions.no_error_truncation the same way. The CLI default (false) does
   tsgo's 160-character truncation (approximateLength ported, `display_over()`). Whether TS2719 now fires where both
   sides truncate to the same text (flagflip vscode/eopt's TS2719->TS2322 x3) is unchecked.
-- largeControlFlowGraph (types): tsc's first deep flow query comes from the end of the file (its checker reaches the
-  last statement's reference first through some deferred check), so every `data` is errorType there; tttt's from the
-  2000th statement. Check order, not a flow bug; one test.
+- tsgo's flowAnalysisDisabled (set at flow depth 2000, restored only by a function or module body's checkBlock)
+  persists in its checker after a file whose top level overflowed: later files of that checker get no flow
+  analysis either. tttt resets it per file (checker-count independence); its types walk emulates the persisting flag
+  for the file itself (largeControlFlowGraph). Not observed across files anywhere.
 - Moved from hacks.md (hacks audit 2026-10-08), missing program/config diagnostics:
   - `/// <reference lib>` with an unknown name is silently ignored (tsc: TS2726).
   - Config syntax: not reported are syntax errors in configs it extends (no SourceFile for them), tokens after the root

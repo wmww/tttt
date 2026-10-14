@@ -95,8 +95,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - Strings are UTF-8 (permanent: tttt's strings are UTF-8), a lone surrogate escape kept as its WTF-8 bytes
   (`append_code_point()`, which joins an escaped pair; the printer escapes it). Code that decodes UTF-8 strictly may
   still drop those bytes (`cutf8_encode` refuses surrogates). `regex_check_literal()` works in UTF-16 to port tsc's scanner; a position between surrogates is the 3rd UTF-8 byte
-  (`utf8_byte_utf16_units()`). A NUL byte ends the file (scannerUnexpectedNullCharacter1,
-  scannerStringLiteralWithContainingNullCharacter1).
+  (`utf8_byte_utf16_units()`). A NUL byte is a character where tokens and lists are concerned (at_eof()); some
+  lookaheads still stop at it.
 - Escaped identifiers (`a`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names
   behind a mutex, keyed by where the raw name sits in a file with a `\u`, each lookup a linear scan of that file's
   cooked names (quadratic for a file with thousands). Symbol tables cook at every lookup (a `memchr` for normal

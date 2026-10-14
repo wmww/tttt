@@ -127,10 +127,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   paired into one InterfaceMember by the parser and merged by builder_add_interface_member(), so the binder's
   table-symbol rule (see bind_member_symbols() for classes, literal_bind() for object literals) has nothing to run
   on. Needs the interface's members bound like the class's (per member, in order) before pairing.
-- typeAliasesDoNotMerge (types): `export type A = {}; type A = {}`: tsgo prints the second alias as
-  `import("./typeAliasesDoNotMerge").A`, i.e. the conflicting symbol has the file's module as parent (fast path of
-  getAliasForSymbolInContainer), not a symbol in scope. Where tsgo's binder puts it (exports with the file as parent?)
-  wasn't checked.
 
 ## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
 - **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
@@ -180,12 +176,12 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `{ a: number } & typeof globalThis`) expands `Intl`'s members one level less than tsc (`Intl: { Collator: any; ...}`
   vs tsc's `Intl: { Collator: { supportedLocalesOf: any; }; ...}`): shouldUsePlaceholderForProperty depth for a
   namespace's members.
-- accessorBodyInTypeContext (types): `type A = { get foo() { return 0 } }` (TS1183) is `foo: number` in tsc, its body
-  walked (`>0 : 0`); tttt's parser turns a type literal's accessor into an InterfaceMember and drops the FunctionImpl
-  (body, parameter scope), so the getter is any and nothing in it is bound or walked. Same root as
-  declarationEmitBindingPatternsUnused (a setter's parameter scope). Needs InterfaceMember to keep the accessor's
-  FunctionImpl (boxed in InterfaceAccessor), the binder to walk it, and the getter's type inferred from the body when
-  unannotated. Parser + binder + checker; a session.
+- Type member accessor bodies (TS1183, 2026-10-14): a getter's body is kept (InterfaceAccessor.getter_body), bound,
+  checked and walked, and types an unannotated getter. Left: an annotated getter's returns aren't checked against the
+  annotation (`get x(): number { return "" }`, tsc's TS2322: the annotation moved to the member's type, the kept
+  FunctionImpl has none), and a setter's body isn't kept at all (`set x(v: number) { v.toFixed() }`: nothing in it
+  is bound or walked; its parameter's annotation is moved to the write type, so keeping it needs a TypeNode copy or a
+  shared node). Same root as declarationEmitBindingPatternsUnused (a setter's parameter scope). No suite test left.
 - vscode/eopt elaboration choice (TS2412 at `viewModel` in tsc vs TS2375 at a nested `styles: { a: st.a }` literal in
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
@@ -196,8 +192,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
   saw the types side; the errors component fails now).
 - ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
-- instantiationExpressions (types): `fx<>`: the parser drops an empty type argument list (keeping it trips code that
-  assumes one).
 
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
 - **Generic methods of a class or non-thisless interface get fresh type parameters in tsgo when accessed through the
@@ -207,20 +201,27 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   (builtinIterator, awaitUsingDeclarationsWithIteratorObject, usingDeclarationsWithIteratorObject). Verified with an
   instrumented tsgo. tttt's ty_instantiate() returns the method's type unchanged for a `this`-only mapper it doesn't
   mention, so ty_display can't tell; a display-only emulation needs the access path; making the instantiation real is
-  a checker identity change (perf, caches). Same family as the item above.
+  a checker identity change (perf, caches). Same family as the item above. (2026-10-14, agent D: which members are
+  thisless is syntactic, tsc's isThislessFunctionLikeDeclaration/isThislessType: a parameter or return annotation
+  that is a union, intersection, function type... is never thisless, only keywords, literals, arrays of thisless
+  types and references with thisless arguments are; `from<T>(value: Iterator<T> | Iterable<T>)` is not, hence the
+  clone. The interface has a this-type because it has a base (`extends typeof Iterator`), isThislessInterface. The
+  visible effect is limited to unions in such signatures printing sorted instead of as written; an emulation would
+  mark the instantiated member's signature "cloned" when the access goes through a this-instantiated reference of a
+  non-thisless interface and its declaration isn't thisless. Plan-sized: the three tests share it.)
 - Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
   `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
   newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
-- Index symbols (`__index`) of an object rest (`const { ...t2 } = strMap; t2.z`) are named after the rest's binding
-  (`t2.__index`: tsgo's getRestType gives the rest type the binding element's symbol); tttt's rest type has none
-  (noUncheckedIndexedAccessDestructuring).
+- Index symbols of a destructuring assignment's rest (`({ ...r } = strMap); r.z`): tsgo's getRestType gets the object
+  literal's symbol there (checkObjectLiteralDestructuringPropertyAssignment); ty_object_rest_type() passes none (a
+  binding's rest has its binding's symbol since 2026-10-14). Not probed.
 - Union order left: tuples of different lengths each have an Array base of their own in tsgo (sliceResultCast:
   `x.slice` is a union of two identical-looking signatures), comparisonReverseMappedTypes (tttt infers a homomorphic
   `T[K]` template's source itself instead of a reverse mapped type: infer.c's "A plain homomorphic T[K] template"
   shortcut; tsgo orders reverse mapped types by source, then mapped type declaration),
-  noImplicitAnyUnionNormalizedObjectLiteral1 (normalized spread literal ordered first in tsgo), instantiationExpressions,
+  noImplicitAnyUnionNormalizedObjectLiteral1 (normalized spread literal ordered first in tsgo),
   `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
 - **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
@@ -283,15 +284,13 @@ Looked at, root cause where found, not fixed (one test each unless named):
 - mergedClassWithNamespacePrototype: `namespace prototype` inside a namespace merged with `declare class Foo` merges
   into the class's prototype property symbol in tsgo (NamespaceModuleExcludes is none), so it prints `typeof
   prototype`; tttt `typeof Foo.prototype`.
-- jsxNamespacePrefixInName(React): `<a attr:={"value"} />` (recovery of a namespaced attribute name with a missing
-  local name): tsgo's type of the tag name `a` is `undefined`. Not chased.
 - typeofImportDefer: `typeof import.defer("./a").Foo` recovers to an import type with a missing string literal;
   tsgo's symbols are `Symbol(unknown)` for the missing literal and `Symbol(unknown.defer)` for the qualifier (an
   unresolved but non-null module), tttt prints nothing. An unresolved `import("./nope")` prints nothing in both.
 - declarationEmitUsingAlternativeContainingModules1/2: in a long signature tsgo prints some optional properties
   without `| undefined` (`enabled?: boolean;`, reused annotations through a mapped type?) and `readonly ["entries"]`
   for an object literal's `['entries'] as const` while the declaration line keeps `['entries']`.
-- jsonRawJSON2, duplicateIdentifierChecks, typeAliasesDoNotMerge, the cross-file alias merges: see "Symbols
+- jsonRawJSON2, duplicateIdentifierChecks, the cross-file alias merges: see "Symbols
   baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
@@ -309,8 +308,6 @@ Looked at, root cause where found, not fixed (one test each unless named):
     the distributed `((F | O) & (F | O)) | undefined` expanded. Seen in a babel__traverse probe, no $ExpectType on it.
 
 ## Unfiled suite failures (triage 2026-10-14, plan 66; first differing line only, not investigated)
-- jsxNamespacePrefixInNameReact (types): `>a : any` where tsgo prints `undefined` (jsxNamespacePrefixInName passes
-  everything but a similar types line).
 - objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier (types): a shorthand `get e` (recovery) is
   `readonly e: any` to tttt, `readonly e: void` to tsgo: the recovered getter's return type.
 - fixSignatureCaching (types): one line inside the huge object literal type of the mobile-detect closure differs

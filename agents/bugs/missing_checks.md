@@ -47,21 +47,10 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Templates**: `${symbol}` not rejected.
 - **Misc**: TS2353 for an object literal assigned to an assignment pattern (`({ a } = { a, b })`); TS2561/TS2820 want
   the spelling suggestion (`spelling_suggestion()` exists); TS2551 suggestions don't filter inaccessible members;
-  TS2793 only for function declarations, not overloaded methods/constructors (`add_implementation_success`); TS2563
-  (flow depth 2000 silently gives the error type: largeControlFlowGraph); TS2406 (`for (#x in o)` says TS1451).
-- **Bigint property names**: TS1539 and `{ 1n: x }` as the property "1n" (TS2538 for bigint keys): bigintPropertyName,
-  which also has a parse failure. (2026-10-14) tsgo's binder names a bigint-named member `__missing` and declares it
-  detached (no table, getNamedMembers skips reserved names): `{ 1n: 1 }` is `{}`, an interface's or class's `2n: T` no
-  member at all, though the symbols baseline still prints `G[2n]`; TS1539 at object literal properties (grammar),
-  property declarations and signatures (checkVariableLikeDeclaration), not methods; `const { 0n: f } = arr` parses
-  (tttt: TS1180) and is TS2538 'bigint' at the name. parse_name_or_value() gives the value's text; tttt needs a
-  "no member" flag on ObjectExprItem/ClassItem/InterfaceMember that every member builder and duplicate check skips
-  (a sentinel name would merge two bigint names). One test, no real code.
-- **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (`<in in>`; its `type T2<out out> = T2`
-  line matches since 2026-10-14, a circular alias is not generic): tsc reads the second `in` as
-  a reserved-word name (TS1359, missing name, not consumed), then an empty type parameter with a missing name consumed
-  by the list's no-progress rule; both are '(Missing)': TS2300, and TS2637 twice through the merged symbol. Needs type
-  parameters with missing names (GenericItem without a name span) that the binder declares as `(Missing)`.
+  TS2793 only for function declarations, not overloaded methods/constructors (`add_implementation_success`); TS2406
+  (`for (#x in o)` says TS1451).
+- **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
+  one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test.
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
@@ -223,16 +212,10 @@ Still wrong: jsExportMemberMergedWithModuleAugmentation2 (duplicates across an i
 our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
 
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
-- scannerUnexpectedNullCharacter1 (a NUL outside a string ends tttt's parse: `*p.pos` is the EOF test everywhere),
-  manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
-- jsxInvalidEsprimaTestSuite (2026-10-12, several mechanisms): (a) in a JSX file tsc's scanner makes `</` (not
-  `</*`) one LessThanSlashToken, which is no binary operator nor expression start: `</>;` is TS1128 at `</` then
-  `>` a binary operator missing its left operand (TS1109 twice), where tttt scans `<` and a regex (TS1161); (b) a `<`
-  at a statement start not followed by a name or `>` isn't JSX (tsgo's parseUpdateExpression lookahead) but still
-  starts an expression statement (isStartOfExpression takes a binary operator): `<:a />` is TS1109 at `<` and `:`,
-  tttt TS1128 twice; (c) `<a.b.c></a>`, `<a.></a.>`, `<a[foo]>`, `<a .../*hai*/asdf/>` each recover differently
-  (missing closing-tag name checks, TS1003 positions). (a) needs a `</` token in tok_scan_end() and the expression
-  parser (JSX files only); not done, one test.
+- manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
+- A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
+  list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
+  probed (they see no token, the list skips it).
 - A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
@@ -252,7 +235,6 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
 - manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a non-initial `#!` (pos++), so
   the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
   parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
-- jsxNamespacePrefixInName(React) (types): `<a attr:=...>` recovery types `a` undefined in tsc, any in tttt.
 - typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
 - Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".
