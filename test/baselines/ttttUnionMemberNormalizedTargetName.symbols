@@ -1,0 +1,44 @@
+//// [test/cases/ttttUnionMemberNormalizedTargetName.ts] ////
+
+=== ttttUnionMemberNormalizedTargetName.ts ===
+// A union source's failing member names the target as tsc's isRelatedTo normalized it before eachTypeRelatedToType:
+// a deferred reference (an alias' tuple or array body) without the alias name, below a head that names it
+type P = [string, number];
+>P : Symbol(P, Decl(ttttUnionMemberNormalizedTargetName.ts, 0, 0))
+
+declare let e: (string[] | [string, number]);
+>e : Symbol(e, Decl(ttttUnionMemberNormalizedTargetName.ts, 3, 11))
+
+let g: P = e;
+>g : Symbol(g, Decl(ttttUnionMemberNormalizedTargetName.ts, 4, 3))
+>P : Symbol(P, Decl(ttttUnionMemberNormalizedTargetName.ts, 0, 0))
+>e : Symbol(e, Decl(ttttUnionMemberNormalizedTargetName.ts, 3, 11))
+
+interface B { a: string }
+>B : Symbol(B, Decl(ttttUnionMemberNormalizedTargetName.ts, 4, 13))
+>a : Symbol(B.a, Decl(ttttUnionMemberNormalizedTargetName.ts, 5, 13))
+
+interface I extends B {}
+>I : Symbol(I, Decl(ttttUnionMemberNormalizedTargetName.ts, 5, 25))
+>B : Symbol(B, Decl(ttttUnionMemberNormalizedTargetName.ts, 4, 13))
+
+declare let k: (number | { a: string });
+>k : Symbol(k, Decl(ttttUnionMemberNormalizedTargetName.ts, 7, 11))
+>a : Symbol(a, Decl(ttttUnionMemberNormalizedTargetName.ts, 7, 26))
+
+let l: I = k;
+>l : Symbol(l, Decl(ttttUnionMemberNormalizedTargetName.ts, 8, 3))
+>I : Symbol(I, Decl(ttttUnionMemberNormalizedTargetName.ts, 5, 25))
+>k : Symbol(k, Decl(ttttUnionMemberNormalizedTargetName.ts, 7, 11))
+
+type A = string[];
+>A : Symbol(A, Decl(ttttUnionMemberNormalizedTargetName.ts, 8, 13))
+
+declare let m: (number[] | string[]);
+>m : Symbol(m, Decl(ttttUnionMemberNormalizedTargetName.ts, 10, 11))
+
+let n: A = m;
+>n : Symbol(n, Decl(ttttUnionMemberNormalizedTargetName.ts, 11, 3))
+>A : Symbol(A, Decl(ttttUnionMemberNormalizedTargetName.ts, 8, 13))
+>m : Symbol(m, Decl(ttttUnionMemberNormalizedTargetName.ts, 10, 11))
+

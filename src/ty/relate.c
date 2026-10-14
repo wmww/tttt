@@ -3682,6 +3682,9 @@ static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty c
         }
         if (!corresponding.len || sources.len < corresponding.len || sources.len % corresponding.len) corresponding = (TyList){0};
     }
+    // (A failing member's errors name the target as tsc's isRelatedTo normalized it before eachTypeRelatedToType: a
+    // deferred reference without its alias name, `[string, number]` below a head that said `P`)
+    Ty const* report_target = report ? normalized_reference(me, target) : target;
     for (u32 i = 0; i < sources.len; i++) {
         Ty const* member = fresh.len ? ty_regular(me, fresh.data[i]) : sources.data[i];
         if (corresponding.len) {
@@ -3691,7 +3694,7 @@ static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty c
                 continue;
             }
         }
-        Ternary related = is_related_to_side(me, st, member, target, report, 2);
+        Ternary related = is_related_to_side(me, st, member, report_target, report, 2);
         if (!related) return TERNARY_FALSE;
         result &= related;
     }

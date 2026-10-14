@@ -1,0 +1,37 @@
+//// [test/cases/ttttUnionMemberNormalizedTargetName.ts] ////
+
+=== ttttUnionMemberNormalizedTargetName.ts ===
+// A union source's failing member names the target as tsc's isRelatedTo normalized it before eachTypeRelatedToType:
+// a deferred reference (an alias' tuple or array body) without the alias name, below a head that names it
+type P = [string, number];
+>P : P
+
+declare let e: (string[] | [string, number]);
+>e : string[] | [string, number]
+
+let g: P = e;
+>g : P
+>e : string[] | [string, number]
+
+interface B { a: string }
+>a : string
+
+interface I extends B {}
+declare let k: (number | { a: string });
+>k : number | { a: string; }
+>a : string
+
+let l: I = k;
+>l : I
+>k : number | { a: string; }
+
+type A = string[];
+>A : A
+
+declare let m: (number[] | string[]);
+>m : string[] | number[]
+
+let n: A = m;
+>n : A
+>m : string[] | number[]
+

@@ -1,0 +1,35 @@
+ttttUnionMemberNormalizedTargetName.ts(5,5): error TS2322: Type 'string[] | [string, number]' is not assignable to type 'P'.
+  Type 'string[]' is not assignable to type '[string, number]'.
+    Target requires 2 element(s) but source may have fewer.
+ttttUnionMemberNormalizedTargetName.ts(9,5): error TS2322: Type 'number | { a: string; }' is not assignable to type 'I'.
+  Type 'number' is not assignable to type 'I'.
+ttttUnionMemberNormalizedTargetName.ts(12,5): error TS2322: Type 'string[] | number[]' is not assignable to type 'A'.
+  Type 'number[]' is not assignable to type 'string[]'.
+    Type 'number' is not assignable to type 'string'.
+
+
+==== ttttUnionMemberNormalizedTargetName.ts (3 errors) ====
+    // A union source's failing member names the target as tsc's isRelatedTo normalized it before eachTypeRelatedToType:
+    // a deferred reference (an alias' tuple or array body) without the alias name, below a head that names it
+    type P = [string, number];
+    declare let e: (string[] | [string, number]);
+    let g: P = e;
+        ~
+!!! error TS2322: Type 'string[] | [string, number]' is not assignable to type 'P'.
+!!! error TS2322:   Type 'string[]' is not assignable to type '[string, number]'.
+!!! error TS2322:     Target requires 2 element(s) but source may have fewer.
+    interface B { a: string }
+    interface I extends B {}
+    declare let k: (number | { a: string });
+    let l: I = k;
+        ~
+!!! error TS2322: Type 'number | { a: string; }' is not assignable to type 'I'.
+!!! error TS2322:   Type 'number' is not assignable to type 'I'.
+    type A = string[];
+    declare let m: (number[] | string[]);
+    let n: A = m;
+        ~
+!!! error TS2322: Type 'string[] | number[]' is not assignable to type 'A'.
+!!! error TS2322:   Type 'number[]' is not assignable to type 'string[]'.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    
