@@ -1,0 +1,48 @@
+//// [test/cases/ttttUnresolvedTypeOrder.ts] ////
+
+=== m.ts ===
+import * as t from "nope";
+>t : Symbol(t, Decl(m.ts, 0, 6))
+
+declare class NP<T> { type: T }
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+>T : Symbol(T, Decl(m.ts, 1, 17))
+>type : Symbol(NP.type, Decl(m.ts, 1, 21))
+>T : Symbol(T, Decl(m.ts, 1, 17))
+
+declare const u: NP<any> | NP<t.Aliases>;
+>u : Symbol(u, Decl(m.ts, 2, 13))
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+>t : Symbol(t, Decl(m.ts, 0, 6))
+>Aliases : Symbol(t.Aliases)
+
+declare const v: NP<Missing> | NP<any>;
+>v : Symbol(v, Decl(m.ts, 3, 13))
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+>Missing : Symbol(Missing)
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+
+export const a = [u, v];
+>a : Symbol(a, Decl(m.ts, 4, 12))
+>u : Symbol(u, Decl(m.ts, 2, 13))
+>v : Symbol(v, Decl(m.ts, 3, 13))
+
+type F<P> = (path: NP<P>) => void;
+>F : Symbol(F, Decl(m.ts, 4, 24))
+>P : Symbol(P, Decl(m.ts, 5, 7))
+>path : Symbol(path, Decl(m.ts, 5, 13))
+>NP : Symbol(NP, Decl(m.ts, 0, 26))
+>P : Symbol(P, Decl(m.ts, 5, 7))
+
+const e: F<any> | F<t.Aliases> = (path) => { path.type; };
+>e : Symbol(e, Decl(m.ts, 6, 5))
+>F : Symbol(F, Decl(m.ts, 4, 24))
+>F : Symbol(F, Decl(m.ts, 4, 24))
+>t : Symbol(t, Decl(m.ts, 0, 6))
+>Aliases : Symbol(t.Aliases)
+>path : Symbol(path, Decl(m.ts, 6, 34))
+>path.type : Symbol(NP.type, Decl(m.ts, 1, 21))
+>path : Symbol(path, Decl(m.ts, 6, 34))
+>type : Symbol(NP.type, Decl(m.ts, 1, 21))
+

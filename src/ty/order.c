@@ -170,6 +170,16 @@ typedef struct TypeName {
 static TypeName type_name(Ty const* t) {
     if (t->alias) return (TypeName){ true, t->alias, t->alias->name, t->alias };
     switch ((TyKind)t->kind) {
+        case TY_INTRINSIC:
+            // An unresolved reference's error type is named by tsc's unresolved symbol (getUnresolvedSymbolForEntityName,
+            // its alias symbol): `a.B` by `B`, one symbol per path, ahead of the unnamed any
+            if ((t->flags & TYF_ERROR) && t->intrinsic.name.size && !csview_equals(t->intrinsic.name, "any")) {
+                csview name = t->intrinsic.name;
+                isize dot = name.size;
+                while (dot > 0 && name.buf[dot - 1] != '.') dot--;
+                return (TypeName){ true, t->intrinsic.name.buf, csview_slice(name, dot, name.size), nullptr };
+            }
+            return (TypeName){0};
         case TY_TYPE_PARAM:
             if (t->param.symbol) return (TypeName){ true, t->param.symbol, t->param.symbol->name, t->param.symbol };
             return (TypeName){ true, t, atom_sv(t->param.name), nullptr };
@@ -447,6 +457,10 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
         if (na.identity == nb.identity) {
             if (a->alias && a->alias == b->alias) {
                 int c = cmp_tylist(a->alias_args, b->alias_args);
+                if (c) return c;
+            } else if (!a->alias && !b->alias && a->kind == TY_INTRINSIC && b->kind == TY_INTRINSIC) {
+                // (The same unresolved path with other type arguments: tsc's alias type arguments)
+                int c = cmp_tylist(a->intrinsic.unresolved_args, b->intrinsic.unresolved_args);
                 if (c) return c;
             }
         } else {

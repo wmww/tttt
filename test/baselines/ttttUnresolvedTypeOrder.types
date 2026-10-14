@@ -1,0 +1,36 @@
+//// [test/cases/ttttUnresolvedTypeOrder.ts] ////
+
+=== m.ts ===
+import * as t from "nope";
+>t : any
+
+declare class NP<T> { type: T }
+>NP : NP<T>
+>type : T
+
+declare const u: NP<any> | NP<t.Aliases>;
+>u : NP<t.Aliases> | NP<any>
+>t : any
+
+declare const v: NP<Missing> | NP<any>;
+>v : NP<Missing> | NP<any>
+
+export const a = [u, v];
+>a : NP<t.Aliases>[]
+>[u, v] : NP<t.Aliases>[]
+>u : NP<t.Aliases> | NP<any>
+>v : NP<Missing> | NP<any>
+
+type F<P> = (path: NP<P>) => void;
+>F : F<P>
+>path : NP<P>
+
+const e: F<any> | F<t.Aliases> = (path) => { path.type; };
+>e : F<t.Aliases> | F<any>
+>t : any
+>(path) => { path.type; } : (path: NP<t.Aliases>) => void
+>path : NP<t.Aliases>
+>path.type : t.Aliases
+>path : NP<t.Aliases>
+>type : t.Aliases
+

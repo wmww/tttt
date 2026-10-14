@@ -1,0 +1,17 @@
+m.ts(1,20): error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+m.ts(4,21): error TS2304: Cannot find name 'Missing'.
+
+
+==== m.ts (2 errors) ====
+    import * as t from "nope";
+                       ~~~~~~
+!!! error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+    declare class NP<T> { type: T }
+    declare const u: NP<any> | NP<t.Aliases>;
+    declare const v: NP<Missing> | NP<any>;
+                        ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+    export const a = [u, v];
+    type F<P> = (path: NP<P>) => void;
+    const e: F<any> | F<t.Aliases> = (path) => { path.type; };
+    
