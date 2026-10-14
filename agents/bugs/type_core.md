@@ -352,17 +352,18 @@ vscode (1): "unsure" also makes `definitely_related` relate without the restrict
 instantiation (instantiate the check type with the wildcard mapper without walking, relate, and only resolve what the
 relation asks for), which is plan-sized: definitely_related's restrictive instantiation needs the same.
 
-## Relation answers that depend on what was related before (mermaid, plan 62)
-mermaid's `packages/mermaid/scripts/create-types-from-json-schema.mts(129,23)` TS2345 (tsgo reports it at any checker
-count) is lost when that file is checked by a fresh checker: `TTTT_CHECK_ONLY=create-types-from-json-schema
-release/tttt --checkers 1 -p .` in `thirdparty/sources/mermaid` reproduces it at one checker (kdiff lists it at K=16).
-`UncheckedJSONSchemaType<MermaidConfig, false>` -> `UncheckedJSONSchemaType<Record<string, any>, false>`: in the full
-run the structural comparison of `UncheckedPropertiesSchema<MermaidConfig>` (variances unmeasurable|unreliable, 24)
-meets SankeyDiagramConfig's property first and fails (0); fresh, it meets `Config`'s, which ends Maybe through the
-recursion (`TTTT_DEBUG_RELATE_NESTED=1`: every level 3), and the top-level Maybe is success. Partial's variance is
-measured in the middle of the fresh relation. Unknown whether tsgo would give Maybe in some order too (then it's a
-tsgo-style order dependence for bugs/tsgo_divergences.md); start by checking which member and property order tsgo
-compares (`scripts/variancetrace.py`-style instrumentation of relater.go's recursiveTypeRelatedTo).
+## Deep nesting cut-offs depend on type ids (tsgo's too)
+isDeeplyNestedType counts a recursion identity only at increasing type ids, so whether a relation is cut off as Maybe
+(or explores further and finds a real failure) depends on which types earlier files created first. tsgo has the same
+dependence; tttt matches it only where the types involved are the same ones (same identities, so the same maybe-stack
+hits and stack contents). mermaid's spurious create-types-from-json-schema.mts(129,23) TS2345 at K=1 (fixed
+2026-10-14) was this shape: `JSONSchemaType<MermaidConfig>` through an import must be a union by that alias, not
+`UncheckedJSONSchemaType<MermaidConfig, false>` (hacks.md "Through an import"), else the inner
+`UncheckedJSONSchemaType<MermaidConfig, false>` hit the maybe stack at once, the comparison took another path, and
+since `.build/jsonSchema.ts` had created `UncheckedJSONSchemaType<any, false>`'s members early the cut-off tsgo gets
+never came. To debug one: `TTTT_DEBUG_RELATE_NESTED=1` marks results "(deeply nested)" and prints "on the maybe
+stack" hits; compare with tsgo's recursiveTypeRelatedTo instrumented the same way (an overlay build like
+`scripts/variancetrace.py`, printing at the end of each top-level relation so typeToString can't shift ids inside it).
 
 ## Without a global Array (noLib or a missing lib; triage 2026-10-14)
 - A tuple's rest element is stored as its array type, which is `{}` then: `[number, ...string[]]` prints

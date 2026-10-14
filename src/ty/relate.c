@@ -6529,6 +6529,11 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
     if (maybe_contains(st, key)) {
+        if (debug_env.debug_relate_nested) {
+            cstr source_str = ty_to_cstr(me, source), target_str = ty_to_cstr(me, target);
+            log_info("on the maybe stack ", st->depth + 1, ": '", source_str, "' -> '", target_str, "'");
+            c_drop(cstr, &source_str, &target_str);
+        }
         if (debug_env.debug_variance && my variance_depth) variance_debug_log(me, st->source_depth, "MAYBE", source, target, "");
         return TERNARY_MAYBE;
     }
@@ -6580,7 +6585,8 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
-        log_info("nested ", st->depth, ": '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "");
+        log_info("nested ", st->depth, ": '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "",
+            st->expanding == 3 ? " (deeply nested)" : "");
         c_drop(cstr, &source_str, &target_str);
     }
     my variance_reports |= saved_reports;

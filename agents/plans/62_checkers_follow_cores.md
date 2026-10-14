@@ -32,9 +32,8 @@ what is left are bugs that already hit today's default of 4 checkers.
        circularly references itself in mapped type") at K>1. dexie also has a TS2502 at K=1 that tsgo hasn't: same
        circularity family.
      - better-auth/demo/nextjs (TS7006 lost, TS2578 gained), better-auth/demo/oidc-client (TS18046 lost at K=4).
-     - mermaid: a TS2345 (`UncheckedJSONSchemaType<MermaidConfig, false>` against `<Record<string, any>, false>`)
-       lost at K=16: a relation answer depending on what was measured first (variances: bugs/type_core.md
-       "Variance measurement order").
+     - mermaid: a spurious TS2345 at K=1 (`JSONSchemaType<MermaidConfig>` against `<Record<string, any>>`), fixed
+       2026-10-14: an import's alias instance wasn't its own union (bugs/type_core.md "Deep nesting cut-offs").
   3. *Display that depends on the checker*: babel-traverse's TS2322 union shows another first member (`... 754 more`:
      an `order.c` id tie, hacks.md "Stable type ordering"); openapi-typescript's TS2425 prints `__@iterator@92` vs
      `@73` (a symbol id in a name: compare with what tsgo prints there); redux-toolkit's elaboration says
@@ -66,8 +65,8 @@ redux-toolkit); the DT sweep, corpora and suite dumps stay K-independent. Source
 (K=1 was 3307), DT sweep 8594 / 8595. Fixed: the JSX runtime module per file (the once_key tagging also caught a later
 TS7026: errors are inserted sorted, the tag went by index range); trpc and better-auth (`outer_inference` leaking into
 variable initializers and predicate inference, hacks.md); dexie and mikro-orm's TS2615 (callable_definitely_related(),
-bugs/type_core.md). Left: mermaid (bugs/type_core.md "Relation answers that depend on what was related before"), so
-stage 2 starts with it or with babel-traverse. `TTTT_CHECK_ONLY=substring` (program.c deal_files) reproduces an order
+bugs/type_core.md). Left: mermaid (fixed 2026-10-14, bugs/type_core.md "Deep nesting cut-offs"), so stage 2 starts with
+babel-traverse. `TTTT_CHECK_ONLY=substring` (program.c deal_files) reproduces an order
 dependence at one checker: only the matching files are checked, by a fresh checker. The sweeps now run at the default
 K; `scripts/oracles.py --only kdiff` is the K oracle (suite dumps + source sweep at 16, ~9 min).
 

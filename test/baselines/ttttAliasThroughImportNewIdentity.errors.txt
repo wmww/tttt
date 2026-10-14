@@ -1,0 +1,44 @@
+main.ts(6,7): error TS2322: Type 'J<number>' is not assignable to type '{ c: 1; }'.
+  Property 'c' is missing in type '{ a: number[]; }' but required in type '{ c: 1; }'.
+main.ts(7,7): error TS2322: Type 'K<number>' is not assignable to type '{ c: 1; }'.
+  Property 'c' is missing in type '{ a: number; } & { k?: string | undefined; }' but required in type '{ c: 1; }'.
+main.ts(8,7): error TS2741: Property 'c' is missing in type 'L<number>' but required in type '{ c: 1; }'.
+main.ts(9,7): error TS2322: Type 'M<number>' is not assignable to type '{ c: 1; }'.
+  Property 'c' is missing in type 'number[]' but required in type '{ c: 1; }'.
+
+
+==== lib.ts (0 errors) ====
+    type W<N extends string, Type> = undefined extends null ? `needs ${N}` : Type;
+    type U<T, P extends boolean> = { a: T[] } | { b: P };
+    type I<T> = ({ a: T } | { b: T[] }) & { k?: string };
+    type O<T> = { o: T };
+    export type J<T> = W<"J", U<T, false>>;
+    export type K<T> = I<T>;
+    export type L<T> = O<T>;
+    export type M<T> = Array<T>;
+==== main.ts (4 errors) ====
+    import type { J, K, L, M } from "./lib";
+    declare const j: J<number>;
+    declare const k: K<number>;
+    declare const l: L<number>;
+    declare const m: M<number>;
+    const j1: { c: 1 } = j;
+          ~~
+!!! error TS2322: Type 'J<number>' is not assignable to type '{ c: 1; }'.
+!!! error TS2322:   Property 'c' is missing in type '{ a: number[]; }' but required in type '{ c: 1; }'.
+!!! related TS2728 main.ts:6:13: 'c' is declared here.
+    const k1: { c: 1 } = k;
+          ~~
+!!! error TS2322: Type 'K<number>' is not assignable to type '{ c: 1; }'.
+!!! error TS2322:   Property 'c' is missing in type '{ a: number; } & { k?: string | undefined; }' but required in type '{ c: 1; }'.
+!!! related TS2728 main.ts:7:13: 'c' is declared here.
+    const l1: { c: 1 } = l;
+          ~~
+!!! error TS2741: Property 'c' is missing in type 'L<number>' but required in type '{ c: 1; }'.
+!!! related TS2728 main.ts:8:13: 'c' is declared here.
+    const m1: { c: 1 } = m;
+          ~~
+!!! error TS2322: Type 'M<number>' is not assignable to type '{ c: 1; }'.
+!!! error TS2322:   Property 'c' is missing in type 'number[]' but required in type '{ c: 1; }'.
+!!! related TS2728 main.ts:9:13: 'c' is declared here.
+    

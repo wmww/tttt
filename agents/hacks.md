@@ -544,6 +544,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - Union origins (`Ty.composite.origin`): not instantiated, dropped by union-mapping helpers (plan 37 B stage 2).
 - `ty_realias`: a renamed object type is a second `Ty` (members resolved twice); renamed deferred types are copies. No
   "local alias" exception. `renames` in `lower`: whether an alias instance keeps the name is syntactic.
+- Through an import (`lower_identifier()`'s `through_import`), a generic alias's instance takes the import's alias like
+  tsgo's getTypeFromTypeAliasReference only for a union/intersection, deferred conditional, indexed access or deferred
+  reference body. Not for an instantiated anonymous or mapped body (tsgo's getObjectTypeInstantiation keys those on the
+  alias too): realiasing them made arktype's `finalizeTree` instantiations run away into 3 spurious TS5114 (2026-10-14,
+  not investigated), so `import { L }` with `type L<T> = O<T>` still is the O<X> type there.
 - Conditional types (`conditional.c`): deferred conditionals don't keep their inferences (`inferred_true_branch()`
   recomputes); `ty_implied_infer_constraint` lacks the mapped-extends rule. Permissive/restrictive instantiations only
   replace what `mentions_type_variables` finds (8192 types / 48 deep, then "unsure": defer; it resolves signatures tsc

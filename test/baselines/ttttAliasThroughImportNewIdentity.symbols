@@ -1,0 +1,102 @@
+//// [test/cases/ttttAliasThroughImportNewIdentity.ts] ////
+
+=== lib.ts ===
+type W<N extends string, Type> = undefined extends null ? `needs ${N}` : Type;
+>W : Symbol(W, Decl(lib.ts, 0, 0))
+>N : Symbol(N, Decl(lib.ts, 0, 7))
+>Type : Symbol(Type, Decl(lib.ts, 0, 24))
+>N : Symbol(N, Decl(lib.ts, 0, 7))
+>Type : Symbol(Type, Decl(lib.ts, 0, 24))
+
+type U<T, P extends boolean> = { a: T[] } | { b: P };
+>U : Symbol(U, Decl(lib.ts, 0, 78))
+>T : Symbol(T, Decl(lib.ts, 1, 7))
+>P : Symbol(P, Decl(lib.ts, 1, 9))
+>a : Symbol(a, Decl(lib.ts, 1, 32))
+>T : Symbol(T, Decl(lib.ts, 1, 7))
+>b : Symbol(b, Decl(lib.ts, 1, 45))
+>P : Symbol(P, Decl(lib.ts, 1, 9))
+
+type I<T> = ({ a: T } | { b: T[] }) & { k?: string };
+>I : Symbol(I, Decl(lib.ts, 1, 53))
+>T : Symbol(T, Decl(lib.ts, 2, 7))
+>a : Symbol(a, Decl(lib.ts, 2, 14))
+>T : Symbol(T, Decl(lib.ts, 2, 7))
+>b : Symbol(b, Decl(lib.ts, 2, 25))
+>T : Symbol(T, Decl(lib.ts, 2, 7))
+>k : Symbol(k, Decl(lib.ts, 2, 39))
+
+type O<T> = { o: T };
+>O : Symbol(O, Decl(lib.ts, 2, 53))
+>T : Symbol(T, Decl(lib.ts, 3, 7))
+>o : Symbol(o, Decl(lib.ts, 3, 13))
+>T : Symbol(T, Decl(lib.ts, 3, 7))
+
+export type J<T> = W<"J", U<T, false>>;
+>J : Symbol(J, Decl(lib.ts, 3, 21))
+>T : Symbol(T, Decl(lib.ts, 4, 14))
+>W : Symbol(W, Decl(lib.ts, 0, 0))
+>U : Symbol(U, Decl(lib.ts, 0, 78))
+>T : Symbol(T, Decl(lib.ts, 4, 14))
+
+export type K<T> = I<T>;
+>K : Symbol(K, Decl(lib.ts, 4, 39))
+>T : Symbol(T, Decl(lib.ts, 5, 14))
+>I : Symbol(I, Decl(lib.ts, 1, 53))
+>T : Symbol(T, Decl(lib.ts, 5, 14))
+
+export type L<T> = O<T>;
+>L : Symbol(L, Decl(lib.ts, 5, 24))
+>T : Symbol(T, Decl(lib.ts, 6, 14))
+>O : Symbol(O, Decl(lib.ts, 2, 53))
+>T : Symbol(T, Decl(lib.ts, 6, 14))
+
+export type M<T> = Array<T>;
+>M : Symbol(M, Decl(lib.ts, 6, 24))
+>T : Symbol(T, Decl(lib.ts, 7, 14))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(lib.ts, 7, 14))
+
+=== main.ts ===
+import type { J, K, L, M } from "./lib";
+>J : Symbol(J, Decl(main.ts, 0, 13))
+>K : Symbol(K, Decl(main.ts, 0, 16))
+>L : Symbol(L, Decl(main.ts, 0, 19))
+>M : Symbol(M, Decl(main.ts, 0, 22))
+
+declare const j: J<number>;
+>j : Symbol(j, Decl(main.ts, 1, 13))
+>J : Symbol(J, Decl(main.ts, 0, 13))
+
+declare const k: K<number>;
+>k : Symbol(k, Decl(main.ts, 2, 13))
+>K : Symbol(K, Decl(main.ts, 0, 16))
+
+declare const l: L<number>;
+>l : Symbol(l, Decl(main.ts, 3, 13))
+>L : Symbol(L, Decl(main.ts, 0, 19))
+
+declare const m: M<number>;
+>m : Symbol(m, Decl(main.ts, 4, 13))
+>M : Symbol(M, Decl(main.ts, 0, 22))
+
+const j1: { c: 1 } = j;
+>j1 : Symbol(j1, Decl(main.ts, 5, 5))
+>c : Symbol(c, Decl(main.ts, 5, 11))
+>j : Symbol(j, Decl(main.ts, 1, 13))
+
+const k1: { c: 1 } = k;
+>k1 : Symbol(k1, Decl(main.ts, 6, 5))
+>c : Symbol(c, Decl(main.ts, 6, 11))
+>k : Symbol(k, Decl(main.ts, 2, 13))
+
+const l1: { c: 1 } = l;
+>l1 : Symbol(l1, Decl(main.ts, 7, 5))
+>c : Symbol(c, Decl(main.ts, 7, 11))
+>l : Symbol(l, Decl(main.ts, 3, 13))
+
+const m1: { c: 1 } = m;
+>m1 : Symbol(m1, Decl(main.ts, 8, 5))
+>c : Symbol(c, Decl(main.ts, 8, 11))
+>m : Symbol(m, Decl(main.ts, 4, 13))
+

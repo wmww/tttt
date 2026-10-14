@@ -1,0 +1,73 @@
+//// [test/cases/ttttAliasThroughImportNewIdentity.ts] ////
+
+=== lib.ts ===
+type W<N extends string, Type> = undefined extends null ? `needs ${N}` : Type;
+>W : Type
+
+type U<T, P extends boolean> = { a: T[] } | { b: P };
+>U : U<T, P>
+>a : T[]
+>b : P
+
+type I<T> = ({ a: T } | { b: T[] }) & { k?: string };
+>I : I<T>
+>a : T
+>b : T[]
+>k : string | undefined
+
+type O<T> = { o: T };
+>O : O<T>
+>o : T
+
+export type J<T> = W<"J", U<T, false>>;
+>J : U<T, false>
+>false : false
+
+export type K<T> = I<T>;
+>K : K<T>
+
+export type L<T> = O<T>;
+>L : L<T>
+
+export type M<T> = Array<T>;
+>M : M<T>
+
+=== main.ts ===
+import type { J, K, L, M } from "./lib";
+>J : { a: T[]; } | { b: false; }
+>K : K<T>
+>L : L<T>
+>M : M<T>
+
+declare const j: J<number>;
+>j : J<number>
+
+declare const k: K<number>;
+>k : K<number>
+
+declare const l: L<number>;
+>l : L<number>
+
+declare const m: M<number>;
+>m : M<number>
+
+const j1: { c: 1 } = j;
+>j1 : { c: 1; }
+>c : 1
+>j : J<number>
+
+const k1: { c: 1 } = k;
+>k1 : { c: 1; }
+>c : 1
+>k : K<number>
+
+const l1: { c: 1 } = l;
+>l1 : { c: 1; }
+>c : 1
+>l : L<number>
+
+const m1: { c: 1 } = m;
+>m1 : { c: 1; }
+>c : 1
+>m : M<number>
+

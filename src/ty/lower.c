@@ -730,7 +730,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             (ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL && ret->conditional.root == declared->conditional.root) ||
             // (A deferred indexed access too, `type Key<I> = Format<I, 's'>` that is `I[2]`: getIndexedAccessType makes
             // another one by the alias)
-            (ret->kind == TY_INDEXED && declared->kind == TY_INDEXED)
+            (ret->kind == TY_INDEXED && declared->kind == TY_INDEXED) ||
+            // (And a union or intersection, `type JSONSchemaType<T> = Wrapper<"x", Unchecked<T, false>>` that is the
+            // union Unchecked<T, false>: tsgo's instantiateTypeWorker makes a union by the import's alias, another type
+            // than Unchecked<X, false>. And a deferred reference: getObjectTypeInstantiation keys on the alias. Not yet
+            // an instantiated anonymous or mapped type, which tsgo names the same way: realiased, arktype's
+            // finalizeTree instantiations ran away into TS5114, see hacks.md)
+            ((declared->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && (
+                ((declared->kind == TY_UNION || declared->kind == TY_INTERSECTION) && (ret->kind == TY_UNION || ret->kind == TY_INTERSECTION)) ||
+                (declared->kind == TY_REFERENCE && declared->reference.deferred && ret->kind == TY_REFERENCE)
+            ))
         )) {
             // (With type arguments through an import, the alias is passed down: a deferred conditional type, which
             // instantiation names by its root's alias, `Exclude<X, null>` of `import { NonNullable as N }` with
