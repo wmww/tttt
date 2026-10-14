@@ -342,5 +342,5 @@ subtype pass). Left:
 - **react-select Async/AsyncCreatable +TS2345**: still the intersection-target inference of the entry above; reproduces
   in a probe project importing useAsync/useStateManager by absolute path (`useStateManager(useAsync(props))` in a
   generic function), not reduced further.
-- tsc misses nothing here but tttt does: TS2694 `Namespace '_default' has no exported member 'Config'` for
+- tttt misses tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for
   `import('<abs path>/node_modules/dompurify').Config` (a CJS package's default namespace) in a probe; not looked at.
