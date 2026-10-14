@@ -200,7 +200,9 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
     cstr common = cstr_null;
     for (isize i = 0; i < project->root_files.count; i++) {
         csview file = cstr_sv(&project->root_files.items[i]);
-        hmap_project_index_insert(&my source_projects, cstr_from_sv(file), slot + 1);
+        // (A file of several referenced projects is the last one's, children after parents: tsgo's initMapperWorker
+        // maps.Copy overwrites)
+        hmap_project_index_insert_or_assign(&my source_projects, cstr_from_sv(file), slot + 1);
         isize stem = 0;
         char const* extension = declaration_extension(file, &stem);
         if (!extension) continue;
@@ -221,9 +223,9 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
         }
         u32 source = (u32)my sources.count;
         str_list_push(&my sources, file);
-        hmap_project_index_insert(&my source_outputs, cstr_from_sv(file), (u32)my output_paths.count);
+        hmap_project_index_insert_or_assign(&my source_outputs, cstr_from_sv(file), (u32)my output_paths.count);
         str_list_push(&my output_paths, cstr_sv(&output));
-        hmap_project_index_insert(&my outputs, output, source);
+        hmap_project_index_insert_or_assign(&my outputs, output, source);
     }
     cstr_drop(&common);
 }
