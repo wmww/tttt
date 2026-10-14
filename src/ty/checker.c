@@ -1746,6 +1746,36 @@ static bool non_union_nullable(TyBuf const* buf) {
     return false;
 }
 
+// What tsc's getIntersectionType finds never before it lets any decide: an object type next to null or undefined, two
+// disjoint primitive domains (`string & number & any` is never). A union is in no domain there, but for boolean
+static bool any_intersection_never(Checker* me, TyBuf const* buf) {
+    enum { OBJECT = 1, NULLABLE = 2 };
+    u32 domains = 0, kinds = 0;
+    for (u32 i = 0; i < buf->len; i++) {
+        Ty const* t = buf->data[i];
+        if (t->kind == TY_UNION) {
+            bool boolean = t->composite.types.len == 2 && (t->composite.types.data[0]->flags & TYF_BOOLEAN_LITERAL) &&
+                (t->composite.types.data[1]->flags & TYF_BOOLEAN_LITERAL);
+            if (boolean) domains |= TYF_BOOLEAN_LITERAL;
+            continue;
+        }
+        if (t->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE) || ty_is_empty_anonymous_object(me, t)) kinds |= OBJECT;
+        if (t->flags & (TYF_UNDEFINED | TYF_NULL)) kinds |= NULLABLE;
+        if (t->flags & TYF_NON_PRIMITIVE) domains |= TYF_NON_PRIMITIVE;
+        if (t->flags & TYF_STRING_LIKE) domains |= TYF_STRING;
+        else if (t->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) domains |= TYF_NUMBER;
+        else if (t->flags & (TYF_BIGINT | TYF_BIGINT_LITERAL)) domains |= TYF_BIGINT;
+        else if (t->flags & TYF_BOOLEAN_LITERAL) domains |= TYF_BOOLEAN_LITERAL;
+        else if (t->flags & TYF_ES_SYMBOL_LIKE) domains |= TYF_ES_SYMBOL;
+        else if (t->flags & (TYF_VOID | TYF_UNDEFINED)) domains |= TYF_VOID;
+        else if (t->flags & TYF_NULL) domains |= TYF_NULL;
+    }
+    if (compiler_options()->strict_null_checks && kinds == (OBJECT | NULLABLE)) return true;
+    // (tsc's DisjointDomains: Null among them, but null & boolean only with one of the others named)
+    u32 named = TYF_NON_PRIMITIVE | TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_VOID;
+    return (domains & named) && (domains & (domains - 1));
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     bool keep_empty_object = opts & INTERSECT_KEEP_EMPTY_OBJECT;
     u32 inherited = opts & INTERSECT_NO_CONSTRAINT_REDUCTION;
@@ -1775,7 +1805,11 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         if (!seen) buf.data[distinct++] = buf.data[i];
     }
     buf.len = distinct;
-    intersect_unions_of_primitives(me, &buf);
+    // (Not when never or any decides: tsc's getIntersectionType returns those before it looks at the unions,
+    // `boolean & any & (string | undefined)` is any)
+    bool decided = false;
+    for (u32 i = 0; i < buf.len; i++) decided |= buf.data[i]->kind != TY_UNION && (buf.data[i]->flags & (TYF_NEVER | TYF_ANY));
+    if (!decided) intersect_unions_of_primitives(me, &buf);
     if (buf.len == 1) {
         Ty const* only = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
         ty_buf_drop(&buf);
@@ -1819,7 +1853,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         for (u32 i = 0; i < buf.len; i++) silent |= buf.data[i] == my intrinsics[TY_SILENT_NEVER];
         ret = my intrinsics[silent ? TY_SILENT_NEVER : TY_NEVER];
     } else if (includes & TYF_ANY) {
-        ret = my intrinsics[includes_error ? TY_ERROR : TY_ANY];
+        ret = my intrinsics[any_intersection_never(me, &buf) ? TY_NEVER : includes_error ? TY_ERROR : TY_ANY];
     } else if (first_union && !compiler_options()->strict_null_checks && non_union_nullable(&buf)) {
         // Without strictNullChecks null or undefined decides before the unions are distributed: `undefined & ("a" |
         // "b")` is undefined, not never (tsc's getIntersectionType sees a union only as a union in its includes)

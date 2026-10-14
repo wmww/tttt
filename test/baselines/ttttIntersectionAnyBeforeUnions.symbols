@@ -1,0 +1,79 @@
+//// [test/cases/ttttIntersectionAnyBeforeUnions.ts] ////
+
+=== ttttIntersectionAnyBeforeUnions.ts ===
+// tsc's getIntersectionType decides never, then any, before it intersects unions of primitives: an `any` member makes
+// `boolean & any & (string | undefined)` any (a write through a union key of { a: boolean; b: any; c: string |
+// undefined } takes any, vencord's settings.store[key] = value), but null or undefined next to an object, or two
+// disjoint primitives, are never even with any
+declare const anyv: any;
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I1 = boolean & any & (string | undefined);
+>I1 : Symbol(I1, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 24))
+
+let i1: I1 = anyv;
+>i1 : Symbol(i1, Decl(ttttIntersectionAnyBeforeUnions.ts, 6, 3))
+>I1 : Symbol(I1, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 24))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I2 = any & (string | undefined) & boolean;
+>I2 : Symbol(I2, Decl(ttttIntersectionAnyBeforeUnions.ts, 6, 18))
+
+let i2: I2 = anyv;
+>i2 : Symbol(i2, Decl(ttttIntersectionAnyBeforeUnions.ts, 8, 3))
+>I2 : Symbol(I2, Decl(ttttIntersectionAnyBeforeUnions.ts, 6, 18))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I3 = undefined & { a: 1 } & any;
+>I3 : Symbol(I3, Decl(ttttIntersectionAnyBeforeUnions.ts, 8, 18))
+>a : Symbol(a, Decl(ttttIntersectionAnyBeforeUnions.ts, 9, 23))
+
+let i3: I3 = anyv;
+>i3 : Symbol(i3, Decl(ttttIntersectionAnyBeforeUnions.ts, 10, 3))
+>I3 : Symbol(I3, Decl(ttttIntersectionAnyBeforeUnions.ts, 8, 18))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I4 = (string | undefined) & { a: 1 } & any;
+>I4 : Symbol(I4, Decl(ttttIntersectionAnyBeforeUnions.ts, 10, 18))
+>a : Symbol(a, Decl(ttttIntersectionAnyBeforeUnions.ts, 11, 34))
+
+let i4: I4 = anyv;
+>i4 : Symbol(i4, Decl(ttttIntersectionAnyBeforeUnions.ts, 12, 3))
+>I4 : Symbol(I4, Decl(ttttIntersectionAnyBeforeUnions.ts, 10, 18))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I5 = string & number & any;
+>I5 : Symbol(I5, Decl(ttttIntersectionAnyBeforeUnions.ts, 12, 18))
+
+let i5: I5 = anyv;
+>i5 : Symbol(i5, Decl(ttttIntersectionAnyBeforeUnions.ts, 14, 3))
+>I5 : Symbol(I5, Decl(ttttIntersectionAnyBeforeUnions.ts, 12, 18))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type I6 = boolean & string & any;
+>I6 : Symbol(I6, Decl(ttttIntersectionAnyBeforeUnions.ts, 14, 18))
+
+let i6: I6 = anyv;
+>i6 : Symbol(i6, Decl(ttttIntersectionAnyBeforeUnions.ts, 16, 3))
+>I6 : Symbol(I6, Decl(ttttIntersectionAnyBeforeUnions.ts, 14, 18))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
+type Store = { a: boolean; b: any; c: string | undefined };
+>Store : Symbol(Store, Decl(ttttIntersectionAnyBeforeUnions.ts, 16, 18))
+>a : Symbol(a, Decl(ttttIntersectionAnyBeforeUnions.ts, 17, 14))
+>b : Symbol(b, Decl(ttttIntersectionAnyBeforeUnions.ts, 17, 26))
+>c : Symbol(c, Decl(ttttIntersectionAnyBeforeUnions.ts, 17, 34))
+
+declare const k: keyof Store;
+>k : Symbol(k, Decl(ttttIntersectionAnyBeforeUnions.ts, 18, 13))
+>Store : Symbol(Store, Decl(ttttIntersectionAnyBeforeUnions.ts, 16, 18))
+
+declare const s: Store;
+>s : Symbol(s, Decl(ttttIntersectionAnyBeforeUnions.ts, 19, 13))
+>Store : Symbol(Store, Decl(ttttIntersectionAnyBeforeUnions.ts, 16, 18))
+
+s[k] = anyv;
+>s : Symbol(s, Decl(ttttIntersectionAnyBeforeUnions.ts, 19, 13))
+>k : Symbol(k, Decl(ttttIntersectionAnyBeforeUnions.ts, 18, 13))
+>anyv : Symbol(anyv, Decl(ttttIntersectionAnyBeforeUnions.ts, 4, 13))
+
