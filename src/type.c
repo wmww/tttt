@@ -642,10 +642,11 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             break;
 
         case TYPE_TEMPLATE: {
-            template_type_typecheck(my template_, errs);
-            // tsc's checkTemplateLiteralType resolves the template itself too, at it (getTemplateLiteralType's
+            // At the template (tsc's checkSourceElement): what checkTemplateLiteralType relates its placeholders to
+            // templateConstraintType, and resolving the template itself (getTemplateLiteralType's
             // checkCrossProductUnion: TS2590 there)
             CurrentNode saved = ty_enter_node(current_checker, my template_->span);
+            template_type_typecheck(my template_, errs);
             ty_of_node(me);
             ty_leave_node(current_checker, saved);
         }   break;
