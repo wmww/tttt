@@ -30,6 +30,12 @@ SKIP = {
         "builder API, not a command",
     r"synthesized-module-specifiers-resolve-correctly|loads-js-based-projects-and-emits-them-correctly$":
         "tsc's fake lib declares Symbol.species, tttt's default libs don't",
+    r"^tsbuild/dependencyUpdate/rebuilds-when-absolute-non-root-dependency-is-updated":
+        "Windows drive-letter paths (`D:/work/...` in paths: rooted to tsgo's virtual fs, a relative name here)",
+    r"^tsbuild/libraryResolution/with-config$":
+        "tsc's fake lib.dom/lib.webworker stubs; the real ones conflict (tsc -b on the tree: TS2300/TS2403/TS2374 too)",
+    r"^tsbuild/contentMapperOptionDiagnostics/rebuild-to-report-mapper-option-diagnostics":
+        "runs the harness's fake `verbatim-mapper` content mapper (--runExternalCode; tttt runs none, plan 56)",
     r"^tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file":
         "TS6377 (two projects writing one .tsbuildinfo; tttt writes no build info)",
 }
