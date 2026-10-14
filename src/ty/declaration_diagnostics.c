@@ -2606,8 +2606,14 @@ static void collect_exported_locals(Walk* me, VecStatement const* statements) {
 // what the walk skips, expandos, class expressions as bases (`_base` variables), JavaScript
 
 static TyDisplay emit_display(Walk* me, cstr* target) {
+    // (Somewhere in the file, which names modules from there: the start when no declaration is being emitted)
+    Span at = my emitting.name;
+    if (!span_valid(at) || span_source(at) != my file) {
+        char const* start = cstr_str(&my file->contents);
+        at = span_make((SourceFile*)my file, start, start);
+    }
     return (TyDisplay){
-        .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
+        .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
         .multiline = true, .indent = my indent,
     };
 }
