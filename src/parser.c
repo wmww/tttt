@@ -13950,25 +13950,6 @@ static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBind
     }));
 }
 
-// `var x = /** @type {T} */ v`: the initializer's JSDoc is the declaration's too (tsc's getJSDocCommentsAndTags of a
-// variable declaration adds its initializer's), so x is a T unless the declaration has a type of its own
-static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable) {
-    for_each (i, vec_initialized_binding, &variable->initializers) {
-        if (i->binding.has_explicit_type || i->binding.tag != BINDING_IDENTIFIER) continue;
-        Expr* value = initialized_binding_value(i);
-        // (Only nodes that take JSDoc (tsc's canHaveJSDoc) and not a parenthesized one, whose `@type` is a cast
-        // (ownsJSDocTag))
-        if (!value || expr_is_perenthisized(value) || (value->tag != EXPR_FUNCTION && value->tag != EXPR_CLASS_DECL &&
-            value->tag != EXPR_OBJECT && value->tag != EXPR_IDENTIFIER)
-        ) {
-            continue;
-        }
-        VecJsDocTag tags = {0};
-        if (jsdoc_before(p, span_start_ptr(expr_outer_span(value)), &tags)) jsdoc_apply_type_to_binding(&tags, &i->binding);
-        vec_jsdoc_tag_drop(&tags);
-    }
-}
-
 // Whether an assignment's target makes it a JavaScript assignment declaration (tsgo's GetAssignmentDeclarationKind):
 // `module.exports`, a property of an entity name (`a.b.c`, `this.x`, `exports.x`), by name or element access
 static bool jsdoc_assignment_declares(Expr const* left) {
@@ -14244,8 +14225,9 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     if (ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) ret->jump_label = label;
     ret->span = span_from(a);
     if (p.shared->source->is_js) {
+        // (Not an initializer's own JSDoc, `var x = /** @type {T} */ v`: tsgo attaches it to the initializer, a
+        // function's FullSignature, and the variable's type is the initializer's)
         jsdoc_apply_statement(&p, a.start, ret);
-        if (ret->tag == STATEMENT_DECL_VARIABLE) jsdoc_apply_initializer_types(&p, &ret->decl.variable);
     }
 
     reset_fail_cache(&p);
