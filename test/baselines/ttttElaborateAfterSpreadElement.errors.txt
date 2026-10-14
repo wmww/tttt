@@ -1,0 +1,36 @@
+ttttElaborateAfterSpreadElement.ts(9,26): error TS2375: Type '{ id: string; locked: boolean; lockedReason: string | undefined; }' is not assignable to type 'P' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'lockedReason' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+ttttElaborateAfterSpreadElement.ts(11,15): error TS2375: Type '{ id: string; isAllowAll: true; locked: boolean; lockedReason: string | undefined; }' is not assignable to type 'P' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'lockedReason' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+
+
+==== ttttElaborateAfterSpreadElement.ts (2 errors) ====
+    // An element after a spread of a union of tuples is named by its own type in the elaboration (tsc's
+    // checkExpressionForMutableLocationWithContextualType of the literal), not the re-read tuple's `E | undefined` there:
+    // TS2375 (vscode agentHostSessionPermissions.ts under exactOptionalPropertyTypes)
+    interface P { id: string; isAllowAll?: boolean; locked?: boolean; lockedReason?: string }
+    declare const flag: boolean;
+    declare const r: boolean;
+    declare function reason(): string;
+    function f(): readonly P[] {
+        return [{ id: 'a' }, ...(flag ? [{
+                             ~~~~~~~~~~~~~
+            id: 'c', locked: r, lockedReason: r ? reason() : undefined,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        }] : []), { id: 'e', isAllowAll: true, locked: r, lockedReason: r ? reason() : undefined }];
+    ~~~~~~~~~~~~
+!!! error TS2375: Type '{ id: string; locked: boolean; lockedReason: string | undefined; }' is not assignable to type 'P' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Types of property 'lockedReason' are incompatible.
+!!! error TS2375:     Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2375:       Type 'undefined' is not assignable to type 'string'.
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2375: Type '{ id: string; isAllowAll: true; locked: boolean; lockedReason: string | undefined; }' is not assignable to type 'P' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Types of property 'lockedReason' are incompatible.
+!!! error TS2375:     Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2375:       Type 'undefined' is not assignable to type 'string'.
+    }
+    

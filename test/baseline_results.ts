@@ -50,6 +50,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttElaborateAfterSpreadElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttElaborateUnionSourceObjectLiteral': {
         errors: true,
         symbols: true,

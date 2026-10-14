@@ -1,0 +1,50 @@
+//// [test/cases/ttttElaborateAfterSpreadElement.ts] ////
+
+=== ttttElaborateAfterSpreadElement.ts ===
+// An element after a spread of a union of tuples is named by its own type in the elaboration (tsc's
+// checkExpressionForMutableLocationWithContextualType of the literal), not the re-read tuple's `E | undefined` there:
+// TS2375 (vscode agentHostSessionPermissions.ts under exactOptionalPropertyTypes)
+interface P { id: string; isAllowAll?: boolean; locked?: boolean; lockedReason?: string }
+>P : Symbol(P, Decl(ttttElaborateAfterSpreadElement.ts, 0, 0))
+>id : Symbol(P.id, Decl(ttttElaborateAfterSpreadElement.ts, 3, 13))
+>isAllowAll : Symbol(P.isAllowAll, Decl(ttttElaborateAfterSpreadElement.ts, 3, 25))
+>locked : Symbol(P.locked, Decl(ttttElaborateAfterSpreadElement.ts, 3, 47))
+>lockedReason : Symbol(P.lockedReason, Decl(ttttElaborateAfterSpreadElement.ts, 3, 65))
+
+declare const flag: boolean;
+>flag : Symbol(flag, Decl(ttttElaborateAfterSpreadElement.ts, 4, 13))
+
+declare const r: boolean;
+>r : Symbol(r, Decl(ttttElaborateAfterSpreadElement.ts, 5, 13))
+
+declare function reason(): string;
+>reason : Symbol(reason, Decl(ttttElaborateAfterSpreadElement.ts, 5, 25))
+
+function f(): readonly P[] {
+>f : Symbol(f, Decl(ttttElaborateAfterSpreadElement.ts, 6, 34))
+>P : Symbol(P, Decl(ttttElaborateAfterSpreadElement.ts, 0, 0))
+
+    return [{ id: 'a' }, ...(flag ? [{
+>id : Symbol(id, Decl(ttttElaborateAfterSpreadElement.ts, 8, 13))
+>flag : Symbol(flag, Decl(ttttElaborateAfterSpreadElement.ts, 4, 13))
+
+        id: 'c', locked: r, lockedReason: r ? reason() : undefined,
+>id : Symbol(id, Decl(ttttElaborateAfterSpreadElement.ts, 8, 38))
+>locked : Symbol(locked, Decl(ttttElaborateAfterSpreadElement.ts, 9, 16))
+>r : Symbol(r, Decl(ttttElaborateAfterSpreadElement.ts, 5, 13))
+>lockedReason : Symbol(lockedReason, Decl(ttttElaborateAfterSpreadElement.ts, 9, 27))
+>r : Symbol(r, Decl(ttttElaborateAfterSpreadElement.ts, 5, 13))
+>reason : Symbol(reason, Decl(ttttElaborateAfterSpreadElement.ts, 5, 25))
+>undefined : Symbol(undefined)
+
+    }] : []), { id: 'e', isAllowAll: true, locked: r, lockedReason: r ? reason() : undefined }];
+>id : Symbol(id, Decl(ttttElaborateAfterSpreadElement.ts, 10, 15))
+>isAllowAll : Symbol(isAllowAll, Decl(ttttElaborateAfterSpreadElement.ts, 10, 24))
+>locked : Symbol(locked, Decl(ttttElaborateAfterSpreadElement.ts, 10, 42))
+>r : Symbol(r, Decl(ttttElaborateAfterSpreadElement.ts, 5, 13))
+>lockedReason : Symbol(lockedReason, Decl(ttttElaborateAfterSpreadElement.ts, 10, 53))
+>r : Symbol(r, Decl(ttttElaborateAfterSpreadElement.ts, 5, 13))
+>reason : Symbol(reason, Decl(ttttElaborateAfterSpreadElement.ts, 5, 25))
+>undefined : Symbol(undefined)
+}
+

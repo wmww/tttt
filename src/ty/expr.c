@@ -4793,6 +4793,10 @@ static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* co
     return ty_expr_type(me, expr);
 }
 
+Ty const* ty_literal_forcing_tuples(Checker* me, Expr const* expr, Ty const* contextual) {
+    return force_tuple_operand(me, expr, contextual, 0);
+}
+
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual) {
     u32 len = (u32)vec_expr_size(&expr->array);
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));

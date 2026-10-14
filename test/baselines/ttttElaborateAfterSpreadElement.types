@@ -1,0 +1,65 @@
+//// [test/cases/ttttElaborateAfterSpreadElement.ts] ////
+
+=== ttttElaborateAfterSpreadElement.ts ===
+// An element after a spread of a union of tuples is named by its own type in the elaboration (tsc's
+// checkExpressionForMutableLocationWithContextualType of the literal), not the re-read tuple's `E | undefined` there:
+// TS2375 (vscode agentHostSessionPermissions.ts under exactOptionalPropertyTypes)
+interface P { id: string; isAllowAll?: boolean; locked?: boolean; lockedReason?: string }
+>id : string
+>isAllowAll : boolean | undefined
+>locked : boolean | undefined
+>lockedReason : string | undefined
+
+declare const flag: boolean;
+>flag : boolean
+
+declare const r: boolean;
+>r : boolean
+
+declare function reason(): string;
+>reason : () => string
+
+function f(): readonly P[] {
+>f : () => readonly P[]
+
+    return [{ id: 'a' }, ...(flag ? [{
+>[{ id: 'a' }, ...(flag ? [{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    }] : []), { id: 'e', isAllowAll: true, locked: r, lockedReason: r ? reason() : undefined }] : ({ id: string; } | { id: string; locked: boolean; lockedReason: string | undefined; } | { id: string; isAllowAll: true; locked: boolean; lockedReason: string | undefined; })[]
+>{ id: 'a' } : { id: string; }
+>id : string
+>'a' : "a"
+>...(flag ? [{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    }] : []) : { id: string; locked: boolean; lockedReason: string | undefined; }
+>(flag ? [{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    }] : []) : { id: string; locked: boolean; lockedReason: string | undefined; }[]
+>flag ? [{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    }] : [] : { id: string; locked: boolean; lockedReason: string | undefined; }[]
+>flag : boolean
+>[{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    }] : { id: string; locked: boolean; lockedReason: string | undefined; }[]
+>{        id: 'c', locked: r, lockedReason: r ? reason() : undefined,    } : { id: string; locked: boolean; lockedReason: string | undefined; }
+
+        id: 'c', locked: r, lockedReason: r ? reason() : undefined,
+>id : string
+>'c' : "c"
+>locked : boolean
+>r : boolean
+>lockedReason : string | undefined
+>r ? reason() : undefined : string | undefined
+>r : boolean
+>reason() : string
+>reason : () => string
+>undefined : undefined
+
+    }] : []), { id: 'e', isAllowAll: true, locked: r, lockedReason: r ? reason() : undefined }];
+>[] : never[]
+>{ id: 'e', isAllowAll: true, locked: r, lockedReason: r ? reason() : undefined } : { id: string; isAllowAll: true; locked: boolean; lockedReason: string | undefined; }
+>id : string
+>'e' : "e"
+>isAllowAll : true
+>true : true
+>locked : boolean
+>r : boolean
+>lockedReason : string | undefined
+>r ? reason() : undefined : string | undefined
+>r : boolean
+>reason() : string
+>reason : () => string
+>undefined : undefined
+}
+
