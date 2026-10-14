@@ -9,7 +9,6 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 - svelte `deriveds.js:352`, `runtime.js:672` (`unknown` to `T`/`V`), `sources.js:90` (`Value<unknown>` to
   `Source<V>`), `Identifier.js:50` (`name += ...` string to the runes union), `builders.js:376` (`Value` to an
   estree union): JS/JSDoc, not reduced.
-- +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses): contextual typing miss, not reduced.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
@@ -67,11 +66,17 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
 - apollo-client docs `@types/react/index.d.ts:4146` +TS2694 `React.React` / -TS2749 (`React.Component` in `declare
   global { namespace JSX }`): near agent A's b5fcc5fc (TS2749 for value-only members of an `export =` namespace), not
   looked at further.
-- sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
-  `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
-  reports it, so does a probe with IndexOptions alone); connection-options.ts:50 -TS2339: tsc reports TS2339 twice
-  there, once on `RawConnectionOptions<Dialect>` and once on its constraint `string | (object & { url?: string })`
-  (the binding pattern's contextual type makes the initializer's `options` substitute constraints); tttt only the first.
+- sequelize connection-options.ts:50 -TS2339 (2 projects): tsc reports TS2339 twice at `const { url, ...rest } =
+  options` (`options: RawConnectionOptions<Dialect>`, a generic union with string): once on `RawConnectionOptions<
+  Dialect>` (the declaration's check) and once on the constraint `string | (object & { url?: string })`, from the flow
+  analysis of a later `if (url)`: tsc's getInitialTypeOfBindingElement re-reads the initializer with getTypeOfExpression
+  (the binding pattern context substitutes constraints) and getTypeOfDestructuredProperty reports again at the name.
+  tttt's initial_binding_type() takes the binding's declared type for an unannotated element without defaults, so it
+  reports once. Reduced (tsc: 2 TS2339 at 7,11): `declare const OT: unique symbol; declare class AD<O extends object =
+  object> { [OT]: O; parse(url: string): O; } type CO<T extends AD> = T[typeof OT]; type Raw<T extends AD> = (CO<T> & {
+  url?: string }) | string; function f<T extends AD>(dialect: T, options: Raw<T>): CO<T> { const { url, ...rest } =
+  options; if (url) { return dialect.parse(url); } return rest; }`. Mirroring needs an error-reporting re-read of the
+  pattern's parent in initial_binding_type(); not done.
 - msw body-stream.node.test.ts:11 and qwik slot.e2e.tsx:19 -TS2428 (a `declare module 'vitest' { interface
   Matchers<T = any> }` augmentation of an interface vitest re-exports from a chunk): a standalone copy of the
   re-export chain (even the `config.d.CU_b-wJj.js` chunk name) reports TS2428 like tsc; something about the real
@@ -105,8 +110,6 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
 - **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
   over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
   storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
-- **es-toolkit tests/types `compat.spec-d.ts:34` -TS2344** (flatMapDepth vs lodash) and root `without.spec.ts:6`
-  +TS2345: not looked at.
 - **svelte** (JS/JSDoc, see the agent tc entry above): not looked at this round.
 - Display differences seen on the way: tsc prints `Nullable<Vals<K>>` (`{ [K in keyof T]: T[K] | null } & {}` over a
   mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
@@ -151,12 +154,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   full project (`ShapeID = keyof typeof shapes`, and `shapes` is built from handlers whose parameters mention
   `Node`, whose `shape` is `ShapeID`). tsc itself resolves `ShapeID` to `string` mid-circularity (the Record has 176
   literal keys), and a probe importing the types alone gets the same as tsc in tttt: order-dependent circularity.
-- **tanstack-table preact/react `selection` +TS18046 x3**: JSX overload resolution. Reduction (10 lines):
-  `interface Sub { <TS, TSel>(p: { source: SS<TS>; selector: (s: TS) => TSel }): null; <TSel>(p: { selector: (s:
-  State) => TSel }): null }` and `<S source={anyValue} selector={(selection) => selection['1']} />`: tsc picks the
-  second (non-generic) overload although it has no `source`, tttt the first with TS = unknown. The call form with an
-  object literal agrees with tttt (the excess `source` fails the second overload there). Something in tsc's
-  checkApplicableSignatureForJsxCallLikeElement (subtype pass and JSX attributes' excess checking) not found yet.
 - **tanstack-table table-core `rowModelSlots.test.ts:368` +TS2322**: AggregationFnListItem/AggregationFnRef relation
   over the large inferred feature type; not reduced.
 - **react-select `Async.tsx:33`, `AsyncCreatable.tsx:40` +TS2345 (2 projects each)**: `useStateManager(useAsync(props))`
@@ -176,24 +173,6 @@ with an export (graphql-js, renovate), pi (widened object literals normalized), 
 soybean-admin (implicit jsx-runtime import only for .tsx/JS), apollo ObservableStream (never-reduction with a
 generic type literal member), ember runloop (IIFE parameters inside a call argument), vueuse/scripts (null for
 string config options), tsx cache.ts (no flow narrowing of a non-variable module export). Left:
-- **tsx `esm/api/register.ts:151` +TS7022**: two `const unregister`s in one arrow, the first in an `if` block
-  (`(async () => {}) as NU`), the second at function level (an expando host, `async () => {}`). tsc's binder, like
-  tttt's, binds the first block's `unregister.unregister = unregister` (inside a nested `if`) as an expando member of
-  the *outer* const (lookupSymbolForName searches the container's locals). tttt then reports TS7022 on that member;
-  tsc doesn't (its member type is computed lazily, and its initializer resolves to the inner const). Reduced:
-  `const register = () => { if (cond) { const u = (async () => {}) as NU; if (ns) { u.unregister = u; } return u; }
-  const u = async () => {}; if (ns) { u.unregister = u; } return u; }` with `NU = (() => Promise<void>) & {
-  unregister: () => Promise<void> }`. Not found which evaluation is circular (TTTT_DEBUG_CYCLE prints nothing: a
-  member type cycle).
-- **vueuse `createEventHook/index.ts:63` +TS2556**: `fn(...args)` with `fn: Callback<T>` (a conditional whose branches
-  are rest-parameter signatures, one `(...param: [T, ...unknown[]])`) and `args: Parameters<Callback<T>>`. Reduced in
-  one file (IsAny + Callback + EventHookTrigger, 15 lines). Suspect: the union signature of the conditional's apparent
-  type combines `min_args` from the expanded rest tuple (relate.c combine_signatures, param optionality from
-  signature_min_args) where tsc's combineUnionParameters keeps `minArgumentCount` raw (0 for a rest-only signature).
-- **es-toolkit `compat/array/sampleSize.ts:68` +TS2578**: needs `Record<string, T>[never]` to be T (tsc reads the
-  index signature); never_index_read()'s HACK makes any anonymous object's never index never. Letting a mapped type
-  over string/number/symbol keys through fixes it but made xstate's flagflip sloppy cells +14 TS5115 (the template
-  instantiation the hack avoids): reverted.
 - **monkeytype storybook +TS2307 x8 in @sentry/browser `feedbackAsync.d.ts`**: an unresolvable `import("@sentry-internal/
   feedback/build/npm/types/core/types")` nested in a *type argument of an import type*
   (`import("@sentry/core").IntegrationFn<... & { attachTo(o?: import("...").X) }>`). tsc's checkImportType doesn't
@@ -319,3 +298,49 @@ its return type on the spot). Contextual is a syntactic guess; arguments of a ca
 contextual. Still off: jest-reporters' GitHubActionsReporter.test.ts, where tsc's order mixes nested `describe`
 bodies in an order this model doesn't produce. `/tmp/ss-d-tsc` had a tsc copy logging `COUNT n name file:line` at
 the suggestion site in resolveNameHelper: the quickest way to see tsc's real order.
+
+## Source sweep fan-out 2026-10-14 (agent B)
+Fixed: adonis (`this.x = v` context keeps an optional property's undefined), docmost (forceTuple reaches nested
+array literals), vueuse (generic rest read as `T[i]` in signature matching), tsx (assignment declarations union
+literal-reduced; unbraced `if` branch no block scope container), renovate (missing element access narrowed), es-toolkit
+(`Record<string, T>[never]`), sequelize's +TS2578 (union-key write types without missing), solid (skipped generic call
+typed against its rest element), tanstack-table preact/react (JSX attributes needn't have optional target props in the
+subtype pass). Left:
+- **better-auth react-store.ts:67 / lynx-store.ts:65 -TS2345** (`listenKeys(store as any, keys, emitChange)` inside
+  `useCallback((onChange) => { ...; return listenKeys(...) }, deps)`): a tsc quirk. `useCallback<T extends Function>
+  (callback: T)` infers T as the arrow's own type, so the arrow's contextual signature is its own; computing its return
+  type from the deferred check, checkExpressionCached hides the pushed return-type resolution (resolutionStart), the
+  inner call's inferTypeArguments asks getContextualReturnType, which recomputes the body, and the inner call is
+  resolved *recursively*: resolveCall's `recursiveResolution` sets InferenceFlagsNoConstraintChecks, so the
+  contra-candidate (the outer SomeStore) wins over the covariant `any` without the constraint check, the candidate
+  fails, and that recursive resolution's TS2345 is reported (instrumented tsgo, a RECURSIVE log in resolveCall).
+  Reduced (tsc: TS2345 on `keys`, tttt none): `type SV<S> = S extends { get(): infer V } ? V : any; interface RA<V =
+  any> { get(): V } interface MS<V = any> { get(): V; setKey(k: keyof V, v: any): void } declare function lk<S extends
+  { setKey: (key: any, value: any) => void }>($store: S, keys: S extends { setKey: (key: infer Key, value: never) =>
+  unknown } ? readonly Key[] : never, listener: (value: SV<S>) => void): () => void; type SK<T> = T extends { setKey:
+  (k: infer K, v: any) => unknown } ? K : never; declare function use3<T>(callback: T): T; export function a<O extends
+  RA | MS>(store: O, keys: SK<O>[]) { const emitChange = (value: SV<O>) => {}; use3(() => lk(store as any, keys,
+  emitChange)); }`. Mirroring it: when a call's contextual type comes through the return of a function whose
+  contextual signature is its own and still in flight, resolve it once more without contextual type and without
+  constraint checks (single generic candidate) and keep that pass's errors. Not done (2 diagnostics, one repo).
+- **mermaid create-types-from-json-schema.mts:129 +TS2345** (`removeRequired(mermaidConfigSchema)`,
+  `JSONSchemaType<MermaidConfig>` to `JSONSchemaType<Record<string, any>>`, ajv): a variance difference.
+  `UncheckedPropertiesSchema<T>` (`{ [K in keyof T]-?: (UncheckedJSONSchemaType<T[K], false> & Nullable<T[K]>) | {
+  $ref: string } }`) measures 9 (covariant + unmeasurable) in tsgo, 8 (invariant + unmeasurable) in tttt
+  (scripts/variancetrace.py --block UncheckedPropertiesSchema: tsgo's measurement meets itself, `VAR circular ...
+  restart`, Unknown). Only matters where a property type is the error type: MermaidConfig's `dompurifyConfig?: Config`
+  has `USE_PROFILES?: false | UseProfilesConfig` with DOM types unresolved (lib without DOM). Reduction: ajv's
+  `dist/types/json-schema.d.ts` cut to 40 lines (a ddmin of it keeps UncheckedJSONSchemaType, UncheckedProperties
+  Schema, UncheckedRequiredMembers, Nullable, Known, StrictNullChecksWrapper), and `interface C1 { u?: false | XX |
+  undefined }; declare const s3: JSONSchemaType<{ d?: C1 }>; function rr(schema: JSONSchemaType<Record<string, any>>)
+  {} rr(s3)` (tsc fine, tttt TS2345; with `C1` directly both report). Variance accuracy (variance_accuracy.md).
+  Display seen there: tsc names `JSONSchemaType<C1>` (the outer alias of an alias whose body is an instantiation of
+  another alias through a resolved conditional), tttt `UncheckedJSONSchemaType<C1, false>`.
+- **es-toolkit/tests/types `compat.spec-d.ts:34` -TS2344** (flattenDeep vs lodash's, `Flat<T>` against es-toolkit's
+  inline conditional): tsc's own order artifact. tsc reports it only with the whole spec file checked; the same line
+  alone, or with the flatMap lines before it, is clean in tsc and tttt alike.
+- **react-select Async/AsyncCreatable +TS2345**: still the intersection-target inference of the entry above; reproduces
+  in a probe project importing useAsync/useStateManager by absolute path (`useStateManager(useAsync(props))` in a
+  generic function), not reduced further.
+- tsc misses nothing here but tttt does: TS2694 `Namespace '_default' has no exported member 'Config'` for
+  `import('<abs path>/node_modules/dompurify').Config` (a CJS package's default namespace) in a probe; not looked at.
