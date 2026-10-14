@@ -1,0 +1,43 @@
+//// [test/cases/ttttSignatureMessageTruncation.ts] ////
+
+=== ttttSignatureMessageTruncation.ts ===
+// A signature in a message (TS2658's signatureToString) elides what comes after tsc's approximateLength of 160, like a type: `Promise<...>` (nest's testing tests)
+interface InstanceWrapperXXXXXXXX<T> { a: T }
+>InstanceWrapperXXXXXXXX : Symbol(InstanceWrapperXXXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSignatureMessageTruncation.ts, 1, 34))
+>a : Symbol(InstanceWrapperXXXXXXXX.a, Decl(ttttSignatureMessageTruncation.ts, 1, 38))
+>T : Symbol(T, Decl(ttttSignatureMessageTruncation.ts, 1, 34))
+
+interface ResolutionContextXXXXXX { b: 1 }
+>ResolutionContextXXXXXX : Symbol(ResolutionContextXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 1, 45))
+>b : Symbol(ResolutionContextXXXXXX.b, Decl(ttttSignatureMessageTruncation.ts, 2, 35))
+
+declare class ModuleXXXXXXXXXXXXXXX { c: 1 }
+>ModuleXXXXXXXXXXXXXXX : Symbol(ModuleXXXXXXXXXXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 2, 42))
+>c : Symbol(ModuleXXXXXXXXXXXXXXX.c, Decl(ttttSignatureMessageTruncation.ts, 3, 37))
+
+declare let target: { m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX): Promise<void> };
+>target : Symbol(target, Decl(ttttSignatureMessageTruncation.ts, 4, 11))
+>m : Symbol(m, Decl(ttttSignatureMessageTruncation.ts, 4, 21))
+>T : Symbol(T, Decl(ttttSignatureMessageTruncation.ts, 4, 24))
+>wrapper : Symbol(wrapper, Decl(ttttSignatureMessageTruncation.ts, 4, 27))
+>InstanceWrapperXXXXXXXX : Symbol(InstanceWrapperXXXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSignatureMessageTruncation.ts, 4, 24))
+>collection : Symbol(collection, Decl(ttttSignatureMessageTruncation.ts, 4, 63))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>InstanceWrapperXXXXXXXX : Symbol(InstanceWrapperXXXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 0, 0))
+>moduleRef : Symbol(moduleRef, Decl(ttttSignatureMessageTruncation.ts, 4, 118))
+>ModuleXXXXXXXXXXXXXXX : Symbol(ModuleXXXXXXXXXXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 2, 42))
+>resolutionContext : Symbol(resolutionContext, Decl(ttttSignatureMessageTruncation.ts, 4, 152))
+>ResolutionContextXXXXXX : Symbol(ResolutionContextXXXXXX, Decl(ttttSignatureMessageTruncation.ts, 1, 45))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare let src: { m: { x: 1 } };
+>src : Symbol(src, Decl(ttttSignatureMessageTruncation.ts, 5, 11))
+>m : Symbol(m, Decl(ttttSignatureMessageTruncation.ts, 5, 18))
+>x : Symbol(x, Decl(ttttSignatureMessageTruncation.ts, 5, 23))
+
+target = src;
+>target : Symbol(target, Decl(ttttSignatureMessageTruncation.ts, 4, 11))
+>src : Symbol(src, Decl(ttttSignatureMessageTruncation.ts, 5, 11))
+

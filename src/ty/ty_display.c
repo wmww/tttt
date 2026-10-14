@@ -2144,13 +2144,24 @@ void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate
 static void append_binding_pattern(cstr* out, Binding const* binding);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 
+// (A message's signature counts tsc's approximateLength like a type, one count per signatureToString, so what comes
+// after 160 is elided: `Promise<...>`. No overall cut, unlike typeToString)
+static void display_signature_top(Checker* me, TyDisplay d, Signature const* sig, char const* separator) {
+    u32 approximate_length = 0;
+    if (!d.depth && !d.approx && truncating(d)) {
+        d.cut_off = true;
+        d.approx = &approximate_length;
+    }
+    display_signature(me, d, sig, separator, (sig->flags & SIGNATURE_CONSTRUCT) != 0);
+}
+
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
-    display_signature(me, d, sig, ": ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
+    display_signature_top(me, d, sig, ": ");
 }
 
 // tsc's signatureToString with WriteArrowStyleSignature: `new (x: number) => C`
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig) {
-    display_signature(me, d, sig, " => ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
+    display_signature_top(me, d, sig, " => ");
 }
 
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n) {

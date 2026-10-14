@@ -1,0 +1,32 @@
+//// [test/cases/ttttSignatureMessageTruncation.ts] ////
+
+=== ttttSignatureMessageTruncation.ts ===
+// A signature in a message (TS2658's signatureToString) elides what comes after tsc's approximateLength of 160, like a type: `Promise<...>` (nest's testing tests)
+interface InstanceWrapperXXXXXXXX<T> { a: T }
+>a : T
+
+interface ResolutionContextXXXXXX { b: 1 }
+>b : 1
+
+declare class ModuleXXXXXXXXXXXXXXX { c: 1 }
+>ModuleXXXXXXXXXXXXXXX : ModuleXXXXXXXXXXXXXXX
+>c : 1
+
+declare let target: { m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX): Promise<void> };
+>target : { m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX): Promise<void>; }
+>m : <T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX) => Promise<void>
+>wrapper : InstanceWrapperXXXXXXXX<T>
+>collection : Map<string, InstanceWrapperXXXXXXXX<any>>
+>moduleRef : ModuleXXXXXXXXXXXXXXX
+>resolutionContext : ResolutionContextXXXXXX | undefined
+
+declare let src: { m: { x: 1 } };
+>src : { m: { x: 1; }; }
+>m : { x: 1; }
+>x : 1
+
+target = src;
+>target = src : { m: { x: 1; }; }
+>target : { m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX): Promise<void>; }
+>src : { m: { x: 1; }; }
+

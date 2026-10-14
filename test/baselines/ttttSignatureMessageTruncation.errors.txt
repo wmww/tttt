@@ -1,0 +1,20 @@
+ttttSignatureMessageTruncation.ts(7,1): error TS2322: Type '{ m: { x: 1; }; }' is not assignable to type '{ m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined): Promise<void>; }'.
+  Types of property 'm' are incompatible.
+    Type '{ x: 1; }' is not assignable to type '<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined) => Promise<void>'.
+      Type '{ x: 1; }' provides no match for the signature '<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined): Promise<...>'.
+
+
+==== ttttSignatureMessageTruncation.ts (1 errors) ====
+    // A signature in a message (TS2658's signatureToString) elides what comes after tsc's approximateLength of 160, like a type: `Promise<...>` (nest's testing tests)
+    interface InstanceWrapperXXXXXXXX<T> { a: T }
+    interface ResolutionContextXXXXXX { b: 1 }
+    declare class ModuleXXXXXXXXXXXXXXX { c: 1 }
+    declare let target: { m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX): Promise<void> };
+    declare let src: { m: { x: 1 } };
+    target = src;
+    ~~~~~~
+!!! error TS2322: Type '{ m: { x: 1; }; }' is not assignable to type '{ m<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined): Promise<void>; }'.
+!!! error TS2322:   Types of property 'm' are incompatible.
+!!! error TS2322:     Type '{ x: 1; }' is not assignable to type '<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined) => Promise<void>'.
+!!! error TS2322:       Type '{ x: 1; }' provides no match for the signature '<T>(wrapper: InstanceWrapperXXXXXXXX<T>, collection: Map<string, InstanceWrapperXXXXXXXX<any>>, moduleRef: ModuleXXXXXXXXXXXXXXX, resolutionContext?: ResolutionContextXXXXXX | undefined): Promise<...>'.
+    
