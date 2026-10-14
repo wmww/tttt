@@ -64686,7 +64686,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeConstraints2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
