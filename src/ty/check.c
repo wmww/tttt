@@ -8,6 +8,7 @@
 #include "port_statement.h"
 #include "unused.h"
 #include "interface_member.h"
+#include "name_index.h"
 #include "several_types.h"
 #include "statement.h"
 #include "lib_features.h"
@@ -3332,7 +3333,16 @@ typedef struct MemberTables {
     MemberEntry* entries;
     u32 count;
     u32 cap;
+    // Past 16 entries, where each (name, table) is among them (find_member(): scanning them for each member declared is
+    // quadratic on large classes and interfaces), built lazily: the first `indexed` entries are in it
+    NameIndex by_name;
+    u32 indexed;
 } MemberTables;
+
+static void member_tables_unindex(MemberTables* me) {
+    name_index_drop(&my by_name);
+    my indexed = 0;
+}
 
 static MemberEntry* add_member_entry(MemberTables* me) {
     if (my count == my cap) {
@@ -3355,11 +3365,30 @@ static void report_duplicate(Span name, ErrorCtx* errs) {
     report_duplicate_named(name, span_sv(name), errs);
 }
 
-static MemberEntry* find_member(MemberTables* me, Atom const* name, uint8_t table) {
-    for (u32 i = 0; i < my count; i++) {
-        if (my entries[i].name == name && my entries[i].table == table) return &my entries[i];
+// Where (name, table) is in the index, or the empty slot it would go to
+static u64 member_tables_probe(MemberTables const* me, Atom const* name, uint8_t table) {
+    u64 slot = name_index_slot(&my by_name, (u64)(uintptr_t)name + table);
+    for (isize at; (at = my by_name.slots[slot]) >= 0; slot = name_index_next(&my by_name, slot)) {
+        if (my entries[at].name == name && my entries[at].table == table) break;
     }
-    return nullptr;
+    return slot;
+}
+
+static MemberEntry* find_member(MemberTables* me, Atom const* name, uint8_t table) {
+    if (my count <= 16) {
+        for (u32 i = 0; i < my count; i++) {
+            if (my entries[i].name == name && my entries[i].table == table) return &my entries[i];
+        }
+        return nullptr;
+    }
+    if (my by_name.slots && (u64)my count * 2 > my by_name.mask + 1) member_tables_unindex(me);
+    if (!my by_name.slots) my by_name = name_index_make((isize)my count * 2);
+    for (; my indexed < my count; my indexed++) {
+        u64 slot = member_tables_probe(me, my entries[my indexed].name, my entries[my indexed].table);
+        if (my by_name.slots[slot] < 0) my by_name.slots[slot] = my indexed;
+    }
+    isize at = my by_name.slots[member_tables_probe(me, name, table)];
+    return at >= 0 ? &my entries[at] : nullptr;
 }
 
 // tsc's declareSymbol for a member (or an export of a namespace merged with a class, is_member false): a conflict with
@@ -3595,6 +3624,7 @@ static u32 interface_declaration_kind(Span decl) {
 // order, so a class getter and an interface property of one name conflict (TS2300 on both, reported once)
 static void check_class_interface_members(Checker* me, Symbol const* symbol, MemberTables* tables, ErrorCtx* errs) {
     tables->count = 0;
+    member_tables_unindex(tables);
     for (u32 d = 0; d < symbol->decl_count; d++) {
         SymbolDecl const* decl = &symbol->decls[d];
         if (decl->kind == SYMBOL_DECL_CLASS) {
@@ -3731,6 +3761,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     vec_dup_record_drop(&records);
     if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
     free(tables->entries);
+    member_tables_unindex(tables);
 }
 
 // TS2717: a property declared again (a duplicate class field, a property of a merged interface) has the type of the
@@ -3827,36 +3858,47 @@ static void collect_interface_property_decls(VecInterfaceMember const* members, 
 // out (HACK: they can be tsc's valueDeclaration too, but merging with them is an error already)
 static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx* errs) {
     isize count = vec_property_decl_entry_size(decls);
+    if (!count) return;
+    PropertyDeclEntry const* entries = vec_property_decl_entry_at(decls, 0);
+    // The declarations merged into the symbol: tsc's declareSymbol gives a declaration that conflicts with the symbol in
+    // the table (TS2300) a symbol of its own. A method first makes every property alone, a method later is only alone
+    // itself. Per declaration the first of its name, and per first whether a later property differs from it
+    isize* first = malloc(sizeof(isize) * (size_t)count);
+    bool* later_differs = calloc((size_t)count, 1);
+    panic_if(!first || !later_differs, "out of memory");
+    NameIndex index = name_index_make(count);
     for (isize i = 0; i < count; i++) {
-        PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
+        u64 slot = name_index_slot(&index, symbol_name_hash(entries[i].name));
+        while (index.slots[slot] >= 0 && !csview_equals_sv(entries[index.slots[slot]].name, entries[i].name)) {
+            slot = name_index_next(&index, slot);
+        }
+        if (index.slots[slot] < 0) index.slots[slot] = i;
+        first[i] = index.slots[slot];
+    }
+    name_index_drop(&index);
+    for (isize i = 0; i < count; i++) {
+        PropertyDeclEntry const* decl = &entries[i];
+        PropertyDeclEntry const* head = &entries[first[i]];
+        if (first[i] != i && !decl->method && !(decl->optional == head->optional && decl->modifiers == head->modifiers)) {
+            later_differs[first[i]] = true;
+        }
+    }
+    for (isize i = 0; i < count; i++) {
+        PropertyDeclEntry const* decl = &entries[i];
         // (A lib's declaration too when lib files are checked: tsc checks it there, the lib side of the conflict)
         if (!span_valid(decl->span) || (span_source(decl->span)->is_stdlib && !lib_files_checked()) || decl->method) continue;
-        // The declarations merged into the symbol: tsc's declareSymbol gives a declaration that conflicts with the
-        // symbol in the table (TS2300) a symbol of its own. A method first makes every property alone, a method later
-        // is only alone itself
-        PropertyDeclEntry const* first = nullptr;
-        for (isize j = 0; j < count && !first; j++) {
-            PropertyDeclEntry const* other = vec_property_decl_entry_at(decls, j);
-            if (csview_equals_sv(other->name, decl->name)) first = other;
-        }
-        if (first->method) continue;
-        bool differs = false;
-        for (isize j = 0; j < count; j++) {
-            PropertyDeclEntry const* other = vec_property_decl_entry_at(decls, j);
-            if (other->method || !csview_equals_sv(other->name, decl->name)) continue;
-            bool identical = other->optional == decl->optional && other->modifiers == decl->modifiers;
-            if (first == decl) {
-                differs |= other != decl && !identical;
-            } else {
-                differs = !identical;
-                break;
-            }
-        }
+        PropertyDeclEntry const* head = &entries[first[i]];
+        if (head->method) continue;
+        // The first one against every other one, every other one against the first
+        bool differs = first[i] == i ? later_differs[i] :
+            !(head->optional == decl->optional && head->modifiers == decl->modifiers);
         if (differs) {
             error_ctx_error_s(errs, decl->span, 2687,
                 cstr_d("All declarations of '", decl->span, "' must have identical modifiers."));
         }
     }
+    free(first);
+    free(later_differs);
 }
 
 void ty_check_property_modifiers(Checker* me, Symbol const* symbol, ClassDecl const* class_decl,
@@ -4058,26 +4100,24 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
         }
     }
     // A property signature declared again (its symbol's later declaration, in any declaration) has the type of its
-    // symbol's first one
+    // symbol's first one. Per entry (symbol): its first record, and whether any of its declarations is optional
+    DupRecord const** first_records = calloc(tables->count ? tables->count : 1, sizeof(DupRecord const*));
+    bool* optional_entries = calloc(tables->count ? tables->count : 1, 1);
+    panic_if(!first_records || !optional_entries, "out of memory");
+    for_each (r, vec_dup_record, &records) {
+        if (r->entry < 0) continue;
+        if (!first_records[r->entry]) first_records[r->entry] = r;
+        optional_entries[r->entry] |= ((InterfaceMember const*)r->member)->optional;
+    }
     for_each (r, vec_dup_record, &records) {
         InterfaceMember const* i = r->member;
         if (r->entry < 0 || r->check_kind != 1 || i->computed_accessor) continue;
-        DupRecord const* first_record = nullptr;
-        for_each (f, vec_dup_record, &records) {
-            if (f->entry == r->entry) {
-                first_record = f;
-                break;
-            }
-        }
-        InterfaceMember const* first = first_record->member;
+        InterfaceMember const* first = first_records[r->entry]->member;
         if (first == i || !span_valid(first->key.span)) continue;
         Ty const* first_type = member_declared_type(me, first);
         // (The property symbol is optional if any declaration is: its type then has undefined, tsc's
         // getTypeOfSymbol of the merged symbol, `(() => string) | undefined` for `bold(): string; bold?: string`)
-        bool any_optional = false;
-        for_each (other, vec_dup_record, &records) {
-            if (other->entry == r->entry && ((InterfaceMember const*)other->member)->optional) any_optional = true;
-        }
+        bool any_optional = optional_entries[r->entry];
         // (Only a method's: a property's type is its own declaration's, `x: string` then `x?: string` is TS2717)
         bool first_method = first->is_method || first->key.name_is_member_function;
         if (any_optional && first_method && !first->optional && compiler_options()->strict_null_checks && !(first_type->flags & TYF_ANY)) {
@@ -4086,10 +4126,13 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
         }
         check_subsequent_property(me, i->key.span, first_type, member_declared_type(me, i), first->key.span, errs);
     }
+    free(first_records);
+    free(optional_entries);
     merge_late_members(tables, &records, errs);
     for (u32 l = 0; l < list_count; l++) check_duplicate_declarations(tables, &records, l, false, errs);
     vec_dup_record_drop(&records);
     free(tables->entries);
+    member_tables_unindex(tables);
 }
 
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs) {

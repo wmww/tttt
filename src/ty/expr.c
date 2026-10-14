@@ -3120,7 +3120,15 @@ typedef struct LiteralBuilder {
     // (tsc's getSpreadType: skippedPrivateMembers)
     Atom const** skipped;
     u32 skipped_count;
+    // Past LITERAL_BUILDER_INDEXED properties, where each name is among `props` (literal_builder_find(): scanning them
+    // for each property added is quadratic on large literals). Open addressing over prop indices, -1 for an empty slot,
+    // built lazily: `indexed` props are in it. Not shared by copies (literal_builder_clone() leaves it out)
+    i32* slots;
+    u32 slot_mask;
+    u32 indexed;
 } LiteralBuilder;
+
+enum { LITERAL_BUILDER_INDEXED = 16 };
 
 static void literal_builder_skip(LiteralBuilder* builder, Atom const* name) {
     builder->skipped = realloc(builder->skipped, sizeof(Atom const*) * (builder->skipped_count + 1));
@@ -3135,7 +3143,43 @@ static bool literal_builder_skips(LiteralBuilder const* builder, Atom const* nam
     return false;
 }
 
+static inline u32 literal_builder_slot(LiteralBuilder const* builder, Atom const* name) {
+    u64 hash = (u64)(uintptr_t)name;
+    return (u32)((hash ^ (hash >> 29)) * 0x9e3779b97f4a7c15ull >> 32) & builder->slot_mask;
+}
+
+// Where `name` is in the index, or the empty slot it would go to
+static u32 literal_builder_probe(LiteralBuilder const* builder, Atom const* name) {
+    u32 slot = literal_builder_slot(builder, name);
+    while (builder->slots[slot] >= 0 && builder->props[builder->slots[slot]].name != name) {
+        slot = (slot + 1) & builder->slot_mask;
+    }
+    return slot;
+}
+
+// Brings the index up to `count` (each name is in `props` once: literal_builder_add() replaces in place)
+static void literal_builder_index(LiteralBuilder* builder) {
+    if (!builder->slots || builder->count * 2 > builder->slot_mask + 1) {
+        u32 capacity = 64;
+        while (capacity < builder->count * 4) capacity <<= 1;
+        free(builder->slots);
+        builder->slots = malloc(sizeof(i32) * capacity);
+        panic_if(!builder->slots, "out of memory");
+        memset(builder->slots, 0xff, sizeof(i32) * capacity);
+        builder->slot_mask = capacity - 1;
+        builder->indexed = 0;
+    }
+    for (; builder->indexed < builder->count; builder->indexed++) {
+        builder->slots[literal_builder_probe(builder, builder->props[builder->indexed].name)] = (i32)builder->indexed;
+    }
+}
+
 static ObjectLiteralProp* literal_builder_find(LiteralBuilder* builder, Atom const* name) {
+    if (builder->count > LITERAL_BUILDER_INDEXED) {
+        literal_builder_index(builder);
+        i32 at = builder->slots[literal_builder_probe(builder, name)];
+        return at >= 0 ? &builder->props[at] : nullptr;
+    }
     for (u32 i = 0; i < builder->count; i++) {
         if (builder->props[i].name == name) return &builder->props[i];
     }
@@ -3161,6 +3205,7 @@ static ObjectLiteralProp* literal_builder_add(LiteralBuilder* builder, ObjectLit
 static void literal_builder_drop(LiteralBuilder* builder) {
     free(builder->props);
     free(builder->skipped);
+    free(builder->slots);
     *builder = (LiteralBuilder){0};
 }
 
@@ -3168,6 +3213,9 @@ static LiteralBuilder literal_builder_clone(LiteralBuilder const* builder) {
     LiteralBuilder ret = *builder;
     ret.skipped = nullptr;
     ret.skipped_count = 0;
+    ret.slots = nullptr;
+    ret.slot_mask = 0;
+    ret.indexed = 0;
     ret.cap = builder->count;
     ret.props = builder->count ? malloc(sizeof(ObjectLiteralProp) * builder->count) : nullptr;
     panic_if(builder->count && !ret.props, "out of memory");
@@ -3396,8 +3444,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
             }
         }
     }
-    free(left->props);
-    free(left->skipped);
+    literal_builder_drop(left);
     *left = result;
 }
 
@@ -4335,7 +4382,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     SourceFile const* file = span_source(expr->inner_span);
     bool js = file && file->is_js && !ctx.contextual;
     Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (js ? OBJECT_JS : 0), expr);
-    free(builder.props);
+    literal_builder_drop(&builder);
     return ret;
 }
 
@@ -4706,7 +4753,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     bool fresh = has_attribute || (!has_spread && !has_children);
     bool spread_nothing = !spread.alt_count && !builder.count && !spread.any;
     Ty const* ret = spread_acc_finish(me, &spread, &builder, fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES, nullptr);
-    free(builder.props);
+    literal_builder_drop(&builder);
     if (to_intersect && !(ret->flags & TYF_ANY)) {
         ret = spread_nothing ? to_intersect : ty_intersection(me, (Ty const*[]){ to_intersect, ret }, 2, nullptr, (TyList){0});
     }

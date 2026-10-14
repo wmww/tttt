@@ -8,6 +8,7 @@
 #include "scope.h"
 #include "function_impl.h"
 #include "generic.h"
+#include "name_index.h"
 #include "class_decl.h"
 #include "interface_member.h"
 #include "several_types.h"
@@ -3233,8 +3234,6 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
     return ty_property_name_of_key(current_checker, ty_expr_type(current_checker, key), &is_number);
 }
 
-// tsc's checkGrammarObjectLiteralExpression (which a destructuring target never gets, and which stops at TS1118 and
-// TS1119): a property can't be optional, a name can be one property, one method or one get/set pair
 static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors || is_destructuring_target(me)) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
@@ -3243,6 +3242,7 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     uint8_t* seen = calloc(count ? (size_t)count : 1, 1);
     Atom const** names = calloc(count ? (size_t)count : 1, sizeof(Atom const*));
     panic_if(!seen || !names, "out of memory");
+    NameIndex index = name_index_make(count);
     for (isize n = 0; n < count; n++) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t kind;
@@ -3263,11 +3263,16 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
         names[n] = object_item_effective_name(item);
         if (!names[n]) continue;
         isize existing = -1;
-        for (isize j = 0; j < n && existing < 0; j++) {
-            if (seen[j] && names[j] == names[n]) existing = j;
+        u64 slot = name_index_slot(&index, (u64)(uintptr_t)names[n]);
+        for (; index.slots[slot] >= 0; slot = name_index_next(&index, slot)) {
+            if (names[index.slots[slot]] == names[n]) {
+                existing = index.slots[slot];
+                break;
+            }
         }
         if (existing < 0) {
             seen[n] = kind;
+            index.slots[slot] = n;
             continue;
         }
         uint8_t previous = seen[existing];
@@ -3290,6 +3295,7 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     }
     free(seen);
     free(names);
+    name_index_drop(&index);
 }
 
 // tsc's binder declares the members of an object literal like any symbols (TypeScript 7's excludes): a property
@@ -3301,11 +3307,12 @@ static void object_bind_members(Expr const* me, ErrorCtx* errs) {
     enum { PROPERTY = 1, METHOD = 2, GET = 4, SET = 8, VALUE = PROPERTY | METHOD | GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
-    // Per item: the item whose symbol it was declared into (-1: none), and for the table's symbols their flags
+    // Per item: the item whose symbol it was declared into (-1: none), and for the table's symbols (in `index`) their
+    // flags
     uint8_t* flags = calloc(count ? (size_t)count : 1, 1);
     isize* start = malloc(sizeof(isize) * (count ? (size_t)count : 1));
-    bool* in_table = calloc(count ? (size_t)count : 1, 1);
-    panic_if(!flags || !start || !in_table, "out of memory");
+    panic_if(!flags || !start, "out of memory");
+    NameIndex index = name_index_make(count);
     for (isize n = 0; n < count; n++) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t includes, excludes;
@@ -3323,13 +3330,17 @@ static void object_bind_members(Expr const* me, ErrorCtx* errs) {
         }
         // The table's symbol of that name
         isize table = -1;
-        for (isize j = 0; j < n && table < 0; j++) {
-            ObjectExprItem const* other = vec_object_expr_item_at(object, j);
-            if (in_table[j] && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) table = j;
+        csview name = cstr_sv(&item->name_string);
+        u64 slot = name_index_slot(&index, symbol_name_hash(name));
+        for (; index.slots[slot] >= 0; slot = name_index_next(&index, slot)) {
+            if (cstr_equals_sv(&vec_object_expr_item_at(object, index.slots[slot])->name_string, name)) {
+                table = index.slots[slot];
+                break;
+            }
         }
         if (table < 0) {
             flags[n] = includes;
-            in_table[n] = true;
+            index.slots[slot] = n;
             continue;
         }
         if (!(flags[table] & excludes)) {
@@ -3349,7 +3360,7 @@ static void object_bind_members(Expr const* me, ErrorCtx* errs) {
     }
     free(flags);
     free(start);
-    free(in_table);
+    name_index_drop(&index);
 }
 
 // tsc's isSideEffectFree

@@ -43,6 +43,7 @@ static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_);
 
 static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, FlowLabelOverride const* overrides, bool use_cache) {
     while (true) {
+        if (flow == my last_reachability_flow) return (FlowReachability)my last_reachability;
         u32 flags = flow->flags;
         if (flags & FLOW_SHARED && use_cache && !overrides) {
             uintptr_t cached = (uintptr_t)ty_link_get(me, KEY_FLOW_REACHABLE, flow);
@@ -82,6 +83,7 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
             flow = flow->antecedent;
         } else if (flags & FLOW_REDUCE_LABEL) {
             FlowReduceLabel const* reduce = flow->node;
+            my last_reachability_flow = nullptr; // (Unreliable once labels are overridden)
             FlowLabelOverride override = { overrides, reduce->target, reduce->antecedents };
             FlowReachability ret = reachability_walk(me, flow->antecedent, &override, true);
             return ret;
@@ -94,7 +96,10 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
 
 FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow) {
     if (!flow) return FLOW_REACH_NO;
-    return reachability_walk(me, flow, nullptr, true);
+    FlowReachability ret = reachability_walk(me, flow, nullptr, true);
+    my last_reachability_flow = flow;
+    my last_reachability = (unsigned char)ret;
+    return ret;
 }
 
 FlowReachability ty_function_end_reachability(Checker* me, FunctionImpl const* function) {
@@ -3399,6 +3404,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             }
         } else if (flags & FLOW_REDUCE_LABEL) {
             FlowReduceLabel const* reduce = flow->node;
+            my last_reachability_flow = nullptr; // (Unreliable once labels are overridden)
             FlowLabelOverride override = { q->overrides, reduce->target, reduce->antecedents };
             q->overrides = &override;
             type = type_at_flow_node(q, flow->antecedent);

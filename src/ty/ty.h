@@ -1029,6 +1029,10 @@ struct Checker {
     // false check of it gives both branches
     Ty const* for_constraint_root;
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
+    // The last reachability query and its answer (tsc's lastFlowNode): the walk from a statement stops at the previous
+    // statement's node, which keeps checking a long straight-line block linear
+    struct FlowNode const* last_reachability_flow;
+    unsigned char last_reachability;
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
     // The next ty_flow_type() is of a reference whose declared type had its constraints substituted (tsc's

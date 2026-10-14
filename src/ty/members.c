@@ -1,6 +1,7 @@
 #include "../source_file.h"
 #include "ty/ty_internal.h"
 #include "scope.h"
+#include "name_index.h"
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "compiler_options.h"
@@ -115,7 +116,14 @@ typedef struct MembersBuilder {
     Members const* same_names;
     // Only the members a class names syntactically, not the computed (late-bound) ones: see early_static_members()
     bool skip_computed;
+    // Past BUILDER_INDEXED props, where each name is among `props` (builder_find_prop(): scanning them for each member
+    // added is quadratic on large interfaces), built lazily: the first `indexed` props are in it. What reorders `props`
+    // calls builder_unindex() (replacing a prop by one of the same name keeps it valid)
+    NameIndex by_name;
+    u32 indexed;
 } MembersBuilder;
+
+enum { BUILDER_INDEXED = 16 };
 
 #define builder_push(me, field, value) do { \
         if ((me)->field##_count == (me)->field##_cap) { \
@@ -126,11 +134,36 @@ typedef struct MembersBuilder {
         (me)->field[(me)->field##_count++] = (value); \
     } while (false)
 
-static Prop* builder_find_prop(MembersBuilder const* me, Atom const* name) {
-    for (u32 i = 0; i < my props_count; i++) {
-        if (my props[i]->name == name) return my props[i];
+static void builder_unindex(MembersBuilder* me) {
+    name_index_drop(&my by_name);
+    my indexed = 0;
+}
+
+// Where `name` is in the index, or the empty slot it would go to
+static u64 builder_probe(MembersBuilder const* me, Atom const* name) {
+    u64 slot = name_index_slot(&my by_name, (u64)(uintptr_t)name);
+    while (my by_name.slots[slot] >= 0 && my props[my by_name.slots[slot]]->name != name) {
+        slot = name_index_next(&my by_name, slot);
     }
-    return nullptr;
+    return slot;
+}
+
+static Prop* builder_find_prop(MembersBuilder* me, Atom const* name) {
+    if (my props_count <= BUILDER_INDEXED) {
+        for (u32 i = 0; i < my props_count; i++) {
+            if (my props[i]->name == name) return my props[i];
+        }
+        return nullptr;
+    }
+    if (my by_name.slots && (u64)my props_count * 2 > my by_name.mask + 1) builder_unindex(me);
+    if (!my by_name.slots) my by_name = name_index_make((isize)my props_count * 2);
+    // (A name added twice stays at its first index, like the scan finds it)
+    for (; my indexed < my props_count; my indexed++) {
+        u64 slot = builder_probe(me, my props[my indexed]->name);
+        if (my by_name.slots[slot] < 0) my by_name.slots[slot] = my indexed;
+    }
+    isize at = my by_name.slots[builder_probe(me, name)];
+    return at >= 0 ? my props[at] : nullptr;
 }
 
 static int prop_cmp_name(void const* a, void const* b) {
@@ -167,6 +200,7 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
     u32 late = 0;
     for (u32 i = from; i < builder->props_count; i++) late += name_span_is_late_bound(builder->props[i]->decl->name_span);
     if (!late || late == builder->props_count - from) return;
+    builder_unindex(builder);
     Prop** moved = malloc(sizeof(Prop*) * late);
     panic_if(!moved, "out of memory");
     u32 kept = from, m = 0;
@@ -216,6 +250,7 @@ static int prop_order_cmp(PropOrder const* a, PropOrder const* b) {
 // (From the `from`-th property on)
 static void builder_sort_stable_from(MembersBuilder* builder, u32 from) {
     if (builder->props_count < from + 2) return;
+    builder_unindex(builder);
     u32 n = builder->props_count - from;
     Prop** props = builder->props + from;
     PropOrder stack[32];
@@ -260,6 +295,7 @@ static void builder_prototype_last(MembersBuilder* builder) {
     for (u32 i = 0; i < builder->props_count; i++) {
         Prop* prop = builder->props[i];
         if (!(prop->flags & PROP_PROTOTYPE)) continue;
+        builder_unindex(builder);
         memmove(builder->props + i, builder->props + i + 1, sizeof(Prop*) * (builder->props_count - i - 1));
         builder->props[builder->props_count - 1] = prop;
         return;
@@ -273,6 +309,7 @@ static MembersRare* members_rare_mut(Checker* me, Members* members) {
 }
 
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
+    builder_unindex(builder);
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
         Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
