@@ -1,0 +1,54 @@
+//// [test/cases/ttttLocalExpandoCyclicPrint.ts] ////
+
+=== a.ts ===
+function topLevel() {}
+>topLevel : Symbol(topLevel, Decl(a.ts, 0, 0))
+
+topLevel.self = topLevel;
+>topLevel.self : Symbol(topLevel.self, Decl(a.ts, 0, 22))
+>topLevel : Symbol(topLevel, Decl(a.ts, 0, 0))
+>self : Symbol(topLevel.self, Decl(a.ts, 0, 22))
+>topLevel : Symbol(topLevel, Decl(a.ts, 0, 0))
+
+function outer() {
+>outer : Symbol(outer, Decl(a.ts, 1, 25))
+
+    function local() {}
+>local : Symbol(local, Decl(a.ts, 2, 18))
+
+    local.self = local;
+>local.self : Symbol(local.self, Decl(a.ts, 3, 23))
+>local : Symbol(local, Decl(a.ts, 2, 18))
+>self : Symbol(local.self, Decl(a.ts, 3, 23))
+>local : Symbol(local, Decl(a.ts, 2, 18))
+
+    local.proto = { ctor: local };
+>local.proto : Symbol(local.proto, Decl(a.ts, 4, 23))
+>local : Symbol(local, Decl(a.ts, 2, 18))
+>proto : Symbol(local.proto, Decl(a.ts, 4, 23))
+>ctor : Symbol(ctor, Decl(a.ts, 5, 19))
+>local : Symbol(local, Decl(a.ts, 2, 18))
+
+    return local;
+>local : Symbol(local, Decl(a.ts, 2, 18))
+}
+namespace N { function nl() {} nl.self = nl; export const r = nl; }
+>N : Symbol(N, Decl(a.ts, 7, 1))
+>nl : Symbol(nl, Decl(a.ts, 8, 13))
+>nl.self : Symbol(nl.self, Decl(a.ts, 8, 30))
+>nl : Symbol(nl, Decl(a.ts, 8, 13))
+>self : Symbol(nl.self, Decl(a.ts, 8, 30))
+>nl : Symbol(nl, Decl(a.ts, 8, 13))
+>r : Symbol(r, Decl(a.ts, 8, 57))
+>nl : Symbol(nl, Decl(a.ts, 8, 13))
+
+=== b.js ===
+function jo() { function jl() {} jl.self = jl; return jl; }
+>jo : Symbol(jo, Decl(b.js, 0, 0))
+>jl : Symbol(jl, Decl(b.js, 0, 15))
+>jl.self : Symbol(jl.self, Decl(b.js, 0, 32))
+>jl : Symbol(jl, Decl(b.js, 0, 15))
+>self : Symbol(jl.self, Decl(b.js, 0, 32))
+>jl : Symbol(jl, Decl(b.js, 0, 15))
+>jl : Symbol(jl, Decl(b.js, 0, 15))
+

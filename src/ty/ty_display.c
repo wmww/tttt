@@ -4090,6 +4090,19 @@ static bool expando_displays_structurally(TyDisplay d, Ty const* ty) {
     return !(is_non_local_function(function) && typeof_function_in_declaration(d, function));
 }
 
+// Within itself, a function with expandos that isn't declared in a file or namespace (or a JavaScript `{}` container)
+// can't be `typeof f`: tsc's createAnonymousTypeNode prints the cyclic structure placeholder
+// (shouldWriteTypeOfFunctionSymbol only names non-local functions)
+static bool expando_cyclic_placeholder(TyDisplay d, Ty const* ty) {
+    if (!is_nested_expando_function(ty) && !(ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.js_container)) return false;
+    Symbol const* function = ty->declared.namespace_symbol ? ty->declared.namespace_symbol : ty->declared.symbol;
+    if (function && is_non_local_function(function)) return false;
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        if (i->ty == ty) return true;
+    }
+    return false;
+}
+
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty)) return false;
     // (What prints: a union or intersection reduced, see ty_display())
@@ -4476,6 +4489,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
                         d.visiting = &visit;
                         display_structure(me, d, ty);
+                        break;
+                    }
+                    if (expando_cyclic_placeholder(d, ty)) {
+                        if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
+                        out_lit(d, "any");
                         break;
                     }
                     if (class_as_literal(d, ty)) {

@@ -1,0 +1,19 @@
+error TS5055: Cannot write file 'b.js' because it would overwrite input file.
+  Adding a tsconfig.json file will help organize projects that contain both TypeScript and JavaScript files. Learn more at https://aka.ms/tsconfig.
+
+
+!!! error TS5055: Cannot write file 'b.js' because it would overwrite input file.
+!!! error TS5055:   Adding a tsconfig.json file will help organize projects that contain both TypeScript and JavaScript files. Learn more at https://aka.ms/tsconfig.
+==== a.ts (0 errors) ====
+    function topLevel() {}
+    topLevel.self = topLevel;
+    function outer() {
+        function local() {}
+        local.self = local;
+        local.proto = { ctor: local };
+        return local;
+    }
+    namespace N { function nl() {} nl.self = nl; export const r = nl; }
+==== b.js (0 errors) ====
+    function jo() { function jl() {} jl.self = jl; return jl; }
+    

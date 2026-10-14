@@ -1,0 +1,60 @@
+//// [test/cases/ttttLocalExpandoCyclicPrint.ts] ////
+
+=== a.ts ===
+function topLevel() {}
+>topLevel : { (): void; self: typeof topLevel; }
+
+topLevel.self = topLevel;
+>topLevel.self = topLevel : { (): void; self: typeof topLevel; }
+>topLevel.self : { (): void; self: typeof topLevel; }
+>topLevel : { (): void; self: typeof topLevel; }
+>self : { (): void; self: typeof topLevel; }
+>topLevel : { (): void; self: typeof topLevel; }
+
+function outer() {
+>outer : () => { (): void; self: any; proto: { ctor: any; }; }
+
+    function local() {}
+>local : { (): void; self: any; proto: { ctor: any; }; }
+
+    local.self = local;
+>local.self = local : { (): void; self: any; proto: { ctor: any; }; }
+>local.self : { (): void; self: any; proto: { ctor: any; }; }
+>local : { (): void; self: any; proto: { ctor: any; }; }
+>self : { (): void; self: any; proto: { ctor: any; }; }
+>local : { (): void; self: any; proto: { ctor: any; }; }
+
+    local.proto = { ctor: local };
+>local.proto = { ctor: local } : { ctor: { (): void; self: any; proto: { ctor: any; }; }; }
+>local.proto : { ctor: { (): void; self: any; proto: any; }; }
+>local : { (): void; self: any; proto: { ctor: any; }; }
+>proto : { ctor: { (): void; self: any; proto: any; }; }
+>{ ctor: local } : { ctor: { (): void; self: any; proto: { ctor: any; }; }; }
+>ctor : { (): void; self: any; proto: { ctor: any; }; }
+>local : { (): void; self: any; proto: { ctor: any; }; }
+
+    return local;
+>local : { (): void; self: any; proto: { ctor: any; }; }
+}
+namespace N { function nl() {} nl.self = nl; export const r = nl; }
+>N : typeof N
+>nl : { (): void; self: typeof nl; }
+>nl.self = nl : { (): void; self: typeof nl; }
+>nl.self : { (): void; self: typeof nl; }
+>nl : { (): void; self: typeof nl; }
+>self : { (): void; self: typeof nl; }
+>nl : { (): void; self: typeof nl; }
+>r : { (): void; self: typeof nl; }
+>nl : { (): void; self: typeof nl; }
+
+=== b.js ===
+function jo() { function jl() {} jl.self = jl; return jl; }
+>jo : () => { (): void; self: any; }
+>jl : { (): void; self: any; }
+>jl.self = jl : { (): void; self: any; }
+>jl.self : { (): void; self: any; }
+>jl : { (): void; self: any; }
+>self : { (): void; self: any; }
+>jl : { (): void; self: any; }
+>jl : { (): void; self: any; }
+
