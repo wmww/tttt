@@ -1721,6 +1721,8 @@ Ty const* ty_parameter_narrowed_type(Checker* me, struct Binding const* binding,
 Ty const* ty_binding_element_type_from(Checker* me, struct Binding const* binding, Ty const* object);
 // tsc's getRestType: `source` without the properties the keys (literal types, computed names' types) name
 Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys);
+// The symbol tsc's getRestType gives an object rest binding's type (the binding's), else null
+Symbol const* ty_rest_type_symbol(Checker* me, Ty const* type);
 Ty const* ty_destructured_assignment_flow_type(
     Checker* me, void const* owner, Expr const* source, Value key, Span key_span, Ty const* declared
 );

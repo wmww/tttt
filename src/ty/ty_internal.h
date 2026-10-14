@@ -144,6 +144,7 @@ enum {
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
     KEY_NAMESPACE_IMPORT, // namespace import alias Symbol -> its module type (or the alias itself: none), see namespace_import_type()
     KEY_MODULE_CLONE,   // that module type -> the alias Symbol it was made for (TyAnonymous.module_clone)
+    KEY_REST_SYMBOL,    // an object rest's type -> the rest binding's Symbol, its symbol to tsc (rest_literal())
     KEY_THISLESS_SIGNATURES, // raw Members of a class or interface -> ThislessSignatures (members.c)
     KEY_ACCESSIBLE_CHAIN, // (location Scope, Symbol, meaning and lookup flags) -> its accessible chain (symbol_chain.c)
     KEY_PSEUDO,         // ObjectExprItem, FunctionArg or FunctionImpl (its return type) -> its Pseudo (pseudo.c)

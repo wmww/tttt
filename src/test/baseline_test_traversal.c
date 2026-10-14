@@ -2663,7 +2663,7 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
         if (!param_symbol && object->param.state->is_this && apparent->kind == TY_REFERENCE) param_symbol = apparent->reference.target->declared.symbol;
     }
     Symbol const* container = object->kind == TY_TYPE_PARAM ? param_symbol : apparent->kind == TY_DECLARED ? apparent->declared.symbol :
-        apparent->kind == TY_REFERENCE ? apparent->reference.target->declared.symbol : nullptr;
+        apparent->kind == TY_REFERENCE ? apparent->reference.target->declared.symbol : ty_rest_type_symbol(checker, apparent);
     Members const* members = ty_members(checker, apparent);
     VecSpan declarations = {0};
     bool any = false;

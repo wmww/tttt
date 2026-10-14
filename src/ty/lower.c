@@ -2794,8 +2794,25 @@ static bool prop_has_numeric_name(Prop const* prop) {
     return (c >= '0' && c <= '9') || c == '.';
 }
 
-static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern);
-Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys) { return object_rest_type(me, source, keys); }
+static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern, Symbol const* symbol);
+Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys) { return object_rest_type(me, source, keys, nullptr); }
+
+// tsc's getRestType makes an anonymous type whose symbol is the rest element's (a binding's): a type of its own, whose
+// index signatures name it (getApplicableIndexSymbol: `t2.__index`). Without a symbol, the structural one
+static Ty const* rest_literal(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, Symbol const* symbol
+) {
+    if (!symbol) return ty_object_literal(me, props, count, index, index_count, OBJECT_SYNTHETIC);
+    Ty const* ret = ty_object_literal_of(me, props, count, index, index_count, OBJECT_SYNTHETIC, symbol);
+    u64 key[2] = { KEY_REST_SYMBOL, (u64)(uintptr_t)ret };
+    void const** slot = intern_slot(me, &me->links, key, 2);
+    if (!*slot) *slot = symbol;
+    return ret;
+}
+
+Symbol const* ty_rest_type_symbol(Checker* me, Ty const* type) {
+    return intern_get(&me->links, (u64[]){ KEY_REST_SYMBOL, (u64)(uintptr_t)type }, 2);
+}
 
 // Whether the keys a pattern names take the property `name` out of its rest
 static bool pattern_names(Checker* me, TyList keys, Atom const* name, bool numeric_name) {
@@ -2843,7 +2860,7 @@ TypeNode const* ty_prop_annotation(Prop const* prop) {
 }
 
 // The rest of an intersection: the properties of all of its members, each of the intersection's type for it
-static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pattern) {
+static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pattern, Symbol const* symbol) {
     TyList parts = source->composite.types;
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = ty_apparent_type(me, parts.data[i]);
@@ -2902,7 +2919,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
     }
     // (The intersection's index signatures stay: tsc's getRestType with getIndexInfosOfType)
     Members const* own = ty_members(me, source);
-    Ty const* ret = ty_object_literal(me, props, count, own->index, own->index_count, OBJECT_SYNTHETIC);
+    Ty const* ret = rest_literal(me, props, count, own->index, own->index_count, symbol);
     free(props);
     return ret;
 }
@@ -2951,14 +2968,14 @@ bool ty_object_rest_source_valid(Checker* me, Ty const* source) {
 
 // tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
 // members and class methods, and with nothing readonly
-static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern) {
+static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern, Symbol const* symbol) {
     if (source->kind == TY_UNION) {
         Ty const* stack[16];
         TyList types = source->composite.types;
         Ty const** mapped = types.len <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * types.len);
         u32 len = 0;
         for (u32 i = 0; i < types.len; i++) {
-            if (!(types.data[i]->flags & TYF_NULLABLE)) mapped[len++] = object_rest_type(me, types.data[i], pattern);
+            if (!(types.data[i]->flags & TYF_NULLABLE)) mapped[len++] = object_rest_type(me, types.data[i], pattern, symbol);
         }
         Ty const* ret = len ? ty_union(me, mapped, len, nullptr, (TyList){0}) : ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
         if (mapped != stack) free((void*)mapped);
@@ -2967,7 +2984,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
     if (source->flags & TYF_NEVER) return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
     if (ty_is_generic_object(me, source) || pattern_has_generic_key(me, pattern)) return generic_rest_type(me, source, pattern);
     Ty const* apparent = ty_apparent_type(me, source);
-    if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern);
+    if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern, symbol);
     if (!(apparent->flags & TYF_OBJECT) || ty_is_generic_index(source)) return source;
     Members const* members = ty_members(me, apparent);
     if (members->mapped) return source;
@@ -3004,7 +3021,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
             .asserted = annotation,
         };
     }
-    Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);
+    Ty const* ret = rest_literal(me, props, count, members->index, members->index_count, symbol);
     free(props);
     return ret;
 }
@@ -3390,7 +3407,8 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
             ty_array(me, ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr), false);
     } else if (binding->rest) {
         // (What can't be spread, reported by binding_typecheck(), is the error type: tsc's getBindingElementTypeFromParentType)
-        ret = ty_object_rest_source_valid(me, object) ? object_rest_type(me, object, pattern_keys(me, parent)) :
+        ret = ty_object_rest_source_valid(me, object) ? object_rest_type(me, object, pattern_keys(me, parent),
+            binding->tag == BINDING_IDENTIFIER ? binding->symbol : nullptr) :
             ty_intrinsic(me, TY_ERROR);
     } else if (in_array) {
         Value index = value_number(binding->parent_index);

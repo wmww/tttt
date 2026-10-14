@@ -61097,7 +61097,7 @@ const baselines = {
     },
     'noUncheckedIndexedAccessDestructuring': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'library-reference-1': {
