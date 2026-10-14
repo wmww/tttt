@@ -4134,7 +4134,15 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
         bool over = last && display_over(d);
         // (Already past it before the first member: the first, how many more, the last)
         if (over && display_index == 1 && display_count > 2) {
-            ty_display(me, d, t);
+            // (`false | true` is formatUnionTypes' `boolean` there too: `boolean | ... 1 more ... | undefined`)
+            if (ty_regular(me, t) == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len &&
+                ty_regular(me, types.data[i + 1]) == ty_intrinsic(me, TY_TRUE)
+            ) {
+                approx_add(d, 7);
+                out_lit(d, "boolean");
+            } else {
+                ty_display(me, d, t);
+            }
             char more[48];
             snprintf(more, sizeof more, " | ... %u more ... | ", display_count - 2);
             out(d, csview_from(more));
