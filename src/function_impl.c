@@ -300,7 +300,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     // bodies at all). Not an IIFE's, which is part of the flow around it
     bool skip_body = my has_body && my ret_explicit && !is_iife && names->file && names->file->skip_typed_bodies;
 
-    unused_register(names, UNUSED_FUNCTION, me, span_null);
+    unused_register(names, UNUSED_FUNCTION, me);
     // Handle generics (includes adding names)
     Scope* type_params_scope = nullptr;
     if (!generic_empty(&my generic)) {

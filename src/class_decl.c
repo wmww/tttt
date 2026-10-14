@@ -551,7 +551,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     }
 
     my outer_class = scope_enclosing_class(names);
-    unused_register(names, UNUSED_CLASS, me, span_null);
+    unused_register(names, UNUSED_CLASS, me);
     my outer_generics = names->generics;
     if (!names->class_strict || !names->strict) {
         // (The type parameters, heritage clauses and body are strict code of the class)

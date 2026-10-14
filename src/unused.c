@@ -16,7 +16,7 @@ bool unused_enabled(void) {
     return options->no_unused_locals || options->no_unused_parameters;
 }
 
-void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span span) {
+void unused_register(Scope const* scope, UnusedKind kind, void const* node) {
     if (!unused_enabled()) return;
     SourceFile* file = scope->file;
     // Ambient declarations are never unused (tsc's unusedIsError)
@@ -26,7 +26,7 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span
         file->unused = realloc(file->unused, sizeof(UnusedCandidate) * file->unused_cap);
         panic_if(!file->unused, "out of memory");
     }
-    file->unused[file->unused_count++] = (UnusedCandidate){ .kind = kind, .node = node, .span = span };
+    file->unused[file->unused_count++] = (UnusedCandidate){ .kind = kind, .node = node };
 }
 
 thread_local u32 unused_marking_suppressed;
@@ -389,8 +389,11 @@ void unused_report(SourceFile const* file, ErrorCtx* errs) {
         UnusedCandidate const* candidate = &file->unused[i];
         switch (candidate->kind) {
             case UNUSED_STATEMENT: report_statement(&r, candidate->node); break;
-            case UNUSED_VARIABLES: report_variables(&r, candidate->node, candidate->span, false); break;
-            case UNUSED_FOR_IN_OF_VARIABLES: report_variables(&r, candidate->node, candidate->span, true); break;
+            case UNUSED_VARIABLES: report_variables(&r, candidate->node, span_null, false); break;
+            // (The span of the loop's variable statement)
+            case UNUSED_FOR_IN_OF_VARIABLES:
+                report_variables(&r, candidate->node, ((Statement const*)candidate->node)->span, true);
+                break;
             case UNUSED_FUNCTION: report_function(&r, candidate->node); break;
             case UNUSED_CLASS: {
                 ClassDecl const* decl = candidate->node;

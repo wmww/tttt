@@ -31,7 +31,7 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope, DeclStatementProp
 }
 
 void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs) {
-    unused_register(names, UNUSED_INTERFACE, me, span_null);
+    unused_register(names, UNUSED_INTERFACE, me);
     my outer_generics = names->generics;
     names = scope_new_generic_merged(names, &my generic, my symbol, me, my name, errs);
     ScopePendingMark pending_mark = scope_pending_mark(names->binder);

@@ -28,13 +28,12 @@ typedef enum UnusedKind : uint8_t {
 typedef struct UnusedCandidate {
     UnusedKind kind;
     void const* node;
-    Span span;
 } UnusedCandidate;
 
 // Either option is on
 bool unused_enabled(void);
 // A declaration (list) in the scope the walk is in that may turn out unused
-void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span span);
+void unused_register(Scope const* scope, UnusedKind kind, void const* node);
 // `found` is what a name looked up from `scope` with `meaning` found, and the use reads it (tsc's resolveName with
 // isUse): it is referenced unless the use is inside its own declaration (tsc's isSelfReferenceLocation: a recursive
 // function, `class C { m() { C } }`, see Scope.self)

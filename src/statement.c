@@ -1579,7 +1579,7 @@ static bool ambient_reported_at(Statement const* me, Scope const* names) {
 static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     if (statement_declares_name(my tag) || my tag == STATEMENT_IMPORT_EXPORT) {
-        unused_register(names, UNUSED_STATEMENT, me, span_null);
+        unused_register(names, UNUSED_STATEMENT, me);
     }
     switch (my tag) {
         case STATEMENT_LABELED: {
@@ -1709,7 +1709,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (!flow_is_unreachable(flow->current)) flow_set_current(flow, pre_loop);
             flow_add_antecedent(flow, post, flow->current);
             if (is_declaration) {
-                unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement, loop->variable.statement.span);
+                unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement);
                 for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
                     // (What its pattern's computed names and defaults may not use yet)
                     flow->initializing = i;
@@ -1853,7 +1853,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // (A class member's typedef sees the class's type parameters)
             Scope* self_scope = scope_new_self(names, my decl.type->symbol, my decl.props.declared);
             // (A JSDoc `@typedef`'s `@template`s too: tsgo's reparsed TypeAliasDeclaration)
-            unused_register(self_scope, UNUSED_TYPE_ALIAS, my decl.type, span_null);
+            unused_register(self_scope, UNUSED_TYPE_ALIAS, my decl.type);
             my decl.type->outer_generics = names->generics;
             my decl.type->local |= names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
             Scope* generic_scope = scope_new_generic(self_scope, &my decl.type->generic, my decl.type->name, span_null, errs);

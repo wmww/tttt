@@ -189,7 +189,7 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
                 .kind = SYMBOL_DECL_INFER,
                 .node = my inferred,
             });
-            if (!infer_unchecked_depth) unused_register(scope, UNUSED_INFER, my inferred, span_null);
+            if (!infer_unchecked_depth) unused_register(scope, UNUSED_INFER, my inferred);
             my inferred->position = position;
             my inferred->reference = reference;
             my inferred->arg_index = arg_index;
