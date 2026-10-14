@@ -5176,8 +5176,11 @@ bool expando_host_is_initializer(Symbol const* host, Span* name) {
 // function (or file, or namespace), nowhere else
 static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
     u64 hash = symbol_name_hash(name);
-    for (Scope* scope = me; scope; scope = scope->parent) {
-        if (scope != me && !scope_is_var_container(scope)) continue;
+    // (tsgo's blockScopeContainer: an `if` branch's scope of its own isn't one, the block around is)
+    Scope* block = me;
+    while (block->binder_transparent && block->parent) block = block->parent;
+    for (Scope* scope = block; scope; scope = scope->parent) {
+        if (scope != block && !scope_is_var_container(scope)) continue;
         bool global = scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION;
         Symbol* found = symbol_table_lookup(global ? &my binder->globals : scope_locals(scope), name, hash);
         Symbol* container = scope->container;
