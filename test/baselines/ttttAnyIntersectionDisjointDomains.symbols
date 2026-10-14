@@ -1,0 +1,40 @@
+//// [test/cases/ttttAnyIntersectionDisjointDomains.ts] ////
+
+=== ttttAnyIntersectionDisjointDomains.ts ===
+// Members of disjoint domains make an intersection never before any absorbs it (tsc's getIntersectionType checks the
+// domains first), and a union key's write type intersects each optional property's write type without the missing
+// type (getWriteTypeOfSymbol per key): sequelize's `existingIndex[key] = index[key]` over IndexOptions' keys, one of
+// them any, is TS2322 to never
+type X1 = string & boolean & any;
+>X1 : Symbol(X1, Decl(ttttAnyIntersectionDisjointDomains.ts, 0, 0))
+
+type X2 = string & any & number;
+>X2 : Symbol(X2, Decl(ttttAnyIntersectionDisjointDomains.ts, 4, 33))
+
+type X3 = any & string & boolean;
+>X3 : Symbol(X3, Decl(ttttAnyIntersectionDisjointDomains.ts, 5, 32))
+
+type X4 = (string | undefined) & (boolean | undefined) & any;
+>X4 : Symbol(X4, Decl(ttttAnyIntersectionDisjointDomains.ts, 6, 33))
+
+type X5 = null & { a: 1 } & any;
+>X5 : Symbol(X5, Decl(ttttAnyIntersectionDisjointDomains.ts, 7, 61))
+>a : Symbol(a, Decl(ttttAnyIntersectionDisjointDomains.ts, 8, 18))
+
+declare let x: { a?: string; b?: boolean; c?: any };
+>x : Symbol(x, Decl(ttttAnyIntersectionDisjointDomains.ts, 9, 11))
+>a : Symbol(a, Decl(ttttAnyIntersectionDisjointDomains.ts, 9, 16))
+>b : Symbol(b, Decl(ttttAnyIntersectionDisjointDomains.ts, 9, 28))
+>c : Symbol(c, Decl(ttttAnyIntersectionDisjointDomains.ts, 9, 41))
+
+declare const k: 'a' | 'b' | 'c';
+>k : Symbol(k, Decl(ttttAnyIntersectionDisjointDomains.ts, 10, 13))
+
+declare const v: any;
+>v : Symbol(v, Decl(ttttAnyIntersectionDisjointDomains.ts, 11, 13))
+
+x[k] = v;
+>x : Symbol(x, Decl(ttttAnyIntersectionDisjointDomains.ts, 9, 11))
+>k : Symbol(k, Decl(ttttAnyIntersectionDisjointDomains.ts, 10, 13))
+>v : Symbol(v, Decl(ttttAnyIntersectionDisjointDomains.ts, 11, 13))
+

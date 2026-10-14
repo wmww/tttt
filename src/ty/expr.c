@@ -5236,7 +5236,9 @@ static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* k
             ty_buf_drop(&parts);
             return nullptr;
         }
-        ty_buf_push(&parts, part);
+        // (Each an optional property's write type without the missing type before they're intersected: tsc's
+        // getWriteTypeOfSymbol per key, `string & boolean & any` is never where `(string | missing) & ...` wouldn't be)
+        ty_buf_push(&parts, ty_remove_missing(me, part, written_prop_is_optional(me, object, k)));
     }
     Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
     ty_buf_drop(&parts);

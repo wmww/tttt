@@ -1,0 +1,42 @@
+//// [test/cases/ttttAnyIntersectionDisjointDomains.ts] ////
+
+=== ttttAnyIntersectionDisjointDomains.ts ===
+// Members of disjoint domains make an intersection never before any absorbs it (tsc's getIntersectionType checks the
+// domains first), and a union key's write type intersects each optional property's write type without the missing
+// type (getWriteTypeOfSymbol per key): sequelize's `existingIndex[key] = index[key]` over IndexOptions' keys, one of
+// them any, is TS2322 to never
+type X1 = string & boolean & any;
+>X1 : never
+
+type X2 = string & any & number;
+>X2 : never
+
+type X3 = any & string & boolean;
+>X3 : never
+
+type X4 = (string | undefined) & (boolean | undefined) & any;
+>X4 : any
+
+type X5 = null & { a: 1 } & any;
+>X5 : never
+>a : 1
+
+declare let x: { a?: string; b?: boolean; c?: any };
+>x : { a?: string; b?: boolean; c?: any; }
+>a : string | undefined
+>b : boolean | undefined
+>c : any
+
+declare const k: 'a' | 'b' | 'c';
+>k : "a" | "b" | "c"
+
+declare const v: any;
+>v : any
+
+x[k] = v;
+>x[k] = v : any
+>x[k] : never
+>x : { a?: string; b?: boolean; c?: any; }
+>k : "a" | "b" | "c"
+>v : any
+
