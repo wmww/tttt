@@ -479,7 +479,16 @@ typedef struct ScopeRare {
     struct ClassItem const* instance_field;
     Span const* constructor_locals;
     u32 constructor_local_count;
+    // A module or namespace block's exported declarations that conflict with an export of another block (TS2300): a
+    // symbol of their own that isn't in the exports, which a value name in this block finds (tsc's local symbol of
+    // declareModuleMember, an ExportValue whose exportSymbol is the duplicate)
+    struct DuplicateExport* duplicate_exports;
 } ScopeRare;
+
+typedef struct DuplicateExport {
+    struct Symbol* symbol;
+    struct DuplicateExport* next;
+} DuplicateExport;
 
 // PERF: ~100k of them on nest/webpack, most of them a block that declares nothing: keep it small (what few scopes
 // have goes to ScopeRare)

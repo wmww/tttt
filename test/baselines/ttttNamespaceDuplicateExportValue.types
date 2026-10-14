@@ -1,0 +1,60 @@
+//// [test/cases/ttttNamespaceDuplicateExportValue.ts] ////
+
+=== ttttNamespaceDuplicateExportValue.ts ===
+// A namespace block's export that duplicates another block's (TS2300) is a symbol of its own: a value name in its block
+// means it (tsc's local symbol, whose exportSymbol it is), printed qualified; a type name means the first export. A
+// namespace `prototype` merged into a class is one too
+declare namespace TS {
+>TS : typeof TS
+
+    class H<T> { a: T; }
+>H : H<T>
+>a : T
+}
+declare namespace TS {
+>TS : typeof TS
+
+    class H<T> { b: T; }
+>H : TS.H<T>
+>b : T
+
+    class I<T> extends H<T> { }
+>I : I<T>
+>H : TS.H<T>
+
+    var x: I<number>;
+>x : I<number>
+
+    var xb: typeof x.b;
+>xb : number
+>x.b : number
+>x : I<number>
+>b : number
+
+    var hv: typeof H;
+>hv : typeof TS.H
+>H : typeof TS.H
+
+    var h: H<number>;
+>h : H<number>
+
+    var ha: typeof h.a;
+>ha : number
+>h.a : number
+>h : H<number>
+>a : number
+}
+declare class Foo {}
+>Foo : Foo
+
+declare namespace Foo {
+>Foo : typeof Foo
+
+    namespace prototype {
+>prototype : typeof Foo.prototype
+
+        function f(): void;
+>f : () => void
+    }
+}
+

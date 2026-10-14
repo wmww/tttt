@@ -1275,6 +1275,15 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         }
     }
     Symbol* symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
+    if (!merged && !props.default_export && (includes & SYMBOL_VALUE) && scope->container && table == scope->container->exports &&
+        table != scope->locals && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) &&
+        symbol_table_get_own(table, name, symbol_name_hash(name)) != symbol
+    ) {
+        // (The last one of the name wins: tsc sets the local's exportSymbol at each declaration)
+        DuplicateExport* duplicate = arena_new(binder_arena(scope->binder), DuplicateExport);
+        *duplicate = (DuplicateExport){ symbol, scope_rare(scope)->duplicate_exports };
+        scope_rare_mut(scope)->duplicate_exports = duplicate;
+    }
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
@@ -5059,6 +5068,18 @@ Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found
     // (An import merged with an exported value of the module: the value, tsc's getExportSymbolOfValueSymbolIfExported
     // of the merged local)
     if (symbol && (symbol->flags & SYMBOL_ALIAS) && symbol->alias && symbol->alias->export_value) return symbol->alias->export_value;
+    // An export of the block's container that this block declared a duplicate of (TS2300): that one (tsc's
+    // checkIdentifier finds the block's local and takes its exportSymbol, the symbols baseline's resolveEntityName the
+    // export)
+    if (symbol && symbol->parent) {
+        for (Scope const* scope = me; scope; scope = scope->parent) {
+            if (scope->container != symbol->parent) continue;
+            for (DuplicateExport const* i = scope_rare(scope)->duplicate_exports; i; i = i->next) {
+                if (csview_equals_sv(i->symbol->name, name)) return i->symbol;
+            }
+            break;
+        }
+    }
     return symbol_for_meaning(symbol, SYMBOL_VALUE);
 }
 

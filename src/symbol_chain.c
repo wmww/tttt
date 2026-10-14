@@ -531,6 +531,14 @@ static bool needs_qualification(ChainCtx* me, Symbol const* symbol, u32 meaning)
         Symbol const* found = symbol_table_get(my tables[i].table, export_name(symbol));
         if (!found) continue;
         found = merged(me, found);
+        // (A class's exports have its `prototype` property in tsc, which a namespace's `prototype` merged into the
+        // class doesn't replace: that one is a duplicate, TS2300, which the name means as a value only through the
+        // block's local)
+        if ((meaning & SYMBOL_VALUE) && found->parent && (merged(me, found->parent)->flags & SYMBOL_CLASS) &&
+            csview_equals(found->name, "prototype") && !found->is_local
+        ) {
+            return true;
+        }
         if (found == merged(me, symbol)) return false;
         bool resolve = (found->flags & SYMBOL_ALIAS) && !is_export_specifier(found);
         u32 flags = resolve ? symbol_resolved_flags(found) : found->flags;
