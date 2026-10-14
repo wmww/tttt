@@ -500,6 +500,15 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
     }
 #undef PUSH_CHUNK
+    // The units, written to the mock filesystem once they're all known (in tsgo's harness's order, see below)
+    struct { csview name; cstr contents; }* units = nullptr;
+    isize unit_count = 0;
+#define PUSH_UNIT(n, c) do { \
+        units = realloc(units, sizeof(*units) * (size_t)(unit_count + 1)); \
+        panic_if(!units, "out of memory"); \
+        units[unit_count].name = (n); \
+        units[unit_count++].contents = (c); \
+    } while (0)
     for (isize chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
         csview whole = chunks[chunk_index];
         isize newline = csview_find_sv(whole, c_sv("\n"));
@@ -517,9 +526,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             if (tag_equals(tag_key, "filename")) {
                 // (what precedes the first `@filename` is dropped: tsc's harness only allows comments there)
                 if (seen_filename) {
-                    try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
-                        cstr_drop(&unparsed_contents);
-                    }
+                    PUSH_UNIT(current_filename, source_contents);
                 } else {
                     cstr_drop(&source_contents);
                 }
@@ -545,9 +552,31 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         cstr_append(&source_contents, "\r\n");
     }
 
-    try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
-        cstr_drop(&unparsed_contents);
+    PUSH_UNIT(current_filename, source_contents);
+#undef PUSH_UNIT
+
+    // tsc's harness: with `@noImplicitReferences`, or when the last unit mentions `require(` or `reference path`, that
+    // unit is the only root (the others are part of the program if something refers to them). It writes the roots
+    // first, then the other units (CompileFiles' inputFiles, then otherFiles), so of a repeated `@filename` the last
+    // copy written wins: the root's copy loses to an earlier one. The baselines show them in that order too
+    bool names_tsconfig = false;
+    for (isize u = 0; u < unit_count; u++) {
+        csview name = basename_of(units[u].name);
+        names_tsconfig |= tag_equals(name, "tsconfig.json") || tag_equals(name, "jsconfig.json");
     }
+    my last_is_only_root = !names_tsconfig && unit_count > 1 &&
+        (my no_implicit_references || contents_mention_references(cstr_sv(&units[unit_count - 1].contents)));
+    for (isize n = 0; n < unit_count; n++) {
+        isize u = !my last_is_only_root ? n : n == 0 ? unit_count - 1 : n - 1;
+        cstr contents = units[u].contents;
+        units[u].contents = cstr_null;
+        try (add_virtual_source_file(me, units[u].name, contents)) cleanup {
+            for (isize k = 0; k < unit_count; k++) cstr_drop(&units[k].contents);
+            free(units);
+            cstr_drop(&unparsed_contents);
+        }
+    }
+    free(units);
     // tsc's harness has its tests/lib folder at /.lib (vfs.ts testLibFolder), for `@libFiles` and for
     // `/// <reference path="/.lib/react16.d.ts" />`. Copied in only for the tests that mention it
     if (cstr_size(&my lib_files) || csview_find_sv(contents_sv, c_sv("/.lib/")) != c_NPOS) {
@@ -870,13 +899,15 @@ static void process_errors(BaselineTestCase* me) {
         const char* end = span_end_ptr(error->span);
         const char* line_start = start;
         while (line_start > file_start && line_start[-1] != '\n' && line_start[-1] != '\r') line_start--;
+        // (A NUL byte is a character of the file, not its end)
+        const char* file_end = file_start + cstr_size(&current_source->contents);
         while (true) {
             const char* line_end = line_start;
-            while (*line_end && *line_end != '\n' && *line_end != '\r') line_end++;
+            while (line_end < file_end && *line_end != '\n' && *line_end != '\r') line_end++;
             const char* next_line_start = line_end;
             if (*next_line_start == '\r') next_line_start++;
             if (*next_line_start == '\n') next_line_start++;
-            bool is_last_line = !*line_end;
+            bool is_last_line = line_end == file_end;
 
             LineNumberedStr item = { .line = line, .str = cstr_null };
             const char* squiggle_start = start > line_start ? start : line_start;
@@ -1008,27 +1039,8 @@ BaselineTestCase run_baseline_test_case(
         program_copy_globals_from(program, lib_program);
     }
 
-    // tsc's harness: with `@noImplicitReferences`, or when the last file mentions `require(` or `reference path`, that
-    // file is the only root (the others are part of the program if something refers to them) and comes first in the
-    // baselines
-    bool last_is_only_root = false;
-    if (!ret.has_tsconfig && vec_baseline_test_file_size(&ret.files) > 1) {
-        BaselineTestFile* last = vec_baseline_test_file_back_mut(&ret.files);
-        cstr contents = cstr_null;
-        try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&last->path), &contents)) if_err (e) {
-            ignore e;
-            current_error_destroy(); // A symlink (`@link`) to nowhere and the like
-        }
-        last_is_only_root = ret.no_implicit_references || contents_mention_references(cstr_sv(&contents));
-        cstr_drop(&contents);
-        if (last_is_only_root) {
-            // Rotate it to the front (in place: popping would drop it)
-            BaselineTestFile moved = *last;
-            isize count = vec_baseline_test_file_size(&ret.files);
-            memmove(ret.files.data + 1, ret.files.data, sizeof(BaselineTestFile) * (size_t)(count - 1));
-            ret.files.data[0] = moved;
-        }
-    }
+    // (The only root, if any, was written first: load_test_source())
+    bool last_is_only_root = ret.last_is_only_root && !ret.has_tsconfig;
 
     // With a tsconfig.json the baselines show it, then the roots, then the other files (the harness's tsConfigFiles,
     // toBeCompiled and otherFiles), each in the order the test has them
@@ -1048,7 +1060,8 @@ BaselineTestCase run_baseline_test_case(
     }
 
     for_each (i, vec_baseline_test_file, &ret.files) {
-        bool is_root = !last_is_only_root || i_index == 0;
+        // (By name: a later copy of the root's `@filename` is the file)
+        bool is_root = !last_is_only_root || cstr_eq(&i->path, &ret.files.data[0].path);
         if (ret.has_tsconfig) {
             cstr cwd = cstr_null;
             try (fs_get_cwd(mock_fs_get_fs(fs), &cwd)) or_panic;

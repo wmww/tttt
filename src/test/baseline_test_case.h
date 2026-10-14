@@ -70,6 +70,9 @@ typedef struct BaselineTestCase {
     MockFs* fs;
     Program* program;
     bool no_implicit_references; // `@noImplicitReferences`
+    // The last unit is the only root (tsc's harness: `@noImplicitReferences`, or it mentions `require(`/`reference
+    // path`), written and shown first
+    bool last_is_only_root;
     // Where the traversal is: types are printed the way they're named from there
     struct Scope const* enclosing;
     struct ModuleRef const* usage_ref; // See TyDisplay.usage_ref: set while an import or export name is added
