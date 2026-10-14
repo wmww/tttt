@@ -268,7 +268,7 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   member; tttt omits it.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
   `@ts-expect-error`). Not reduced.
-- Elaboration chains: conditionalTypes1/2, recursiveConditionalTypes.
+- Elaboration chains: recursiveConditionalTypes.
 - tsxStatelessFunctionComponentsWithTypeArguments4: the overload in the message prints `{ b: number; a: unknown }` in
   tsc, `b: unknown` in tttt (inference for that overload).
 - Lesson (ex plan 34): a message change can crash on real code the suite doesn't have (`ty_prop_written_name` on a

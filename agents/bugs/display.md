@@ -169,7 +169,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   cut by isDeeplyNestedType as Maybe, so `size` (declared after `filter` in Collection) is the first failing
   property; tttt goes one level deeper and fails `filter`. Recursion-identity depth, not property order (member order
   matches since the getNamedMembers work).
-- Elaboration chain shapes (conditionalTypes1/2, recursiveConditionalTypes):
+- Elaboration chain shapes (recursiveConditionalTypes; conditionalTypes1/2 fixed by normalizing the target and the
+  apparent intersection source, 2026-10-14):
   tsc's chains interleave lines from a failed constraint attempt with the later ones (`T` to `NonNullable<T>`: the
   source constraint `string | undefined` against `T & {}`, then "'undefined' is assignable to the constraint of type
   'T', but...", then T against `{}` *nested under it*), i.e. its errorInfo save/restore around
@@ -251,13 +252,12 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   replacement touches the scanner, TS1490 and every UTF-16 column computation.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
-- Relation paths that differ from tsgo's (not elaboration rules): conditionalTypes2 (`Extract<Extract<T, Foo>, Bar>`
-  explained through `Extract<T, Bar>`), mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
+- Relation paths that differ from tsgo's (not elaboration rules): mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
   complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
   (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
   mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
-  `use(): this`), conditionalTypes1's `Partial<T>[keyof T] & {}` target display.
+  `use(): this`).
 - The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
   declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by

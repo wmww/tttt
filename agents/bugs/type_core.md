@@ -89,9 +89,6 @@ passing tests).
   (only the "0" property rule is in `context_is_tuple_like`).
 - **Conditional true branch with `infer`s**: relating a deferred conditional through its true branch with `infer`s as
   unknown is done only when the check type is generic; with a generic extends type tsc has real inferences.
-- conditionalTypes2's remaining errors are elaborations: variance-based `Type 'A' is not assignable to type 'B'` for
-  `Covariant<A>` vs `Covariant<B>`, and an intersection source with a bare `T` (`Foo & Bar & T`) reported whole where
-  tsc reports its constraint (getEffectiveConstraintOfIntersection).
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
   type in the tsc corpus's `utilities.ts` printed a huge `keyof "a" & keyof "b"` key). Not re-probed.
 

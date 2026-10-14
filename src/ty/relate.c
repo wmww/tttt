@@ -7432,6 +7432,17 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if ((source->flags | target->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         source = normalized_generic_tuple(me, source, false);
         target = normalized_generic_tuple(me, target, true);
+        // An intersection target with `{}` in it has its members normalized, as written to (tsc's
+        // getNormalizedUnionOrIntersectionType): `NonNullable<Partial<T>[keyof T]>` is `T[keyof T] & {}`, which is
+        // what the members of a union source are related to (and reported against) below
+        if (target->kind == TY_INTERSECTION && (target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+            bool empty = false;
+            for (u32 i = 0; i < target->composite.types.len && !empty; i++) {
+                Ty const* member = target->composite.types.data[i];
+                empty = member->kind == TY_ANONYMOUS && ty_is_empty_anonymous_object(me, member);
+            }
+            if (empty) target = ty_regular(me, normalized_intersection(me, target, true));
+        }
         if (source == target) return TERNARY_TRUE;
     }
     Ty const* stripped = ty_strip_nullable_target(me, source, target);
