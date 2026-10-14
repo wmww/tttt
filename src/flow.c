@@ -211,7 +211,7 @@ bool expr_is_entity_name(Expr const* me) {
     // (`(a).b` isn't one either)
     while (my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(me)) {
         // (`a.#x` isn't one: tsc's isPropertyAccessEntityNameExpression wants an identifier)
-        Span name = my property->prop.inner_span;
+        Span name = property_name(my property);
         if (name.size && name.buf[0] == '#') return false;
         me = &my property->expr;
     }
@@ -233,7 +233,7 @@ bool expr_is_narrowable_reference(Expr const* me) {
             case EXPR_PROPERTY:
                 if (my property->optional_chain) return false; // Only as part of containsNarrowableReference
                 if (my property->form == PROPERTY_EXPR_BRACKET) {
-                    Expr const* key = &my property->prop;
+                    Expr const* key = &my property->index;
                     bool literal = key->tag == EXPR_LITERAL &&
                         (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER);
                     if (!literal && !expr_is_entity_name(key)) return false;
@@ -346,8 +346,7 @@ static bool may_evolve(Expr const* object) {
 
 static bool is_dot_name(Expr const* access, char const* name) {
     if (access->tag != EXPR_PROPERTY || access->property->form != PROPERTY_EXPR_DOT) return false;
-    Expr const* prop = &access->property->prop;
-    return prop->tag == EXPR_LITERAL && span_valid(prop->inner_span) && csview_equals(span_sv(prop->inner_span), name);
+    return property_is_dot_name(access->property, name);
 }
 
 void flow_array_mutation(FlowBuilder* me, Expr* expr) {
@@ -362,7 +361,7 @@ void flow_array_mutation(FlowBuilder* me, Expr* expr) {
         Expr* left = &expr->binary_op->left;
         if (expr->binary_op->op != BINARY_OP_EQUAL || left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_BRACKET) return;
         object = &left->property->expr;
-        mark_evolving_array_target(object, EVOLVING_OP_ELEMENT_ASSIGNMENT, &left->property->prop);
+        mark_evolving_array_target(object, EVOLVING_OP_ELEMENT_ASSIGNMENT, &left->property->index);
     }
     if (my dead || flow_is_unreachable(my current) || !is_narrowable_operand(object) || !may_evolve(object)) return;
     set_referenced(my current);

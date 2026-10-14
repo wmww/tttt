@@ -1446,7 +1446,7 @@ static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
     if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
         display_entity_expr(me, d, &expr->property->expr);
         out_lit(d, ".");
-        out(d, span_sv(expr->property->prop.inner_span));
+        out(d, span_sv(property_name(expr->property)));
     } else if (expr->tag == EXPR_GENERIC_PARAMS) {
         display_entity_expr(me, d, &expr->generic_params->expr);
         display_node_args(me, d, &expr->generic_params->params);

@@ -849,8 +849,7 @@ void display_expr(Display d, Expr const* me) {
             switch (my property->form) {
                 case PROPERTY_EXPR_DOT:
                     display_lit(d, ".");
-                    check(my property->prop.tag == EXPR_LITERAL && my property->prop.literal.tag == VALUE_STRING);
-                    display_s(d, my property->prop.literal.string);
+                    display_sv(d, name_cooked(span_sv(property_name(my property))));
                     break;
 
                 case PROPERTY_EXPR_BRACKET:
@@ -858,7 +857,7 @@ void display_expr(Display d, Expr const* me) {
                         display_lit(d, ".");
                     }
                     display_lit(d, "[");
-                    display_expr(d, &my property->prop);
+                    display_expr(d, &my property->index);
                     display_lit(d, "]");
             }
         }   break;

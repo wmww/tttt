@@ -966,13 +966,11 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     } else if (extends->tag == EXPR_PROPERTY && extends->property->form == PROPERTY_EXPR_DOT) {
         // A class in a namespace
         Expr const* object = &extends->property->expr;
-        Expr const* name = &extends->property->prop;
         Symbol const* namespace_decl = nullptr;
         if (object->tag == EXPR_IDENTIFIER) namespace_decl = object->identifier.target;
         namespace_decl = symbol_for_meaning(namespace_decl, SYMBOL_NAMESPACE);
-        // (The name of a dot access is a literal)
-        if (namespace_decl && !namespace_decl->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
-            decl = symbol_get_export(namespace_decl, span_sv(name->inner_span));
+        if (namespace_decl && !namespace_decl->is_placeholder) {
+            decl = symbol_get_export(namespace_decl, span_sv(property_name(extends->property)));
         }
     }
     // The name was looked up as a value, the class is the same symbol

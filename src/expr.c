@@ -27,6 +27,15 @@ const int as_type_precedence = 90;
 const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
+PropertyExpr* property_dot_new(PropertyExpr const* fields) {
+    check(fields->form == PROPERTY_EXPR_DOT);
+    size_t size = offsetof(PropertyExpr, name_key) + sizeof(LazyType);
+    void* raw = malloc(size);
+    check(raw);
+    memcpy(raw, fields, size);
+    return raw;
+}
+
 void identifier_expr_drop(IdentifierExpr* me) {
     ignore me;
 }
@@ -460,11 +469,9 @@ static Symbol const* entity_name_symbol(Scope* names, Expr const* expr, u32 mean
         return symbol_for_meaning(scope_resolve(names, span_sv(expr->inner_span), meaning), meaning);
     }
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
-    Expr const* name = &expr->property->prop;
-    if (name->tag != EXPR_LITERAL || name->literal.tag != VALUE_STRING) return nullptr;
     Symbol const* container = entity_name_symbol(names, &expr->property->expr, SYMBOL_NAMESPACE);
     if (!container || container->is_placeholder) return nullptr;
-    return symbol_for_meaning(symbol_get_export(container, cstr_sv(&name->literal.string)), meaning);
+    return symbol_for_meaning(symbol_get_export(container, name_cooked(span_sv(property_name(expr->property)))), meaning);
 }
 
 // A class's `extends` names an interface (tsc's checkAndReportErrorForExtendingInterface)
@@ -1022,7 +1029,7 @@ void expr_drop(Expr* me) {
 
         case EXPR_PROPERTY:
             expr_drop(&my property->expr);
-            expr_drop(&my property->prop);
+            if (my property->form == PROPERTY_EXPR_BRACKET) expr_drop(&my property->index);
             free(my property);
             break;
 
@@ -1423,7 +1430,8 @@ static void expr_lookup_names_chain(
         flow_set_current(flow, flow_finish_label(pre_chain));
     }
     if (my tag == EXPR_PROPERTY) {
-        expr_lookup_names(&my property->prop, names, errs);
+        if (my property->form == PROPERTY_EXPR_BRACKET) expr_lookup_names(&my property->index, names, errs);
+        else lazy_type_bind(&my property->name_key, LAZY_TYPE_EVALUATED);
     } else if (my tag == EXPR_CALL) {
         for_each (i, vec_expr, &my call->args) {
             expr_lookup_names(i, names, errs);
@@ -1964,10 +1972,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 context.flow_container = flow->container;
                 my property->context = flow_builder_property_context(flow, &context);
             }
-            if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
-                span_valid(my property->prop.inner_span) && my property->prop.inner_span.buf[0] == '#'
+            if (my property->form == PROPERTY_EXPR_DOT && span_valid(property_name(my property)) &&
+                property_name(my property).buf[0] == '#'
             ) {
-                csview name = span_sv(my property->prop.inner_span);
+                csview name = span_sv(property_name(my property));
                 ClassDecl const* c = my property->context->enclosing_class;
                 while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
                 my property->private_class_ = c;
@@ -1976,7 +1984,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }
-            if (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL) {
+            if (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) {
                 if (my property->expr.tag == EXPR_IDENTIFIER) my property->expr.identifier.constraint_position = true;
                 if (my property->expr.tag == EXPR_PROPERTY) my property->expr.property->constraint_position = true;
             } else if (my property->expr.tag == EXPR_IDENTIFIER && !my property->expr.identifier.keyword &&
@@ -1986,18 +1994,19 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 IdentifierExpr* object = &my property->expr.identifier;
                 object->constraint_position = true;
                 object->element_object = true;
-                object->evolving_index_ = &my property->prop;
+                object->evolving_index_ = &my property->index;
             }
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
             } else {
                 expr_lookup_names(&my property->expr, names, errs);
-                expr_lookup_names(&my property->prop, names, errs);
+                if (my property->form == PROPERTY_EXPR_BRACKET) expr_lookup_names(&my property->index, names, errs);
+                else lazy_type_bind(&my property->name_key, LAZY_TYPE_EVALUATED);
             }
-            if (my property->form == PROPERTY_EXPR_BRACKET && my property->prop.tag == EXPR_IDENTIFIER &&
-                my property->prop.identifier.target
+            if (my property->form == PROPERTY_EXPR_BRACKET && my property->index.tag == EXPR_IDENTIFIER &&
+                my property->index.identifier.target
             ) {
-                my property->for_in_loop_ = scope_for_in_loop_of(names, my property->prop.identifier.target);
+                my property->for_in_loop_ = scope_for_in_loop_of(names, my property->index.identifier.target);
             }
             break;
 
@@ -2797,7 +2806,7 @@ static Expr const* cond_path_binary_parent(CondPath const* path) {
 // symbol of an identifier, the declaration of a property. Null if there is nothing to compare
 static void const* location_symbol(Expr const* me) {
     if (my tag == EXPR_IDENTIFIER) return my identifier.keyword ? nullptr : my identifier.symbol;
-    if (my tag != EXPR_PROPERTY || my property->form != PROPERTY_EXPR_DOT || my property->prop.tag != EXPR_LITERAL) return nullptr;
+    if (my tag != EXPR_PROPERTY || my property->form != PROPERTY_EXPR_DOT) return nullptr;
     Checker* checker = current_checker;
     Ty const* key = ty_access_key_type(checker, my property);
     if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) || (key->flags & TYF_ENUM_LITERAL)) return nullptr;
@@ -4161,7 +4170,7 @@ static Expr const* checked_callee;
 
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
-    Span name = my property->prop.inner_span;
+    Span name = property_name(my property);
     if (csview_equals(span_sv(name), "defer") || csview_equals(span_sv(name), "source")) { // (tsgo's IsImportPhaseMetaProperty)
         // (Not called: `import.defer(...)` is a deferred import call, see parse_import_keyword_expr())
         Span end = span_make_in(my inner_span, span_end_ptr(my inner_span), span_end_ptr(my inner_span));
@@ -4324,13 +4333,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             current_checker->const_enum_object_ok = &my property->expr;
             expr_typecheck(&my property->expr, errs);
             current_checker->const_enum_object_ok = outer_ok;
-            expr_typecheck(&my property->prop, errs);
+            if (my property->form == PROPERTY_EXPR_BRACKET) expr_typecheck(&my property->index, errs);
             // (`a?.b` of `a?.b.c` without the undefined of a chain that ended)
             Ty const* expr_type = ty_optional_expression_type(current_checker, expr_get_type(&my property->expr),
                 my property->optional_chain, nullptr);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
-            if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
-                span_valid(my property->prop.inner_span) && my property->prop.inner_span.buf[0] == '#'
+            if (my property->form == PROPERTY_EXPR_DOT && span_valid(property_name(my property)) &&
+                property_name(my property).buf[0] == '#'
             ) {
                 private_access_check_emit_helpers(me, errs);
             }
@@ -4353,7 +4362,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
                 expr_type = ty_non_nullable(current_checker, expr_type);
             }
-            if (my property->qualified_name && my property->prop.tag == EXPR_LITERAL &&
+            if (my property->qualified_name && (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) &&
                 ty_namespace_type_only_prop(current_checker, expr_type, ty_literal_name(current_checker, ty_access_key_type(current_checker, my property)))
             ) {
                 break;
@@ -4371,7 +4380,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_type,
                 ty_access_key_type(current_checker, my property),
                 expr_outer_span(&my property->expr),
-                expr_outer_span(&my property->prop),
+                property_key_span(my property),
                 // (In a `typeof a.b.c` type the object is a qualified name, an entity name expression only when it's an
                 // identifier, `this` included: tsc's isEntityNameExpression)
                 my property->qualified_name ?
@@ -4380,13 +4389,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 &found
             );
-            Span name_span = expr_outer_span(&my property->prop);
+            Span name_span = property_key_span(my property);
             if (unwidened != expr_type && error_if_not_found && (error_ctx_find(&found, name_span, 2339) ||
                 error_ctx_find(&found, name_span, 2550) || error_ctx_find(&found, name_span, 2551))
             ) {
                 error_ctx_clear(&found);
                 ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
-                    expr_outer_span(&my property->prop), errs);
+                    property_key_span(my property), errs);
             }
             current_checker->suggestion_access = nullptr;
             error_ctx_merge(errs, &found);
@@ -4894,8 +4903,9 @@ bool expr_is_plain_identifier(Expr const* me, const char* name) {
 // `a.b` or `a["b"]`: the name b, else an invalid span
 Span expr_static_property_name(Expr const* me) {
     if (my tag != EXPR_PROPERTY || expr_is_perenthisized(me) || my property->optional_chain) return span_null;
-    Expr const* prop = &my property->prop;
-    if (prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER && my property->form == PROPERTY_EXPR_BRACKET) {
+    if (my property->form == PROPERTY_EXPR_DOT) return property_name(my property);
+    Expr const* prop = &my property->index;
+    if (prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER) {
         // `o[77]` (tsc's isStringOrNumericLiteralLike): named by the number's text, when that is how it prints. Also
         // `o[(77)]`: tsgo's GetElementOrPropertyAccessName skips parentheses
         csview digits = span_sv(prop->inner_span);
@@ -4904,7 +4914,6 @@ Span expr_static_property_name(Expr const* me) {
         return canonical && digits.size < 16 ? prop->inner_span : span_null;
     }
     if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return span_null;
-    if (my property->form == PROPERTY_EXPR_DOT) return prop->inner_span;
     // Without the quotes
     Span ret = prop->inner_span;
     if (ret.size < 2) return span_null;
@@ -4984,7 +4993,7 @@ bool expr_is_define_property_call(Expr const* me, Span* name_ret) {
     if (my tag != EXPR_CALL || my call->uses_new || my call->optional_chain || vec_expr_size(&my call->args) != 3) return false;
     Expr const* callee = &my call->callable;
     if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT || callee->property->optional_chain ||
-        !span_equals(callee->property->prop.inner_span, "defineProperty") ||
+        !span_equals(property_name(callee->property), "defineProperty") ||
         !expr_is_plain_identifier(&callee->property->expr, "Object")
     ) {
         return false;

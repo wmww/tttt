@@ -753,7 +753,7 @@ static bool field_initialized_in_constructor(
         Atom const* name = item_member_name(checker, me, field);
         for_each (i, vec_expr_cptr, &my computed_this_assignments) {
             bool is_number = false;
-            Ty const* key = ty_expr_type(checker, &(*i)->property->prop);
+            Ty const* key = ty_expr_type(checker, &(*i)->property->index);
             if (name && ty_property_name_of_key(checker, key, &is_number) == name) {
                 reference = *i;
                 break;
@@ -1818,9 +1818,11 @@ static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, b
     ) {
         // A class in a namespace, `M.E` (like the members' class_base())
         Symbol const* namespace = symbol_for_meaning(base->property->expr.identifier.target, SYMBOL_NAMESPACE);
-        Expr const* name = &base->property->prop;
-        if (namespace && !namespace->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
-            target = symbol_get_export(namespace, span_sv(name->inner_span));
+        PropertyExpr const* access = base->property;
+        if (namespace && !namespace->is_placeholder && (access->form == PROPERTY_EXPR_DOT ||
+            access->index.tag == EXPR_IDENTIFIER || access->index.tag == EXPR_LITERAL)
+        ) {
+            target = symbol_get_export(namespace, span_sv(property_key_inner_span(access)));
         }
     }
     target = symbol_for_meaning(target, SYMBOL_CLASS);

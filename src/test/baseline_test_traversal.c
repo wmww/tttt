@@ -168,7 +168,7 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
     if (!declares) return;
-    add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
+    add_symbol_override(ctx, property_key_span(left->property), member);
 }
 
 // Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
@@ -1926,7 +1926,7 @@ static void heritage_invalid_compile_test_info(Expr* expr, BaselineTestCase* ctx
     u32 saved = ctx->hidden_type_span_count;
     while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && ctx->hidden_type_span_count + 2 <= c_arraylen(ctx->hidden_type_spans)) {
         ctx->hidden_type_spans[ctx->hidden_type_span_count++] = e->inner_span;
-        ctx->hidden_type_spans[ctx->hidden_type_span_count++] = expr_outer_span(&e->property->prop);
+        ctx->hidden_type_spans[ctx->hidden_type_span_count++] = property_key_span(e->property);
         e = &e->property->expr;
     }
     expr_compile_test_info(expr, ctx);
@@ -1948,7 +1948,7 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
     u32 n = 0;
     Expr* e = base;
     while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && !e->property->optional_chain &&
-        !expr_is_perenthisized(e) && e->property->prop.tag == EXPR_LITERAL && n < c_arraylen(nodes)
+        !expr_is_perenthisized(e) && n < c_arraylen(nodes)
     ) {
         nodes[n++] = e;
         e = &e->property->expr;
@@ -1958,7 +1958,7 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
     if (alias_of_unknown(found)) {
         // (An import of an unresolved module: the names after it are tsc's unknownSymbol, see unknown_symbol_text())
         for (u32 k = n; k-- > 0 && ctx->symbol_override_count + 2 <= c_arraylen(ctx->symbol_overrides);) {
-            Span spans[2] = { nodes[k]->inner_span, expr_outer_span(&nodes[k]->property->prop) };
+            Span spans[2] = { nodes[k]->inner_span, property_key_span(nodes[k]->property) };
             for (u32 j = 0; j < 2; j++) {
                 ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
                     .span = spans[j], .text = unknown_symbol_text(ctx), .declarations = vec_span_init(),
@@ -1981,11 +1981,11 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
     for (u32 k = n; k-- > 0;) {
         Symbol const* container = symbol_for_meaning(found, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return;
-        csview name = span_sv(expr_outer_span(&nodes[k]->property->prop));
+        csview name = span_sv(property_key_span(nodes[k]->property));
         Symbol const* next = symbol_get_export(container, name);
         if (!next || !symbol_for_meaning(next, k ? SYMBOL_NAMESPACE : SYMBOL_VALUE)) return;
         add_symbol_override(ctx, nodes[k]->inner_span, next);
-        add_symbol_override(ctx, expr_outer_span(&nodes[k]->property->prop), next);
+        add_symbol_override(ctx, property_key_span(nodes[k]->property), next);
         found = next;
     }
 }
@@ -2776,9 +2776,9 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
 }
 
 static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (ty_is_import_meta(me) && !csview_equals(span_sv(my property->prop.inner_span), "meta")) {
+    if (ty_is_import_meta(me) && !csview_equals(span_sv(property_key_inner_span(my property)), "meta")) {
         // `import.metal` (TS17012) is the error type, and has no symbols
-        baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), ty_intrinsic(current_checker, TY_ERROR));
+        baseline_test_case_add_type(ctx, property_key_span(my property), ty_intrinsic(current_checker, TY_ERROR));
         return;
     }
     if (ty_is_import_meta(me)) {
@@ -2793,12 +2793,12 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             });
         }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .span = expr_outer_span(&my property->prop),
+            .span = property_key_span(my property),
             .allow_declaration_empty = true,
             .text = cstr_lit("ImportMetaExpression.meta"),
         });
         ctx->any_keeps_rendering = true;
-        baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), type);
+        baseline_test_case_add_type(ctx, property_key_span(my property), type);
         return;
     }
     bool has_compiled_expr_info = false;
@@ -2821,14 +2821,14 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     }
     // (Not of a parenthesized key: getSymbolAtLocation of `0` in `o[(0)]` sees no element access around it)
     if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
-        !(my property->form == PROPERTY_EXPR_BRACKET && expr_is_perenthisized(&my property->prop))
+        !(my property->form == PROPERTY_EXPR_BRACKET && expr_is_perenthisized(&my property->index))
     ) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }
     // The synthetic `default` of a namespace import of a JSON module (with_synthetic_default()): named as the module
     Symbol const* default_of = nullptr;
-    if (info.found && !info.parent && vec_span_is_empty(&info.declarations) && my property->prop.tag == EXPR_LITERAL &&
-        csview_equals(span_sv(expr_outer_span(&my property->prop)), "default") && my property->expr.tag == EXPR_IDENTIFIER
+    if (info.found && !info.parent && vec_span_is_empty(&info.declarations) && (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) &&
+        csview_equals(span_sv(property_key_span(my property)), "default") && my property->expr.tag == EXPR_IDENTIFIER
     ) {
         Symbol const* alias = my property->expr.identifier.symbol;
         PortItem const* item = alias && alias->alias ? alias->alias->item : nullptr;
@@ -2845,23 +2845,23 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
                 .span = my inner_span,
-                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, property_key_span(my property)),
             });
         }
         expr_compile_test_info(&my property->expr, ctx);
         has_compiled_expr_info = true;
         // tsc has no line for the name in a private name access (`a.#b`)
-        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")) {
+        if ((my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) && !csview_starts_with(span_sv(property_key_span(my property)), "#")) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
-                .span = expr_outer_span(&my property->prop),
-                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .span = property_key_span(my property),
+                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, property_key_span(my property)),
             });
         }
     }
     vec_span_drop(&info.declarations);
-    if (!info.found && has_symbol_override(ctx, expr_outer_span(&my property->prop))) {
+    if (!info.found && has_symbol_override(ctx, property_key_span(my property))) {
         // The target of a CommonJS assignment shows what it declares, even through an `exports` that is any
         if (my property->form == PROPERTY_EXPR_DOT && has_symbol_override(ctx, my inner_span)) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
@@ -2869,12 +2869,12 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         ctx->any_keeps_rendering = my property->form == PROPERTY_EXPR_DOT; // The object of a property access
         expr_compile_test_info(&my property->expr, ctx);
         has_compiled_expr_info = true;
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = expr_outer_span(&my property->prop), .allow_declaration_empty = true });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = property_key_span(my property), .allow_declaration_empty = true });
         info.found = true;
     }
     if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
-        !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
-        !csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")
+        !(key->flags & TYF_ENUM_LITERAL) && (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) &&
+        !csview_starts_with(span_sv(property_key_span(my property)), "#")
     ) {
         // Through a declared index signature: `__index`, on the access and on the name (a type parameter's
         // constraint's too, tsgo; not in element accesses: tsc has no symbol there)
@@ -2887,7 +2887,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         ) {
             expr_compile_test_info(&my property->expr, ctx);
             has_compiled_expr_info = true;
-            index_symbol_compile_test_info(ctx, object, key, expr_outer_span(&my property->prop), false);
+            index_symbol_compile_test_info(ctx, object, key, property_key_span(my property), false);
         }
     }
 
@@ -2898,10 +2898,10 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     }
 
     if (!dot) {
-        expr_compile_test_info(&my property->prop, ctx);
-    } else if (!csview_starts_with(span_sv(expr_outer_span(&my property->prop)), "#")) {
+        expr_compile_test_info(&my property->index, ctx);
+    } else if (!csview_starts_with(span_sv(property_key_span(my property)), "#")) {
         ctx->any_keeps_rendering = true;
-        baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), ty_regular(current_checker, expr_get_type((Expr*)me)));
+        baseline_test_case_add_type(ctx, property_key_span(my property), ty_regular(current_checker, expr_get_type((Expr*)me)));
     }
 }
 
@@ -3027,7 +3027,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             ) {
                 // tsc's synthetic `exports` property of `module`, named after it and declared by the file
                 SourceFile const* file = module->identifier.target->decls[0].node;
-                Span spans[2] = { my inner_span, expr_outer_span(&my property->prop) };
+                Span spans[2] = { my inner_span, property_key_span(my property) };
                 for (u32 i = 0; i < 2; i++) {
                     VecSpan declarations = vec_span_init();
                     vec_span_push(&declarations, span_from_sv(file, csview_from_n(source_file_start(file), 0)));

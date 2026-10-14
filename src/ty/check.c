@@ -1477,7 +1477,7 @@ static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop 
         .initializer_context = site->initializer_context,
     };
     ErrorCtx discard = error_ctx_init();
-    bool ret = check_accessibility(me, &access_site, expr_outer_span(&access->prop), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+    bool ret = check_accessibility(me, &access_site, property_key_span(access), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
         false, prop, containing, is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER), &discard);
     error_ctx_drop(&discard);
     return ret;
@@ -2297,7 +2297,7 @@ void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty co
     Ty const* key = ty_access_key_type(me, access);
     if (!ty_generic_write_index_info(me, access, object, key)) return;
     if (access->form == PROPERTY_EXPR_DOT) {
-        report_no_property(me, object, ty_regular(me, key), 2339, expr_outer_span(&access->prop), false, errs);
+        report_no_property(me, object, ty_regular(me, key), 2339, property_key_span(access), false, errs);
         return;
     }
     cstr object_str = ty_to_cstr(me, object);
@@ -2450,7 +2450,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
     ) {
         // (tsc's checkElementAccess: isStringLiteralLike, a string literal or a template without substitutions)
-        Expr const* index = &access->prop;
+        Expr const* index = &access->index;
         if (index->tag != EXPR_LITERAL || index->literal.tag != VALUE_STRING) {
             error_ctx_error_d(errs, index->inner_span, 2476, "A const enum member can only be accessed using a string literal.");
             return;
@@ -2459,12 +2459,12 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
             !ty_access(me, object, key)
         ) {
-            report_no_property(me, object, key, 2339, expr_outer_span(&access->prop), false, errs);
+            report_no_property(me, object, key, 2339, property_key_span(access), false, errs);
         }
         return;
     }
     if (!compiler_options()->no_implicit_any) return;
-    Span index_span = expr_outer_span(&access->prop);
+    Span index_span = property_key_span(access);
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
     u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     // (`any` is a key like any other: tsc's isTypeAssignableToKind)
@@ -2561,7 +2561,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         ty_get_prop(me, ty_static_type_of(me, class_symbol), name)
     ) {
         error_ctx_error_d(errs, span, 2576, "Property '", atom_sv(name), "' does not exist on type '", object_str,
-            "'. Did you mean to access the static member '", object_str, "[", csview_trim(span_sv(access->prop.inner_span)),
+            "'. Did you mean to access the static member '", object_str, "[", csview_trim(span_sv(property_key_inner_span(access))),
             "]' instead?");
     } else if (number_index) {
         error_ctx_error_d(errs, index_span, 7015,
@@ -2746,7 +2746,7 @@ static bool is_namespace_import(Expr const* expr) {
 // tsc's isAssignmentToReadonlyEntity for a property
 // `exports.x = v` in a CommonJS file declares x (whatever else declares it: the target of an alias export is a const)
 static bool is_commonjs_export_assignment(PropertyExpr const* access) {
-    SourceFile const* file = span_source(expr_outer_span(&access->prop));
+    SourceFile const* file = span_source(property_key_span(access));
     if (!file || !file->is_commonjs) return false;
     Expr left = { .tag = EXPR_PROPERTY, .property = (PropertyExpr*)access };
     return expr_commonjs_target(&left, nullptr) == COMMONJS_TARGET_EXPORTS_PROPERTY;
@@ -2789,7 +2789,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
         return;
     }
     PropertyExpr const* access = operand->property;
-    Span name_span = access->prop.inner_span;
+    Span name_span = property_key_inner_span(access);
     if (access->form == PROPERTY_EXPR_DOT && span_valid(name_span) && name_span.buf[0] == '#') {
         error_ctx_error_d(errs, operand->inner_span, 18011, "The operand of a 'delete' operator cannot be a private identifier.");
     }
@@ -4379,7 +4379,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
             if (s->tag != STATEMENT_EXPR || s->expr.tag != EXPR_BINARY_OP || s->expr.binary_op->op != BINARY_OP_EQUAL) continue;
             Expr const* target = &s->expr.binary_op->left;
             if (target->tag == EXPR_PROPERTY && target->property->form == PROPERTY_EXPR_DOT &&
-                csview_equals_sv(span_sv(target->property->prop.inner_span), name)
+                csview_equals_sv(span_sv(property_name(target->property)), name)
             ) {
                 return true;
             }
@@ -4395,7 +4395,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
     PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
-    if (!span_valid(prop->decl->name_span) || span_source(prop->decl->name_span) != span_source(expr_outer_span(&access->prop))) return;
+    if (!span_valid(prop->decl->name_span) || span_source(prop->decl->name_span) != span_source(property_key_span(access))) return;
     // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
     if (prop->decl->symbol && prop->decl->symbol->decl_count && prop->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
@@ -4432,7 +4432,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         case INITIALIZER_INSTANCE_FIELD: deferred = !is_instance_field || !same_class; break;
         case INITIALIZER_STATIC_FIELD:
             deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && site->initializer_field &&
-                initialized_in_static_blocks(class_decl, span_sv(access->prop.inner_span), span_start_ptr(site->initializer_field->span),
+                initialized_in_static_blocks(class_decl, span_sv(property_key_inner_span(access)), span_start_ptr(site->initializer_field->span),
                     (prop_type(me, prop)->flags & (TYF_ANY | TYF_UNKNOWN)) != 0));
             break;
         case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
@@ -4449,12 +4449,12 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         fine = !(emit_standard && (is_field || parameter) &&
             (within_declaration || (site->initializer_field && same_class) ||
                 site->initializer_context == INITIALIZER_STATIC_BLOCK) &&
-            span_end_ptr(expr_outer_span(&access->prop)) <= span_end_ptr(declaration));
+            span_end_ptr(property_key_span(access)) <= span_end_ptr(declaration));
     } else {
         fine = false;
     }
     if (fine) return;
-    Span name = access->prop.inner_span;
+    Span name = property_key_inner_span(access);
     Error* error = error_ctx_error_d(errs, name, 2729, "Property '", name, "' is used before its initialization.");
     // (tsc's error span of the declaration: the name, but all of a parameter)
     error_add_related_d(error, parameter ? parameter->span : prop->decl->name_span, 2728, "'", name, "' is declared here.");
@@ -4469,7 +4469,7 @@ static void check_class_used_before_declaration(PropertyExpr const* access, Prop
     ClassDecl const* class_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
     // (A class declaration: `exports.C = class {}` aliases a class expression)
     if (!class_decl || class_decl->is_ambient || class_decl->is_expression || access->qualified_name) return;
-    Span used = access->prop.inner_span;
+    Span used = property_key_inner_span(access);
     if (!span_valid(used) || span_source(class_decl->full_span) != span_source(used) || !span_source(used) || span_source(used)->is_declaration) return;
     char const* declared_at = span_start_ptr(class_decl->full_span);
     if (declared_at <= span_start_ptr(used)) return;
@@ -4487,7 +4487,7 @@ static bool has_real_prop(Checker* me, Ty const* apparent, Atom const* name) {
 }
 
 void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
-    if (access->form != PROPERTY_EXPR_DOT || access->qualified_name || access->prop.tag != EXPR_LITERAL) return;
+    if (access->form != PROPERTY_EXPR_DOT || access->qualified_name) return;
     Ty const* key = ty_access_key_type(me, access);
     Atom const* name = ty_literal_name(me, key);
     if (!name || !name->len || name->str[0] == '#') return;
@@ -4501,7 +4501,7 @@ void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access
         if (!ty_applicable_index_info(me, member, key)) return;
     }
     // (tsc's checkPropertyAccessExpressionOrQualifiedName, at the name)
-    error_ctx_error_d(errs, expr_outer_span(&access->prop), 4111, "Property '", atom_sv(name),
+    error_ctx_error_d(errs, property_key_span(access), 4111, "Property '", atom_sv(name),
         "' comes from an index signature, so it must be accessed with ['", atom_sv(name), "'].");
 }
 
@@ -4510,9 +4510,9 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access()). Its own
     // `globalThis` is readonly (tsc's globalThisSymbol has CheckFlags.Readonly)
     if (is_global_this(object) && access->assignment_target && access->form == PROPERTY_EXPR_DOT &&
-        span_equals(access->prop.inner_span, "globalThis")
+        span_equals(property_name(access), "globalThis")
     ) {
-        error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540, "Cannot assign to 'globalThis' because it is a read-only property.");
+        error_ctx_error_d(errs, property_key_span(access), 2540, "Cannot assign to 'globalThis' because it is a read-only property.");
     }
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
     Atom const* name = access_name(me, access);
@@ -4558,7 +4558,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
                 Atom const* member_name = ty_literal_name(me, key);
                 int readonly = member_name ? readonly_key_member(me, access, object, member_name) : -1;
                 if (readonly > 0) {
-                    error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540,
+                    error_ctx_error_d(errs, property_key_span(access), 2540,
                         "Cannot assign to '", atom_sv(member_name), "' because it is a read-only property.");
                     continue;
                 }
@@ -4622,7 +4622,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         SyntheticAccess synthetic;
         synthetic_access(me, object, name, &synthetic, 0);
         if (synthetic.found && synthetic.synthetic) {
-            check_synthetic_access(me, &synthetic_site, expr_outer_span(&access->prop), &synthetic, access->assignment_target,
+            check_synthetic_access(me, &synthetic_site, property_key_span(access), &synthetic, access->assignment_target,
                 object, name, errs);
             synthetic_checked = true;
         }
@@ -4641,7 +4641,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
             synthetic.leaves.props[synthetic.leaves.len] = parts[i];
             synthetic.leaves.objects[synthetic.leaves.len++] = refs.objects[0];
         }
-        check_synthetic_access(me, &synthetic_site, expr_outer_span(&access->prop), &synthetic, access->assignment_target,
+        check_synthetic_access(me, &synthetic_site, property_key_span(access), &synthetic, access->assignment_target,
             object, name, errs);
         synthetic_checked = true;
     }
@@ -4653,7 +4653,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
                 .this_parameter = site->this_parameter, .this_function = site->this_function,
                 .initializer_context = site->initializer_context,
             };
-            if (!check_accessibility(me, &access_site, expr_outer_span(&access->prop), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+            if (!check_accessibility(me, &access_site, property_key_span(access), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
                 access->assignment_target, refs.props[i], refs.objects[i], is_super, errs)
             ) {
                 break;
@@ -4662,7 +4662,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     refs.len = 0;
     if (readonly_assignment(me, access, object, &refs)) {
-        error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540,
+        error_ctx_error_d(errs, property_key_span(access), 2540,
             "Cannot assign to '", atom_sv(name), "' because it is a read-only property.");
     }
 }
@@ -4794,10 +4794,9 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
 // tsc's checkPropertyAccessExpressionOrQualifiedName for a PrivateIdentifier, and checkPrivateIdentifierPropertyAccess
 bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
     PropertyContext const* site = property_context(access);
-    Span name = access->prop.inner_span;
-    if (access->form != PROPERTY_EXPR_DOT || access->prop.tag != EXPR_LITERAL || !span_valid(name) || name.buf[0] != '#') {
-        return false;
-    }
+    if (access->form != PROPERTY_EXPR_DOT) return false;
+    Span name = property_name(access);
+    if (!span_valid(name) || name.buf[0] != '#') return false;
     ClassDecl const* lexical = property_private_class(access);
     ClassItem const* lexical_item = lexical ? class_decl_find_private_name(lexical, span_sv(name)) : nullptr;
     if (access->assignment_target && lexical_item && lexical_item->tag == CLASS_ITEM_METHOD &&

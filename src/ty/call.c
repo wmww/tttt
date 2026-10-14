@@ -1688,7 +1688,7 @@ static Span callee_span(CallInfo const* info) {
     Expr const* callee = &info->call->callable;
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
-        return callee->property->prop.inner_span;
+        return property_name(callee->property);
     }
     return callee->inner_span;
 }
@@ -1708,7 +1708,7 @@ static Span invocation_error_span(CallInfo const* info) {
     if (info->jsx || info->tagged_template || info->decorator) return expr_outer_span(callee);
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
-        return callee->property->prop.inner_span;
+        return property_name(callee->property);
     }
     // (type arguments belong to tsc's call node, not its expression)
     return expr_outer_span(callee);
@@ -2603,10 +2603,7 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
     if (callee->tag != EXPR_PROPERTY) return nullptr;
     PropertyExpr const* property = callee->property;
-    Expr const* name = &property->prop;
-    if (property->form != PROPERTY_EXPR_DOT || name->tag != EXPR_LITERAL || name->literal.tag != VALUE_STRING) {
-        return nullptr;
-    }
+    if (property->form != PROPERTY_EXPR_DOT) return nullptr;
     Ty const* receiver = ty_optional_expression_type(me, ty_expr_type(me, &property->expr),
         property->optional_chain, nullptr);
     Ty const* apparent = ty_apparent_type(me, receiver);
@@ -2614,7 +2611,7 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     TyList members = apparent->composite.types;
     Ty const** elements = malloc(sizeof(Ty const*) * members.len);
     bool readonly = false;
-    Atom const* method = checker_atom(me, cstr_sv(&name->literal.string));
+    Atom const* method = checker_atom(me, name_cooked(span_sv(property_name(property))));
     for (u32 i = 0; i < members.len; i++) {
         Ty const* array = ty_apparent_type(me, members.data[i]);
         if (ty_is_tuple(array)) array = ty_tuple_as_array(me, array);
@@ -2639,7 +2636,7 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     }
     Ty const* element = ty_union(me, elements, members.len, nullptr, (TyList){0});
     free(elements);
-    Ty const* index = ty_string_literal(me, cstr_sv(&name->literal.string));
+    Ty const* index = ty_string_literal(me, atom_sv(method));
     return ty_access(me, ty_array(me, element, readonly), index);
 }
 

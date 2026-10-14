@@ -761,7 +761,7 @@ void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* 
     // (Only `Symbol()` or `Symbol.for()` makes one, see is_symbol_call())
     CallExpr* call = initializer->call;
     Expr const* callee = &call->callable;
-    if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
+    if (callee->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(callee->property), "for")) callee = &callee->property->expr;
     if (callee->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(callee->inner_span), "Symbol")) return;
     if (!call->unique_symbol) call->unique_symbol = malloc(sizeof(UniqueSymbolDecl));
     *call->unique_symbol = decl;

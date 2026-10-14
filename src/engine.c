@@ -208,7 +208,13 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
 
 static Result MUST_USE engine_eval_property(Engine* me, PropertyExpr const* prop_expr) {
     TRY_THROW(value, engine_eval_expr(me, &prop_expr->expr));
-    TRY_THROW(property, engine_eval_expr(me, &prop_expr->prop));
+    Value property;
+    if (prop_expr->form == PROPERTY_EXPR_DOT) {
+        property = value_string(cstr_from_sv(name_cooked(span_sv(property_name(prop_expr)))));
+    } else {
+        TRY_THROW(index, engine_eval_expr(me, &prop_expr->index));
+        property = index;
+    }
     Result ret = {0};
     switch (value.tag) {
         case VALUE_UNDEFINED: ret = result_err(value_string(cstr_lit("TypeError: undefined has no properties"))); break;

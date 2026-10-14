@@ -173,7 +173,7 @@ static bool expr_requires_scope_change(Expr const* me) {
         case EXPR_PROPERTY:
             if (my property->optional_chain && below_es2020) return true;
             return expr_requires_scope_change(&my property->expr) ||
-                (my property->form == PROPERTY_EXPR_BRACKET && expr_requires_scope_change(&my property->prop));
+                (my property->form == PROPERTY_EXPR_BRACKET && expr_requires_scope_change(&my property->index));
         case EXPR_GENERIC_PARAMS:
             return expr_requires_scope_change(&my generic_params->expr);
         case EXPR_AS_TYPE:

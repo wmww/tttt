@@ -4727,7 +4727,7 @@ static void jsdoc_apply_template(Parser* p, VecJsDocTag* tags, Generic* generic,
 static Span jsdoc_entity_name_last(Expr const* expr) {
     if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
     if (expr->tag == EXPR_IDENTIFIER) return expr->inner_span;
-    if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) return expr->property->prop.inner_span;
+    if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) return property_name(expr->property);
     return span_null;
 }
 
@@ -8575,7 +8575,7 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) {
+static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Span* ret) {
     Parser p = parser(parent);
 
     bool optional_chain = hop_char(&p, '?');
@@ -8617,7 +8617,7 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         p.whitespace_end = at_dot.whitespace_end;
     }
 
-    *ret = expr_literal(prop, value_string(identifier_name_value(span_sv(prop))));
+    *ret = prop;
     *optional_chain_ret = optional_chain;
     return parse_success(&p);
 }
@@ -8856,9 +8856,10 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         mark_assigned_name(&right, left_and_ret->inner_span);
     } else if (left_and_ret->tag == EXPR_PROPERTY && !left_parenthesized) {
         // `a.C = class {}`: C. `a["C"] = class {}`: "C". `a[k] = class {}`: a[k]
-        Expr const* prop = &left_and_ret->property->prop;
-        bool named = left_and_ret->property->form == PROPERTY_EXPR_DOT || prop->tag == EXPR_LITERAL;
-        mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
+        PropertyExpr const* access = left_and_ret->property;
+        Span name = access->form == PROPERTY_EXPR_DOT ? property_name(access) :
+            access->index.tag == EXPR_LITERAL ? access->index.inner_span : left_and_ret->inner_span;
+        mark_assigned_name(&right, name);
     }
     // (tsc's setCommonJSModuleIndicator for an assignment declaration: `module.exports = exports` is none)
     if (op == BINARY_OP_EQUAL && p.shared->source->is_js && expr_commonjs_target(left_and_ret, nullptr) &&
@@ -9632,7 +9633,8 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (parse_dot_prop(&p, &parsed.optional_chain, &parsed.expr_a)) {
+    Span prop_name;
+    if (parse_dot_prop(&p, &parsed.optional_chain, &prop_name)) {
         if (left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret) &&
             !parsed.optional_chain
         ) {
@@ -9645,14 +9647,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         mark_chain_continues(left_and_ret, false);
         *left_and_ret = expr_property(
             span_from(a),
-            c_new(PropertyExpr, {
+            property_dot_new(&(PropertyExpr){
                 .expr = *left_and_ret,
-                .prop = parsed.expr_a,
-                .form = PROPERTY_EXPR_DOT,
+                .name_ = prop_name,
                 .optional_chain = parsed.optional_chain,
             })
         );
-        Span prop_name = parsed.expr_a.inner_span;
         if (prop_name.size && prop_name.buf[0] == '#' && expr_is_optional_chain(left_and_ret)) {
             // tsc's parsePropertyAccessExpressionRest
             parse_error(&p, prop_name, 18030, "An optional chain cannot contain private identifiers.");
@@ -9666,7 +9666,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             span_from(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
-                .prop = parsed.expr_a,
+                .index = parsed.expr_a,
                 .form = PROPERTY_EXPR_BRACKET,
                 .optional_chain = optional_chain,
             })
@@ -10203,11 +10203,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
                 // (the access has a missing name after it: `this.#prop` is a property access to the types baseline)
                 Span missing = span_from_pos(&dot);
                 parse_success(&dot);
-                *ret = expr_property(span_from(a), c_new(PropertyExpr, {
-                    .expr = *ret,
-                    .prop = expr_literal(missing, value_string(cstr_null)),
-                    .form = PROPERTY_EXPR_DOT,
-                }));
+                *ret = expr_property(span_from(a), property_dot_new(&(PropertyExpr){ .expr = *ret, .name_ = missing }));
                 break;
             } else {
                 parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
@@ -10216,11 +10212,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
             break;
         }
         parse_success(&dot);
-        *ret = expr_property(span_from(a), c_new(PropertyExpr, {
-            .expr = *ret,
-            .prop = expr_literal(prop, value_string(identifier_name_value(span_sv(prop)))),
-            .form = PROPERTY_EXPR_DOT,
-        }));
+        *ret = expr_property(span_from(a), property_dot_new(&(PropertyExpr){ .expr = *ret, .name_ = prop }));
     }
 }
 
@@ -10263,7 +10255,7 @@ static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
             return ret;
         }
         case EXPR_PROPERTY:
-            return csview_equals_sv(span_sv((a->property->prop.inner_span)), span_sv((b->property->prop.inner_span))) &&
+            return csview_equals_sv(span_sv(property_name(a->property)), span_sv(property_name(b->property))) &&
                 jsx_tag_names_equal(&a->property->expr, &b->property->expr);
         default:
             return false;
@@ -10884,11 +10876,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             parse_success(&next_p);
             p.pos = super_end;
             Span missing = span_make(p.shared->source, p.pos, p.pos);
-            *ret = expr_property(span_from(a), c_new(PropertyExpr, {
-                .expr = *ret,
-                .prop = expr_literal(missing, value_string(cstr_null)),
-                .form = PROPERTY_EXPR_DOT,
-            }));
+            *ret = expr_property(span_from(a), property_dot_new(&(PropertyExpr){ .expr = *ret, .name_ = missing }));
         } else {
             parse_fail(&next_p);
         }
@@ -13983,8 +13971,8 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
 // `module.exports`, a property of an entity name (`a.b.c`, `this.x`, `exports.x`), by name or element access
 static bool jsdoc_assignment_declares(Expr const* left) {
     if (left->tag != EXPR_PROPERTY || expr_is_perenthisized(left)) return false;
-    if (left->property->form == PROPERTY_EXPR_DOT && left->property->prop.inner_span.size &&
-        left->property->prop.inner_span.buf[0] == '#'
+    if (left->property->form == PROPERTY_EXPR_DOT && property_name(left->property).size &&
+        property_name(left->property).buf[0] == '#'
     ) {
         return false;
     }

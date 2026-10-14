@@ -223,8 +223,8 @@ bool expr_is_ambient_const_initializer(Expr const* me) {
         }
         case EXPR_PROPERTY: {
             PropertyExpr const* property = my property;
-            if (property->form == PROPERTY_EXPR_BRACKET && !(property->prop.tag == EXPR_LITERAL && !property->prop.paren_before &&
-                (property->prop.literal.tag == VALUE_STRING || property->prop.literal.tag == VALUE_NUMBER))
+            if (property->form == PROPERTY_EXPR_BRACKET && !(property->index.tag == EXPR_LITERAL && !property->index.paren_before &&
+                (property->index.literal.tag == VALUE_STRING || property->index.literal.tag == VALUE_NUMBER))
             ) {
                 return false;
             }

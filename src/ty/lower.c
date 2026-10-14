@@ -2612,12 +2612,11 @@ static Expr const* synthetic_access(Checker* me, void const* owner, Expr const* 
     Expr const* access = intern_get(&my links, memo_key, 2);
     if (access) return access;
     PropertyExpr* property = arena_new(&my arena, PropertyExpr);
-    *property = (PropertyExpr){
-        .expr = *object,
-        .prop = expr_literal(key_span, key),
-        .form = key.tag == VALUE_STRING ? PROPERTY_EXPR_DOT : PROPERTY_EXPR_BRACKET,
-        .flow = flow,
-    };
+    // (A dot access when the key is written as its name: its name is its span. `{ "a-b": x }` is `x["a-b"]`)
+    bool dot = key.tag == VALUE_STRING && csview_equals_sv(name_cooked(span_sv(key_span)), cstr_sv(&key.string));
+    *property = (PropertyExpr){ .expr = *object, .form = dot ? PROPERTY_EXPR_DOT : PROPERTY_EXPR_BRACKET, .flow = flow };
+    if (dot) property->name_ = key_span;
+    else property->index = expr_literal(key_span, key);
     Expr* synthetic = arena_new(&my arena, Expr);
     *synthetic = (Expr){
         .tag = EXPR_PROPERTY, .property = property, .inner_span = key_span,

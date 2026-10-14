@@ -2392,7 +2392,7 @@ bool ty_is_import_meta(Expr const* expr) {
 
 // The type of `import.x`: ImportMeta for `import.meta`, else the error type (TS17012, tsc's checkImportMetaProperty)
 Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr) {
-    return csview_equals(span_sv(expr->property->prop.inner_span), "meta") ? ty_import_meta_type(me) : ty_intrinsic(me, TY_ERROR);
+    return csview_equals(span_sv(property_key_inner_span(expr->property)), "meta") ? ty_import_meta_type(me) : ty_intrinsic(me, TY_ERROR);
 }
 
 // `import.meta`: the global ImportMeta interface (tsc's getGlobalImportMetaType, `{}` without one)
@@ -2409,9 +2409,9 @@ static bool is_narrowable_access(Expr const* expr) {
             case EXPR_IDENTIFIER:
                 return true; // (`import` too: the object of `import.meta`)
             case EXPR_PROPERTY: {
-                Expr const* key = &expr->property->prop;
+                Expr const* key = expr->property->form == PROPERTY_EXPR_BRACKET ? &expr->property->index : nullptr;
                 // (`m[E.A]`: a dotted key names something too, see flow.c's is_constant_entity_name())
-                if (key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER && !expr_is_entity_name(key)) return false;
+                if (key && key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER && !expr_is_entity_name(key)) return false;
                 expr = &expr->property->expr;
                 break;
             }
@@ -2485,7 +2485,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* objec
 // flow container that declares it (tsc's getControlFlowContainer), where it's undefined until assigned
 static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* access) {
     if (!my binder->has_assignment_flow_containers) return false;
-    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span) || property_private_class(access)) return false;
+    if (access->form != PROPERTY_EXPR_DOT || !span_valid(property_name(access)) || property_private_class(access)) return false;
     Ty const* object = ty_expr_type(me, &access->expr);
     if (object->kind == TY_UNION || (object->flags & (TYF_ANY | TYF_ERROR))) return false;
     Ty const* apparent = ty_apparent_type(me, object);
@@ -2521,7 +2521,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
         if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
-        error_ctx_error_d(errs, access->prop.inner_span, 2565, "Property '", access->prop.inner_span, "' is used before being assigned.");
+        error_ctx_error_d(errs, property_name(access), 2565, "Property '", property_name(access), "' is used before being assigned.");
         return;
     }
     if (!options->strict_property_initialization || !property_context(access)->in_constructor_of) return;
@@ -2530,10 +2530,10 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     ) {
         return;
     }
-    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span)) return;
+    if (access->form != PROPERTY_EXPR_DOT || !span_valid(property_name(access))) return;
     ClassDecl const* class_decl = symbol_find_node(property_context(access)->in_constructor_of, SYMBOL_DECL_CLASS);
     if (!class_decl || class_decl->is_ambient) return;
-    ClassItem const* field = class_decl_find_member(class_decl, span_sv(access->prop.inner_span), false);
+    ClassItem const* field = class_decl_find_member(class_decl, span_sv(property_name(access)), false);
     if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
         field->field.is_declare || field->field.is_auto_accessor || field->field.is_definite
     ) {
@@ -2544,7 +2544,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
     if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
-    error_ctx_error_d(errs, access->prop.inner_span, 2565, "Property '", access->prop.inner_span, "' is used before being assigned.");
+    error_ctx_error_d(errs, property_name(access), 2565, "Property '", property_name(access), "' is used before being assigned.");
 }
 
 // Operators
@@ -2851,10 +2851,10 @@ static bool is_bindable_static_name(Expr const* expr) {
     if (expr->tag == EXPR_IDENTIFIER) return !expr->identifier.keyword;
     if (expr->tag != EXPR_PROPERTY) return false;
     if (expr->property->form == PROPERTY_EXPR_BRACKET) {
-        Expr const* key = &expr->property->prop;
+        Expr const* key = &expr->property->index;
         if (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER)) return false;
-    } else if (expr->property->prop.tag != EXPR_IDENTIFIER) {
-        return false; // (`a.#x`)
+    } else {
+        return false; // TODO: meant for `a.#x`, but the name of a dot access never was an identifier (hacks.md)
     }
     return is_bindable_static_name(&expr->property->expr);
 }
@@ -4920,7 +4920,7 @@ static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is
 // `Symbol()` or `Symbol.for()` with the global `Symbol` (tsc's isSymbolOrSymbolForCall)
 static bool is_symbol_call(Checker* me, CallExpr const* call) {
     Expr const* callee = &call->callable;
-    if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
+    if (callee->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(callee->property), "for")) callee = &callee->property->expr;
     if (callee->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(callee->inner_span), "Symbol")) return false;
     Symbol const* global = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
     return global && binder_redirect(my binder, callee->identifier.target) == global;
@@ -5270,9 +5270,9 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
 // Null otherwise
 static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     // `this.x`, `this["x"]`
-    csview name = span_sv(access->prop.inner_span);
+    csview name = span_sv(property_key_inner_span(access));
     if (access->form != PROPERTY_EXPR_DOT) {
-        if (access->prop.tag != EXPR_LITERAL || access->prop.literal.tag != VALUE_STRING || name.size < 2) return nullptr;
+        if (access->index.tag != EXPR_LITERAL || access->index.literal.tag != VALUE_STRING || name.size < 2) return nullptr;
         name = csview_slice(name, 1, name.size - 1);
     }
     Expr const* object = &access->expr;
@@ -5754,18 +5754,25 @@ static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) 
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
     if (property_private_class(access) && property_private_class(access)->symbol) {
-        return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, span_sv(access->prop.inner_span)));
+        return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, span_sv(property_name(access))));
     }
-    // (A `#x` no class around declares names nothing, not even what an index signature has)
-    Span name = access->prop.inner_span;
-    // (A lone `#` is TS1127's, and the members named so are too)
-    if (access->form == PROPERTY_EXPR_DOT && access->prop.tag == EXPR_LITERAL && span_valid(name) && name.size > 1 &&
-        name.buf[0] == '#'
-    ) {
-        return ty_prop_name_literal(me, ty_private_name(me, nullptr, span_sv(name)));
+    if (access->form == PROPERTY_EXPR_DOT) {
+        // (A `#x` no class around declares names nothing, not even what an index signature has)
+        Span name = property_name(access);
+        // (A lone `#` is TS1127's, and the members named so are too)
+        if (span_valid(name) && name.size > 1 && name.buf[0] == '#') {
+            return ty_prop_name_literal(me, ty_private_name(me, nullptr, span_sv(name)));
+        }
+        // (Memoized: the string's atom and literal are lookups by content. Synthetic accesses have no slot)
+        LazyType* memo = (LazyType*)&access->name_key;
+        LazyMemo const* state = memo->slot ? lazy_type_state_peek(memo) : nullptr;
+        if (state && state->done) return lazy_memo_evaluated(state);
+        Ty const* ret = ty_fresh_literal(me, ty_string_literal(me, span_sv(name)));
+        if (memo->slot) lazy_type_set(memo, ret, nullptr);
+        return ret;
     }
-    if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, access)) return ty_intrinsic(me, TY_NUMBER);
-    return ty_element_index_type(me, &access->prop);
+    if (is_for_in_numeric_variable(me, access)) return ty_intrinsic(me, TY_NUMBER);
+    return ty_element_index_type(me, &access->index);
 }
 
 // What the LazyType of an expression evaluates to: nobody checked it with a contextual type first

@@ -131,11 +131,9 @@ static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span us
 static Symbol const* entity_symbol(Expr const* expr) {
     if (expr->tag == EXPR_IDENTIFIER) return expr->identifier.target;
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
-    Expr const* prop = &expr->property->prop;
-    if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return nullptr;
     Symbol const* object = entity_symbol(&expr->property->expr);
     if (!object || !(object->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE))) return nullptr;
-    return symbol_get_export(object, cstr_sv(&prop->literal.string));
+    return symbol_get_export(object, name_cooked(span_sv(property_name(expr->property))));
 }
 
 // tsc's evaluator (enum initializers, template literal expressions)
@@ -210,8 +208,9 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
                 return const_variable_value(me, entity_symbol(expr), expr_outer_span(expr), depth);
             }
             if (!enum_decl) return enum_value_unknown;
-            if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) return enum_value_unknown;
-            return member_value(me, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)), depth);
+            csview name;
+            if (!property_string_key(property, &name)) return enum_value_unknown;
+            return member_value(me, symbol_get_export(enum_decl, name), depth);
         }
 
         default:
@@ -253,8 +252,9 @@ void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, E
             PropertyExpr const* property = expr->property;
             Symbol const* enum_decl = entity_symbol(&property->expr);
             if (!enum_decl || !(enum_decl->flags & SYMBOL_ENUM)) break;
-            if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) break;
-            check_enum_reference(member, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)),
+            csview name;
+            if (!property_string_key(property, &name)) break;
+            check_enum_reference(member, symbol_get_export(enum_decl, name),
                 expr_outer_span(expr), errs);
             break;
         }

@@ -145,7 +145,7 @@ static bool walk_children(Expr const* me, AstExprVisit visit, void* arg) {
         case EXPR_UNARY_OP: return ast_walk_expr(&my unary_op->expr, visit, arg);
         case EXPR_PROPERTY:
             return ast_walk_expr(&my property->expr, visit, arg) ||
-                (my property->form == PROPERTY_EXPR_BRACKET && ast_walk_expr(&my property->prop, visit, arg));
+                (my property->form == PROPERTY_EXPR_BRACKET && ast_walk_expr(&my property->index, visit, arg));
         case EXPR_GENERIC_PARAMS: return ast_walk_expr(&my generic_params->expr, visit, arg);
         case EXPR_AS_TYPE: return ast_walk_expr(&my as_type->expr, visit, arg);
         case EXPR_TERNARY:

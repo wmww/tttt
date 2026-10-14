@@ -880,9 +880,7 @@ static bool is_global_symbol_reference(Walk* me, Expr const* expr) {
     Expr const* object = &expr->property->expr;
     if (object->tag == EXPR_PROPERTY) {
         if (object->property->form != PROPERTY_EXPR_DOT || object->property->expr.tag != EXPR_IDENTIFIER) return false;
-        Expr const* prop = &object->property->prop;
-        bool symbol = prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_STRING &&
-            cstr_equals(&prop->literal.string, "Symbol");
+        bool symbol = csview_equals(name_cooked(span_sv(property_name(object->property))), "Symbol");
         IdentifierExpr const* global = &object->property->expr.identifier;
         return symbol && csview_equals(span_sv(identifier_expr_name(global)), "globalThis") && global->target && global->target->is_global_this;
     }
@@ -2190,7 +2188,7 @@ static void check_written_type(Walk* me, TypeNode const* type) {
                 // `typeof this.#a`: the emitted declaration can't name a private member (tsgo's declaration transform of
                 // a QualifiedName whose right is a PrivateIdentifier, TS7080 at the qualified name)
                 for (Expr const* e = type->typeof_->expr; e->tag == EXPR_PROPERTY; e = &e->property->expr) {
-                    csview name = span_sv(e->property->prop.inner_span);
+                    csview name = span_sv(property_key_inner_span(e->property));
                     if (!name.size || name.buf[0] != '#') continue;
                     error_ctx_error_d(my errs, expr_outer_span(e), 7080, "Declaration emit elides private members, but '",
                         name, "' refers to a private member. Write an explicit type here.");
@@ -2252,11 +2250,11 @@ static bool enum_member_external_references(Walk* me, EnumDecl const* enum_decl,
 static Symbol const* enum_entity_symbol(Expr const* expr) {
     if (expr->tag == EXPR_IDENTIFIER) return expr->identifier.target;
     if (expr->tag != EXPR_PROPERTY) return nullptr;
-    Expr const* prop = &expr->property->prop;
-    if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return nullptr;
+    csview name;
+    if (!property_string_key(expr->property, &name)) return nullptr;
     Symbol const* object = enum_entity_symbol(&expr->property->expr);
     if (!object || !(object->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_ENUM))) return nullptr;
-    return symbol_get_export(object, cstr_sv(&prop->literal.string));
+    return symbol_get_export(object, name);
 }
 
 static bool enum_external_references(Walk* me, EnumDecl const* enum_decl, Expr const* expr, u32 depth) {

@@ -613,7 +613,6 @@ typedef struct PropertyContext {
 
 typedef struct PropertyExpr {
     Expr expr;
-    Expr prop;
     uint8_t form; // PROPERTY_EXPR_DOT, PROPERTY_EXPR_BRACKET
     uint8_t assignment_target; // FlowAssignmentKind
     bool optional_chain : 1;
@@ -647,9 +646,55 @@ typedef struct PropertyExpr {
         // see ty_access_key_type()
         struct ForEachLoopStatement const* for_in_loop_;
     };
+    // Last: a dot access is allocated without the bytes of `index` past `name_key` (property_dot_new()), so
+    // that its name is a Span rather than a whole Expr (most accesses are dot ones)
+    union {
+        struct {
+            // PROPERTY_EXPR_DOT: the name (`b` of `a.b`, `#b` of `a.#b`, empty where it is missing), cooked with
+            // name_cooked(). Read it with property_name()
+            Span name_;
+            // The memo of ty_access_key_type() (only its slot: bound by the resolve walk, set by the checker)
+            LazyType name_key;
+        };
+        Expr index; // PROPERTY_EXPR_BRACKET: `k` of `a[k]`
+    };
 } PropertyExpr;
 
 enum { PROPERTY_EXPR_DOT, PROPERTY_EXPR_BRACKET };
+
+// A dot access, owned (expr_drop() frees it): allocated short, see PropertyExpr.name_key
+PropertyExpr* property_dot_new(PropertyExpr const* fields);
+
+static inline Span property_name(PropertyExpr const* me) {
+    check(my form == PROPERTY_EXPR_DOT);
+    return my name_;
+}
+
+// What the access names, for errors and baselines: a dot access's name, a bracket access's index (with parentheses)
+static inline Span property_key_span(PropertyExpr const* me) {
+    return my form == PROPERTY_EXPR_DOT ? my name_ : expr_outer_span(&my index);
+}
+
+// The same without a bracket access's parentheses
+static inline Span property_key_inner_span(PropertyExpr const* me) {
+    return my form == PROPERTY_EXPR_DOT ? my name_ : my index.inner_span;
+}
+
+// The name a dot access or a bracket access with a string literal (`a["b"]`) names, cooked; false for other keys
+static inline bool property_string_key(PropertyExpr const* me, csview* ret) {
+    if (my form == PROPERTY_EXPR_DOT) {
+        *ret = name_cooked(span_sv(my name_));
+        return true;
+    }
+    if (my index.tag != EXPR_LITERAL || my index.literal.tag != VALUE_STRING) return false;
+    *ret = cstr_sv(&my index.literal.string);
+    return true;
+}
+
+// `a.b` where b is `name`
+static inline bool property_is_dot_name(PropertyExpr const* me, char const* name) {
+    return my form == PROPERTY_EXPR_DOT && span_valid(my name_) && csview_equals(span_sv(my name_), name);
+}
 
 static inline ClassDecl const* property_private_class(PropertyExpr const* me) {
     return my form == PROPERTY_EXPR_DOT ? my private_class_ : nullptr;

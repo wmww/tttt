@@ -2004,7 +2004,7 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
         case COMMONJS_TARGET_EXPORTS_PROPERTY: {
             // (`exports["b"] = v` is named `"b"` where it's shown, like tsc's symbol of a string literal name)
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
-                op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
+                op->left.property->index.tag == EXPR_LITERAL ? op->left.property->index.inner_span : name;
             declare_commonjs_export(me, span_sv(name), shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
             // (The property access is the declaration, which a read in its flow container finds undefined before it:
             // expr_link_assignment_declaration())
@@ -3169,7 +3169,7 @@ static Symbol* resolve_entity_alias(Symbol* me) {
     if (!target || target == me) return entity_value_symbol(me);
     target = resolve_if_pure_alias(target);
     for (u32 i = count; i-- > 0;) {
-        csview name = span_sv(names[i]->property->prop.inner_span);
+        csview name = span_sv(property_key_inner_span(names[i]->property));
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return entity_value_symbol(me);
         Symbol* found = symbol_get_export(container, name);
@@ -5285,9 +5285,9 @@ static Span written_member_name(Expr const* left, Span name) {
         if (key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING) return key->inner_span;
     }
     if (left->tag == EXPR_PROPERTY && left->property->form == PROPERTY_EXPR_BRACKET &&
-        left->property->prop.tag == EXPR_LITERAL && left->property->prop.literal.tag == VALUE_STRING
+        left->property->index.tag == EXPR_LITERAL && left->property->index.literal.tag == VALUE_STRING
     ) {
-        return left->property->prop.inner_span;
+        return left->property->index.inner_span;
     }
     return name;
 }
@@ -5328,9 +5328,9 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
     // isBindableStaticElementAccessExpression, addLateBoundAssignmentDeclarationToSymbol). Named `[k]` as written
     Expr const* late_bound_key = nullptr;
     if (!span_valid(name) && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
-        !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
+        !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->index)
     ) {
-        late_bound_key = &left->property->prop;
+        late_bound_key = &left->property->index;
         name = span_make_in(expr_outer_span(left), span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
         if (!span_valid(name) || !csview_starts_with(span_sv(name), "[")) return;
     }
@@ -5486,8 +5486,9 @@ static void declare_assignment_member(
 void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
-    Expr const* prop = &left->property->prop;
-    if (!span_valid(name) && prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER) name = prop->inner_span; // `this[0]`
+    PropertyExpr const* access = left->property;
+    Expr const* prop = access->form == PROPERTY_EXPR_BRACKET ? &access->index : nullptr;
+    if (!span_valid(name) && prop && prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER) name = prop->inner_span; // `this[0]`
     Expr const* object = &left->property->expr;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
     // Directly in the constructor or a static block: not in a nested function, arrow functions included
@@ -5508,12 +5509,12 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     for_each (i, vec_class_item, &class_decl->items) {
         if (field) break;
         if (i->tag == CLASS_ITEM_FIELD && i->field.computed_key && i->field.is_static == is_static &&
-            csview_equals_sv(span_sv(expr_outer_span(i->field.computed_key)), span_sv(expr_outer_span(prop)))
+            csview_equals_sv(span_sv(expr_outer_span(i->field.computed_key)), span_sv(property_key_span(access)))
         ) {
             field = (ClassItem*)i;
         }
     }
-    if (!field && !is_static && left->property->form == PROPERTY_EXPR_BRACKET &&
+    if (!field && !is_static && prop &&
         (prop->tag == EXPR_IDENTIFIER || prop->tag == EXPR_PROPERTY)
     ) {
         vec_expr_cptr_push(&((ClassDecl*)class_decl)->computed_this_assignments, left);

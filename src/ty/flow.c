@@ -258,7 +258,7 @@ static bool type_at_array_mutation(FlowQuery* q, FlowNode const* flow, FlowType*
     if (evolved->kind == TY_EVOLVING_ARRAY) {
         if (node->tag == EXPR_CALL) {
             for_each (i, vec_expr, &node->call->args) evolved = add_evolving_element(me, evolved, i);
-        } else if (is_number_like_index(me, &node->binary_op->left.property->prop)) {
+        } else if (is_number_like_index(me, &node->binary_op->left.property->index)) {
             evolved = add_evolving_element(me, evolved, &node->binary_op->right);
         }
     }
@@ -628,8 +628,14 @@ static bool is_constant_entity_name(Checker* me, Expr const* key) {
 
 // The name an access goes by: `a.b`, `a["b"]`, `a[0]`, `a[c]` for a `const c` of a literal type
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
-    Expr const* key = &access->prop;
     if (property_private_class(access)) return ty_literal_name(me, ty_access_key_type(me, access));
+    if (access->form == PROPERTY_EXPR_DOT) {
+        Span name = property_name(access);
+        // (A `#x` no class declares is named by its text here, see ty_access_key_type())
+        if (name.size && name.buf[0] == '#') return checker_atom(me, span_sv(name));
+        return ty_literal_name(me, ty_access_key_type(me, access));
+    }
+    Expr const* key = &access->index;
     if (key->tag == EXPR_LITERAL) {
         if (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER) return nullptr;
     } else if (key->tag == EXPR_IDENTIFIER) {
@@ -668,8 +674,9 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
 // `x[k]` where k has no literal type but always names the same thing: a const, or a parameter or `let` never assigned
 // (tsc's isConstantVariable || isParameterOrMutableLocalVariable && !isSymbolAssigned). Null otherwise
 static Symbol const* access_key_symbol(PropertyExpr const* access) {
-    Expr const* key = &access->prop;
-    if (access->form != PROPERTY_EXPR_BRACKET || key->tag != EXPR_IDENTIFIER || key->identifier.keyword) return nullptr;
+    if (access->form != PROPERTY_EXPR_BRACKET) return nullptr;
+    Expr const* key = &access->index;
+    if (key->tag != EXPR_IDENTIFIER || key->identifier.keyword) return nullptr;
     Symbol const* symbol = key->identifier.target;
     // (Not an imported one, nor an exported one: tsc's getResolvedSymbol is the alias, or the local export symbol, which
     // aren't variables to isConstantVariable)
@@ -835,7 +842,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) return nullptr;
     // (tsc's isSymbolOrSymbolForCall and isRequireCall: `Symbol()`, `Symbol.for()` and `require()`)
     Expr const* name_expr = &call->callable;
-    if (name_expr->tag == EXPR_PROPERTY && span_equals(name_expr->property->prop.inner_span, "for")) {
+    if (name_expr->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(name_expr->property), "for")) {
         name_expr = &name_expr->property->expr;
     }
     if (name_expr->tag == EXPR_IDENTIFIER && !call->uses_new) {
@@ -1422,7 +1429,7 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
     Expr const* missing = dotted_name_without_type(me, callee);
     Span declaration = missing ? dotted_name_declaration(me, missing) : span_null;
     if (error && span_valid(declaration)) {
-        Span name = missing->tag == EXPR_PROPERTY ? missing->property->prop.inner_span : missing->inner_span;
+        Span name = missing->tag == EXPR_PROPERTY ? property_key_inner_span(missing->property) : missing->inner_span;
         error_add_related_d(error, declaration, 2782, "'", span_sv(name), "' needs an explicit type annotation.");
     }
 }
@@ -2477,8 +2484,8 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
     if (expr->tag != EXPR_PROPERTY) return false;
     PropertyExpr const* access = expr->property;
     if (property_private_class(access)) return false;
-    Expr const* key = &access->prop;
-    bool named = (access->form != PROPERTY_EXPR_BRACKET || (key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING)) &&
+    bool named = (access->form != PROPERTY_EXPR_BRACKET ||
+        (access->index.tag == EXPR_LITERAL && access->index.literal.tag == VALUE_STRING)) &&
         access_name(me, access) == my atom_constructor;
     return named && is_matching_reference(me, q->reference, &access->expr);
 }
