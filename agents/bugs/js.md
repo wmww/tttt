@@ -9,7 +9,12 @@ what remains is below, each with what was found.
   guarded_assignment_symbol_type() is entered for y, but resolving `Object.values(obj)` never asks for y's type again
   (past the call's resolving barrier, Checker.resolving_start? overload 2 `values(o: {}): any[]` chosen? check
   whether infer.c's index-signature inference from the expando namespace type reads the props: tsgo's
-  getImplicitIndexTypeOfType reads every property's type, y's included).
+  getImplicitIndexTypeOfType reads every property's type, y's included). (2026-10-14: inference from the container
+  works, `Object.values(obj)` without the cycle is `string[]`; TTTT_DEBUG_CYCLE prints nothing. tsgo's path: y's
+  second evaluation, inside getResolvedSignature's reset resolutionStart, checks the call again
+  (checkExpressionCached has no in-flight guard; the cached resolvingSignature keeps resolutionStart) and that
+  inference meets y pushed twice. tttt's second evaluation likely gets the in-flight call expression's lazy type
+  without re-resolving: the fix is in lazy_type_get()'s reentrancy, broad.)
 - jsContainerMergeTsDeclaration3 (TYP): `declare class A {}` in a.d.ts and `const A = {}; A.d = {}` in b.js (TS2451
   between them): tsgo's binder makes d a member of the `{}` literal's symbol (b.js's own local, before the global
   merge), so the literal prints `{ d: {}; }`; tttt's host is the merged global, the literal prints `{}`. Conflict-only.
@@ -45,18 +50,11 @@ what remains is below, each with what was found.
 - exportDefaultWithJSDoc1 (TYP): `/** @type {NumberLike[]} */export default ([ ]);` prints `([ ]) : NumberLike[]`
   in the test (with a b.ts importing the default) but `never[]` in probes without b.ts (tsgo, checkJs or not): the
   import's resolution changes the cached type of the parenthesized expression. Check order / tsgo artifact, left.
-- errorOnFunctionReturnType(target=es2015): (1) `/** @type {F} */ async function f()` where F returns never: tsgo has
-  no TS1065 (the FullSignature's return isn't the function's own annotation; ty_check_async_return_annotation() looks
-  at the moved-in return type); (2) `var v = /** @type {F} */ function () {}` prints v as `() => Promise<number>` in
-  tsgo (the function's type), the alias `F` in tttt: the variable seems to take the tag type itself.
 - importTypeInJSDoc (TYP): `constructor(x: MyClass.Bar)` in a .d.ts with `export = MyClass` (class + namespace) prints
   `import("./externs").Bar` in tttt, `MyClass.Bar` as written in tsgo.
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (TYP): `Color.prototype = { negate: function () { return this }, ...}`:
   the `this` of each method is the literal's type, whose printing nests one level more in tsgo (each method's return
   shows the literal again with itself as `any`): tttt prints `negate: () => any` where tsgo expands it once.
-- requireOfJsonFileWithoutResolveJsonModule: a `.json` file reached by `require` without resolveJsonModule is parsed
-  as JSON by tttt (TS1328/TS1012) and as a TS source by tsgo (TS1005/TS1136, an object literal with `contents: any`
-  ...); tsgo's types follow from that parse.
 
 ## JSDoc diagnostics
 - An earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every

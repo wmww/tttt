@@ -199,15 +199,11 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 ## Leftovers of plan 35 (silent type differences, retired 2026-10-09; components as of the tsgo 7.1 suite)
 - recursiveConditionalCrash3 (types): a mapped key named `K_1` where tsc says `K_2`: tsc gives every instantiated mapped
   type a fresh key type parameter (instantiateMappedType's cloneTypeParameter), tttt keeps the declared one.
-- symbolDeclarationEmit12 (errors, types; symbols pass since 2026-10-12): duplicate declarations that resolve to the
-  other symbol (`import("f").A`).
 - isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
   saw the types side; the errors component fails now).
 - ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
 - instantiationExpressions (types): `fx<>`: the parser drops an empty type argument list (keeping it trips code that
   assumes one).
-- exportAssignmentMembersVisibleInAugmentation: `typeof import("react")`-style naming of an ambient `export =` (plan 35
-  saw it in types; errors fail now).
 
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
 - **Anonymous types inside generic declarations are instantiated even when they reference no outer type parameter**
@@ -249,10 +245,14 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
-- declarationEmitUnserializableTypes: `function inner<T>(): typeof inner<T>` recursion prints one level too many;
-  `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers the arrow's return while grow's
-  return is in flight (any at depth 2) and reports TS7056 on grow; tttt infers it lazily afterwards and prints 10+
-  levels.
+- declarationEmitUnserializableTypes (types; errors pass since 2026-10-14): `function inner<T>(): typeof inner<T>`
+  recursion prints one level too many; `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers
+  the arrow's return while grow's return is in flight (any at depth 2); tttt infers it lazily afterwards and prints 10+
+  levels. declarationsWithRecursiveInternalTypesProduceUniqueTypeParams (types) is the same family: `reduce`'s
+  return printed 2 levels deep in tsgo (an `any` where the recursion is in flight), 6+ in tttt.
+- arrayFakeFlatNoCrashInferenceDeclarations (types; errors pass since 2026-10-14): the `"recur"` property line of the
+  alias declaration prints each level's index (`[-1, 0, ...][Depth]` instantiated) where tsgo prints `[any]`
+  (elided at once: not understood).
 - varianceComputationNoCrash: a mapped type reprinted inside its own `as` clause prints an empty `as ]` (reprint_range
   of a range still being printed?), and `CamelCase<T, {}>` where tsc elides a default type argument.
 - mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.

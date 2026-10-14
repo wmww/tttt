@@ -26,9 +26,7 @@
 - The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
   harness honours it.
 - Option diagnostics go on the tsconfig (program_set_config_file(), option_sites()) since suite checker bugs 6. Left:
-  `paths` only an extended config sets isn't validated; libReplacement (`@typescript/lib-*`:
-  libTypeScriptOverrideSimple, libTypeScriptSubfileResolving and their `Config` variants; a test's `/// <reference
-  lib>` can't add to the harness's shared lib program either) isn't implemented; APILibCheck wants
+  `paths` only an extended config sets isn't validated; APILibCheck wants
   typescript.internal.d.ts and tsserverlibrary, which only a tsc build has.
 - Module resolution leftovers: resolution-mode attributes (~20 tests), `tryLoadInputFileForPath` (outDir mapping back
   to the input `.ts`, 8), Windows rooted paths, tsconfig `references`/`watchOptions`.
@@ -59,8 +57,7 @@
   last statement's reference first through some deferred check), so every `data` is errorType there; tttt's from the
   2000th statement. Check order, not a flow bug; one test.
 - Moved from hacks.md (hacks audit 2026-10-08), missing program/config diagnostics:
-  - `/// <reference lib>` with an unknown name is silently ignored (tsc: TS2726); `@libReplacement: true` is
-    unimplemented (libTypeScriptOverrideSimple & co.).
+  - `/// <reference lib>` with an unknown name is silently ignored (tsc: TS2726).
   - Config syntax: not reported are syntax errors in configs it extends (no SourceFile for them), tokens after the root
     value (tsc's TS1012 + TS5092), TS5092 for a non-object root.
   - Project references: `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is

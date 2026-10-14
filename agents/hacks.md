@@ -207,7 +207,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - `block_is_instantiated`: a nested namespace is judged with its parent's `outer` scope.
 - Class/interface members aren't symbols (`Prop` is the identity). `bind_member_symbols` + `class_decl_lookup_names`
   apply binder rules at lookup; computed keys' `name_string` is source text, so accessor pairs and overloads match
-  computed entity-name keys by text whatever their type (tsc late-binds only literal/unique-symbol names, and `["a"]`
+  computed entity-name keys by text whatever their type (a class's pairs replay the binder's join rule over the
+  members with that text, `computed_symbol_first()`; object literals don't) (tsc late-binds only literal/unique-symbol names, and `["a"]`
   pairs with `a`: computedPropertyNames2): needs lazy pairing in the checker. `ty_member_name()` still evaluates every
   computed key. `ty_check_class_duplicate_members` / `object_bind_members` replay the binder at check time.
 - `declare_symbol` (permanent: builtin types are symbols in tttt's globals, not in tsc's): a declaration named like a

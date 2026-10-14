@@ -50,8 +50,15 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   TS2793 only for function declarations, not overloaded methods/constructors (`add_implementation_success`); TS2563
   (flow depth 2000 silently gives the error type: largeControlFlowGraph); TS2406 (`for (#x in o)` says TS1451).
 - **Bigint property names**: TS1539 and `{ 1n: x }` as the property "1n" (TS2538 for bigint keys): bigintPropertyName,
-  which also has a parse failure.
-- **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (`<in in>`): tsc reads the second `in` as
+  which also has a parse failure. (2026-10-14) tsgo's binder names a bigint-named member `__missing` and declares it
+  detached (no table, getNamedMembers skips reserved names): `{ 1n: 1 }` is `{}`, an interface's or class's `2n: T` no
+  member at all, though the symbols baseline still prints `G[2n]`; TS1539 at object literal properties (grammar),
+  property declarations and signatures (checkVariableLikeDeclaration), not methods; `const { 0n: f } = arr` parses
+  (tttt: TS1180) and is TS2538 'bigint' at the name. parse_name_or_value() gives the value's text; tttt needs a
+  "no member" flag on ObjectExprItem/ClassItem/InterfaceMember that every member builder and duplicate check skips
+  (a sentinel name would merge two bigint names). One test, no real code.
+- **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (`<in in>`; its `type T2<out out> = T2`
+  line matches since 2026-10-14, a circular alias is not generic): tsc reads the second `in` as
   a reserved-word name (TS1359, missing name, not consumed), then an empty type parameter with a missing name consumed
   by the list's no-progress rule; both are '(Missing)': TS2300, and TS2637 twice through the merged symbol. Needs type
   parameters with missing names (GenericItem without a name span) that the binder declares as `(Missing)`.
@@ -103,7 +110,8 @@ Each one mutant:
   something computes the parameter's type (here overload resolution), since checkVariableLikeDeclaration returns early
   for renamed elements of bodiless signatures; tttt skips them eagerly (binding_add_implicit_any_type_errors'
   `bodiless && renaming`). Reporting from lazy type computation (ty_error_at) needs care with several checkers each
-  computing it; one test.
+  computing it; one test. (2026-10-14 probe: `declare function f({y1: string})` never called, or only named in
+  `typeof f`, has no TS7031 in tsgo; called once, it has.)
 - awaitedTypeNoLib (2026-10-12): the narrowing matches (both keep the union); the difference is inference. With
   `PromiseLike` unresolved (noLib: the nested `T extends PromiseLike<unknown> ? never : T` extends an error type; the
   same with lib and `T extends any ? never : T`), tsgo infers `R = TResult` for `rp<R>(result: Thenable<R>, resolve:
@@ -124,9 +132,6 @@ Each one mutant:
   emulation. The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
   old;` in two methods: tsc TS7022 on the first `old` and on `labels`, tttt on both `old`s) is the same family:
   which declaration's resolution meets the cycle first.
-- libTypeScriptOverride*/libTypeScriptSubfileResolving* (4 tests): libReplacement (`/// <reference lib="dom">` and
-  the default libs resolve `@typescript/lib-dom` from node_modules) isn't implemented at all; the harness's shared lib
-  program would also have to be replaced per test. The option defaults off in 6.0; low value.
 
 ## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
 - Known families: typeGuardsAsAssertions null-arg and arrayFrom null-arg (tsc's errors from loop-flow / early
@@ -258,9 +263,6 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
   parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
 - jsxNamespacePrefixInName(React) (types): `<a attr:=...>` recovery types `a` undefined in tsc, any in tttt.
-- requireOfJsonFileWithoutResolveJsonModule: tsc parses a non-JSON `.json` with parseJsonText's recovery (TS1005/TS1136,
-  an object `{ contents: any; Not: any; read: any; }`); tttt says TS1328. Needs JSON files parsed with tsc's recovery
-  (an object literal expression parse of arbitrary text). Diagnosed against 6.0, recheck tsgo's resolution first.
 - typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
 - Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".
@@ -286,12 +288,12 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   `type_node_names_nothing()`). tttt reuses nodes only for the types baseline
   (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks.
 ## Declaration emit (`ty/declaration_diagnostics.c`; approximations in hacks.md "Declaration diagnostics")
-- TS5088 (arrayFakeFlatNoCrashInferenceDeclarations): tsc's typeToTypeNodeOrCircularityElision tracks the unions it
-  is printing and reports a cyclic structure; tttt's printer has no such set in declaration mode.
-- TS7056 for deep recursive types: tsc elides a symbol nested more than 10 deep (visitAndTransformType), tttt's
-  printer elides at MAX_DISPLAY_DEPTH 8 overall, so deep types never reach the 1M characters
-  (declarationEmitPrivatePromiseLikeInterface passes anyway). Porting the per-symbol depth risks seconds per print on
-  big types and spurious TS7056 where tttt expands what tsc names.
+- TS5088/TS7056 from the printer: conditional branches' unions printed inside themselves (display_branch(), tsgo's
+  typeToTypeNodeOrCircularityElision) and anonymous/conditional types elided eleven deep (anonymous_elided(),
+  conditional_elided(): visitAndTransformType's symbolDepth) report to the declaration tracker. Not ported: the
+  general visitedTypes cycle check of every object type (tttt checks anonymous types only), type references by
+  their node (a deferred reference's symbolDepth identity) and the reverse mapped depth of 100
+  (reverseMappedDeclarationSerialization, which first needs its spurious TS5114 gone).
 - TS9039 "Type containing private name '{0}' can't be used with --isolatedDeclarations" (tsc's
   trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported.
 
@@ -335,8 +337,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
 - **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with
   noUnused* off (unused_enabled() is false then; plain JS too) and TS6385 'x' is
   deprecated (deprecatedReferenceInEnumComputedNameNoFlake). The CLI never prints suggestions; only the harness wants them.
-- arrayFakeFlatNoCrashInferenceDeclarations: TS5088 from a union's circularity elision
-  (typeToTypeNodeOrCircularityElision), not ported. TS7056 (declarationEmitUnserializableTypes) likewise.
 - syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the
   synthetic property a parent when its members have one value declaration (`hasNonUniformValueDeclaration`, a
   synthetic member without one skipped): `w2.content` of `(Mock & Base) | (Mock & Dummy)` is `Mock.content` in the
