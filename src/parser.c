@@ -4208,6 +4208,16 @@ static const char* jsdoc_line_comment_start(const char* line, const char* end) {
     return nullptr;
 }
 
+// Where the line comment that ends at `c` starts, null if none does. `ws_end` is where the whitespace after `c` ends: a
+// line comment runs to the end of its line, so one ends at `c` only if a line break follows it (a host in the middle of
+// a minified line skips the walk back to the line's start)
+static const char* jsdoc_line_comment_ending_at(const char* file_start, const char* c, const char* ws_end) {
+    if (!memchr(c, '\n', ws_end - c) && !memchr(c, '\r', ws_end - c)) return nullptr;
+    const char* line = c;
+    while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
+    return jsdoc_line_comment_start(line, c);
+}
+
 // Whether a comment starting at `start` is among the leading comments of what follows it (tsc's
 // getLeadingCommentRanges): only those after the first line break since the previous token are (or everything at the
 // start of the file); `{ /** @type {T} */ this.x = [] }` on one line is a trailing comment of the `{`
@@ -4250,6 +4260,7 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
     // it and the host (`// eslint-disable-next-line`) are skipped
     isize lo;
     while (true) {
+        const char* ws_end = c;
         while (c > file_start && is_js_ascii_space(c[-1])) c--;
         if (c - file_start >= 4 && c[-1] == '/' && c[-2] == '*') {
             // Binary search for the comment ending at c
@@ -4270,9 +4281,7 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
         }
         // A line comment ending the line: before its `//` (what comes before it on the line may be trivia too:
         // `/** @type {T} */ // why`)
-        const char* line = c;
-        while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
-        const char* comment = jsdoc_line_comment_start(line, c);
+        const char* comment = jsdoc_line_comment_ending_at(file_start, c, ws_end);
         if (comment) {
             c = comment;
             continue;
@@ -4287,6 +4296,7 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
         const char* start = comments->data[first].start;
         bool adjacent = false;
         while (true) {
+            const char* ws_end = start;
             while (start > file_start && is_js_ascii_space(start[-1])) start--;
             if (start == comments->data[first - 1].end) {
                 adjacent = true;
@@ -4299,9 +4309,7 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
                 start = open - 2;
                 continue;
             }
-            const char* line = start;
-            while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
-            const char* comment = jsdoc_line_comment_start(line, start);
+            const char* comment = jsdoc_line_comment_ending_at(file_start, start, ws_end);
             if (comment) {
                 start = comment;
                 continue;
@@ -5377,6 +5385,20 @@ static bool only_trivia_until(const char* at, const char* end) {
 }
 
 
+// Whether a comment's text mentions `@typedef`, `@callback`, `@import` or `@template` (one pass over its `@`s)
+static bool jsdoc_text_declares(csview text) {
+    const char* end = text.buf + text.size;
+    for (const char* at = text.buf; (at = memchr(at, '@', (size_t)(end - at))); at++) {
+        csview rest = csview_from_range(at + 1, end);
+        if (csview_starts_with(rest, "typedef") || csview_starts_with(rest, "callback") || csview_starts_with(rest, "import") ||
+            csview_starts_with(rest, "template")
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
 // statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
 // declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
@@ -5403,9 +5425,7 @@ static void jsdoc_bind_comments(
         // whose host takes nothing of it but `@overload`s: only its declarations are bound
         bool earlier = inner_from && c + 1 < comments->size && comments->data[c + 1].end <= inner_from &&
             only_trivia_until(range.end, inner_from);
-        if (!eof && !earlier && !csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
-            !csview_contains(text, "@template")
-        ) {
+        if (!eof && !earlier && !jsdoc_text_declares(text)) {
             continue;
         }
         VecJsDocTag tags = {0};
