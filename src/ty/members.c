@@ -408,7 +408,8 @@ static void prop_add_shared_decl_spans(Checker* me, Prop* prop, Span const* span
 // the declarations of the method's prop again, each method's overloads first
 static void add_jsdoc_overload_decl_spans(Checker* me, Prop* prop, ClassDecl const* class_decl, ClassItem const* first, bool static_side) {
     u32 overloads = 0, methods = 0;
-    for_each (other, vec_class_item, &class_decl->items) {
+    for (ClassNamesakes it = class_namesakes(class_decl, first, false); class_namesakes_next(&it);) {
+        ClassItem const* other = it.item;
         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
             !cstr_eq(&other->method.name_string, &first->method.name_string)
         ) {
@@ -420,7 +421,8 @@ static void add_jsdoc_overload_decl_spans(Checker* me, Prop* prop, ClassDecl con
     if (!overloads || prop->decl == prop_decl_none()) return;
     Span* spans = arena_new_n(&my arena, Span, overloads + methods + prop->decl->decl_span_count);
     u32 count = 0;
-    for_each (other, vec_class_item, &class_decl->items) {
+    for (ClassNamesakes it = class_namesakes(class_decl, first, false); class_namesakes_next(&it);) {
+        ClassItem const* other = it.item;
         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
             !cstr_eq(&other->method.name_string, &first->method.name_string)
         ) {
@@ -1519,7 +1521,8 @@ static void builder_add_class_items(
                     bool has_setter = false, has_getter = false;
                     TypeNode const* setter_type = nullptr;
                     u32 get_access = access_prop_flags(i->access), set_access = get_access;
-                    for_each (other, vec_class_item, &class_decl->items) {
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                        ClassItem const* other = it.item;
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
                         has_setter |= other->method.accessor == CLASS_ACCESSOR_SET;
                         has_getter |= other->method.accessor == CLASS_ACCESSOR_GET;
@@ -1542,7 +1545,8 @@ static void builder_add_class_items(
                     break;
                 }
                 u32 visible = 0;
-                for_each (other, vec_class_item, &class_decl->items) {
+                for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                    ClassItem const* other = it.item;
                     if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
                         !cstr_eq(&other->method.name_string, &i->method.name_string)
                     ) {
@@ -1554,10 +1558,9 @@ static void builder_add_class_items(
                 {
                     FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, visible);
                     u32 count = 0;
-                    ClassItem const* previous = nullptr; // The class item before `other`
-                    for_each (other, vec_class_item, &class_decl->items) {
-                        ClassItem const* before = previous;
-                        previous = other;
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                        ClassItem const* other = it.item;
+                        ClassItem const* before = it.index ? other - 1 : nullptr; // The class item before `other`
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
                             !cstr_eq(&other->method.name_string, &i->method.name_string)
                         ) {
@@ -1585,7 +1588,8 @@ static void builder_add_class_items(
                     u32 span_cap = visible;
                     Span* spans = arena_new_n(&my arena, Span, span_cap);
                     u32 span_count = 0;
-                    for_each (other, vec_class_item, &class_decl->items) {
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                        ClassItem const* other = it.item;
                         if (other != i && other->tag == CLASS_ITEM_METHOD && !other->method.accessor &&
                             other->method.is_static == static_side && cstr_eq(&other->method.name_string, &i->method.name_string)
                         ) {

@@ -3737,17 +3737,17 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
-    // A field declared again (its symbol's later declaration) has the type of its symbol's first one
+    // A field declared again (its symbol's later declaration) has the type of its symbol's first one (per entry, its
+    // first record)
+    DupRecord const** first_records = calloc(tables->count ? tables->count : 1, sizeof(DupRecord const*));
+    panic_if(!first_records, "out of memory");
+    for_each (r, vec_dup_record, &records) {
+        if (r->entry >= 0 && !first_records[r->entry]) first_records[r->entry] = r;
+    }
     for_each (r, vec_dup_record, &records) {
         ClassItem* item = (ClassItem*)r->member;
         if (r->entry < 0 || !item || item->tag != CLASS_ITEM_FIELD) continue;
-        DupRecord const* first = nullptr;
-        for_each (f, vec_dup_record, &records) {
-            if (f->entry == r->entry) {
-                first = f;
-                break;
-            }
-        }
+        DupRecord const* first = first_records[r->entry];
         if (first == r || !first->member) continue;
         ClassItem* first_item = (ClassItem*)first->member;
         // (A field's type has undefined when it's optional: addOptionality of its declaration)
@@ -3756,6 +3756,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         check_subsequent_property(me, item->field.name_span, first_type,
             with_optionality(me, class_item_get_type(item), item->field.is_optional), first->span, errs);
     }
+    free(first_records);
     merge_late_members(tables, &records, errs);
     check_duplicate_declarations(tables, &records, 0, true, errs);
     vec_dup_record_drop(&records);

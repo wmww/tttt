@@ -170,6 +170,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLargeDeclarationDuplicates': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLibInterfaceMergeIndexConstraint': {
         errors: true,
         symbols: true,

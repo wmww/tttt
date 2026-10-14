@@ -1,0 +1,443 @@
+//// [test/cases/ttttLargeDeclarationDuplicates.ts] ////
+
+=== ttttLargeDeclarationDuplicates.ts ===
+// Declarations past the member counts where the checker indexes members by name (16: the class's namesake chains,
+// the members builder, the duplicate tables, object literal builders): duplicates, overloads, accessor pairs, joined
+// properties and computed keys behave as in small ones
+const k = "kk";
+>k : "kk"
+>"kk" : "kk"
+
+declare const sym: unique symbol;
+>sym : unique symbol
+
+class Big {
+>Big : Big
+
+    pad0 = 0;
+>pad0 : number
+>0 : 0
+
+    pad1 = 1;
+>pad1 : number
+>1 : 1
+
+    pad2 = 2;
+>pad2 : number
+>2 : 2
+
+    pad3 = 3;
+>pad3 : number
+>3 : 3
+
+    pad4 = 4;
+>pad4 : number
+>4 : 4
+
+    pad5 = 5;
+>pad5 : number
+>5 : 5
+
+    pad6 = 6;
+>pad6 : number
+>6 : 6
+
+    pad7 = 7;
+>pad7 : number
+>7 : 7
+
+    pad8 = 8;
+>pad8 : number
+>8 : 8
+
+    pad9 = 9;
+>pad9 : number
+>9 : 9
+
+    pad10 = 10;
+>pad10 : number
+>10 : 10
+
+    pad11 = 11;
+>pad11 : number
+>11 : 11
+
+    pad12 = 12;
+>pad12 : number
+>12 : 12
+
+    pad13 = 13;
+>pad13 : number
+>13 : 13
+
+    pad14 = 14;
+>pad14 : number
+>14 : 14
+
+    pad15 = 15;
+>pad15 : number
+>15 : 15
+
+    pad16 = 16;
+>pad16 : number
+>16 : 16
+
+    pad17 = 17;
+>pad17 : number
+>17 : 17
+
+    pad18 = 18;
+>pad18 : number
+>18 : 18
+
+    pad19 = 19;
+>pad19 : number
+>19 : 19
+
+    m(x: string): void;
+>m : { (x: string): void; (x: number): void; }
+>x : string
+
+    m(x: number): void;
+>m : { (x: string): void; (x: number): void; }
+>x : number
+
+    m(x: any) {}
+>m : { (x: string): void; (x: number): void; }
+>x : any
+
+    other() {}
+>other : () => void
+
+    n(x: string): void;
+>n : { (x: string): void; (x: number): void; }
+>x : string
+
+    n2() {}
+>n2 : () => void
+
+    n(x: number) {}
+>n : { (x: string): void; (x: number): void; }
+>x : number
+
+    dup() {}
+>dup : () => void
+
+    dup() {}
+>dup : () => void
+
+    static m(x: string): void;
+>m : (x: string) => void
+>x : string
+
+    m2(x: string): void;
+>m2 : { (x: string): void; (x: any): void; }
+>x : string
+
+    static m2(x: number): void;
+>m2 : (x: number) => void
+>x : number
+
+    m2(x: any) {}
+>m2 : { (x: string): void; (x: any): void; }
+>x : any
+
+    get acc() { return 1; }
+>acc : number
+>1 : 1
+
+    set acc(v: number) {}
+>acc : number
+>v : number
+
+    private get vis() { return 1; }
+>vis : number
+>1 : 1
+
+    public set vis(v: number) {}
+>vis : number
+>v : number
+
+    joined = 1;
+>joined : number
+>1 : 1
+
+    get joined2() { return 1; }
+>joined2 : number
+>1 : 1
+
+    prop = 1;
+>prop : number
+>1 : 1
+
+    prop = "s";
+>prop : number
+>"s" : "s"
+
+    meth() {}
+>meth : () => void
+
+    meth = 1;
+>meth : number
+>1 : 1
+
+    [sym]() {}
+>[sym] : () => void
+>sym : unique symbol
+
+    [sym]() {}
+>[sym] : () => void
+>sym : unique symbol
+
+    get [k + ""]() { return 1; }
+>[k + ""] : number
+>k + "" : string
+>k : "kk"
+>"" : ""
+>1 : 1
+
+    abstractish?(): void;
+>abstractish : { (): void; (x: number): void; } | undefined
+
+    abstractish?(x: number): void;
+>abstractish : { (): void; (x: number): void; } | undefined
+>x : number
+
+    late(): void;
+>late : { (): void; (): void; }
+
+    pad19b = 1;
+>pad19b : number
+>1 : 1
+
+    late() {}
+>late : { (): void; (): void; }
+}
+
+interface BigI {
+    pad0: number;
+>pad0 : number
+
+    pad1: number;
+>pad1 : number
+
+    pad2: number;
+>pad2 : number
+
+    pad3: number;
+>pad3 : number
+
+    pad4: number;
+>pad4 : number
+
+    pad5: number;
+>pad5 : number
+
+    pad6: number;
+>pad6 : number
+
+    pad7: number;
+>pad7 : number
+
+    pad8: number;
+>pad8 : number
+
+    pad9: number;
+>pad9 : number
+
+    pad10: number;
+>pad10 : number
+
+    pad11: number;
+>pad11 : number
+
+    pad12: number;
+>pad12 : number
+
+    pad13: number;
+>pad13 : number
+
+    pad14: number;
+>pad14 : number
+
+    pad15: number;
+>pad15 : number
+
+    pad16: number;
+>pad16 : number
+
+    pad17: number;
+>pad17 : number
+
+    pad18: number;
+>pad18 : number
+
+    pad19: number;
+>pad19 : number
+
+    a: string;
+>a : string
+
+    a: number;
+>a : string
+
+    b?: string;
+>b : string | undefined
+
+    b: string;
+>b : string | undefined
+
+    readonly c: string;
+>c : string
+
+    c: string;
+>c : string
+
+    m(): void;
+>m : () => void
+
+    m: number;
+>m : number
+
+    o(): void;
+>o : { (): void; (x: number): void; } | undefined
+
+    o?(x: number): void;
+>o : { (): void; (x: number): void; } | undefined
+>x : number
+
+    o: () => void;
+>o : () => void
+}
+
+const big = {
+>big : { pad1: string; pad2: number; pad3: number; pad4: number; pad5: number; pad6: number; pad7: number; pad8: number; pad9: number; pad10: number; pad11: number; pad12: number; pad13: number; pad14: number; pad15: number; pad16: number; pad17: number; pad18: number; pad19: number; a: number; g: number; s: number; m: number; pad0: string; }
+>{    pad0: 0,    pad1: 1,    pad2: 2,    pad3: 3,    pad4: 4,    pad5: 5,    pad6: 6,    pad7: 7,    pad8: 8,    pad9: 9,    pad10: 10,    pad11: 11,    pad12: 12,    pad13: 13,    pad14: 14,    pad15: 15,    pad16: 16,    pad17: 17,    pad18: 18,    pad19: 19,    a: 1,    a: 2,    get g() { return 1; },    get g() { return 2; },    s: 1,    get s() { return 1; },    m() {},    m: 1,    ...{ pad0: "x" },    pad1: "y",} : { pad1: string; pad2: number; pad3: number; pad4: number; pad5: number; pad6: number; pad7: number; pad8: number; pad9: number; pad10: number; pad11: number; pad12: number; pad13: number; pad14: number; pad15: number; pad16: number; pad17: number; pad18: number; pad19: number; a: number; g: number; s: number; m: number; pad0: string; }
+
+    pad0: 0,
+>pad0 : number
+>0 : 0
+
+    pad1: 1,
+>pad1 : number
+>1 : 1
+
+    pad2: 2,
+>pad2 : number
+>2 : 2
+
+    pad3: 3,
+>pad3 : number
+>3 : 3
+
+    pad4: 4,
+>pad4 : number
+>4 : 4
+
+    pad5: 5,
+>pad5 : number
+>5 : 5
+
+    pad6: 6,
+>pad6 : number
+>6 : 6
+
+    pad7: 7,
+>pad7 : number
+>7 : 7
+
+    pad8: 8,
+>pad8 : number
+>8 : 8
+
+    pad9: 9,
+>pad9 : number
+>9 : 9
+
+    pad10: 10,
+>pad10 : number
+>10 : 10
+
+    pad11: 11,
+>pad11 : number
+>11 : 11
+
+    pad12: 12,
+>pad12 : number
+>12 : 12
+
+    pad13: 13,
+>pad13 : number
+>13 : 13
+
+    pad14: 14,
+>pad14 : number
+>14 : 14
+
+    pad15: 15,
+>pad15 : number
+>15 : 15
+
+    pad16: 16,
+>pad16 : number
+>16 : 16
+
+    pad17: 17,
+>pad17 : number
+>17 : 17
+
+    pad18: 18,
+>pad18 : number
+>18 : 18
+
+    pad19: 19,
+>pad19 : number
+>19 : 19
+
+    a: 1,
+>a : number
+>1 : 1
+
+    a: 2,
+>a : number
+>2 : 2
+
+    get g() { return 1; },
+>g : number
+>1 : 1
+
+    get g() { return 2; },
+>g : number
+>2 : 2
+
+    s: 1,
+>s : number
+>1 : 1
+
+    get s() { return 1; },
+>s : number
+>1 : 1
+
+    m() {},
+>m : () => void
+
+    m: 1,
+>m : number
+>1 : 1
+
+    ...{ pad0: "x" },
+>{ pad0: "x" } : { pad0: string; }
+>pad0 : string
+>"x" : "x"
+
+    pad1: "y",
+>pad1 : number
+>"y" : "y"
+
+};
+const n: number = big.pad0;
+>n : number
+>big.pad0 : string
+>big : { pad1: string; pad2: number; pad3: number; pad4: number; pad5: number; pad6: number; pad7: number; pad8: number; pad9: number; pad10: number; pad11: number; pad12: number; pad13: number; pad14: number; pad15: number; pad16: number; pad17: number; pad18: number; pad19: number; a: number; g: number; s: number; m: number; pad0: string; }
+>pad0 : string
+

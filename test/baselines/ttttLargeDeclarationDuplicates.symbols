@@ -1,0 +1,382 @@
+//// [test/cases/ttttLargeDeclarationDuplicates.ts] ////
+
+=== ttttLargeDeclarationDuplicates.ts ===
+// Declarations past the member counts where the checker indexes members by name (16: the class's namesake chains,
+// the members builder, the duplicate tables, object literal builders): duplicates, overloads, accessor pairs, joined
+// properties and computed keys behave as in small ones
+const k = "kk";
+>k : Symbol(k, Decl(ttttLargeDeclarationDuplicates.ts, 3, 5))
+
+declare const sym: unique symbol;
+>sym : Symbol(sym, Decl(ttttLargeDeclarationDuplicates.ts, 4, 13))
+
+class Big {
+>Big : Symbol(Big, Decl(ttttLargeDeclarationDuplicates.ts, 4, 33))
+
+    pad0 = 0;
+>pad0 : Symbol(Big.pad0, Decl(ttttLargeDeclarationDuplicates.ts, 6, 11))
+
+    pad1 = 1;
+>pad1 : Symbol(Big.pad1, Decl(ttttLargeDeclarationDuplicates.ts, 7, 13))
+
+    pad2 = 2;
+>pad2 : Symbol(Big.pad2, Decl(ttttLargeDeclarationDuplicates.ts, 8, 13))
+
+    pad3 = 3;
+>pad3 : Symbol(Big.pad3, Decl(ttttLargeDeclarationDuplicates.ts, 9, 13))
+
+    pad4 = 4;
+>pad4 : Symbol(Big.pad4, Decl(ttttLargeDeclarationDuplicates.ts, 10, 13))
+
+    pad5 = 5;
+>pad5 : Symbol(Big.pad5, Decl(ttttLargeDeclarationDuplicates.ts, 11, 13))
+
+    pad6 = 6;
+>pad6 : Symbol(Big.pad6, Decl(ttttLargeDeclarationDuplicates.ts, 12, 13))
+
+    pad7 = 7;
+>pad7 : Symbol(Big.pad7, Decl(ttttLargeDeclarationDuplicates.ts, 13, 13))
+
+    pad8 = 8;
+>pad8 : Symbol(Big.pad8, Decl(ttttLargeDeclarationDuplicates.ts, 14, 13))
+
+    pad9 = 9;
+>pad9 : Symbol(Big.pad9, Decl(ttttLargeDeclarationDuplicates.ts, 15, 13))
+
+    pad10 = 10;
+>pad10 : Symbol(Big.pad10, Decl(ttttLargeDeclarationDuplicates.ts, 16, 13))
+
+    pad11 = 11;
+>pad11 : Symbol(Big.pad11, Decl(ttttLargeDeclarationDuplicates.ts, 17, 15))
+
+    pad12 = 12;
+>pad12 : Symbol(Big.pad12, Decl(ttttLargeDeclarationDuplicates.ts, 18, 15))
+
+    pad13 = 13;
+>pad13 : Symbol(Big.pad13, Decl(ttttLargeDeclarationDuplicates.ts, 19, 15))
+
+    pad14 = 14;
+>pad14 : Symbol(Big.pad14, Decl(ttttLargeDeclarationDuplicates.ts, 20, 15))
+
+    pad15 = 15;
+>pad15 : Symbol(Big.pad15, Decl(ttttLargeDeclarationDuplicates.ts, 21, 15))
+
+    pad16 = 16;
+>pad16 : Symbol(Big.pad16, Decl(ttttLargeDeclarationDuplicates.ts, 22, 15))
+
+    pad17 = 17;
+>pad17 : Symbol(Big.pad17, Decl(ttttLargeDeclarationDuplicates.ts, 23, 15))
+
+    pad18 = 18;
+>pad18 : Symbol(Big.pad18, Decl(ttttLargeDeclarationDuplicates.ts, 24, 15))
+
+    pad19 = 19;
+>pad19 : Symbol(Big.pad19, Decl(ttttLargeDeclarationDuplicates.ts, 25, 15))
+
+    m(x: string): void;
+>m : Symbol(Big.m, Decl(ttttLargeDeclarationDuplicates.ts, 26, 15), Decl(ttttLargeDeclarationDuplicates.ts, 27, 23), Decl(ttttLargeDeclarationDuplicates.ts, 28, 23))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 27, 6))
+
+    m(x: number): void;
+>m : Symbol(Big.m, Decl(ttttLargeDeclarationDuplicates.ts, 26, 15), Decl(ttttLargeDeclarationDuplicates.ts, 27, 23), Decl(ttttLargeDeclarationDuplicates.ts, 28, 23))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 28, 6))
+
+    m(x: any) {}
+>m : Symbol(Big.m, Decl(ttttLargeDeclarationDuplicates.ts, 26, 15), Decl(ttttLargeDeclarationDuplicates.ts, 27, 23), Decl(ttttLargeDeclarationDuplicates.ts, 28, 23))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 29, 6))
+
+    other() {}
+>other : Symbol(Big.other, Decl(ttttLargeDeclarationDuplicates.ts, 29, 16))
+
+    n(x: string): void;
+>n : Symbol(Big.n, Decl(ttttLargeDeclarationDuplicates.ts, 30, 14), Decl(ttttLargeDeclarationDuplicates.ts, 32, 11))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 31, 6))
+
+    n2() {}
+>n2 : Symbol(Big.n2, Decl(ttttLargeDeclarationDuplicates.ts, 31, 23))
+
+    n(x: number) {}
+>n : Symbol(Big.n, Decl(ttttLargeDeclarationDuplicates.ts, 30, 14), Decl(ttttLargeDeclarationDuplicates.ts, 32, 11))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 33, 6))
+
+    dup() {}
+>dup : Symbol(Big.dup, Decl(ttttLargeDeclarationDuplicates.ts, 33, 19), Decl(ttttLargeDeclarationDuplicates.ts, 34, 12))
+
+    dup() {}
+>dup : Symbol(Big.dup, Decl(ttttLargeDeclarationDuplicates.ts, 33, 19), Decl(ttttLargeDeclarationDuplicates.ts, 34, 12))
+
+    static m(x: string): void;
+>m : Symbol(Big.m, Decl(ttttLargeDeclarationDuplicates.ts, 35, 12))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 36, 13))
+
+    m2(x: string): void;
+>m2 : Symbol(Big.m2, Decl(ttttLargeDeclarationDuplicates.ts, 36, 30), Decl(ttttLargeDeclarationDuplicates.ts, 38, 31))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 37, 7))
+
+    static m2(x: number): void;
+>m2 : Symbol(Big.m2, Decl(ttttLargeDeclarationDuplicates.ts, 37, 24))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 38, 14))
+
+    m2(x: any) {}
+>m2 : Symbol(Big.m2, Decl(ttttLargeDeclarationDuplicates.ts, 36, 30), Decl(ttttLargeDeclarationDuplicates.ts, 38, 31))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 39, 7))
+
+    get acc() { return 1; }
+>acc : Symbol(Big.acc, Decl(ttttLargeDeclarationDuplicates.ts, 39, 17), Decl(ttttLargeDeclarationDuplicates.ts, 40, 27))
+
+    set acc(v: number) {}
+>acc : Symbol(Big.acc, Decl(ttttLargeDeclarationDuplicates.ts, 39, 17), Decl(ttttLargeDeclarationDuplicates.ts, 40, 27))
+>v : Symbol(v, Decl(ttttLargeDeclarationDuplicates.ts, 41, 12))
+
+    private get vis() { return 1; }
+>vis : Symbol(Big.vis, Decl(ttttLargeDeclarationDuplicates.ts, 41, 25), Decl(ttttLargeDeclarationDuplicates.ts, 42, 35))
+
+    public set vis(v: number) {}
+>vis : Symbol(Big.vis, Decl(ttttLargeDeclarationDuplicates.ts, 41, 25), Decl(ttttLargeDeclarationDuplicates.ts, 42, 35))
+>v : Symbol(v, Decl(ttttLargeDeclarationDuplicates.ts, 43, 19))
+
+    joined = 1;
+>joined : Symbol(Big.joined, Decl(ttttLargeDeclarationDuplicates.ts, 43, 32))
+
+    get joined2() { return 1; }
+>joined2 : Symbol(Big.joined2, Decl(ttttLargeDeclarationDuplicates.ts, 44, 15))
+
+    prop = 1;
+>prop : Symbol(Big.prop, Decl(ttttLargeDeclarationDuplicates.ts, 45, 31), Decl(ttttLargeDeclarationDuplicates.ts, 46, 13))
+
+    prop = "s";
+>prop : Symbol(Big.prop, Decl(ttttLargeDeclarationDuplicates.ts, 45, 31), Decl(ttttLargeDeclarationDuplicates.ts, 46, 13))
+
+    meth() {}
+>meth : Symbol(Big.meth, Decl(ttttLargeDeclarationDuplicates.ts, 47, 15))
+
+    meth = 1;
+>meth : Symbol(Big.meth, Decl(ttttLargeDeclarationDuplicates.ts, 48, 13))
+
+    [sym]() {}
+>[sym] : Symbol(Big[sym], Decl(ttttLargeDeclarationDuplicates.ts, 49, 13), Decl(ttttLargeDeclarationDuplicates.ts, 50, 14))
+>sym : Symbol(sym, Decl(ttttLargeDeclarationDuplicates.ts, 4, 13))
+
+    [sym]() {}
+>[sym] : Symbol(Big[sym], Decl(ttttLargeDeclarationDuplicates.ts, 49, 13), Decl(ttttLargeDeclarationDuplicates.ts, 50, 14))
+>sym : Symbol(sym, Decl(ttttLargeDeclarationDuplicates.ts, 4, 13))
+
+    get [k + ""]() { return 1; }
+>[k + ""] : Symbol(Big[k + ""], Decl(ttttLargeDeclarationDuplicates.ts, 51, 14))
+>k : Symbol(k, Decl(ttttLargeDeclarationDuplicates.ts, 3, 5))
+
+    abstractish?(): void;
+>abstractish : Symbol(Big.abstractish, Decl(ttttLargeDeclarationDuplicates.ts, 52, 32), Decl(ttttLargeDeclarationDuplicates.ts, 53, 25))
+
+    abstractish?(x: number): void;
+>abstractish : Symbol(Big.abstractish, Decl(ttttLargeDeclarationDuplicates.ts, 52, 32), Decl(ttttLargeDeclarationDuplicates.ts, 53, 25))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 54, 17))
+
+    late(): void;
+>late : Symbol(Big.late, Decl(ttttLargeDeclarationDuplicates.ts, 54, 34), Decl(ttttLargeDeclarationDuplicates.ts, 56, 15))
+
+    pad19b = 1;
+>pad19b : Symbol(Big.pad19b, Decl(ttttLargeDeclarationDuplicates.ts, 55, 17))
+
+    late() {}
+>late : Symbol(Big.late, Decl(ttttLargeDeclarationDuplicates.ts, 54, 34), Decl(ttttLargeDeclarationDuplicates.ts, 56, 15))
+}
+
+interface BigI {
+>BigI : Symbol(BigI, Decl(ttttLargeDeclarationDuplicates.ts, 58, 1))
+
+    pad0: number;
+>pad0 : Symbol(BigI.pad0, Decl(ttttLargeDeclarationDuplicates.ts, 60, 16))
+
+    pad1: number;
+>pad1 : Symbol(BigI.pad1, Decl(ttttLargeDeclarationDuplicates.ts, 61, 17))
+
+    pad2: number;
+>pad2 : Symbol(BigI.pad2, Decl(ttttLargeDeclarationDuplicates.ts, 62, 17))
+
+    pad3: number;
+>pad3 : Symbol(BigI.pad3, Decl(ttttLargeDeclarationDuplicates.ts, 63, 17))
+
+    pad4: number;
+>pad4 : Symbol(BigI.pad4, Decl(ttttLargeDeclarationDuplicates.ts, 64, 17))
+
+    pad5: number;
+>pad5 : Symbol(BigI.pad5, Decl(ttttLargeDeclarationDuplicates.ts, 65, 17))
+
+    pad6: number;
+>pad6 : Symbol(BigI.pad6, Decl(ttttLargeDeclarationDuplicates.ts, 66, 17))
+
+    pad7: number;
+>pad7 : Symbol(BigI.pad7, Decl(ttttLargeDeclarationDuplicates.ts, 67, 17))
+
+    pad8: number;
+>pad8 : Symbol(BigI.pad8, Decl(ttttLargeDeclarationDuplicates.ts, 68, 17))
+
+    pad9: number;
+>pad9 : Symbol(BigI.pad9, Decl(ttttLargeDeclarationDuplicates.ts, 69, 17))
+
+    pad10: number;
+>pad10 : Symbol(BigI.pad10, Decl(ttttLargeDeclarationDuplicates.ts, 70, 17))
+
+    pad11: number;
+>pad11 : Symbol(BigI.pad11, Decl(ttttLargeDeclarationDuplicates.ts, 71, 18))
+
+    pad12: number;
+>pad12 : Symbol(BigI.pad12, Decl(ttttLargeDeclarationDuplicates.ts, 72, 18))
+
+    pad13: number;
+>pad13 : Symbol(BigI.pad13, Decl(ttttLargeDeclarationDuplicates.ts, 73, 18))
+
+    pad14: number;
+>pad14 : Symbol(BigI.pad14, Decl(ttttLargeDeclarationDuplicates.ts, 74, 18))
+
+    pad15: number;
+>pad15 : Symbol(BigI.pad15, Decl(ttttLargeDeclarationDuplicates.ts, 75, 18))
+
+    pad16: number;
+>pad16 : Symbol(BigI.pad16, Decl(ttttLargeDeclarationDuplicates.ts, 76, 18))
+
+    pad17: number;
+>pad17 : Symbol(BigI.pad17, Decl(ttttLargeDeclarationDuplicates.ts, 77, 18))
+
+    pad18: number;
+>pad18 : Symbol(BigI.pad18, Decl(ttttLargeDeclarationDuplicates.ts, 78, 18))
+
+    pad19: number;
+>pad19 : Symbol(BigI.pad19, Decl(ttttLargeDeclarationDuplicates.ts, 79, 18))
+
+    a: string;
+>a : Symbol(BigI.a, Decl(ttttLargeDeclarationDuplicates.ts, 80, 18), Decl(ttttLargeDeclarationDuplicates.ts, 81, 14))
+
+    a: number;
+>a : Symbol(BigI.a, Decl(ttttLargeDeclarationDuplicates.ts, 80, 18), Decl(ttttLargeDeclarationDuplicates.ts, 81, 14))
+
+    b?: string;
+>b : Symbol(BigI.b, Decl(ttttLargeDeclarationDuplicates.ts, 82, 14), Decl(ttttLargeDeclarationDuplicates.ts, 83, 15))
+
+    b: string;
+>b : Symbol(BigI.b, Decl(ttttLargeDeclarationDuplicates.ts, 82, 14), Decl(ttttLargeDeclarationDuplicates.ts, 83, 15))
+
+    readonly c: string;
+>c : Symbol(BigI.c, Decl(ttttLargeDeclarationDuplicates.ts, 84, 14), Decl(ttttLargeDeclarationDuplicates.ts, 85, 23))
+
+    c: string;
+>c : Symbol(BigI.c, Decl(ttttLargeDeclarationDuplicates.ts, 84, 14), Decl(ttttLargeDeclarationDuplicates.ts, 85, 23))
+
+    m(): void;
+>m : Symbol(BigI.m, Decl(ttttLargeDeclarationDuplicates.ts, 86, 14))
+
+    m: number;
+>m : Symbol(BigI.m, Decl(ttttLargeDeclarationDuplicates.ts, 87, 14))
+
+    o(): void;
+>o : Symbol(BigI.o, Decl(ttttLargeDeclarationDuplicates.ts, 88, 14), Decl(ttttLargeDeclarationDuplicates.ts, 89, 14))
+
+    o?(x: number): void;
+>o : Symbol(BigI.o, Decl(ttttLargeDeclarationDuplicates.ts, 88, 14), Decl(ttttLargeDeclarationDuplicates.ts, 89, 14))
+>x : Symbol(x, Decl(ttttLargeDeclarationDuplicates.ts, 90, 7))
+
+    o: () => void;
+>o : Symbol(BigI.o, Decl(ttttLargeDeclarationDuplicates.ts, 90, 24))
+}
+
+const big = {
+>big : Symbol(big, Decl(ttttLargeDeclarationDuplicates.ts, 94, 5))
+
+    pad0: 0,
+>pad0 : Symbol(pad0, Decl(ttttLargeDeclarationDuplicates.ts, 94, 13))
+
+    pad1: 1,
+>pad1 : Symbol(pad1, Decl(ttttLargeDeclarationDuplicates.ts, 95, 12), Decl(ttttLargeDeclarationDuplicates.ts, 123, 21))
+
+    pad2: 2,
+>pad2 : Symbol(pad2, Decl(ttttLargeDeclarationDuplicates.ts, 96, 12))
+
+    pad3: 3,
+>pad3 : Symbol(pad3, Decl(ttttLargeDeclarationDuplicates.ts, 97, 12))
+
+    pad4: 4,
+>pad4 : Symbol(pad4, Decl(ttttLargeDeclarationDuplicates.ts, 98, 12))
+
+    pad5: 5,
+>pad5 : Symbol(pad5, Decl(ttttLargeDeclarationDuplicates.ts, 99, 12))
+
+    pad6: 6,
+>pad6 : Symbol(pad6, Decl(ttttLargeDeclarationDuplicates.ts, 100, 12))
+
+    pad7: 7,
+>pad7 : Symbol(pad7, Decl(ttttLargeDeclarationDuplicates.ts, 101, 12))
+
+    pad8: 8,
+>pad8 : Symbol(pad8, Decl(ttttLargeDeclarationDuplicates.ts, 102, 12))
+
+    pad9: 9,
+>pad9 : Symbol(pad9, Decl(ttttLargeDeclarationDuplicates.ts, 103, 12))
+
+    pad10: 10,
+>pad10 : Symbol(pad10, Decl(ttttLargeDeclarationDuplicates.ts, 104, 12))
+
+    pad11: 11,
+>pad11 : Symbol(pad11, Decl(ttttLargeDeclarationDuplicates.ts, 105, 14))
+
+    pad12: 12,
+>pad12 : Symbol(pad12, Decl(ttttLargeDeclarationDuplicates.ts, 106, 14))
+
+    pad13: 13,
+>pad13 : Symbol(pad13, Decl(ttttLargeDeclarationDuplicates.ts, 107, 14))
+
+    pad14: 14,
+>pad14 : Symbol(pad14, Decl(ttttLargeDeclarationDuplicates.ts, 108, 14))
+
+    pad15: 15,
+>pad15 : Symbol(pad15, Decl(ttttLargeDeclarationDuplicates.ts, 109, 14))
+
+    pad16: 16,
+>pad16 : Symbol(pad16, Decl(ttttLargeDeclarationDuplicates.ts, 110, 14))
+
+    pad17: 17,
+>pad17 : Symbol(pad17, Decl(ttttLargeDeclarationDuplicates.ts, 111, 14))
+
+    pad18: 18,
+>pad18 : Symbol(pad18, Decl(ttttLargeDeclarationDuplicates.ts, 112, 14))
+
+    pad19: 19,
+>pad19 : Symbol(pad19, Decl(ttttLargeDeclarationDuplicates.ts, 113, 14))
+
+    a: 1,
+>a : Symbol(a, Decl(ttttLargeDeclarationDuplicates.ts, 114, 14), Decl(ttttLargeDeclarationDuplicates.ts, 115, 9))
+
+    a: 2,
+>a : Symbol(a, Decl(ttttLargeDeclarationDuplicates.ts, 114, 14), Decl(ttttLargeDeclarationDuplicates.ts, 115, 9))
+
+    get g() { return 1; },
+>g : Symbol(g, Decl(ttttLargeDeclarationDuplicates.ts, 116, 9))
+
+    get g() { return 2; },
+>g : Symbol(g, Decl(ttttLargeDeclarationDuplicates.ts, 117, 26))
+
+    s: 1,
+>s : Symbol(s, Decl(ttttLargeDeclarationDuplicates.ts, 118, 26), Decl(ttttLargeDeclarationDuplicates.ts, 119, 9))
+
+    get s() { return 1; },
+>s : Symbol(s, Decl(ttttLargeDeclarationDuplicates.ts, 118, 26), Decl(ttttLargeDeclarationDuplicates.ts, 119, 9))
+
+    m() {},
+>m : Symbol(m, Decl(ttttLargeDeclarationDuplicates.ts, 120, 26))
+
+    m: 1,
+>m : Symbol(m, Decl(ttttLargeDeclarationDuplicates.ts, 121, 11))
+
+    ...{ pad0: "x" },
+>pad0 : Symbol(pad0, Decl(ttttLargeDeclarationDuplicates.ts, 123, 8))
+
+    pad1: "y",
+>pad1 : Symbol(pad1, Decl(ttttLargeDeclarationDuplicates.ts, 95, 12), Decl(ttttLargeDeclarationDuplicates.ts, 123, 21))
+
+};
+const n: number = big.pad0;
+>n : Symbol(n, Decl(ttttLargeDeclarationDuplicates.ts, 126, 5))
+>big.pad0 : Symbol(pad0, Decl(ttttLargeDeclarationDuplicates.ts, 123, 8))
+>big : Symbol(big, Decl(ttttLargeDeclarationDuplicates.ts, 94, 5))
+>pad0 : Symbol(pad0, Decl(ttttLargeDeclarationDuplicates.ts, 123, 8))
+

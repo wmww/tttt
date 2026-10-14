@@ -175,9 +175,56 @@ typedef struct ClassDecl {
     // field it assigns needs the key's type, so TS2564 (field_initialized_in_constructor()) tries these as the flow
     // reference of fields no `this.x = v` names. Set by the resolve walk
     VecExprCPtr computed_this_assignments;
+    // In a class of more than CLASS_NAMESAKES_FROM items (set when looking up names; null otherwise): per item, the
+    // first and the next item (-1 at the end) with its name_string (methods and fields, computed keys by their text;
+    // -1 for the others), and the items with a computed key in order. The loops over the declarations of a member
+    // (overloads, accessor pairs, member symbols) walk these (class_namesakes()), not every item: linear on large classes
+    i32* namesake_first;
+    i32* namesake_next;
+    i32* computed_items;
+    u32 computed_item_count;
 } ClassDecl;
 
+enum { CLASS_NAMESAKES_FROM = 16 };
+
 void class_decl_drop(ClassDecl* me);
+
+// The items that may declare the same member as `item`, in order: those with its name_string, and `with_computed`
+// those with a computed key too (same_member() compares a computed key's name, not its text; for an item with a
+// computed key itself, every item). Every item in a small class, or for an item without a name_string. Callers keep
+// their own name tests: this only skips items that can't pass them
+//     for (ClassNamesakes it = class_namesakes(decl, item, false); class_namesakes_next(&it);) { it.item, it.index }
+typedef struct ClassNamesakes {
+    ClassDecl const* decl;
+    bool all;
+    i32 chain; // The next item of the name chain, -1 at its end
+    u32 computed; // The next position in decl->computed_items
+    isize index; // The current item's
+    struct ClassItem* item;
+} ClassNamesakes;
+
+ClassNamesakes class_namesakes(ClassDecl const* decl, struct ClassItem const* item, bool with_computed);
+
+static inline bool class_namesakes_next(ClassNamesakes* it) {
+    ClassDecl const* decl = it->decl;
+    if (it->all) {
+        if (++it->index >= (isize)decl->items.size) return false;
+    } else {
+        isize computed = it->computed < decl->computed_item_count ? decl->computed_items[it->computed] : PTRDIFF_MAX;
+        isize chain = it->chain >= 0 ? it->chain : PTRDIFF_MAX;
+        if (computed == PTRDIFF_MAX && chain == PTRDIFF_MAX) return false;
+        if (chain <= computed) {
+            it->index = chain;
+            it->chain = decl->namesake_next[chain];
+            if (computed == chain) it->computed++;
+        } else {
+            it->index = computed;
+            it->computed++;
+        }
+    }
+    it->item = &decl->items.data[it->index];
+    return true;
+}
 /// What the class is called in messages and baselines: its name, else its assigned name, else `(Anonymous class)`
 Span class_decl_display_name(ClassDecl const* me);
 /// The first member of the class named `#name` (tsc's lookupSymbolForPrivateIdentifierDeclaration for one class)

@@ -13,6 +13,7 @@
 #include "unused.h"
 #include "source_file.h"
 #include "block.h"
+#include "name_index.h"
 
 void class_item_drop(ClassItem* me) {
     vec_expr_drop(&my decorators);
@@ -192,6 +193,8 @@ Ty const* class_item_get_type(ClassItem* me) {
     impossible;
 }
 
+static void drop_namesakes(ClassDecl* me);
+
 void class_decl_drop(ClassDecl* me) {
     vec_expr_drop(&my decorators);
     generic_drop(&my generic);
@@ -202,6 +205,7 @@ void class_decl_drop(ClassDecl* me) {
     vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
     vec_expr_cptr_drop(&my computed_this_assignments);
+    drop_namesakes(me);
     if (my jsdoc_augments) {
         type_drop(my jsdoc_augments);
         free(my jsdoc_augments);
@@ -460,6 +464,68 @@ static bool member_binding(ClassItem const* item, cstr const** name, bool* is_st
     return false;
 }
 
+// A method's or field's name_string (a computed key's text), null for other items
+static cstr const* item_name_string(ClassItem const* item) {
+    if (item->tag == CLASS_ITEM_METHOD) return &item->method.name_string;
+    if (item->tag == CLASS_ITEM_FIELD) return &item->field.name_string;
+    return nullptr;
+}
+
+static bool item_has_computed_key(ClassItem const* item) {
+    return (item->tag == CLASS_ITEM_METHOD && item->method.computed_key) || (item->tag == CLASS_ITEM_FIELD && item->field.computed_key);
+}
+
+static void drop_namesakes(ClassDecl* me) {
+    free(my namesake_first);
+    free(my namesake_next);
+    free(my computed_items);
+    my namesake_first = my namesake_next = my computed_items = nullptr;
+    my computed_item_count = 0;
+}
+
+// ClassDecl.namesake_first and the rest
+static void link_namesakes(ClassDecl* me) {
+    drop_namesakes(me);
+    isize count = vec_class_item_size(&my items);
+    if (count <= CLASS_NAMESAKES_FROM) return;
+    my namesake_first = malloc(sizeof(i32) * (size_t)count);
+    my namesake_next = malloc(sizeof(i32) * (size_t)count);
+    my computed_items = malloc(sizeof(i32) * (size_t)count);
+    panic_if(!my namesake_first || !my namesake_next || !my computed_items, "out of memory");
+    NameIndex last = name_index_make(count); // The last item of each name so far, its chain's end
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        my namesake_next[i] = my namesake_first[i] = -1;
+        cstr const* name = item_name_string(item);
+        if (!name) continue;
+        if (item_has_computed_key(item)) my computed_items[my computed_item_count++] = (i32)i;
+        csview sv = cstr_sv(name);
+        u64 slot = name_index_slot(&last, symbol_name_hash(sv));
+        while (last.slots[slot] >= 0 && !cstr_equals_sv(item_name_string(vec_class_item_at(&my items, last.slots[slot])), sv)) {
+            slot = name_index_next(&last, slot);
+        }
+        if (last.slots[slot] >= 0) {
+            my namesake_next[last.slots[slot]] = (i32)i;
+            my namesake_first[i] = my namesake_first[last.slots[slot]];
+        } else {
+            my namesake_first[i] = (i32)i;
+        }
+        last.slots[slot] = i;
+    }
+    name_index_drop(&last);
+}
+
+ClassNamesakes class_namesakes(ClassDecl const* decl, ClassItem const* item, bool with_computed) {
+    ClassNamesakes ret = { .decl = decl, .chain = -1, .index = -1, .computed = decl->computed_item_count };
+    isize at = item - decl->items.data;
+    ret.all = !decl->namesake_first || decl->namesake_first[at] < 0 || (with_computed && item_has_computed_key(item));
+    if (!ret.all) {
+        ret.chain = decl->namesake_first[at];
+        if (with_computed) ret.computed = 0;
+    }
+    return ret;
+}
+
 // tsc's binder for the members of a class, in order: a member joins the symbol the first one of its name made unless
 // that symbol has a meaning it excludes (TypeScript 7: a property excludes all but properties and accessors, a method
 // everything but methods, an accessor everything but the other accessor and properties), then it stands alone and isn't
@@ -475,7 +541,8 @@ static void bind_member_symbols(ClassDecl* me) {
         // The symbol in the table: the first of the name, what joined it so far
         ClassItem* first = nullptr;
         u32 existing = 0;
-        for (ClassItem* j = my items.data; j < i; j++) {
+        for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it) && it.item < i;) {
+            ClassItem* j = it.item;
             cstr const* other_name;
             bool other_static;
             u32 other_flags;
@@ -540,7 +607,8 @@ static void link_overload_implementations(ClassDecl* me) {
         bool is_constructor = i->tag == CLASS_ITEM_CONSTRUCTOR;
         if (is_constructor ? i->constructor.func.has_body :
             i->tag != CLASS_ITEM_METHOD || i->method.func.has_body || !i->symbol_first) continue;
-        for_each (j, vec_class_item, &my items) {
+        for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it);) {
+            ClassItem* j = it.item;
             if (is_constructor ? j->tag == CLASS_ITEM_CONSTRUCTOR && j->constructor.func.has_body :
                 j->tag == CLASS_ITEM_METHOD && j->method.func.has_body && j->symbol_first == i->symbol_first
             ) {
@@ -623,6 +691,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         }
     }
 
+    link_namesakes(me);
     bind_member_symbols(me);
     if (!my is_ambient) link_overload_implementations(me);
     for_each (i, vec_class_item, &my items) {
@@ -637,7 +706,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
             // isLateBindableName)
             Expr const* own_key = i->method.computed_key;
             bool bindable = !own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key);
-            for_each (other, vec_class_item, &my items) {
+            for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it);) {
+                ClassItem* other = it.item;
                 if (!bindable && other != i) continue;
                 if (other->tag == CLASS_ITEM_METHOD &&
                     other->method.accessor &&
@@ -667,7 +737,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         if (i->tag != CLASS_ITEM_FIELD) continue;
         i->field.joined_accessor = nullptr;
         if (i->symbol_first != i || i->field.is_auto_accessor) continue;
-        for_each (j, vec_class_item, &my items) {
+        for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it);) {
+            ClassItem* j = it.item;
             if (j->symbol_first == i && j->tag == CLASS_ITEM_METHOD && j->method.accessor && j->method.accessor_first) {
                 i->field.joined_accessor = j->method.accessor_first;
                 break;
@@ -1511,14 +1582,14 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
         ClassItem const* implementation = nullptr;
         u32 some_flags = 0, all_flags = ~0u;
         bool some_optional = false, all_optional = true;
-        for (isize j = 0; j < count; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
             if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || !same_member(item, other) ||
                 other->method.is_static != item->method.is_static
             ) {
                 continue;
             }
-            if (j < i) first = false;
+            if (it.index < i) first = false;
             u32 flags = (u32)other->access << 1 | other->method.is_abstract;
             some_flags |= flags;
             all_flags &= flags;
@@ -1532,8 +1603,8 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
         }
         if (!first || !overloads) continue;
         ClassItem const* canonical = implementation ? implementation : item;
-        for (isize j = 0; j < count; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
             if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || !same_member(item, other) ||
                 other->method.is_static != item->method.is_static
             ) {
@@ -1577,8 +1648,10 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
             // implementation, body or not, unless the next is a second implementation (tsc's
             // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
             bool some_body = false;
-            for (isize j = 0; j <= i && overloadable(next)->has_body && !some_body; j++) {
-                ClassItem const* other = vec_class_item_at(&my items, j);
+            for (ClassNamesakes it = class_namesakes(me, item, true);
+                overloadable(next)->has_body && !some_body && class_namesakes_next(&it) && it.index <= i;
+            ) {
+                ClassItem const* other = it.item;
                 some_body = overloadable(other) && overloadable(other)->has_body && same_member(item, other);
             }
             if (!(overloadable(next)->has_body && some_body)) {
@@ -1605,8 +1678,9 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         bool is_abstract = !is_constructor && item->method.is_abstract;
         bool later = false;
         // (Of the same symbol: a static and an instance method of one name are two)
-        for (isize j = i + 1; j < count && !later; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); !later && class_namesakes_next(&it);) {
+            if (it.index <= i) continue;
+            ClassItem const* other = it.item;
             later = same_member(item, other) && (is_constructor || other->tag != CLASS_ITEM_METHOD ||
                 other->method.is_static == item->method.is_static);
         }
@@ -1639,12 +1713,12 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         FunctionImpl const* overloads[32];
         Span names[32];
         u32 overload_count = 0;
-        for (isize j = 0; j < count; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
             FunctionImpl const* other_func = overloadable(other);
             if (!other_func || !same_member(item, other)) continue;
             if (item->tag == CLASS_ITEM_METHOD && other->method.is_static != item->method.is_static) continue;
-            if (j < i) first = false;
+            if (it.index < i) first = false;
             if (other_func->has_body) {
                 if (!implementation) {
                     implementation = other_func;
@@ -1668,15 +1742,15 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         if (!func || item->tag == CLASS_ITEM_CONSTRUCTOR || !bindable_method(item)) continue;
         bool first = true, is_static = item->method.is_static;
         u32 bodies = 0;
-        for (isize j = 0; j < count; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
             if (!overloadable(other) || !same_member(item, other) || other->method.is_static != is_static) continue;
-            if (j < i) first = false;
+            if (it.index < i) first = false;
             if (other->method.func.has_body) bodies++;
         }
         if (!first || bodies < 2) continue;
-        for (isize j = 0; j < count; j++) {
-            ClassItem const* other = vec_class_item_at(&my items, j);
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
             if (!overloadable(other) || !same_member(item, other) || other->method.is_static != is_static) continue;
             error_ctx_error_d(errs, other->method.name_span, 2393, "Duplicate function implementation.");
         }

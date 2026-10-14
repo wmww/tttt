@@ -1,0 +1,265 @@
+ttttLargeDeclarationDuplicates.ts(32,5): error TS2394: This overload signature is not compatible with its implementation signature.
+ttttLargeDeclarationDuplicates.ts(33,5): error TS2389: Function implementation name must be 'n'.
+ttttLargeDeclarationDuplicates.ts(35,5): error TS2393: Duplicate function implementation.
+ttttLargeDeclarationDuplicates.ts(36,5): error TS2393: Duplicate function implementation.
+ttttLargeDeclarationDuplicates.ts(37,12): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLargeDeclarationDuplicates.ts(39,12): error TS2388: Function overload must not be static.
+ttttLargeDeclarationDuplicates.ts(40,5): error TS2387: Function overload must be static.
+ttttLargeDeclarationDuplicates.ts(43,17): error TS2808: A get accessor must be at least as accessible as the setter
+ttttLargeDeclarationDuplicates.ts(44,16): error TS2808: A get accessor must be at least as accessible as the setter
+ttttLargeDeclarationDuplicates.ts(47,5): error TS2300: Duplicate identifier 'prop'.
+ttttLargeDeclarationDuplicates.ts(48,5): error TS2300: Duplicate identifier 'prop'.
+ttttLargeDeclarationDuplicates.ts(48,5): error TS2717: Subsequent property declarations must have the same type.  Property 'prop' must be of type 'number', but here has type 'string'.
+ttttLargeDeclarationDuplicates.ts(49,5): error TS2300: Duplicate identifier 'meth'.
+ttttLargeDeclarationDuplicates.ts(50,5): error TS2300: Duplicate identifier 'meth'.
+ttttLargeDeclarationDuplicates.ts(51,5): error TS2393: Duplicate function implementation.
+ttttLargeDeclarationDuplicates.ts(52,5): error TS2393: Duplicate function implementation.
+ttttLargeDeclarationDuplicates.ts(56,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLargeDeclarationDuplicates.ts(82,5): error TS2300: Duplicate identifier 'a'.
+ttttLargeDeclarationDuplicates.ts(83,5): error TS2300: Duplicate identifier 'a'.
+ttttLargeDeclarationDuplicates.ts(83,5): error TS2717: Subsequent property declarations must have the same type.  Property 'a' must be of type 'string', but here has type 'number'.
+ttttLargeDeclarationDuplicates.ts(84,5): error TS2300: Duplicate identifier 'b'.
+ttttLargeDeclarationDuplicates.ts(84,5): error TS2687: All declarations of 'b' must have identical modifiers.
+ttttLargeDeclarationDuplicates.ts(85,5): error TS2300: Duplicate identifier 'b'.
+ttttLargeDeclarationDuplicates.ts(85,5): error TS2687: All declarations of 'b' must have identical modifiers.
+ttttLargeDeclarationDuplicates.ts(85,5): error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'string | undefined', but here has type 'string'.
+ttttLargeDeclarationDuplicates.ts(86,14): error TS2300: Duplicate identifier 'c'.
+ttttLargeDeclarationDuplicates.ts(86,14): error TS2687: All declarations of 'c' must have identical modifiers.
+ttttLargeDeclarationDuplicates.ts(87,5): error TS2300: Duplicate identifier 'c'.
+ttttLargeDeclarationDuplicates.ts(87,5): error TS2687: All declarations of 'c' must have identical modifiers.
+ttttLargeDeclarationDuplicates.ts(88,5): error TS2300: Duplicate identifier 'm'.
+ttttLargeDeclarationDuplicates.ts(89,5): error TS2300: Duplicate identifier 'm'.
+ttttLargeDeclarationDuplicates.ts(90,5): error TS2300: Duplicate identifier 'o'.
+ttttLargeDeclarationDuplicates.ts(91,5): error TS2300: Duplicate identifier 'o'.
+ttttLargeDeclarationDuplicates.ts(91,5): error TS2386: Overload signatures must all be optional or required.
+ttttLargeDeclarationDuplicates.ts(92,5): error TS2300: Duplicate identifier 'o'.
+ttttLargeDeclarationDuplicates.ts(96,5): error TS2783: 'pad0' is specified more than once, so this usage will be overwritten.
+ttttLargeDeclarationDuplicates.ts(117,5): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttLargeDeclarationDuplicates.ts(118,9): error TS2300: Duplicate identifier 'g'.
+ttttLargeDeclarationDuplicates.ts(119,9): error TS1118: An object literal cannot have multiple get/set accessors with the same name.
+ttttLargeDeclarationDuplicates.ts(119,9): error TS2300: Duplicate identifier 'g'.
+ttttLargeDeclarationDuplicates.ts(122,5): error TS2300: Duplicate identifier 'm'.
+ttttLargeDeclarationDuplicates.ts(123,5): error TS2300: Duplicate identifier 'm'.
+ttttLargeDeclarationDuplicates.ts(127,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttLargeDeclarationDuplicates.ts (43 errors) ====
+    // Declarations past the member counts where the checker indexes members by name (16: the class's namesake chains,
+    // the members builder, the duplicate tables, object literal builders): duplicates, overloads, accessor pairs, joined
+    // properties and computed keys behave as in small ones
+    const k = "kk";
+    declare const sym: unique symbol;
+    
+    class Big {
+        pad0 = 0;
+        pad1 = 1;
+        pad2 = 2;
+        pad3 = 3;
+        pad4 = 4;
+        pad5 = 5;
+        pad6 = 6;
+        pad7 = 7;
+        pad8 = 8;
+        pad9 = 9;
+        pad10 = 10;
+        pad11 = 11;
+        pad12 = 12;
+        pad13 = 13;
+        pad14 = 14;
+        pad15 = 15;
+        pad16 = 16;
+        pad17 = 17;
+        pad18 = 18;
+        pad19 = 19;
+        m(x: string): void;
+        m(x: number): void;
+        m(x: any) {}
+        other() {}
+        n(x: string): void;
+        ~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 ttttLargeDeclarationDuplicates.ts:34:5: The implementation signature is declared here.
+        n2() {}
+        ~~
+!!! error TS2389: Function implementation name must be 'n'.
+        n(x: number) {}
+        dup() {}
+        ~~~
+!!! error TS2393: Duplicate function implementation.
+        dup() {}
+        ~~~
+!!! error TS2393: Duplicate function implementation.
+        static m(x: string): void;
+               ~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        m2(x: string): void;
+        static m2(x: number): void;
+               ~~
+!!! error TS2388: Function overload must not be static.
+        m2(x: any) {}
+        ~~
+!!! error TS2387: Function overload must be static.
+        get acc() { return 1; }
+        set acc(v: number) {}
+        private get vis() { return 1; }
+                    ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+        public set vis(v: number) {}
+                   ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+        joined = 1;
+        get joined2() { return 1; }
+        prop = 1;
+        ~~~~
+!!! error TS2300: Duplicate identifier 'prop'.
+        prop = "s";
+        ~~~~
+!!! error TS2300: Duplicate identifier 'prop'.
+        ~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'prop' must be of type 'number', but here has type 'string'.
+!!! related TS6203 ttttLargeDeclarationDuplicates.ts:47:5: 'prop' was also declared here.
+        meth() {}
+        ~~~~
+!!! error TS2300: Duplicate identifier 'meth'.
+        meth = 1;
+        ~~~~
+!!! error TS2300: Duplicate identifier 'meth'.
+        [sym]() {}
+        ~~~~~
+!!! error TS2393: Duplicate function implementation.
+        [sym]() {}
+        ~~~~~
+!!! error TS2393: Duplicate function implementation.
+        get [k + ""]() { return 1; }
+        abstractish?(): void;
+        abstractish?(x: number): void;
+        late(): void;
+        ~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        pad19b = 1;
+        late() {}
+    }
+    
+    interface BigI {
+        pad0: number;
+        pad1: number;
+        pad2: number;
+        pad3: number;
+        pad4: number;
+        pad5: number;
+        pad6: number;
+        pad7: number;
+        pad8: number;
+        pad9: number;
+        pad10: number;
+        pad11: number;
+        pad12: number;
+        pad13: number;
+        pad14: number;
+        pad15: number;
+        pad16: number;
+        pad17: number;
+        pad18: number;
+        pad19: number;
+        a: string;
+        ~
+!!! error TS2300: Duplicate identifier 'a'.
+        a: number;
+        ~
+!!! error TS2300: Duplicate identifier 'a'.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'a' must be of type 'string', but here has type 'number'.
+!!! related TS6203 ttttLargeDeclarationDuplicates.ts:82:5: 'a' was also declared here.
+        b?: string;
+        ~
+!!! error TS2300: Duplicate identifier 'b'.
+        ~
+!!! error TS2687: All declarations of 'b' must have identical modifiers.
+        b: string;
+        ~
+!!! error TS2300: Duplicate identifier 'b'.
+        ~
+!!! error TS2687: All declarations of 'b' must have identical modifiers.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'string | undefined', but here has type 'string'.
+!!! related TS6203 ttttLargeDeclarationDuplicates.ts:84:5: 'b' was also declared here.
+        readonly c: string;
+                 ~
+!!! error TS2300: Duplicate identifier 'c'.
+                 ~
+!!! error TS2687: All declarations of 'c' must have identical modifiers.
+        c: string;
+        ~
+!!! error TS2300: Duplicate identifier 'c'.
+        ~
+!!! error TS2687: All declarations of 'c' must have identical modifiers.
+        m(): void;
+        ~
+!!! error TS2300: Duplicate identifier 'm'.
+        m: number;
+        ~
+!!! error TS2300: Duplicate identifier 'm'.
+        o(): void;
+        ~
+!!! error TS2300: Duplicate identifier 'o'.
+        o?(x: number): void;
+        ~
+!!! error TS2300: Duplicate identifier 'o'.
+        ~
+!!! error TS2386: Overload signatures must all be optional or required.
+        o: () => void;
+        ~
+!!! error TS2300: Duplicate identifier 'o'.
+    }
+    
+    const big = {
+        pad0: 0,
+        ~~~~~~~
+!!! error TS2783: 'pad0' is specified more than once, so this usage will be overwritten.
+!!! related TS2785 ttttLargeDeclarationDuplicates.ts:124:5: This spread always overwrites this property.
+        pad1: 1,
+        pad2: 2,
+        pad3: 3,
+        pad4: 4,
+        pad5: 5,
+        pad6: 6,
+        pad7: 7,
+        pad8: 8,
+        pad9: 9,
+        pad10: 10,
+        pad11: 11,
+        pad12: 12,
+        pad13: 13,
+        pad14: 14,
+        pad15: 15,
+        pad16: 16,
+        pad17: 17,
+        pad18: 18,
+        pad19: 19,
+        a: 1,
+        a: 2,
+        ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+        get g() { return 1; },
+            ~
+!!! error TS2300: Duplicate identifier 'g'.
+        get g() { return 2; },
+            ~
+!!! error TS1118: An object literal cannot have multiple get/set accessors with the same name.
+            ~
+!!! error TS2300: Duplicate identifier 'g'.
+        s: 1,
+        get s() { return 1; },
+        m() {},
+        ~
+!!! error TS2300: Duplicate identifier 'm'.
+        m: 1,
+        ~
+!!! error TS2300: Duplicate identifier 'm'.
+        ...{ pad0: "x" },
+        pad1: "y",
+    };
+    const n: number = big.pad0;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
