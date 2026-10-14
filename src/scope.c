@@ -397,6 +397,33 @@ SymbolDecl const* symbol_find_decl(Symbol const* me, SymbolDeclKind kind) {
 VecSpan symbol_declaration_spans(Symbol const* me) {
     VecSpan ret = vec_span_init();
     if (!me) return ret;
+    // A global's declarations in `declare global` blocks come after those of scripts, whatever the file order (tsc's
+    // initializeTypeChecker merges every script's locals into the globals before the global augmentations; binder_link()
+    // does too, but a program sharing its libs has merged the libs' augmentations already)
+    u32 last_script = 0;
+    bool deferred = false;
+    for (u32 i = 0; i < my decl_count; i++) {
+        SourceFile const* file = span_source(my decls[i].full);
+        bool in_augmentation = my decls[i].block && my decls[i].block->kind == SCOPE_GLOBAL_AUGMENTATION;
+        if (in_augmentation) deferred = true;
+        else if (deferred && file && !file->is_module) last_script = i;
+    }
+    if (last_script) {
+        SymbolDecl* decls = malloc(sizeof(SymbolDecl) * my decl_count);
+        u32 len = 0;
+        for (u32 j = 0; j <= last_script; j++) {
+            if (!(my decls[j].block && my decls[j].block->kind == SCOPE_GLOBAL_AUGMENTATION)) decls[len++] = my decls[j];
+        }
+        for (u32 j = 0; j <= last_script; j++) {
+            if (my decls[j].block && my decls[j].block->kind == SCOPE_GLOBAL_AUGMENTATION) decls[len++] = my decls[j];
+        }
+        for (u32 j = last_script + 1; j < my decl_count; j++) decls[len++] = my decls[j];
+        Symbol reordered = *me;
+        reordered.decls = decls;
+        ret = symbol_declaration_spans(&reordered);
+        free(decls);
+        return ret;
+    }
     // In tsc's order: its binder binds the function declarations of a block before its other statements
     // (bindEachFunctionsFirst). Declarations of the same block are grouped (the file, without a block)
     #define same_block(a, b) ((a).block && (b).block ? (a).block == (b).block : span_source((a).full) == span_source((b).full))
