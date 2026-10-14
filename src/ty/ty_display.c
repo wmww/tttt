@@ -3866,6 +3866,26 @@ static bool conditional_elided(TyDisplay d, Ty const* ty) {
     return depth > 10;
 }
 
+// A conditional type's branch (tsc's typeToTypeNodeOrCircularityElision): a union printed inside itself is the cyclic
+// structure placeholder, `any` (TS5088 in declaration emit), which ends a recursive conditional whose instantiations
+// come back to the same union
+static void display_branch(Checker* me, TyDisplay d, Ty const* branch) {
+    if (branch->kind != TY_UNION) {
+        ty_display(me, d, branch);
+        return;
+    }
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        if (i->ty != branch) continue;
+        if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
+        approx_add(d, 3);
+        out(d, truncating(d) ? c_sv("...") : c_sv("any"));
+        return;
+    }
+    TyDisplayVisit visit = { .ty = branch, .outer = d.visiting };
+    d.visiting = &visit;
+    ty_display(me, d, branch);
+}
+
 static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     // Eleven instantiations of one conditional type deep, the next is the elided information placeholder (tsc's
     // visitAndTransformType counts conditional types by their root's node); `any` without truncation (the
@@ -3898,9 +3918,9 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     display_parenthesized_if(me, extends_d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL &&
         !shows_alias(d, ty->conditional.extends));
     out_lit(d, " ? ");
-    ty_display(me, d, ty_conditional_branch(me, ty, true));
+    display_branch(me, d, ty_conditional_branch(me, ty, true));
     out_lit(d, " : ");
-    ty_display(me, d, ty_conditional_branch(me, ty, false));
+    display_branch(me, d, ty_conditional_branch(me, ty, false));
 }
 
 

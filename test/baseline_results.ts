@@ -1261,7 +1261,7 @@ const baselines = {
         types: true,
     },
     'arrayFakeFlatNoCrashInferenceDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
