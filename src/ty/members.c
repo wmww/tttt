@@ -116,6 +116,10 @@ typedef struct MembersBuilder {
     Members const* same_names;
     // Only the members a class names syntactically, not the computed (late-bound) ones: see early_static_members()
     bool skip_computed;
+    // Only the late-bound members, after the early-bound ones of every declaration were added (tsc's
+    // getResolvedMembersOrExportsOfSymbol: combineSymbolTables merges a late symbol into the early one of its name,
+    // the early declarations first): see resolve_declared_members()
+    bool only_late;
     // Past BUILDER_INDEXED props, where each name is among `props` (builder_find_prop(): scanning them for each member
     // added is quadratic on large interfaces), built lazily: the first `indexed` props are in it. What reorders `props`
     // calls builder_unindex() (replacing a prop by one of the same name keeps it valid)
@@ -516,9 +520,15 @@ static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, void 
     return *slot;
 }
 
+// A member of an interface or type literal named by an entity name: late bound (tsc's hasLateBindableName)
+static bool interface_member_is_late(InterfaceMember const* i) {
+    return i->key.tag == INTERFACE_KEY_EXPR && i->key.expr && expr_is_entity_name(i->key.expr);
+}
+
 static void builder_add_interface_member(
     Checker* me, MembersBuilder* builder, InterfaceMember const* i, LowerCtx ctx, Symbol const* parent
 ) {
+    if (builder->only_late && !interface_member_is_late(i)) return;
     {
         switch (i->key.tag) {
             case INTERFACE_KEY_NAME:
@@ -530,7 +540,7 @@ static void builder_add_interface_member(
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
                     // (Late bound: not among the early members, see early_declared_members())
-                    if (builder->skip_computed && i->key.expr && expr_is_entity_name(i->key.expr)) break;
+                    if (builder->skip_computed && interface_member_is_late(i)) break;
                     key = ty_expr_type(me, i->key.expr);
                     name = ty_literal_name(me, key);
                     if (!name) break;
@@ -1231,6 +1241,32 @@ static bool computed_key_may_name(Expr const* key) {
     return expr_is_entity_name(key);
 }
 
+// A class member named by an entity name: late bound (tsc's hasLateBindableName; a literal key is bound early, by value)
+static bool class_item_is_late(ClassItem const* item) {
+    Expr const* key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : nullptr;
+    return key && computed_key_may_name(key) && !computed_key_early_name(key, nullptr);
+}
+
+// The meanings of a member's symbol, as tsc's binder flags them: 1 property, 2 method, 4 get, 8 set
+static u32 class_item_meanings(ClassItem const* item) {
+    if (item->tag == CLASS_ITEM_FIELD) return item->field.is_auto_accessor ? 4 | 8 : 1;
+    return item->method.accessor == CLASS_ACCESSOR_GET ? 4 : item->method.accessor == CLASS_ACCESSOR_SET ? 8 : 2;
+}
+
+static u32 prop_meanings(Prop const* prop) {
+    if (prop->flags & PROP_METHOD) return 2;
+    if (!(prop->flags & PROP_ACCESSOR)) return 1;
+    return (prop->flags & PROP_CLASS_GETTER ? 4 : 0) | (prop->flags & PROP_READONLY ? 0 : 8);
+}
+
+// What the meanings exclude (TypeScript 7: a property excludes methods, a method everything but methods, an accessor
+// everything but the other accessor and properties)
+static u32 meanings_excluded(u32 meanings) {
+    if (meanings & 2) return 1 | 4 | 8;
+    if (meanings == 1) return 2;
+    return 2 | (meanings & 4 ? 4 : 0) | (meanings & 8 ? 8 : 0);
+}
+
 static Prop* builder_add_class_prop_joined(
     Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item,
     Prop** joined
@@ -1240,7 +1276,7 @@ static Prop* builder_add_class_prop_joined(
     Ty const* key = nullptr;
     if (computed_key) {
         // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
-        if (!computed_key_may_name(computed_key) || builder->skip_computed) return nullptr;
+        if (!computed_key_may_name(computed_key) || (builder->skip_computed && class_item_is_late(item))) return nullptr;
         bool is_number = false;
         key = ty_expr_type(me, computed_key);
         name = ty_property_name_of_key(me, key, &is_number);
@@ -1265,6 +1301,13 @@ static Prop* builder_add_class_prop_joined(
             !existing->decl->parameter_property && !existing->decl->function
         ) {
             joins = true;
+        }
+        // A late-bound member merges into the early symbol of its name unless one excludes the other (tsc's
+        // combineSymbolTables: mergeSymbol, after the early members of every declaration, see
+        // builder_add_declarations())
+        if (builder->only_late) {
+            joins = !(prop_meanings(existing) & meanings_excluded(class_item_meanings(item))) &&
+                !(class_item_meanings(item) & meanings_excluded(prop_meanings(existing)));
         }
         if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         if (joins && joined) *joined = existing;
@@ -1472,6 +1515,8 @@ static void builder_add_class_items(
     Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side, LowerCtx ctx, Symbol const* parent
 ) {
     for_each (i, vec_class_item, &class_decl->items) {
+        // (The late-bound members in a pass of their own, see resolve_declared_members(); an interface member's own)
+        if (builder->only_late && i->tag != CLASS_ITEM_INTERFACE_MEMBER && !class_item_is_late(i)) continue;
         switch (i->tag) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.is_static != static_side) break;
@@ -1599,17 +1644,30 @@ static void builder_add_class_items(
                     if (!count) break;
                     // After an interface's method of its name (the class merges with it): one method, the interface's
                     // signatures then the class's (tsc's getSignaturesOfSymbol over the symbol's declarations)
+                    // A late-bound method after the early method of its name (the early declarations of every
+                    // declaration first): one method too, the early signatures then the late ones (mergeSymbol)
                     Prop* interface_method = !i->method.computed_key && !span_valid(class_item_private_name(i)) ?
                         builder_find_prop(builder, checker_atom(me, cstr_sv(&i->method.name_string))) : nullptr;
-                    if (interface_method && (interface_method->flags & PROP_METHOD) && interface_method->decl->node &&
-                        interface_method->decl->node->tag == TYPE_CALLABLE
+                    if (builder->only_late) {
+                        interface_method = nullptr;
+                        Atom const* late_name = ty_member_name(me, &i->method.name_string, i->method.computed_key);
+                        Prop* early = late_name ? builder_find_prop(builder, late_name) : nullptr;
+                        if (early && (early->flags & PROP_METHOD) &&
+                            (early->decl->node ? early->decl->node->tag == TYPE_CALLABLE : early->decl->function != nullptr)
+                        ) {
+                            interface_method = early;
+                        }
+                    }
+                    if (interface_method && (interface_method->flags & PROP_METHOD) &&
+                        (builder->only_late || (interface_method->decl->node && interface_method->decl->node->tag == TYPE_CALLABLE))
                     ) {
                         u32 had = prop_decl_rare(interface_method->decl)->overload_count ? prop_decl_rare(interface_method->decl)->overload_count : 1;
                         FunctionImpl const** all = arena_new_n(&my arena, FunctionImpl const*, had + count);
                         if (prop_decl_rare(interface_method->decl)->overload_count) {
                             memcpy(all, prop_decl_rare(interface_method->decl)->overloads, sizeof(FunctionImpl const*) * had);
                         } else {
-                            all[0] = interface_method->decl->node->callable->function;
+                            all[0] = interface_method->decl->node ? interface_method->decl->node->callable->function :
+                                interface_method->decl->function;
                         }
                         memcpy(all + had, functions, sizeof(FunctionImpl const*) * count);
                         prop_decl_rare_mut(me, interface_method->decl)->overloads = all;
@@ -1725,7 +1783,17 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     // (First, so that it wins over a declared `static prototype`; builder_prototype_last() moves it)
     builder_push(builder, props, prototype);
 
-    builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
+    if (builder->skip_computed) {
+        builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
+    } else {
+        // The early-bound members, then the late-bound ones (see resolve_declared_members())
+        builder->skip_computed = true;
+        builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
+        builder->skip_computed = false;
+        builder->only_late = true;
+        builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
+        builder->only_late = false;
+    }
     // A static member and a type the class's namespace exports of its name are one symbol in tsc (both in the class's
     // exports): symbols baseline only, the type stays a type. Same for an expando assignment of a static property
     if (instance_decl->exports) {
@@ -2595,17 +2663,23 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
             }
             builder.index_pass = index_signatures ? 1 : 0;
-            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
-                if (node->kind == SYMBOL_DECL_INTERFACE) {
-                    InterfaceDecl const* interface_decl = node->node;
-                    check(interface_decl->type.tag == TYPE_INTERFACE);
-                    builder.decl_group = decl_group_of(me, decl, node);
-                    builder_add_interface(me, &builder, &interface_decl->type.interface, ctx, decl);
-                    builder.decl_group = nullptr;
-                } else if (node->kind == SYMBOL_DECL_CLASS) {
-                    builder_add_class_items(me, &builder, node->node, false, ctx, decl);
+            // The early-bound members of every declaration, then the late-bound ones (builder_add_declarations())
+            for (u32 pass = 0; pass < 2; pass++) {
+                builder.skip_computed = pass == 0;
+                builder.only_late = pass == 1;
+                for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                    if (node->kind == SYMBOL_DECL_INTERFACE) {
+                        InterfaceDecl const* interface_decl = node->node;
+                        check(interface_decl->type.tag == TYPE_INTERFACE);
+                        builder.decl_group = decl_group_of(me, decl, node);
+                        builder_add_interface(me, &builder, &interface_decl->type.interface, ctx, decl);
+                        builder.decl_group = nullptr;
+                    } else if (node->kind == SYMBOL_DECL_CLASS) {
+                        builder_add_class_items(me, &builder, node->node, false, ctx, decl);
+                    }
                 }
             }
+            builder.skip_computed = builder.only_late = false;
             if (index_signatures) {
                 TyObjectState* state = object_state(ty);
                 if (state && state->members_state == LAZY_STATE_IN_FLIGHT) {
@@ -3933,7 +4007,13 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 builder_add_callable(me, &builder, ty->anonymous.node->callable->function, ty->anonymous.ctx);
             } else {
                 check(ty->anonymous.node->tag == TYPE_INTERFACE);
+                // (The early-bound members, then the late-bound ones: see resolve_declared_members())
+                builder.skip_computed = true;
                 builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
+                builder.skip_computed = false;
+                builder.only_late = true;
+                builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
+                builder.only_late = false;
                 // (tsc 6's getNamedMembers puts the late-bound ones back in declaration order: the members are in it
                 // already unless there are some)
                 bool late = false;

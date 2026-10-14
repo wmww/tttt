@@ -1806,6 +1806,10 @@ bool ty_expr_is_context_sensitive(Expr const* expr);
 bool ty_function_is_context_sensitive(FunctionImpl const* function);
 // The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
+/// The declarations of an object literal member's symbol, as tsgo's binder and late binding make it (the early
+/// members of a name first, then the late-bound ones that merge into it), *first its first member. Only the member
+/// itself when it is alone, empty for a spread
+VecSpan ty_object_literal_member_symbol(Checker* me, Expr const* object, ObjectExprItem const* item, ObjectExprItem const** first);
 // `x as const`
 typedef struct AsTypeExpr AsTypeExpr;
 bool as_type_is_const(AsTypeExpr const* as_type);

@@ -3987,12 +3987,16 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
 // symbol the first member of its name made unless that symbol has a meaning it excludes, then it is a symbol of its own
 // that no later member finds. A property excludes methods, a method everything, an accessor methods and the same
 // accessor; an accessor conflicting with a member that isn't the other accessor marks the symbol as both accessors.
-// Members with a computed name that isn't a literal are late bound, symbols of their own
+// Members with a computed name that is an entity name are late bound after all the others (tsgo's lateBindMember):
+// among themselves like the binder, by the name their key's type gives, then each late symbol merges into the early
+// one of its name unless the early one excludes it (combineSymbolTables), the early members first. Any other
+// computed name is a symbol of its own
 enum { LIT_SYM_PROPERTY = 1, LIT_SYM_METHOD = 2, LIT_SYM_GET = 4, LIT_SYM_SET = 8 };
 typedef struct LiteralSymbol {
     Atom const* name;
     uint8_t flags;
     bool in_table;
+    bool late; // Made by a late-bound member
     u32 first; // Item indices
     i32 getter, setter; // -1: none
     u32 member_start, member_count; // Its members' item indices in LiteralBinding.members, in order
@@ -4015,10 +4019,28 @@ typedef struct LiteralBinding {
 static Atom const* literal_item_bound_name(Checker* me, ObjectExprItem const* item) {
     if (item->tag == OBJECT_ITEM_SPREAD) return nullptr;
     if (!item->computed_key) return checker_atom(me, cstr_sv(&item->name_string));
+    // (A literal key is bound by its value, `[-1]` and `[+1]` as written: tsc's getDeclarationName)
     Expr const* key = item->computed_key;
-    if (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER) || expr_is_perenthisized(key)) return nullptr;
+    if (!computed_key_early_name(key, nullptr)) return nullptr;
     bool is_number = false;
-    return ty_property_name_of_key(me, ty_expr_type(me, key), &is_number);
+    if (key->tag == EXPR_LITERAL) return ty_property_name_of_key(me, ty_expr_type(me, key), &is_number);
+    Atom const* text = ty_property_name_of_key(me, ty_expr_type(me, &key->unary_op->expr), &is_number);
+    if (!text) return nullptr;
+    cstr name = cstr_d(key->unary_op->op == UNARY_OP_MINUS ? "-" : "+", atom_sv(text));
+    Atom const* ret = checker_atom(me, cstr_sv(&name));
+    cstr_drop(&name);
+    return ret;
+}
+
+// A member whose computed key is an entity name: late bound (tsc's hasLateBindableName)
+static bool literal_item_is_late(ObjectExprItem const* item) {
+    return item->tag != OBJECT_ITEM_SPREAD && item->computed_key && !expr_is_perenthisized(item->computed_key) &&
+        !computed_key_early_name(item->computed_key, nullptr) && expr_is_entity_name(item->computed_key);
+}
+
+static uint8_t literal_item_excludes(uint8_t includes) {
+    return includes == LIT_SYM_PROPERTY ? LIT_SYM_METHOD : includes == LIT_SYM_METHOD ? 0xF :
+        includes == LIT_SYM_GET ? LIT_SYM_METHOD | LIT_SYM_GET : LIT_SYM_METHOD | LIT_SYM_SET;
 }
 
 static uint8_t literal_item_symbol_flags(ObjectExprItem const* item) {
@@ -4041,6 +4063,8 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
     r->members = small ? r->members_buf : malloc(sizeof(u32) * n);
     #define ret (*r)
     // (Without a name written twice every member is a symbol of its own: none are made)
+    // (Nor without a late-bound member among others, whose name its key's type gives)
+    bool any_late = false;
     if (small) {
         bool repeated = false;
         for (u32 k = 0; k < n; k++) {
@@ -4048,8 +4072,9 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
             ret.names[k] = name;
             ret.symbol_of[k] = UINT32_MAX;
             for (u32 j = 0; j < k && name && !repeated; j++) repeated = ret.names[j] == name;
+            any_late |= literal_item_is_late(&object->data[k]);
         }
-        if (!repeated) return;
+        if (!repeated && !(any_late && n > 1)) return;
     }
     // The table: symbol indices by name (open addressing on the atom)
     // (A small literal searches its symbols instead)
@@ -4064,10 +4089,12 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
         Atom const* name = small ? ret.names[k] : literal_item_bound_name(me, item);
         ret.names[k] = name;
         if (!name && !(item->computed_key && item->tag != OBJECT_ITEM_SPREAD)) continue;
+        if (literal_item_is_late(item)) {
+            any_late = true;
+            continue;
+        }
         uint8_t includes = literal_item_symbol_flags(item);
-        uint8_t excludes = includes == LIT_SYM_PROPERTY ? LIT_SYM_METHOD :
-            includes == LIT_SYM_METHOD ? 0xF :
-            includes == LIT_SYM_GET ? LIT_SYM_METHOD | LIT_SYM_GET : LIT_SYM_METHOD | LIT_SYM_SET;
+        uint8_t excludes = literal_item_excludes(includes);
         u32* slot = nullptr;
         if (name && !table) {
             small_slot = UINT32_MAX;
@@ -4102,16 +4129,74 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
         if (item->tag == OBJECT_ITEM_SETTER && symbol->setter < 0) symbol->setter = (i32)k;
     }
     free(table);
+    // The late-bound members (names aren't kept: the checker asks the key's type)
+    u32 early_count = ret.count;
+    for (u32 k = 0; any_late && k < n; k++) {
+        ObjectExprItem const* item = &object->data[k];
+        if (!literal_item_is_late(item)) continue;
+        bool is_number = false;
+        Atom const* name = ty_property_name_of_key(me, ty_expr_type(me, item->computed_key), &is_number);
+        uint8_t includes = literal_item_symbol_flags(item);
+        LiteralSymbol* existing = nullptr;
+        for (u32 j = early_count; name && j < ret.count && !existing; j++) {
+            if (ret.symbols[j].in_table && ret.symbols[j].name == name) existing = &ret.symbols[j];
+        }
+        if (existing && !(existing->flags & literal_item_excludes(includes))) {
+            existing->flags |= includes;
+            ret.symbol_of[k] = (u32)(existing - ret.symbols);
+        } else {
+            // (A conflicting one is a symbol of its own, tsgo's lateBindMember; an accessor makes the symbol both)
+            if (existing && (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) &&
+                (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) != (includes & (LIT_SYM_GET | LIT_SYM_SET))
+            ) {
+                existing->flags |= LIT_SYM_GET | LIT_SYM_SET;
+            }
+            ret.symbols[ret.count] = (LiteralSymbol){
+                .name = name, .flags = includes, .in_table = name && !existing, .late = true, .first = k, .getter = -1, .setter = -1,
+            };
+            ret.symbol_of[k] = ret.count++;
+        }
+        LiteralSymbol* symbol = &ret.symbols[ret.symbol_of[k]];
+        symbol->member_count++;
+        if (item->tag == OBJECT_ITEM_GETTER && symbol->getter < 0) symbol->getter = (i32)k;
+        if (item->tag == OBJECT_ITEM_SETTER && symbol->setter < 0) symbol->setter = (i32)k;
+    }
+    // Each late symbol merges into the early one of its name, unless that one excludes it (mergeSymbol)
+    for (u32 l = early_count; l < ret.count; l++) {
+        LiteralSymbol* late = &ret.symbols[l];
+        if (!late->in_table || !late->member_count) continue;
+        LiteralSymbol* early = nullptr;
+        for (u32 j = 0; j < early_count && !early; j++) {
+            if (ret.symbols[j].in_table && ret.symbols[j].name == late->name) early = &ret.symbols[j];
+        }
+        if (!early) continue;
+        uint8_t excluded = 0;
+        for (uint8_t bit = 1; bit <= LIT_SYM_SET; bit <<= 1) {
+            if (late->flags & bit) excluded |= literal_item_excludes(bit);
+        }
+        if (early->flags & excluded) continue;
+        early->flags |= late->flags;
+        if (early->getter < 0) early->getter = late->getter;
+        if (early->setter < 0) early->setter = late->setter;
+        early->member_count += late->member_count;
+        late->member_count = 0;
+        for (u32 k = 0; k < n; k++) {
+            if (ret.symbol_of[k] == l) ret.symbol_of[k] = (u32)(early - ret.symbols);
+        }
+    }
     u32 offset = 0;
     for (u32 s = 0; s < ret.count; s++) {
         ret.symbols[s].member_start = offset;
         offset += ret.symbols[s].member_count;
         ret.symbols[s].member_count = 0;
     }
-    for (u32 k = 0; k < n; k++) {
-        if (ret.symbol_of[k] == UINT32_MAX) continue;
-        LiteralSymbol* symbol = &ret.symbols[ret.symbol_of[k]];
-        ret.members[symbol->member_start + symbol->member_count++] = k;
+    // (The early members of a symbol first, then the late-bound ones)
+    for (u32 pass = 0; pass < (any_late ? 2u : 1u); pass++) {
+        for (u32 k = 0; k < n; k++) {
+            if (ret.symbol_of[k] == UINT32_MAX || (any_late && literal_item_is_late(&object->data[k]) != (pass == 1))) continue;
+            LiteralSymbol* symbol = &ret.symbols[ret.symbol_of[k]];
+            ret.members[symbol->member_start + symbol->member_count++] = k;
+        }
     }
     #undef ret
 }
@@ -4365,7 +4450,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .setter = setter,
             .methods = methods,
             .method_count = method_count,
-            .name_span = i->name_span,
+            // (Named as its symbol's first declaration writes it: `{ kk: 1, [k]: 2 }` is `kk`)
+            .name_span = symbol && member_items[0] != item_index && literal_item_is_late(i) ? object->data[member_items[0]].name_span : i->name_span,
             .decl_spans = decl_span,
             .decl_span_count = decl_span_count,
             .name_is_value = name_is_value,
@@ -4438,6 +4524,24 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     }
     signature_resolve(me, sig);
     return sig->param_count ? sig->params[0].type : any_type(me);
+}
+
+VecSpan ty_object_literal_member_symbol(Checker* me, Expr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {
+    VecSpan ret = vec_span_init();
+    *first = item;
+    if (item->tag == OBJECT_ITEM_SPREAD) return ret;
+    LiteralBinding binding;
+    literal_bind(me, &object->object, &binding);
+    u32 index = (u32)(item - object->object.data);
+    LiteralSymbol const* symbol = binding.symbol_of[index] != UINT32_MAX ? &binding.symbols[binding.symbol_of[index]] : nullptr;
+    if (symbol && symbol->member_count) {
+        *first = &object->object.data[binding.members[symbol->member_start]];
+        for (u32 k = 0; k < symbol->member_count; k++) vec_span_push(&ret, object->object.data[binding.members[symbol->member_start + k]].span);
+    } else {
+        vec_span_push(&ret, item->span);
+    }
+    literal_binding_drop(&binding);
+    return ret;
 }
 
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item) {

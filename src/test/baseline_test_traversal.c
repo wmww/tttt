@@ -897,10 +897,12 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 }
             }
             if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, span_valid(my declaration) ? my declaration : my key.span);
+            // (Named as its symbol's first declaration writes it: a late-bound member merged into an early one is that one)
+            Span written = overloads && span_valid(overloads->decl->name_span) ? overloads->decl->name_span : my key.span;
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my key.span,
-                .text = member_text(ctx, ctx->member_container, scope, span_sv(my key.span), false),
+                .text = member_text(ctx, ctx->member_container, scope, span_sv(written), false),
             }, my key.expr);
             // (Overloads: optional if any of them is, the symbol's flags)
             baseline_test_case_add_type(ctx, my key.span, overloads ? optional_member_type(prop_type(current_checker, overloads), overloads->flags & PROP_OPTIONAL) :
@@ -1741,6 +1743,29 @@ static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const*
     return len;
 }
 
+// A late-bound member (an entity name key) merged into the early member of its name, or into another late-bound one:
+// the declarations of the checker's member, which has them in tsc's order (the early ones first, see
+// resolve_declared_members()), named as its first declaration writes it. False when it is alone
+static bool late_member_declarations(ClassItem const* me, BaselineTestCase* ctx, VecSpan* declarations, Span* written_name) {
+    Expr const* key = me->tag == CLASS_ITEM_METHOD ? me->method.computed_key : me->field.computed_key;
+    if (!key || computed_key_early_name(key, nullptr) || !expr_is_entity_name(key) || !ctx->class_symbol) return false;
+    Checker* checker = current_checker;
+    bool is_number = false;
+    Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
+    Ty const* owner = class_item_is_static((ClassItem*)me) ? ty_static_type_of(checker, ctx->class_symbol) :
+        ty_declared_type_of(checker, ctx->class_symbol);
+    Prop const* prop = name ? ty_get_prop(checker, owner, name) : nullptr;
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
+    if (!prop || prop->decl->decl_span_count < 2) return false;
+    bool mine = false;
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], me->span);
+    if (!mine) return false;
+    vec_span_clear(declarations);
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(declarations, prop->decl->decl_spans[i]);
+    if (span_valid(prop->decl->name_span)) *written_name = prop->decl->name_span;
+    return true;
+}
+
 void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
@@ -1802,6 +1827,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
                 }
             }
+            late_member_declarations(me, ctx, &declarations, &written_name);
             // (named as its first declaration writes it)
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
@@ -1863,6 +1889,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             }
             ClassItem const* first = symbol_count ? symbol_items[0] : me;
             Span written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
+            late_member_declarations(me, ctx, &declarations, &written_name);
             // (add_member_symbol() takes the declarations)
             bool declared_first_elsewhere = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span);
             add_member_symbol(ctx, (BaselineSym){
@@ -2423,84 +2450,10 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     });
 }
 
-// The declarations of the symbol tsc's binder makes for an object literal member (bindPropertyOrMethodOrAccessor into
-// the literal's members): a later member of the same name joins it unless the symbol has a meaning it excludes
-// (a property excludes nothing, a method other values, an accessor other values but its other half). *first: the
-// symbol's first member (whose value types it)
-// An object literal member's binder name (tsc's getDeclarationName: a written name, a literal computed name's text,
-// `+1`/`-1` as written), or with `late` its late bound name (a computed entity name of a literal or unique symbol
-// type). Null for a symbol of its own
-static Atom const* object_member_name(ObjectExprItem const* item, bool* late) {
-    *late = false;
-    if (item->tag == OBJECT_ITEM_SPREAD) return nullptr;
-    Checker* checker = current_checker;
-    Expr const* key = item->computed_key;
-    if (!key) return checker_atom(checker, cstr_sv(&item->name_string));
-    if (expr_is_perenthisized(key)) return nullptr;
-    bool is_number = false;
-    if ((key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) ||
-        (key->tag == EXPR_TEMPLATE && !key->template_->tag && vec_expr_is_empty(&key->template_->substitutions))
-    ) {
-        return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
-    }
-    if (key->tag == EXPR_UNARY_OP && (key->unary_op->op == UNARY_OP_MINUS || key->unary_op->op == UNARY_OP_PLUS)) {
-        Expr const* operand = &key->unary_op->expr;
-        if (operand->tag != EXPR_LITERAL || operand->literal.tag != VALUE_NUMBER || expr_is_perenthisized(operand)) return nullptr;
-        Atom const* text = ty_property_name_of_key(checker, ty_expr_type(checker, operand), &is_number);
-        if (!text) return nullptr;
-        cstr name = cstr_d(key->unary_op->op == UNARY_OP_MINUS ? "-" : "+", atom_sv(text));
-        Atom const* ret = checker_atom(checker, cstr_sv(&name));
-        cstr_drop(&name);
-        return ret;
-    }
-    if (!expr_is_entity_name(key)) return nullptr;
-    *late = true;
-    return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
-}
-
-// The declarations of an object literal member's symbol: the binder's table joins members of a name unless the first
-// one's meaning excludes the new one's (then it's a symbol of its own); late bound names (lateBindMember) the same way
-// among themselves
-static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {
-    VecSpan ret = vec_span_init();
-    *first = item;
-    if (item->tag == OBJECT_ITEM_SPREAD) return ret;
-    // (Only an object with a computed name asks the checker for names)
-    bool computed = false;
-    for_each (other, vec_object_expr_item, object) computed |= other->computed_key != nullptr;
-    bool late = false;
-    Atom const* name = computed ? object_member_name(item, &late) : nullptr;
-    if (computed && !name) return ret;
-    enum { PROP = 1, METHOD = 2, GET = 4, SET = 8 };
-    u32 flags = 0; // The table's symbol of the name
-    for_each (other, vec_object_expr_item, object) {
-        if (other->tag == OBJECT_ITEM_SPREAD) continue;
-        if (computed) {
-            bool other_late = false;
-            if (object_member_name(other, &other_late) != name || other_late != late) continue;
-        } else if (!cstr_eq(&other->name_string, &item->name_string)) {
-            continue;
-        }
-        u32 kind = other->tag == OBJECT_ITEM_METHOD ? METHOD : other->tag == OBJECT_ITEM_GETTER ? GET :
-            other->tag == OBJECT_ITEM_SETTER ? SET : PROP;
-        // (TypeScript 7's excludes: an object literal method excludes every value, see object_bind_members())
-        u32 excludes = kind == PROP ? METHOD : kind == METHOD ? (PROP | METHOD | GET | SET) : kind == GET ? (METHOD | GET) : (METHOD | SET);
-        if (flags && (flags & excludes)) {
-            // (An accessor conflicting with what isn't the other accessor makes the symbol both: tsgo's declareSymbolEx)
-            if ((flags & (GET | SET)) && (flags & (GET | SET)) != (kind & (GET | SET))) flags |= GET | SET;
-            // A symbol of its own, outside the table
-            if (other == item) {
-                vec_span_clear(&ret);
-                vec_span_push(&ret, other->span);
-                return ret;
-            }
-            continue;
-        }
-        if (!flags) *first = other;
-        flags |= kind;
-        vec_span_push(&ret, other->span);
-    }
-    return ret;
+// The declarations of an object literal member's symbol (the checker's binding, ty_object_literal_member_symbol()),
+// *first its first member (whose value types it)
+static VecSpan object_member_symbol_decls(Expr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {
+    return ty_object_literal_member_symbol(current_checker, object, item, first);
 }
 
 // `new.target` in a function expression: the function's symbol (named like tsc's getNameOfSymbolAsWritten: the
@@ -3118,7 +3071,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
                 ObjectExprItem const* first = nullptr;
-                VecSpan merged = object_member_symbol_decls(&my object, i, &first);
+                VecSpan merged = object_member_symbol_decls(me, i, &first);
                 if (i->tag != OBJECT_ITEM_SPREAD && vec_span_size(&merged) > 1 &&
                     (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) &&
                     (first->tag == OBJECT_ITEM_PROPERTY || first->tag == OBJECT_ITEM_SHORTHAND)
@@ -3155,11 +3108,14 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (i->tag != OBJECT_ITEM_SPREAD) {
                     VecSpan declarations = {0};
                     ObjectExprItem const* named = i; // (named like its first declaration)
-                    if (!i->computed_key) {
+                    // (A late-bound name too: its symbol may have merged into the early one of its name)
+                    bool late = i->computed_key && !expr_is_perenthisized(i->computed_key) &&
+                        !computed_key_early_name(i->computed_key, nullptr) && expr_is_entity_name(i->computed_key);
+                    if (!i->computed_key || late) {
                         // (Its symbol: with the other accessor or the other methods of its name, alone if it conflicts
                         // with what came first)
                         ObjectExprItem const* accessor_first = nullptr;
-                        declarations = object_member_symbol_decls(&my object, i, &accessor_first);
+                        declarations = object_member_symbol_decls(me, i, &accessor_first);
                         if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, i->span);
                         if (accessor_first && vec_span_size(&declarations) > 1) named = accessor_first;
                     } else if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
