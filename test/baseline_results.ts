@@ -64041,7 +64041,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
