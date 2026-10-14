@@ -115,6 +115,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttGetterMissingBody': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportFromExportEqualsAnyAsType': {
         errors: true,
         symbols: true,
@@ -230,7 +235,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLocalExpandoCyclicPrint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNamespaceDuplicateExportValue': {
         errors: true,
         symbols: true,
         types: true,
@@ -15768,7 +15783,7 @@ const baselines = {
     'genericClassesRedeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCloduleInModule': {
         errors: true,
@@ -22333,7 +22348,7 @@ const baselines = {
     'mergedClassWithNamespacePrototype': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mergedDeclarationExports': {
         errors: true,
@@ -44238,7 +44253,7 @@ const baselines = {
     'objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralShorthandPropertiesErrorWithModule': {
         errors: true,
@@ -50448,7 +50463,7 @@ const baselines = {
     'fixSignatureCaching': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionImplementationErrors(target=es2015)': {
         errors: true,
@@ -65673,7 +65688,7 @@ const baselines = {
     'circularTypeofWithVarOrFunc': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidTypeOfTarget': {
         errors: true,
