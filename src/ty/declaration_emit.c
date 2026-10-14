@@ -1,4 +1,4 @@
-#include "ty/declaration_diagnostics.h"
+#include "ty/declaration_emit.h"
 #include "ty/ty_internal.h"
 #include "statement.h"
 #include "class_decl.h"
@@ -27,11 +27,11 @@
 // information of createGetIsolatedDeclarationErrors). The transformer adds a few checks of its own (TS9019, TS9021,
 // TS9023, TS9026, TS9038), and the symbol tracker reports what the printed types can't name (TS4xxx).
 //
-// This file walks the same way and does the serializing's equivalence and reporting, printing types only for the
-// tracker (into scratch strings)
+// This file walks the same way and does the serializing's equivalence and reporting, printing types for the tracker
+// (into scratch strings). With emit on, a second walk writes the `.d.ts` (see "Declaration emit's writer" below).
 //
 // Not done: JavaScript (no JS declaration emit); what is approximated is in agents/hacks.md "isolatedDeclarations
-// reporting"
+// reporting" and "Declaration emit's writer"
 
 // What tsc's findNearestDeclaration finds for a node: the declaration the "Add a type annotation" related information
 // is about
@@ -2086,8 +2086,9 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     }
     // A base that isn't a name is written as a variable of its type
     Expr const* base = &cls->extends;
+    VecSpannedType const* base_args = nullptr;
     if (base->tag == EXPR_GENERIC_PARAMS) {
-        for_each (i, vec_spanned_type, &base->generic_params->params) check_written_type(me, &i->type);
+        base_args = &base->generic_params->params;
         base = &base->generic_params->expr;
     }
     bool is_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
@@ -2095,6 +2096,10 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name,
         span_valid(cls->extends_clause) ? cls->extends_clause : expr_outer_span(&cls->extends));
     my emitting.fallback = block_first_token(statement);
+    // (Its type arguments are the clause's: what they name is painted, or reported, as the clause's)
+    if (base_args) {
+        for_each (i, vec_spanned_type, base_args) check_written_type(me, &i->type);
+    }
     if (pseudo_is_entity_name(base)) {
         check_entity_expression(me, base);
     } else {

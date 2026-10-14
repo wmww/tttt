@@ -5115,7 +5115,7 @@ cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node) {
     return ret;
 }
 
-// Declaration emit's entry points (plan 64, declaration_diagnostics.c's writer)
+// Declaration emit's entry points (plan 64, declaration_emit.c's writer)
 
 void ty_display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     bool over = false;

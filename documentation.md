@@ -328,7 +328,7 @@ type order's last ties, so creation order is still (a little) part of the output
 
 **Thread safety** is checked, not proven: `scripts/threadcheck.sh` (corpus output at `--threads 1` vs 4, byte for byte), `scripts/checkerdiff.py` (`--checkers K` vs 1), `baseline_tests --checkers 4 --threads 1/4 --dump DIR` (identical), and a TSan build, `meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, run with `TTTT_NO_REEXEC=1` on the corpora at `--threads 4` and on `TTTT_PARALLEL_RESOLVE=1 baseline_tests --threads 4` (`ulimit -s 4000000`): it was clean on every corpus when checking, loading and the resolve walk went parallel. The frozen guards (`log_error` on a report into the program's ErrorCtx, a new binder symbol or a first alias resolution while checking) catch the common mistakes on the suite.
 
-After its files are checked, each checker runs `declaration_diagnostics_check()` (`ty/declaration_diagnostics.c`) on
+After its files are checked, each checker runs `declaration_emit.check()` (`ty/declaration_diagnostics.c`) on
 them with `declaration`/`composite`: the diagnostics tsc's declaration transformer reports, without emitting anything
 (plan 40). It walks what a `.d.ts` would contain (the visible statements, then the late painted ones: non-exported
 declarations an emitted one names) and ports the syntactic type builder's decisions; with isolatedDeclarations each

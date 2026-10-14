@@ -524,7 +524,7 @@ src` finds the code-side markers; every significant one has an entry here.
   comments. `pseudo_member_prop()` finds a member's property by declaration span, not by name. `pseudo_type()` of an
   Inferred expression whose type is a fresh object literal is null (never equivalent): tsgo re-checks the expression and
   gets a new type, tttt interns literal types by shape, so this is decided by the flag rather than by identity.
-- isolatedDeclarations reporting (`declaration_diagnostics.c`, plan 55): tttt has no parents, so `locate()` finds a
+- isolatedDeclarations reporting (`declaration_emit.c`, plan 55): tttt has no parents, so `locate()` finds a
   reported node by walking the declaration being serialized along the pseudo builder's descent (for
   findNearestDeclaration and createExpressionError's parent); a node the printer reports from another declaration of
   the same file gets no related information. `print_part()` prints an Inferred part as `ty_pseudo_type()` (tsgo:

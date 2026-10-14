@@ -3,7 +3,7 @@
 #include "lib_names.h"
 #include "string_helpers.h"
 #include "unused.h"
-#include "ty/declaration_diagnostics.h"
+#include "ty/declaration_emit.h"
 #include "import_attributes.h"
 #include "parser.h"
 #include "block.h"

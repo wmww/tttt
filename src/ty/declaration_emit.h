@@ -5,9 +5,9 @@
 typedef struct SourceFile SourceFile;
 typedef struct ErrorCtx ErrorCtx;
 
-// The diagnostics tsc's declaration transformer reports (tsgo's transformers/declarations with the node builder's
-// pseudo types, pseudo.h), without emitting anything: the isolatedDeclarations ones (TS9007-TS9039) and what the
-// symbol tracker reports (TS4xxx). Run by the checker that checked the file, after checking it (plan 40)
+// Declaration emit (tsgo's transformers/declarations with the node builder's pseudo types, pseudo.h): the diagnostics
+// its transformer reports, the isolatedDeclarations ones (TS9007-TS9039) and what the symbol tracker reports (TS4xxx)
+// (plan 40), and the `.d.ts` text (plan 64). Run by the checker that checked the file, after checking it
 
 // tsc's getEmitDeclarations (declaration or composite) and the file is one tsc emits (getSourceFilesToEmit): not a
 // declaration file, JSON or JavaScript
