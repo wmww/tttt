@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Content mappers (2026-10-14, todo entries 2-3, plan 56) and the stage 1 fan-out's rescue
+Suite 13604 -> 13615 / 13660 (`contentMapper*` 15 / 15, ttttMissingInitializerImplicitAny), scenarios 211 / 0 failed
+(both content-mapper scenarios now run). `scripts/oracles.py` identical to the session start: corpora (webpack 0/1,
+vue 0/3, effect 3/0, rest 0/0), DT sweep 8594 / 8595, `$ExpectType` 68637, flagflip 42 / 6 / 3, source sweep sample
+811 / 822, perfsweep median 0.21 (load), worst types ratio 1.62. Instructions (`scripts/instrcount.sh`, callgrind):
+tsc 4.700, type-fest 19.256, valibot 3.458 (3.456 at 65aa0d23), react 1.506, nest 1.186, webpack 10.006, zod 5.077,
+xstate 2.726, drizzle 6.000, vue 6.598, effect 10.215, vscode 89.370, excalidraw 7.853, tanstack-router 5.391 G.
+Everything content-mapper is gated on the option: no corpus uses it.
+
 ## Perf session (2026-10-14, todo entry 8)
 `scripts/bench.sh --runs 3` at the session start (0d243c6c, nothing else running; best wall s / peak RSS MB;
 defaults = 4 checkers on every core for both, single = `--singleThreaded`):
