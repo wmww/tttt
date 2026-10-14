@@ -340,6 +340,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeParameterMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionMemberNormalizedTargetName': {
         errors: true,
         symbols: true,
@@ -66666,9 +66671,9 @@ const baselines = {
         types: true,
     },
     'varianceAnnotationsWithCircularlyReferencesError': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'apparentTypeSubtyping': {
         errors: true,

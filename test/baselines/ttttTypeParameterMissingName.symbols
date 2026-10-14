@@ -1,0 +1,28 @@
+//// [test/cases/ttttTypeParameterMissingName.ts] ////
+
+=== ttttTypeParameterMissingName.ts ===
+// Type parameters that start at a modifier, `in` or `const` but have no name: TS1359/TS1003, a missing name (`(Missing)`)
+type A<in extends X> = {};
+>A : Symbol(A, Decl(ttttTypeParameterMissingName.ts, 0, 0))
+> : Symbol((Missing), Decl(ttttTypeParameterMissingName.ts, 1, 7))
+>X : Symbol(X)
+
+type B<const> = {};
+>B : Symbol(B, Decl(ttttTypeParameterMissingName.ts, 1, 26))
+> : Symbol((Missing), Decl(ttttTypeParameterMissingName.ts, 2, 7))
+
+type C<in in T> = { a: T };
+>C : Symbol(C, Decl(ttttTypeParameterMissingName.ts, 2, 19))
+>T : Symbol(T, Decl(ttttTypeParameterMissingName.ts, 3, 7))
+>a : Symbol(a, Decl(ttttTypeParameterMissingName.ts, 3, 19))
+>T : Symbol(T, Decl(ttttTypeParameterMissingName.ts, 3, 7))
+
+function f<in>() {}
+>f : Symbol(f, Decl(ttttTypeParameterMissingName.ts, 3, 27))
+> : Symbol((Missing), Decl(ttttTypeParameterMissingName.ts, 4, 11))
+
+interface I<in in> {}
+>I : Symbol(I, Decl(ttttTypeParameterMissingName.ts, 4, 19))
+> : Symbol((Missing), Decl(ttttTypeParameterMissingName.ts, 5, 12), Decl(ttttTypeParameterMissingName.ts, 5, 14))
+> : Symbol((Missing), Decl(ttttTypeParameterMissingName.ts, 5, 12), Decl(ttttTypeParameterMissingName.ts, 5, 14))
+

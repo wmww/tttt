@@ -2378,11 +2378,20 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
     bool is_out = modifiers.includes[MODIFIER_OUT];
     check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_TYPE_PARAMETER, .parent = MODIFIED_IN_OTHER,
         .type_param_owner = owner });
+    bool had_modifiers = !vec_spanned_modifier_is_empty(&modifiers.spanned);
     modifier_list_drop(&modifiers);
 
     Span name;
-    if (!parse_identifier(&p, &name)) {
-        return parse_fail(&p);
+    bool name_missing = false;
+    Tok t = tok_peek(&p);
+    bool reserved = tok_is_word(t) && *t.start != '#' && is_reserved_word((csview){ t.start, t.end - t.start });
+    if (reserved || !parse_identifier(&p, &name)) {
+        // A type parameter starts at a modifier, or at `in` or `const` (tsc's isListElement for TypeParameters):
+        // tsc's parseIdentifier then reports a reserved word (TS1359) or whatever else is there, and the name is
+        // missing (`<in in>`). parse_generic_decl() skips a token an element took nothing of
+        if (!had_modifiers && !tok_is(t, "in") && !tok_is(t, "const")) return parse_fail(&p);
+        expect_non_reserved_identifier(&p, &name);
+        name_missing = true;
     }
     hop_whitespace(&p);
 
@@ -2412,9 +2421,15 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         }
     }
 
+    Span full_span = span_from(a);
+    if (name_missing && !extends_explicit && !fallback_explicit) {
+        // (tsc's node ends with its missing name, at the modifiers' end; without modifiers it is all missing, at
+        // the name's full start)
+        full_span = span_make(p.shared->source, had_modifiers ? a.start : span_start_ptr(name), span_start_ptr(name));
+    }
     *ret = (GenericItem){
         .name = name,
-        .full_span = span_from(a),
+        .full_span = full_span,
         .is_const = is_const,
         .is_in = is_in,
         .is_out = is_out,
@@ -2444,8 +2459,11 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
 
     while (!at_eof(&p, p.pos) && *p.pos != '>') {
         GenericItem item;
+        const char* item_start = p.pos;
         if (parse_generic_decl_item(&p, owner, &item)) {
             list_push(vec_generic_item, &ret->items, item);
+            // (tsc's parseDelimitedList: an element that took nothing, `<in in>`'s second, skips its token)
+            if (p.pos == item_start) hop_token(&p);
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");

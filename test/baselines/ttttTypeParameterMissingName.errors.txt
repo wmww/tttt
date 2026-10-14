@@ -1,0 +1,35 @@
+ttttTypeParameterMissingName.ts(2,11): error TS1359: Identifier expected. 'extends' is a reserved word that cannot be used here.
+ttttTypeParameterMissingName.ts(2,19): error TS2304: Cannot find name 'X'.
+ttttTypeParameterMissingName.ts(3,8): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttTypeParameterMissingName.ts(4,8): error TS2636: Type 'C<super-T>' is not assignable to type 'C<sub-T>' as implied by variance annotation.
+  Types of property 'a' are incompatible.
+    Type 'super-T' is not assignable to type 'sub-T'.
+ttttTypeParameterMissingName.ts(5,12): error TS1359: Identifier expected. 'in' is a reserved word that cannot be used here.
+ttttTypeParameterMissingName.ts(6,15): error TS2300: Duplicate identifier '(Missing)'.
+ttttTypeParameterMissingName.ts(6,16): error TS1359: Identifier expected. 'in' is a reserved word that cannot be used here.
+
+
+==== ttttTypeParameterMissingName.ts (7 errors) ====
+    // Type parameters that start at a modifier, `in` or `const` but have no name: TS1359/TS1003, a missing name (`(Missing)`)
+    type A<in extends X> = {};
+              ~~~~~~~
+!!! error TS1359: Identifier expected. 'extends' is a reserved word that cannot be used here.
+                      ~
+!!! error TS2304: Cannot find name 'X'.
+    type B<const> = {};
+           ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+    type C<in in T> = { a: T };
+           ~~~~~~~
+!!! error TS2636: Type 'C<super-T>' is not assignable to type 'C<sub-T>' as implied by variance annotation.
+!!! error TS2636:   Types of property 'a' are incompatible.
+!!! error TS2636:     Type 'super-T' is not assignable to type 'sub-T'.
+    function f<in>() {}
+               ~~
+!!! error TS1359: Identifier expected. 'in' is a reserved word that cannot be used here.
+    interface I<in in> {}
+                  
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                   ~~
+!!! error TS1359: Identifier expected. 'in' is a reserved word that cannot be used here.
+    

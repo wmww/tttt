@@ -1043,7 +1043,14 @@ void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic con
     for (u32 i = 0; i < (u32)vec_generic_item_size(&generic->items); i++) {
         GenericItem const* item = vec_generic_item_at(&generic->items, i);
         if (item->jsdoc) continue; // TODO: JSDoc `@template in T`
-        unsigned modifiers = ty_variance_modifiers(owner, i);
+        // (Of the type parameter's symbol, tsc's getTypeParameterModifiers: a name the list repeats is one symbol)
+        unsigned modifiers = 0;
+        for (u32 j = 0; j < (u32)vec_generic_item_size(&generic->items); j++) {
+            GenericItem const* other = vec_generic_item_at(&generic->items, j);
+            if (j == i || (!other->jsdoc && csview_equals_sv(span_sv(other->name), span_sv(item->name)))) {
+                modifiers |= ty_variance_modifiers(owner, j);
+            }
+        }
         if (!modifiers) continue;
         if (is_alias) {
             // Only object types (literals, function, constructor and mapped types, and instantiations of them)

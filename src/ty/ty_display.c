@@ -1155,7 +1155,9 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
 // it the range of the node it replaces)
 static void out_type_param_name(Checker* me, TyDisplay d, Ty const* param, bool in_node) {
     Atom const* name = type_param_name(me, d, param);
-    out(name == param->param.name || in_node ? d : reused_if(d, false), atom_sv(name));
+    // (A missing name, `<in in>`'s recovery, is tsc's `__missing`: declarationNameToString's "(Missing)")
+    csview text = atom_sv(name).size ? atom_sv(name) : c_sv("(Missing)");
+    out(name == param->param.name || in_node ? d : reused_if(d, false), text);
 }
 
 // tsc's enterNewScope() for a signature: names given inside it don't count outside
