@@ -18,3 +18,9 @@ From the triage session (2026-10-14, late-bound member merging):
 - (2026-10-14, content mapper probe) `const __VERSION = "1.0.0"; const __VERSION: number = 1;` in one file with
   noUnusedLocals: tsgo reports TS2451 twice and no TS6133; tttt also reports TS6133 for one of them. Check a plain TS
   file (`scripts/filetest.sh`) before blaming the mapper.
+
+- **For the human** (plan 62 stage 3, 2026-10-14): tttt's `--checkers` now defaults to one per core (at most one per
+  64 KB of checked source), so on the 12-core machine the corpora check with 12 checkers where they had 4. Please run
+  `scripts/bench.sh --checkers "4 8 12 16"` there and paste the output into measurements.md (next to the bun table):
+  the per-K wall times and RSS decide whether the default should be capped below the core count (this 4-vCPU box can't
+  measure past 4; the 2026-10-11 bun session saw 12 checkers 30-50% faster than 4 at +13..40% RSS).

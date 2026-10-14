@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # Perf benchmark: tttt vs tsgo (the pinned TypeScript 7.1 oracle, thirdparty/typescript/built/tsc), both at their
-# defaults (every core; 4 checkers) and single-threaded.
+# defaults (every core; tttt one checker per core for a big enough program, tsgo 4 checkers) and single-threaded.
 # Wall time and peak RSS, best and median of RUNS runs, plus tttt's phase split, on the pinned corpora. See
 # agents/measurements.md for recorded numbers and caveats.
 #
 #   scripts/bench.sh [--runs N]
+#   scripts/bench.sh --checkers "4 8 12 16"   # also tttt at each of these checker counts (plan 62: core scaling)
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 
 RUNS=5
+CHECKERS=""
 while test $# -gt 0; do
     case "$1" in
         --runs) RUNS="$2"; shift 2 ;;
+        --checkers) CHECKERS="$2"; shift 2 ;;
         *) echo "unknown argument $1" >&2; exit 1 ;;
     esac
 done
@@ -52,6 +55,7 @@ echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
 measure "tttt" ./release/tttt -q --keep-going -p $REAL
 measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $REAL
+for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K -p $REAL; done
 measure "tsgo" $TSGO $REAL_ARGS -p $REAL
 measure "tsgo single-threaded" $TSGO $REAL_ARGS --singleThreaded -p $REAL
 echo "tttt phases (one run):"
@@ -70,6 +74,7 @@ for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpac
     echo "corpus $CORPUS: $($TSGO -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
     measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $DIR
+    for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K -p $DIR; done
     measure "tsgo" $TSGO --noEmit $TSGO_ARGS
     measure "tsgo single-threaded" $TSGO --noEmit --singleThreaded $TSGO_ARGS
     echo "tttt phases (one run):"

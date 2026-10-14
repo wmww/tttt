@@ -641,6 +641,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (type_errors) ret = 1;
         phase_done(opts, out, "typecheck", &last_time);
         if (opts->time) {
+            out_eprintln(out, "time: checkers: ", program_checker_count(program), " (", (i64)(program_checked_source_bytes(program) >> 10),
+                " KB of checked source)");
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
@@ -991,9 +993,8 @@ static void print_help(void) {
         "  --listFiles   print the program's files after its diagnostics\n"
         "  --listFilesOnly  print the program's files and stop\n"
         "  -v, --version print the version of TypeScript tttt checks like\n"
-        "  --checkers K  check with K checkers (default 4, whatever the cores: the order of union members in\n"
-        "                messages depends on K, so the output doesn't depend on the machine). Each gets\n"
-        "                contiguous runs of the files\n"
+        "  --checkers K  check with K checkers (default: one per thread, at most one per 64 KB of checked\n"
+        "                source). Each gets contiguous runs of the files; the output doesn't depend on K\n"
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
@@ -1012,9 +1013,9 @@ static void print_help(void) {
 
 static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
-    // Every core parses and binds; checking uses at most `checkers` of them (a fixed 4 by default: K changes the order of
-    // union members in messages, so a machine-dependent K would make the output machine-dependent)
-    Options opts = { .paths = argv, .pretty = -1, .checkers = 4, .threads = cores < 1 ? 1 : (u32)cores };
+    // Every core parses and binds; checking uses at most `checkers` of them (0: one per core, fewer for a small program,
+    // auto_checker_count(): the output doesn't depend on the count, plan 62)
+    Options opts = { .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores };
     bool single_threaded = false;
     // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it
     // (TS5093): every such error is reported, then nothing is done

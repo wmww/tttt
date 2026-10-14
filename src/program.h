@@ -95,10 +95,11 @@ void program_typecheck(Program* me);
 // them otherwise. Call it after program_resolve_names()
 void program_report_global_diagnostics(Program* me);
 
-// How many checkers program_typecheck() deals the files to (tsgo's --checkers; 0 is the default, 1). The diagnostics
-// depend on it (only in the order of union members inside messages: type ids are per checker), not on anything else.
-// Call it while loading
+// How many checkers program_typecheck() deals the files to (tsgo's --checkers). 0, the default: one per thread, fewer
+// for a small program (auto_checker_count()). The diagnostics don't depend on it (plan 62). Call it while loading
 void program_set_checkers(Program* me, u32 count);
+// The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
+u64 program_checked_source_bytes(Program const* me);
 
 // The program is checked like tsc's command line does (not like its test harness): with noEmit or noEmitOnError, the
 // declaration diagnostics (declaration_diagnostics.h) are only reported if there is no other diagnostic, `earlier_errors`

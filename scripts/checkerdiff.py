@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Compares tttt's diagnostics with --checkers 1 and --checkers K (plan 36) on the pinned corpora.
 
-With K checkers (files dealt round robin) the diagnostics may only differ from one checker's inside quoted types: ties
-that the stable type order breaks by type id (per checker), and widened object literals' `x?: undefined` properties,
-which take their position from the first property of that name the checker saw (tsc's undefinedProperties cache, one
-per program in tsc; seen in webpack's JSON schemas). This runs each corpus both ways and reports:
-  exact     diagnostics (header, source excerpt, message chain) that differ at all
-  modulo    what still differs once every quoted '...' part of a message is blanked: codes, positions and the
-            unquoted text. Anything here is a determinism bug (a memoised report, an evaluation-order dependence)
-Also runs K twice and checks the outputs are byte-identical.
+tsgo's output doesn't depend on its checker count, so tttt's mustn't either (plan 62): any diagnostic (header, source
+excerpt, message chain) that differs is a bug: an evaluation-order dependence, a memoised report, a tie the stable type
+order breaks by type id. The one exception tsgo shares is widened object literals' `x?: undefined` property order
+(tsgo's per-checker undefinedProperties cache; no corpus shows it). Also runs K twice and checks the outputs are
+byte-identical.
 
   scripts/checkerdiff.py                   # every corpus, K=4
   scripts/checkerdiff.py -k 2 webpack zod  # some corpora, K=2
@@ -54,27 +51,20 @@ def diagnostics(text):
     return out
 
 
-def normalize(diag):
-    return re.sub(r"'[^'\n]*'", "'…'", diag)
-
-
 def compare(name, options, k, timeout, examples):
     one = run(options, 1, timeout)
     many = run(options, k, timeout)
     again = run(options, k, timeout)
     d1, dk = diagnostics(one), diagnostics(many)
     c1, ck = collections.Counter(d1), collections.Counter(dk)
-    n1 = collections.Counter(normalize(d) for d in d1)
-    nk = collections.Counter(normalize(d) for d in dk)
-    exact = sum(((c1 - ck) + (ck - c1)).values())
-    lost, gained = n1 - nk, nk - n1
-    modulo = sum((lost + gained).values())
-    print(f'{name}: {len(d1)} diagnostics with 1 checker, {len(dk)} with {k}; differing exactly: {exact}, '
-          f'modulo quoted text: {modulo}; {k} checkers twice: {"identical" if many == again else "DIFFERENT"}')
+    lost, gained = c1 - ck, ck - c1
+    exact = sum((lost + gained).values())
+    print(f'{name}: {len(d1)} diagnostics with 1 checker, {len(dk)} with {k}; differing: {exact}; '
+          f'{k} checkers twice: {"identical" if many == again else "DIFFERENT"}')
     for title, which in (('only with 1 checker', lost), (f'only with {k} checkers', gained)):
         for diag, _ in list(which.items())[:examples]:
             print(f'  {title}:\n    ' + diag.split('\n')[0])
-    return modulo == 0 and many == again
+    return exact == 0 and many == again
 
 
 def main():

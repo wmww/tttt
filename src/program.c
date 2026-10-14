@@ -3195,6 +3195,11 @@ void program_make_current(Program* me) {
     checker_make_current(my checker);
 }
 
+// (64 KB: below it a second checker saves a few milliseconds and costs its own copy of the library types, 4-9% of the
+// RSS; measured on a twelfth of the source sweep 2026-10-14, plan 62 stage 3. Bytes are a rough proxy for check time:
+// nestjs-boilerplate checks 240 KB in 110 ms where most projects of that size take 25)
+enum { CHECKER_BYTES = 64 << 10 };
+
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my requested_checkers = count;
@@ -3439,6 +3444,23 @@ static void deal_files(Program* me) {
     }
 }
 
+u64 program_checked_source_bytes(Program const* me) {
+    u64 bytes = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if (source_file_is_checked(*i) && !(*i)->is_stdlib) bytes += cstr_size(&(*i)->contents);
+    }
+    return bytes;
+}
+
+// program_set_checkers(0): one checker per thread, but not more than one per CHECKER_BYTES of checked source (the
+// default library's files aside): each checker builds the global and library types it uses again, which a small
+// project's few files don't win back
+static u32 auto_checker_count(Program const* me) {
+    u64 count = program_checked_source_bytes(me) / CHECKER_BYTES;
+    u32 threads = my threads ? my threads : 1;
+    return count < 1 ? 1 : count > threads ? threads : (u32)count;
+}
+
 static void check_shares_run(CheckShares* me) {
     for (u32 c; (c = atomic_fetch_add(&my next, 1)) < my count;) check_share(my program, c, my count);
 }
@@ -3461,7 +3483,7 @@ void program_typecheck(Program* me) {
     if (!my global_diagnostics_reported) program_report_missing_global_types(me);
     // Each checker reports into its own ErrorCtx; nothing may write to the program's or make symbols meanwhile (they
     // run on threads of their own)
-    u32 count = my requested_checkers ? my requested_checkers : 1;
+    u32 count = my requested_checkers ? my requested_checkers : auto_checker_count(me);
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);

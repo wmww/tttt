@@ -65,10 +65,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).
 - **Thread defaults** (2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and name
-  resolution scale with it; checking uses at most K threads), `--checkers` stays a fixed 4 because K was thought to be
-  part of the output and each checker duplicates lib types. Plan 62 (2026-10-13) measured: tsgo's output is
-  K-independent, tttt's nearly (19 / 3363 source sweep projects differ at K=16, all of them bugs, 13 already at K=4);
-  K 4 -> 16 costs +7..47% RSS. So: fix the order bugs, then K follows the cores with a size cap (plan 62 stages 1-3).
+  resolution scale with it), and since plan 62 (2026-10-14) `--checkers` follows them: one checker per thread, at
+  most one per 64 KB of checked source (a small project's second checker saves milliseconds and copies the lib
+  types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
+  which tsgo shares, and mermaid's relation order). K 4 -> 16 costs +7..47% RSS; wall-time scaling past 4 cores
+  waits on the human's 12-core bench (triage.md).
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -138,10 +139,10 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   into the same `Ty` machinery.
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
 - **Competition**: bun check (a Rust tsgo port, 2026-10) beats tttt on memory and, on many cores, ties it on wall time
-  (it uses every core, we stop at 4 checkers). If tsgo itself gets a similar pass, our margin is single-threaded speed
+  (it uses every core; tttt did too only from plan 62 stage 3). If tsgo itself gets a similar pass, our margin is single-threaded speed
   (2-6x) minus what core scaling and memory cost us: plans 62 and 63.
-- **Determinism vs scaling**: the checker count is part of the output today. Any scaling design must keep output
-  byte-identical across machines (`scripts/checkerdiff.py`, `scripts/threadcheck.sh`).
+- **Determinism vs scaling**: the output must stay byte-identical at any checker and thread count, so across machines
+  (`scripts/kdiff.py`, `scripts/checkerdiff.py`, `scripts/threadcheck.sh`; `scripts/oracles.py` runs kdiff).
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
 
 ## Where this is going (rough order)
