@@ -53,9 +53,8 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
-- declarationEmitBindingPatternsUnused: an interface setter `set x({ name: alias }: Named & { o: typeof alias })`
-  keeps only its parameter's type (interface_member.h: `setter_param`), so its binding pattern gets no TS2842 and
-  `typeof alias` in the parameter type is TS2304. Needs the setter's parameter as a parameter.
+- declarationEmitBindingPatternsUnused: type_core.md "Accessor members of interfaces and type literals" (with
+  duplicateIdentifierChecks and display.md's accessorBodyInTypeContext: one refactor).
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
 
 ## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
@@ -199,7 +198,16 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 
 ## Relations and type core (more in `type_core.md`)
 - reactReduxLikeDeferredInferenceAllowsAssignment and
-  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations; agent
+  B 2026-10-14): tsgo's mappedTypeRelatedTo instantiates the source template with the *target's* key type parameter,
+  which for an instantiated mapped type is a fresh one constrained by the instantiated constraint (instantiateMappedType):
+  `Extract<keyof TInjectedProps, keyof GetProps<C>>`. tttt's instances share the root's key parameter
+  (ty_mapped_info_instantiate()), so the elaboration shows the declaration's `Extract<keyof InjectedProps, keyof
+  DecorationTargetProps>`. Cloning it there (constraint = the instantiated one, P -> P' in the template mapper) gives
+  tsgo's line but then the relation ends Maybe (`TD[keyof TD & string]` deeply nested 3 times) and the TS2344 is lost:
+  tsgo's deeper lines also index through the true branch's substitution (`TI[keyof TI & Extract<string, keyof TD>]`,
+  tttt `TI[Extract<string, keyof TD>]`), which keeps its chain shorter. Probe: Shared/Matching with `<TI, TD>` assigned
+  (/tmp-style: `function f<TI, TD>(m: Matching<TI, TD>) { const s: Shared<TI, TD> = m; }`). Medium-large.
   mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),
   inferFromGenericFunctionReturnTypes3.
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
@@ -244,7 +252,8 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
 - importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
   TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
   pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
-- reachabilityChecksNoCrash1: the diagnostics' positions match now (reparseTopLevelAwait sections, 2026-10-12); left
+- reachabilityChecksNoCrash1 (2026-10-14: `x > { const out = [], for: 1, const v }` in a module gives `const: any` in
+  tsgo too, the last one's, like tttt; the test's `const: never[]` needs its exact recovered shape): the diagnostics' positions match now (reparseTopLevelAwait sections, 2026-10-12); left
   is the type of a recovered object literal with two `const` properties, `{ const out = [], for: await (<missing>
   const v ... }`: tsc's object type says `const: never[]` (the first one's) where every probe of duplicate properties
   (`{ a: [], a: 1 }`) gives the last one's, as tttt does (`any`, from the unresolved `v`). Reduce with a module
@@ -344,6 +353,11 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
 - **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with
   noUnused* off (unused_enabled() is false then; plain JS too) and TS6385 'x' is
   deprecated (deprecatedReferenceInEnumComputedNameNoFlake). The CLI never prints suggestions; only the harness wants them.
+  For TS6385 (small-medium): a declaration's JSDoc `@deprecated` (tsgo's IsDeprecatedDeclaration: combined node flags,
+  a variable's comes from its statement) kept past parsing (the parser's jsdoc_comments are Parser-only now), and
+  checkIdentifier's addDeprecatedSuggestion when capture_suggestions (isDeprecatedSymbol: every declaration deprecated,
+  or the value declaration; isUncalledFunctionReference for functions). The test's reference is an enum member's
+  computed name, which tttt checks (TS1164) but must also resolve as an expression there.
 - syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the
   synthetic property a parent when its members have one value declaration (`hasNonUniformValueDeclaration`, a
   synthetic member without one skipped): `w2.content` of `(Mock & Base) | (Mock & Dummy)` is `Mock.content` in the

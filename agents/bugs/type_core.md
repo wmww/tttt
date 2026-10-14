@@ -156,7 +156,14 @@ passing tests).
   label names, so the two tuples are one type and the union collapses.
 ## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
 - circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
-- Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls).
+- recursiveConditionalTypes (types only since 2026-10-14; no spurious TS2589 any more): (1) `unbox(b4)` with
+  `b4: { value: { value: { value: typeof b4 }}}` against `RecBox<T> = T | Box<RecBox<T>>`: tsgo infers T one level
+  shallower (`{ value: { value: typeof b4 } }`, tttt `{ value: typeof b4 }`): where inferToMultipleTypes' naked
+  inference stops relative to invokeOnce's circularity (both sides deeply nested at depth 2, source identities are the
+  three type literal symbols). Trace both with the inference-side analogue of the relater.go logging (agent B's
+  /tmp/b-tsgo overlay recipe: patch invokeOnce to print source/target/expandingFlags). (2) the getter `{ get value()
+  { return this; } }` inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<...>`
+  (the contextual `this` of a getter in a literal whose contextual type is the inferred union), tttt `{}`. Medium each.
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
@@ -258,11 +265,34 @@ passing tests).
   (stringLiteralTypesInImplementationSignatures2, callSignaturesWithParameterInitializers2; ex plan 35).
 - A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
   callSignaturesWithParameterInitializers2 types; duplicateClassElements symbols;
-  symbolProperty44 (late-bound name vs method). duplicateIdentifierChecks: the parser merges a name's accessor
-  declarations of a type literal/interface into one member, tsgo keeps a symbol per conflicting declaration.
+  symbolProperty44 (late-bound name vs method).
+- **Accessor members of interfaces and type literals as declarations of their own** (duplicateIdentifierChecks,
+  declarationEmitBindingPatternsUnused; agent B 2026-10-14, plan-sized, ~1 session): the parser merges a name's
+  `get`/`set` signatures into one InterfaceMember (parser.c's CLASS_ITEM_METHOD accessor branch: InterfaceAccessor
+  keeps a setter's parameter *name* and type only). tsgo keeps each accessor a declaration: (a) the binder merges them
+  into symbols by SymbolFlags excludes (tsgo ast/symbolflags.go: GetAccessor excludes Value & ~(SetAccessor | Property),
+  SetAccessor the mirror, Property excludes Value & ~(Property | Accessor), Method Value & ~Method), a conflicting
+  declaration becoming a symbol of its own that isn't in the members table: duplicateIdentifierChecks' symbols print one
+  `Symbol(I3.x, ...)` per such partition, for classes too (C3..C8: the symbols walker needs the partition, the type
+  keeps the first symbol); (b) a setter's parameter is a real parameter with a scope: `set x({ name: alias }: Named &
+  { o: typeof alias })` binds `alias` (TS2842 unused renaming, `typeof alias` resolves; tttt says TS2304) and the types
+  baseline shows the setter parameter (`>value : number` lines). Shape: InterfaceMember gets a FunctionImpl per
+  accessor like a method signature; builder_add_interface merges get/set into the prop (write type from the setter's
+  parameter) as now; the TS2300 partition logic moves to one helper both the duplicate check and the walker use.
 - TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
-  instantiation depth limit in tttt; recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
-  recursiveIndexedAccessSimplification lacks TS4109 and two TS2589; xstate under sloppy/nosnc (flagflip) gets one spurious
+  instantiation depth limit in tttt (plan 65's eager-base runaway: tsgo's resolveStructuredTypeMembers has no in-flight
+  guard; an instrumented tsgo's stack at the limit, 2026-10-14: keyofGeneric... loops resolveTypeReferenceMembers ->
+  instantiate Model<ModelAttributes<T>> -> Exclude<keyof PersonModel, ...> -> getIndexType -> PersonModel's members ->
+  its base again, entered from checkClassLikeDeclaration's typeWithThis-to-base relation (isWeakType); mutually...
+  loops through `X[X['a']]` (an indexed access on the non-generic X, resolved eagerly) -> X's members -> base L<X> ->
+  T<X[X['a']]>). mutuallyRecursiveInference also needs the harness's emit order (plan 64): the CLI reports TS5114 at
+  `class X` (9,7) from the type-argument constraint check, the suite baseline at `this.a` (12,9), which the JS emit's
+  resolver checks first. recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
+  recursiveIndexedAccessSimplification has its TS4109 since aa320754, but lacks the TS2322 at `return ['marker',
+  ...l]` and the two TS2589 (8,12)/(12,37): the instantiations of `Recur<T>` in join/a run into the limit in tsgo
+  (each a fresh deferred reference with its own args), tttt's relation at the return is never even made (no
+  TTTT_DEBUG_RELATE line: probably a cut-short instantiation remembered from the alias check, not reported again,
+  check_assignable()'s instantiation_limit_hits rule). xstate under sloppy/nosnc (flagflip) gets one spurious
   TS5115 at graph/utils.ts:91 next to tsgo's at State.ts:395 (another StateId instantiation tsgo finds cached; tsgo's
   sites move with its checker count: -p with 4 checkers reports State.ts, setup.ts, stateUtils.ts); webpack misses
   zod's TS5115 at node_modules/zod/v4/classic/schemas.d.cts:806 (`interface ZodJSONSchemaInternals extends
@@ -280,7 +310,18 @@ passing tests).
   has `(X["w"] & number) | ...` members (union property type intersected with the declared number), tttt plain X["w"].
 - reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
   TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
-- inferFromGenericFunctionReturnTypes3: spurious errors (relation path differs too).
+- inferFromGenericFunctionReturnTypes3 (agent B 2026-10-14): `baz(makeFoo(Enum.A), makeFoo(Enum.A))` with
+  `baz<U>(x: Func<U>, y: Func<U>)`: the second makeFoo's return mapper comes from the main inference (U already Enum, so
+  T -> Enum, the argument's literal regularized, T = Enum.A), where tsgo's returnMapper comes from a separate inference
+  from the contextual type instantiated with the *outer return mapper* only (T -> U, the literal stays fresh and widens:
+  Func<Enum>). That's call.c's infer_type_arguments HACK (hacks.md "Return mapper"): the faithful version (FAITHFUL
+  experiment: return_inference_mapper of a separate return_inf always) fixes this test and loses
+  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference. In ...Inference1 tttt then gives
+  `effectFn(function (a) {...})` no contextual type: `function () { return { fn: effectFn(...) } }`'s return context
+  is AEff, instantiated by the return mapper (AEff -> S, layerEffect's type parameter), whose apparent type has no `fn`.
+  tsgo types `a` as string there; how is still unexplained (its contextual signature for the outer function is
+  `() => AEff` and instantiateContextualType only uses the non-fixing mapper with ContextFlags.Signature). Next step:
+  instrument tsgo's getContextualTypeForObjectLiteralElement / instantiateContextualType on that test.
 - Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
   inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
   literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348

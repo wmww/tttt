@@ -127,6 +127,11 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   paired into one InterfaceMember by the parser and merged by builder_add_interface_member(), so the binder's
   table-symbol rule (see bind_member_symbols() for classes, literal_bind() for object literals) has nothing to run
   on. Needs the interface's members bound like the class's (per member, in order) before pairing.
+- duplicateIdentifierChecks: type_core.md "Accessor members of interfaces and type literals".
+- typeAliasesDoNotMerge (types): `export type A = {}; type A = {}`: tsgo prints the second alias as
+  `import("./typeAliasesDoNotMerge").A`, i.e. the conflicting symbol has the file's module as parent (fast path of
+  getAliasForSymbolInContainer), not a symbol in scope. Where tsgo's binder puts it (exports with the file as parent?)
+  wasn't checked.
 
 ## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
 - **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
@@ -182,6 +187,13 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   FunctionImpl has none), and a setter's body isn't kept at all (`set x(v: number) { v.toFixed() }`: nothing in it
   is bound or walked; its parameter's annotation is moved to the write type, so keeping it needs a TypeNode copy or a
   shared node). Same root as declarationEmitBindingPatternsUnused (a setter's parameter scope). No suite test left.
+- accessorBodyInTypeContext (types): `type A = { get foo() { return 0 } }` (TS1183) is `foo: number` in tsc, its body
+  walked (`>0 : 0`); tttt's parser turns a type literal's accessor into an InterfaceMember and drops the FunctionImpl
+  (body, parameter scope), so the getter is any and nothing in it is bound or walked. Same root as
+  declarationEmitBindingPatternsUnused and duplicateIdentifierChecks (type_core.md "Accessor members of interfaces and
+  type literals"). Needs InterfaceMember to keep the accessor's
+  FunctionImpl (boxed in InterfaceAccessor), the binder to walk it, and the getter's type inferred from the body when
+  unannotated. Parser + binder + checker; a session.
 - vscode/eopt elaboration choice (TS2412 at `viewModel` in tsc vs TS2375 at a nested `styles: { a: st.a }` literal in
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
