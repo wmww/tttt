@@ -6186,7 +6186,7 @@ static Ternary structured_related_members(
         }
         if (nullable && !any) return TERNARY_FALSE;
     }
-    Ty const* apparent = source->kind == TY_INTERSECTION ? source : apparent_type(me, source);
+    Ty const* apparent = apparent_type(me, source);
     if (apparent != source && apparent->kind == TY_UNION && target->kind == TY_REFERENCE &&
         is_array_target(me, target->reference.target)
     ) {
@@ -6217,8 +6217,11 @@ static Ternary structured_related_members(
     }
     // A homomorphic mapped type over an array type parameter is an array once apparent, related to an array by its type
     // arguments (tsc's structuredTypeRelatedToWorker goes on with source = getApparentType(source), whose reference case
-    // relates the element types: no line about the array, nor the array methods)
-    if (apparent != source && source->kind == TY_ANONYMOUS && apparent->kind == TY_REFERENCE &&
+    // relates the element types: no line about the array, nor the array methods). So is an intersection whose apparent
+    // type is one reference (`Thenable<unknown> & T`, T unconstrained: its apparent unknown drops out), by variances:
+    // no structural fallback when they fail
+    // (tsc takes the apparent type of every source here, intersections included: getApparentTypeOfIntersectionType)
+    if (apparent != source && (source->kind == TY_ANONYMOUS || source->kind == TY_INTERSECTION) && apparent->kind == TY_REFERENCE &&
         target->kind == TY_REFERENCE && apparent->reference.target == target->reference.target && !is_tuple(apparent)
     ) {
         return structured_related_impl(me, st, apparent, target, report, true);
