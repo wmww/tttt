@@ -1,0 +1,60 @@
+//// [test/cases/ttttDistributedBooleanAlias.ts] ////
+
+=== ttttDistributedBooleanAlias.ts ===
+// Booleans made by a distributive conditional type go by the alias declaring the instantiation (tsc's mapTypeWithAlias
+// makes a union of its own), not when the alias body is boolean itself
+type If<C extends boolean, T, F> = C extends true ? T : F;
+>If : If<C, T, F>
+>true : true
+
+type X1 = If<boolean, 1, 2>;
+>X1 : X1
+
+type X2 = If<boolean, true, false>;
+>X2 : X2
+>true : true
+>false : false
+
+type D<T> = T extends string ? 1 : 2;
+>D : D<T>
+
+type X3 = D<string | number>;
+>X3 : X3
+
+type X4 = D<string | number | boolean>;
+>X4 : X4
+
+type B<T> = T extends string ? true : false;
+>B : B<T>
+>true : true
+>false : false
+
+type X5 = B<string | number>;
+>X5 : X5
+
+type B1 = true | false;
+>B1 : B1
+>true : true
+>false : false
+
+type BB<T> = boolean;
+>BB : boolean
+
+type B2 = BB<1>;
+>B2 : boolean
+
+type B3<T> = T extends 1 ? boolean : string;
+>B3 : B3<T>
+
+type B4 = B3<1>;
+>B4 : boolean
+
+type B5 = B3<1 | 2>;
+>B5 : B5
+
+declare let b1: B1, b2: B2, b4: B4, b5: B5;
+>b1 : B1
+>b2 : boolean
+>b4 : boolean
+>b5 : B5
+

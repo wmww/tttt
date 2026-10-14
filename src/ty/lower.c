@@ -3937,6 +3937,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // (Syntactically: the alias may be being resolved)
             TypeNode const* body = alias && decl && symbol_is_generic_alias(decl) ? alias_body_node(canonical(me, decl)) : nullptr;
             bool renames = false;
+            bool distributed = false; // (Renamed as a distribution's union)
             if (body && !is_intrinsic_body(body)) {
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
@@ -3980,13 +3981,17 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     TyList params = ty_type_params_of(me, symbol_type_generic(canonical(me, decl)));
                     TyList args = lower_type_args(me, params, 0, &node->identifier->generic_params, ctx, args_buf, false);
                     TyMapper const* mapper = ty_mapper_new(me, params, args);
-                    renames = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
+                    renames = distributed = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
                 }
             }
             // A local alias doesn't rename an instantiation of a top-level one (tsc's getTypeFromTypeAliasReference: it
             // may end up in an inferred return type where it isn't accessible, TypeScript#43622)
             if (renames && alias_is_local(alias) && !alias_is_local(canonical(me, decl))) renames = false;
-            if (renames) {
+            if (renames && distributed && ret->kind == TY_UNION && (ret->flags & TYF_BOOLEAN) && ret->alias != alias) {
+                // (`true | false` made by the distribution too, which ty_realias() leaves alone for `type B<T> =
+                // boolean`: tsc's mapTypeWithAlias makes a union of its own by the alias, `type N3 = Not<boolean>`)
+                ret = ty_union(me, ret->composite.types.data, ret->composite.types.len, alias, alias_args);
+            } else if (renames) {
                 ret = ty_realias(me, ret, alias, alias_args);
             }
             return ret;

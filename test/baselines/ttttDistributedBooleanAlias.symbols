@@ -1,0 +1,78 @@
+//// [test/cases/ttttDistributedBooleanAlias.ts] ////
+
+=== ttttDistributedBooleanAlias.ts ===
+// Booleans made by a distributive conditional type go by the alias declaring the instantiation (tsc's mapTypeWithAlias
+// makes a union of its own), not when the alias body is boolean itself
+type If<C extends boolean, T, F> = C extends true ? T : F;
+>If : Symbol(If, Decl(ttttDistributedBooleanAlias.ts, 0, 0))
+>C : Symbol(C, Decl(ttttDistributedBooleanAlias.ts, 2, 8))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 2, 26))
+>F : Symbol(F, Decl(ttttDistributedBooleanAlias.ts, 2, 29))
+>C : Symbol(C, Decl(ttttDistributedBooleanAlias.ts, 2, 8))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 2, 26))
+>F : Symbol(F, Decl(ttttDistributedBooleanAlias.ts, 2, 29))
+
+type X1 = If<boolean, 1, 2>;
+>X1 : Symbol(X1, Decl(ttttDistributedBooleanAlias.ts, 2, 58))
+>If : Symbol(If, Decl(ttttDistributedBooleanAlias.ts, 0, 0))
+
+type X2 = If<boolean, true, false>;
+>X2 : Symbol(X2, Decl(ttttDistributedBooleanAlias.ts, 3, 28))
+>If : Symbol(If, Decl(ttttDistributedBooleanAlias.ts, 0, 0))
+
+type D<T> = T extends string ? 1 : 2;
+>D : Symbol(D, Decl(ttttDistributedBooleanAlias.ts, 4, 35))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 5, 7))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 5, 7))
+
+type X3 = D<string | number>;
+>X3 : Symbol(X3, Decl(ttttDistributedBooleanAlias.ts, 5, 37))
+>D : Symbol(D, Decl(ttttDistributedBooleanAlias.ts, 4, 35))
+
+type X4 = D<string | number | boolean>;
+>X4 : Symbol(X4, Decl(ttttDistributedBooleanAlias.ts, 6, 29))
+>D : Symbol(D, Decl(ttttDistributedBooleanAlias.ts, 4, 35))
+
+type B<T> = T extends string ? true : false;
+>B : Symbol(B, Decl(ttttDistributedBooleanAlias.ts, 7, 39))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 8, 7))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 8, 7))
+
+type X5 = B<string | number>;
+>X5 : Symbol(X5, Decl(ttttDistributedBooleanAlias.ts, 8, 44))
+>B : Symbol(B, Decl(ttttDistributedBooleanAlias.ts, 7, 39))
+
+type B1 = true | false;
+>B1 : Symbol(B1, Decl(ttttDistributedBooleanAlias.ts, 9, 29))
+
+type BB<T> = boolean;
+>BB : Symbol(BB, Decl(ttttDistributedBooleanAlias.ts, 10, 23))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 11, 8))
+
+type B2 = BB<1>;
+>B2 : Symbol(B2, Decl(ttttDistributedBooleanAlias.ts, 11, 21))
+>BB : Symbol(BB, Decl(ttttDistributedBooleanAlias.ts, 10, 23))
+
+type B3<T> = T extends 1 ? boolean : string;
+>B3 : Symbol(B3, Decl(ttttDistributedBooleanAlias.ts, 12, 16))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 13, 8))
+>T : Symbol(T, Decl(ttttDistributedBooleanAlias.ts, 13, 8))
+
+type B4 = B3<1>;
+>B4 : Symbol(B4, Decl(ttttDistributedBooleanAlias.ts, 13, 44))
+>B3 : Symbol(B3, Decl(ttttDistributedBooleanAlias.ts, 12, 16))
+
+type B5 = B3<1 | 2>;
+>B5 : Symbol(B5, Decl(ttttDistributedBooleanAlias.ts, 14, 16))
+>B3 : Symbol(B3, Decl(ttttDistributedBooleanAlias.ts, 12, 16))
+
+declare let b1: B1, b2: B2, b4: B4, b5: B5;
+>b1 : Symbol(b1, Decl(ttttDistributedBooleanAlias.ts, 16, 11))
+>B1 : Symbol(B1, Decl(ttttDistributedBooleanAlias.ts, 9, 29))
+>b2 : Symbol(b2, Decl(ttttDistributedBooleanAlias.ts, 16, 19))
+>B2 : Symbol(B2, Decl(ttttDistributedBooleanAlias.ts, 11, 21))
+>b4 : Symbol(b4, Decl(ttttDistributedBooleanAlias.ts, 16, 27))
+>B4 : Symbol(B4, Decl(ttttDistributedBooleanAlias.ts, 13, 44))
+>b5 : Symbol(b5, Decl(ttttDistributedBooleanAlias.ts, 16, 35))
+>B5 : Symbol(B5, Decl(ttttDistributedBooleanAlias.ts, 14, 16))
+
