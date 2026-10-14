@@ -85,13 +85,14 @@ K; `scripts/oracles.py --only kdiff` is the K oracle (suite dumps + source sweep
   differences; the source sweep's match count at the default K is at least today's K=1 count (3307); suite 0 lost.
 
 ### Stage 2: display independent of K — done 2026-10-14
-Result: kdiff at K=16 **4 -> 2** / 3363 (inbox-zero's undefinedProperties order, which tsgo shares; mermaid, see
-below), DT 0 / 8595, suite dumps 0 / 39870 differing, every corpus byte-identical at 1 and 16 (checkerdiff compares
+Result: kdiff at K=16 **4 -> 1** / 3363 (inbox-zero's undefinedProperties order, which tsgo shares), DT 0 / 8595, suite dumps 0 / 39870 differing, every corpus byte-identical at 1 and 16 (checkerdiff compares
 exactly now). babel-traverse had already gone. openapi-typescript: checkKindsOfPropertyMemberOverrides' messages
 printed a member's escaped name (`__@iterator@<type id>`), now symbolToString's `[Symbol.iterator]`; redux-toolkit:
 signature_return_code() read the parameter count of a not yet resolved (lazily instantiated) signature, so
 `get(...)` became `get()` unless something had resolved it first.
-MERMAID_RESULT
+mermaid: tsgo never reports the TS2345; an imported generic alias's union instance is now its own type (tsgo's
+getTypeFromTypeAliasReference), which keeps the relation off the type-id-dependent depth cut-off path
+(bugs/type_core.md "Deep nesting cut-offs").
 
 - Finish `ty/order.c`'s id tie-breaks against tsgo's `CompareTypes` (hacks.md "Stable type ordering" lists the
   remaining ones: roots without `outer`, deferred references without a cheap position, same-symbol anonymous types with

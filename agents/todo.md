@@ -21,9 +21,9 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
 2. Done (2026-10-14, one session for entries 2 and 3): content mappers, `contentMapper*` 15 / 15, suite 13615 / 13660,
    both content-mapper scenarios pass; plan 56 deleted (documentation.md "Content mappers").
 3. (Merged into 2.)
-4. **Plan 62 stages 2 and 3.** Display independent of K (`order.c` id ties, symbol ids in names), then `--checkers`
-   follows the cores with a size cap; the human item asking for `scripts/bench.sh` at K 4/8/12/16 on the 12-core box.
-   If stage 2 overruns, stage 3 goes to the next window (don't take a third session).
+4. Done (2026-10-14): plan 62 stages 2 and 3. kdiff K=16 4 -> 1 / 3363 (inbox-zero, tsgo's too), DT 0, corpora and
+   suite dumps byte-identical; `--checkers` defaults to one per thread, at most one per 64 KB of checked source. The
+   12-core bench is a human item (triage.md); stage 4 (what the duplication is) folds into entry 5.
 5. **Planning: plan 67, memory against bun.** vscode peaks at 4.2 GB single-threaded (bun 2.1 GB at defaults), and plan
    63's struct diet missed its targets. Measure where the peak is (AST, binder, checker arenas, per-checker
    duplication: plan 62 stage 4's question) and cost the structural options: 32-bit node references in per-file

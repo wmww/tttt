@@ -5,6 +5,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasThroughImportNewIdentity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyIntersectionDisjointDomains': {
         errors: true,
         symbols: true,
@@ -315,6 +320,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOverrideSymbolMemberName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttPackageIdPeerDependencies': {
         errors: true,
         symbols: true,
@@ -361,6 +371,11 @@ const baselines = {
         types: true,
     },
     'ttttSignatureParameterTypeofItself': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSignatureReturnUnresolvedParams': {
         errors: true,
         symbols: true,
         types: true,

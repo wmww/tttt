@@ -68,7 +68,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   resolution scale with it), and since plan 62 (2026-10-14) `--checkers` follows them: one checker per thread, at
   most one per 64 KB of checked source (a small project's second checker saves milliseconds and copies the lib
   types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
-  which tsgo shares, and mermaid's relation order). K 4 -> 16 costs +7..47% RSS; wall-time scaling past 4 cores
+  which tsgo shares). K 4 -> 16 costs +7..47% RSS; wall-time scaling past 4 cores
   waits on the human's 12-core bench (triage.md).
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).

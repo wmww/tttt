@@ -9,6 +9,20 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 62 stages 2-3 (2026-10-14, todo entry 4): output independent of K, K follows the cores
+kdiff (1 vs 16 checkers): source sweep 4 -> **1** / 3363 (inbox-zero's undefinedProperties order, tsgo's too), DT
+0 / 8595, suite dumps 0 / 39870, every corpus byte-identical (`scripts/checkerdiff.py -k 16`, now exact), threadcheck
+identical. Suite 13615 -> 13618 / 13660 (three own tests), 0 lost; `scripts/oracles.py` otherwise identical: corpora
+(webpack 0/1, vue 0/3, effect 3/0), DT 8594 / 8595, `$ExpectType` 68637, flagflip 42 / 6 / 3, source sweep sample
+811 / 822, perfsweep median 0.21, worst types ratio 1.62. New default `--checkers`: one per thread, at most one per
+64 KB of checked non-lib source. A twelfth of the source sweep (281 projects, `--threads K --checkers K`, medians):
+below 64 KB the check takes ~4 ms and K=4 costs +9% RSS for nothing; 64-256 KB K=4 checks in 0.7x K=1's time (a few
+ms) at +11-13% RSS; above 1 MB 0.6-0.7x at +15-23%. On this box only react (2 checkers: 0.11 -> 0.12 s, 196 -> 165 MB)
+and nest (3) change. Instructions (callgrind): tsc 4.700, type-fest 19.258, valibot 3.457, react 1.506, nest 1.186,
+webpack 10.008, zod 5.076, xstate 2.726, drizzle 5.999, vue 6.598, effect 10.212, vscode 89.372, excalidraw 7.853,
+tanstack-router 5.391 G (flat; an eager signature_resolve() for the return-type message code had cost drizzle +16%,
+6.000 -> 6.962, before it was limited to reports).
+
 ## Content mappers (2026-10-14, todo entries 2-3, plan 56) and the stage 1 fan-out's rescue
 Suite 13604 -> 13615 / 13660 (`contentMapper*` 15 / 15, ttttMissingInitializerImplicitAny), scenarios 211 / 0 failed
 (both content-mapper scenarios now run). `scripts/oracles.py` identical to the session start: corpora (webpack 0/1,
