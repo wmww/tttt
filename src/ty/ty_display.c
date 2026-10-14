@@ -123,6 +123,8 @@ typedef struct TyPrinted {
     cstr const* target;
     PrintedRange range;
     u32 names_len; // How many type parameter names were given when it was printed (see param_names_leave())
+    u32 added; // What it added to the approximate length (tsc's SerializedTypeEntry.addedLength)
+    bool over; // The print was past the truncation length after it (SerializedTypeEntry.truncating)
 } TyPrinted;
 
 void ty_param_names_drop(TyParamNames* names) {
@@ -139,14 +141,16 @@ static TyPrinted const* printed_before(TyDisplay d, Ty const* ty) {
     return nullptr;
 }
 
-static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range) {
+static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range, u32 added) {
     TyParamNames* names = d.param_names;
     if (!names) return;
     if (names->printed_len == names->printed_cap) {
         names->printed_cap = names->printed_cap ? names->printed_cap * 2 : 8;
         names->printed = realloc(names->printed, names->printed_cap * sizeof(TyPrinted));
     }
-    names->printed[names->printed_len++] = (TyPrinted){ .ty = ty, .target = d.target, .range = range, .names_len = names->len };
+    names->printed[names->printed_len++] = (TyPrinted){
+        .ty = ty, .target = d.target, .range = range, .names_len = names->len, .added = added, .over = d.over && *d.over,
+    };
 }
 
 // What was printed into `from`, a buffer of its own, is appended to `d`'s target: what is remembered of it is now
@@ -163,6 +167,17 @@ static void append_printed(TyDisplay d, cstr* from) {
         printed->range.end += base;
     }
     cstr_drop(from);
+}
+
+// A type printed before in this print is printed again the same, in whole, whatever the length is by now (tsc's
+// visitAndTransformType's serializedTypes cache: the cached node, its addedLength, and its truncating)
+static bool reprint_printed(TyDisplay d, Ty const* ty) {
+    TyPrinted const* before = printed_before(d, ty);
+    if (!before) return false;
+    reprint_range(d, before->range);
+    approx_add(d, before->added);
+    if (before->over) set_over(d);
+    return true;
 }
 
 static TyDisplay reused_if(TyDisplay d, bool reused) {
@@ -4224,6 +4239,17 @@ static u32 union_display_count(Checker* me, TyList types, Ty const** last) {
     return count;
 }
 
+// A member of a union, parenthesized as tsc's printer does (parenthesizeConstituentTypeOfUnionType)
+static void display_union_member(Checker* me, TyDisplay d, Ty const* t) {
+    // (A member that is itself a union is one in an origin, `(string | false) | (string | false)[]` of a hidden
+    // local alias: tsc's printer parenthesizes a union constituent of a union)
+    bool union_member = t->kind == TY_UNION && !(t->flags & TYF_BOOLEAN) && !ty_is_enum_union(t) &&
+        !(t->composite.origin && t->composite.origin->kind == TY_KEYOF);
+    bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
+        union_member));
+    display_parenthesized_if(me, d, t, parens);
+}
+
 static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     // tsc's formatUnionTypes(): `true | false` prints as `boolean`, `null` and `undefined` go last
     TyList types = ty->composite.types;
@@ -4252,18 +4278,18 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 approx_add(d, 7);
                 out_lit(d, "boolean");
             } else {
-                ty_display(me, d, t);
+                display_union_member(me, d, t);
             }
             out_lit(d, " | ");
             out_more(d, display_count - 2, " | ");
-            ty_display(me, d, last);
+            display_union_member(me, d, last);
             free(collisions);
             return;
         }
         if (over && display_index + 2 < display_count - 1) {
             out_lit(d, " | ");
             out_more(d, display_count - display_index, " | ");
-            ty_display(me, d, last);
+            display_union_member(me, d, last);
             free(collisions);
             return;
         }
@@ -4293,13 +4319,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
-        // (A member that is itself a union is one in an origin, `(string | false) | (string | false)[]` of a hidden
-        // local alias: tsc's printer parenthesizes a union constituent of a union)
-        bool union_member = t->kind == TY_UNION && !(t->flags & TYF_BOOLEAN) && !ty_is_enum_union(t) &&
-            !(t->composite.origin && t->composite.origin->kind == TY_KEYOF);
-        bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
-            union_member));
-        display_parenthesized_if(me, qualified_if(d, collisions, i), t, parens);
+        display_union_member(me, qualified_if(d, collisions, i), t);
     }
     free(collisions);
     if (nullable & TYF_NULL) {
@@ -4484,12 +4504,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");
-            // (tsc counts `this` as four, a name like any (entity_name_length()), `infer N` as the name and six)
+            // (tsc counts `this` as four, a name like any (entity_name_length()), `infer N` as the name and six; with
+            // GenerateNamesForShadowedTypeParams (the types baseline) the name it gives, typeParameterToName)
             isize_t name_start = cstr_size(d.target);
             // (Declared here, the name gets its declaration's range: tsc's typeParameterToName, reused)
             out_type_param_name(me, declared_here ? reused_if(d, true) : d, ty, false);
             u32 name_length = (u32)(cstr_size(d.target) - name_start);
-            approx_add(d, ty->param.state->is_this ? 4 : declared_here ? name_length + 6 : 2 * (name_length + 1));
+            approx_add(d, ty->param.state->is_this ? 4 : declared_here ? name_length + 6 : d.types_baseline ? name_length :
+                2 * (name_length + 1));
             if (declared_here && ty->param.state->constraint_node) {
                 approx_add(d, 9);
                 out_lit(d, " extends ");
@@ -4731,6 +4753,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_elided(d);
                 break;
             }
+            // (Printed before: again, tsc's serializedTypes. Not in declaration emit, whose tracker hears from each print)
+            if (!d.tracker && reprint_printed(d, ty)) break;
             if (anonymous_elided(d, ty)) {
                 if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
                 set_over(d);
@@ -4739,7 +4763,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;
+            u32 approx_start = d.approx ? *d.approx : 0;
+            PrintedRange whole = printed_range_start(d);
             display_structure(me, d, ty);
+            printed_range_end(d, &whole);
+            if (!d.tracker) remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0);
         }   break;
 
         case TY_UNION:
@@ -4809,15 +4837,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_elided(d);
                 break;
             }
-            TyPrinted const* before = printed_before(d, ty);
-            if (before) {
-                reprint_range(d, before->range);
-                break;
-            }
+            if (reprint_printed(d, ty)) break;
+            u32 approx_start = d.approx ? *d.approx : 0;
             PrintedRange whole = printed_range_start(d);
             display_conditional(me, d, ty);
             printed_range_end(d, &whole);
-            remember_printed(d, ty, whole);
+            remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0);
         }   break;
 
         case TY_TEMPLATE_LITERAL:

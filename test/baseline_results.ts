@@ -24458,7 +24458,7 @@ const baselines = {
     'nestedSpreadsAndWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedSuperCallEmit(target=es2015)': {
         errors: true,
