@@ -324,14 +324,31 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
   ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
 - webpack node_modules/zod TS5115: see type_core.md (instantiation limits).
-- Flag-specific ones left: vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562 are one cause, an
-  auto-typed `let v` assigned from itself in a loop (`while (u-- > 0) { v = p[v] }`, `node = node.nextSibling`): the
-  back edge's assigned type is any in tttt (the access with the incomplete `number | undefined` index is any, like a
-  complete one: tsgo agrees on that for a declared index, v3 probe), so v is any at the reference; tsgo ends with
-  `number | undefined` there and reports TS2538. Something in tsgo's loop evaluation doesn't let that any in (an
-  instrumented tsgo would tell: getTypeAtFlowAssignment's getInitialOrAssignedType for the auto-typed v). xstate/sloppy
-  spurious TS5115 (type_core.md), xstate/eopt spurious TS2322 (input.test.ts:272), webpack/nuia UmdLibraryPlugin.js
-  (triage.md).
+- Flag-specific ones left (flagflip, 2026-10-14 agent D):
+  - vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562, an auto-typed `let v` assigned from itself
+    in a loop (`while (u-- > 0) { result[u] = v; v = p[v] }`): tsgo's *final* type of v there is any (a probe's `const z:
+    string = v` before `v = p[v]` is fine in tsc) but it reports TS2538 anyway: the error comes from an intermediate
+    evaluation of `p[v]` during the loop analysis, with v's incomplete `number | undefined`, which tsgo's
+    checkExpression reports as it goes. tttt's check walk only reports from final types. Reduced (tsc TS2538 at
+    `p[v]`, tttt nothing): `function g(p: number[], result: number[], k: number) { let u, v; v = k; u = result.length;
+    v = result[u - 1]; while (u-- > 0) { result[u] = v; v = p[v] } }` under strict + noUncheckedIndexedAccess (without
+    the `v = k` both agree). Mirroring means reporting what the loop's incomplete evaluations report: architectural.
+  - xstate/eopt +TS2322 input.test.ts:272: `spawn`'s `...[options]: SpawnOptions<TActor, TSrc>` compared between two
+    instantiations ("Two different types with this name exist"): `{ input?: number } & { [K in "input"]: unknown }` is
+    not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
+    type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in
+    tttt too; not reduced.
+  - xstate/sloppy spurious TS5115 (type_core.md), webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS5115/-TS7006
+    in vue's pluginScoped.ts and webpack's zod: plan 65.
+  - vscode/eopt stateToProgressAdapter.ts:453 TS2412->TS2322: `invocation.toolSpecificData = ...` where the property
+    is an accessor pair whose getter returns `this._toolSpecificData` (an optional property): tsgo's getter type keeps
+    the missing type of the read, so isExactOptionalPropertyMismatch is true (TS2412); tttt only says TS2412 for a
+    property declared optional (ty_check_assignable_to_access). Reduced: `class Inv { private _d?: D; get d() { return
+    this._d } set d(v: typeof this._d) {...} }` and `inv.d = src` with src `{ kind: "s"; a: boolean | undefined } |
+    undefined` against `D { kind: "s"; a?: boolean }`. Needs the missing type to survive reads (deep).
+  - vscode/eopt extensionsActions.ts:578 extra TS2412 next to tsc's TS2769 (dialogService.prompt's generic overloads,
+    `custom: cond ? undefined : {...}`), and chatGeneratedImages.fixture.ts:101/102 missing TS2322 (elements after
+    spreads of an array literal against a union element type): neither reproduced in a probe.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - **Suggestion diagnostics aren't implemented**: `@captureSuggestions` tests want TS6133 unused suggestions with

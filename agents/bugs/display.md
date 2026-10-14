@@ -295,3 +295,15 @@ Looked at, root cause where found, not fixed (one test each unless named):
   baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
+- $ExpectType leftovers (2026-10-14, agent D; 68637/68640):
+  - map-to-obj-tests.ts:9/12: `MapToObj(new Map([["hello", "world"]]))` with `MapToObj<K extends string | number |
+    symbol, V>(map: Map<K, V>): Record<K, V>`: tsc infers the inner `new Map`'s K as string, tttt keeps "hello" (the
+    literal's contextual type through the return mapper is the outer K, whose constraint is primitive, which tttt's
+    inference_call_result_fallback() treats as room for the literal). By tsgo's code as read the literal should stay
+    too; an instrumented tsgo would tell where it widens. Also `f<K extends string>(m: Map<K, 1>)` with
+    `f(new Map([["a", 1]]))`: tsc string, tttt "a".
+  - knockout.mapping-tests.ts:109: union order of `KnockoutObservableArray<KnockoutObservableType<any>> |
+    KnockoutObservableArray<any>` (tttt the reverse): not looked at.
+  - tsgo keeps the intersection it distributed as the union's origin for display (getIntersectionType's
+    createOriginUnionOrIntersectionType): `(VisitNode<S, any> & VisitNode<S, t.Aliases>) | undefined` where tttt prints
+    the distributed `((F | O) & (F | O)) | undefined` expanded. Seen in a babel__traverse probe, no $ExpectType on it.
