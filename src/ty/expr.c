@@ -5100,13 +5100,21 @@ bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMappe
 // `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures, the others
 // dropped (`instantiate_members()`). Returns the type itself if it has no signatures
 Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    return ty_apply_type_arguments_mapper_of(me, ty, mapper, nullptr);
+}
+
+// ... as an instantiation of `query`, the type of a `typeof f<T>` node: tsc instantiates that type like any anonymous
+// type, keyed by the node's outer type parameters (getObjectTypeInstantiation of an InstantiationExpressionType), so
+// it's a type of its own, not the one the expression `f<number>` has
+Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper const* mapper, Ty const* query) {
     Members const* members = ty_members(me, ty);
     if (!members->call_count && !members->construct_count) return ty;
     u32 count = 3 + mapper->len * 2;
     u64* key = malloc(sizeof(u64) * count);
     key[0] = KEY_ANONYMOUS_INSTANCE;
     key[1] = ty->id;
-    key[2] = UINT64_MAX; // Not a type id: tells these apart from ordinary instantiations
+    // (Not a type id: tells these apart from ordinary instantiations and ty_realias()'s)
+    key[2] = query ? (UINT64_MAX >> 1) + query->id : UINT64_MAX;
     u32 flags = TYF_OBJECT | (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
     for (u32 i = 0; i < mapper->len; i++) {
         key[3 + i * 2] = mapper->sources[i]->id;

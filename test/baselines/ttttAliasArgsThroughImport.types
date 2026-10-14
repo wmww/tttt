@@ -1,0 +1,37 @@
+//// [test/cases/ttttAliasArgsThroughImport.ts] ////
+
+=== a.ts ===
+export type C<T, O extends object = {}> = T extends string ? [T, O] : T;
+>C : C<T, O>
+
+export type U<T, O = {}> = T | O | undefined;
+>U : U<T, O>
+
+=== main.ts ===
+import type { C, U } from "./a";
+>C : C<T, O>
+>U : U<T, O>
+
+function boom<T>(x: C<T>, y: C<T, {}>, z: U<T>, w: U<T, {}>) {
+>boom : <T>(x: C<T>, y: C<T, {}>, z: U<T>, w: U<T, {}>) => void
+>x : C<T>
+>y : C<T, {}>
+>z : U<T>
+>w : U<T, {}>
+
+    x = y
+>x = y : C<T, {}>
+>x : C<T>
+>y : C<T, {}>
+
+    y = x
+>y = x : C<T>
+>y : C<T, {}>
+>x : C<T>
+
+    z = w
+>z = w : U<T, {}>
+>z : U<T>
+>w : U<T, {}>
+}
+

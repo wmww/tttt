@@ -5336,12 +5336,11 @@ static Ternary structured_related_members(
 
 // Whether two instantiations of one generic type alias relate by its variances first (see structured_related_impl)
 static bool alias_variance_applies(Checker* me, RelationState const* st, Ty const* source, Ty const* target, bool use_variances) {
-    // (A generic alias with no arguments, an import's reference without any, goes by its defaults: tsc's
-    // aliasTypeArguments `[]` is set, and fillMissingTypeArguments pads both sides. See ty_alias_args_filled())
+    // (A generic alias with fewer arguments, an import's reference with those written, goes by its defaults:
+    // fillMissingTypeArguments pads both sides. See ty_alias_args_filled())
     return ((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias &&
         source->alias == target->alias &&
-        (source->alias_args.len == target->alias_args.len ? source->alias_args.len != 0 :
-            !source->alias_args.len || !target->alias_args.len) &&
+        (source->alias_args.len == target->alias_args.len ? source->alias_args.len != 0 : true) &&
         source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
         !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
         !(st->alias_fallback_source == source && st->alias_fallback_target == target);

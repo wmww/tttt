@@ -1,5 +1,10 @@
 const tsCommit = "fed0bf24149fb1ed36039212648bafdafc1ea10e"
 const baselines = {
+    'ttttAliasArgsThroughImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyIntersectionDisjointDomains': {
         errors: true,
         symbols: true,
@@ -46,6 +51,11 @@ const baselines = {
         types: true,
     },
     'ttttDeferredCheckErrorLocation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,
         types: true,
@@ -1413,7 +1423,7 @@ const baselines = {
     'arrayFakeFlatNoCrashInferenceDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayFilter': {
         errors: true,
@@ -9568,7 +9578,7 @@ const baselines = {
     'declarationEmitUnserializableTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitUsingAlternativeContainingModules1': {
         errors: true,
@@ -9743,7 +9753,7 @@ const baselines = {
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareAlreadySeen': {
         errors: true,
@@ -16598,7 +16608,7 @@ const baselines = {
     'hugeDeclarationOutputGetsTruncatedWithError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'i3': {
         errors: true,
@@ -28053,7 +28063,7 @@ const baselines = {
     'recursiveConditionalCrash3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveConditionalCrash4': {
         errors: true,
@@ -34723,7 +34733,7 @@ const baselines = {
     'varianceComputationNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'varianceMeasurement': {
         errors: true,

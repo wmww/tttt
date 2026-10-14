@@ -413,14 +413,22 @@ static bool symbol_is_generic_alias(Symbol const* symbol) {
     return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
 }
 
-// A type's alias type arguments, the defaults filled in when it goes by a generic alias with none (an import's
-// reference without type arguments, see lower_identifier(): tsc's fillMissingTypeArguments where it compares them)
+// A type's alias type arguments, the defaults filled in where it goes by a generic alias with fewer (an import's
+// reference with the type arguments written, see lower_identifier(): tsc's fillMissingTypeArguments where it compares them)
 TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]) {
-    if (ty->alias_args.len || !ty->alias || !symbol_is_generic_alias(ty->alias)) return ty->alias_args;
+    if (!ty->alias || !symbol_is_generic_alias(ty->alias)) return ty->alias_args;
     TyList params = ty_alias_type_params(me, ty->alias);
-    if (!params.len || params.len > MAX_TYPE_ARGS) return ty->alias_args;
+    if (ty->alias_args.len >= params.len || params.len > MAX_TYPE_ARGS) return ty->alias_args;
     VecSpannedType none = {0};
-    return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf, false);
+    if (!ty->alias_args.len) return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf, false);
+    // (Those written, then the defaults: tsc's fillMissingTypeArguments, a default mentioning the parameters before it)
+    for (u32 i = 0; i < params.len; i++) buf[i] = i < ty->alias_args.len ? ty->alias_args.data[i] : ty_intrinsic(me, TY_ERROR);
+    for (u32 i = ty->alias_args.len; i < params.len; i++) {
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        if (fallback) fallback = ty_instantiate(me, fallback, ty_mapper_new(me, params, (TyList){ .data = buf, .len = params.len }));
+        buf[i] = fallback ? fallback : ty_intrinsic(me, TY_ERROR);
+    }
+    return (TyList){ .data = buf, .len = params.len };
 }
 
 // The instantiation of a generic type alias (canonical) with these type arguments, as `A<args>` written would be
@@ -707,20 +715,21 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             if (intrinsic) return intrinsic;
         }
         Ty const* ret = alias_instance(me, decl, declared, params, args);
-        // Through an import without type arguments it goes by the alias with none (tsc's getTypeFromTypeAliasReference:
-        // the resolved alias of an import/export, aliasTypeArguments `[]`): it prints as `A`, not `A<defaults>`
-        if (!vec_spanned_type_size(&identifier->generic_params) && identifier->symbol && identifier->symbol != identifier->target &&
-            (identifier->symbol->flags & SYMBOL_ALIAS) && ret->alias == decl
-        ) {
-            ret = ty_realias(me, ret, decl, (TyList){0});
-        } else if (identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS) &&
-            ret->alias != decl && ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL &&
+        // Through an import it goes by the alias with the type arguments as written (tsc's getTypeFromTypeAliasReference:
+        // the resolved alias of an import/export, aliasTypeArguments from the node, defaults not filled in): it prints
+        // as `A` or `A<X>`, not with the defaults
+        bool through_import = identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS);
+        TyList written = { .data = args.data, .len = (u32)vec_spanned_type_size(&identifier->generic_params) };
+        if (written.len > args.len) written.len = args.len;
+        if (through_import && ret->alias == decl && written.len < args.len) {
+            ret = ty_realias(me, ret, decl, written);
+        } else if (through_import && ret->alias != decl && ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL &&
             ret->conditional.root == declared->conditional.root
         ) {
             // (With type arguments through an import, the alias is passed down: a deferred conditional type, which
             // instantiation names by its root's alias, `Exclude<X, null>` of `import { NonNullable as N }` with
             // `N<U> = Exclude<U, null>`, is N<X>; tsc's getTypeFromTypeAliasReference)
-            ret = ty_realias(me, ret, decl, args);
+            ret = ty_realias(me, ret, decl, written);
         }
         return ret;
     }

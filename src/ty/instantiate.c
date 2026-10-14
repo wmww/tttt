@@ -550,7 +550,8 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         }
         TyMapper const* applied = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
         free(sources);
-        return ty_apply_type_arguments_mapper(me, target, applied);
+        bool query = intern_get(&my links, (u64[]){ KEY_INSTANTIATION_QUERY, ty->id }, 2) != nullptr;
+        return ty_apply_type_arguments_mapper_of(me, target, applied, query ? ty : nullptr);
     }
     Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);
     if (as_list) return as_list;
@@ -711,7 +712,10 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
     }
     if (ty->alias == alias) {
-        if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function) return ty;
+        // (A conditional type too: `C<T>` through an import is not `C<T, {}>`, tsc's getTypeAliasInstantiation keys on
+        // the alias type arguments)
+        if (ty->kind == TY_CONDITIONAL) {
+        } else if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function) return ty;
     } else {
         // (A deferred reference, `type L1<V> = L2<V>` of `type L2<V> = L3<V>`, goes by the new name too: tsc's
         // getObjectTypeInstantiation keys it on the alias)
