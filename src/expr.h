@@ -633,9 +633,25 @@ typedef struct PropertyExpr {
     // `this.x` of `this.x.push(v)`, `this.x.unshift(v)` or `this.x.length`: an evolving array operation target (tsc's
     // isEvolvingArrayOperationTarget), like IdentifierExpr.evolving_op's EVOLVING_OP_ACCESS. Set by the flow builder
     bool evolving_access : 1;
+    // PROPERTY_EXPR_DOT: the LazyType slot memoizing ty_access_key_type() (bound by the resolve walk, set by the
+    // checker; 0 for a synthetic access)
+    u32 name_slot;
     FlowNode* flow; // Like IdentifierExpr.flow
     // Set by the resolve walk (null before), see PropertyContext
     PropertyContext const* context;
+    struct PropertyRare* rare; // Owned, null when all of it is: read through property_rare()
+    // Last: a dot access is allocated without the bytes of `index` past `name_` (property_dot_new()), so that its
+    // name is a Span rather than a whole Expr (most accesses are dot ones)
+    union {
+        // PROPERTY_EXPR_DOT: the name (`b` of `a.b`, `#b` of `a.#b`, empty where it is missing), cooked with
+        // name_cooked(). Read it with property_name()
+        Span name_;
+        Expr index; // PROPERTY_EXPR_BRACKET: `k` of `a[k]`
+    };
+} PropertyExpr;
+
+// What few accesses have (set by the resolve walk, through property_rare_mut())
+typedef struct PropertyRare {
     // JavaScript: the member an assignment to this access declares (`this.x = v`, `ns.a = v`), set by the resolve walk
     Symbol const* declares;
     union {
@@ -646,23 +662,18 @@ typedef struct PropertyExpr {
         // see ty_access_key_type()
         struct ForEachLoopStatement const* for_in_loop_;
     };
-    // Last: a dot access is allocated without the bytes of `index` past `name_key` (property_dot_new()), so
-    // that its name is a Span rather than a whole Expr (most accesses are dot ones)
-    union {
-        struct {
-            // PROPERTY_EXPR_DOT: the name (`b` of `a.b`, `#b` of `a.#b`, empty where it is missing), cooked with
-            // name_cooked(). Read it with property_name()
-            Span name_;
-            // The memo of ty_access_key_type() (only its slot: bound by the resolve walk, set by the checker)
-            LazyType name_key;
-        };
-        Expr index; // PROPERTY_EXPR_BRACKET: `k` of `a[k]`
-    };
-} PropertyExpr;
+} PropertyRare;
+
+extern const PropertyRare property_no_rare;
+static inline PropertyRare const* property_rare(PropertyExpr const* me) {
+    return my rare ? my rare : &property_no_rare;
+}
+// Allocates it if needed
+PropertyRare* property_rare_mut(PropertyExpr* me);
 
 enum { PROPERTY_EXPR_DOT, PROPERTY_EXPR_BRACKET };
 
-// A dot access, owned (expr_drop() frees it): allocated short, see PropertyExpr.name_key
+// A dot access, owned (expr_drop() frees it): allocated short, see PropertyExpr.name_
 PropertyExpr* property_dot_new(PropertyExpr const* fields);
 
 static inline Span property_name(PropertyExpr const* me) {
@@ -697,11 +708,11 @@ static inline bool property_is_dot_name(PropertyExpr const* me, char const* name
 }
 
 static inline ClassDecl const* property_private_class(PropertyExpr const* me) {
-    return my form == PROPERTY_EXPR_DOT ? my private_class_ : nullptr;
+    return my form == PROPERTY_EXPR_DOT ? property_rare(me)->private_class_ : nullptr;
 }
 
 static inline struct ForEachLoopStatement const* property_for_in_loop(PropertyExpr const* me) {
-    return my form == PROPERTY_EXPR_BRACKET ? my for_in_loop_ : nullptr;
+    return my form == PROPERTY_EXPR_BRACKET ? property_rare(me)->for_in_loop_ : nullptr;
 }
 
 static inline PropertyContext const* property_context(PropertyExpr const* me) {

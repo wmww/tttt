@@ -28,6 +28,12 @@ const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
 const CallRare call_no_rare = {0};
+const PropertyRare property_no_rare = {0};
+
+PropertyRare* property_rare_mut(PropertyExpr* me) {
+    if (!my rare) my rare = c_new(PropertyRare, {0});
+    return my rare;
+}
 
 CallRare* call_rare_mut(CallExpr* me) {
     if (!my rare) my rare = c_new(CallRare, {0});
@@ -36,7 +42,7 @@ CallRare* call_rare_mut(CallExpr* me) {
 
 PropertyExpr* property_dot_new(PropertyExpr const* fields) {
     check(fields->form == PROPERTY_EXPR_DOT);
-    size_t size = offsetof(PropertyExpr, name_key) + sizeof(LazyType);
+    size_t size = offsetof(PropertyExpr, name_) + sizeof(Span);
     void* raw = malloc(size);
     check(raw);
     memcpy(raw, fields, size);
@@ -1037,6 +1043,7 @@ void expr_drop(Expr* me) {
         case EXPR_PROPERTY:
             expr_drop(&my property->expr);
             if (my property->form == PROPERTY_EXPR_BRACKET) expr_drop(&my property->index);
+            free(my property->rare);
             free(my property);
             break;
 
@@ -1341,9 +1348,9 @@ void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatemen
 }
 
 void expr_link_assignment_declaration(Expr* me, Binder* binder) {
-    if (my tag != EXPR_PROPERTY || !my property->declares || my property->form != PROPERTY_EXPR_DOT) return;
+    if (my tag != EXPR_PROPERTY || !property_rare(my property)->declares || my property->form != PROPERTY_EXPR_DOT) return;
     // (The declaration this assignment made: tsc's getControlFlowContainer of a valueDeclaration)
-    Symbol* declared = (Symbol*)my property->declares;
+    Symbol* declared = (Symbol*)property_rare(my property)->declares;
     for (u32 d = 0; d < declared->decl_count; d++) {
         SymbolDecl* decl = &declared->decls[d];
         if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
@@ -1439,7 +1446,7 @@ static void expr_lookup_names_chain(
     }
     if (my tag == EXPR_PROPERTY) {
         if (my property->form == PROPERTY_EXPR_BRACKET) expr_lookup_names(&my property->index, names, errs);
-        else lazy_type_bind(&my property->name_key, LAZY_TYPE_EVALUATED);
+        else if (!my property->name_slot) my property->name_slot = lazy_slot_new();
     } else if (my tag == EXPR_CALL) {
         for_each (i, vec_expr, &my call->args) {
             expr_lookup_names(i, names, errs);
@@ -1986,7 +1993,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 csview name = span_sv(property_name(my property));
                 ClassDecl const* c = my property->context->enclosing_class;
                 while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
-                my property->private_class_ = c;
+                if (c || my property->rare) property_rare_mut(my property)->private_class_ = c;
             }
             expr_link_assignment_declaration(me, names->binder);
             if (my property->expr.tag == EXPR_IDENTIFIER) {
@@ -2009,12 +2016,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             } else {
                 expr_lookup_names(&my property->expr, names, errs);
                 if (my property->form == PROPERTY_EXPR_BRACKET) expr_lookup_names(&my property->index, names, errs);
-                else lazy_type_bind(&my property->name_key, LAZY_TYPE_EVALUATED);
+                else if (!my property->name_slot) my property->name_slot = lazy_slot_new();
             }
             if (my property->form == PROPERTY_EXPR_BRACKET && my property->index.tag == EXPR_IDENTIFIER &&
                 my property->index.identifier.target
             ) {
-                my property->for_in_loop_ = scope_for_in_loop_of(names, my property->index.identifier.target);
+                ForEachLoopStatement const* loop = scope_for_in_loop_of(names, my property->index.identifier.target);
+                if (loop || my property->rare) property_rare_mut(my property)->for_in_loop_ = loop;
             }
             break;
 
@@ -2351,7 +2359,7 @@ static bool is_container_declaration(BinaryOpExpr const* op) {
     if (!init || init->tag != EXPR_OBJECT) return false;
     // (Only if it does declare members: `symbol.exports.size`. Unknown for CommonJS exports, taken as yes; an
     // assignment that declares nothing is none: `foo["baz"] = {}` of an annotated `foo`)
-    Symbol const* declared = op->left.property->declares;
+    Symbol const* declared = property_rare(op->left.property)->declares;
     if (!declared) return binary_commonjs_declaration(op, nullptr) != COMMONJS_TARGET_NONE;
     return declared->exports && declared->exports->count;
 }
@@ -4099,10 +4107,10 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
         js_module_exports_implicit_any_check(me, errs);
         return;
     }
-    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !op->left.property->declares) return;
+    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !property_rare(op->left.property)->declares) return;
     SourceFile const* file = span_source(my inner_span);
     if (!file || !compiler_options()->no_implicit_any) return;
-    Symbol const* member = op->left.property->declares;
+    Symbol const* member = property_rare(op->left.property)->declares;
     SymbolDecl const* first = nullptr;
     SymbolDecl const* own = nullptr;
     for (u32 i = 0; i < member->decl_count; i++) {
@@ -4126,7 +4134,7 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
 // JavaScript `/** @type {T} */ this.x = v` in a function, which declares nothing: tsgo only resolves the reparsed
 // binary.Type when the value asks for its contextual type, never checks it as such (no TS2526 for `{this}`)
 static bool is_undeclared_this_assignment(BinaryOpExpr const* op) {
-    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || op->left.property->declares) return false;
+    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || property_rare(op->left.property)->declares) return false;
     IdentifierExpr const* this = expr_this_keyword(&op->left.property->expr);
     return this && this->this_kind == THIS_ANY && op->right.tag != EXPR_FUNCTION && op->right.tag != EXPR_OBJECT;
 }

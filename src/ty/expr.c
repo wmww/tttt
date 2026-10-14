@@ -2798,7 +2798,7 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     if (left->tag != EXPR_PROPERTY) return false;
     SourceFile const* file = span_source(expr_outer_span(left));
     if (!file || !file->is_js) return false;
-    Symbol const* symbol = left->property->declares;
+    Symbol const* symbol = property_rare(left->property)->declares;
     // (A CommonJS export: `module.exports.A = {}; module.exports.A.B = 1`)
     Span name = span_null;
     if (!symbol && file->scope && file->scope->container && file->scope->container->exports &&
@@ -2832,7 +2832,7 @@ static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
 }
 
 static bool expando_target_is_annotated(PropertyExpr const* access) {
-    Symbol const* declared = access->declares;
+    Symbol const* declared = property_rare(access)->declares;
     // (`this.x`: its value declaration's annotation; `F.x`: only F's, tsgo's getContextualTypeForAssignmentExpression)
     bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
     if (this_access && declared->decl_count && symbol_decl_jsdoc_type(&declared->decls[0])) return true;
@@ -2927,7 +2927,7 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration). A class field
     // the class body declares with a type is that declaration's (the symbol's valueDeclaration in
     // getContextualTypeForThisPropertyAssignment): `/** @type {M} */ map;` then `this.map = {...}`
-    if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && binary->left.property->declares &&
+    if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && property_rare(binary->left.property)->declares &&
         !binary->jsdoc_type && !expando_target_is_annotated(binary->left.property)
     ) {
         assigned_context = annotated_property_context(me, binary);
@@ -5765,11 +5765,11 @@ Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
             return ty_prop_name_literal(me, ty_private_name(me, nullptr, span_sv(name)));
         }
         // (Memoized: the string's atom and literal are lookups by content. Synthetic accesses have no slot)
-        LazyType* memo = (LazyType*)&access->name_key;
-        LazyMemo const* state = memo->slot ? lazy_type_state_peek(memo) : nullptr;
+        LazyType memo = { .tag = LAZY_TYPE_EVALUATED, .slot = access->name_slot };
+        LazyMemo const* state = memo.slot ? lazy_type_state_peek(&memo) : nullptr;
         if (state && state->done) return lazy_memo_evaluated(state);
         Ty const* ret = ty_fresh_literal(me, ty_string_literal(me, span_sv(name)));
-        if (memo->slot) lazy_type_set(memo, ret, nullptr);
+        if (memo.slot) lazy_type_set(&memo, ret, nullptr);
         return ret;
     }
     if (is_for_in_numeric_variable(me, access)) return ty_intrinsic(me, TY_NUMBER);

@@ -2009,9 +2009,9 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
             declare_commonjs_export(me, span_sv(name), shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
             // (The property access is the declaration, which a read in its flow container finds undefined before it:
             // expr_link_assignment_declaration())
-            if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !op->left.property->declares) {
+            if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !property_rare(op->left.property)->declares) {
                 Symbol* exported = symbol_table_get(my container->exports, span_sv(name));
-                if (exported && !(exported->flags & SYMBOL_ALIAS)) op->left.property->declares = exported;
+                if (exported && !(exported->flags & SYMBOL_ALIAS)) property_rare_mut(op->left.property)->declares = exported;
             }
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS:
@@ -5416,7 +5416,7 @@ static void add_expando_member(
         value = &value->binary_op->right;
     }
     if (late_bound_key && !symbol_rare(member)->late_bound_key) symbol_rare_mut(member)->late_bound_key = late_bound_key;
-    if (left->tag == EXPR_PROPERTY) left->property->declares = member;
+    if (left->tag == EXPR_PROPERTY && (member || left->property->rare)) property_rare_mut(left->property)->declares = member;
     if (left->tag == EXPR_CALL && (member || left->call->rare)) call_rare_mut(left->call)->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
@@ -5476,7 +5476,7 @@ static void declare_assignment_member(
         member->parent = parent;
         member->exported = true;
     }
-    if (left->tag == EXPR_PROPERTY) left->property->declares = member;
+    if (left->tag == EXPR_PROPERTY && (member || left->property->rare)) property_rare_mut(left->property)->declares = member;
     if (left->tag == EXPR_CALL && (member || left->call->rare)) call_rare_mut(left->call)->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
