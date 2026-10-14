@@ -1987,7 +1987,8 @@ static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
     Expr const* key = vec_expr_at(&call->call->args, 1);
     Span shown = key->literal.tag == VALUE_STRING ? key->inner_span : name;
     declare_commonjs_export(me, span_sv(name), shown, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level, false);
-    call->call->declares = symbol_table_get(my container->exports, span_sv(name));
+    Symbol const* declares = symbol_table_get(my container->exports, span_sv(name));
+    if (declares || call->call->rare) call_rare_mut(call->call)->declares = declares;
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
@@ -5416,7 +5417,7 @@ static void add_expando_member(
     }
     if (late_bound_key && !symbol_rare(member)->late_bound_key) symbol_rare_mut(member)->late_bound_key = late_bound_key;
     if (left->tag == EXPR_PROPERTY) left->property->declares = member;
-    if (left->tag == EXPR_CALL) left->call->declares = member;
+    if (left->tag == EXPR_CALL && (member || left->call->rare)) call_rare_mut(left->call)->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true),
@@ -5476,7 +5477,7 @@ static void declare_assignment_member(
         member->exported = true;
     }
     if (left->tag == EXPR_PROPERTY) left->property->declares = member;
-    if (left->tag == EXPR_CALL) left->call->declares = member;
+    if (left->tag == EXPR_CALL && (member || left->call->rare)) call_rare_mut(left->call)->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true), .jsdoc_modifiers = jsdoc_modifiers,

@@ -27,6 +27,13 @@ const int as_type_precedence = 90;
 const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
+const CallRare call_no_rare = {0};
+
+CallRare* call_rare_mut(CallExpr* me) {
+    if (!my rare) my rare = c_new(CallRare, {0});
+    return my rare;
+}
+
 PropertyExpr* property_dot_new(PropertyExpr const* fields) {
     check(fields->form == PROPERTY_EXPR_DOT);
     size_t size = offsetof(PropertyExpr, name_key) + sizeof(LazyType);
@@ -1055,7 +1062,8 @@ void expr_drop(Expr* me) {
         case EXPR_CALL:
             expr_drop(&my call->callable);
             vec_expr_drop(&my call->args);
-            free(my call->unique_symbol);
+            if (my call->rare) free(my call->rare->unique_symbol);
+            free(my call->rare);
             free(my call);
             break;
 
@@ -2060,7 +2068,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             // (Undone after the switch. A `new` expression isn't a call to tsc's isContextuallyTyped)
             if (!my call->uses_new) flow->contextual_depth++;
             mark_indirect_call(&my call->callable);
-            if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
+            ClassDecl const* enclosing_class = my call->uses_new ? scope_enclosing_class(names) : nullptr;
+            if (enclosing_class) call_rare_mut(my call)->enclosing_class = enclosing_class;
             // `import("m", { with: { type: "json" } })`: the attributes are a const context (tsgo's isConstContext,
             // isInlineImportAttributes: the `with` property's own object literal, the options parenthesized or not)
             if (my call->callable.tag == EXPR_IDENTIFIER && my call->callable.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&

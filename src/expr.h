@@ -760,20 +760,32 @@ typedef struct TernaryExpr {
 
 // Call
 
+// What few calls have: read through call_rare(), written through call_rare_mut()
+typedef struct CallRare {
+    ClassDecl const* enclosing_class; // `new C()` in a class (for a private or protected constructor): see PropertyExpr
+    // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving,
+    // owned, null unless the callee is written `Symbol` or `Symbol.for`)
+    UniqueSymbolDecl* unique_symbol;
+    Symbol const* declares; // What a JavaScript `Object.defineProperty(o, "x", {...})` declares (set when binding)
+} CallRare;
+
 typedef struct CallExpr {
     bool uses_new;
     bool is_extends;
     bool optional_chain; // `f?.()`
     bool continues_chain; // Like PropertyExpr.continues_chain
-    ClassDecl const* enclosing_class; // `new C()` of a private or protected constructor: see PropertyExpr
+    CallRare* rare; // Owned, null when all of it is
     Expr callable;
     // PERF: types of each argument should be cached
     VecExpr args;
-    // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving,
-    // owned, null unless the callee is written `Symbol` or `Symbol.for`)
-    UniqueSymbolDecl* unique_symbol;
-    Symbol const* declares; // What a JavaScript `Object.defineProperty(o, "x", {...})` declares (set when binding)
 } CallExpr;
+
+extern const CallRare call_no_rare;
+static inline CallRare const* call_rare(CallExpr const* me) {
+    return my rare ? my rare : &call_no_rare;
+}
+// Allocates it if needed
+CallRare* call_rare_mut(CallExpr* me);
 
 // Template
 

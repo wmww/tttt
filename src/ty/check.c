@@ -4879,12 +4879,12 @@ bool ty_constructor_accessible(Checker* me, CallExpr const* call, Signature cons
         return true;
     }
     ClassDecl const* declaring = class_decl_of(function_impl_rare(function)->constructed_class);
-    if (!declaring || is_within_class(call->enclosing_class, declaring)) return true;
+    if (!declaring || is_within_class(call_rare(call)->enclosing_class, declaring)) return true;
     Ty const* declaring_type = ty_declared_type_of(me, function_impl_rare(function)->constructed_class);
     bool is_private = function_impl_rare(function)->constructor_access == ACCESS_MODIFIER_PRIVATE;
     // A protected constructor is accessible from a derived class (tsc's typeHasProtectedAccessibleBase)
-    if (!is_private && call->enclosing_class && call->enclosing_class->symbol &&
-        ty_has_base_type(me, ty_declared_type_of(me, call->enclosing_class->symbol), declaring_type)
+    if (!is_private && call_rare(call)->enclosing_class && call_rare(call)->enclosing_class->symbol &&
+        ty_has_base_type(me, ty_declared_type_of(me, call_rare(call)->enclosing_class->symbol), declaring_type)
     ) {
         return true;
     }
