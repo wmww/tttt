@@ -1375,11 +1375,16 @@ static TyMapper const* infer_type_arguments(
             Ty const* param_type = shape_type_at(&shape, i);
             if (arg->context_sensitive && !arg->spread && !arg->part_of_spread && param_type) {
                 my outer_inference = &self;
+                // (The functions it has that aren't skipped get their return types from their bodies now, whose
+                // context-sensitive functions fix what their contextual signatures mention: tsc's
+                // contextuallyCheckFunctionExpressionOrObjectLiteralMethod with the inference context's mapper)
+                self.fixing = true;
                 Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
                 GenericFunctionMode mode = {0};
                 Ty const* type = ty_check_literal_argument(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
                     true, &mode);
                 arg->nested_generic = mode.skipped;
+                self.fixing = false;
                 my outer_inference = nullptr;
                 infer_types(me, &inf, type, param_type, INFER_PRIORITY_NORMAL);
             }

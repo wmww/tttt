@@ -300,8 +300,6 @@ passing tests).
   family as sourcesweep_checker.md's -TS5115 and vue's postcss-selector-parser one).
 - distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
   `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
-- contextualTypingGenericFunction2 (TypeScript#61979): a context-sensitive arrow returned from a generic arrow argument
-  gets `unknown` for parameters typed by the outer call's still-inferring type parameter P; tttt leaves P.
 - Variances still measured differently from tsgo on xstate (25 of 160 type parameters, 2026-10-12; compare with
   tsgo's `--generateTrace` getVariancesWorker events, script idea: dump both, key by symbol name): mostly the
   unreliable/unmeasurable flags (tsgo `out (unreliable)` where tttt has plain or invariant) and some independent vs
