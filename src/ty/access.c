@@ -253,7 +253,13 @@ static bool is_string_index_signature_only(Checker* me, Ty const* ty) {
 // string or number key, `o["toString"]` included (tsc's getIndexedAccessTypeOrUndefined; property access expressions
 // find Object's toString)
 Ty const* ty_string_index_only_key(Checker* me, Ty const* object, Ty const* index) {
-    if ((index->flags & TYF_NULLABLE) || index->kind == TY_INTRINSIC || !is_string_index_signature_only(me, object)) return index;
+    // (string and number too, whose answer is the same either way: the members it resolves are what tsc resolves, a
+    // deferred reference's arguments in flight are TS4109, `[...Recur<T>[number][]]`)
+    if ((index->flags & TYF_NULLABLE) || (index->kind == TY_INTRINSIC && !(index->flags & (TYF_STRING | TYF_NUMBER))) ||
+        !is_string_index_signature_only(me, object)
+    ) {
+        return index;
+    }
     if (ty_is_related(me, index, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE) ||
         ty_is_related(me, index, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE)
     ) {

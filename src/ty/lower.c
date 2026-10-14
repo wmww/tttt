@@ -2591,6 +2591,16 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             } else {
                 ty_error_at_current_node_d(me, 4109, "Type arguments for '", name, "' circularly reference themselves.");
             }
+        } else if (node->tag == TYPE_TUPLE && reference->reference.target->declared.kind != TY_DECLARED_TUPLE_TARGET &&
+            reference->reference.target->declared.symbol
+        ) {
+            // (`[...X[]]` is the array X[] (tsc's createNormalizedTupleType): its symbol is named, at the tuple node)
+            Symbol const* symbol = reference->reference.target->declared.symbol;
+            if (span_valid(node->tuple.span)) {
+                ty_error_at(me, node->tuple.span, 4109, cstr_d("Type arguments for '", symbol->name, "' circularly reference themselves."));
+            } else {
+                ty_error_at_current_node_d(me, 4109, "Type arguments for '", symbol->name, "' circularly reference themselves.");
+            }
         } else if (node->tag == TYPE_TUPLE && span_valid(node->tuple.span)) {
             ty_error_at(me, node->tuple.span, 4110, cstr_from("Tuple type arguments circularly reference themselves."));
         } else {
