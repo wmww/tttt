@@ -1,0 +1,30 @@
+//// [test/cases/ttttJsDefaultTypeArgumentAny.ts] ////
+
+=== types.d.ts ===
+export interface Value<V = unknown> { v: V }
+>v : V
+
+export interface Derived<V = unknown> extends Value<V> { d: 1 }
+>d : 1
+
+=== a.js ===
+/** @import { Derived } from './types' */
+/**
+ * @template T
+ * @param {Derived} derived
+ * @returns {T}
+ */
+export function execute_derived(derived) {
+>execute_derived : <T>(derived: Derived) => T
+>derived : Derived<any>
+
+	const q = derived;
+>q : Derived<any>
+>derived : Derived<any>
+
+	return derived.v;
+>derived.v : any
+>derived : Derived<any>
+>v : any
+}
+

@@ -105,6 +105,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsDefaultTypeArgumentAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsonRecovery': {
         errors: true,
         symbols: true,

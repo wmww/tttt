@@ -1,0 +1,37 @@
+//// [test/cases/ttttJsDefaultTypeArgumentAny.ts] ////
+
+=== types.d.ts ===
+export interface Value<V = unknown> { v: V }
+>Value : Symbol(Value, Decl(types.d.ts, 0, 0))
+>V : Symbol(V, Decl(types.d.ts, 0, 23))
+>v : Symbol(Value.v, Decl(types.d.ts, 0, 37))
+>V : Symbol(V, Decl(types.d.ts, 0, 23))
+
+export interface Derived<V = unknown> extends Value<V> { d: 1 }
+>Derived : Symbol(Derived, Decl(types.d.ts, 0, 44))
+>V : Symbol(V, Decl(types.d.ts, 1, 25))
+>Value : Symbol(Value, Decl(types.d.ts, 0, 0))
+>V : Symbol(V, Decl(types.d.ts, 1, 25))
+>d : Symbol(Derived.d, Decl(types.d.ts, 1, 56))
+
+=== a.js ===
+/** @import { Derived } from './types' */
+/**
+ * @template T
+ * @param {Derived} derived
+ * @returns {T}
+ */
+export function execute_derived(derived) {
+>execute_derived : Symbol(execute_derived, Decl(a.js, 0, 0))
+>derived : Symbol(derived, Decl(a.js, 6, 32))
+
+	const q = derived;
+>q : Symbol(q, Decl(a.js, 7, 6))
+>derived : Symbol(derived, Decl(a.js, 6, 32))
+
+	return derived.v;
+>derived.v : Symbol(Value.v, Decl(types.d.ts, 0, 37))
+>derived : Symbol(derived, Decl(a.js, 6, 32))
+>v : Symbol(Value.v, Decl(types.d.ts, 0, 37))
+}
+

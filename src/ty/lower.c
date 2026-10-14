@@ -323,11 +323,18 @@ Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
     return links->static_type;
 }
 
-// Type arguments as written, padded with defaults (then `any`) and truncated to the parameter count. The first `outer`
-// parameters are a local class or interface's outer ones, which are passed as themselves
+// Whether a class or interface reference is in a JavaScript file (tsc's getTypeFromClassOrInterfaceReference passes
+// isInJSFile(node) to fillMissingTypeArguments; an alias's instantiation passes isInJSFile of the alias's value
+// declaration, which it has none of, so not for those)
+static bool identifier_in_js(IdentifierType const* identifier) {
+    SourceFile const* file = span_source(identifier_type_span(identifier));
+    return file && file->is_js;
+}
 
+// Type arguments as written, padded with defaults (then `any`; `js`: see identifier_in_js()) and truncated to the
+// parameter count. The first `outer` parameters are a local class or interface's outer ones, passed as themselves
 static TyList lower_type_args(
-    Checker* me, TyList params, u32 outer, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS]
+    Checker* me, TyList params, u32 outer, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS], bool js
 ) {
     panic_if(params.len > MAX_TYPE_ARGS, "too many type parameters");
     u32 written_len = (u32)vec_spanned_type_size(written) + outer;
@@ -340,6 +347,12 @@ static TyList lower_type_args(
             args[i] = ty_from_node(me, &vec_spanned_type_at(written, i - outer)->type, ctx);
         } else {
             Ty const* fallback = ty_param_default(me, params.data[i]);
+            // In JavaScript a default of `{}` or unknown is any (tsc's fillMissingTypeArguments with isInJSFile)
+            if (fallback && js && ((fallback->flags & TYF_UNKNOWN) ||
+                ty_is_related(me, fallback, ty_empty_object_type(me), TY_RELATION_IDENTITY))
+            ) {
+                fallback = ty_intrinsic(me, TY_ANY);
+            }
             if (fallback) {
                 // A default can mention the parameters before it
                 // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
@@ -382,7 +395,7 @@ TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_AR
     TyList params = ty_alias_type_params(me, ty->alias);
     if (!params.len || params.len > MAX_TYPE_ARGS) return ty->alias_args;
     VecSpannedType none = {0};
-    return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf);
+    return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf, false);
 }
 
 // The instantiation of a generic type alias (canonical) with these type arguments, as `A<args>` written would be
@@ -651,7 +664,8 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                     if (ctx.generic) return ty_reference(me, declared, declared->declared.type_params);
                 }
                 TyList args = lower_type_args(
-                    me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf
+                    me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf,
+                    identifier_in_js(identifier)
                 );
                 // (Not marked from_type_node, unlike tsc: tttt's signature relations don't instantiate a fresh reference
                 // at each level like tsc's do, so a generic interface reference written in a signature would never nest,
@@ -662,7 +676,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     if (symbol_is_generic_alias(decl)) {
         TyList params = ty_type_params_of(me, symbol_type_generic(decl));
-        TyList args = lower_type_args(me, params, 0, &identifier->generic_params, ctx, args_buf);
+        TyList args = lower_type_args(me, params, 0, &identifier->generic_params, ctx, args_buf, false);
         if (declared == ty_intrinsic(me, TY_ANY) && args.len == 1) {
             Ty const* intrinsic = intrinsic_alias_instance(me, decl, args.data[0]);
             if (intrinsic) return intrinsic;
@@ -740,7 +754,7 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
                 // It can mention the other type parameters, which are what the reference passes (`Foo<infer X,
                 // infer X>` with `U extends T` gives X itself, which is no constraint)
                 Ty const* args_buf[MAX_TYPE_ARGS];
-                TyList args = lower_type_args(me, params, outer, &reference->generic_params, (LowerCtx){ .generic = true }, args_buf);
+                TyList args = lower_type_args(me, params, outer, &reference->generic_params, (LowerCtx){ .generic = true }, args_buf, false);
                 constraint = ty_instantiate(me, declared_constraint, ty_mapper_new(me, params, args));
                 if (constraint == param) constraint = nullptr;
             }   break;
@@ -2510,7 +2524,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
         Ty const* written_buf[MAX_TYPE_ARGS];
         Ty const* target = reference->reference.target;
         TyList written = lower_type_args(me, target->declared.type_params, target->declared.outer_count,
-            &node->identifier->generic_params, deferred->ctx, written_buf);
+            &node->identifier->generic_params, deferred->ctx, written_buf, identifier_in_js(node->identifier));
         for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, written.data[i], deferred->mapper);
     } else {
         for (u32 i = 0; i < len; i++) {
@@ -3894,7 +3908,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 if (!renames && ret->kind == TY_UNION && distributes_over) {
                     Ty const* args_buf[MAX_TYPE_ARGS];
                     TyList params = ty_type_params_of(me, symbol_type_generic(canonical(me, decl)));
-                    TyList args = lower_type_args(me, params, 0, &node->identifier->generic_params, ctx, args_buf);
+                    TyList args = lower_type_args(me, params, 0, &node->identifier->generic_params, ctx, args_buf, false);
                     TyMapper const* mapper = ty_mapper_new(me, params, args);
                     renames = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
                 }
