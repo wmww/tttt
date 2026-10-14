@@ -2236,9 +2236,9 @@ const baselines = {
         types: true,
     },
     'augmentExportEquals2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'augmentExportEquals2_1': {
         errors: true,
@@ -21313,12 +21313,12 @@ const baselines = {
     'jsxNamespacePrefixInName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacePrefixInNameReact': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacePrefixIntrinsics': {
         errors: true,
@@ -62296,9 +62296,9 @@ const baselines = {
         types: true,
     },
     'scannerUnexpectedNullCharacter1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerUnicodeEscapeInKeyword1': {
         errors: true,

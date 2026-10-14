@@ -1661,17 +1661,25 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
             } else if (my tag == EXPR_JSX_ELEMENT && !my jsx->namespaced) {
                 // Only for the types baseline, which shows an intrinsic tag name as a value of that name (tsc's
                 // getTypeAtLocation checks it as an expression): no reference
+                // (With its flow node, tsc's binder gives every identifier expression one: a `var` assigned later is
+                // undefined there)
                 IdentifierExpr* name = &my jsx->tag_name.identifier;
-                if (!name->keyword) name->target = scope_get_value(names, span_sv(identifier_expr_name(name)), &name->symbol);
-                IdentifierExpr* closing = &my jsx->closing_name.identifier;
-                if (my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
-                    closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
+                if (!name->keyword) {
+                    name->target = scope_get_value(names, span_sv(identifier_expr_name(name)), &name->symbol);
+                    name->flow = flow_builder_reference(names->flow, my jsx->tag_name.inner_span);
                 }
             }
             for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
             expr_lookup_names(&my jsx->attributes, names, errs);
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_lookup_names(&i->expr, names, errs);
+            }
+            IdentifierExpr* closing = &my jsx->closing_name.identifier;
+            if (intrinsic && my tag == EXPR_JSX_ELEMENT && !my jsx->namespaced && my jsx->closing_name.tag == EXPR_IDENTIFIER &&
+                !closing->keyword
+            ) {
+                closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
+                closing->flow = flow_builder_reference(names->flow, my jsx->closing_name.inner_span);
             }
             if (!intrinsic && my jsx->closing_name.tag != EXPR_IMPLICIT_ANY && span_valid(my jsx->closing_name.inner_span) &&
                 my jsx->closing_name.inner_span.size

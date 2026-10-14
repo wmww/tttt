@@ -2738,7 +2738,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
     // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
     Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
     ctx->any_keeps_rendering = true; // (tsc's harness keeps it for JSX tag names)
-    baseline_test_case_add_type(ctx, name->inner_span, value ? ty_type_of_symbol(checker, value) : ty_intrinsic(checker, TY_ANY));
+    baseline_test_case_add_type(ctx, name->inner_span, value ? ty_expr_type(checker, name) : ty_intrinsic(checker, TY_ANY));
 }
 
 static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
