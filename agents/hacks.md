@@ -152,10 +152,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `triple_slash_invalid_reference()` re-implements tsc's pragma regexes next to `parse_source_directive()`.
 - `undefined` is a literal; `expr_lookup_names` rewrites it into an identifier when a non-global declaration is in
   scope (`Expr.undefined_assigned` for assignment targets). Should be an identifier resolved to undefinedSymbol.
-- TS2574 in `type_typecheck()` (type.c, HACK) skips generic types other than type parameters. tsc's isArrayLikeType
-  sees a homomorphic mapped type over an array-constrained `T[K]` as array-like (getResolvedApparentTypeOfMappedType
-  in the relation); tttt's relation doesn't, and deleting the skip loses
-  homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1. Real fix: that apparent type in relate.c.
 
 - `json_check_value()` (parser.c): the TS1328 of a missing or omitted JSON value is placed at its full start by walking
   back over whitespace only; a comment between `:` and the missing value puts tsc's at the comment's end.

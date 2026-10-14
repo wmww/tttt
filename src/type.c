@@ -585,9 +585,9 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                     is_rest = true;
                 } else if (i->rest) {
                     Ty const* type = ty_of_node(&i->type);
-                    // HACK: only type parameters of the generic types (a mapped type over T[K] can be array-like by its
-                    // constraint, which tttt's relation doesn't see)
-                    bool skip = i->type.tag == TYPE_TUPLE || (type->kind != TY_TYPE_PARAM && ty_is_generic_type(current_checker, type));
+                    // (A generic one too, through its constraint: a mapped type over a type parameter that isn't
+                    // constrained to an array isn't array-like, tsc's isArrayLikeType)
+                    bool skip = i->type.tag == TYPE_TUPLE;
                     if (!skip && !ty_extends_array(current_checker, type)) {
                         error_ctx_error_d(errs, i->span, 2574, "A rest element type must be an array type.");
                         break;
