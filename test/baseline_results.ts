@@ -20,6 +20,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCircularBaseDefaultArgument': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttComputedDestructuringNarrowing': {
         errors: true,
         symbols: true,
@@ -3626,9 +3631,9 @@ const baselines = {
         types: true,
     },
     'circularConstraintYieldsAppropriateError': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'circularConstructorWithReturn': {
         errors: true,
@@ -31227,7 +31232,7 @@ const baselines = {
     },
     'syntheticProtectedProperties': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'taggedPrimitiveNarrowing': {
@@ -50862,8 +50867,8 @@ const baselines = {
     },
     'typeofImportDefer': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importSource1(module=esnext)': {
         errors: true,

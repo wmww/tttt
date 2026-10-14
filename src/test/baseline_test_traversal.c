@@ -1115,7 +1115,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     .allow_declaration_empty = true,
                     .namespaces = vec_span_clone(so_far),
                     .span = *i,
-                    .text = decl && !decl->is_placeholder ? symbol_text(ctx, decl) : cstr_init(),
+                    // (A missing name resolves to tsc's unknownSymbol)
+                    .text = decl && !decl->is_placeholder ? symbol_text(ctx, decl) : i->size ? cstr_init() : cstr_lit("unknown"),
                 });
                 vec_span_push(&so_far, *i);
             }

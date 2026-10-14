@@ -3058,12 +3058,23 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         } else if (*p.pos == '.') {
             // `import.defer(...)`: tsc's parseType makes an entity name with a missing first identifier of `.defer`
             // (its error at the same position as the missing `(`, dropped), which checkImportType says TS1141 about
-            while (hop_char(&p, '.')) {
-                hop_whitespace(&p);
+            IdentifierType missing = { .name = span_make(p.shared->source, p.pos, p.pos) };
+            VecSpan namespaces = vec_span_init();
+            while (*p.pos == '.') {
+                Parser q = parser(&p);
+                hop_char(&q, '.');
+                hop_whitespace(&q);
                 Span name;
-                if (!parse_identifier_or_keyword(&p, &name)) break;
+                if (!parse_identifier_or_keyword(&q, &name)) {
+                    parse_fail(&q);
+                    break;
+                }
+                parse_success(&q);
+                vec_span_push(&namespaces, missing.name);
+                missing.name = name;
             }
-            rare.import_argument = c_new(TypeNode, {0}); // (Nothing to look up: an any)
+            identifier_type_rare(&missing)->namespaces = namespaces;
+            rare.import_argument = c_new(TypeNode, type_identifier(c_new(IdentifierType, missing)));
             rare.import_argument_span = span_from(path_anchor);
         } else {
             parse_error(&p, span_from_token(&p), 1141, "String literal expected.");

@@ -318,7 +318,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             Symbol const* decl;
             Symbol const* found;
             if (i == rare->namespaces.data /* First namespaces */) {
-                decl = scope_get_namespace(names, span_sv(*i), &found);
+                found = nullptr;
+                decl = i->size ? scope_get_namespace(names, span_sv(*i), &found) : nullptr; // (Missing: nothing)
                 if (namespace_from_expandos_only(decl)) decl = nullptr;
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
                 if (decl && decl->is_placeholder) port_item_check_namespace_import_use(found, names);
@@ -327,7 +328,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     Symbol const* type = scope_get_type(names, span_sv(*i), &type_symbol);
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
                         rare->type_as_namespace = type;
-                    } else {
+                    } else if (i->size) { // (A missing name: tsc's resolveEntityName says nothing)
                         scope_report_namespace_not_found(names, *i, errs);
                     }
                 }

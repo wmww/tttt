@@ -1804,7 +1804,8 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
             if (has_namespace) {
                 cstr_append_lit(&text, ".");
             }
-            cstr_append_span(&text, *i);
+            if (i->size) cstr_append_span(&text, *i);
+            else cstr_append_lit(&text, "unknown"); // (A missing name: tsc's unknownSymbol)
             has_namespace = true;
         }
     }
