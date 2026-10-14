@@ -1,0 +1,27 @@
+//// [test/cases/ttttCircularAliasArity.ts] ////
+
+=== ttttCircularAliasArity.ts ===
+// A type alias whose resolution is circular has no type parameters (tsc's getDeclaredTypeOfTypeAlias): a reference
+// without type arguments isn't TS2314, one with them is TS2315, and the alias is resolved before its arguments count
+type T2<X> = T2;
+>T2 : any
+
+type T3<out X> = T3;
+>T3 : any
+
+type T4<X> = T4<X>;
+>T4 : any
+
+type T5<X> = { a: T5<X> } | T6<X>;
+>T5 : any
+>a : any
+
+type T6<X> = T6;
+>T6 : any
+
+let a: T2<number>;
+>a : any
+
+let b: T2;
+>b : any
+

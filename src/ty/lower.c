@@ -300,6 +300,14 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
+// Whether a type alias's resolution reached itself (TS2456): tsc's getDeclaredTypeOfTypeAlias then never sets
+// typeAliasLinks.typeParameters, so every reference takes it as not generic (getTypeFromTypeAliasReference)
+bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || symbol->is_placeholder) return false;
+    ty_declared_type_of(me, symbol);
+    return symbol_links(me, canonical(me, symbol))->circular;
+}
+
 // The static side of a class, the object of an enum: what the symbol is as a value, before any merging
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol);
@@ -613,6 +621,9 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     Ty const* args_buf[MAX_TYPE_ARGS];
 
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
+    // (An alias is resolved first, which is where a reference inside its own body finds it circular: tsc's
+    // getTypeFromTypeAliasReference asks getDeclaredTypeOfSymbol before counting type arguments)
+    if (decl->flags & SYMBOL_TYPE_ALIAS) ty_declared_type_of(me, decl);
     // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
     // getTypeFromClassOrInterfaceReference), for a type alias or a type without type parameters in JavaScript too
     // (getTypeFromTypeAliasReference, checkNoTypeArguments)

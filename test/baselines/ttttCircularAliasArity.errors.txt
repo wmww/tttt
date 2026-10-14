@@ -1,0 +1,37 @@
+ttttCircularAliasArity.ts(3,6): error TS2456: Type alias 'T2' circularly references itself.
+ttttCircularAliasArity.ts(4,6): error TS2456: Type alias 'T3' circularly references itself.
+ttttCircularAliasArity.ts(4,9): error TS2637: Variance annotations are only supported in type aliases for object, function, constructor, and mapped types.
+ttttCircularAliasArity.ts(5,6): error TS2456: Type alias 'T4' circularly references itself.
+ttttCircularAliasArity.ts(5,14): error TS2315: Type 'T4' is not generic.
+ttttCircularAliasArity.ts(6,29): error TS2315: Type 'T6' is not generic.
+ttttCircularAliasArity.ts(7,6): error TS2456: Type alias 'T6' circularly references itself.
+ttttCircularAliasArity.ts(8,8): error TS2315: Type 'T2' is not generic.
+
+
+==== ttttCircularAliasArity.ts (8 errors) ====
+    // A type alias whose resolution is circular has no type parameters (tsc's getDeclaredTypeOfTypeAlias): a reference
+    // without type arguments isn't TS2314, one with them is TS2315, and the alias is resolved before its arguments count
+    type T2<X> = T2;
+         ~~
+!!! error TS2456: Type alias 'T2' circularly references itself.
+    type T3<out X> = T3;
+         ~~
+!!! error TS2456: Type alias 'T3' circularly references itself.
+            ~~~~~
+!!! error TS2637: Variance annotations are only supported in type aliases for object, function, constructor, and mapped types.
+    type T4<X> = T4<X>;
+         ~~
+!!! error TS2456: Type alias 'T4' circularly references itself.
+                 ~~~~~
+!!! error TS2315: Type 'T4' is not generic.
+    type T5<X> = { a: T5<X> } | T6<X>;
+                                ~~~~~
+!!! error TS2315: Type 'T6' is not generic.
+    type T6<X> = T6;
+         ~~
+!!! error TS2456: Type alias 'T6' circularly references itself.
+    let a: T2<number>;
+           ~~~~~~~~~~
+!!! error TS2315: Type 'T2' is not generic.
+    let b: T2;
+    

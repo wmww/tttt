@@ -607,6 +607,10 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
         return;
     }
+    if (ty_alias_is_circular(current_checker, symbol)) {
+        if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
+        return;
+    }
     if (!several_types_check_arity(symbol, arg_count, span, false, errs) && arg_count && !my jsdoc_unchecked) {
         ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
     }

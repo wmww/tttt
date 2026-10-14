@@ -5,6 +5,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCircularAliasArity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConditionalCallableAgainstAnyFunction': {
         errors: true,
         symbols: true,
@@ -52311,9 +52316,9 @@ const baselines = {
         types: true,
     },
     'errorOnFunctionReturnType(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportedAliasedEnumTag': {
         errors: true,

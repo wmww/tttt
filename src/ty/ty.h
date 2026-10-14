@@ -1602,6 +1602,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
 // The type of the default of an element of a pattern (`x = 1` in `{ x = 1 }`), checked with its contextual type
 Ty const* ty_binding_default_type(Checker* me, Binding const* element);
 Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
+bool ty_alias_is_circular(Checker* me, Symbol const* symbol);
 SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);

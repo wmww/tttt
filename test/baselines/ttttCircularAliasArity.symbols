@@ -1,0 +1,43 @@
+//// [test/cases/ttttCircularAliasArity.ts] ////
+
+=== ttttCircularAliasArity.ts ===
+// A type alias whose resolution is circular has no type parameters (tsc's getDeclaredTypeOfTypeAlias): a reference
+// without type arguments isn't TS2314, one with them is TS2315, and the alias is resolved before its arguments count
+type T2<X> = T2;
+>T2 : Symbol(T2, Decl(ttttCircularAliasArity.ts, 0, 0))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 2, 8))
+>T2 : Symbol(T2, Decl(ttttCircularAliasArity.ts, 0, 0))
+
+type T3<out X> = T3;
+>T3 : Symbol(T3, Decl(ttttCircularAliasArity.ts, 2, 16))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 3, 8))
+>T3 : Symbol(T3, Decl(ttttCircularAliasArity.ts, 2, 16))
+
+type T4<X> = T4<X>;
+>T4 : Symbol(T4, Decl(ttttCircularAliasArity.ts, 3, 20))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 4, 8))
+>T4 : Symbol(T4, Decl(ttttCircularAliasArity.ts, 3, 20))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 4, 8))
+
+type T5<X> = { a: T5<X> } | T6<X>;
+>T5 : Symbol(T5, Decl(ttttCircularAliasArity.ts, 4, 19))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 5, 8))
+>a : Symbol(a, Decl(ttttCircularAliasArity.ts, 5, 14))
+>T5 : Symbol(T5, Decl(ttttCircularAliasArity.ts, 4, 19))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 5, 8))
+>T6 : Symbol(T6, Decl(ttttCircularAliasArity.ts, 5, 34))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 5, 8))
+
+type T6<X> = T6;
+>T6 : Symbol(T6, Decl(ttttCircularAliasArity.ts, 5, 34))
+>X : Symbol(X, Decl(ttttCircularAliasArity.ts, 6, 8))
+>T6 : Symbol(T6, Decl(ttttCircularAliasArity.ts, 5, 34))
+
+let a: T2<number>;
+>a : Symbol(a, Decl(ttttCircularAliasArity.ts, 7, 3))
+>T2 : Symbol(T2, Decl(ttttCircularAliasArity.ts, 0, 0))
+
+let b: T2;
+>b : Symbol(b, Decl(ttttCircularAliasArity.ts, 8, 3))
+>T2 : Symbol(T2, Decl(ttttCircularAliasArity.ts, 0, 0))
+
