@@ -358,3 +358,13 @@ recursion (`TTTT_DEBUG_RELATE_NESTED=1`: every level 3), and the top-level Maybe
 measured in the middle of the fresh relation. Unknown whether tsgo would give Maybe in some order too (then it's a
 tsgo-style order dependence for bugs/tsgo_divergences.md); start by checking which member and property order tsgo
 compares (`scripts/variancetrace.py`-style instrumentation of relater.go's recursiveTypeRelatedTo).
+
+## Conditional simplification before base constraints (plan 61 stage 3 leftover, triage 2026-10-14)
+tsc simplifies every type before computing its base constraint (getResolvedBaseConstraint); tttt does it for indexed
+accesses only (hacks.md, `resolved_base_constraint()`). Doing it for conditional types too costs mikro-orm/seeder 2.3x
+types; with a prefilter in `compute_simplified_conditional()` that skips instantiating the branches when the root's
+branches can't be never, distributiveConditionalTypeConstraints loses `f10` (`ZeroOf<T>` with `T extends {}` assigned
+to `"" | 0 | false` errors), although the prefilter returns the same answers: the branch instantiation was a side
+effect something downstream depends on (an order dependence). Not in base/distributive constraints nor
+narrowable_type (checked); look at the relation of `ZeroOf<T>` to the union. Probe: the test's lines 27-37 under
+`--strict`.

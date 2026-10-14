@@ -33,7 +33,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   parallel loading / resolving / checking, declaration diagnostics, project references / `-b`, tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), content
-  mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
+  mappers (plan 56, not started; now scheduled by plan 66, the human wants the suite at 100%), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
   member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64, planned, not started).
 
 ## Course correction (insights of 2026-10-13, end of the fourteenth window)

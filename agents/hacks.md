@@ -440,7 +440,7 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc's alias references are lazier. Real fix: deferred alias references, or that gate after the alias is resolved.
 - `resolved_base_constraint()` simplifies only indexed accesses before computing (tsc: every type). A conditional's
   simplification instantiates both branches, which resolves the conditional types in them: mikro-orm/packages/seeder
-  went 2.3x types (triage.md has the order dependence a cheaper prefilter exposed).
+  went 2.3x types (bugs/type_core.md has the order dependence a cheaper prefilter exposed).
 - Base constraints of types without type variables are themselves (`resolved_base_constraint()`) except string mappings,
   template literals and substitution types: tsc also computes unions/intersections containing those
   (`Uppercase<string> | number` is `string | number` to tsc, itself to tttt).

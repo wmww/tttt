@@ -1,7 +1,8 @@
 # Plan 56: content mappers (TS 7.1 `contentMappers`)
 
-Status: not started. Written 2026-10-09 by the 7.1 fan-out (agent B) after reading tsgo; decision: **don't implement
-now**. 10 suite tests (`contentMapper*`, 15 in tsgo's tree) and nothing in the corpora or sweeps uses the feature yet.
+Status: not started. Written 2026-10-09 by the 7.1 fan-out (agent B) after reading tsgo; its decision "don't implement
+now" is **reversed** (2026-10-14): the human wants the suite at 100%, plan 66 schedules it and says how the suite
+should run tsgo's Go test mappers. 10 suite tests (`contentMapper*`, 15 in tsgo's tree) and nothing in the corpora or sweeps uses the feature yet.
 
 ## What it is
 A tsconfig option that lets an external program turn files TypeScript can't read (`.vue`, `.box`...) into virtual

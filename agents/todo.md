@@ -55,5 +55,5 @@ plan 61.
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 64 (`.d.ts` emit, stages 1-5); plan 65 (the TS5115 eager-base runaway, 13 sweep projects); plan 56 (content
-mappers) only if a corpus or sweep starts using them.
+After the insights entry (for the next window): **plan 66 (the suite to 100%, the human's request: a fan-out, plan 56's
+content mappers, emit order riding on plan 64)**; plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 64 (`.d.ts` emit, stages 1-5); plan 65 (the TS5115 eager-base runaway, 13 sweep projects).
