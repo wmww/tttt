@@ -304,3 +304,89 @@ S.m;
 >S : typeof S
 >m : { (x: string): string; (): number; }
 
+// A class checks its duplicate properties before late binding merged anything (tsc's getSymbolOfDeclaration of an
+// early member before the first late-bound one is the early symbol alone): only a late-bound one first is TS2300
+class V1 {
+>V1 : V1
+
+    kk: number;
+>kk : number
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+}
+class V2 {
+>V2 : V2
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+
+    ["kk"]: number;
+>["kk"] : number
+>"kk" : "kk"
+}
+class V3 {
+>V3 : V3
+
+    ["kk"]: number;
+>["kk"] : number
+>"kk" : "kk"
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+}
+class V5 {
+>V5 : V5
+
+    "kk": number;
+>"kk" : number
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+}
+class Twice {
+>Twice : Twice
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+
+    [k]: string;
+>[k] : number
+>k : "kk"
+}
+// A late-bound property conflicting with an early method: reportMergeSymbolError, named as the late one is written
+class MethodFirst {
+>MethodFirst : MethodFirst
+
+    kk() {}
+>kk : () => void
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+}
+interface MethodFirstI {
+    [k](): void;
+>[k] : () => void
+>k : "kk"
+
+    kk: number;
+>kk : number
+}
+class SymbolKeys {
+>SymbolKeys : SymbolKeys
+
+    [s]: number;
+>[s] : number
+>s : unique symbol
+
+    [s]() {}
+>[s] : () => void
+>s : unique symbol
+}
+

@@ -1743,12 +1743,14 @@ static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const*
     return len;
 }
 
-// A late-bound member (an entity name key) merged into the early member of its name, or into another late-bound one:
-// the declarations of the checker's member, which has them in tsc's order (the early ones first, see
-// resolve_declared_members()), named as its first declaration writes it. False when it is alone
+// A member with a computed name merged with others: a late-bound one (an entity name key) into the early member of its
+// name or another late-bound one, a literal one with late-bound ones: the declarations of the checker's member, which
+// has them in tsc's order (the early ones first, see resolve_declared_members()), named as its first declaration
+// writes it. False when it has no more than `declarations`
 static bool late_member_declarations(ClassItem const* me, BaselineTestCase* ctx, VecSpan* declarations, Span* written_name) {
     Expr const* key = me->tag == CLASS_ITEM_METHOD ? me->method.computed_key : me->field.computed_key;
-    if (!key || computed_key_early_name(key, nullptr) || !expr_is_entity_name(key) || !ctx->class_symbol) return false;
+    bool early = key && computed_key_early_name(key, nullptr);
+    if (!key || (!early && !expr_is_entity_name(key)) || !ctx->class_symbol) return false;
     Checker* checker = current_checker;
     bool is_number = false;
     Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
@@ -1756,7 +1758,7 @@ static bool late_member_declarations(ClassItem const* me, BaselineTestCase* ctx,
         ty_declared_type_of(checker, ctx->class_symbol);
     Prop const* prop = name ? ty_get_prop(checker, owner, name) : nullptr;
     while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
-    if (!prop || prop->decl->decl_span_count < 2) return false;
+    if (!prop || prop->decl->decl_span_count < 2 || (early && prop->decl->decl_span_count <= (u32)vec_span_size(declarations))) return false;
     bool mine = false;
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], me->span);
     if (!mine) return false;
@@ -1906,7 +1908,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             if (span_valid(class_item_private_name(me)) && ctx->class_symbol) {
                 name = ty_private_name(current_checker, ctx->class_symbol, span_sv(class_item_private_name(me)));
             }
-            if (my field.is_static && my field.computed_key) {
+            if (my field.computed_key) {
                 bool is_number = false;
                 name = ty_property_name_of_key(current_checker, ty_expr_type(current_checker, my field.computed_key), &is_number);
             }

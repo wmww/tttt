@@ -290,3 +290,91 @@ S.m;
 >S : Symbol(S, Decl(ttttLateBoundMemberMerge.ts, 86, 1))
 >m : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
 
+// A class checks its duplicate properties before late binding merged anything (tsc's getSymbolOfDeclaration of an
+// early member before the first late-bound one is the early symbol alone): only a late-bound one first is TS2300
+class V1 {
+>V1 : Symbol(V1, Decl(ttttLateBoundMemberMerge.ts, 92, 4))
+
+    kk: number;
+>kk : Symbol(V1.kk, Decl(ttttLateBoundMemberMerge.ts, 96, 10), Decl(ttttLateBoundMemberMerge.ts, 97, 15))
+
+    [k]: number;
+>[k] : Symbol(V1.kk, Decl(ttttLateBoundMemberMerge.ts, 96, 10), Decl(ttttLateBoundMemberMerge.ts, 97, 15))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+}
+class V2 {
+>V2 : Symbol(V2, Decl(ttttLateBoundMemberMerge.ts, 99, 1))
+
+    [k]: number;
+>[k] : Symbol(V2["kk"], Decl(ttttLateBoundMemberMerge.ts, 101, 16), Decl(ttttLateBoundMemberMerge.ts, 100, 10))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+    ["kk"]: number;
+>["kk"] : Symbol(V2["kk"], Decl(ttttLateBoundMemberMerge.ts, 101, 16), Decl(ttttLateBoundMemberMerge.ts, 100, 10))
+>"kk" : Symbol(V2["kk"], Decl(ttttLateBoundMemberMerge.ts, 101, 16), Decl(ttttLateBoundMemberMerge.ts, 100, 10))
+}
+class V3 {
+>V3 : Symbol(V3, Decl(ttttLateBoundMemberMerge.ts, 103, 1))
+
+    ["kk"]: number;
+>["kk"] : Symbol(V3["kk"], Decl(ttttLateBoundMemberMerge.ts, 104, 10), Decl(ttttLateBoundMemberMerge.ts, 105, 19))
+>"kk" : Symbol(V3["kk"], Decl(ttttLateBoundMemberMerge.ts, 104, 10), Decl(ttttLateBoundMemberMerge.ts, 105, 19))
+
+    [k]: number;
+>[k] : Symbol(V3["kk"], Decl(ttttLateBoundMemberMerge.ts, 104, 10), Decl(ttttLateBoundMemberMerge.ts, 105, 19))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+}
+class V5 {
+>V5 : Symbol(V5, Decl(ttttLateBoundMemberMerge.ts, 107, 1))
+
+    "kk": number;
+>"kk" : Symbol(V5["kk"], Decl(ttttLateBoundMemberMerge.ts, 108, 10), Decl(ttttLateBoundMemberMerge.ts, 109, 17))
+
+    [k]: number;
+>[k] : Symbol(V5["kk"], Decl(ttttLateBoundMemberMerge.ts, 108, 10), Decl(ttttLateBoundMemberMerge.ts, 109, 17))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+}
+class Twice {
+>Twice : Symbol(Twice, Decl(ttttLateBoundMemberMerge.ts, 111, 1))
+
+    [k]: number;
+>[k] : Symbol(Twice[k], Decl(ttttLateBoundMemberMerge.ts, 112, 13), Decl(ttttLateBoundMemberMerge.ts, 113, 16))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+    [k]: string;
+>[k] : Symbol(Twice[k], Decl(ttttLateBoundMemberMerge.ts, 112, 13), Decl(ttttLateBoundMemberMerge.ts, 113, 16))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+}
+// A late-bound property conflicting with an early method: reportMergeSymbolError, named as the late one is written
+class MethodFirst {
+>MethodFirst : Symbol(MethodFirst, Decl(ttttLateBoundMemberMerge.ts, 115, 1))
+
+    kk() {}
+>kk : Symbol(MethodFirst.kk, Decl(ttttLateBoundMemberMerge.ts, 117, 19))
+
+    [k]: number;
+>[k] : Symbol(MethodFirst[k], Decl(ttttLateBoundMemberMerge.ts, 118, 11))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+}
+interface MethodFirstI {
+>MethodFirstI : Symbol(MethodFirstI, Decl(ttttLateBoundMemberMerge.ts, 120, 1))
+
+    [k](): void;
+>[k] : Symbol(MethodFirstI[k], Decl(ttttLateBoundMemberMerge.ts, 121, 24))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+    kk: number;
+>kk : Symbol(MethodFirstI.kk, Decl(ttttLateBoundMemberMerge.ts, 122, 16))
+}
+class SymbolKeys {
+>SymbolKeys : Symbol(SymbolKeys, Decl(ttttLateBoundMemberMerge.ts, 124, 1))
+
+    [s]: number;
+>[s] : Symbol(SymbolKeys[s], Decl(ttttLateBoundMemberMerge.ts, 125, 18))
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+
+    [s]() {}
+>[s] : Symbol(SymbolKeys[s], Decl(ttttLateBoundMemberMerge.ts, 126, 16))
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+}
+

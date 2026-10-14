@@ -92,3 +92,39 @@ class S {
     static m(x?: any): any { return 1; }
 }
 S.m;
+
+// A class checks its duplicate properties before late binding merged anything (tsc's getSymbolOfDeclaration of an
+// early member before the first late-bound one is the early symbol alone): only a late-bound one first is TS2300
+class V1 {
+    kk: number;
+    [k]: number;
+}
+class V2 {
+    [k]: number;
+    ["kk"]: number;
+}
+class V3 {
+    ["kk"]: number;
+    [k]: number;
+}
+class V5 {
+    "kk": number;
+    [k]: number;
+}
+class Twice {
+    [k]: number;
+    [k]: string;
+}
+// A late-bound property conflicting with an early method: reportMergeSymbolError, named as the late one is written
+class MethodFirst {
+    kk() {}
+    [k]: number;
+}
+interface MethodFirstI {
+    [k](): void;
+    kk: number;
+}
+class SymbolKeys {
+    [s]: number;
+    [s]() {}
+}

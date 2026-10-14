@@ -3327,6 +3327,10 @@ typedef struct MemberEntry {
     Span decls[8];
     u32 decl_count;
     u32 total; // Declarations, those past `decls` too
+    // Before merge_late_members() merged late-bound declarations into it: what tsc's check of a member before the first
+    // late-bound one sees (getMergedSymbol before late binding ran), see check_duplicate_declarations()
+    u32 early_total;
+    bool merged;
 } MemberEntry;
 
 typedef struct MemberTables {
@@ -3502,6 +3506,8 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
         for_each (r, vec_dup_record, records) {
             if (r->entry == (i32)l) r->entry = early_index;
         }
+        if (!early->merged) early->early_total = early->total;
+        early->merged = true;
         early->total += late->total;
         late->total = 0;
     }
@@ -3547,9 +3553,16 @@ static void check_duplicate_declarations(MemberTables const* tables, VecDupRecor
     NameState* states = malloc(sizeof(NameState) * (vec_dup_record_size(records) + 1));
     panic_if(!states, "out of memory");
     u32 state_count = 0;
+    // (In a class, tsc's getSymbolOfDeclaration of a member before the first late-bound one: the early symbol, which
+    // late binding hasn't merged anything into yet. `[k]: T; kk: T` is TS2300, `kk: T; [k]: T` isn't. An interface's
+    // or type literal's check resolved the members first, checkIndexConstraints)
+    bool late_seen = !private_names;
     for_each (r, vec_dup_record, records) {
-        if (r->list != list) continue;
-        if (r->check_kind && r->entry >= 0 && tables->entries[r->entry].total > 1) {
+        late_seen |= r->late;
+        if (r->list != list || r->entry < 0) continue;
+        MemberEntry const* entry = &tables->entries[r->entry];
+        u32 total = entry->merged && !late_seen ? entry->early_total : entry->total;
+        if (r->check_kind && total > 1) {
             NameState* state = nullptr;
             for (u32 i = 0; i < state_count && !state; i++) {
                 if (states[i].name == r->name && states[i].table == r->table) state = &states[i];
@@ -3730,13 +3743,6 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             // (A private name is its class's own, `__#1@#a` to tsc's binder: `#a` and `["#a"]` don't meet)
             entry = declare_member(tables, name, is_static + (span_valid(private_name) ? PRIVATE_TABLE : 0), kind, name_span, errs);
         } else {
-            // HACK: a late-bound name still conflicts with what the early table has (the static side's `prototype`,
-            // where tsc reports TS2300 from somewhere not pinned down), without joining it
-            MemberEntry* early = find_member(tables, name, is_static);
-            if (early && early->has_member && (early->flags & symbol_excludes(kind))) {
-                for (u32 d = 0; d < early->decl_count; d++) report_duplicate(early->decls[d], errs);
-                report_duplicate(name_span, errs);
-            }
             bool unique_symbol = ty_regular(me, ty_expr_type(me, computed_key))->flags & TYF_UNIQUE_ES_SYMBOL;
             entry = declare_late_member(tables, name, is_static, kind, name_span, unique_symbol, errs);
         }

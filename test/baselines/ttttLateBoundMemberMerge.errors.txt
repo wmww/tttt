@@ -40,9 +40,31 @@ ttttLateBoundMemberMerge.ts(86,5): error TS2389: Function implementation name mu
 ttttLateBoundMemberMerge.ts(86,5): error TS2393: Duplicate function implementation.
 ttttLateBoundMemberMerge.ts(89,12): error TS2391: Function implementation is missing or not immediately following the declaration.
 ttttLateBoundMemberMerge.ts(91,12): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(98,5): error TS2564: Property 'kk' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(99,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(102,5): error TS2300: Duplicate identifier '["kk"]'.
+ttttLateBoundMemberMerge.ts(102,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(103,5): error TS2300: Duplicate identifier '["kk"]'.
+ttttLateBoundMemberMerge.ts(103,5): error TS2564: Property '["kk"]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(106,5): error TS2564: Property '["kk"]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(107,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(111,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(114,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(114,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(115,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(115,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(115,5): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+ttttLateBoundMemberMerge.ts(119,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(120,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(120,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(123,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(124,5): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(127,5): error TS2300: Duplicate identifier '[s]'.
+ttttLateBoundMemberMerge.ts(127,5): error TS2564: Property '[s]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(128,5): error TS2300: Duplicate identifier '[s]'.
 
 
-==== ttttLateBoundMemberMerge.ts (42 errors) ====
+==== ttttLateBoundMemberMerge.ts (64 errors) ====
     // A computed literal key is bound early by its value (tsc's getDeclarationName: `["kk"]` is `kk`); a computed entity
     // name is bound late (lateBindMember), and its symbol merges into the early one of its name after all the early
     // declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables): the types, symbols, overload order and
@@ -225,4 +247,89 @@ ttttLateBoundMemberMerge.ts(91,12): error TS2391: Function implementation is mis
 !!! error TS2391: Function implementation is missing or not immediately following the declaration.
     }
     S.m;
+    
+    // A class checks its duplicate properties before late binding merged anything (tsc's getSymbolOfDeclaration of an
+    // early member before the first late-bound one is the early symbol alone): only a late-bound one first is TS2300
+    class V1 {
+        kk: number;
+        ~~
+!!! error TS2564: Property 'kk' has no initializer and is not definitely assigned in the constructor.
+        [k]: number;
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+    }
+    class V2 {
+        [k]: number;
+        ~~~
+!!! error TS2300: Duplicate identifier '["kk"]'.
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+        ["kk"]: number;
+        ~~~~~~
+!!! error TS2300: Duplicate identifier '["kk"]'.
+        ~~~~~~
+!!! error TS2564: Property '["kk"]' has no initializer and is not definitely assigned in the constructor.
+    }
+    class V3 {
+        ["kk"]: number;
+        ~~~~~~
+!!! error TS2564: Property '["kk"]' has no initializer and is not definitely assigned in the constructor.
+        [k]: number;
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+    }
+    class V5 {
+        "kk": number;
+        [k]: number;
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+    }
+    class Twice {
+        [k]: number;
+        ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+        [k]: string;
+        ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+        ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:114:5: '[k]' was also declared here.
+    }
+    // A late-bound property conflicting with an early method: reportMergeSymbolError, named as the late one is written
+    class MethodFirst {
+        kk() {}
+        ~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:120:5: '[k]' was also declared here.
+        [k]: number;
+        ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:119:5: '[k]' was also declared here.
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+    }
+    interface MethodFirstI {
+        [k](): void;
+        ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:124:5: '[k]' was also declared here.
+        kk: number;
+        ~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:123:5: '[k]' was also declared here.
+    }
+    class SymbolKeys {
+        [s]: number;
+        ~~~
+!!! error TS2300: Duplicate identifier '[s]'.
+        ~~~
+!!! error TS2564: Property '[s]' has no initializer and is not definitely assigned in the constructor.
+        [s]() {}
+        ~~~
+!!! error TS2300: Duplicate identifier '[s]'.
+    }
     

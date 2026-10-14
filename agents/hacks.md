@@ -600,6 +600,11 @@ src` finds the code-side markers; every significant one has an entry here.
   identity"): a partial port.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
+- `check_duplicate_declarations()` (TS2300 for a property declared again) reproduces a tsgo checking-order artifact:
+  in a class, a member before the first late-bound one counts its early symbol's declarations only
+  (`MemberEntry.early_total`: tsgo's getSymbolOfDeclaration before late binding merged anything), keyed on the
+  `private_names` parameter, which only the class check passes. If something in tttt ever resolves class members
+  before this check the way tsgo might, revisit.
 - `checker_defer_function_body()` (ty/checker.c): a function expression's body is queued from its first check
   only when it is in the file being checked. tsc's checkNodeDeferred also queues one checked from *another* file into
   that file's set before the file is checked, so those come first: excalidraw's bounds.ts under
