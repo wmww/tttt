@@ -779,10 +779,11 @@ src` finds the code-side markers; every significant one has an entry here.
   (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type: `S & object` of a conditional's true
   branch, `Pick<X, keyof X>` too), but doing so changed localTypeParameterInferencePriority's inference candidates
   (an extra `Pick<UnrollOnHover<S>, ...>` candidate): something downstream treats the extra index signature differently.
-- `try_resolve_indexed` (checker.c): an anonymous object indexed by never is never, members unresolved (tsc reads an
-  index signature: `Record<string, T>[never]` is T). Taking it made xstate's recursive StateId (`Values<{ [K in never]:
+- `never_index_read` (checker.c): an anonymous object indexed by never is never, members unresolved (tsc reads an
+  index signature: `{ [k: number]: X }[never]` is X). Taking it made xstate's recursive StateId (`Values<{ [K in never]:
   StateId<...> }>`) hit TS5115 under nosnc/sloppy flagflip cells (+7): resolving those keyless mapped types' members,
-  even ty_mapped_info_unexpanded's constraint, instantiates enough to tip the circularity heuristic. Cost: es-toolkit's
-  compat sampleSize (`Array<C[keyof C]>`'s element `T | Record<string, T>[never] | ...`) is back to an unused
-  @ts-expect-error (+TS2578, as at the start of 2026-10-12). Fix properly by making the TS5115/instantiation
-  accounting not depend on such member resolution, or a mapped type's template lazy when its keys are none.
+  even ty_mapped_info_unexpanded's constraint of the instantiation, instantiates enough to tip the circularity
+  heuristic. Only a mapped type whose keys its declaration tells (a primitive, or a type parameter the instantiation
+  maps to string/number/symbol: `Record<string, T>[never]` is T, es-toolkit's sampleSize) reads its index signature.
+  Type literals with index signatures still don't. Fix properly by making the TS5115/instantiation accounting not
+  depend on such member resolution, or a mapped type's template lazy when its keys are none.

@@ -3004,6 +3004,15 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
     return true;
 }
 
+// Whether a mapped type's keys `constraint` make index signatures: string, number or symbol among them
+static bool mapped_keys_have_index_signature(Ty const* constraint) {
+    TyList keys = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    for (u32 i = 0; i < keys.len; i++) {
+        if (keys.data[i]->kind == TY_INTRINSIC && (keys.data[i]->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL))) return true;
+    }
+    return false;
+}
+
 // What a never index reads before the general access (out of line: try_resolve_indexed is hot). Null: no shortcut
 [[gnu::noinline, gnu::cold]] static Ty const* never_index_read(Checker* me, Ty const* object, Ty const* index) {
     // A never index on a tuple reads its number index signature, the union of its elements, without resolving the
@@ -3013,9 +3022,22 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
     // resolving its members here would, xstate's recursive StateId then ran into TS5115 without strictNullChecks)
     // HACK: an anonymous object indexed by never is never, its members unresolved. tsc reads an index signature there
     // (`{ [k: string]: X }[never]` is X), but resolving the members of xstate's `{ [K in never]: StateId<...> }` (and
-    // the other `{}`s on the way) instantiated enough to push its recursive StateId into TS5115 without
-    // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template
-    if (object->kind == TY_ANONYMOUS) return index;
+    // the other `{}`s on the way), or even just their keys (ty_mapped_info_unexpanded() of the instantiation),
+    // instantiated enough to push its recursive StateId into TS5115 without strictNullChecks (flagflip nosnc/sloppy:
+    // +7); tsc never instantiates a keyless mapped type's template. Only a mapped type whose keys are known from its
+    // declaration reads its index signature: keys written as a primitive or as a type parameter the instantiation maps
+    // to string, number or symbol (`Record<string, T>[never]` is T, es-toolkit's sampleSize)
+    if (object->kind == TY_ANONYMOUS) {
+        if (!object->anonymous.mapped) return index;
+        Ty const* declared = object->anonymous.target ? object->anonymous.target : object;
+        if (declared->kind != TY_ANONYMOUS || declared->anonymous.target || !declared->anonymous.mapped) return index;
+        MappedInfo const* mapped = ty_mapped_info_unexpanded(me, declared);
+        if (!mapped || mapped->name_type) return index;
+        Ty const* keys = mapped->constraint;
+        if (keys->kind == TY_TYPE_PARAM && object->anonymous.mapper) keys = ty_instantiate(me, keys, object->anonymous.mapper);
+        else if (keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return index;
+        return mapped_keys_have_index_signature(keys) ? nullptr : index;
+    }
     if (ty_is_tuple(object)) {
         TyList elements = ty_reference_args(me, object);
         TupleShape const* shape = ty_tuple_shape(object);

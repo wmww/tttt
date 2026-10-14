@@ -1,0 +1,21 @@
+//// [test/cases/ttttNeverIndexRecord.ts] ////
+
+=== ttttNeverIndexRecord.ts ===
+// A never index reads a mapped type's index signature when its keys are string, number or symbol: `Record<string,
+// T>[never]` is T (tsc's getPropertyTypeForIndexType), es-toolkit's compat sampleSize. A keyless one is never
+type A<T> = Record<string, T>[never];
+>A : T
+
+declare const a: A<number>;
+>a : number
+
+const b: string = a;
+>b : string
+>a : number
+
+type C = { [K in never]: string }[never];
+>C : never
+
+type D = Record<number | "x", boolean>[never];
+>D : boolean
+
