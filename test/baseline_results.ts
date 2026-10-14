@@ -1,5 +1,10 @@
 const tsCommit = "fed0bf24149fb1ed36039212648bafdafc1ea10e"
 const baselines = {
+    'ttttAnyIntersectionDisjointDomains': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBasicGlobalNamespaceAugmentation': {
         errors: true,
         symbols: true,
@@ -111,6 +116,11 @@ const baselines = {
         types: true,
     },
     'ttttJsxFactoryImportedAsType(jsx=react)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxSkippedAttributesSubtype': {
         errors: true,
         symbols: true,
         types: true,
