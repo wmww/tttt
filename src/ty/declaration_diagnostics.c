@@ -2771,6 +2771,14 @@ static void w_signature(Walk* me, FunctionImpl const* fn, bool private_member) {
 }
 
 // The type a variable is written with (ensureType, or its literal initializer: shouldPrintWithInitializer)
+// The type of a declaration that is the unique symbol it declares: `unique symbol` (the node builder names the symbol
+// everywhere else)
+static bool w_own_unique_symbol(Walk* me, Ty const* type, Symbol const* symbol) {
+    if (!type || !symbol || !(type->flags & TYF_UNIQUE_ES_SYMBOL) || type->literal.unique->owner != symbol) return false;
+    w_lit(me, "unique symbol");
+    return true;
+}
+
 static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
     Expr const* init = initialized_binding_value(decl);
@@ -2784,6 +2792,7 @@ static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_co
         w_node(me, binding_type(binding));
         return;
     }
+    if (binding->symbol && w_own_unique_symbol(me, ty_type_of_symbol(my checker, binding->symbol), binding->symbol)) return;
     cstr text = cstr_init();
     cstr* outer = my type_out;
     my type_out = &text;
@@ -2887,8 +2896,13 @@ static void emit_field(Walk* me, ClassItem const* item) {
         return;
     }
     w_lit(me, ": ");
+    Ty const* field_type = lazy_type_get((LazyType*)&item->field.lazy_type);
+    Symbol const* field_symbol = field_type && (field_type->flags & TYF_UNIQUE_ES_SYMBOL) ? field_type->literal.unique->owner : nullptr;
+    bool own_unique = field_symbol && span_eq(field_symbol->decl_count ? field_symbol->decls[0].name : span_null, item->field.name_span);
     if (item->field.has_explicit_type) {
         w_node(me, &item->field.explicit_type);
+    } else if (own_unique) {
+        w_lit(me, "unique symbol");
     } else {
         cstr text = cstr_init();
         cstr* outer = my type_out;
@@ -2928,6 +2942,23 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
 }
 
 static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container) {
+    // A base that isn't a name is a variable of its type, `C_base` (transformClassDeclaration)
+    Expr const* base = &cls->extends;
+    Expr const* base_name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
+    bool base_variable = base->tag != EXPR_IMPLICIT_ANY && !pseudo_is_entity_name(base_name) &&
+        !(base_name->tag == EXPR_LITERAL && base_name->literal.tag == VALUE_NULL);
+    cstr base_variable_name = cstr_init();
+    if (base_variable) {
+        cstr_take(&base_variable_name, cstr_d(span_valid(cls->name) ? span_sv(cls->name) : c_sv("default"), "_base"));
+        w_indent(me);
+        if (container_is_file(container)) w_lit(me, "declare ");
+        my needs_scope_fix = true;
+        w_lit(me, "const ");
+        w(me, cstr_sv(&base_variable_name));
+        w_lit(me, ": ");
+        w_type(me, lazy_type_get((LazyType*)&base_name->lazy_type));
+        w_lit(me, ";\n");
+    }
     w_indent(me);
     w_statement_modifiers(me, statement, container, false);
     if (cls->is_abstract) w_lit(me, "abstract ");
@@ -2937,11 +2968,9 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         w(me, span_sv(cls->name));
     }
     w_type_params(me, &cls->generic);
-    Expr const* base = &cls->extends;
     if (base->tag != EXPR_IMPLICIT_ANY) {
         w_lit(me, " extends ");
-        Expr const* name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
-        w(me, span_sv(expr_outer_span(name)));
+        w(me, base_variable ? cstr_sv(&base_variable_name) : span_sv(expr_outer_span(base_name)));
         if (base->tag == EXPR_GENERIC_PARAMS) {
             w_lit(me, "<");
             for_each (i, vec_spanned_type, &base->generic_params->params) {
@@ -3061,6 +3090,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     my scope = outer_scope;
     w_indent(me);
     w_lit(me, "}\n");
+    cstr_drop(&base_variable_name);
 }
 
 // A type literal's members, one per line, braces and all (an interface's body: `{` and `}` on lines of their own even
@@ -3359,12 +3389,23 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     my root = outer_root;
     emit_leave(me, saved);
     my type_out = outer;
+    // (A name nothing in the file declares: tsc's unique name, `_default_1` when `_default` is taken)
+    cstr name = cstr_from("_default");
+    for (u32 n = 1; my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE); n++) {
+        cstr_take(&name, cstr_d("_default_", n));
+    }
     w_indent(me);
-    w(me, is_file ? c_sv("declare const _default: ") : c_sv("const _default: "));
+    if (is_file) w_lit(me, "declare ");
+    w_lit(me, "const ");
+    w(me, cstr_sv(&name));
+    w_lit(me, ": ");
     w_serialized(me, &text);
     w_lit(me, ";\n");
     w_indent(me);
-    w(me, statement->export_equals ? c_sv("export = _default;\n") : c_sv("export default _default;\n"));
+    w(me, statement->export_equals ? c_sv("export = ") : c_sv("export default "));
+    w(me, cstr_sv(&name));
+    w_lit(me, ";\n");
+    cstr_drop(&name);
 }
 
 static void emit_statement(Walk* me, Statement const* statement, Container container) {
