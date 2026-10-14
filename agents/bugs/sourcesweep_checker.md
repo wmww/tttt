@@ -6,9 +6,6 @@ missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match n
 dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, astro, react-router, rxjs, angular-cli.)
 
 ## Older leftovers (2026-10-08..09), still mismatching
-- svelte `deriveds.js:352`, `runtime.js:672` (`unknown` to `T`/`V`), `sources.js:90` (`Value<unknown>` to
-  `Source<V>`), `Identifier.js:50` (`name += ...` string to the runes union), `builders.js:376` (`Value` to an
-  estree union): JS/JSDoc, not reduced.
 - +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses): contextual typing miss, not reduced.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
