@@ -276,10 +276,17 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   (tttt 361k), 332k on valibot (tttt 385k). On sweep projects they were (section above).
 
 ## Time
-- **`jsdoc_before_ex()` (parser.c) is 3.9% of webpack's whole run** (426 M of 10.87 G instructions, callgrind 2026-10-14,
-  17% of `parse_file`; `hop_whitespace_slow` another 1.4%): it walks back from every JSDoc host over whitespace and line
-  comments to the line start, and over plain block comments char by char. Probably near-quadratic on comment-heavy JS.
-  Check its cost on vscode (TS) too; a forward index of comment ends built once per file would make each lookup O(log n).
+- **Scaling probes** (2026-10-14 perf session, `scripts/scaleprobe.py [-k KIND] [-n N]`): one declaration or block
+  with N members/statements/elements, timed against tsgo `--singleThreaded` (8k and 32k by default, ~3 min). Fixed that session (all were quadratic in tttt, linear in tsgo): array literal element contexts, statement
+  reachability (tsgo's lastFlowNode memo), object literal / interface / class member duplicate and overload checks
+  (name indexes: `src/name_index.h`, LiteralBuilder/MembersBuilder/MemberTables lazy indexes, ClassDecl namesake
+  chains). Linear on both or better than tsgo: unions, switch, if/else chains, `+` and `&&` chains (tsgo takes 73 s
+  on 8k `&&`), enums, namespaces, type literals, exports, overloads, tuples, JSX children, JSDoc functions, locals,
+  calls, type alias chains. Superlinear on both: a chain of N classes each extending the previous (1000: tttt 16 s /
+  4 GB, tsgo 365 s / 20 GB), CommonJS `module.exports.cN = ...` (32k: 13 s on both). Rerun after big
+  checker changes; add a kind (the KINDS table) when a real project shows a slow file (`TTTT_FILE_TIMES=1`).
+- `jsdoc_before_ex()` walked back to the line start from every JSDoc host (minified lines: 3.9% of webpack), fixed
+  2026-10-14; what's left of JSDoc in webpack is parsing the comments themselves (`parse_jsdoc_comment` ~2.3%).
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
   four sites; Unmeasurable separate). Probe: zod with its `in`/`out` annotations stripped (sed over a /tmp copy of
   `packages/zod/src`, `.configs/` and `vitest.config.ts` alongside) costs 4.65 G vs 4.33 annotated (was 7.8). To compare
