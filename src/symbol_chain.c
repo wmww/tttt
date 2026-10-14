@@ -1118,8 +1118,11 @@ static bool is_painted(Symbol const* symbol) {
 
 // `export = x`, `export default x` or `export { x }` in the module or namespace makes x's declarations visible (tsc's
 // collectLinkedAliases)
+// (Only in a file that is emitted: collectLinkedAliases runs from the declaration transform of the `export =`, never
+// for a declaration file's: a namespace only `export =` names in a .d.ts stays invisible, TS4060 for a name of it)
 static bool exported_by_alias(Scope const* scope, Symbol const* symbol) {
     if ((scope->kind != SCOPE_MODULE && scope->kind != SCOPE_NAMESPACE) || !scope->container) return false;
+    if (scope->file && scope->file->is_declaration) return false;
     SymbolTable const* exports = symbol_members(scope->container)->exports;
     if (!exports) return false;
     Binder const* binder = scope->binder;

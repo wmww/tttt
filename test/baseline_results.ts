@@ -13356,7 +13356,7 @@ const baselines = {
         types: true,
     },
     'exportAssignmentMembersVisibleInAugmentation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
