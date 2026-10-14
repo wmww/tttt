@@ -9,6 +9,27 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Source sweep + suite tail fan-out (2026-10-14, todo entry 7)
+4 agents (A source sweep relations + the TS5115 bucket, B source sweep calls/inference/flow, C suite errors tail, D
+suite symbols/types tail + module/declaration sweep projects), then second tasks (B scenarios/clidiff/DT sweep, C
+mutation seeds 61/62, D flagflip/`$ExpectType`, A its untouched items); 71 picks, 0 lost components at every merge,
+2 duplicates caught as pick conflicts (peer-dependency package ids A/D, never-before-any intersections A/B).
+- suite 13464 -> **13515 / 13629** (+22 own tests); errors 13547 -> 13584, symbols 13560 -> 13592, types 13509 -> 13547.
+- source sweep (full, match-set diff vs the session start) 3310 -> **3332 / 3363**, 0 lost (one transient loss,
+  react-router `__tests__`, came with B's forceTuple commit and went with its fix). The 13-project -TS5115 bucket is
+  plan 65 (a prototype matched all of them but made zod 0 -> 20 spurious).
+- corpora unchanged (webpack 0/1, vue 0/3, effect 3/0, vscode 0/0, rest 0/0); DT sweep 8594 / 8595 (types/ember/v2
+  written up, binder_modules.md); `$ExpectType` 68631 -> **68637 / 68640**; flagflip 46 / 8 / 3 -> **42 / 6 / 3**
+  (a vscode/eopt TS2375->TS2322 regression found by the final run, fixed b46696dc); scenarios 209 -> **210 / 0 failed /
+  14 skipped**; clidiff `--sample 4` 824 -> 827 / 839; mutants seed 61 11 -> 5, seed 62 11 -> 8; kdiff 4 / 3363
+  projects differ at K=16 (inbox-zero, mermaid, openapi-typescript, redux-toolkit); perfsweep worst types ratio 1.62
+  (date-fns docs, unchanged).
+- Instructions (callgrind): tsc 4.766, type-fest 19.258, valibot 3.450, react 1.525, nest 1.183, webpack 10.898, zod
+  5.065, xstate 2.711, drizzle 6.019, vue 6.601, effect 10.153, vscode 90.442, excalidraw 7.940, tanstack-router 5.420
+  G: +0.2..+0.6% creep from ~70 commits; type-fest +1.2%, +0.84 of it TS2574's generic variadic element check
+  (a03f29d0, tsgo runs it too; perf_leads.md has where its cost goes). Mid-session bisects: nest +3.1% (peer
+  dependency lookup per resolution, fixed by D).
+
 ## Plan 63 stage 1 (2026-10-14, todo entry 6)
 - K1 (`--checkers 1 --threads 1`) resident after load+parse / after names / `/usr/bin/time` peak MB, f67e4fa7 -> now:
   tsc 109/151/225 -> 104/144/219, webpack 237/323/545 -> 224/307/529, vue 120/164/342 -> 116/157/330, effect

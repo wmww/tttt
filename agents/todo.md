@@ -40,8 +40,9 @@ plan 61.
    (PropertyExpr's dot name is a Span, rare parts for calls, object items, imports, module refs, boxed binding
    annotations, Scope 96 bytes). What's left, led by Expr 72 -> 64 (an IdentifierExpr design), is plan 63 "Stage 1b";
    stage 2 (arenas) is unaffected.
-7. **Fan-out: source sweep + suite tail** (4 agents, like entries 6 and 9 of the last window; disjoint lists, 0 lost at
-   merge, full source sweep match-set diff before and after). bugs/sourcesweep_checker.md and the failing suite tests.
+7. Done (2026-10-14): fan-out, 71 picks, 0 lost. Suite 13464 -> 13515, source sweep 3310 -> 3332 (0 lost),
+   `$ExpectType` 68637, flagflip 42 / 6 / 3, scenarios 210 / 0 failed. Plan 65 written (the TS5115 bucket, not done).
+   Instructions +0.2..0.6% (type-fest +1.2%, accepted): measurements.md.
 8. **Perf session**: perfsweep and bench re-run (wall times only with nothing else running), instruction creep since
    this file was written bisected if any corpus is up more than 1%, the worst types ratios, `jsdoc_before_ex`
    (perf_leads.md "Time").
@@ -54,5 +55,5 @@ plan 61.
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 56 (content
+After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 65 (the TS5115 eager-base runaway, 13 sweep projects); plan 56 (content
 mappers) only if a corpus or sweep starts using them.

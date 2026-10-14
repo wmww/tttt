@@ -6,7 +6,6 @@ missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match n
 dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, astro, react-router, rxjs, angular-cli.)
 
 ## Older leftovers (2026-10-08..09), still mismatching
-- +TS7006 renovate `migration.ts:201` (under @ts-expect-error'd element accesses): contextual typing miss, not reduced.
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
 - tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
   call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
@@ -125,7 +124,6 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
 - **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
   over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
   storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
-- **svelte** (JS/JSDoc, see the agent tc entry above): not looked at this round.
 - Display differences seen on the way: tsc prints `Nullable<Vals<K>>` (`{ [K in keyof T]: T[K] | null } & {}` over a
   mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
   TS2345 elaboration prints `Partial<T>[K] & null` where tsc normalizes to `T[K] & null`; isolatedDeclarations on
@@ -199,15 +197,6 @@ string config options), tsx cache.ts (no flow narrowing of a non-variable module
   const u = async () => {}; if (ns) { u.unregister = u; } return u; }` with `NU = (() => Promise<void>) & {
   unregister: () => Promise<void> }`. Not found which evaluation is circular (TTTT_DEBUG_CYCLE prints nothing: a
   member type cycle).
-- **vueuse `createEventHook/index.ts:63` +TS2556**: `fn(...args)` with `fn: Callback<T>` (a conditional whose branches
-  are rest-parameter signatures, one `(...param: [T, ...unknown[]])`) and `args: Parameters<Callback<T>>`. Reduced in
-  one file (IsAny + Callback + EventHookTrigger, 15 lines). Suspect: the union signature of the conditional's apparent
-  type combines `min_args` from the expanded rest tuple (relate.c combine_signatures, param optionality from
-  signature_min_args) where tsc's combineUnionParameters keeps `minArgumentCount` raw (0 for a rest-only signature).
-- **es-toolkit `compat/array/sampleSize.ts:68` +TS2578**: needs `Record<string, T>[never]` to be T (tsc reads the
-  index signature); never_index_read()'s HACK makes any anonymous object's never index never. Letting a mapped type
-  over string/number/symbol keys through fixes it but made xstate's flagflip sloppy cells +14 TS5115 (the template
-  instantiation the hack avoids): reverted.
 - **tiptap/demos `VueNodeViewRenderer.test.ts` +TS2345 x9**: `ReturnType<typeof defineComponent>` (overloaded,
   generic) prints as `DefineComponent<unknown, unknown, ...>` in tttt's message and isn't a Component<NodeViewProps>;
   not reduced.
