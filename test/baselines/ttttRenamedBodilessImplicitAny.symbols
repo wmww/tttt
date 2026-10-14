@@ -1,0 +1,23 @@
+//// [test/cases/ttttRenamedBodilessImplicitAny.ts] ////
+
+=== ttttRenamedBodilessImplicitAny.ts ===
+// A renamed binding element of a bodiless signature is implicitly any only once something asks for the
+// parameter's type (tsc's getTypeOfSymbol of the parameter): the call to g, not f, which nothing calls
+declare function f({y1: string}): void;
+>f : Symbol(f, Decl(ttttRenamedBodilessImplicitAny.ts, 0, 0))
+>y1 : Symbol(y1)
+>string : Symbol(string, Decl(ttttRenamedBodilessImplicitAny.ts, 2, 20))
+
+declare function g({y2: string}): void;
+>g : Symbol(g, Decl(ttttRenamedBodilessImplicitAny.ts, 2, 39))
+>y2 : Symbol(y2)
+>string : Symbol(string, Decl(ttttRenamedBodilessImplicitAny.ts, 3, 20))
+
+g({ y2: 1 });
+>g : Symbol(g, Decl(ttttRenamedBodilessImplicitAny.ts, 2, 39))
+>y2 : Symbol(y2, Decl(ttttRenamedBodilessImplicitAny.ts, 4, 3))
+
+type F = typeof f;
+>F : Symbol(F, Decl(ttttRenamedBodilessImplicitAny.ts, 4, 13))
+>f : Symbol(f, Decl(ttttRenamedBodilessImplicitAny.ts, 0, 0))
+

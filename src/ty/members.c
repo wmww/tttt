@@ -4586,6 +4586,28 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
     return members->call[0];
 }
 
+// The renamed elements (`{ a: b }`) of a parameter pattern of a signature without a body, which
+// checkVariableLikeDeclaration leaves alone: implicitly any once something asks for the parameter's type (tsc's
+// getTypeOfSymbol of the parameter -> getTypeFromBindingElement with reportErrors), here when the signature is resolved
+static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern) {
+    if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) {
+            if (i->target.rest || i->target.default_value) continue;
+            if (i->target.tag != BINDING_IDENTIFIER) {
+                report_renamed_bodiless_elements(me, &i->target);
+                continue;
+            }
+            if (span_eq(i->source_span, i->target.content_span)) continue;
+            ty_error_at(me, i->target.content_span, 7031, cstr_d("Binding element '", span_name_text(i->target.content_span),
+                "' implicitly has an 'any' type."));
+        }
+    } else if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) {
+            if (i->tag == BINDING_OBJECT || i->tag == BINDING_ARRAY) report_renamed_bodiless_elements(me, i);
+        }
+    }
+}
+
 void signature_resolve(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (sig->state != LAZY_STATE_NOT_STARTED) return;
@@ -4643,6 +4665,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             Expr const* initial = initialized_binding_value(&i->initializer);
             param->optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
+            if (!function->has_body && !i->initializer.binding.has_explicit_type && compiler_options()->no_implicit_any) {
+                report_renamed_bodiless_elements(me, &i->initializer.binding);
+            }
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
             // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
             // optional by the effective ones, tuple spreads expanded)

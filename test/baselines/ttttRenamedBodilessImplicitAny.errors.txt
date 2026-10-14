@@ -1,0 +1,21 @@
+ttttRenamedBodilessImplicitAny.ts(3,25): error TS2842: 'string' is an unused renaming of 'y1'. Did you intend to use it as a type annotation?
+ttttRenamedBodilessImplicitAny.ts(4,25): error TS2842: 'string' is an unused renaming of 'y2'. Did you intend to use it as a type annotation?
+ttttRenamedBodilessImplicitAny.ts(4,25): error TS7031: Binding element 'string' implicitly has an 'any' type.
+
+
+==== ttttRenamedBodilessImplicitAny.ts (3 errors) ====
+    // A renamed binding element of a bodiless signature is implicitly any only once something asks for the
+    // parameter's type (tsc's getTypeOfSymbol of the parameter): the call to g, not f, which nothing calls
+    declare function f({y1: string}): void;
+                            ~~~~~~
+!!! error TS2842: 'string' is an unused renaming of 'y1'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttRenamedBodilessImplicitAny.ts:3:32: We can only write a type for 'y1' by adding a type for the entire parameter here.
+    declare function g({y2: string}): void;
+                            ~~~~~~
+!!! error TS2842: 'string' is an unused renaming of 'y2'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttRenamedBodilessImplicitAny.ts:4:32: We can only write a type for 'y2' by adding a type for the entire parameter here.
+                            ~~~~~~
+!!! error TS7031: Binding element 'string' implicitly has an 'any' type.
+    g({ y2: 1 });
+    type F = typeof f;
+    
