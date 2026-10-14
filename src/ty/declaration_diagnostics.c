@@ -2610,6 +2610,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
 }
 
 static void w(Walk* me, csview text) { cstr_append_sv(my out, text); }
+static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers);
 #define w_lit(me, s) w(me, c_sv(s))
 
 static void w_indent(Walk* me) {
@@ -2823,6 +2824,27 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     VariableStatement const* variable = &statement->decl.variable;
     bool visible = container.global || container.ambient || statement->decl.props.exported != DECL_EXPORTED_NO;
     bool is_const = variable_statement_is_const(variable);
+    // A function expression with expandos is a function declaration and a namespace (transformExpandoHost)
+    if (vec_initialized_binding_size(&variable->initializers) == 1) {
+        InitializedBinding const* only = vec_initialized_binding_at(&variable->initializers, 0);
+        Expr const* init = initialized_binding_value(only);
+        if (only->binding.tag == BINDING_IDENTIFIER && !only->binding.has_explicit_type && init->tag == EXPR_FUNCTION &&
+            (visible || was_painted(me, only->binding.symbol)) && is_expando_variable(me, &only->binding, init)
+        ) {
+            FunctionImpl const* fn = init->function;
+            w_indent(me);
+            isize_t modifiers_start = (isize_t)cstr_size(my out);
+            w_statement_modifiers(me, statement, container, false);
+            cstr modifiers = cstr_from_sv(csview_slice(cstr_sv(my out), (isize_t)modifiers_start, cstr_size(my out)));
+            w_lit(me, "function ");
+            w(me, span_sv(only->binding.content_span));
+            w_signature(me, fn, false);
+            w_lit(me, ";\n");
+            emit_expando_namespace(me, only->binding.symbol, span_sv(only->binding.content_span), cstr_sv(&modifiers));
+            cstr_drop(&modifiers);
+            return;
+        }
+    }
     cstr declarations = cstr_init();
     cstr* outer = my out;
     my out = &declarations;
@@ -2872,15 +2894,87 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     cstr_drop(&declarations);
 }
 
+// The expando members of a function (`f.x = v`, tsc's transformExpandoAssignment), as a namespace of the function's
+// name after it (createFullExpandoBlock): a variable of each assignment's type, or `export { v as x }` when the value
+// is a name (every member is exported then). `modifiers`: the function's, as written
+static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers) {
+    if (!host || !host->exports) return;
+    cstr members = cstr_init();
+    cstr* outer = my out;
+    my out = &members;
+    my indent++;
+    bool any_export = false;
+    u32 count = 0;
+    for (u32 i = 0; i < host->exports->count; i++) {
+        Symbol const* member = host->exports->entries[i].symbol;
+        if (!member || !member->decl_count || member->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+        if (symbol_rare(member)->late_bound_key || !ty_is_identifier_name(member->name)) continue;
+        for (u32 j = 0; j < member->decl_count; j++) {
+            if (member->decls[j].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+            Expr const* value = member->decls[j].node;
+            count++;
+            w_indent(me);
+            if (value && value->tag == EXPR_IDENTIFIER) {
+                any_export = true;
+                w_lit(me, "export { ");
+                w(me, span_sv(expr_outer_span(value)));
+                if (!csview_equals_sv(span_sv(expr_outer_span(value)), member->name)) {
+                    w_lit(me, " as ");
+                    w(me, member->name);
+                }
+                w_lit(me, " };\n");
+                continue;
+            }
+            w_lit(me, "\x01var ");
+            w(me, member->name);
+            w_lit(me, ": ");
+            w_type(me, ty_widened_literal(my checker, ty_type_of_symbol(my checker, member)));
+            w_lit(me, ";\n");
+        }
+    }
+    my indent--;
+    my out = outer;
+    if (count) {
+        w_indent(me);
+        w(me, modifiers);
+        w_lit(me, "namespace ");
+        w(me, name);
+        w_lit(me, " {\n");
+        // (`\x01` marks where a variable's `export` goes when there is an export declaration)
+        for (csview rest = cstr_sv(&members); rest.size;) {
+            isize_t mark = csview_find_sv(rest, c_sv("\x01"));
+            if (mark == c_NPOS) {
+                w(me, rest);
+                break;
+            }
+            w(me, csview_slice(rest, 0, mark));
+            if (any_export) w_lit(me, "export ");
+            rest = csview_slice(rest, mark + 1, rest.size);
+        }
+        w_indent(me);
+        w_lit(me, "}\n");
+    }
+    cstr_drop(&members);
+}
+
 static void emit_function_declaration(Walk* me, Statement const* statement, Container container) {
     FunctionImpl const* fn = statement->decl.function.impl;
     if (is_overload_implementation(fn)) return;
     w_indent(me);
+    isize_t modifiers_start = (isize_t)cstr_size(my out);
     w_statement_modifiers(me, statement, container, false);
+    cstr modifiers = cstr_from_sv(csview_slice(cstr_sv(my out), (isize_t)modifiers_start, cstr_size(my out)));
     w_lit(me, "function ");
     w(me, span_sv(fn->name));
     w_signature(me, fn, false);
     w_lit(me, ";\n");
+    // (After the first declaration of the function: its symbol's value declaration)
+    Symbol const* symbol = fn->symbol;
+    bool first = symbol && symbol->decl_count && symbol->decls[0].node == fn;
+    if (first && statement->decl.props.exported != DECL_EXPORTED_YES_DEFAULT) {
+        emit_expando_namespace(me, symbol, span_sv(fn->name), cstr_sv(&modifiers));
+    }
+    cstr_drop(&modifiers);
 }
 
 // A class member's modifiers in tsc's order (createModifiersFromModifierFlags; `public`, `async` and `override` aren't

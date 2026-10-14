@@ -2490,6 +2490,7 @@ void ty_display_type_params(Checker* me, TyDisplay d, struct Generic const* gene
 struct Pseudo;
 void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
 void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
+bool ty_is_identifier_name(csview name); // An identifier as written (`#x` too)
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);

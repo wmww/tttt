@@ -5135,3 +5135,5 @@ void ty_display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const*
 }
 
 void ty_append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern(out, binding); }
+
+bool ty_is_identifier_name(csview name) { return is_identifier_name(name); }
