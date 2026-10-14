@@ -2616,10 +2616,22 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
     Span key_span;
     if (parent->tag == BINDING_OBJECT) {
         ObjectBindingItem const* item = binding->parent_item;
-        if (!item || item->computed_key) return nullptr;
-        if (item->source.tag != VALUE_STRING && item->source.tag != VALUE_NUMBER) return nullptr;
-        key = item->source;
-        key_span = item->source_span;
+        if (!item) return nullptr;
+        if (item->computed_key) {
+            // (A computed name of a string or number literal type names the property too: tsc's
+            // getDestructuringPropertyName through getLiteralTypeFromPropertyName)
+            Ty const* key_type = ty_regular(me, ty_binding_computed_key_type(me, item));
+            if (key_type->kind != TY_LITERAL || !(key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return nullptr;
+            // (A literal type's string is its atom: once per binding, the synthetic access is remembered)
+            key = key_type->flags & TYF_STRING_LITERAL ?
+                (Value){ .tag = VALUE_STRING, .string = cstr_from_sv(atom_sv(key_type->literal.string)) } : key_type->literal.value;
+            // (Not the key expression's span: a synthetic expression is known by its span, which mustn't be another's)
+            key_span = span_valid(item->source_span) ? item->source_span : binding_element_span(binding);
+        } else {
+            if (item->source.tag != VALUE_STRING && item->source.tag != VALUE_NUMBER) return nullptr;
+            key = item->source;
+            key_span = item->source_span;
+        }
     } else if (parent->tag == BINDING_ARRAY) {
         key = value_number(binding->parent_index);
         key_span = binding_element_span(binding);

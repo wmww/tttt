@@ -1,0 +1,44 @@
+//// [test/cases/ttttComputedDestructuringNarrowing.ts] ////
+
+=== ttttComputedDestructuringNarrowing.ts ===
+// A computed key of a literal type names the destructured property for narrowing too (tsc's
+// getDestructuringPropertyName through getLiteralTypeFromPropertyName): `w.window` narrowed by the assignment
+{
+    interface W { window?: W; a?: W }
+>W : Symbol(W, Decl(ttttComputedDestructuringNarrowing.ts, 2, 1))
+>window : Symbol(W.window, Decl(ttttComputedDestructuringNarrowing.ts, 3, 17))
+>W : Symbol(W, Decl(ttttComputedDestructuringNarrowing.ts, 2, 1))
+>a : Symbol(W.a, Decl(ttttComputedDestructuringNarrowing.ts, 3, 29))
+>W : Symbol(W, Decl(ttttComputedDestructuringNarrowing.ts, 2, 1))
+
+    let w = {} as W;
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+>W : Symbol(W, Decl(ttttComputedDestructuringNarrowing.ts, 2, 1))
+
+    w.window = w;
+>w.window : Symbol(W.window, Decl(ttttComputedDestructuringNarrowing.ts, 3, 17))
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+>window : Symbol(W.window, Decl(ttttComputedDestructuringNarrowing.ts, 3, 17))
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+
+    const { ["window"]: bar } = w;
+>"window" : Symbol(bar, Decl(ttttComputedDestructuringNarrowing.ts, 6, 11))
+>bar : Symbol(bar, Decl(ttttComputedDestructuringNarrowing.ts, 6, 11))
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+
+    const { [(() => "window" as const)()]: { a: bar2 } } = w;
+>const : Symbol(const)
+>a : Symbol(W.a, Decl(ttttComputedDestructuringNarrowing.ts, 3, 29))
+>bar2 : Symbol(bar2, Decl(ttttComputedDestructuringNarrowing.ts, 7, 44))
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+
+    const k = "window";
+>k : Symbol(k, Decl(ttttComputedDestructuringNarrowing.ts, 8, 9))
+
+    const { [k]: { window: bar3 } } = w;
+>k : Symbol(k, Decl(ttttComputedDestructuringNarrowing.ts, 8, 9))
+>window : Symbol(W.window, Decl(ttttComputedDestructuringNarrowing.ts, 3, 17))
+>bar3 : Symbol(bar3, Decl(ttttComputedDestructuringNarrowing.ts, 9, 18))
+>w : Symbol(w, Decl(ttttComputedDestructuringNarrowing.ts, 4, 7))
+}
+

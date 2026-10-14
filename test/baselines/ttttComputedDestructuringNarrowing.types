@@ -1,0 +1,48 @@
+//// [test/cases/ttttComputedDestructuringNarrowing.ts] ////
+
+=== ttttComputedDestructuringNarrowing.ts ===
+// A computed key of a literal type names the destructured property for narrowing too (tsc's
+// getDestructuringPropertyName through getLiteralTypeFromPropertyName): `w.window` narrowed by the assignment
+{
+    interface W { window?: W; a?: W }
+>window : W | undefined
+>a : W | undefined
+
+    let w = {} as W;
+>w : W
+>{} as W : W
+>{} : {}
+
+    w.window = w;
+>w.window = w : W
+>w.window : W | undefined
+>w : W
+>window : W | undefined
+>w : W
+
+    const { ["window"]: bar } = w;
+>"window" : "window"
+>bar : W
+>w : W
+
+    const { [(() => "window" as const)()]: { a: bar2 } } = w;
+>(() => "window" as const)() : "window"
+>(() => "window" as const) : () => "window"
+>() => "window" as const : () => "window"
+>"window" as const : "window"
+>"window" : "window"
+>a : any
+>bar2 : W | undefined
+>w : W
+
+    const k = "window";
+>k : "window"
+>"window" : "window"
+
+    const { [k]: { window: bar3 } } = w;
+>k : "window"
+>window : any
+>bar3 : W | undefined
+>w : W
+}
+
