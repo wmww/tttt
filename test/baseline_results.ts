@@ -50,6 +50,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttElaborateUnionSourceObjectLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,
@@ -266,6 +271,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionRestSignaturesCombined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnresolvedTypeOrder': {
         errors: true,
         symbols: true,
         types: true,
