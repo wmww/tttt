@@ -132,22 +132,14 @@ passing tests).
   distributive constraint) leaves an `any` branch out like tsc's getDefaultConstraintOfConditionalType but uses the
   raw true branch, not tsc's inferred one. `ReturnType<T[M]>` property access (seed-5 mut0710/mut3585) still misses
   TS2339.
-- (2026-10-07) sliceResultCast (types): `x.slice` of `[number, string] | [number, string, string]` is a union of two
-  equal signatures in tsc (each tuple's Array members are instantiated with the tuple as `this`, Array being merged
-  makes `this` possibly referenced everywhere); retarget_this_props() only retargets props that mention `this` (a
-  deliberate perf shortcut), so tttt's members are shared and the union collapses. A fix must keep the shortcut's
-  cost (instrcount valibot/zod) or make the retargeted members cheap.
-- (2026-10-07) genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (types): `inner.log(100)`
-  with `inner: XXX` and `log = implement<this>()(<N extends number>(n: N) => succeed(n))` is `F<Effect<100, never,
-  never>, this>` in tsc 6 (deferred: `this` is generic), tttt resolves it to `Effect<100, never, never>` (the test's
-  own comment, pre-6.0). Likely mechanism, unverified: reading a member through a non-generic class's own declared
-  type doesn't instantiate `this` in tsc (resolveObjectTypeMembers' rangeEquals shortcut keeps the declared members),
-  and tsc 6's SingleSignatureType has no outer type parameters to carry a `this` mapping; tttt maps `this` to XXX on
-  the access. Check `class C { p!: F<1, this> }; declare const c: C; c.p` against tsc first.
-- (2026-10-07) noImplicitAnyUnionNormalizedObjectLiteral1 (types): union order of two widened object literals with the
-  same symbol (the spread literal) goes by type id; tsc's getWidenedTypeWithContext makes both members anew in member
-  order, tttt's separate widen_nullable() pass keeps the unchanged `{ c: string; ... }` (older id) and remakes only
-  the other, so the order flips.
+- genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (types; rechecked 2026-10-14):
+  `inner.log(100)` matches now; `outer.log` (outer: `ProxyMap<XXX>` = `{ [K in keyof XXX]: (XXX & { _type: XXX })[K] }`)
+  is `<N extends number>(n: N) => Effect<N, never, never>` in tsgo, `Effect<N, never, XXX>` in tttt: tttt reads
+  `log` of the intersection with the intersection as `this` (so `F<X, this>`'s `Y extends { _type: infer Z }` finds
+  XXX), tsgo with XXX itself (the property type of an intersection member keeps its class's own `this`, or F was
+  already resolved when the class's member type was cached: the test's name says cache reuse). Check
+  `class C { p!: F<1, this> }` read through `(C & { _type: C })["p"]` against tsgo first. Inference/`this`
+  instantiation; ~a session once the mechanism is pinned.
 - (2026-10-07) knockout.mapping `$ExpectType` (knockout.mapping-tests.ts:109): tsc orders
   `KnockoutObservableArray<KnockoutObservableType<any>> | KnockoutObservableArray<any>`, tttt the other way round.
   Not investigated (type id order of two references to one target: which type argument list is made first).
@@ -304,10 +296,14 @@ passing tests).
   tsgo's `--generateTrace` getVariancesWorker events, script idea: dump both, key by symbol name): mostly the
   unreliable/unmeasurable flags (tsgo `out (unreliable)` where tttt has plain or invariant) and some independent vs
   measured. The restart/Unknown/marker mechanics are ported (relate.c measured_variances()).
-- nestedSpreadsAndWidening: the spread of an 11-member union of nested spreads prints a 6 MB type (tsc 1.4 MB): tttt's
-  spread of unions doesn't reduce/dedupe like tsc's getSpreadType.
-- crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1: `props?.w` of a big union of intersections: tsc's type
-  has `(X["w"] & number) | ...` members (union property type intersected with the declared number), tttt plain X["w"].
+- crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1 (types, 2026-10-14): the `w`/`props?.w` lines now
+  match tsgo's 1M-length cut (sticky truncation and the serializedTypes reuse); the `newShapePartial.props` lines
+  still differ: tsgo reaches the length limit (its `Partial<any> | ...` elisions) around 307k characters, tttt doesn't.
+  An instrumented tsgo (approximateLength logged at each typeToTypeNode: a nodebuilderimpl.go overlay on the probe
+  test binary, `go test -overlay ... -c ./internal/testrunner`) showed the counts agree until ~11k, then tsgo reuses a
+  cached `{ w: number; h: number; }` object that tttt prints afresh: a type identity difference (tsgo's object is the
+  same type as one printed earlier in the line, tttt's another instance), inside `Partial<A & B & ...>` arguments.
+  Find which instance (spread/intersection property types) and why tttt makes a new one; ~a session.
 - reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
   TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
 - inferFromGenericFunctionReturnTypes3 (agent B 2026-10-14): `baz(makeFoo(Enum.A), makeFoo(Enum.A))` with

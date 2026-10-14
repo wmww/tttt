@@ -513,8 +513,7 @@ src` finds the code-side markers; every significant one has an entry here.
   lowered from a node (no `outer`), deferred references whose node has no cheap position (`type_node_start()`:
   parenthesized or keyword element types), two nodes starting at the same token (`(A extends B ? 1 : 2) extends C ?
   ...`), unique symbols of one name without positions, intrinsic variants, same-symbol anonymous types
-  with equal mappers. noImplicitAnyUnionNormalizedObjectLiteral1: tttt's nullable widening keeps one member's id where
-  tsc's recreates both.
+  with equal mappers.
 - Pseudo types (`src/ty/pseudo.c`, plan 55): tsgo walks parents for isContextuallyTyped/IsInConstContext, tttt passes
   them down from flags the resolve walk sets (`ObjectExprItem.pseudo_contextual`/`pseudo_const`,
   `FunctionImpl.syntactically_contextual`); `pseudo_of_variable()` is always given a non-contextual place (a variable
@@ -599,6 +598,21 @@ src` finds the code-side markers; every significant one has an entry here.
 - Deep nesting identity (isDeeplyNestedType's recursion identity) uses ObjectFlags.FromTypeNode only for array/tuple
   nodes, not generic interface references (commit "Arrays and tuples written as type nodes are their own recursion
   identity"): a partial port.
+
+- `item_is_literal()` (`ty_display.c`): an object literal property whose value is an array/object literal isn't printed
+  from its syntax in the literal's unwidened type. tsgo's array literal types carry ContainsObjectOrArrayLiteral and
+  are other types than their widened copies; tttt interns tuples and arrays without a fresh twin, so it's told
+  syntactically.
+- `OBJECT_WIDENED_COPY` (`widen_nullable_copy()`, members.c): only the non-strict nullable widening of a union remakes
+  unchanged object literal members (tsgo's getWidenedTypeOfObjectLiteral remakes every one it widens, which orders
+  the union by creation); the strict-mode object widening doesn't, and tttt's structural intern otherwise hands the
+  original back.
+- `declared_inside()` (`instantiate_anonymous()`): an object literal/function expression type whose mentions are
+  unknown drops mappings of type parameters declared inside its span, standing in for tsgo's outer-type-parameter
+  key; anything else tsgo's syntactic isTypeParameterPossiblyReferenced filters is still in the key.
+- `ty_display()`'s depth safety net: 1024 where nothing truncates (tsgo has none but the 1M length), 128 in
+  declaration emit, 44 in messages. A runaway print still stops; a genuine deep alias argument list beyond 1024 would
+  print `...`.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_duplicate_declarations()` (TS2300 for a property declared again) reproduces a tsgo checking-order artifact:

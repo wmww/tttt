@@ -149,27 +149,12 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   parameter type is T, not the tuple, so when the annotation can't be reused (it mentions c2's fresh T) the type
   prints bare. Wherever the rest param's `[...T]` is normalized to T (call.c's rest_variadic?), the display needs the
   tuple.
-- declarationEmitHigherOrderRetainedGenerics: in tsc's printed overload set the second overload's type parameters are
-  renamed `<R1, O1_1, E1_1, A_1, R2, O2_1, E2_1, B_1, C_1>`: everything but R1 and R2. Those two appear in the first
-  overload only inside a reused `Kind<F, R1 & R2, ...>` node, the renamed ones in printed unions (`O2 | O1`, reordered)
-  or parameter lists, so tsc's typeParameterNamesByText seems to collect only names that went through
-  typeParameterToName. Unverified; instrument typeParameterToName on this test before touching the renamer.
-- thisInPropertyBoundDeclarations / genericCallOnMemberReturningClosedOverObject: tsc's typeWriter shares
-  NodeLinks.serializedTypes across baseline lines (visitAndTransformType caches an object type's printed node per
-  (enclosing declaration node, type id, flags)), so a later line under the same declaration reuses a node printed
-  while a cycle cut it short (`<T2>(t2: T2) => any`). Modelling it needs the harness to pass each line's parent
-  declaration and the printer to keep a cache keyed by it across ty_display() calls; ty_display.c only models the
-  within-one-print case. Two tests; not worth it unless more show up (displaydiff's `other` bucket would tell).
-  genericCallOnMemberReturningClosedOverObject's *expression* lines are another mechanism (plan 55 "Known traps"):
-  `example<number>().foo("hello")` prints ten levels of `{ foo: <T2_1>(t2: T2_1) => ...` because the object literal
-  instantiated inside its own method's signature instantiation (T2 -> fresh T2') is a new type per level in tttt;
-  tsgo keys an anonymous type's instantiations by its outer type parameters (T1, not the method's T2), gets the same
-  type back and prints the cycle as `any`. A checker identity change (instantiation keys), pre-existing.
-- complexRecursiveCollections (TS2430 elaboration `map(...).filter(...).filter` vs tsc's `map(...).size`): after
-  Seq<K,M> vs Collection<K,M> tsc's relation of `filter` (two overloads with `this`-typed predicates) succeeds, or is
-  cut by isDeeplyNestedType as Maybe, so `size` (declared after `filter` in Collection) is the first failing
-  property; tttt goes one level deeper and fails `filter`. Recursion-identity depth, not property order (member order
-  matches since the getNamedMembers work).
+- complexRecursiveCollections (TS2430 elaboration, rechecked 2026-10-14): tttt elaborates through
+  `map(...).filter(...).filter` (its overloads with `this`-typed predicates fail one level deeper) where tsgo's first
+  failing member is `map(...).size` (`number | undefined` to `number`): in tsgo the `filter` comparison succeeds or is
+  cut by isDeeplyNestedType as Maybe. Recursion-identity depth (which pairs count as the same recursive type), not
+  member order. Needs a relation trace against tsgo (scripts/variancetrace.py's instrumented relater logs every
+  comparison); unknown size.
 - Elaboration chain shapes (recursiveConditionalTypes; conditionalTypes1/2 fixed by normalizing the target and the
   apparent intersection source, 2026-10-14):
   tsc's chains interleave lines from a failed constraint attempt with the later ones (`T` to `NonNullable<T>`: the
@@ -199,30 +184,30 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
   property fails with an expression it can descend into, and stops at the first reported one per literal).
 ## Leftovers of plan 35 (silent type differences, retired 2026-10-09; components as of the tsgo 7.1 suite)
-- recursiveConditionalCrash3 (types): a mapped key named `K_1` where tsc says `K_2`: tsc gives every instantiated mapped
-  type a fresh key type parameter (instantiateMappedType's cloneTypeParameter), tttt keeps the declared one.
 - isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
   saw the types side; the errors component fails now).
-- ramdaToolsNoInfinite2 (types): the literal `5` is made later in tsc (union order).
-
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
 - `Iterator.from` prints its union sorted in tsgo (builtinIterator, awaitUsingDeclarationsWithIteratorObject,
   usingDeclarationsWithIteratorObject): not the fresh-type-parameter mechanism this entry used to claim, which tsgo
   probes refute; see plan 68 (an instrumented tsgo is the next step).
-- Function types of an object literal's properties: tsgo prints `{ foo: () => { foo: () => any; } }` where tttt prints
-  `{ foo: () => { foo: any; } }` (genericCallOnMemberReturningClosedOverObject, thisInPropertyBoundDeclarations,
-  newTarget, noImplicitThisBigThis): the widened literal's property function type seems a distinct type in tsgo.
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
 - Index symbols of a destructuring assignment's rest (`({ ...r } = strMap); r.z`): tsgo's getRestType gets the object
   literal's symbol there (checkObjectLiteralDestructuringPropertyAssignment); ty_object_rest_type() passes none (a
   binding's rest has its binding's symbol since 2026-10-14). Not probed.
-- Union order left: tuples of different lengths each have an Array base of their own in tsgo (sliceResultCast:
-  `x.slice` is a union of two identical-looking signatures), comparisonReverseMappedTypes (tttt infers a homomorphic
-  `T[K]` template's source itself instead of a reverse mapped type: infer.c's "A plain homomorphic T[K] template"
-  shortcut; tsgo orders reverse mapped types by source, then mapped type declaration),
-  noImplicitAnyUnionNormalizedObjectLiteral1 (normalized spread literal ordered first in tsgo),
-  `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
+- Union order left (2026-10-14 fan-out agent A looked again; neither is display, both are checker identity):
+  - sliceResultCast: `x.slice` of `[number, string] | [number, string, string]` is a union of two identical-looking
+    signatures in tsgo: each tuple reference resolves its Array base's members instantiated with itself as `this`
+    (resolveObjectTypeMembers instantiates every member unless the type arguments equal the parameters), so `slice`
+    is a distinct function type per tuple. tttt's retarget_this_props() retargets only members that mention `this`
+    (a deliberate perf shortcut), so both tuples share Array<number | string>'s `slice` and the union collapses.
+    Fix = per-tuple `this` instances of every member, cheap enough (instrcount valibot/zod/effect): ~a session.
+  - comparisonReverseMappedTypes: `[identity(nested), unbox(nested)]` orders `{ value: string; }` (unbox's reverse
+    mapped type) before `{ value: { value: string; }; }` in tsgo, which made both reverse mapped types
+    (createReverseMappedType; ordered by source, then mapped type declaration); tttt's infer.c "A plain homomorphic
+    `T[K]` template" shortcut infers identity's source itself (an older type). Making the identity template's
+    inference a real reverse mapped type touches every Partial/Readonly inference (identity, perf): plan-sized.
+  - `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
 - **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
   truncation is sticky. Ported (TyDisplay.approx counts where tsgo's node builder counts, `display_over()`). Left:
@@ -235,27 +220,16 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
-- declarationEmitUnserializableTypes (types; errors pass since 2026-10-14): `function inner<T>(): typeof inner<T>`
-  recursion prints one level too many; `grow<T>` returning `{ deeper: <U>(next: U) => grow<T & U>(...) }`: tsgo infers
-  the arrow's return while grow's return is in flight (any at depth 2); tttt infers it lazily afterwards and prints 10+
-  levels. declarationsWithRecursiveInternalTypesProduceUniqueTypeParams (types) is the same family: `reduce`'s
-  return printed 2 levels deep in tsgo (an `any` where the recursion is in flight), 6+ in tttt.
-- arrayFakeFlatNoCrashInferenceDeclarations (types; errors pass since 2026-10-14): the `"recur"` property line of the
-  alias declaration prints each level's index (`[-1, 0, ...][Depth]` instantiated) where tsgo prints `[any]`
-  (elided at once: not understood).
-- varianceComputationNoCrash: a mapped type reprinted inside its own `as` clause prints an empty `as ]` (reprint_range
-  of a range still being printed?), and `CamelCase<T, {}>` where tsc elides a default type argument.
 - mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.
-- importAttributesDeclarationEmit: tsgo prints an import type's attribute keys `any` or `error` depending on what was
-  checked before (order-dependent in tsgo, not chased).
 - regexInvalidUtf8WithUnicodeFlag: `text_decode()` replaces invalid UTF-8 with U+FFFD when a file is loaded; tsgo keeps
   the raw bytes, its scanner reads them as RuneError one byte wide. Only the echoed source lines differ; dropping the
   replacement touches the scanner, TS1490 and every UTF-16 column computation.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
 - Relation paths that differ from tsgo's (not elaboration rules):
-  complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
-  (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
+  complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound (tsgo's chain relates `string`, not T's constraint
+  `"email" | "text"`, to `ChannelOfType<T, EmailChannel>["type"] & ...`, twice: some constraint/apparent-type step
+  tttt doesn't take; a relation trace would show it), reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
   mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
   `use(): this`).
@@ -283,9 +257,6 @@ Looked at, root cause where found, not fixed (one test each unless named):
 - typeofImportDefer: `typeof import.defer("./a").Foo` recovers to an import type with a missing string literal;
   tsgo's symbols are `Symbol(unknown)` for the missing literal and `Symbol(unknown.defer)` for the qualifier (an
   unresolved but non-null module), tttt prints nothing. An unresolved `import("./nope")` prints nothing in both.
-- declarationEmitUsingAlternativeContainingModules1/2: in a long signature tsgo prints some optional properties
-  without `| undefined` (`enabled?: boolean;`, reused annotations through a mapped type?) and `readonly ["entries"]`
-  for an object literal's `['entries'] as const` while the declaration line keeps `['entries']`.
 - jsonRawJSON2, duplicateIdentifierChecks, the cross-file alias merges: see "Symbols
   baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
