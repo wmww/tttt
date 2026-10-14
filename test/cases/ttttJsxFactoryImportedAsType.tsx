@@ -1,7 +1,8 @@
 // A JSX tag needs its factory as a value (tsc's markJsxAliasReferenced -> resolveName with isUse): one imported with
 // `import type` is TS1361 at each tag name (trpc's next-sse-chat dialog.tsx under `jsx: react`). A fragment isn't an
-// expression to report at, nor is a namespaced tag name
-// @jsx: react
+// expression to report at, nor is a namespaced tag name. Only under jsx: react: resolveName checks what it found only
+// with a not-found message (better-auth's, inbox-zero's `import type React` under preserve and react-jsx)
+// @jsx: react,preserve
 // @module: preserve
 // @filename: react.d.ts
 declare namespace React { function createElement(...a: any[]): any; }

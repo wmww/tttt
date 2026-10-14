@@ -1549,9 +1549,12 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
     if (found) {
         unused_mark_referenced(names, found, SYMBOL_VALUE);
         // (The factory is a name like any other: tsc's resolveName)
+        // (resolveName's checks of what it found run only with a not-found message, which is jsx: react's; a type-only
+        // one only at an expression: a tag name, not a fragment nor `a:b`)
         if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
-        // (resolveName's type-only check: only a tag name is an expression, a fragment or `a:b` isn't)
-        if (!fragment && el->tag_name.inner_span.size && !el->namespaced) check_type_only_value_at(found, at, name, names, errs);
+        if (jsx == JSX_REACT && !fragment && el->tag_name.inner_span.size && !el->namespaced) {
+            check_type_only_value_at(found, at, name, names, errs);
+        }
     } else if (jsx == JSX_REACT && scope_resolve(names, name, SYMBOL_NAMESPACE_MODULE)) {
         // (tsc's resolveName -> checkAndReportErrorForUsingNamespaceAsValue, before any suggestion)
         error_ctx_error_d(errs, at, 2708, "Cannot use namespace '", name, "' as a value.");
