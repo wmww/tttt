@@ -3990,11 +3990,9 @@ static Ty const* compute_simplified_conditional(Checker* me, Ty const* ty, bool 
     return ty;
 }
 
-// A simpler form of an indexed access or conditional type, or the type itself (tsc's getSimplifiedType). `writing`:
-// the target of an assignment, where a union of keys is the intersection of their properties
 // keyof a generic mapped type with an `as` clause (not over `keyof X`) is the clause over the constraint's members
-// (tsc 6.0's getSimplifiedIndexType, and computeBaseConstraint of an index type: getIndexTypeForMappedType). Null for
-// any other keyof
+// (tsc's computeBaseConstraint of an index type: getIndexTypeForMappedType; tsc 6.0's getSimplifiedIndexType too, which
+// tsgo 7.1 doesn't have). Null for any other keyof
 static Ty const* mapped_keyof_names(Checker* me, Ty const* keyof) {
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, keyof->keyof.operand, &generic);
@@ -4020,12 +4018,10 @@ static Ty const* mapped_keyof_names(Checker* me, Ty const* keyof) {
     return ret;
 }
 
+// A simpler form of an indexed access or conditional type, or the type itself (tsc's getSimplifiedType: not keyof,
+// which only its base constraint simplifies, mapped_keyof_names()). `writing`: the target of an assignment, where a
+// union of keys is the intersection of their properties
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
-    if (ty->kind == TY_KEYOF) {
-        if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty->keyof.operand->kind != TY_ANONYMOUS) return ty;
-        Ty const* names = mapped_keyof_names(me, ty);
-        return names ? names : ty;
-    }
     if (ty->kind != TY_INDEXED && ty->kind != TY_CONDITIONAL) return ty;
     u64 key[3] = { KEY_SIMPLIFIED, ty->id, writing };
     Ty const* cached = intern_get(&my links, key, 3);

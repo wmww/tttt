@@ -179,7 +179,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   Accepted divergence; revisit only if real projects show tsc's TS2589 hiding errors tttt reports.
 
 ## Relations and type core (more in `type_core.md`)
-- mappedTypeConstraints2 (indexed accesses of mapped types with template-literal keys: spurious TS2536).
 - reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
   mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),

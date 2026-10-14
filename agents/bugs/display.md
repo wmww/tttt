@@ -253,7 +253,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   replacement touches the scanner, TS1490 and every UTF-16 column computation.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
-- Relation paths that differ from tsgo's (not elaboration rules): mappedTypeConstraints2 (tttt simplifies `M<K>[keyof M<K>]` first),
+- Relation paths that differ from tsgo's (not elaboration rules):
   complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, complexRecursiveCollections
   (another failing member first), reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
