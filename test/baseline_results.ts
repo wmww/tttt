@@ -9638,12 +9638,12 @@ const baselines = {
     'declarationEmitUsingAlternativeContainingModules1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitUsingAlternativeContainingModules2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitUsingTypeAlias1': {
         errors: true,

@@ -3616,6 +3616,16 @@ static bool requires_widening(Ty const* ty) {
     return (ty->flags & TYF_FRESH_OBJECT) || (ty->xflags & TYX_CONTAINS_WIDENING);
 }
 
+// An object literal's property whose value is an array or object literal (through `as const` or `satisfies`): in the
+// literal's own type, before widening, its type is that literal's, which tsc's ContainsObjectOrArrayLiteral marks as
+// still widening (tttt's tuples and arrays have no such twin), so serializeTypeForDeclaration doesn't reuse its syntax
+static bool item_is_literal(ObjectExprItem const* item) {
+    if (item->tag != OBJECT_ITEM_PROPERTY) return false;
+    Expr const* value = &item->value;
+    while (value->tag == EXPR_AS_TYPE && (value->as_type->is_satisfies || as_type_is_const(value->as_type))) value = &value->as_type->expr;
+    return value->tag == EXPR_ARRAY || value->tag == EXPR_OBJECT;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
@@ -3815,10 +3825,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // syntax (tsgo's serializeTypeForDeclaration of its valueDeclaration; a property's type that still widens, the
         // literal's own type, is printed as a type)
         bool suppress = false;
+        bool unwidened = ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT);
         ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(me, prop, 0);
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         bool item_property = item && (item->tag == OBJECT_ITEM_PROPERTY || item->tag == OBJECT_ITEM_SHORTHAND);
-        if ((item_property && !requires_widening(type)) || item_accessor) {
+        if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item))) || item_accessor) {
             Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
             Ty const* item_type = type;
             if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
@@ -3855,9 +3866,12 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // still says the same), or the type assertion of an object literal's
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        bool mapped_from = prop_decl_rare(origin->decl)->template_of && prop_decl_rare(prop->decl)->mapped_from;
+        // (An instance of a mapped type's property, its signature instantiated, is declared where that property is)
+        Prop const* mapped_prop = prop;
+        while (mapped_prop->target && !prop_decl_rare(mapped_prop->decl)->mapped_from) mapped_prop = mapped_prop->target;
+        bool mapped_from = prop_decl_rare(origin->decl)->template_of && prop_decl_rare(mapped_prop->decl)->mapped_from;
         if (mapped_from) {
-            origin = prop_decl_rare(prop->decl)->mapped_from;
+            origin = prop_decl_rare(mapped_prop->decl)->mapped_from;
             // (Through a modifiers type that is mapped itself, `keyof (Partial<A> & B)`: the declarations tsc's mapped
             // property copies are its modifiers property's, all the way down)
             for (int depth = 0; depth < 16 && origin->mapped && prop_decl_rare(origin->decl)->mapped_from; depth++) {
