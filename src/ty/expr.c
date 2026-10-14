@@ -4715,13 +4715,14 @@ Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* cont
     return widen_literals(me, type);
 }
 
-// A spread operand checked with tsc's forceTuple check mode, which reaches the array literals of a conditional's
-// branches too: `[...(c ? r : [r])]` spreads `R | [r]` (checkConditionalExpression's subtype-reduced union)
-static Ty const* force_tuple_operand(Checker* me, Expr const* expr, u32 depth) {
-    if (expr->tag == EXPR_ARRAY) return ty_array_literal_as_tuple(me, expr, nullptr);
+// An element or spread operand checked with tsc's forceTuple check mode, which reaches nested array literals and the
+// array literals of a conditional's branches too: `[...(c ? r : [r])]` spreads `R | [r]` (checkConditionalExpression's
+// subtype-reduced union), `[["a", f]]` is `[[string, F]]`
+static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* contextual, u32 depth) {
+    if (expr->tag == EXPR_ARRAY) return ty_array_literal_as_tuple(me, expr, contextual);
     if (expr->tag == EXPR_TERNARY && depth < 8) {
-        Ty const* yes = force_tuple_operand(me, &expr->ternary->yes, depth + 1);
-        Ty const* no = force_tuple_operand(me, &expr->ternary->no, depth + 1);
+        Ty const* yes = force_tuple_operand(me, &expr->ternary->yes, contextual, depth + 1);
+        Ty const* no = force_tuple_operand(me, &expr->ternary->no, contextual, depth + 1);
         if (yes != ty_expr_type(me, &expr->ternary->yes) || no != ty_expr_type(me, &expr->ternary->no)) {
             Ty const* both[2] = { yes, no };
             return ty_union_subtype_reduced(me, both, 2);
@@ -4739,14 +4740,17 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
         if (i->tag == EXPR_SPREAD) {
             // As check_array() makes a spread element of a tuple. An array literal is a tuple too (tsc passes
             // forceTuple on to the spread expression)
-            Ty const* operand = force_tuple_operand(me, i->spread, 0);
+            Ty const* operand = force_tuple_operand(me, i->spread, nullptr, 0);
             flags[i_index] = TUPLE_ELEMENT_REST;
             elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ||
                 is_union_of_arrays(me, operand) ?
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             continue;
         }
-        elements[i_index] = ty_mutable_location_type(me, i, contextual_array_element_type(me, contextual, expr, (u32)i_index));
+        Ty const* element_context = contextual_array_element_type(me, contextual, expr, (u32)i_index);
+        // (tsc's checkExpressionForMutableLocation(e, checkMode) passes forceTuple on)
+        Ty const* forced = i->tag == EXPR_ARRAY || i->tag == EXPR_TERNARY ? force_tuple_operand(me, i, element_context, 0) : nullptr;
+        elements[i_index] = forced && forced != ty_expr_type(me, i) ? forced : ty_mutable_location_type(me, i, element_context);
     }
     ret = tuple_of(me, elements, flags, len, false);
     free(elements);

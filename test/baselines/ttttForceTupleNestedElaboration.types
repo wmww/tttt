@@ -1,0 +1,105 @@
+//// [test/cases/ttttForceTupleNestedElaboration.ts] ////
+
+=== ttttForceTupleNestedElaboration.ts ===
+// The elaboration of an array literal argument re-reads it as a tuple (tsc's elaborateArrayLiteral with forceTuple),
+// and forceTuple reaches nested array literals and a spread conditional's branches: the spread element is
+// `[string, Toggle]` (no `| undefined` without strictNullChecks), which fits HotkeyItem, so nothing is elaborated
+// and the error stays on the argument (docmost's `getHotkeyHandler([..., ...(editable ? [["alt+R", t]] : [])])`)
+type HotkeyItem = [string, (event: any) => void, {}?];
+>HotkeyItem : HotkeyItem
+>event : any
+
+declare function getHotkeyHandler(hotkeys: HotkeyItem[]): void;
+>getHotkeyHandler : (hotkeys: HotkeyItem[]) => void
+>hotkeys : HotkeyItem[]
+
+type SSA<S> = S | ((prevState: S) => S);
+>SSA : SSA<S>
+>prevState : S
+
+declare function useToggle<T = boolean>(options?: readonly T[]): [T, (value?: SSA<T>) => void];
+>useToggle : <T = boolean>(options?: readonly T[]) => [T, (value?: SSA<T>) => void]
+>options : readonly T[]
+>value : SSA<T>
+
+const [caseSensitive, caseSensitiveToggle] = useToggle([
+>caseSensitive : { isCaseSensitive: boolean; color: string; }
+>caseSensitiveToggle : (value?: SSA<{ isCaseSensitive: boolean; color: string; }>) => void
+>useToggle([    { isCaseSensitive: false, color: "gray" },    { isCaseSensitive: true, color: "blue" },]) : [{ isCaseSensitive: boolean; color: string; }, (value?: SSA<{ isCaseSensitive: boolean; color: string; }>) => void]
+>useToggle : <T = boolean>(options?: readonly T[]) => [T, (value?: SSA<T>) => void]
+>[    { isCaseSensitive: false, color: "gray" },    { isCaseSensitive: true, color: "blue" },] : ({ isCaseSensitive: false; color: string; } | { isCaseSensitive: true; color: string; })[]
+
+    { isCaseSensitive: false, color: "gray" },
+>{ isCaseSensitive: false, color: "gray" } : { isCaseSensitive: false; color: string; }
+>isCaseSensitive : false
+>false : false
+>color : string
+>"gray" : "gray"
+
+    { isCaseSensitive: true, color: "blue" },
+>{ isCaseSensitive: true, color: "blue" } : { isCaseSensitive: true; color: string; }
+>isCaseSensitive : true
+>true : true
+>color : string
+>"blue" : "blue"
+
+]);
+const [r, replaceToggle] = useToggle([
+>r : { isR: boolean; color: string; }
+>replaceToggle : (value?: SSA<{ isR: boolean; color: string; }>) => void
+>useToggle([    { isR: false, color: "gray" },]) : [{ isR: boolean; color: string; }, (value?: SSA<{ isR: boolean; color: string; }>) => void]
+>useToggle : <T = boolean>(options?: readonly T[]) => [T, (value?: SSA<T>) => void]
+>[    { isR: false, color: "gray" },] : { isR: false; color: string; }[]
+
+    { isR: false, color: "gray" },
+>{ isR: false, color: "gray" } : { isR: false; color: string; }
+>isR : false
+>false : false
+>color : string
+>"gray" : "gray"
+
+]);
+declare const editable: boolean;
+>editable : boolean
+
+const next = () => {};
+>next : () => void
+>() => {} : () => void
+
+const previous = () => {};
+>previous : () => void
+>() => {} : () => void
+
+getHotkeyHandler([
+>getHotkeyHandler([  ["Enter", next],  ["shift+Enter", previous],  ["alt+C", caseSensitiveToggle],  ...(editable ? [["alt+R", replaceToggle]] : []),]) : void
+>getHotkeyHandler : (hotkeys: HotkeyItem[]) => void
+>[  ["Enter", next],  ["shift+Enter", previous],  ["alt+C", caseSensitiveToggle],  ...(editable ? [["alt+R", replaceToggle]] : []),] : ((string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[] | [string, (value?: SSA<{ isCaseSensitive: boolean; color: string; }>) => void])[]
+
+  ["Enter", next],
+>["Enter", next] : [string, () => void]
+>"Enter" : "Enter"
+>next : () => void
+
+  ["shift+Enter", previous],
+>["shift+Enter", previous] : [string, () => void]
+>"shift+Enter" : "shift+Enter"
+>previous : () => void
+
+  ["alt+C", caseSensitiveToggle],
+>["alt+C", caseSensitiveToggle] : [string, (value?: SSA<{ isCaseSensitive: boolean; color: string; }>) => void]
+>"alt+C" : "alt+C"
+>caseSensitiveToggle : (value?: SSA<{ isCaseSensitive: boolean; color: string; }>) => void
+
+  ...(editable ? [["alt+R", replaceToggle]] : []),
+>...(editable ? [["alt+R", replaceToggle]] : []) : (string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[]
+>(editable ? [["alt+R", replaceToggle]] : []) : (string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[][]
+>editable ? [["alt+R", replaceToggle]] : [] : (string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[][]
+>editable : boolean
+>[["alt+R", replaceToggle]] : (string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[][]
+>["alt+R", replaceToggle] : (string | ((value?: SSA<{ isR: boolean; color: string; }>) => void))[]
+>"alt+R" : "alt+R"
+>replaceToggle : (value?: SSA<{ isR: boolean; color: string; }>) => void
+>[] : undefined[]
+
+]);
+

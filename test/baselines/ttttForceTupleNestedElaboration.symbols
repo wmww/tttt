@@ -1,0 +1,85 @@
+//// [test/cases/ttttForceTupleNestedElaboration.ts] ////
+
+=== ttttForceTupleNestedElaboration.ts ===
+// The elaboration of an array literal argument re-reads it as a tuple (tsc's elaborateArrayLiteral with forceTuple),
+// and forceTuple reaches nested array literals and a spread conditional's branches: the spread element is
+// `[string, Toggle]` (no `| undefined` without strictNullChecks), which fits HotkeyItem, so nothing is elaborated
+// and the error stays on the argument (docmost's `getHotkeyHandler([..., ...(editable ? [["alt+R", t]] : [])])`)
+type HotkeyItem = [string, (event: any) => void, {}?];
+>HotkeyItem : Symbol(HotkeyItem, Decl(ttttForceTupleNestedElaboration.ts, 0, 0))
+>event : Symbol(event, Decl(ttttForceTupleNestedElaboration.ts, 4, 28))
+
+declare function getHotkeyHandler(hotkeys: HotkeyItem[]): void;
+>getHotkeyHandler : Symbol(getHotkeyHandler, Decl(ttttForceTupleNestedElaboration.ts, 4, 54))
+>hotkeys : Symbol(hotkeys, Decl(ttttForceTupleNestedElaboration.ts, 5, 34))
+>HotkeyItem : Symbol(HotkeyItem, Decl(ttttForceTupleNestedElaboration.ts, 0, 0))
+
+type SSA<S> = S | ((prevState: S) => S);
+>SSA : Symbol(SSA, Decl(ttttForceTupleNestedElaboration.ts, 5, 63))
+>S : Symbol(S, Decl(ttttForceTupleNestedElaboration.ts, 6, 9))
+>S : Symbol(S, Decl(ttttForceTupleNestedElaboration.ts, 6, 9))
+>prevState : Symbol(prevState, Decl(ttttForceTupleNestedElaboration.ts, 6, 20))
+>S : Symbol(S, Decl(ttttForceTupleNestedElaboration.ts, 6, 9))
+>S : Symbol(S, Decl(ttttForceTupleNestedElaboration.ts, 6, 9))
+
+declare function useToggle<T = boolean>(options?: readonly T[]): [T, (value?: SSA<T>) => void];
+>useToggle : Symbol(useToggle, Decl(ttttForceTupleNestedElaboration.ts, 6, 40))
+>T : Symbol(T, Decl(ttttForceTupleNestedElaboration.ts, 7, 27))
+>options : Symbol(options, Decl(ttttForceTupleNestedElaboration.ts, 7, 40))
+>T : Symbol(T, Decl(ttttForceTupleNestedElaboration.ts, 7, 27))
+>T : Symbol(T, Decl(ttttForceTupleNestedElaboration.ts, 7, 27))
+>value : Symbol(value, Decl(ttttForceTupleNestedElaboration.ts, 7, 70))
+>SSA : Symbol(SSA, Decl(ttttForceTupleNestedElaboration.ts, 5, 63))
+>T : Symbol(T, Decl(ttttForceTupleNestedElaboration.ts, 7, 27))
+
+const [caseSensitive, caseSensitiveToggle] = useToggle([
+>caseSensitive : Symbol(caseSensitive, Decl(ttttForceTupleNestedElaboration.ts, 8, 7))
+>caseSensitiveToggle : Symbol(caseSensitiveToggle, Decl(ttttForceTupleNestedElaboration.ts, 8, 21))
+>useToggle : Symbol(useToggle, Decl(ttttForceTupleNestedElaboration.ts, 6, 40))
+
+    { isCaseSensitive: false, color: "gray" },
+>isCaseSensitive : Symbol(isCaseSensitive, Decl(ttttForceTupleNestedElaboration.ts, 9, 5))
+>color : Symbol(color, Decl(ttttForceTupleNestedElaboration.ts, 9, 29))
+
+    { isCaseSensitive: true, color: "blue" },
+>isCaseSensitive : Symbol(isCaseSensitive, Decl(ttttForceTupleNestedElaboration.ts, 10, 5))
+>color : Symbol(color, Decl(ttttForceTupleNestedElaboration.ts, 10, 28))
+
+]);
+const [r, replaceToggle] = useToggle([
+>r : Symbol(r, Decl(ttttForceTupleNestedElaboration.ts, 12, 7))
+>replaceToggle : Symbol(replaceToggle, Decl(ttttForceTupleNestedElaboration.ts, 12, 9))
+>useToggle : Symbol(useToggle, Decl(ttttForceTupleNestedElaboration.ts, 6, 40))
+
+    { isR: false, color: "gray" },
+>isR : Symbol(isR, Decl(ttttForceTupleNestedElaboration.ts, 13, 5))
+>color : Symbol(color, Decl(ttttForceTupleNestedElaboration.ts, 13, 17))
+
+]);
+declare const editable: boolean;
+>editable : Symbol(editable, Decl(ttttForceTupleNestedElaboration.ts, 15, 13))
+
+const next = () => {};
+>next : Symbol(next, Decl(ttttForceTupleNestedElaboration.ts, 16, 5))
+
+const previous = () => {};
+>previous : Symbol(previous, Decl(ttttForceTupleNestedElaboration.ts, 17, 5))
+
+getHotkeyHandler([
+>getHotkeyHandler : Symbol(getHotkeyHandler, Decl(ttttForceTupleNestedElaboration.ts, 4, 54))
+
+  ["Enter", next],
+>next : Symbol(next, Decl(ttttForceTupleNestedElaboration.ts, 16, 5))
+
+  ["shift+Enter", previous],
+>previous : Symbol(previous, Decl(ttttForceTupleNestedElaboration.ts, 17, 5))
+
+  ["alt+C", caseSensitiveToggle],
+>caseSensitiveToggle : Symbol(caseSensitiveToggle, Decl(ttttForceTupleNestedElaboration.ts, 8, 21))
+
+  ...(editable ? [["alt+R", replaceToggle]] : []),
+>editable : Symbol(editable, Decl(ttttForceTupleNestedElaboration.ts, 15, 13))
+>replaceToggle : Symbol(replaceToggle, Decl(ttttForceTupleNestedElaboration.ts, 12, 9))
+
+]);
+
