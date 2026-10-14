@@ -9386,7 +9386,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitUnserializableTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9561,7 +9561,7 @@ const baselines = {
         types: true,
     },
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

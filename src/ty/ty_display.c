@@ -3871,6 +3871,7 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     // visitAndTransformType counts conditional types by their root's node); `any` without truncation (the
     // types baseline, declaration emit), `...` in messages
     if (conditional_elided(d, ty)) {
+        if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
         approx_add(d, 3);
         out(d, truncating(d) ? c_sv("...") : c_sv("any"));
         return;
@@ -4511,7 +4512,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // Eleven instantiations of one anonymous type deep (their symbol: the root they were instantiated from),
             // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
             // without truncation (the types baseline, declaration emit), `...` in messages
+            // (Declaration emit reports it: the node builder's truncating, ReportTruncationError, TS7056)
             if (anonymous_elided(d, ty)) {
+                if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
                 approx_add(d, 3);
                 out(d, truncating(d) ? c_sv("...") : c_sv("any"));
                 break;
