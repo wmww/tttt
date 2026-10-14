@@ -323,6 +323,8 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
   ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
 - webpack node_modules/zod TS5115: see type_core.md (instantiation limits).
+  (2026-10-14, agent D: vue's three (pluginScoped.ts:107 TS5115 and the two TS7006 that follow from it) and webpack's
+  one are all plan 65's eager-base runaway; nothing new found, plan 65's prototype status stands.)
 - Flag-specific ones left (flagflip, 2026-10-14 agent D):
   - vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562, an auto-typed `let v` assigned from itself
     in a loop (`while (u-- > 0) { result[u] = v; v = p[v] }`): tsgo's *final* type of v there is any (a probe's `const z:
