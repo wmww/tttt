@@ -12,7 +12,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   a Go overlay on the pinned checkout, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`** (plan 53): tsc's output formats, sorting, exit codes and flags; `scripts/clidiff.py`
   compares stdout byte for byte. The human (2026-10-12): JS emit is out of scope (esbuild and co. cover it); .d.ts
-  emit is our call (plan 64 scopes it this window).
+  emit is our call: plan 64 says build it (TS sources first, ~5 sessions), making tttt a drop-in for
+  `tsc --emitDeclarationOnly` too.
 - **Corpora** 0 spurious everywhere; missing: webpack 1, vue 3; effect 3 spurious. **DT sweep** 8594 / 8595,
   **`$ExpectType`** 68631 / 68640, **flagflip** 46 / 8 / 3, **scenarios** 209 / 213, **source sweep** 3307 / 3363
   (129 / 174 repos fully matching).
@@ -33,7 +34,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), content
   mappers (plan 56, deliberately not done), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
-  member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64 scopes it).
+  member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64, planned, not started).
 
 ## Course correction (insights of 2026-10-13, end of the fourteenth window)
 - **The perf-first window delivered, on both fronts.** Perf at breadth (plan 59) found what fourteen tuned corpora
@@ -55,9 +56,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **The last core-rule approximation, the constraint functions, is gone** (plan 61, 2026-10-13): getConstraintOfType /
   getBaseConstraintOfType are tsgo's, circularity included. What remains is where tttt resolves eagerly what tsgo
   defers (alias references, conditional branches): two hacks.md entries name the places it shows.
-- **`.d.ts` emit gets scoped, not built** (plan 64). The pseudochecker and declaration diagnostics are most of a
-  declaration emitter's hard part, and `tsc --emitDeclarationOnly` beside esbuild is a common real workflow, so it is
-  the one feature that would widen "drop-in". It competes with the scaling work for sessions: decide with a size.
+- **`.d.ts` emit: scoped (plan 64), verdict yes.** The pseudochecker and declaration diagnostics are most of a
+  declaration emitter's hard part (the walk already prints every type a `.d.ts` would hold, into scratch strings),
+  and `tsc --emitDeclarationOnly` beside a bundler is common (87 configs in ~40 of the source sweep's repos). Five
+  ~1-session stages for TS sources, with a suite component (2139 tests carry `.d.ts` output) and a byte-for-byte
+  real-world oracle against tsgo. It competes with the scaling work for sessions: the next insights orders them.
 - **Keep the oracle discipline that caught this window's regressions**: full source sweep match-set diffs and flagflip
   against a session-start run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 
@@ -170,5 +173,5 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    source sweep and suite tails, own regression tests, lib checking~~ done.
 15. **Now**: checking that scales with cores (plan 62), the AST's allocation (plan 63), constraint functions (plan
    61), scoping `.d.ts` emit (plan 64). Plan 58 (7.1.0 stable re-pin) once it's on npm (after 2026-11-24).
-16. Then: whatever plans 62-64 found worth building; parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
+16. Then: plan 64 (`.d.ts` emit), plans 62/63's later stages; parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
    cache in the parser.

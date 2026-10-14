@@ -48,14 +48,12 @@ plan 61.
    `jsdoc_before_ex` fixed (minified lines), and `scripts/scaleprobe.py` (new) found five quadratic paths, fixed
    (array literals, statements, object literal / interface / class members). webpack -8.6% instructions, tsc/react/
    vscode -1.6..2%; no creep to bisect (type-fest +1.4% since the window's start is the accepted TS2574).
-9. **Planning: plan 64, scope `.d.ts` emit.** The human left it to us (vision.md). tttt now has tsgo's pseudochecker
-   (plan 55) and declaration diagnostics (plan 40): what does tsgo's declaration emitter need beyond them (the
-   transformer, the printer, `--emitDeclarationOnly`/`--declarationDir`/maps, `-b` writing outputs)? Size it against
-   the codebase, find an oracle (the suite's `.js` baselines carry the emitted `.d.ts`:
-   `thirdparty/typescript/tsc/testdata/baselines/reference/**/*.js`, 13k files),
-   and recommend yes/no/when. Don't build it in this entry.
+9. Done (2026-10-14): plan 64 written, recommendation **yes** (TS sources first, five ~1-session stages: suite
+   `dts` component + `scripts/dtsdiff.py`, the writer as a sink on declaration_diagnostics.c's walk, comments,
+   CLI/outputs/`-b`, declarationMap; JS emit an optional stage 6). 717 source sweep tsconfigs emit declarations, 87
+   with `emitDeclarationOnly`; 2139 suite tests carry `.d.ts` output; tsgo's output is checker-count independent.
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 65 (the TS5115 eager-base runaway, 13 sweep projects); plan 56 (content
+After the insights entry (for the next window): plan 58 if not done; plan 62/63's later stages (63 stage 2: arenas); plan 64 (`.d.ts` emit, stages 1-5); plan 65 (the TS5115 eager-base runaway, 13 sweep projects); plan 56 (content
 mappers) only if a corpus or sweep starts using them.
