@@ -2732,8 +2732,12 @@ static bool mapped_needs_wrapper(Checker* me, TyDisplay d, MappedInfo const* map
     if (!d.param_names || !mapped->modifiers_type || mapped->modifiers_type == ty_intrinsic(me, TY_UNKNOWN_)) return false;
     MappedInfo const* root = mapped_root(mapped);
     if (mapped->keyof_constraint) {
+        // (Homomorphic as tsc's getHomomorphicTypeVariable says: its constraint is `keyof` a type parameter, which
+        // `keyof` of a generic mapped type is too, `keyof Required<L>` being `keyof L`)
+        Ty const* constraint = mapped->constraint;
+        bool homomorphic = constraint->kind == TY_KEYOF && ty_non_distributed(constraint->keyof.operand)->kind == TY_TYPE_PARAM;
         *homomorphic_lost = root != mapped && root->modifiers_type && root->modifiers_type->kind == TY_TYPE_PARAM &&
-            mapped->modifiers_type->kind != TY_TYPE_PARAM;
+            mapped->modifiers_type->kind != TY_TYPE_PARAM && !homomorphic;
     }
     bool preserving = !mapped->keyof_constraint && !(mapped->constraint->kind == TY_TYPE_PARAM &&
         ty_param_constraint(me, ty_non_distributed(mapped->constraint)) &&

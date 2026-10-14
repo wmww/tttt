@@ -520,6 +520,12 @@ static bool ty_list_contains(TyList list, Ty const* ty) {
     return false;
 }
 
+// A type parameter declared within `span` (see instantiate_anonymous())
+static bool declared_inside(Ty const* source, Span span) {
+    if (!span.buf || source->kind != TY_TYPE_PARAM || !source->param.symbol) return false;
+    return span_contains_span(span, source->param.symbol->name_span);
+}
+
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
@@ -591,6 +597,17 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     ) {
         free_params_unknown = false;
     }
+    // Whatever it mentions, it doesn't mention a type parameter declared inside it from outside: those are bound in it
+    // (a method's own), so what maps them doesn't make another instance (tsc's getObjectTypeInstantiation keys on the
+    // outer type parameters of the declaration). A literal whose method returns the literal's variable: a call of the
+    // method maps the method's type parameter
+    Span own = {0};
+    if (free_params_unknown) {
+        if (target->anonymous.function) own = target->anonymous.function->full_span;
+        else if (target->anonymous.object_literal && !target->anonymous.overload_count && target->anonymous.literal_expr) {
+            own = expr_outer_span(target->anonymous.literal_expr);
+        }
+    }
     // A declared function's or method's whose signature is all annotations by the outer type parameters those mention
     // (tsc's getObjectTypeInstantiation filters a method's by isTypeParameterPossiblyReferenced): every `() => void`
     // method of ts-morph's Node<T> was a new type for every Node<X>, relating two of its subclasses member by member
@@ -605,6 +622,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         // (What the node doesn't mention is dropped below anyway: not instantiated, like tsc's getObjectTypeInstantiation
         // maps only the outer type parameters it mentions)
         if (!free_params_unknown && !ty_list_contains(free_params, inner->sources[i])) continue;
+        if (declared_inside(inner->sources[i], own)) continue;
         Ty const* mapped = ty_instantiate(me, inner->targets[i], mapper);
         if (mapped != inner->sources[i]) { // Identity mappings say nothing
             sources[len] = inner->sources[i];
@@ -614,6 +632,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     for (u32 i = 0; i < mapper->len; i++) {
         bool shadowed = mapper->sources[i] == mapper->targets[i];
         if (!shadowed && !free_params_unknown && !ty_list_contains(free_params, mapper->sources[i])) continue;
+        if (declared_inside(mapper->sources[i], own)) continue;
         for (u32 j = 0; inner && j < inner->len && !shadowed; j++) shadowed = inner->sources[j] == mapper->sources[i];
         if (!shadowed) {
             sources[len] = mapper->sources[i];
@@ -712,10 +731,10 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
     }
     if (ty->alias == alias) {
-        // (A conditional type too: `C<T>` through an import is not `C<T, {}>`, tsc's getTypeAliasInstantiation keys on
-        // the alias type arguments)
-        if (ty->kind == TY_CONDITIONAL) {
-        } else if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function) return ty;
+        // (A deferred type too: `C<T>` through an import is not `C<T, {}>`, tsc's getTypeAliasInstantiation keys on the
+        // alias type arguments)
+        bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || (ty->kind == TY_REFERENCE && ty->reference.deferred);
+        if (!deferred && (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function)) return ty;
     } else {
         // (A deferred reference, `type L1<V> = L2<V>` of `type L2<V> = L3<V>`, goes by the new name too: tsc's
         // getObjectTypeInstantiation keys it on the alias)
@@ -986,13 +1005,15 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
 
         case TY_INDEXED: {
             Ty const* index = ty_instantiate(me, ty->indexed.index, mapper);
-            Ty const* ret = ty_indexed_instantiated(
-                me, ty_instantiate(me, ty->indexed.object, mapper), index, ty->indexed.include_undefined
-            );
+            Ty const* object = ty_instantiate(me, ty->indexed.object, mapper);
+            Ty const* ret = ty_indexed_instantiated(me, object, index, ty->indexed.include_undefined);
             // (A union of what the members of a union index give goes by the alias too: tsc's
             // getIndexedAccessTypeOrUndefined passes it to getUnionType)
             bool distributed = index->kind == TY_UNION && ret->kind == TY_UNION;
-            return ret->kind == TY_INDEXED || distributed ? instantiate_alias(me, ty, ret, mapper) : ret;
+            // (Only the deferred access of these: a property's type that is an indexed access itself, `I[3]` read out
+            // of `{ n: I[3] }["n"]`, is that type, getIndexedAccessType names only the IndexedAccessType it creates)
+            bool deferred = ret->kind == TY_INDEXED && ret->indexed.object == object && ret->indexed.index == index;
+            return deferred || distributed ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
 
         case TY_SUBSTITUTION: {

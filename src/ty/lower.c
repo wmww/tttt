@@ -441,7 +441,7 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl) {
     return ty_type_params_of(me, symbol_type_generic(decl));
 }
 
-static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
+static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of);
 
 // `{ [P in keyof T]: X }` with T a type parameter: instantiating it keeps the name it was written with (tsc's
 // instantiateMappedType maps the constituents without the new alias), only a union made of it takes the new one
@@ -575,7 +575,8 @@ void ty_check_export_equals_property_reference(Checker* me, IdentifierType const
     }
 }
 
-static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
+// `body_of`: the alias whose body the reference is, if it is one
+static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of) {
     switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
         case JSDOC_INTRINSIC_NONE: break;
         case JSDOC_INTRINSIC_STRING: return ty_intrinsic(me, TY_STRING);
@@ -718,14 +719,19 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         // Through an import it goes by the alias with the type arguments as written (tsc's getTypeFromTypeAliasReference:
         // the resolved alias of an import/export, aliasTypeArguments from the node, defaults not filled in): it prints
         // as `A` or `A<X>`, not with the defaults
-        bool through_import = identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS);
+        // (Unless it's the body of another alias, which names it instead: the caller renames it)
+        bool through_import = identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS) &&
+            !(body_of && !(alias_is_local(body_of) && !alias_is_local(decl)));
         TyList written = { .data = args.data, .len = (u32)vec_spanned_type_size(&identifier->generic_params) };
         if (written.len > args.len) written.len = args.len;
         if (through_import && ret->alias == decl && written.len < args.len) {
             ret = ty_realias(me, ret, decl, written);
-        } else if (through_import && ret->alias != decl && ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL &&
-            ret->conditional.root == declared->conditional.root
-        ) {
+        } else if (through_import && ret->alias != decl && (
+            (ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL && ret->conditional.root == declared->conditional.root) ||
+            // (A deferred indexed access too, `type Key<I> = Format<I, 's'>` that is `I[2]`: getIndexedAccessType makes
+            // another one by the alias)
+            (ret->kind == TY_INDEXED && declared->kind == TY_INDEXED)
+        )) {
             // (With type arguments through an import, the alias is passed down: a deferred conditional type, which
             // instantiation names by its root's alias, `Exclude<X, null>` of `import { NonNullable as N }` with
             // `N<U> = Exclude<U, null>`, is N<X>; tsc's getTypeFromTypeAliasReference)
@@ -3920,7 +3926,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             ) {
                 my current_node = (CurrentNode){ .span = identifier_type_span(node->identifier) };
             }
-            Ty const* ret = lower_identifier(me, node->identifier, ctx);
+            Ty const* ret = lower_identifier(me, node->identifier, ctx, alias);
             my current_node = saved_node;
             // (Under a conditional type distributing over it: the distributed twin, plan 57)
             if (node->identifier->distributed && ret->kind == TY_TYPE_PARAM) ret = ty_distributed_type_param(me, ret);

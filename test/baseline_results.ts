@@ -15663,7 +15663,7 @@ const baselines = {
     'genericCallOnMemberReturningClosedOverObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallSpecializedToTypeArg': {
         errors: true,
@@ -27728,7 +27728,7 @@ const baselines = {
     'ramdaToolsNoInfinite2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'randomSemicolons1': {
         errors: true,
