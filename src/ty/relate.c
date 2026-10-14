@@ -124,6 +124,9 @@ static inline bool optional_adds_undefined(void) {
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+static bool template_related(Checker* me, void* st, Ty const* source, Ty const* target) {
+    return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
+}
 static void report_variance(Checker* me, Ty const* ty, unsigned flag);
 // The recursion identities of the types whose base constraints are being computed, innermost first (tsc's stack in
 // getResolvedBaseConstraint; each top-level base constraint starts a new one)
@@ -5832,7 +5835,9 @@ static Ternary structured_related_members(
                 // `foo-${number}` is related to `foo-${string}` though number isn't related to string
                 report_variance(me, source, VARIANCE_UNRELIABLE);
             }
-            if (ty_template_matches(me, source, target)) return TERNARY_TRUE;
+            // (Placeholders compared by this relation, whose recursion limits reach through: tsc passes
+            // isRelatedToWorker to isTypeMatchedByTemplateLiteralType)
+            if (ty_template_matches_with(me, source, target, &(TyCompare){ .fn = template_related, .ctx = st })) return TERNARY_TRUE;
             break;
 
         case TY_STRING_MAPPING:

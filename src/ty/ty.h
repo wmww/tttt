@@ -1319,6 +1319,12 @@ bool ty_is_valid_index_key(Ty const* ty); // tsc's isValidIndexKeyType: string, 
 bool ty_is_pattern_placeholder(Ty const* ty); // Something a pattern can be made of: string, number, a pattern...
 // tsc's isTypeMatchedByTemplateLiteralType, isMemberOfStringMapping, templateLiteralTypesDefinitelyUnrelated
 bool ty_template_matches(Checker* me, Ty const* source, Ty const* target);
+// The same where a relation is in progress: its comparison of the placeholders (tsc's compareTypes)
+typedef struct TyCompare {
+    bool (*fn)(Checker* me, void* ctx, Ty const* source, Ty const* target);
+    void* ctx;
+} TyCompare;
+bool ty_template_matches_with(Checker* me, Ty const* source, Ty const* target, TyCompare const* compare);
 bool ty_string_mapping_contains(Checker* me, Ty const* source, Ty const* target);
 bool ty_templates_definitely_unrelated(Ty const* source, Ty const* target);
 // tsc's inferTypesFromTemplateLiteralType: what each placeholder of `target` matched in `source`, false if it doesn't

@@ -497,16 +497,25 @@ static bool is_empty_type_literal(Checker* me, Ty const* ty) {
     return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count && !members->mapped;
 }
 
+// The comparison of a relation in progress, or a fresh assignability one (tsc's compareTypes: a relater's
+// isRelatedToWorker, whose recursion limits then reach through a template literal, or compareTypesAssignable)
+static bool template_compare(Checker* me, TyCompare const* compare, Ty const* source, Ty const* target) {
+    if (compare) return compare->fn(me, compare->ctx, source, target);
+    return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+}
+
+static bool template_matches(Checker* me, Ty const* source, Ty const* target, TyCompare const* compare);
+
 // tsc's isValidTypeForTemplateLiteralPlaceholder
-static bool placeholder_accepts(Checker* me, Ty const* source, Ty const* target) {
+static bool placeholder_accepts(Checker* me, Ty const* source, Ty const* target, TyCompare const* compare) {
     if (target->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < target->composite.types.len; i++) {
             Ty const* t = target->composite.types.data[i];
-            if (!is_empty_type_literal(me, t) && !placeholder_accepts(me, source, t)) return false;
+            if (!is_empty_type_literal(me, t) && !placeholder_accepts(me, source, t, compare)) return false;
         }
         return true;
     }
-    if ((target->flags & TYF_STRING) || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    if ((target->flags & TYF_STRING) || template_compare(me, compare, source, target)) return true;
     if (source->kind == TY_LITERAL && (source->flags & TYF_STRING_LITERAL)) {
         csview value = atom_sv(source->literal.string);
         if ((target->flags & TYF_NUMBER) && is_valid_number_string(value, false)) return true;
@@ -517,13 +526,13 @@ static bool placeholder_accepts(Checker* me, Ty const* source, Ty const* target)
         if (target->flags & TYF_NULL) return csview_equals(value, "null");
         if (target->flags & TYF_UNDEFINED) return csview_equals(value, "undefined");
         if (target->kind == TY_STRING_MAPPING) return ty_string_mapping_contains(me, source, target);
-        if (target->kind == TY_TEMPLATE_LITERAL) return ty_template_matches(me, source, target);
+        if (target->kind == TY_TEMPLATE_LITERAL) return template_matches(me, source, target, compare);
         return false;
     }
     if (source->kind == TY_TEMPLATE_LITERAL) {
         return source->template_literal.types.len == 1 && !source->template_literal.texts[0]->len &&
             !source->template_literal.texts[1]->len &&
-            ty_is_related(me, source->template_literal.types.data[0], target, TY_RELATION_ASSIGNABLE);
+            template_compare(me, compare, source->template_literal.types.data[0], target);
     }
     return false;
 }
@@ -654,7 +663,7 @@ static Ty const* base_constraint_or_self(Checker* me, Ty const* ty) {
     return constraint ? constraint : ty;
 }
 
-bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out) {
+static bool infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out, TyCompare const* compare) {
     if (source->kind == TY_LITERAL && (source->flags & TYF_STRING_LITERAL)) {
         return infer_from_parts(me, &source->literal.string, nullptr, 0, target, out);
     }
@@ -667,7 +676,7 @@ bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty 
             Ty const* s = source->template_literal.types.data[i];
             Ty const* t = target->template_literal.types.data[i];
             Ty const* source_constraint = base_constraint_or_self(me, s);
-            bool fits = ty_is_related(me, source_constraint, base_constraint_or_self(me, t), TY_RELATION_ASSIGNABLE);
+            bool fits = template_compare(me, compare, source_constraint, base_constraint_or_self(me, t));
             out[i] = fits ? s : string_like_of(me, s);
         }
         return true;
@@ -675,15 +684,28 @@ bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty 
     return infer_from_parts(me, source->template_literal.texts, source->template_literal.types.data, len, target, out);
 }
 
-bool ty_template_matches(Checker* me, Ty const* source, Ty const* target) {
+bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out) {
+    return infer_from_template(me, source, target, out, nullptr);
+}
+
+// tsc's isTypeMatchedByTemplateLiteralType
+static bool template_matches(Checker* me, Ty const* source, Ty const* target, TyCompare const* compare) {
     u32 len = target->template_literal.types.len;
     Ty const* stack_buf[16];
     Ty const** inferred = len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * len);
     panic_if(!inferred, "out of memory");
-    bool ret = ty_infer_from_template(me, source, target, inferred);
-    for (u32 i = 0; i < len && ret; i++) ret = placeholder_accepts(me, inferred[i], target->template_literal.types.data[i]);
+    bool ret = infer_from_template(me, source, target, inferred, compare);
+    for (u32 i = 0; i < len && ret; i++) ret = placeholder_accepts(me, inferred[i], target->template_literal.types.data[i], compare);
     if (inferred != stack_buf) free(inferred);
     return ret;
+}
+
+bool ty_template_matches(Checker* me, Ty const* source, Ty const* target) {
+    return template_matches(me, source, target, nullptr);
+}
+
+bool ty_template_matches_with(Checker* me, Ty const* source, Ty const* target, TyCompare const* compare) {
+    return template_matches(me, source, target, compare);
 }
 
 bool ty_templates_definitely_unrelated(Ty const* source, Ty const* target) {
