@@ -241,18 +241,24 @@ static void collect_found_prop(Checker* checker, Ty const* object, Prop const* p
 // The property symbol a union's or intersection's members' properties (collected into `inner`) make, added to `info`
 static void merge_composite_info(PropSymbolInfo* info, PropSymbolInfo const* inner_info) {
     PropSymbolInfo const inner = *inner_info;
+    // A member's synthetic property of distinct declarations has no value declaration of its own: it doesn't count
+    // for uniformity, the next member's declaration is the first (tsc's createUnionOrIntersectionProperty skips
+    // members without a valueDeclaration in hasNonUniformValueDeclaration)
+    Span first = inner.non_uniform ? span_null : inner.first_declaration;
     if (!info->found) {
         info->found = true;
-        info->parent = inner.parent;
+        info->parent = inner.non_uniform ? nullptr : inner.parent;
         info->namespace = inner.namespace;
         info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
         info->name_span = inner.name_span;
         info->name_is_value = inner.name_is_value;
-        info->first_declaration = inner.first_declaration;
-    } else if (!span_eq(info->first_declaration, inner.first_declaration)) {
+        info->first_declaration = first;
+    } else if (span_valid(first) && !span_valid(info->first_declaration)) {
+        info->first_declaration = first;
+        info->parent = inner.parent;
+    } else if (span_valid(first) && !span_eq(info->first_declaration, first)) {
         info->non_uniform = true;
     }
-    info->non_uniform |= inner.non_uniform;
     info->member_count += inner.member_count;
     // (A composite member with one property that has the name is that property's symbol, tsc's
     // createUnionOrIntersectionProperty's singleProp: it may already be there. More are a symbol of their own)
@@ -361,7 +367,10 @@ static void collect_found_prop(Checker* checker, Ty const* object, Prop const* p
         info->name_is_value = root->decl->name_is_value;
         info->first_declaration = first_declaration;
         info->readonly = (prop->flags & PROP_READONLY) != 0;
-    } else if (!span_eq(info->first_declaration, first_declaration)) {
+    } else if (span_valid(first_declaration) && !span_valid(info->first_declaration)) {
+        info->first_declaration = first_declaration;
+        info->parent = prop->parent;
+    } else if (span_valid(first_declaration) && !span_eq(info->first_declaration, first_declaration)) {
         info->non_uniform = true;
     }
     info->member_count++;
