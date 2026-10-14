@@ -90,3 +90,8 @@ whole (JS declaration emit's walk); the TS9013 part alone is ~60 lines.
   (`scope_add_port()`). (From hacks.md, 2026-10-08)
 - Mutant one-offs (JS mutants 2026-10-09): TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge),
   moduleExportAlias5 TS2339, jsDeclarationsFunctions TS2323 (`export { j }` twice).
+
+## Unfiled suite failure (triage 2026-10-14, plan 66)
+- moduleExportsAliasLoop2 (symbols): `Foo.min` is `Symbol(fn2, Decl(x.js, 0, 13))` to tsgo (the alias loop resolves
+  `min` to the `exports.fn2` symbol, keeping min's declaration), `Symbol(min, ...)` to tttt. moduleExportsAliasLoop1
+  (binder_modules.md) is the same loop.

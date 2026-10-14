@@ -307,3 +307,13 @@ Looked at, root cause where found, not fixed (one test each unless named):
   - tsgo keeps the intersection it distributed as the union's origin for display (getIntersectionType's
     createOriginUnionOrIntersectionType): `(VisitNode<S, any> & VisitNode<S, t.Aliases>) | undefined` where tttt prints
     the distributed `((F | O) & (F | O)) | undefined` expanded. Seen in a babel__traverse probe, no $ExpectType on it.
+
+## Unfiled suite failures (triage 2026-10-14, plan 66; first differing line only, not investigated)
+- jsxNamespacePrefixInNameReact (types): `>a : any` where tsgo prints `undefined` (jsxNamespacePrefixInName passes
+  everything but a similar types line).
+- objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier (types): a shorthand `get e` (recovery) is
+  `readonly e: any` to tttt, `readonly e: void` to tsgo: the recovered getter's return type.
+- fixSignatureCaching (types): one line inside the huge object literal type of the mobile-detect closure differs
+  (`grep '^[-+]>'` and compare the tails; the first lines are identical for >1 KB).
+- circularTypeofWithVarOrFunc (types): `func : () => typeAlias3` where tsgo prints `() => any` (the circular
+  `typeof` alias resolves to any; tttt keeps the alias name).
