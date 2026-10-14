@@ -1931,6 +1931,9 @@ typedef enum ObjectLiteralKind {
     // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral, binding patterns), which
     // has no inferable index (isObjectTypeWithInferableIndex)
     OBJECT_NO_INFERABLE_INDEX = 1 << 5,
+    // Or'ed with the kind: a copy of the same literal, another type (tsc's widening makes every object literal anew,
+    // see widen_nullable_copy())
+    OBJECT_WIDENED_COPY = 1 << 6,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
@@ -2351,6 +2354,7 @@ typedef struct TyParamNames {
     TyParamName* given;
     u32 len;
     u32 cap;
+    u32 used; // How many of the names given the print so far depends on (the highest one it used, see TyPrinted)
     // While an instantiated signature's type parameters are named: the names of its parameters that are copies (tsc's
     // instantiateSymbol), each a symbol other than the type parameter of its name it was declared with (the binder's
     // one symbol of both), so a type parameter of that name is shadowed (tsc's params fake scope)

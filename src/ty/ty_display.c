@@ -122,7 +122,7 @@ typedef struct TyPrinted {
     Ty const* ty;
     cstr const* target;
     PrintedRange range;
-    u32 names_len; // How many type parameter names were given when it was printed (see param_names_leave())
+    u32 names_used; // How many of the type parameter names given it depends on (see param_names_leave())
     u32 added; // What it added to the approximate length (tsc's SerializedTypeEntry.addedLength)
     bool over; // The print was past the truncation length after it (SerializedTypeEntry.truncating)
 } TyPrinted;
@@ -141,7 +141,21 @@ static TyPrinted const* printed_before(TyDisplay d, Ty const* ty) {
     return nullptr;
 }
 
-static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range, u32 added) {
+// Around a print that may be remembered: which type parameter names it used (TyParamNames.used)
+static u32 names_used_start(TyDisplay d) {
+    if (!d.param_names) return 0;
+    u32 outer = d.param_names->used;
+    d.param_names->used = 0;
+    return outer;
+}
+static u32 names_used_end(TyDisplay d, u32 outer) {
+    if (!d.param_names) return 0;
+    u32 used = d.param_names->used;
+    if (outer > d.param_names->used) d.param_names->used = outer;
+    return used;
+}
+
+static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range, u32 added, u32 names_used) {
     TyParamNames* names = d.param_names;
     if (!names) return;
     if (names->printed_len == names->printed_cap) {
@@ -149,7 +163,7 @@ static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range, u32 
         names->printed = realloc(names->printed, names->printed_cap * sizeof(TyPrinted));
     }
     names->printed[names->printed_len++] = (TyPrinted){
-        .ty = ty, .target = d.target, .range = range, .names_len = names->len, .added = added, .over = d.over && *d.over,
+        .ty = ty, .target = d.target, .range = range, .names_used = names_used, .added = added, .over = d.over && *d.over,
     };
 }
 
@@ -176,6 +190,7 @@ static bool reprint_printed(TyDisplay d, Ty const* ty) {
     if (!before) return false;
     reprint_range(d, before->range);
     approx_add(d, before->added);
+    if (d.param_names->used < before->names_used) d.param_names->used = before->names_used;
     if (before->over) set_over(d);
     return true;
 }
@@ -1156,7 +1171,9 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
     TyParamNames* names = d.param_names;
     if (!names || param->param.state->is_this) return param->param.name;
     for (u32 i = names->len; i--;) {
-        if (names->given[i].param == param) return names->given[i].name;
+        if (names->given[i].param != param) continue;
+        if (names->used < i + 1) names->used = i + 1;
+        return names->given[i].name;
     }
     Ty const* declared = param; // (A clone made by instantiating a signature has its original's symbol)
     while (declared->param.state->clone_of) declared = declared->param.state->clone_of;
@@ -1180,6 +1197,8 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
         names->given = realloc(names->given, sizeof(TyParamName) * names->cap);
     }
     names->given[names->len++] = (TyParamName){ .param = param, .name = name };
+    // (Its name depends on all the names given before it)
+    names->used = names->len;
     return name;
 }
 
@@ -1203,9 +1222,10 @@ static void param_names_leave(TyDisplay d, u32 saved) {
     TyParamNames* names = d.param_names;
     if (!names || names->len <= saved) return;
     names->len = saved;
+    if (names->used > saved) names->used = saved;
     u32 kept = 0;
     for (u32 i = 0; i < names->printed_len; i++) {
-        if (names->printed[i].names_len > saved) continue;
+        if (names->printed[i].names_used > saved) continue;
         names->printed[kept++] = names->printed[i];
     }
     names->printed_len = kept;
@@ -4769,10 +4789,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;
             u32 approx_start = d.approx ? *d.approx : 0;
+            u32 outer_used = names_used_start(d);
             PrintedRange whole = printed_range_start(d);
             display_structure(me, d, ty);
             printed_range_end(d, &whole);
-            if (!d.tracker) remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0);
+            u32 names_used = names_used_end(d, outer_used);
+            if (!d.tracker) remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0, names_used);
         }   break;
 
         case TY_UNION:
@@ -4844,10 +4866,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             if (reprint_printed(d, ty)) break;
             u32 approx_start = d.approx ? *d.approx : 0;
+            u32 outer_used = names_used_start(d);
             PrintedRange whole = printed_range_start(d);
             display_conditional(me, d, ty);
             printed_range_end(d, &whole);
-            remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0);
+            u32 names_used = names_used_end(d, outer_used);
+            remember_printed(d, ty, whole, d.approx ? *d.approx - approx_start : 0, names_used);
         }   break;
 
         case TY_TEMPLATE_LITERAL:
