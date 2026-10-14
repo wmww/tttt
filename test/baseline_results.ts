@@ -2571,7 +2571,7 @@ const baselines = {
         types: true,
     },
     'awaitedTypeNoLib': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
