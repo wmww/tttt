@@ -1,5 +1,8 @@
 # Plan 63: the AST's allocation (struct diet first, then per-file arenas)
 
+**On hold (insights 2026-10-14):** plan 67 (memory against bun, todo entry 5 of the sixteenth window) measures where
+vscode's peak is and decides whether stage 1b and stage 2 below still run, as written or folded into it.
+
 Written 2026-10-14 by todo entry 5 (planning). It replaces plan 60 (deleted: its checker-side leftovers are in
 bugs/perf_leads.md "Memory", its corpus table in measurements.md "Memory breakdown"). Numbers are this machine's (4 vCPU,
 GCC 15.2), K1 = `--checkers 1 --threads 1`.

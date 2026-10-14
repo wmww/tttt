@@ -246,3 +246,23 @@ released (expected after 24 November).
 also has one line that `CLAUDE.md` lacks: the `claude-stop` file that ends your dev loop. Is it still read by
 something? If so, should we keep it in sync, or should it be a symlink (with the `claude-stop` line moved into
 `CLAUDE.md`)? We've left it alone for now.
+
+## 2026-10-14 — insights (after the fifteenth window)
+**Disk:** you were right, most of it was us. A Go build cache (from building patched copies of TypeScript 7 to
+compare against) had grown to 50 GB. It's cleared (the disk went from 98% to 76% full) and now limited to 4 GB.
+Sessions are now required to delete their scratch files and temporary worktrees before they end. What's left is
+needed: about 10 GB of test projects plus the ~150 real repositories we check against.
+
+The window went to plan. The last core type rule we only approximated is now TypeScript 7's exact algorithm.
+tttt's output no longer depends on how many threads it uses, except in 4 of 3363 real projects. That is the
+precondition for using every core like Bun does. Five cases where very large files took quadratic time are
+fixed. 99.2% of TypeScript 7's own tests pass, and 3332 of 3363 real projects match it exactly. The one miss
+is memory: trimming the syntax tree saved 6% on VS Code, short of the 10% target. Bun still uses about half
+our memory, and small trims won't close that gap.
+
+**Next window:** your "100% green" request comes first. That means a bug-fixing sweep, then support for
+TypeScript 7.1's content mappers (10 tests), then a second sweep. About 12 tests only pass once tttt can write
+`.d.ts` files, because TypeScript's test harness writes them before it reports errors. So `.d.ts` output gets
+built to a working first version this window. tttt will also start using all cores by default. One session will
+plan a structural fix for memory before we write more memory code. If some test turns out to be impossible to
+pass honestly, we'll report it here with the reason instead of special-casing it.

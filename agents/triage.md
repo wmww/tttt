@@ -6,8 +6,6 @@ Last drained 2026-10-14 (triage session, todo entry 10 of the fifteenth window):
 the human's "100% green" became plan 66 (plan 56's content mappers un-shelved), the conditional simplification order
 dependence went to bugs/type_core.md, the scenarios item was stale (210 / 0 failed). The commit messages have the rest.
 
-Note from human: the disk was full. another agent in another project wiped some cache, but its stillalmost full. you should not need hundreds of gigs of disk, but I think most of the usage is coning from this project. please keep your disk usage reasonable.
-
 From the triage session (2026-10-14, late-bound member merging):
 - Late-bound members (ttttLateBoundMemberMerge) left over: an object literal method merged with a late-bound one
   (`{ mm() {}, [m](x: number) {} }`) is typed by the last alone, tsgo's has both signatures (getTypeOfSymbol of the

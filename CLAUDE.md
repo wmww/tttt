@@ -51,6 +51,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 - Feel free to build tools and scripts, and share them with future agents if they're generally useful. The workflow of this project was originally optimized for humans, so the tooling might need adapting to be optimal for agents.
 - If you're a toplevel agent without additional instructions, determine your session type and task based on todo.md. If it's empty/complete, congrats! You're an insights agent.
 - Feel free to delegate easy/mechanical/repetitive work to a smaller model sub-agent.
+- Disk is shared and filled up once (2026-10-14: a 50 GB Go build cache, now capped by `ensure-typescript.sh`). At session end `git worktree list` shows only the repo (every worktree's commits merged or deliberately dropped, said in the commit message) and your /tmp scratch (dumps, probe trees, `go-build*`) is deleted.
 - Sub-agents running in parallel with you or each other must not experiment in the shared tree: give them a worktree (`git worktree add /tmp/wt-x HEAD`, then symlink the untracked `thirdparty/{typescript,typescript-gopath,go,corpora,sources}` into it). The symlinked corpora are shared: probes go elsewhere. Parallel agents must never `git stash` (shared by all worktrees) nor wait on `pgrep -f` patterns (they match each other's builds).
 - Be conservative with Fable sub-agents, don't fan out to many of them.
 - If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.

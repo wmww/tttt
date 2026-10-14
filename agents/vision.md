@@ -5,18 +5,18 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-13, insights after the fourteenth window)
+## State (2026-10-14, insights after the fifteenth window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  after 2026-11-24: plan 58). Its native suite: **13440 / 13568** (99.1%), plus 18 own regression tests (`test/cases`,
+  after 2026-11-24: plan 58). Its native suite: **13455 / 13568** (99.2%), plus 65 own regression tests (all passing) (`test/cases`,
   every fix found outside the suite gets one). Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`:
   a Go overlay on the pinned checkout, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`** (plan 53): tsc's output formats, sorting, exit codes and flags; `scripts/clidiff.py`
   compares stdout byte for byte. The human (2026-10-12): JS emit is out of scope (esbuild and co. cover it); .d.ts
   emit is our call: plan 64 says build it (TS sources first, ~5 sessions), making tttt a drop-in for
   `tsc --emitDeclarationOnly` too.
-- **Corpora** 0 spurious everywhere; missing: webpack 1, vue 3; effect 3 spurious. **DT sweep** 8594 / 8595,
-  **`$ExpectType`** 68631 / 68640, **flagflip** 46 / 8 / 3, **scenarios** 209 / 213, **source sweep** 3307 / 3363
-  (129 / 174 repos fully matching).
+- **Corpora** 0 spurious everywhere but effect (3); missing: webpack 1, vue 3. **DT sweep** 8594 / 8595,
+  **`$ExpectType`** 68637 / 68640, **flagflip** 42 / 6 / 3, **scenarios** 210 passed / 0 failed (14 skipped),
+  **source sweep** 3332 / 3363, **kdiff** (1 vs 16 checkers) 4 / 3363 projects differ.
 - **Perf**: single-threaded tttt is 2.0-5.8x faster than single-threaded tsgo 7.1 on the corpora, 2.5-9.6x at both
   defaults, at 0.15-0.6x its RSS (measurements.md "Perf session (2026-10-14)"). **At breadth** (`scripts/perfsweep.py`,
   1786 source sweep projects): check time median 0.16x tsgo's, types 0.68x, worst types ratio 1.62, no project above
@@ -36,33 +36,29 @@ types components) are the oracle, not the goal; real projects that are clean und
   mappers (plan 56, not started; now scheduled by plan 66, the human wants the suite at 100%), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
   member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64, planned, not started).
 
-## Course correction (insights of 2026-10-13, end of the fourteenth window)
-- **The perf-first window delivered, on both fronts.** Perf at breadth (plan 59) found what fourteen tuned corpora
-  never showed: ~20 tsgo caches and lazinesses tttt lacked; the worst types ratio went 16.4 -> 1.56 and no project is
-  above tsgo's memory any more. Plan 60 cut vscode's peak 16% and type-fest's 61%. Correctness didn't stall: two
-  fan-outs and plan 55 took the suite 98.1% -> 99.1% and the source sweep 3119 -> 3307. hacks.md grew 709 -> 771
-  lines, nearly all of it *permanent* memory-layout notes (Span file table, LazyMemo ids, node links), not workarounds.
-- **Against tsgo, the goal is met at the corpora and at breadth; the open front is bun.** Two gaps, both structural:
-  (1) **cores**: checking stops at 4 checkers because the checker count is part of the output (union order from
-  type-id ties), so on a 12-core box bun's every-core default ties our 4-checker one on vscode; (2) **memory**: our
-  AST is tsgo-sized (~10M malloc'd boxes on vscode, half their words zero) and each checker duplicates lib and shared
-  types (+17..55% arena at K4). This window plans both (62: decouple output from K, or say why not; 63: the AST's
-  allocation) before building either. Plan 63's measurement (2026-10-14): malloc's own overhead
-  is only ~5% of the AST (105 MB on vscode, no fragmentation), so arenas are a *time* lever (11% of parsing's
-  instructions, huge pages without re-exec, freeing in O(chunks)), not a memory one; the memory is in the
-  representation (51% zero words). Plan 63 does the struct diet first (target vscode peak 4.4 -> 4.0 GB), then
-  per-file arenas behind an audit. Reaching Bun's 1.6 GB would take 32-bit node references (indices into per-file
-  arenas): still not planned, but the arenas are its prerequisite.
-- **The last core-rule approximation, the constraint functions, is gone** (plan 61, 2026-10-13): getConstraintOfType /
-  getBaseConstraintOfType are tsgo's, circularity included. What remains is where tttt resolves eagerly what tsgo
-  defers (alias references, conditional branches): two hacks.md entries name the places it shows.
-- **`.d.ts` emit: scoped (plan 64), verdict yes.** The pseudochecker and declaration diagnostics are most of a
-  declaration emitter's hard part (the walk already prints every type a `.d.ts` would hold, into scratch strings),
-  and `tsc --emitDeclarationOnly` beside a bundler is common (87 configs in ~40 of the source sweep's repos). Five
-  ~1-session stages for TS sources, with a suite component (2139 tests carry `.d.ts` output) and a byte-for-byte
-  real-world oracle against tsgo. It competes with the scaling work for sessions: the next insights orders them.
-- **Keep the oracle discipline that caught this window's regressions**: full source sweep match-set diffs and flagflip
-  against a session-start run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
+## Course correction (insights of 2026-10-14, end of the fifteenth window)
+- **The window did what it planned, and planned the rest.** Plan 61 finished the last core-rule approximation
+  (tsgo's constraint functions, circularity included); plan 62 stage 1 made the output checker-count independent
+  everywhere but 4 source sweep projects; a fan-out took the suite 13464 -> 13515 and the source sweep 3310 -> 3332
+  with 0 lost; scaling probes found and fixed five quadratic paths no corpus showed. Plans 63 (AST memory), 64 (`.d.ts`
+  emit, verdict yes) and 66 (the last ~113 tests) were written. hacks.md 771 -> 804 lines, mostly notes, not debt.
+- **The miss is memory.** Plan 63's struct diet got vscode's single-threaded peak 4.40 -> 4.16 GB against a 4.0
+  target, and what's left of it (stage 1b) is ~-90 MB of increments. Bun is at 2.1 GB at defaults on the same
+  project. More diets won't close a 2x gap: the next window spends one *planning* session (plan 67) measuring where
+  the peak is (AST, binder, checker, per-checker duplication) and costing the structural options (32-bit node
+  references in per-file arenas, a shared lib type layer) before any more memory code.
+- **The human asked for 100% of the suite.** Plan 66 is the route: two fan-outs, content mappers (plan 56, 10
+  tests, reversing its "not now"), and the emit-order tests that ride on plan 64's writer, because tsgo's harness
+  emits before it collects diagnostics. The no-special-casing rule holds: a test that can't pass honestly gets a
+  written argument in tsgo_divergences.md and a line in report.md, not a hack.
+- **Two process failures this window, both now rules (CLAUDE.md Workflow):** the disk filled (a 50 GB Go build cache
+  from instrumented tsgo builds; now capped in `ensure-typescript.sh`), and the triage session ended with four
+  finished commits stranded in a worktree (merged by this insights session, 0 lost). Sessions end with an empty
+  `git worktree list` and their /tmp scratch deleted.
+- **Order this window:** the suite's fan-out and content mappers first (the human's request), the checker count
+  following the cores (plan 62 stages 2-3, the cheaper half of the bun gap), the memory plan, then plan 64 to a
+  working TS-source writer and the second fan-out. Plan 64's later stages (comments, CLI, declarationMap) and plan
+  67's execution are the next window's.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
@@ -73,6 +69,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   part of the output and each checker duplicates lib types. Plan 62 (2026-10-13) measured: tsgo's output is
   K-independent, tttt's nearly (19 / 3363 source sweep projects differ at K=16, all of them bugs, 13 already at K=4);
   K 4 -> 16 costs +7..47% RSS. So: fix the order bugs, then K follows the cores with a size cap (plan 62 stages 1-3).
+- **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
+  run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
   test lists, 0 lost enforced at merge) are the engine for the long tail: one or two per window. **Instruction counts
   at every session end** (`scripts/instrcount.sh`): creep is silent otherwise.
@@ -171,7 +169,10 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    tsgo-based oracle tools and caches, 7's removals deleted, the 7.x deltas by fan-out~~ done.
 14. ~~Perf at breadth (plan 59), memory (plan 60), the bench against tsgo 7.1, plan 55 (pseudochecker), the
    source sweep and suite tails, own regression tests, lib checking~~ done.
-15. **Now**: checking that scales with cores (plan 62), the AST's allocation (plan 63), constraint functions (plan
-   61), scoping `.d.ts` emit (plan 64). Plan 58 (7.1.0 stable re-pin) once it's on npm (after 2026-11-24).
-16. Then: plan 64 (`.d.ts` emit), plans 62/63's later stages; parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
+15. ~~Plan 61 (constraint functions), plan 62 stage 1 (output independent of K), plan 63 stage 1 (struct diet),
+   scaling probes, planning `.d.ts` emit (64) and the last tests (66)~~ done.
+16. **Now**: the suite to 100% (plan 66: fan-outs, content mappers 56), the checker count following the cores (plan
+   62 stages 2-3), planning memory against bun (plan 67), `.d.ts` emit to a working writer (plan 64 stages 1-2).
+   Plan 58 (7.1.0 stable re-pin) once it's on npm (after 2026-11-24).
+17. Then: plan 64 stages 3-5, plan 67's execution, parallel declare/link (bugs/perf_leads.md "Parallelism"), a token
    cache in the parser.
