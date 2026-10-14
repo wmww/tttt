@@ -3328,8 +3328,9 @@ cstr program_module_specifier_ending(
     cstr importing_path = absolute_path_of(cwd, cstr_sv(&importing->canonical_path));
     cstr target_path = absolute_path_of(cwd, cstr_sv(&target->canonical_path));
     // (tsc's command line names a referenced project's output declaration file, which it reads in its place)
+    // (tsc's command line names a referenced project's source by its output declaration file first, then by itself:
+    // GetSourceOfProjectReferenceIfOutputIncluded and GetEachFileNameOfModule's referenceRedirect)
     csview output = target->from_reference ? project_redirects_output_of_source(my redirects, cstr_sv(&target_path)) : c_sv("");
-    if (output.size) cstr_assign_sv(&target_path, output);
     CompilerOptions const* options = program_options_of(me, importing);
     cstr project_dir = cstr_size(&options->config_dir) ? absolute_path_of(cwd, cstr_sv(&options->config_dir)) : cstr_null;
     SpecifierRequest request = {
@@ -3345,6 +3346,7 @@ cstr program_module_specifier_ending(
         .override_mode = override,
         .ending_mode = ending_mode,
         .target = cstr_sv(&target_path),
+        .redirect = output,
         .project_dir = cstr_sv(&project_dir),
     };
     cstr ret = module_specifier_generate(&request);

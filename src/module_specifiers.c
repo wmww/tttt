@@ -1045,6 +1045,7 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
 typedef struct ModulePath {
     cstr path;
     bool in_node_modules;
+    bool is_redirect; // A referenced project's output declaration file (or a link to it): sorted first
 } ModulePath;
 
 typedef struct ModulePaths {
@@ -1053,7 +1054,7 @@ typedef struct ModulePaths {
     u32 cap;
 } ModulePaths;
 
-static void module_paths_add(ModulePaths* me, csview path) {
+static void module_paths_add(ModulePaths* me, csview path, bool is_redirect) {
     for (u32 i = 0; i < my len; i++) {
         if (cstr_equals_sv(&my items[i].path, path)) return;
     }
@@ -1061,7 +1062,9 @@ static void module_paths_add(ModulePaths* me, csview path) {
         my cap = my cap ? my cap * 2 : 4;
         my items = realloc(my items, my cap * sizeof(*my items));
     }
-    my items[my len++] = (ModulePath){ .path = cstr_from_sv(path), .in_node_modules = path_contains_node_modules(path) };
+    my items[my len++] = (ModulePath){
+        .path = cstr_from_sv(path), .in_node_modules = path_contains_node_modules(path), .is_redirect = is_redirect,
+    };
 }
 
 static void module_paths_drop(ModulePaths* me) {
@@ -1113,6 +1116,12 @@ static u32 resolve_dependencies(Generator* me) {
     return scope;
 }
 
+// tsc's comparePathsByRedirect: redirects first, then fewer directories (stable otherwise)
+static bool path_sorts_after(ModulePath const* a, ModulePath const* b, u32 b_depth) {
+    if (a->is_redirect != b->is_redirect) return b->is_redirect;
+    return separators(cstr_sv(&a->path)) > b_depth;
+}
+
 // tsc's getAllModulePathsWorker: every name of the target (through the links to a directory it's in, then itself),
 // ordered by how close they are to the importing file
 static ModulePaths all_module_paths(Generator* me) {
@@ -1120,7 +1129,12 @@ static ModulePaths all_module_paths(Generator* me) {
     u32 scope = r->symlinks ? resolve_dependencies(me) : 0;
     ModulePaths found = {0};
     csview target = r->target;
-    bool filter_ignored = !contains_ignored_path(target);
+    // (A referenced project's source is named by its output declaration file first, then itself: tsgo's
+    // GetEachFileNameOfModule with the referenceRedirect)
+    csview targets[2] = { r->redirect, target };
+    u32 first_target = r->redirect.size ? 0 : 1;
+    bool filter_ignored = false;
+    for (u32 t = first_target; t < 2; t++) filter_ignored |= !contains_ignored_path(targets[t]);
     // forEachFileNameOfModule with preferSymlinks
     if (r->symlinks) {
         for (csview dir = parent_dir(target);;) {
@@ -1133,11 +1147,12 @@ static ModulePaths all_module_paths(Generator* me) {
                     str_list_drop(&links);
                     break;
                 }
-                if (starts_with_directory(target, dir)) {
-                    cstr relative = relative_path_of(dir, target);
+                for (u32 t = first_target; t < 2; t++) {
+                    if (!starts_with_directory(targets[t], dir)) continue;
+                    cstr relative = relative_path_of(dir, targets[t]);
                     for (isize i = 0; i < links.count; i++) {
                         cstr option = absolute_path_of(cstr_sv(&links.items[i]), cstr_sv(&relative));
-                        module_paths_add(&found, cstr_sv(&option));
+                        module_paths_add(&found, cstr_sv(&option), t == 0);
                         cstr_drop(&option);
                         filter_ignored = true;
                     }
@@ -1150,7 +1165,9 @@ static ModulePaths all_module_paths(Generator* me) {
             dir = parent;
         }
     }
-    if (!(filter_ignored && contains_ignored_path(target))) module_paths_add(&found, target);
+    for (u32 t = first_target; t < 2; t++) {
+        if (!(filter_ignored && contains_ignored_path(targets[t]))) module_paths_add(&found, targets[t], t == 0);
+    }
 
     // Sorted by the closest directory both are in, then by how deep they are (stable)
     ModulePaths sorted = { .items = malloc(sizeof(ModulePath) * (found.len + 1)), .cap = found.len + 1 };
@@ -1167,7 +1184,7 @@ static ModulePaths all_module_paths(Generator* me) {
             // (insertion keeps it stable)
             u32 at = sorted.len;
             u32 depth = separators(cstr_sv(&found.items[i].path));
-            while (at > first && separators(cstr_sv(&sorted.items[at - 1].path)) > depth) {
+            while (at > first && path_sorts_after(&sorted.items[at - 1], &found.items[i], depth)) {
                 sorted.items[at] = sorted.items[at - 1];
                 at--;
             }
@@ -1184,7 +1201,7 @@ static ModulePaths all_module_paths(Generator* me) {
         if (taken[i]) continue;
         u32 at = sorted.len;
         u32 depth = separators(cstr_sv(&found.items[i].path));
-        while (at > first && separators(cstr_sv(&sorted.items[at - 1].path)) > depth) {
+        while (at > first && path_sorts_after(&sorted.items[at - 1], &found.items[i], depth)) {
             sorted.items[at] = sorted.items[at - 1];
             at--;
         }
