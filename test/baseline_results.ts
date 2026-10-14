@@ -5,12 +5,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAutoAccessorModifiers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBasicGlobalNamespaceAugmentation': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttCircularAliasArity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttComputedDestructuringNarrowing': {
         errors: true,
         symbols: true,
         types: true,
@@ -236,6 +246,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionRestSignaturesCombined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttVariadicMappedNotArray': {
         errors: true,
         symbols: true,
         types: true,
