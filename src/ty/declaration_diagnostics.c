@@ -2531,7 +2531,8 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
         case STATEMENT_DECL_NAMESPACE: {
             NamespaceDecl const* decl = statement->decl.namespace;
             bool augmentation = decl->is_augmentation || decl->is_global;
-            if (!augmentation && !statement_visible(me, statement, container, decl->symbol)) return;
+            // (A late pass only gets here for a namespace visible from the start, to walk what was painted inside)
+            if (!augmentation && !my late_pass && !statement_visible(me, statement, container, decl->symbol)) return;
             bool ambient = container.ambient || statement->decl.props.declared || decl->is_ambient_module || decl->is_global;
             Scope const* outer_scope = my scope;
             if (decl->inner_scope) my scope = decl->inner_scope;
@@ -2828,8 +2829,27 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     u32 written = 0;
     for_each (i, vec_initialized_binding, &variable->initializers) {
         Binding const* binding = &i->binding;
-        if (binding->tag != BINDING_IDENTIFIER) {
+        if (binding->tag != BINDING_IDENTIFIER && binding_has_initializers(binding)) {
             w_binding_elements(me, binding, container, visible, &written);
+            continue;
+        }
+        if (binding->tag != BINDING_IDENTIFIER) {
+            // (Without initializers in it, the pattern is written with its type)
+            if (!visible) continue;
+            if (written++) w_lit(me, ", ");
+            cstr pattern = cstr_init();
+            ty_append_binding_pattern(&pattern, binding);
+            w(me, cstr_sv(&pattern));
+            cstr_drop(&pattern);
+            w_lit(me, ": ");
+            if (binding->has_explicit_type) {
+                w_node(me, binding_type(binding));
+            } else {
+                Expr const* init = initialized_binding_value(i);
+                Ty const* type = init->tag != EXPR_IMPLICIT_ANY ? lazy_type_get((LazyType*)&init->lazy_type) : nullptr;
+                w_type(me, type ? ty_widened_literal(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))) :
+                    ty_intrinsic(my checker, TY_ANY));
+            }
             continue;
         }
         if (!visible && !was_painted(me, binding->symbol) && !(container.module_top_level && is_exported_local(me, binding->symbol))) {
@@ -3222,6 +3242,14 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
     my indent--;
     my scope = outer_scope;
     my has_scope_marker = outer_marker, my needs_scope_fix = outer_fix, my has_module_indicator = outer_indicator;
+    // (An empty block is `{ }` where it was written on one line)
+    char const* block_from = span_end_ptr(body->name);
+    bool one_line = !memchr(block_from, '\n', (size_t)(span_end_ptr(decl->full_span) - block_from));
+    if (cstr_size(my out) == body_start && one_line) {
+        cstr_erase(my out, body_start - 3, 3);
+        w_lit(me, " { }\n");
+        return;
+    }
     w_indent(me);
     w_lit(me, "}\n");
 }
@@ -3267,7 +3295,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             w_lit(me, "* as ");
             w(me, span_sv(port->main.decl_name));
         } else {
-            w_lit(me, "{ ");
+            w(me, vec_port_item_size(&port->items) ? c_sv("{ ") : c_sv("{"));
             for_each (i, vec_port_item, &port->items) {
                 if (i_index) w_lit(me, ", ");
                 if (i->type_modifier) w_lit(me, "type ");

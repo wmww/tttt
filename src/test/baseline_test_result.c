@@ -145,7 +145,7 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
     }
     // Ours: each test file's declaration output, by output name
     cstr expected_text = cstr_null, ours = cstr_null;
-    bool* used = c_new_n(bool, vec_baseline_test_file_size(&test_case->files) + 1);
+    bool* used = calloc((size_t)vec_baseline_test_file_size(&test_case->files) + 1, sizeof(bool));
     for (u32 k = 0; k < count; k++) {
         cstr_append_sv(&expected_text, sections[k].text);
         for_each (i, vec_baseline_test_file, &test_case->files) {
@@ -320,7 +320,7 @@ void baseline_test_result_run(
 
     if (my did_run) {
         run_dts(me, &test_case, cstr_sv(&js_path));
-        if (my has_dts) {
+        {
             cstr ours = cstr_null;
             for_each (i, vec_baseline_test_file, &test_case.files) {
                 if (i->superseded || !i->source || !i->source->declaration_output) continue;
@@ -328,7 +328,7 @@ void baseline_test_result_run(
                 cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", output_name, "]\r\n", *i->source->declaration_output);
                 cstr_drop(&output_name);
             }
-            dump_output(suite, name, ".d.ts", cstr_sv(&ours));
+            if (cstr_size(&ours)) dump_output(suite, name, ".d.ts", cstr_sv(&ours));
             cstr_drop(&ours);
         }
     }
