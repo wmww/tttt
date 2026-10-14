@@ -109,6 +109,19 @@ Each one mutant:
   isTypeAssignableTo(..., contra candidate). The TS2318 'Awaited' follows from the TS2345 (the missing-await
   suggestion's getAwaitedTypeOfPromise). Reduce with `type NotPromise<T> = T extends
   Thenable<unknown> ? T : T extends any ? never : T`.
+- awaitedTypeNoLib (2026-10-14, agent B; the relation half is fixed by 5edf168b, the Awaited TS2318 by 88f22cc7): what's
+  left is the base constraint of `NotPromise<TResult>`: tsgo simplifies `T extends PromiseLike<unknown> ? never : T`
+  (PromiseLike an error type under noLib) to never before computing it (getResolvedBaseConstraint ->
+  getSimplifiedConditionalType), so the base constraint is `Thenable<unknown>` and inference from the union argument
+  adds `unknown`, making R = TResult and the TS2345. Commit c2aaa6c2 did that (resolved_base_constraint() simplifying
+  the conditionals may_simplify_conditional() let through, mikro-orm/seeder types unchanged) and was reverted (277199cd):
+  it lost tanstack-table/packages/angular-table (sourcesweep, +TS2345 at tests/test-utils.ts:20). The cause there is a
+  separate bug: `ty_definitely_assignable(keyof M<T>, string)` is true for `M<T> = { [K in keyof T as T[K] extends
+  Sig<any> ? K : never]?: ... }` because under the restrictive instantiation (conditional.c, restrictive_type_param())
+  the TY_KEYOF relation instantiates the name type to never (`keys never` in structured_related's TY_KEYOF case), so
+  `Extract<keyof M<T>, string>` simplified to `keyof M<T>`, whose base constraint is string | number | symbol. Probe:
+  that M, `for (const k in inputs) { const s: string = k; }` with `inputs: M<T>`, `T extends NonNullable<unknown>`.
+  Fix that, then re-apply c2aaa6c2.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
   self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
   tttt. Still so.
