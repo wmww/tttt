@@ -17108,7 +17108,7 @@ const baselines = {
     'importAttributesDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributesWithValueComments': {
         errors: true,

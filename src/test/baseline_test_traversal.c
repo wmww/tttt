@@ -1045,12 +1045,13 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
-            // `import("./a", { with: { type: "json" } })`: the keys written as identifiers are any (unlike an import
-            // declaration's, errorType)
+            // `import("./a", { with: { type: "json" } })`: the keys written as identifiers are errorType, like an import
+            // declaration's (printed `error`, or `any` where the test has errors: tsgo's TypeWriterWalker prints an any's
+            // intrinsic name only without an error baseline)
             if (my identifier->rare && my identifier->rare->import_attributes) {
                 for_each (i, vec_import_attribute, &my identifier->rare->import_attributes->elements) {
                     if (span_valid(i->name) && i->name.buf[0] != '"' && i->name.buf[0] != '\'') {
-                        baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ANY));
+                        baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ERROR));
                     }
                 }
             }
