@@ -12,4 +12,5 @@ typedef struct ErrorCtx ErrorCtx;
 // tsc's getEmitDeclarations (declaration or composite) and the file is one tsc emits (getSourceFilesToEmit): not a
 // declaration file, JSON or JavaScript
 bool declaration_diagnostics_wanted(SourceFile const* file);
-void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs);
+// `emit`: also write the file's declarations (SourceFile.declaration_output, plan 64)
+void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool emit);

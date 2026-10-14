@@ -105,6 +105,9 @@ u64 program_checked_source_bytes(Program const* me);
 // declaration diagnostics (declaration_diagnostics.h) are only reported if there is no other diagnostic, `earlier_errors`
 // saying whether earlier phases reported some. Call it before program_typecheck()
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
+// Declaration emit (plan 64): program_typecheck() also writes each emitted file's `.d.ts` text into its
+// SourceFile.declaration_output, on the checker that checked it. Call it before program_typecheck()
+void program_set_emit_declarations(Program* me, bool emit);
 
 // How a declaration file of `importing` (a file of this program) would name the module `target` (tsc's
 // getSpecifierForModuleSymbol): an import of the file that resolves to it, else module_specifier_generate(). override:

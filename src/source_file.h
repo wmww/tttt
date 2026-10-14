@@ -234,6 +234,8 @@ typedef struct SourceFile {
     struct ExpandoContainer { struct Expr const* literal; Symbol const* host; }* expando_containers;
     u32 expando_container_count;
     cstr decl_override; // Used for the tests
+    // The `.d.ts` declaration emit wrote for it (program_set_emit_declarations(), plan 64), null if none. Owned
+    cstr* declaration_output;
     // A default lib's name in tsgo's CLI (bundled:///libs/lib.es5.d.ts, lib.d.ts for default.d.ts): tsgo reads its libs
     // from the executable, so its messages name them by that URL, not relative to the working directory
     cstr bundled_path;

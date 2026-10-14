@@ -2540,9 +2540,13 @@ static void js_declaration_diagnostics_check(SourceFile const* file, ErrorCtx* e
     }
 }
 
-void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
+void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool emit) {
     if (file->is_js) js_declaration_diagnostics_check(file, errs);
     if (!declaration_diagnostics_wanted(file)) return;
+    if (emit) {
+        SourceFile* writable = (SourceFile*)file;
+        if (!writable->declaration_output) writable->declaration_output = c_new(cstr, cstr_init());
+    }
     Walk walk = {
         .file = file,
         .errs = errs,

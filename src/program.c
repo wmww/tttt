@@ -126,6 +126,7 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
+    bool emit_declarations; // program_set_emit_declarations()
     bool global_diagnostics_reported; // program_report_global_diagnostics()
     ErrorCtx* declaration_errs; // One per checker while typechecking: the declaration diagnostics of its files
     u32 threads; // program_set_threads(), 0: 1
@@ -3205,6 +3206,8 @@ void program_set_checkers(Program* me, u32 count) {
     my requested_checkers = count;
 }
 
+void program_set_emit_declarations(Program* me, bool emit) { my emit_declarations = emit; }
+
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
     my declaration_diagnostics_cli = true;
     my declaration_diagnostics_earlier = earlier_errors;
@@ -3385,7 +3388,9 @@ static void check_share(Program* me, u32 c, u32 count) {
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
-        if (my declaration_errs && !source->is_stdlib) declaration_diagnostics_check(source, &my declaration_errs[c]);
+        if (my declaration_errs && !source->is_stdlib) {
+            declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+        }
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
     }
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
@@ -3395,7 +3400,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         SourceFile* source = *i;
         if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || source->is_js) continue;
         if (index++ % count != c) continue;
-        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
+        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
     }
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);

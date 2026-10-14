@@ -157,6 +157,11 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
         append_test_subresult_to_cstr(target, "ERR", test->errors_passed,  test->errors_prev,  test->has_prev);
         append_test_subresult_to_cstr(target, "SYM", test->symbols_passed, test->symbols_prev, test->has_prev);
         append_test_subresult_to_cstr(target, "TYP", test->types_passed,   test->types_prev,   test->has_prev);
+        if (test->has_dts) {
+            append_test_subresult_to_cstr(target, "DTS", test->dts_passed, test->dts_prev, test->has_dts_prev);
+        } else {
+            cstr_append_lit(target, "     ");
+        }
     } else {
         cstr_append_d(
             target, PRINT_DISPLAY,
@@ -176,6 +181,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
 void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show_errs, bool show_syms, bool show_typs) {
     intptr_t test_count = vec_baseline_test_result_size(&my results);
     int passed = 0, failed = 0, new_passed = 0, new_failed = 0, skipped = 0;
+    int dts_passed = 0, dts_total = 0, dts_js = 0;
     cstr display = cstr_null;
     VecBaselineTestResultCPtr newly_failed = vec_baseline_test_result_c_ptr_init();
     VecBaselineTestResultCPtr newly_passed = vec_baseline_test_result_c_ptr_init();
@@ -236,6 +242,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             continue;
         }
 
+        dts_total += i->has_dts;
+        dts_passed += i->has_dts && i->dts_passed;
+        dts_js += i->dts_js;
         bool is_pass = baseline_test_result_is_pass(i);
         bool is_change = is_pass != baseline_test_result_was_pass(i);
         if (is_pass) {
@@ -266,6 +275,10 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
         color_error, failed, color_normal, " failed, ",
         vec_baseline_test_result_size(&my results) - skipped, " total\n"
     );
+    if (dts_total || dts_js) {
+        println("  dts (declaration emit, not in the count above): ", color_good, dts_passed, color_normal, " / ", dts_total,
+            " (", dts_js, " with JavaScript inputs apart)\n");
+    }
     if (skipped) println("  (", skipped, " configurations skipped: tsgo doesn't run them, an option 7.0 removed)\n");
     if (my has_filter && passed + failed == 0) {
         // STC's cregex silently matches nothing once a pattern gets long (a few hundred alternatives)
@@ -361,9 +374,10 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
             "    '", name, "': {\n",
             "        errors: ", result_element_to_str(i->did_run, i->errors_passed), ",\n",
             "        symbols: ", result_element_to_str(i->did_run, i->symbols_passed), ",\n",
-            "        types: ", result_element_to_str(i->did_run, i->types_passed), ",\n",
-            "    },\n"
+            "        types: ", result_element_to_str(i->did_run, i->types_passed), ",\n"
         );
+        if (i->has_dts) cstr_append_d(&results, DEFAULT_DISPLAY, "        dts: ", i->dts_passed ? "true" : "false", ",\n");
+        cstr_append_lit(&results, "    },\n");
     }
 
     cstr_append_lit(&results, "}\n");

@@ -1262,6 +1262,8 @@ BaselineTestCase run_baseline_test_case(
 
     // tsc reports type errors next to parse errors (getPreEmitDiagnostics() is all of them)
     program_resolve_names(program);
+    // (tsgo's harness emits unless noEmit: the `.js` baseline's declaration files, the dts component)
+    program_set_emit_declarations(program, !program_options(program)->no_emit);
     program_typecheck(program);
 
     set_compiler_options(program_options(program));

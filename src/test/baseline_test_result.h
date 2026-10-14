@@ -19,7 +19,17 @@ typedef struct BaselineTestResult {
     bool errors_passed;
     bool symbols_passed;
     bool types_passed;
+    // The dts component (plan 64): the declaration files in the `.js` baseline, for tests that have some and whose
+    // inputs are TypeScript (JavaScript declaration emit isn't done: `dts_js` tests are counted apart). Not part of
+    // baseline_test_result_is_pass() yet
+    bool has_dts;
+    bool dts_js;
+    bool has_dts_prev; // The saved results have a dts entry
+    bool dts_prev;
+    bool dts_passed;
 } BaselineTestResult;
+
+extern bool baseline_show_dts; // baseline_tests --dts: show the dts component's diffs
 
 // Takes ownership of both
 BaselineTestResult make_baseline_test_result(cstr source_path, cstr config);

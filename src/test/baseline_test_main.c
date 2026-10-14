@@ -43,7 +43,8 @@ static void show_help(FILE* target) {
         "  -d, --diffs               if to show all diffs for failing tests\n\n"
         "  --err                     show errors diffs for failing tests\n\n"
         "  --sym                     show symbols diffs for failing tests\n\n"
-        "  --typ                     show types diffs for failing tests\n\n"
+        "  --typ                     show types diffs for failing tests\n"
+        "  --dts                     show declaration emit diffs (the dts component, plan 64)\n\n"
     ));
 }
 
@@ -85,6 +86,9 @@ static_failable parse_args(int argc, const char** argv) {
             show_errs = true;
             show_syms = true;
             show_typs = true;
+            baseline_show_dts = true;
+        } else if (streq(argv[i], "--dts")) {
+            baseline_show_dts = true;
         } else if (streq(argv[i], "--err")) {
             show_errs = true;
         } else if (streq(argv[i], "--sym")) {
