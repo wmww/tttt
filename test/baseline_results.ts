@@ -215,6 +215,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSuperConstructorsForTypeArguments': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
         symbols: true,

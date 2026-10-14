@@ -2320,10 +2320,11 @@ static Resolution resolve_with_signatures(
     CallExpr const* saved_call = my resolving_call;
     my inferential_depth = 0;
     my resolving_call = info->call;
-    // A JavaScript `super(...)` whose base clause has no type arguments: the base's constructors that take none
-    // (tsgo's getConstructorsForTypeArguments), none of them is a call checked against nothing (no error)
+    // A `super(...)` whose base clause has no type arguments: the base's constructors that take none (tsgo's
+    // getConstructorsForTypeArguments), none of them is a call checked against nothing (no error: resolveCall's
+    // unknownSignature)
     Signature* filtered[16];
-    if (info->super_fill && span_source(info->call_span) && span_source(info->call_span)->is_js && count <= c_arraylen(filtered)) {
+    if (info->super_fill && count <= c_arraylen(filtered)) {
         u32 kept = 0;
         for (u32 i = 0; i < count; i++) {
             signature_resolve(me, signatures[i]);

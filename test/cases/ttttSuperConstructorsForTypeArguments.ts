@@ -1,0 +1,21 @@
+// `super(...)` of a base clause without type arguments resolves against the base's constructors that take none
+// (tsc's getInstantiatedConstructorsForTypeArguments): the generic ones that would accept the arguments don't count
+interface Base<T, U> { x: T; y: U; }
+interface BaseConstructor {
+    new (x: number, y: number): Base<string, string>;
+    new <T>(x: T): Base<T, T>;
+    new <T, U>(x: T, y: U): Base<T, U>;
+}
+declare function getBase(): BaseConstructor;
+class D1 extends getBase() {
+    constructor() {
+        super("abc", "def");
+    }
+}
+interface OnlyGeneric { new <T>(x: T): Base<T, T>; }
+declare function getGeneric(): OnlyGeneric;
+class D2 extends getGeneric() {
+    constructor() {
+        super("abc");
+    }
+}

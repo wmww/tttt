@@ -1,0 +1,76 @@
+//// [test/cases/ttttSuperConstructorsForTypeArguments.ts] ////
+
+=== ttttSuperConstructorsForTypeArguments.ts ===
+// `super(...)` of a base clause without type arguments resolves against the base's constructors that take none
+// (tsc's getInstantiatedConstructorsForTypeArguments): the generic ones that would accept the arguments don't count
+interface Base<T, U> { x: T; y: U; }
+>Base : Symbol(Base, Decl(ttttSuperConstructorsForTypeArguments.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 15))
+>U : Symbol(U, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 17))
+>x : Symbol(Base.x, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 22))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 15))
+>y : Symbol(Base.y, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 28))
+>U : Symbol(U, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 17))
+
+interface BaseConstructor {
+>BaseConstructor : Symbol(BaseConstructor, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 36))
+
+    new (x: number, y: number): Base<string, string>;
+>x : Symbol(x, Decl(ttttSuperConstructorsForTypeArguments.ts, 4, 9))
+>y : Symbol(y, Decl(ttttSuperConstructorsForTypeArguments.ts, 4, 19))
+>Base : Symbol(Base, Decl(ttttSuperConstructorsForTypeArguments.ts, 0, 0))
+
+    new <T>(x: T): Base<T, T>;
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 5, 9))
+>x : Symbol(x, Decl(ttttSuperConstructorsForTypeArguments.ts, 5, 12))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 5, 9))
+>Base : Symbol(Base, Decl(ttttSuperConstructorsForTypeArguments.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 5, 9))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 5, 9))
+
+    new <T, U>(x: T, y: U): Base<T, U>;
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 9))
+>U : Symbol(U, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 11))
+>x : Symbol(x, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 15))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 9))
+>y : Symbol(y, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 20))
+>U : Symbol(U, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 11))
+>Base : Symbol(Base, Decl(ttttSuperConstructorsForTypeArguments.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 9))
+>U : Symbol(U, Decl(ttttSuperConstructorsForTypeArguments.ts, 6, 11))
+}
+declare function getBase(): BaseConstructor;
+>getBase : Symbol(getBase, Decl(ttttSuperConstructorsForTypeArguments.ts, 7, 1))
+>BaseConstructor : Symbol(BaseConstructor, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 36))
+
+class D1 extends getBase() {
+>D1 : Symbol(D1, Decl(ttttSuperConstructorsForTypeArguments.ts, 8, 44))
+>getBase : Symbol(getBase, Decl(ttttSuperConstructorsForTypeArguments.ts, 7, 1))
+
+    constructor() {
+        super("abc", "def");
+>super : Symbol(BaseConstructor, Decl(ttttSuperConstructorsForTypeArguments.ts, 2, 36))
+    }
+}
+interface OnlyGeneric { new <T>(x: T): Base<T, T>; }
+>OnlyGeneric : Symbol(OnlyGeneric, Decl(ttttSuperConstructorsForTypeArguments.ts, 13, 1))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 29))
+>x : Symbol(x, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 32))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 29))
+>Base : Symbol(Base, Decl(ttttSuperConstructorsForTypeArguments.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 29))
+>T : Symbol(T, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 29))
+
+declare function getGeneric(): OnlyGeneric;
+>getGeneric : Symbol(getGeneric, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 52))
+>OnlyGeneric : Symbol(OnlyGeneric, Decl(ttttSuperConstructorsForTypeArguments.ts, 13, 1))
+
+class D2 extends getGeneric() {
+>D2 : Symbol(D2, Decl(ttttSuperConstructorsForTypeArguments.ts, 15, 43))
+>getGeneric : Symbol(getGeneric, Decl(ttttSuperConstructorsForTypeArguments.ts, 14, 52))
+
+    constructor() {
+        super("abc");
+    }
+}
+
