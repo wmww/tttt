@@ -180,6 +180,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLateBoundMemberMerge': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLibInterfaceMergeIndexConstraint': {
         errors: true,
         symbols: true,
@@ -11387,7 +11392,7 @@ const baselines = {
     },
     'dynamicNamesErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'dynamicRequire': {

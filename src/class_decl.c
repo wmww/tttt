@@ -1635,84 +1635,179 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
     }
 }
 
+// Whether `next` directly follows `previous` (tsc's `previous.end === next.pos`: only trivia between, and the `;` that
+// ends a declaration without a body)
+static bool overloads_adjacent(ClassItem const* previous, ClassItem const* next) {
+    FunctionImpl const* func = overloadable(previous);
+    return span_start_ptr(next->span) >= span_end_ptr(previous->span) &&
+        span_only_trivia_between(span_end_ptr(previous->span), span_start_ptr(next->span), !func->has_body && !func->body_missing);
+}
+
+// Whether two methods are written with the same name, as tsc's reportImplementationExpectedError compares them: both
+// private names of one text, both computed names of identical types, or both written (an identifier or a literal) of
+// one text
+static bool overload_names_match(ClassItem const* a, ClassItem const* b) {
+    bool a_private = span_valid(class_item_private_name(a)), b_private = span_valid(class_item_private_name(b));
+    if (a_private || b_private) return a_private && b_private && cstr_eq(&a->method.name_string, &b->method.name_string);
+    Expr const* a_key = a->method.computed_key;
+    Expr const* b_key = b->method.computed_key;
+    if (a_key && b_key) {
+        Checker* checker = current_checker;
+        return ty_is_related(checker, ty_regular(checker, ty_expr_type(checker, a_key)),
+            ty_regular(checker, ty_expr_type(checker, b_key)), TY_RELATION_IDENTITY);
+    }
+    return !a_key && !b_key && cstr_eq(&a->method.name_string, &b->method.name_string);
+}
+
+// tsc's reportImplementationExpectedError: the declaration right after `item` is its implementation of another name
+// (TS2389), of its name but the other staticness (TS2387/TS2388; else nothing: the binder reported it), or there is
+// none (TS2390, TS2516, TS2391)
+static void report_implementation_expected(ClassDecl const* me, ClassItem const* item, ErrorCtx* errs) {
+    bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
+    // (A missing name: tsc's reportImplementationExpectedError says nothing)
+    if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.size) return;
+    ClassItem const* next = item + 1 < my items.data + my items.size ? item + 1 : nullptr;
+    if (next && overloadable(next) && next->tag == item->tag && overloads_adjacent(item, next)) {
+        if (!is_constructor && overload_names_match(item, next)) {
+            if (item->method.is_static != next->method.is_static) {
+                error_ctx_error_d(errs, next->method.name_span, item->method.is_static ? 2387 : 2388,
+                    item->method.is_static ? "Function overload must be static." : "Function overload must not be static.");
+            }
+            return;
+        }
+        if (overloadable(next)->has_body) {
+            cstr name = cstr_from_sv(span_sv(overload_name(item)));
+            error_ctx_error_d(errs, overload_name(next), 2389, "Function implementation name must be '", name, "'.");
+            cstr_drop(&name);
+            return;
+        }
+    }
+    if (is_constructor) {
+        error_ctx_error_d(errs, overload_name(item), 2390, "Constructor implementation is missing.");
+    } else if (item->method.is_abstract) {
+        error_ctx_error_d(errs, overload_name(item), 2516, "All declarations of an abstract method must be consecutive.");
+    } else {
+        error_ctx_error_d(errs, overload_name(item), 2391, "Function implementation is missing or not immediately following the declaration.");
+    }
+}
+
+// The first early-bound member of the name a late-bound method binds (the early symbol of that name, which its late
+// symbol merges into), null if none
+static ClassItem const* early_namesake_of_late(ClassDecl const* me, ClassItem const* item) {
+    Atom const* name = bindable_computed_name(item);
+    if (!name) return nullptr;
+    for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+        ClassItem const* other = it.item;
+        if ((other->tag != CLASS_ITEM_METHOD && other->tag != CLASS_ITEM_FIELD) || item_late_key(other) || !other->symbol_first ||
+            class_item_is_static((ClassItem*)other) != item->method.is_static || span_valid(class_item_private_name(other))
+        ) {
+            continue;
+        }
+        cstr const* other_name = other->tag == CLASS_ITEM_METHOD ? &other->method.name_string : &other->field.name_string;
+        if (cstr_equals_sv(other_name, atom_sv(name))) return other->symbol_first;
+    }
+    return nullptr;
+}
+
+// The declarations of the method symbol (or the constructor) `item` leads, in tsc's order, into `out`: 0 unless `item`
+// leads one. An early-bound method's symbol is the binder's (ClassItem.symbol_first), then the late-bound methods that
+// merge into it (when it is a method's: mergeSymbol); a late-bound one not merged leads its own (lateBindMember's,
+// see computed_symbol_first())
+// (`early_of`: per item, the early method a late-bound one merges into; null when none does)
+static u32 overload_symbol_declarations(ClassDecl const* me, ClassItem const* item, ClassItem const* const* early_of, ClassItem const** out, u32 cap) {
+    if (!overloadable(item)) return 0;
+    u32 len = 0;
+    if (item->tag == CLASS_ITEM_CONSTRUCTOR) {
+        for_each (other, vec_class_item, &my items) {
+            if (other->tag != CLASS_ITEM_CONSTRUCTOR) continue;
+            if (!len && other != item) return 0; // (The first constructor leads)
+            if (len < cap) out[len++] = other;
+        }
+        return len;
+    }
+    if (!bindable_method(item)) return 0;
+    if (item_late_key(item)) {
+        if (early_of && early_of[item - my items.data]) return 0; // (Merged: the early one leads)
+        if (computed_symbol_first(me, item) != item) return 0;
+        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
+            if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && item_late_key(other) &&
+                other->method.is_static == item->method.is_static && cstr_eq(&other->method.name_string, &item->method.name_string) &&
+                computed_symbol_first(me, other) == item && len < cap
+            ) {
+                out[len++] = other;
+            }
+        }
+        return len;
+    }
+    if (item->symbol_first != item) return 0;
+    for (ClassNamesakes it = class_namesakes(me, item, false); class_namesakes_next(&it);) {
+        ClassItem const* other = it.item;
+        if (overloadable(other) && other->symbol_first == item && len < cap) out[len++] = other;
+    }
+    for (ClassNamesakes it = class_namesakes(me, item, true); early_of && class_namesakes_next(&it);) {
+        ClassItem const* other = it.item;
+        if (early_of[other - my items.data] == item && len < cap) out[len++] = other;
+    }
+    return len;
+}
+
 // tsc's checkFunctionOrConstructorSymbol for the methods and constructors of a class: overloads are consecutive and
 // followed by the implementation (TS2391, TS2389, TS2390, TS2516, TS2387/TS2388), one implementation (TS2393)
 static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     SourceFile const* file = span_source(my name) ? span_source(my name) : span_source(my full_span);
     if ((my symbol && my symbol->is_ambient) || !file || file->is_declaration) return;
     isize count = vec_class_item_size(&my items);
+    // Each method symbol's declarations (and the constructor's), in tsc's order: the early ones, then the late-bound
+    // ones merged into them (see overload_symbol_declarations())
+    ClassItem const** decls = malloc(sizeof(ClassItem const*) * (size_t)(count ? count : 1));
+    ClassItem const** early_of = calloc((size_t)(count ? count : 1), sizeof(ClassItem const*));
+    panic_if(!decls || !early_of, "out of memory");
+    bool merged = false;
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
-        FunctionImpl const* func = overloadable(item);
-        if (!func) continue;
-        bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
-        if (!is_constructor && !bindable_method(item)) continue;
-        if (!is_constructor && item->method.is_declare) continue; // (Ambient: tsc's checkFunctionOrConstructorSymbol)
-        // (A missing name: tsc's reportImplementationExpectedError says nothing)
-        if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.size) continue;
-        ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
-        if (next && !overloadable(next)) next = nullptr;
-        if (next && same_member(item, next) && !span_only_trivia_between(span_end_ptr(item->span),
-            span_start_ptr(next->span), !func->has_body && !func->body_missing)
-        ) {
-            // Not directly followed by the next declaration (a token was skipped in between): missing its
-            // implementation, body or not, unless the next is a second implementation (tsc's
-            // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
-            bool some_body = false;
-            for (ClassNamesakes it = class_namesakes(me, item, true);
-                overloadable(next)->has_body && !some_body && class_namesakes_next(&it) && it.index <= i;
-            ) {
-                ClassItem const* other = it.item;
-                some_body = overloadable(other) && overloadable(other)->has_body && same_member(item, other);
-            }
-            if (!(overloadable(next)->has_body && some_body)) {
-                if (is_constructor) {
-                    error_ctx_error_d(errs, overload_name(item), 2390, "Constructor implementation is missing.");
-                } else if (item->method.is_abstract) {
-                    error_ctx_error_d(errs, overload_name(item), 2516, "All declarations of an abstract method must be consecutive.");
-                } else {
-                    error_ctx_error_d(errs, overload_name(item), 2391,
-                        "Function implementation is missing or not immediately following the declaration.");
-                }
-                continue;
-            }
-        }
-        if (func->has_body) continue;
-        if (next && same_member(item, next)) {
-            bool is_static = !is_constructor && item->method.is_static;
-            if (!is_constructor && is_static != next->method.is_static) {
-                error_ctx_error_d(errs, next->method.name_span, is_static ? 2387 : 2388,
-                    is_static ? "Function overload must be static." : "Function overload must not be static.");
-            }
-            continue;
-        }
-        bool is_abstract = !is_constructor && item->method.is_abstract;
-        bool later = false;
-        // (Of the same symbol: a static and an instance method of one name are two)
-        for (ClassNamesakes it = class_namesakes(me, item, true); !later && class_namesakes_next(&it);) {
-            if (it.index <= i) continue;
-            ClassItem const* other = it.item;
-            later = same_member(item, other) && (is_constructor || other->tag != CLASS_ITEM_METHOD ||
-                other->method.is_static == item->method.is_static);
-        }
-        // A body missing its `{` (tsc's missing Block) is no body when another declaration of the member follows
-        // (nodeIsPresent), but is one for the last declaration's check (`!lastSeenNonAmbientDeclaration.body`)
-        if (func->body_missing && !later) continue;
-        // The last one without a body is only an error for what needs an implementation
-        if (!later && (is_abstract || (!is_constructor && item->method.is_optional))) continue;
-        if (next && overloadable(next)->has_body && next->tag == item->tag) {
-            cstr name = cstr_from_sv(span_sv(overload_name(item)));
-            error_ctx_error_d(errs, overload_name(next), 2389, "Function implementation name must be '", name, "'.");
-            cstr_drop(&name);
-        } else if (is_constructor) {
-            error_ctx_error_d(errs, overload_name(item), 2390, "Constructor implementation is missing.");
-        } else if (is_abstract) {
-            error_ctx_error_d(errs, overload_name(item), 2516, "All declarations of an abstract method must be consecutive.");
-        } else {
-            error_ctx_error_d(errs, overload_name(item), 2391,
-                "Function implementation is missing or not immediately following the declaration.");
+        if (overloadable(item) && item->tag == CLASS_ITEM_METHOD && item_late_key(item) && bindable_method(item)) {
+            ClassItem const* early = early_namesake_of_late(me, item);
+            if (early && early->tag == CLASS_ITEM_METHOD && !early->method.accessor) early_of[i] = early;
+            merged |= early_of[i] != nullptr;
         }
     }
+    if (!merged) {
+        free(early_of);
+        early_of = nullptr;
+    }
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        u32 decl_count = overload_symbol_declarations(me, item, early_of, decls, (u32)count);
+        if (!decl_count) continue;
+        // tsc's walk of the declarations: one not right after the previous one (and not a second implementation)
+        // leaves the previous one without its implementation
+        ClassItem const* previous = nullptr;
+        ClassItem const* last = nullptr;
+        bool body_seen = false;
+        for (u32 d = 0; d < decl_count; d++) {
+            ClassItem const* node = decls[d];
+            FunctionImpl const* func = overloadable(node);
+            // (`declare m()`: ambient, tsc's NodeFlags.Ambient, interleaving is no error)
+            bool ambient = node->tag == CLASS_ITEM_METHOD && node->method.is_declare;
+            if (ambient) previous = nullptr;
+            if (!(func->has_body && body_seen) && previous && !overloads_adjacent(previous, node)) {
+                report_implementation_expected(me, previous, errs);
+            }
+            body_seen |= func->has_body;
+            previous = node;
+            if (!ambient) last = node;
+        }
+        // The last one without a body is only an error for what needs an implementation (a body missing its `{` is
+        // one here: tsc's `!body`)
+        if (last && !overloadable(last)->has_body && !overloadable(last)->body_missing &&
+            !(last->tag == CLASS_ITEM_METHOD && (last->method.is_abstract || last->method.is_optional))
+        ) {
+            report_implementation_expected(me, last, errs);
+        }
+    }
+    free(decls);
+    free(early_of);
     // The overloads of each method (and of the constructor) fit its implementation (TS2394)
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);

@@ -1,0 +1,292 @@
+//// [test/cases/ttttLateBoundMemberMerge.ts] ////
+
+=== ttttLateBoundMemberMerge.ts ===
+// A computed literal key is bound early by its value (tsc's getDeclarationName: `["kk"]` is `kk`); a computed entity
+// name is bound late (lateBindMember), and its symbol merges into the early one of its name after all the early
+// declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables): the types, symbols, overload order and
+// declaration checks all see the early declarations first
+
+// Literal keys: one symbol with the written name
+class Big {
+>Big : Symbol(Big, Decl(ttttLateBoundMemberMerge.ts, 0, 0))
+
+    ["kk"]() {}
+>["kk"] : Symbol(Big["kk"], Decl(ttttLateBoundMemberMerge.ts, 6, 11), Decl(ttttLateBoundMemberMerge.ts, 7, 15))
+>"kk" : Symbol(Big["kk"], Decl(ttttLateBoundMemberMerge.ts, 6, 11), Decl(ttttLateBoundMemberMerge.ts, 7, 15))
+
+    kk() {}
+>kk : Symbol(Big["kk"], Decl(ttttLateBoundMemberMerge.ts, 6, 11), Decl(ttttLateBoundMemberMerge.ts, 7, 15))
+}
+abstract class Lit {
+>Lit : Symbol(Lit, Decl(ttttLateBoundMemberMerge.ts, 9, 1))
+
+    ["lit"](): void;
+>["lit"] : Symbol(Lit["lit"], Decl(ttttLateBoundMemberMerge.ts, 10, 20), Decl(ttttLateBoundMemberMerge.ts, 11, 20), Decl(ttttLateBoundMemberMerge.ts, 12, 25))
+>"lit" : Symbol(Lit["lit"], Decl(ttttLateBoundMemberMerge.ts, 10, 20), Decl(ttttLateBoundMemberMerge.ts, 11, 20), Decl(ttttLateBoundMemberMerge.ts, 12, 25))
+
+    lit(x: number): void;
+>lit : Symbol(Lit["lit"], Decl(ttttLateBoundMemberMerge.ts, 10, 20), Decl(ttttLateBoundMemberMerge.ts, 11, 20), Decl(ttttLateBoundMemberMerge.ts, 12, 25))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 12, 8))
+
+    lit(x?: number) {}
+>lit : Symbol(Lit["lit"], Decl(ttttLateBoundMemberMerge.ts, 10, 20), Decl(ttttLateBoundMemberMerge.ts, 11, 20), Decl(ttttLateBoundMemberMerge.ts, 12, 25))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 13, 8))
+
+    #p(): void;
+>#p : Symbol(Lit.#p, Decl(ttttLateBoundMemberMerge.ts, 13, 22), Decl(ttttLateBoundMemberMerge.ts, 14, 15))
+
+    #p() {}
+>#p : Symbol(Lit.#p, Decl(ttttLateBoundMemberMerge.ts, 13, 22), Decl(ttttLateBoundMemberMerge.ts, 14, 15))
+
+    q(): void;
+>q : Symbol(Lit.q, Decl(ttttLateBoundMemberMerge.ts, 15, 11), Decl(ttttLateBoundMemberMerge.ts, 16, 14))
+
+    ["q"]() {}
+>["q"] : Symbol(Lit.q, Decl(ttttLateBoundMemberMerge.ts, 15, 11), Decl(ttttLateBoundMemberMerge.ts, 16, 14))
+>"q" : Symbol(Lit.q, Decl(ttttLateBoundMemberMerge.ts, 15, 11), Decl(ttttLateBoundMemberMerge.ts, 16, 14))
+
+    [0x10](): void;
+>[0x10] : Symbol(Lit[0x10], Decl(ttttLateBoundMemberMerge.ts, 17, 14), Decl(ttttLateBoundMemberMerge.ts, 18, 19))
+>0x10 : Symbol(Lit[0x10], Decl(ttttLateBoundMemberMerge.ts, 17, 14), Decl(ttttLateBoundMemberMerge.ts, 18, 19))
+
+    16() {}
+>16 : Symbol(Lit[0x10], Decl(ttttLateBoundMemberMerge.ts, 17, 14), Decl(ttttLateBoundMemberMerge.ts, 18, 19))
+
+    #a = 1;
+>#a : Symbol(Lit.#a, Decl(ttttLateBoundMemberMerge.ts, 19, 11))
+
+    ["#a"] = 2;
+>["#a"] : Symbol(Lit["#a"], Decl(ttttLateBoundMemberMerge.ts, 20, 11))
+>"#a" : Symbol(Lit["#a"], Decl(ttttLateBoundMemberMerge.ts, 20, 11))
+
+    get ["g"]() { return 1; }
+>["g"] : Symbol(Lit["g"], Decl(ttttLateBoundMemberMerge.ts, 21, 15), Decl(ttttLateBoundMemberMerge.ts, 22, 29))
+>"g" : Symbol(Lit["g"], Decl(ttttLateBoundMemberMerge.ts, 21, 15), Decl(ttttLateBoundMemberMerge.ts, 22, 29))
+
+    set g(v: number) {}
+>g : Symbol(Lit["g"], Decl(ttttLateBoundMemberMerge.ts, 21, 15), Decl(ttttLateBoundMemberMerge.ts, 22, 29))
+>v : Symbol(v, Decl(ttttLateBoundMemberMerge.ts, 23, 10))
+}
+interface ILit {
+>ILit : Symbol(ILit, Decl(ttttLateBoundMemberMerge.ts, 24, 1))
+
+    ["kk"]: number;
+>["kk"] : Symbol(ILit["kk"], Decl(ttttLateBoundMemberMerge.ts, 25, 16), Decl(ttttLateBoundMemberMerge.ts, 26, 19))
+>"kk" : Symbol(ILit["kk"], Decl(ttttLateBoundMemberMerge.ts, 25, 16), Decl(ttttLateBoundMemberMerge.ts, 26, 19))
+
+    kk: number;
+>kk : Symbol(ILit["kk"], Decl(ttttLateBoundMemberMerge.ts, 25, 16), Decl(ttttLateBoundMemberMerge.ts, 26, 19))
+}
+
+// Late-bound methods merge into the early method: the early signatures, then the late ones
+const k2 = "late";
+>k2 : Symbol(k2, Decl(ttttLateBoundMemberMerge.ts, 31, 5))
+
+class C2 {
+>C2 : Symbol(C2, Decl(ttttLateBoundMemberMerge.ts, 31, 18))
+
+    late(): void;
+>late : Symbol(C2.late, Decl(ttttLateBoundMemberMerge.ts, 32, 10), Decl(ttttLateBoundMemberMerge.ts, 34, 17), Decl(ttttLateBoundMemberMerge.ts, 33, 17))
+
+    [k2](): void;
+>[k2] : Symbol(C2.late, Decl(ttttLateBoundMemberMerge.ts, 32, 10), Decl(ttttLateBoundMemberMerge.ts, 34, 17), Decl(ttttLateBoundMemberMerge.ts, 33, 17))
+>k2 : Symbol(k2, Decl(ttttLateBoundMemberMerge.ts, 31, 5))
+
+    late() {}
+>late : Symbol(C2.late, Decl(ttttLateBoundMemberMerge.ts, 32, 10), Decl(ttttLateBoundMemberMerge.ts, 34, 17), Decl(ttttLateBoundMemberMerge.ts, 33, 17))
+}
+new C2().late;
+>new C2().late : Symbol(C2.late, Decl(ttttLateBoundMemberMerge.ts, 32, 10), Decl(ttttLateBoundMemberMerge.ts, 34, 17), Decl(ttttLateBoundMemberMerge.ts, 33, 17))
+>C2 : Symbol(C2, Decl(ttttLateBoundMemberMerge.ts, 31, 18))
+>late : Symbol(C2.late, Decl(ttttLateBoundMemberMerge.ts, 32, 10), Decl(ttttLateBoundMemberMerge.ts, 34, 17), Decl(ttttLateBoundMemberMerge.ts, 33, 17))
+
+class C4 {
+>C4 : Symbol(C4, Decl(ttttLateBoundMemberMerge.ts, 37, 14))
+
+    [k2](x: string): void;
+>[k2] : Symbol(C4.late, Decl(ttttLateBoundMemberMerge.ts, 39, 26), Decl(ttttLateBoundMemberMerge.ts, 40, 26), Decl(ttttLateBoundMemberMerge.ts, 38, 10))
+>k2 : Symbol(k2, Decl(ttttLateBoundMemberMerge.ts, 31, 5))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 39, 9))
+
+    late(x: number): void;
+>late : Symbol(C4.late, Decl(ttttLateBoundMemberMerge.ts, 39, 26), Decl(ttttLateBoundMemberMerge.ts, 40, 26), Decl(ttttLateBoundMemberMerge.ts, 38, 10))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 40, 9))
+
+    late(x: any) {}
+>late : Symbol(C4.late, Decl(ttttLateBoundMemberMerge.ts, 39, 26), Decl(ttttLateBoundMemberMerge.ts, 40, 26), Decl(ttttLateBoundMemberMerge.ts, 38, 10))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 41, 9))
+}
+new C4().late;
+>new C4().late : Symbol(C4.late, Decl(ttttLateBoundMemberMerge.ts, 39, 26), Decl(ttttLateBoundMemberMerge.ts, 40, 26), Decl(ttttLateBoundMemberMerge.ts, 38, 10))
+>C4 : Symbol(C4, Decl(ttttLateBoundMemberMerge.ts, 37, 14))
+>late : Symbol(C4.late, Decl(ttttLateBoundMemberMerge.ts, 39, 26), Decl(ttttLateBoundMemberMerge.ts, 40, 26), Decl(ttttLateBoundMemberMerge.ts, 38, 10))
+
+// Late-bound properties
+const k = "kk";
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+class C3 {
+>C3 : Symbol(C3, Decl(ttttLateBoundMemberMerge.ts, 46, 15))
+
+    [k]: number;
+>[k] : Symbol(C3.kk, Decl(ttttLateBoundMemberMerge.ts, 48, 16), Decl(ttttLateBoundMemberMerge.ts, 47, 10))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+    kk: number;
+>kk : Symbol(C3.kk, Decl(ttttLateBoundMemberMerge.ts, 48, 16), Decl(ttttLateBoundMemberMerge.ts, 47, 10))
+}
+interface I5 { [k]: number; kk: string; }
+>I5 : Symbol(I5, Decl(ttttLateBoundMemberMerge.ts, 50, 1))
+>[k] : Symbol(I5.kk, Decl(ttttLateBoundMemberMerge.ts, 51, 27), Decl(ttttLateBoundMemberMerge.ts, 51, 14))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+>kk : Symbol(I5.kk, Decl(ttttLateBoundMemberMerge.ts, 51, 27), Decl(ttttLateBoundMemberMerge.ts, 51, 14))
+
+declare const i5: I5;
+>i5 : Symbol(i5, Decl(ttttLateBoundMemberMerge.ts, 52, 13))
+>I5 : Symbol(I5, Decl(ttttLateBoundMemberMerge.ts, 50, 1))
+
+i5.kk;
+>i5.kk : Symbol(I5.kk, Decl(ttttLateBoundMemberMerge.ts, 51, 27), Decl(ttttLateBoundMemberMerge.ts, 51, 14))
+>i5 : Symbol(i5, Decl(ttttLateBoundMemberMerge.ts, 52, 13))
+>kk : Symbol(I5.kk, Decl(ttttLateBoundMemberMerge.ts, 51, 27), Decl(ttttLateBoundMemberMerge.ts, 51, 14))
+
+interface I6 { [k]: number; }
+>I6 : Symbol(I6, Decl(ttttLateBoundMemberMerge.ts, 53, 6), Decl(ttttLateBoundMemberMerge.ts, 54, 29))
+>[k] : Symbol(I6.kk, Decl(ttttLateBoundMemberMerge.ts, 55, 14), Decl(ttttLateBoundMemberMerge.ts, 54, 14))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+interface I6 { kk: string; }
+>I6 : Symbol(I6, Decl(ttttLateBoundMemberMerge.ts, 53, 6), Decl(ttttLateBoundMemberMerge.ts, 54, 29))
+>kk : Symbol(I6.kk, Decl(ttttLateBoundMemberMerge.ts, 55, 14), Decl(ttttLateBoundMemberMerge.ts, 54, 14))
+
+declare const i6: I6;
+>i6 : Symbol(i6, Decl(ttttLateBoundMemberMerge.ts, 56, 13))
+>I6 : Symbol(I6, Decl(ttttLateBoundMemberMerge.ts, 53, 6), Decl(ttttLateBoundMemberMerge.ts, 54, 29))
+
+i6.kk;
+>i6.kk : Symbol(I6.kk, Decl(ttttLateBoundMemberMerge.ts, 55, 14), Decl(ttttLateBoundMemberMerge.ts, 54, 14))
+>i6 : Symbol(i6, Decl(ttttLateBoundMemberMerge.ts, 56, 13))
+>kk : Symbol(I6.kk, Decl(ttttLateBoundMemberMerge.ts, 55, 14), Decl(ttttLateBoundMemberMerge.ts, 54, 14))
+
+type T = { [k]?: string; kk: string };
+>T : Symbol(T, Decl(ttttLateBoundMemberMerge.ts, 57, 6))
+>[k] : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 58, 24), Decl(ttttLateBoundMemberMerge.ts, 58, 10))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 58, 24), Decl(ttttLateBoundMemberMerge.ts, 58, 10))
+
+// Object literals
+const o = { [k]: 1, kk: 2 };
+>o : Symbol(o, Decl(ttttLateBoundMemberMerge.ts, 61, 5))
+>[k] : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 61, 19), Decl(ttttLateBoundMemberMerge.ts, 61, 11))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 61, 19), Decl(ttttLateBoundMemberMerge.ts, 61, 11))
+
+o.kk;
+>o.kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 61, 19), Decl(ttttLateBoundMemberMerge.ts, 61, 11))
+>o : Symbol(o, Decl(ttttLateBoundMemberMerge.ts, 61, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 61, 19), Decl(ttttLateBoundMemberMerge.ts, 61, 11))
+
+const o2 = { ["kk"]: 1, kk: 2 };
+>o2 : Symbol(o2, Decl(ttttLateBoundMemberMerge.ts, 63, 5))
+>["kk"] : Symbol(["kk"], Decl(ttttLateBoundMemberMerge.ts, 63, 12), Decl(ttttLateBoundMemberMerge.ts, 63, 23))
+>"kk" : Symbol(["kk"], Decl(ttttLateBoundMemberMerge.ts, 63, 12), Decl(ttttLateBoundMemberMerge.ts, 63, 23))
+>kk : Symbol(["kk"], Decl(ttttLateBoundMemberMerge.ts, 63, 12), Decl(ttttLateBoundMemberMerge.ts, 63, 23))
+
+const o3 = { [k]() {}, kk: 2 };
+>o3 : Symbol(o3, Decl(ttttLateBoundMemberMerge.ts, 64, 5))
+>[k] : Symbol([k], Decl(ttttLateBoundMemberMerge.ts, 64, 12))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 64, 22))
+
+const o4 = { kk: 2, [k]: "s" };
+>o4 : Symbol(o4, Decl(ttttLateBoundMemberMerge.ts, 65, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 65, 12), Decl(ttttLateBoundMemberMerge.ts, 65, 19))
+>[k] : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 65, 12), Decl(ttttLateBoundMemberMerge.ts, 65, 19))
+>k : Symbol(k, Decl(ttttLateBoundMemberMerge.ts, 46, 5))
+
+o4.kk;
+>o4.kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 65, 12), Decl(ttttLateBoundMemberMerge.ts, 65, 19))
+>o4 : Symbol(o4, Decl(ttttLateBoundMemberMerge.ts, 65, 5))
+>kk : Symbol(kk, Decl(ttttLateBoundMemberMerge.ts, 65, 12), Decl(ttttLateBoundMemberMerge.ts, 65, 19))
+
+// Overload checks walk the merged symbol's declarations
+const m = "m";
+>m : Symbol(m, Decl(ttttLateBoundMemberMerge.ts, 69, 5))
+
+const s = Symbol();
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+abstract class Overloads {
+>Overloads : Symbol(Overloads, Decl(ttttLateBoundMemberMerge.ts, 70, 19))
+
+    static m(): void;
+>m : Symbol(Overloads.m, Decl(ttttLateBoundMemberMerge.ts, 71, 26))
+
+    m() {}
+>m : Symbol(Overloads.m, Decl(ttttLateBoundMemberMerge.ts, 72, 21), Decl(ttttLateBoundMemberMerge.ts, 79, 32), Decl(ttttLateBoundMemberMerge.ts, 84, 14))
+
+    x: number;
+>x : Symbol(Overloads.x, Decl(ttttLateBoundMemberMerge.ts, 73, 10))
+
+    x(): void;
+>x : Symbol(Overloads.x, Decl(ttttLateBoundMemberMerge.ts, 74, 14))
+
+    x() {}
+>x : Symbol(Overloads.x, Decl(ttttLateBoundMemberMerge.ts, 75, 14))
+
+    abstract a(): void;
+>a : Symbol(Overloads.a, Decl(ttttLateBoundMemberMerge.ts, 76, 10), Decl(ttttLateBoundMemberMerge.ts, 78, 14))
+
+    b(): void;
+>b : Symbol(Overloads.b, Decl(ttttLateBoundMemberMerge.ts, 77, 23))
+
+    abstract a(x: number): void;
+>a : Symbol(Overloads.a, Decl(ttttLateBoundMemberMerge.ts, 76, 10), Decl(ttttLateBoundMemberMerge.ts, 78, 14))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 79, 15))
+
+    [m](): void;
+>[m] : Symbol(Overloads.m, Decl(ttttLateBoundMemberMerge.ts, 72, 21), Decl(ttttLateBoundMemberMerge.ts, 79, 32), Decl(ttttLateBoundMemberMerge.ts, 84, 14))
+>m : Symbol(m, Decl(ttttLateBoundMemberMerge.ts, 69, 5))
+
+    [s](): void;
+>[s] : Symbol(Overloads[s], Decl(ttttLateBoundMemberMerge.ts, 80, 16), Decl(ttttLateBoundMemberMerge.ts, 81, 16), Decl(ttttLateBoundMemberMerge.ts, 82, 25))
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+
+    [s](x: number): void;
+>[s] : Symbol(Overloads[s], Decl(ttttLateBoundMemberMerge.ts, 80, 16), Decl(ttttLateBoundMemberMerge.ts, 81, 16), Decl(ttttLateBoundMemberMerge.ts, 82, 25))
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 82, 8))
+
+    [s](x?: number) {}
+>[s] : Symbol(Overloads[s], Decl(ttttLateBoundMemberMerge.ts, 80, 16), Decl(ttttLateBoundMemberMerge.ts, 81, 16), Decl(ttttLateBoundMemberMerge.ts, 82, 25))
+>s : Symbol(s, Decl(ttttLateBoundMemberMerge.ts, 70, 5))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 83, 8))
+
+    w(): void;
+>w : Symbol(Overloads.w, Decl(ttttLateBoundMemberMerge.ts, 83, 22))
+
+    [m]() {}
+>[m] : Symbol(Overloads.m, Decl(ttttLateBoundMemberMerge.ts, 72, 21), Decl(ttttLateBoundMemberMerge.ts, 79, 32), Decl(ttttLateBoundMemberMerge.ts, 84, 14))
+>m : Symbol(m, Decl(ttttLateBoundMemberMerge.ts, 69, 5))
+}
+class S {
+>S : Symbol(S, Decl(ttttLateBoundMemberMerge.ts, 86, 1))
+
+    static [m](): number;
+>[m] : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
+>m : Symbol(m, Decl(ttttLateBoundMemberMerge.ts, 69, 5))
+
+    static m(x: string): string;
+>m : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 89, 13))
+
+    static m(x?: any): any { return 1; }
+>m : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
+>x : Symbol(x, Decl(ttttLateBoundMemberMerge.ts, 90, 13))
+}
+S.m;
+>S.m : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
+>S : Symbol(S, Decl(ttttLateBoundMemberMerge.ts, 86, 1))
+>m : Symbol(S.m, Decl(ttttLateBoundMemberMerge.ts, 88, 25), Decl(ttttLateBoundMemberMerge.ts, 89, 32), Decl(ttttLateBoundMemberMerge.ts, 87, 9))
+

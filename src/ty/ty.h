@@ -1806,6 +1806,9 @@ bool ty_expr_is_context_sensitive(Expr const* expr);
 bool ty_function_is_context_sensitive(FunctionImpl const* function);
 // The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
+/// TS2300 for the late-bound members of an object literal that conflict (tsgo's lateBindMember among themselves, its
+/// mergeSymbol with the early member of their name)
+void ty_check_object_literal_late_members(Checker* me, Expr const* object, ErrorCtx* errs);
 /// The declarations of an object literal member's symbol, as tsgo's binder and late binding make it (the early
 /// members of a name first, then the late-bound ones that merge into it), *first its first member. Only the member
 /// itself when it is alone, empty for a spread

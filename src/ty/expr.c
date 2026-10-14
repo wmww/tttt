@@ -4009,6 +4009,11 @@ typedef struct LiteralBinding {
     Atom const** names; // Per item, its bound name (null: none)
     LiteralSymbol* symbols;
     u32* members;
+    // The late-bound members that conflicted (see ty_check_object_literal_late_members()): with the late symbol of
+    // their name (lateBindMember, `symbol` the one it conflicted with), or whose late symbol the early one of its name
+    // excludes (mergeSymbol, `symbol` the early one, `item` the late symbol's first member)
+    struct LiteralConflict { u32 item, symbol; bool merge; }* conflicts;
+    u32 conflict_count;
     // (Small literals don't allocate)
     u32 symbol_of_buf[LITERAL_BINDING_INLINE];
     Atom const* names_buf[LITERAL_BINDING_INLINE];
@@ -4043,6 +4048,13 @@ static uint8_t literal_item_excludes(uint8_t includes) {
         includes == LIT_SYM_GET ? LIT_SYM_METHOD | LIT_SYM_GET : LIT_SYM_METHOD | LIT_SYM_SET;
 }
 
+// What a meaning excludes to late binding and mergeSymbol (tsgo's getExcludedSymbolFlags: the binder's object literal
+// methods exclude every value, these only the other meanings)
+static uint8_t literal_late_excludes(uint8_t includes) {
+    return includes == LIT_SYM_PROPERTY ? LIT_SYM_METHOD : includes == LIT_SYM_METHOD ? LIT_SYM_PROPERTY | LIT_SYM_GET | LIT_SYM_SET :
+        includes == LIT_SYM_GET ? LIT_SYM_METHOD | LIT_SYM_GET : LIT_SYM_METHOD | LIT_SYM_SET;
+}
+
 static uint8_t literal_item_symbol_flags(ObjectExprItem const* item) {
     switch (item->tag) {
         case OBJECT_ITEM_METHOD: return LIT_SYM_METHOD;
@@ -4052,10 +4064,18 @@ static uint8_t literal_item_symbol_flags(ObjectExprItem const* item) {
     }
 }
 
+static void literal_binding_conflict(LiteralBinding* me, u32 item, u32 symbol, bool merge) {
+    my conflicts = realloc(my conflicts, sizeof(*my conflicts) * (my conflict_count + 1));
+    panic_if(!my conflicts, "out of memory");
+    my conflicts[my conflict_count++] = (struct LiteralConflict){ item, symbol, merge };
+}
+
 static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBinding* out) {
     u32 n = (u32)vec_object_expr_item_size(object);
     LiteralBinding* r = out;
     r->count = 0;
+    r->conflicts = nullptr;
+    r->conflict_count = 0;
     bool small = n <= LITERAL_BINDING_INLINE;
     r->symbol_of = small ? r->symbol_of_buf : malloc(sizeof(u32) * n);
     r->names = small ? r->names_buf : malloc(sizeof(Atom const*) * n);
@@ -4141,11 +4161,12 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
         for (u32 j = early_count; name && j < ret.count && !existing; j++) {
             if (ret.symbols[j].in_table && ret.symbols[j].name == name) existing = &ret.symbols[j];
         }
-        if (existing && !(existing->flags & literal_item_excludes(includes))) {
+        if (existing && !(existing->flags & literal_late_excludes(includes))) {
             existing->flags |= includes;
             ret.symbol_of[k] = (u32)(existing - ret.symbols);
         } else {
             // (A conflicting one is a symbol of its own, tsgo's lateBindMember; an accessor makes the symbol both)
+            if (existing) literal_binding_conflict(r, k, (u32)(existing - ret.symbols), false);
             if (existing && (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) &&
                 (existing->flags & (LIT_SYM_GET | LIT_SYM_SET)) != (includes & (LIT_SYM_GET | LIT_SYM_SET))
             ) {
@@ -4172,9 +4193,12 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
         if (!early) continue;
         uint8_t excluded = 0;
         for (uint8_t bit = 1; bit <= LIT_SYM_SET; bit <<= 1) {
-            if (late->flags & bit) excluded |= literal_item_excludes(bit);
+            if (late->flags & bit) excluded |= literal_late_excludes(bit);
         }
-        if (early->flags & excluded) continue;
+        if (early->flags & excluded) {
+            literal_binding_conflict(r, late->first, (u32)(early - ret.symbols), true);
+            continue;
+        }
         early->flags |= late->flags;
         if (early->getter < 0) early->getter = late->getter;
         if (early->setter < 0) early->setter = late->setter;
@@ -4202,6 +4226,7 @@ static void literal_bind(Checker* me, VecObjectExprItem const* object, LiteralBi
 }
 
 static void literal_binding_drop(LiteralBinding* me) {
+    free(my conflicts);
     if (my symbol_of == my symbol_of_buf) return;
     free(my symbol_of);
     free(my names);
@@ -4524,6 +4549,57 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     }
     signature_resolve(me, sig);
     return sig->param_count ? sig->params[0].type : any_type(me);
+}
+
+void ty_check_object_literal_late_members(Checker* me, Expr const* object, ErrorCtx* errs) {
+    VecObjectExprItem const* items = &object->object;
+    bool late = false;
+    for_each (i, vec_object_expr_item, items) late |= literal_item_is_late(i);
+    if (!late) return;
+    LiteralBinding binding;
+    literal_bind(me, items, &binding);
+    for (u32 c = 0; c < binding.conflict_count; c++) {
+        struct LiteralConflict const* conflict = &binding.conflicts[c];
+        ObjectExprItem const* item = &items->data[conflict->item];
+        LiteralSymbol const* other = &binding.symbols[conflict->symbol];
+        if (!conflict->merge) {
+            // tsgo's lateBindMember: at the early declarations of the name, those of the late symbol and this one,
+            // named by the property name (a unique symbol's by the declaration's name)
+            Ty const* key = ty_regular(me, ty_expr_type(me, item->computed_key));
+            csview name = key->flags & TYF_UNIQUE_ES_SYMBOL ? span_sv(item->name_span) : atom_sv(other->name);
+            for (u32 s = 0; s < binding.count; s++) {
+                LiteralSymbol const* symbol = &binding.symbols[s];
+                if (symbol->late || !symbol->in_table || symbol->name != other->name) continue;
+                for (u32 k = 0; k < symbol->member_count; k++) {
+                    Span at = items->data[binding.members[symbol->member_start + k]].name_span;
+                    if (!error_ctx_find(errs, at, 2300)) error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
+                }
+            }
+            for (u32 k = 0; k < other->member_count; k++) {
+                Span at = items->data[binding.members[other->member_start + k]].name_span;
+                if (!error_ctx_find(errs, at, 2300)) error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
+            }
+            if (!error_ctx_find(errs, item->name_span, 2300)) error_ctx_error_d(errs, item->name_span, 2300, "Duplicate identifier '", name, "'.");
+            continue;
+        }
+        // tsgo's reportMergeSymbolError: at every declaration of both, named as the late symbol prints (`[k]`), each
+        // side's pointing at the other's
+        LiteralSymbol const* late_symbol = &binding.symbols[binding.symbol_of[conflict->item]];
+        csview name = span_sv(item->name_span);
+        for (int side = 0; side < 2; side++) {
+            LiteralSymbol const* at_symbol = side ? other : late_symbol;
+            LiteralSymbol const* to_symbol = side ? late_symbol : other;
+            for (u32 k = 0; k < at_symbol->member_count; k++) {
+                Span at = items->data[binding.members[at_symbol->member_start + k]].name_span;
+                Error* error = error_ctx_find(errs, at, 2300);
+                if (!error) error = error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
+                for (u32 j = 0; j < to_symbol->member_count; j++) {
+                    add_duplicate_related_named(error, at, items->data[binding.members[to_symbol->member_start + j]].name_span, name);
+                }
+            }
+        }
+    }
+    literal_binding_drop(&binding);
 }
 
 VecSpan ty_object_literal_member_symbol(Checker* me, Expr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {

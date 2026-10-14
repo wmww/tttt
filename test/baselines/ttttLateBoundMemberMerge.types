@@ -1,0 +1,306 @@
+//// [test/cases/ttttLateBoundMemberMerge.ts] ////
+
+=== ttttLateBoundMemberMerge.ts ===
+// A computed literal key is bound early by its value (tsc's getDeclarationName: `["kk"]` is `kk`); a computed entity
+// name is bound late (lateBindMember), and its symbol merges into the early one of its name after all the early
+// declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables): the types, symbols, overload order and
+// declaration checks all see the early declarations first
+
+// Literal keys: one symbol with the written name
+class Big {
+>Big : Big
+
+    ["kk"]() {}
+>["kk"] : () => void
+>"kk" : "kk"
+
+    kk() {}
+>kk : () => void
+}
+abstract class Lit {
+>Lit : Lit
+
+    ["lit"](): void;
+>["lit"] : { (): void; (x: number): void; }
+>"lit" : "lit"
+
+    lit(x: number): void;
+>lit : { (): void; (x: number): void; }
+>x : number
+
+    lit(x?: number) {}
+>lit : { (): void; (x: number): void; }
+>x : number | undefined
+
+    #p(): void;
+>#p : () => void
+
+    #p() {}
+>#p : () => void
+
+    q(): void;
+>q : () => void
+
+    ["q"]() {}
+>["q"] : () => void
+>"q" : "q"
+
+    [0x10](): void;
+>[0x10] : () => void
+>0x10 : 16
+
+    16() {}
+>16 : () => void
+
+    #a = 1;
+>#a : number
+>1 : 1
+
+    ["#a"] = 2;
+>["#a"] : number
+>"#a" : "#a"
+>2 : 2
+
+    get ["g"]() { return 1; }
+>["g"] : number
+>"g" : "g"
+>1 : 1
+
+    set g(v: number) {}
+>g : number
+>v : number
+}
+interface ILit {
+    ["kk"]: number;
+>["kk"] : number
+>"kk" : "kk"
+
+    kk: number;
+>kk : number
+}
+
+// Late-bound methods merge into the early method: the early signatures, then the late ones
+const k2 = "late";
+>k2 : "late"
+>"late" : "late"
+
+class C2 {
+>C2 : C2
+
+    late(): void;
+>late : { (): void; (): void; (): void; }
+
+    [k2](): void;
+>[k2] : { (): void; (): void; (): void; }
+>k2 : "late"
+
+    late() {}
+>late : { (): void; (): void; (): void; }
+}
+new C2().late;
+>new C2().late : { (): void; (): void; (): void; }
+>new C2() : C2
+>C2 : typeof C2
+>late : { (): void; (): void; (): void; }
+
+class C4 {
+>C4 : C4
+
+    [k2](x: string): void;
+>[k2] : { (x: number): void; (x: string): void; }
+>k2 : "late"
+>x : string
+
+    late(x: number): void;
+>late : { (x: number): void; (x: string): void; }
+>x : number
+
+    late(x: any) {}
+>late : { (x: number): void; (x: string): void; }
+>x : any
+}
+new C4().late;
+>new C4().late : { (x: number): void; (x: string): void; }
+>new C4() : C4
+>C4 : typeof C4
+>late : { (x: number): void; (x: string): void; }
+
+// Late-bound properties
+const k = "kk";
+>k : "kk"
+>"kk" : "kk"
+
+class C3 {
+>C3 : C3
+
+    [k]: number;
+>[k] : number
+>k : "kk"
+
+    kk: number;
+>kk : number
+}
+interface I5 { [k]: number; kk: string; }
+>[k] : string
+>k : "kk"
+>kk : string
+
+declare const i5: I5;
+>i5 : I5
+
+i5.kk;
+>i5.kk : string
+>i5 : I5
+>kk : string
+
+interface I6 { [k]: number; }
+>[k] : string
+>k : "kk"
+
+interface I6 { kk: string; }
+>kk : string
+
+declare const i6: I6;
+>i6 : I6
+
+i6.kk;
+>i6.kk : string
+>i6 : I6
+>kk : string
+
+type T = { [k]?: string; kk: string };
+>T : T
+>[k] : string
+>k : "kk"
+>kk : string
+
+// Object literals
+const o = { [k]: 1, kk: 2 };
+>o : { kk: number; }
+>{ [k]: 1, kk: 2 } : { kk: number; }
+>[k] : number
+>k : "kk"
+>1 : 1
+>kk : number
+>2 : 2
+
+o.kk;
+>o.kk : number
+>o : { kk: number; }
+>kk : number
+
+const o2 = { ["kk"]: 1, kk: 2 };
+>o2 : { kk: number; }
+>{ ["kk"]: 1, kk: 2 } : { kk: number; }
+>["kk"] : number
+>"kk" : "kk"
+>1 : 1
+>kk : number
+>2 : 2
+
+const o3 = { [k]() {}, kk: 2 };
+>o3 : { kk: number; }
+>{ [k]() {}, kk: 2 } : { kk: number; }
+>[k] : () => void
+>k : "kk"
+>kk : number
+>2 : 2
+
+const o4 = { kk: 2, [k]: "s" };
+>o4 : { kk: string; }
+>{ kk: 2, [k]: "s" } : { kk: string; }
+>kk : number
+>2 : 2
+>[k] : number
+>k : "kk"
+>"s" : "s"
+
+o4.kk;
+>o4.kk : string
+>o4 : { kk: string; }
+>kk : string
+
+// Overload checks walk the merged symbol's declarations
+const m = "m";
+>m : "m"
+>"m" : "m"
+
+const s = Symbol();
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+abstract class Overloads {
+>Overloads : Overloads
+
+    static m(): void;
+>m : () => void
+
+    m() {}
+>m : { (): void; (): void; (): void; }
+
+    x: number;
+>x : number
+
+    x(): void;
+>x : () => void
+
+    x() {}
+>x : () => void
+
+    abstract a(): void;
+>a : { (): void; (x: number): void; }
+
+    b(): void;
+>b : () => void
+
+    abstract a(x: number): void;
+>a : { (): void; (x: number): void; }
+>x : number
+
+    [m](): void;
+>[m] : { (): void; (): void; (): void; }
+>m : "m"
+
+    [s](): void;
+>[s] : { (): void; (x: number): void; }
+>s : unique symbol
+
+    [s](x: number): void;
+>[s] : { (): void; (x: number): void; }
+>s : unique symbol
+>x : number
+
+    [s](x?: number) {}
+>[s] : { (): void; (x: number): void; }
+>s : unique symbol
+>x : number | undefined
+
+    w(): void;
+>w : () => void
+
+    [m]() {}
+>[m] : { (): void; (): void; (): void; }
+>m : "m"
+}
+class S {
+>S : S
+
+    static [m](): number;
+>[m] : { (x: string): string; (): number; }
+>m : "m"
+
+    static m(x: string): string;
+>m : { (x: string): string; (): number; }
+>x : string
+
+    static m(x?: any): any { return 1; }
+>m : { (x: string): string; (): number; }
+>x : any
+>1 : 1
+}
+S.m;
+>S.m : { (x: string): string; (): number; }
+>S : typeof S
+>m : { (x: string): string; (): number; }
+

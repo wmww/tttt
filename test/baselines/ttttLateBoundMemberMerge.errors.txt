@@ -1,0 +1,228 @@
+ttttLateBoundMemberMerge.ts(8,5): error TS2393: Duplicate function implementation.
+ttttLateBoundMemberMerge.ts(9,5): error TS2393: Duplicate function implementation.
+ttttLateBoundMemberMerge.ts(27,5): error TS2300: Duplicate identifier '["kk"]'.
+ttttLateBoundMemberMerge.ts(28,5): error TS2300: Duplicate identifier '["kk"]'.
+ttttLateBoundMemberMerge.ts(34,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(36,5): error TS2389: Function implementation name must be '[k2]'.
+ttttLateBoundMemberMerge.ts(36,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(40,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(42,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(49,5): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(49,5): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(50,5): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(50,5): error TS2564: Property 'kk' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(52,16): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(52,16): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'number'.
+ttttLateBoundMemberMerge.ts(52,29): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(55,16): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'number'.
+ttttLateBoundMemberMerge.ts(59,12): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(59,12): error TS2687: All declarations of '[k]' must have identical modifiers.
+ttttLateBoundMemberMerge.ts(59,12): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'string | undefined'.
+ttttLateBoundMemberMerge.ts(59,26): error TS2300: Duplicate identifier 'kk'.
+ttttLateBoundMemberMerge.ts(59,26): error TS2687: All declarations of 'kk' must have identical modifiers.
+ttttLateBoundMemberMerge.ts(62,21): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttLateBoundMemberMerge.ts(64,25): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttLateBoundMemberMerge.ts(65,14): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(65,24): error TS1119: An object literal cannot have property and accessor with the same name.
+ttttLateBoundMemberMerge.ts(65,24): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundMemberMerge.ts(66,21): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttLateBoundMemberMerge.ts(74,5): error TS2387: Function overload must be static.
+ttttLateBoundMemberMerge.ts(74,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(74,5): error TS2393: Duplicate function implementation.
+ttttLateBoundMemberMerge.ts(75,5): error TS2300: Duplicate identifier 'x'.
+ttttLateBoundMemberMerge.ts(75,5): error TS2564: Property 'x' has no initializer and is not definitely assigned in the constructor.
+ttttLateBoundMemberMerge.ts(76,5): error TS2300: Duplicate identifier 'x'.
+ttttLateBoundMemberMerge.ts(77,5): error TS2300: Duplicate identifier 'x'.
+ttttLateBoundMemberMerge.ts(78,14): error TS2516: All declarations of an abstract method must be consecutive.
+ttttLateBoundMemberMerge.ts(79,5): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(81,5): error TS2393: Duplicate function implementation.
+ttttLateBoundMemberMerge.ts(86,5): error TS2389: Function implementation name must be 'w'.
+ttttLateBoundMemberMerge.ts(86,5): error TS2393: Duplicate function implementation.
+ttttLateBoundMemberMerge.ts(89,12): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttLateBoundMemberMerge.ts(91,12): error TS2391: Function implementation is missing or not immediately following the declaration.
+
+
+==== ttttLateBoundMemberMerge.ts (42 errors) ====
+    // A computed literal key is bound early by its value (tsc's getDeclarationName: `["kk"]` is `kk`); a computed entity
+    // name is bound late (lateBindMember), and its symbol merges into the early one of its name after all the early
+    // declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables): the types, symbols, overload order and
+    // declaration checks all see the early declarations first
+    
+    // Literal keys: one symbol with the written name
+    class Big {
+        ["kk"]() {}
+        ~~~~~~
+!!! error TS2393: Duplicate function implementation.
+        kk() {}
+        ~~
+!!! error TS2393: Duplicate function implementation.
+    }
+    abstract class Lit {
+        ["lit"](): void;
+        lit(x: number): void;
+        lit(x?: number) {}
+        #p(): void;
+        #p() {}
+        q(): void;
+        ["q"]() {}
+        [0x10](): void;
+        16() {}
+        #a = 1;
+        ["#a"] = 2;
+        get ["g"]() { return 1; }
+        set g(v: number) {}
+    }
+    interface ILit {
+        ["kk"]: number;
+        ~~~~~~
+!!! error TS2300: Duplicate identifier '["kk"]'.
+        kk: number;
+        ~~
+!!! error TS2300: Duplicate identifier '["kk"]'.
+    }
+    
+    // Late-bound methods merge into the early method: the early signatures, then the late ones
+    const k2 = "late";
+    class C2 {
+        late(): void;
+        ~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        [k2](): void;
+        late() {}
+        ~~~~
+!!! error TS2389: Function implementation name must be '[k2]'.
+        ~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    }
+    new C2().late;
+    class C4 {
+        [k2](x: string): void;
+        ~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        late(x: number): void;
+        late(x: any) {}
+        ~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    }
+    new C4().late;
+    
+    // Late-bound properties
+    const k = "kk";
+    class C3 {
+        [k]: number;
+        ~~~
+!!! error TS2300: Duplicate identifier 'kk'.
+        ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+        kk: number;
+        ~~
+!!! error TS2300: Duplicate identifier 'kk'.
+        ~~
+!!! error TS2564: Property 'kk' has no initializer and is not definitely assigned in the constructor.
+    }
+    interface I5 { [k]: number; kk: string; }
+                   ~~~
+!!! error TS2300: Duplicate identifier 'kk'.
+                   ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'number'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:52:29: '[k]' was also declared here.
+                                ~~
+!!! error TS2300: Duplicate identifier 'kk'.
+    declare const i5: I5;
+    i5.kk;
+    interface I6 { [k]: number; }
+                   ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'number'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:56:16: '[k]' was also declared here.
+    interface I6 { kk: string; }
+    declare const i6: I6;
+    i6.kk;
+    type T = { [k]?: string; kk: string };
+               ~~~
+!!! error TS2300: Duplicate identifier 'kk'.
+               ~~~
+!!! error TS2687: All declarations of '[k]' must have identical modifiers.
+               ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'string', but here has type 'string | undefined'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:59:26: '[k]' was also declared here.
+                             ~~
+!!! error TS2300: Duplicate identifier 'kk'.
+                             ~~
+!!! error TS2687: All declarations of 'kk' must have identical modifiers.
+    
+    // Object literals
+    const o = { [k]: 1, kk: 2 };
+                        ~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    o.kk;
+    const o2 = { ["kk"]: 1, kk: 2 };
+                            ~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const o3 = { [k]() {}, kk: 2 };
+                 ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:65:24: '[k]' was also declared here.
+                           ~~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                           ~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundMemberMerge.ts:65:14: '[k]' was also declared here.
+    const o4 = { kk: 2, [k]: "s" };
+                        ~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    o4.kk;
+    
+    // Overload checks walk the merged symbol's declarations
+    const m = "m";
+    const s = Symbol();
+    abstract class Overloads {
+        static m(): void;
+        m() {}
+        ~
+!!! error TS2387: Function overload must be static.
+        ~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        ~
+!!! error TS2393: Duplicate function implementation.
+        x: number;
+        ~
+!!! error TS2300: Duplicate identifier 'x'.
+        ~
+!!! error TS2564: Property 'x' has no initializer and is not definitely assigned in the constructor.
+        x(): void;
+        ~
+!!! error TS2300: Duplicate identifier 'x'.
+        x() {}
+        ~
+!!! error TS2300: Duplicate identifier 'x'.
+        abstract a(): void;
+                 ~
+!!! error TS2516: All declarations of an abstract method must be consecutive.
+        b(): void;
+        ~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        abstract a(x: number): void;
+        [m](): void;
+        ~~~
+!!! error TS2393: Duplicate function implementation.
+        [s](): void;
+        [s](x: number): void;
+        [s](x?: number) {}
+        w(): void;
+        [m]() {}
+        ~~~
+!!! error TS2389: Function implementation name must be 'w'.
+        ~~~
+!!! error TS2393: Duplicate function implementation.
+    }
+    class S {
+        static [m](): number;
+               ~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+        static m(x: string): string;
+        static m(x?: any): any { return 1; }
+               ~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    }
+    S.m;
+    

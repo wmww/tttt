@@ -3467,6 +3467,7 @@ typedef struct DupRecord {
     uint8_t table; // 0 instance, 1 static
     uint8_t check_kind; // 1 a property, 2 an accessor, 0 neither
     bool is_private;
+    bool late; // Late bound: after the early declarations of its symbol once merge_late_members() merged it
     u32 list; // The declaration it is in (of an interface's)
 } DupRecord;
 
@@ -3504,6 +3505,18 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
         early->total += late->total;
         late->total = 0;
     }
+}
+
+// Per entry (symbol), its first record: an early one before the late-bound ones merged into it (callers free it)
+static DupRecord const** dup_first_records(MemberTables const* tables, VecDupRecord const* records) {
+    DupRecord const** ret = calloc(tables->count ? tables->count : 1, sizeof(DupRecord const*));
+    panic_if(!ret, "out of memory");
+    for (int late = 0; late < 2; late++) {
+        for_each (r, vec_dup_record, records) {
+            if (r->entry >= 0 && r->late == (bool)late && !ret[r->entry]) ret[r->entry] = r;
+        }
+    }
+    return ret;
 }
 
 // How tsc prints a member's symbol (symbolToString): its first declaration's name as written
@@ -3731,19 +3744,17 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         vec_dup_record_push(&records, (DupRecord){
             .name = name, .span = name_span, .member = i, .entry = entry, .check_kind = check_kind,
             .table = is_static + (span_valid(private_name) ? PRIVATE_TABLE : 0),
-            .is_private = span_valid(private_name),
+            .is_private = span_valid(private_name), .late = late_bound,
         });
     }
     for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
+    // (A late-bound symbol merged into the early one of its name is its later declarations)
+    merge_late_members(tables, &records, errs);
     // A field declared again (its symbol's later declaration) has the type of its symbol's first one (per entry, its
     // first record)
-    DupRecord const** first_records = calloc(tables->count ? tables->count : 1, sizeof(DupRecord const*));
-    panic_if(!first_records, "out of memory");
-    for_each (r, vec_dup_record, &records) {
-        if (r->entry >= 0 && !first_records[r->entry]) first_records[r->entry] = r;
-    }
+    DupRecord const** first_records = dup_first_records(tables, &records);
     for_each (r, vec_dup_record, &records) {
         ClassItem* item = (ClassItem*)r->member;
         if (r->entry < 0 || !item || item->tag != CLASS_ITEM_FIELD) continue;
@@ -3757,7 +3768,6 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             with_optionality(me, class_item_get_type(item), item->field.is_optional), first->span, errs);
     }
     free(first_records);
-    merge_late_members(tables, &records, errs);
     check_duplicate_declarations(tables, &records, 0, true, errs);
     vec_dup_record_drop(&records);
     if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
@@ -3814,9 +3824,23 @@ static uint8_t access_modifier_bits(AccessModifier access) {
     return access == ACCESS_MODIFIER_PRIVATE ? PROPERTY_MOD_PRIVATE : access == ACCESS_MODIFIER_PROTECTED ? PROPERTY_MOD_PROTECTED : 0;
 }
 
-// The instance properties a class declares: its (non-static) fields and parameter properties, in binding order
-static void collect_class_property_decls(ClassDecl const* class_decl, VecPropertyDeclEntry* out) {
+// The instance properties a class declares: its (non-static) fields and parameter properties, in binding order. With
+// `late`, those named by an entity name instead (late bound: after the others of every declaration, see
+// resolve_declared_members())
+static void collect_class_property_decls(Checker* me, ClassDecl const* class_decl, bool late, VecPropertyDeclEntry* out) {
     for_each (i, vec_class_item, &class_decl->items) {
+        if (late) {
+            Expr const* key = i->tag == CLASS_ITEM_FIELD && !i->field.is_static ? i->field.computed_key : nullptr;
+            if (!key || computed_key_early_name(key, nullptr) || expr_is_perenthisized(key) || !expr_is_entity_name(key)) continue;
+            Atom const* name = ty_member_name(me, &i->field.name_string, key);
+            if (!name) continue;
+            vec_property_decl_entry_push(out, (PropertyDeclEntry){
+                .name = atom_sv(name), .span = i->field.name_span, .optional = i->field.is_optional,
+                .modifiers = access_modifier_bits(i->access) | (i->field.is_readonly ? PROPERTY_MOD_READONLY : 0) |
+                    (i->field.is_abstract ? PROPERTY_MOD_ABSTRACT : 0),
+            });
+            continue;
+        }
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
             for_each (arg, vec_function_arg, &i->constructor.func.args) {
                 Binding const* binding = &arg->initializer.binding;
@@ -3827,7 +3851,7 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
                 });
             }
         }
-        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.computed_key) continue;
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || (i->field.computed_key && !computed_key_early_name(i->field.computed_key, nullptr))) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
             .name = cstr_sv(&i->field.name_string), .span = i->field.name_span, .optional = i->field.is_optional,
             .modifiers = access_modifier_bits(i->access) | (i->field.is_readonly ? PROPERTY_MOD_READONLY : 0) |
@@ -3836,8 +3860,19 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
     }
 }
 
-static void collect_interface_property_decls(VecInterfaceMember const* members, VecPropertyDeclEntry* out) {
+static void collect_interface_property_decls(Checker* me, VecInterfaceMember const* members, bool late, VecPropertyDeclEntry* out) {
     for_each (i, vec_interface_member, members) {
+        if (late) {
+            if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr || !expr_is_entity_name(i->key.expr) || i->computed_accessor) continue;
+            Atom const* name = ty_literal_name(me, ty_expr_type(me, i->key.expr));
+            if (!name) continue;
+            bool method = i->is_method && i->type.tag == TYPE_CALLABLE;
+            vec_property_decl_entry_push(out, (PropertyDeclEntry){
+                .name = atom_sv(name), .span = i->key.span, .optional = i->optional, .method = method,
+                .modifiers = !method && i->readonly ? PROPERTY_MOD_READONLY : 0,
+            });
+            continue;
+        }
         if (i->key.tag != INTERFACE_KEY_NAME) continue;
         if (i->is_method || i->key.name_is_member_function) {
             vec_property_decl_entry_push(out, (PropertyDeclEntry){
@@ -3905,20 +3940,21 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
 void ty_check_property_modifiers(Checker* me, Symbol const* symbol, ClassDecl const* class_decl,
     VecInterfaceMember const* type_literal, ErrorCtx* errs
 ) {
-    (void)me;
     VecPropertyDeclEntry decls = {0};
-    if (symbol) {
-        for (u32 d = 0; d < symbol->decl_count; d++) {
-            SymbolDecl const* decl = &symbol->decls[d];
-            if (decl->kind == SYMBOL_DECL_CLASS) collect_class_property_decls(decl->node, &decls);
-            if (decl->kind == SYMBOL_DECL_INTERFACE) {
-                collect_interface_property_decls(&((InterfaceDecl const*)decl->node)->type.interface.members, &decls);
+    for (int late = 0; late < 2; late++) {
+        if (symbol) {
+            for (u32 d = 0; d < symbol->decl_count; d++) {
+                SymbolDecl const* decl = &symbol->decls[d];
+                if (decl->kind == SYMBOL_DECL_CLASS) collect_class_property_decls(me, decl->node, late, &decls);
+                if (decl->kind == SYMBOL_DECL_INTERFACE) {
+                    collect_interface_property_decls(me, &((InterfaceDecl const*)decl->node)->type.interface.members, late, &decls);
+                }
             }
+        } else if (class_decl) {
+            collect_class_property_decls(me, class_decl, late, &decls);
+        } else if (type_literal) {
+            collect_interface_property_decls(me, type_literal, late, &decls);
         }
-    } else if (class_decl) {
-        collect_class_property_decls(class_decl, &decls);
-    } else if (type_literal) {
-        collect_interface_property_decls(type_literal, &decls);
     }
     check_property_modifiers(&decls, errs);
     vec_property_decl_entry_drop(&decls);
@@ -4095,20 +4131,20 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
                     declare_member(tables, name, 0, kind, at, errs);
                 uint8_t check_kind = kind == MEMBER_METHOD ? 0 : kind == MEMBER_PROPERTY ? 1 : 2;
                 vec_dup_record_push(&records, (DupRecord){
-                    .name = name, .span = at, .member = i, .entry = entry, .check_kind = check_kind, .list = l,
+                    .name = name, .span = at, .member = i, .entry = entry, .check_kind = check_kind, .list = l, .late = late_bound,
                 });
             }
         }
     }
+    // (A late-bound symbol merged into the early one of its name is its later declarations)
+    merge_late_members(tables, &records, errs);
     // A property signature declared again (its symbol's later declaration, in any declaration) has the type of its
     // symbol's first one. Per entry (symbol): its first record, and whether any of its declarations is optional
-    DupRecord const** first_records = calloc(tables->count ? tables->count : 1, sizeof(DupRecord const*));
+    DupRecord const** first_records = dup_first_records(tables, &records);
     bool* optional_entries = calloc(tables->count ? tables->count : 1, 1);
-    panic_if(!first_records || !optional_entries, "out of memory");
+    panic_if(!optional_entries, "out of memory");
     for_each (r, vec_dup_record, &records) {
-        if (r->entry < 0) continue;
-        if (!first_records[r->entry]) first_records[r->entry] = r;
-        optional_entries[r->entry] |= ((InterfaceMember const*)r->member)->optional;
+        if (r->entry >= 0) optional_entries[r->entry] |= ((InterfaceMember const*)r->member)->optional;
     }
     for_each (r, vec_dup_record, &records) {
         InterfaceMember const* i = r->member;
@@ -4129,7 +4165,6 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
     }
     free(first_records);
     free(optional_entries);
-    merge_late_members(tables, &records, errs);
     for (u32 l = 0; l < list_count; l++) check_duplicate_declarations(tables, &records, l, false, errs);
     vec_dup_record_drop(&records);
     free(tables->entries);

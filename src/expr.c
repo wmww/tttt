@@ -4566,6 +4566,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             object_bind_members(me, errs);
             object_check_grammar(me, errs);
             ty_check_object_literal_pattern(current_checker, me, errs);
+            ty_check_object_literal_late_members(current_checker, me, errs);
             TyWrittenProp* written = nullptr;
             u32 written_count = 0;
             for_each (i, vec_object_expr_item, &my object) {
