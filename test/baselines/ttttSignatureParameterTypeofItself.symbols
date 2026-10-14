@@ -1,0 +1,49 @@
+//// [test/cases/ttttSignatureParameterTypeofItself.ts] ////
+
+=== ttttSignatureParameterTypeofItself.ts ===
+// A parameter of a signature without a body whose annotation is `typeof` itself (the parameter shadows the outer name)
+// is TS2502 at the whole parameter (tsc's checkParameter -> getTypeOfSymbol, reportCircularityError at its
+// valueDeclaration), in type literals, interfaces and function types too (bumpp's `(currentVersion, semver: typeof
+// semver) => ...` in soybean-admin)
+declare const semver: { a: number };
+>semver : Symbol(semver, Decl(ttttSignatureParameterTypeofItself.ts, 4, 13))
+>a : Symbol(a, Decl(ttttSignatureParameterTypeofItself.ts, 4, 23))
+
+interface O {
+>O : Symbol(O, Decl(ttttSignatureParameterTypeofItself.ts, 4, 36))
+
+  f?: (cur: string, semver: typeof semver) => void;
+>f : Symbol(O.f, Decl(ttttSignatureParameterTypeofItself.ts, 5, 13))
+>cur : Symbol(cur, Decl(ttttSignatureParameterTypeofItself.ts, 6, 7))
+>semver : Symbol(semver, Decl(ttttSignatureParameterTypeofItself.ts, 6, 19))
+>semver : Symbol(semver, Decl(ttttSignatureParameterTypeofItself.ts, 6, 19))
+
+  g(semver: typeof semver): void;
+>g : Symbol(O.g, Decl(ttttSignatureParameterTypeofItself.ts, 6, 51))
+>semver : Symbol(semver, Decl(ttttSignatureParameterTypeofItself.ts, 7, 4))
+>semver : Symbol(semver, Decl(ttttSignatureParameterTypeofItself.ts, 7, 4))
+}
+type F = (x: typeof x) => void;
+>F : Symbol(F, Decl(ttttSignatureParameterTypeofItself.ts, 8, 1))
+>x : Symbol(x, Decl(ttttSignatureParameterTypeofItself.ts, 9, 10))
+>x : Symbol(x, Decl(ttttSignatureParameterTypeofItself.ts, 9, 10))
+
+declare function h(y: typeof y): void;
+>h : Symbol(h, Decl(ttttSignatureParameterTypeofItself.ts, 9, 31))
+>y : Symbol(y, Decl(ttttSignatureParameterTypeofItself.ts, 10, 19))
+>y : Symbol(y, Decl(ttttSignatureParameterTypeofItself.ts, 10, 19))
+
+function k(z: typeof z) {}
+>k : Symbol(k, Decl(ttttSignatureParameterTypeofItself.ts, 10, 38))
+>z : Symbol(z, Decl(ttttSignatureParameterTypeofItself.ts, 11, 11))
+>z : Symbol(z, Decl(ttttSignatureParameterTypeofItself.ts, 11, 11))
+
+type C = new (w: typeof w) => void;
+>C : Symbol(C, Decl(ttttSignatureParameterTypeofItself.ts, 11, 26))
+>w : Symbol(w, Decl(ttttSignatureParameterTypeofItself.ts, 12, 14))
+>w : Symbol(w, Decl(ttttSignatureParameterTypeofItself.ts, 12, 14))
+
+var u: typeof u;
+>u : Symbol(u, Decl(ttttSignatureParameterTypeofItself.ts, 13, 3))
+>u : Symbol(u, Decl(ttttSignatureParameterTypeofItself.ts, 13, 3))
+

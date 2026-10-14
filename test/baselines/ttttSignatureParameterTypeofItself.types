@@ -1,0 +1,47 @@
+//// [test/cases/ttttSignatureParameterTypeofItself.ts] ////
+
+=== ttttSignatureParameterTypeofItself.ts ===
+// A parameter of a signature without a body whose annotation is `typeof` itself (the parameter shadows the outer name)
+// is TS2502 at the whole parameter (tsc's checkParameter -> getTypeOfSymbol, reportCircularityError at its
+// valueDeclaration), in type literals, interfaces and function types too (bumpp's `(currentVersion, semver: typeof
+// semver) => ...` in soybean-admin)
+declare const semver: { a: number };
+>semver : { a: number; }
+>a : number
+
+interface O {
+  f?: (cur: string, semver: typeof semver) => void;
+>f : ((cur: string, semver: typeof semver) => void) | undefined
+>cur : string
+>semver : any
+>semver : any
+
+  g(semver: typeof semver): void;
+>g : (semver: typeof semver) => void
+>semver : any
+>semver : any
+}
+type F = (x: typeof x) => void;
+>F : F
+>x : any
+>x : any
+
+declare function h(y: typeof y): void;
+>h : (y: typeof y) => void
+>y : any
+>y : any
+
+function k(z: typeof z) {}
+>k : (z: typeof z) => void
+>z : any
+>z : any
+
+type C = new (w: typeof w) => void;
+>C : C
+>w : any
+>w : any
+
+var u: typeof u;
+>u : any
+>u : any
+

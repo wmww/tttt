@@ -573,7 +573,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                 // (tsc's reportCircularityError)
                 if (type == ty_intrinsic(current_checker, TY_CIRCULAR) && my has_explicit_type) {
-                    error_ctx_error_d(errs, my content_span, 2502,
+                    error_ctx_error_d(errs, at, 2502,
                         "'", my content_span, "' is referenced directly or indirectly in its own type annotation.");
                 } else if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
                     compiler_options()->no_implicit_any && !my has_explicit_type

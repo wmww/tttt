@@ -35,8 +35,17 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(my function, true, errs);
     function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {
-        if (!i->initializer.binding.has_explicit_type) continue;
-        type_typecheck(binding_type(&i->initializer.binding), errs);
+        Binding* binding = &i->initializer.binding;
+        if (!binding->has_explicit_type) continue;
+        type_typecheck(binding_type(binding), errs);
+        // (tsc's checkParameter -> checkVariableLikeDeclaration: the parameter's type, reportCircularityError for
+        // `(x: typeof x) => void`)
+        if (binding->tag == BINDING_IDENTIFIER && binding->symbol &&
+            ty_binding_type(current_checker, binding, (LowerCtx){ .generic = true }) == ty_intrinsic(current_checker, TY_CIRCULAR)
+        ) {
+            error_ctx_error_d(errs, i->span, 2502, // (at the whole parameter, its symbol's valueDeclaration)
+                "'", binding->content_span, "' is referenced directly or indirectly in its own type annotation.");
+        }
     }
     type_typecheck(&my function->ret, errs);
     if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);

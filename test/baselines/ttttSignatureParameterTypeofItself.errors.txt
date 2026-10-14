@@ -1,0 +1,39 @@
+ttttSignatureParameterTypeofItself.ts(7,21): error TS2502: 'semver' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(8,5): error TS2502: 'semver' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(10,11): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(11,20): error TS2502: 'y' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(12,12): error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(13,15): error TS2502: 'w' is referenced directly or indirectly in its own type annotation.
+ttttSignatureParameterTypeofItself.ts(14,5): error TS2502: 'u' is referenced directly or indirectly in its own type annotation.
+
+
+==== ttttSignatureParameterTypeofItself.ts (7 errors) ====
+    // A parameter of a signature without a body whose annotation is `typeof` itself (the parameter shadows the outer name)
+    // is TS2502 at the whole parameter (tsc's checkParameter -> getTypeOfSymbol, reportCircularityError at its
+    // valueDeclaration), in type literals, interfaces and function types too (bumpp's `(currentVersion, semver: typeof
+    // semver) => ...` in soybean-admin)
+    declare const semver: { a: number };
+    interface O {
+      f?: (cur: string, semver: typeof semver) => void;
+                        ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'semver' is referenced directly or indirectly in its own type annotation.
+      g(semver: typeof semver): void;
+        ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'semver' is referenced directly or indirectly in its own type annotation.
+    }
+    type F = (x: typeof x) => void;
+              ~~~~~~~~~~~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    declare function h(y: typeof y): void;
+                       ~~~~~~~~~~~
+!!! error TS2502: 'y' is referenced directly or indirectly in its own type annotation.
+    function k(z: typeof z) {}
+               ~~~~~~~~~~~
+!!! error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+    type C = new (w: typeof w) => void;
+                  ~~~~~~~~~~~
+!!! error TS2502: 'w' is referenced directly or indirectly in its own type annotation.
+    var u: typeof u;
+        ~
+!!! error TS2502: 'u' is referenced directly or indirectly in its own type annotation.
+    
