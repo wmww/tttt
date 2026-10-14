@@ -1594,6 +1594,33 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             // (The argument's literal, its quotes kept: tsgo's node copy)
             bool single = span_valid(ref->span) && ref->span.size && ref->span.buf[0] == '\'';
             display_quoted_string(d, cstr_sv(&ref->path), single, false);
+            // Declaration emit: the options as written (`import("m", { with: { ... } })`)
+            if (d.multiline && span_valid(ref->span) && span_source(ref->span)) {
+                SourceFile const* file = span_source(ref->span);
+                char const* end = cstr_str(&file->contents) + cstr_size(&file->contents);
+                char const* c = span_end_ptr(ref->span);
+                while (c < end && (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r')) c++;
+                if (c < end && *c == ',') {
+                    char const* from = c + 1;
+                    int depth = 0;
+                    for (; c < end && !(depth == 0 && *c == ')'); c++) {
+                        if (*c == '{' || *c == '(' || *c == '[') depth++;
+                        if (*c == '}' || *c == ')' || *c == ']') depth--;
+                    }
+                    csview options = csview_trim_whitespace((csview){ from, c - from });
+                    if (options.size && options.buf[options.size - 1] == ',') options = csview_trim_whitespace(csview_slice(options, 0, options.size - 1));
+                    if (options.size) {
+                        // (The printer's object literals: `{ a: b }`, single line as written)
+                        out_lit(d, ", ");
+                        for (isize_t k = 0; k < options.size; k++) {
+                            char ch = options.buf[k];
+                            if (ch == '}' && k && options.buf[k - 1] != ' ' && options.buf[k - 1] != '{') out_lit(d, " ");
+                            out(d, (csview){ &options.buf[k], 1 });
+                            if (ch == '{' && k + 1 < options.size && options.buf[k + 1] != ' ' && options.buf[k + 1] != '}') out_lit(d, " ");
+                        }
+                    }
+                }
+            }
         } else {
             display_node(me, d, identifier_type_import_argument(identifier));
         }
