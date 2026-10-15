@@ -1,0 +1,32 @@
+//// [test/cases/ttttDeclarationInferredPredicatePaintsImport.ts] ////
+
+=== /charCode.ts ===
+export const enum CharCode { Slash = 47, Backslash = 92 }
+>CharCode : CharCode
+>Slash : CharCode.Slash
+>47 : 47
+>Backslash : CharCode.Backslash
+>92 : 92
+
+=== /extpath.ts ===
+import { CharCode } from "./charCode";
+>CharCode : typeof CharCode
+
+export function isPathSeparator(code: number) {
+>isPathSeparator : (code: number) => code is CharCode
+>code : number
+
+    return code === CharCode.Slash || code === CharCode.Backslash;
+>code === CharCode.Slash || code === CharCode.Backslash : boolean
+>code === CharCode.Slash : boolean
+>code : number
+>CharCode.Slash : CharCode.Slash
+>CharCode : typeof CharCode
+>Slash : CharCode.Slash
+>code === CharCode.Backslash : boolean
+>code : number
+>CharCode.Backslash : CharCode.Backslash
+>CharCode : typeof CharCode
+>Backslash : CharCode.Backslash
+}
+

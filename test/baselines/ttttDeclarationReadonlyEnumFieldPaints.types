@@ -1,0 +1,27 @@
+//// [test/cases/ttttDeclarationReadonlyEnumFieldPaints.ts] ////
+
+=== /e.ts ===
+export const enum Id { A = "a", B = "b" }
+>Id : Id
+>A : Id.A
+>"a" : "a"
+>B : Id.B
+>"b" : "b"
+
+=== /c.ts ===
+import { Id } from "./e";
+>Id : typeof Id
+
+class P { public readonly id = Id.A; }
+>P : P
+>id : Id.A
+>Id.A : Id.A
+>Id : typeof Id
+>A : Id.A
+
+export class C { get() { return new P(); } }
+>C : C
+>get : () => P
+>new P() : P
+>P : typeof P
+

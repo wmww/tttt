@@ -1517,6 +1517,9 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
         if (predicate && !(pseudo->kind == PSEUDO_DIRECT && pseudo->predicate)) {
             report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = fn });
             my fell_back = true;
+            // (The predicate's type is what w_return() writes: its names are tracked, painting the imports they go
+            // through, vscode's `code is CharCode`)
+            if (!my type_out && predicate->type) print_type(me, predicate->type, my print_reports);
         } else {
             pseudo_to_node_with_fallback(me, pseudo, type);
         }
@@ -1987,6 +1990,9 @@ static void check_field(Walk* me, ClassItem const* item) {
             report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FIELD, .field = item });
             fallback_end(me, outer, type);
         }
+        // (An enum member's names the enum: createLiteralConstValue's symbolToExpression, tracked, see
+        // serialize_variable())
+        if (type && (type->flags & TYF_ENUM_LITERAL)) print_type(me, type, false);
     } else if (item->field.has_explicit_type) {
         check_written_type(me, &item->field.explicit_type);
     } else {
@@ -2213,9 +2219,11 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
         Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key :
             i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
         // A late bound name's entity (checkName): what it names is emitted
+        bool late_bound = false;
         if (is_dynamic_name(key) && pseudo_is_entity_name(key) && !item_has_private_name(i)) {
             Ty const* key_type = lazy_type_get((LazyType*)&key->lazy_type);
-            if (key_type && (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
+            late_bound = key_type && (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL));
+            if (late_bound) {
                 Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
                 Emitting saved = emit_enter_nested(me, i->tag == CLASS_ITEM_METHOD ? EMIT_METHOD_NAME : EMIT_PROPERTY, SIG_METHOD, name, name);
                 check_entity_expression(me, key);
@@ -2239,7 +2247,9 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                     serialize_signature(me, &i->method.func);
                     my root = outer_root;
                 }
-                continue;
+                // (A late bound member is emitted, and its type checked, except with isolatedDeclarations: tsgo's
+                // visitDeclarationSubtree)
+                if (my isolated || !late_bound) continue;
             }
         }
         switch (i->tag) {

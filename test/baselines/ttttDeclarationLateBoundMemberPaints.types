@@ -1,0 +1,33 @@
+//// [test/cases/ttttDeclarationLateBoundMemberPaints.ts] ////
+
+=== /em.ts ===
+export class EntityManager<D> { d!: D }
+>EntityManager : EntityManager<D>
+>d : D
+
+=== /types.ts ===
+export declare const EntityManagerType: unique symbol;
+>EntityManagerType : unique symbol
+
+=== /driver.ts ===
+import { EntityManagerType } from "./types";
+>EntityManagerType : unique symbol
+
+import { EntityManager } from "./em";
+>EntityManager : typeof EntityManager
+
+export abstract class DatabaseDriver {
+>DatabaseDriver : DatabaseDriver
+
+    [EntityManagerType]!: EntityManager<this>;
+>[EntityManagerType] : EntityManager<this>
+>EntityManagerType : unique symbol
+
+    get [Symbol.iterator](): () => EntityManager<number> { return null!; }
+>[Symbol.iterator] : () => EntityManager<number>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>null! : never
+}
+

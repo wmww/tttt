@@ -3820,7 +3820,19 @@ static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
     if ((prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) || ty_private_name_class(me, prop->name)) {
         d.tracker->report(d.tracker, DECL_REPORT_PRIVATE_IN_CLASS_LITERAL, atom_sv(prop->name));
     }
-    if (!ty_unique_symbol_of_name(me, prop->name)) return false;
+    if (!ty_unique_symbol_of_name(me, prop->name)) {
+        // A name that is an enum member's value is written as that member where the enum is accessible (see
+        // display_member_name()), which tracks the enum (getPropertyNameNodeForSymbolFromNameType's symbolToExpression)
+        Prop const* declared = prop;
+        while (declared->target && !declared->decl->decl_span_count && !prop_decl_rare(declared->decl)->name_type) declared = declared->target;
+        Ty const* name_type = prop_decl_rare(declared->decl)->name_type;
+        Symbol const* enum_symbol = name_type && (name_type->flags & TYF_ENUM_LITERAL) && name_type->kind == TY_LITERAL ?
+            name_type->literal.enum_decl : nullptr;
+        if (enum_symbol && d.enclosing && symbol_accessible_without_modules_at(d.enclosing, enum_symbol, SYMBOL_VALUE)) {
+            d.tracker->track_symbol(d.tracker, enum_symbol, SYMBOL_VALUE);
+        }
+        return false;
+    }
     // A late bound name: the declaration's computed name, else it can't be written
     // (A mapped type's property is declared where the property it comes from is, see mapped_members())
     Prop const* declared = prop;

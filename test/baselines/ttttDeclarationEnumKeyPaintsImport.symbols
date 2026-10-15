@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationEnumKeyPaintsImport.ts] ////
+
+=== /e.ts ===
+export const enum Id { A = "a", B = "b" }
+>Id : Symbol(Id, Decl(e.ts, 0, 0))
+>A : Symbol(Id.A, Decl(e.ts, 0, 22))
+>B : Symbol(Id.B, Decl(e.ts, 0, 31))
+
+=== /c.ts ===
+import { Id } from "./e";
+>Id : Symbol(Id, Decl(c.ts, 0, 8))
+
+export const props = {
+>props : Symbol(props, Decl(c.ts, 1, 12))
+
+    [Id.A]: { type: "string" },
+>[Id.A] : Symbol([Id.A], Decl(c.ts, 1, 22))
+>Id.A : Symbol(Id.A, Decl(e.ts, 0, 22))
+>Id : Symbol(Id, Decl(c.ts, 0, 8))
+>A : Symbol(Id.A, Decl(e.ts, 0, 22))
+>type : Symbol(type, Decl(c.ts, 2, 13))
+
+};
+

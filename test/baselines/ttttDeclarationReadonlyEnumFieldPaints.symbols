@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationReadonlyEnumFieldPaints.ts] ////
+
+=== /e.ts ===
+export const enum Id { A = "a", B = "b" }
+>Id : Symbol(Id, Decl(e.ts, 0, 0))
+>A : Symbol(Id.A, Decl(e.ts, 0, 22))
+>B : Symbol(Id.B, Decl(e.ts, 0, 31))
+
+=== /c.ts ===
+import { Id } from "./e";
+>Id : Symbol(Id, Decl(c.ts, 0, 8))
+
+class P { public readonly id = Id.A; }
+>P : Symbol(P, Decl(c.ts, 0, 25))
+>id : Symbol(P.id, Decl(c.ts, 1, 9))
+>Id.A : Symbol(Id.A, Decl(e.ts, 0, 22))
+>Id : Symbol(Id, Decl(c.ts, 0, 8))
+>A : Symbol(Id.A, Decl(e.ts, 0, 22))
+
+export class C { get() { return new P(); } }
+>C : Symbol(C, Decl(c.ts, 1, 38))
+>get : Symbol(C.get, Decl(c.ts, 2, 16))
+>P : Symbol(P, Decl(c.ts, 0, 25))
+
