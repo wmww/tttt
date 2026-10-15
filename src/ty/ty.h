@@ -1005,6 +1005,10 @@ struct Checker {
     u32 painted_kept_count;
     u32 painted_kept_cap;
     double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
+    // Its share's checkers program_typecheck() dropped before it (Program.checker_memory) and the most any of them
+    // held (checker_memory()), for tttt --time
+    u32 recycles;
+    u64 peak_memory;
     u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
     // What the walk of the file being checked meets and tsc checks after the file's statements, in that order (tsc's
     // checkNodeDeferred and checkDeferredNodes): function expression bodies (arrows, object literal methods and
@@ -1184,6 +1188,10 @@ struct Checker {
 // checker.c
 Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
+// What the checker holds, in bytes: its arena and its tables (the intern and link tables, the relation caches, the
+// type directory). Not the LazyMemo pages, whose number depends on how the parser threads numbered the slots: this is
+// what program_typecheck() recycles a checker by, which must depend only on what the checker did
+u64 checker_memory(Checker const* me);
 // Checks something after the statements of the file being checked (Checker.defer_checks)
 void checker_defer(Checker* me, DeferredCheckKind kind, void const* node);
 // A function expression's body is checked after the statements of the file being checked, from the first time the

@@ -124,6 +124,8 @@ typedef struct Program {
     VecSourceFilePtr check_files;
     u32* file_shares; // malloc'd: the checker of each file of check_files (see share_of())
     u32 requested_checkers; // program_set_checkers()
+    u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
+    u64 checker_budget; // While typechecking: what each checker may hold (checker_memory split between them)
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
     bool emit_declarations; // program_set_emit_declarations()
@@ -188,6 +190,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .binder = binder_new(errs),
         .options = compiler_options_init(),
         .symlinks = symlink_cache_new(),
+        .checker_memory = UINT64_MAX,
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
@@ -3206,6 +3209,11 @@ void program_set_checkers(Program* me, u32 count) {
     my requested_checkers = count;
 }
 
+void program_set_checker_memory(Program* me, u64 bytes) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my checker_memory = bytes;
+}
+
 void program_set_emit_declarations(Program* me, bool emit) { my emit_declarations = emit; }
 
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
@@ -3256,6 +3264,9 @@ static u32 share_of(Program const* me, u32 index) {
 // are only complete in the checker that walked the file: one that didn't would type an expression without the
 // contextual type its parent gives it (see "Expressions" in documentation.md)
 Checker* program_checker_of(Program const* me, SourceFile const* file) {
+    for (u32 c = 0; c < my checker_count; c++) {
+        panic_if(my checkers[c]->recycles, "program_checker_of() after recycled checkers (program_set_checker_memory())");
+    }
     if (my checker_count <= 1) return my checker;
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my check_files) {
@@ -3352,17 +3363,60 @@ static void print_file_time(char const* what, struct timespec start, SourceFile 
     fprintf(stderr, "file time: %10.1f ms %s %s\n", ms, what, cstr_str(&source->canonical_path));
 }
 
+// After a segment's files (from..to of check_files) are checked, in the checker that checked them: unused_report() reads
+// the marks the checker made on members while checking, the declaration walk the types it inferred
+static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from, u32 to) {
+    for (u32 at = from; at < to; at++) {
+        if (share_of(me, at) != c) continue;
+        SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        struct timespec file_start;
+        if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
+        if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
+        if (my declaration_errs && !source->is_stdlib) {
+            declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+        }
+        if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
+    }
+}
+
+// A fresh checker for share c, reporting where the last one did
+static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
+    Checker* checker = checker_new(me);
+    checker->errs = old->errs;
+    checker->recycles = old->recycles + 1;
+    checker->peak_memory = old->peak_memory;
+    checker_drop(old);
+    my checkers[c] = checker;
+    checker_make_current(checker);
+    ty_init_global_types(checker);
+    return checker;
+}
+
+// Checks share c of the files. With a checker memory budget the share is checked in segments: once the checker holds
+// more than the budget after a file, the segment's files get their after-check pass and the next file starts in a fresh
+// checker (tsgo keeps its checkers, but nothing tttt reports depends on a checker's history, plan 62: what bun does,
+// plan 67). A fresh checker builds the global and library types its files use again: a few milliseconds on vscode,
+// ~100 ms where the files share one big type graph (type-fest, drizzle). Nothing cheap predicts that cost (what the
+// segment's first file held doesn't: those are the default library's declarations), so the budget alone decides.
+// Where the cuts fall depends only on the checker's own work on its own files, not on the threads
+#define CHECKER_MEMORY_FLOOR ((u64)128 << 20)
+
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
     Checker* checker = my checkers[c];
     checker_make_current(checker);
     ty_init_global_types(checker);
-    u32 index = 0;
-    for_each (i, vec_source_file_ptr, &my check_files) {
-        SourceFile* source = *i;
-        if (share_of(me, index++) != c) continue;
-        checker->file_order = index - 1;
+    u32 total = (u32)vec_source_file_ptr_size(&my check_files);
+    u32 last = 0; // The last file of the share
+    for (u32 at = 0; at < total; at++) {
+        if (share_of(me, at) == c) last = at;
+    }
+    u32 segment_start = 0;
+    for (u32 at = 0; at < total; at++) {
+        if (share_of(me, at) != c) continue;
+        SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        checker->file_order = at;
         checker->flow_analysis_disabled = false;
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
@@ -3379,23 +3433,20 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->defer_checks = false;
         checker->checking_file = nullptr;
         if (debug_env.file_times) print_file_time("check", file_start, source);
+        if (my checker_budget == UINT64_MAX || at == last) continue;
+        u64 held = checker_memory(checker);
+        if (held > checker->peak_memory) checker->peak_memory = held;
+        if (held <= my checker_budget) continue;
+        check_segment_after(me, checker, c, segment_start, at + 1);
+        checker = checker_recycled(me, checker, c);
+        segment_start = at + 1;
     }
-    // After its files are checked: the checker marks members it reads
-    index = 0;
-    for_each (i, vec_source_file_ptr, &my check_files) {
-        SourceFile* source = *i;
-        if (share_of(me, index++) != c) continue;
-        struct timespec file_start;
-        if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
-        if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
-        if (my declaration_errs && !source->is_stdlib) {
-            declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
-        }
-        if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
-    }
+    check_segment_after(me, checker, c, segment_start, total);
+    u64 held = checker_memory(checker);
+    if (held > checker->peak_memory) checker->peak_memory = held;
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
     // unchecked (not a referenced project's, which that project reports)
-    index = 0;
+    u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || source->is_js) continue;
@@ -3491,6 +3542,10 @@ void program_typecheck(Program* me) {
     u32 count = my requested_checkers ? my requested_checkers : auto_checker_count(me);
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
+    // (Split between the checkers, but at least CHECKER_MEMORY_FLOOR each when there's that much: a fresh checker's
+    // warm-ups cost more than the memory saves below it, vscode at 4 checkers of 64 MB +6% wall, of 128 +3%)
+    u64 floor = my checker_memory < CHECKER_MEMORY_FLOOR ? my checker_memory : CHECKER_MEMORY_FLOOR;
+    my checker_budget = my checker_memory == UINT64_MAX ? UINT64_MAX : (my checker_memory / count > floor ? my checker_memory / count : floor);
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     my binder->frozen = true;
     my errs->frozen = true;
@@ -3533,6 +3588,8 @@ void program_typecheck(Program* me) {
         my checkers[c]->errs = my errs;
     }
     free(checker_errs);
+    // (Recycled: the first share's last checker)
+    my checker = my checkers[0];
     checker_make_current(my checker);
 
     error_ctx_remove_unchecked(my errs);

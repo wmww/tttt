@@ -10,6 +10,7 @@ own form (`baseline_tests --checkers K --dump DIR` against a K=1 dump) and the c
   scripts/kdiff.py                 # source sweep, K=16 (~7 min on 4 cores)
   scripts/kdiff.py --dt            # DefinitelyTyped (~4.5 min)
   scripts/kdiff.py -k 4 -f trpc    # some projects, K=4
+  scripts/kdiff.py -k 1 -m 0       # one checker against a fresh checker per file (plan 67)
 """
 import argparse, concurrent.futures, json, os, subprocess, sys
 
@@ -19,10 +20,10 @@ import sweep, sourcesweep
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def run(project, cwd, k, timeout):
+def run(project, cwd, k, timeout, memory='off'):
     try:
         r = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--checkers', str(k),
-                            '-p', project], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
+                            '--checker-memory', memory, '-p', project], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                            env={**os.environ, 'TTTT_NO_REEXEC': '1'})
         return r.stdout.decode(errors='replace'), r.returncode
     except subprocess.TimeoutExpired:
@@ -32,6 +33,9 @@ def run(project, cwd, k, timeout):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-k', type=int, default=16, help='checker count to compare with 1 (default 16)')
+    ap.add_argument('-m', '--memory', default='off',
+                    help="the K run's --checker-memory (0: a fresh checker per file, plan 67; with -k 1 the stronger "
+                         "order-independence oracle)")
     ap.add_argument('--dt', action='store_true', help='the DefinitelyTyped sweep instead of the source sweep')
     ap.add_argument('-f', '--filter', help='regex the project must match (re.search)')
     ap.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
@@ -45,7 +49,7 @@ def main():
 
     def one(job):
         project, cwd = job
-        return project, run(project, cwd, 1, args.timeout), run(project, cwd, args.k, args.timeout)
+        return project, run(project, cwd, 1, args.timeout), run(project, cwd, args.k, args.timeout, args.memory)
 
     differ = 0
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as ex:
@@ -56,7 +60,8 @@ def main():
             la, lb = set(a[0].split('\n')), set(b[0].split('\n'))
             print(json.dumps({'project': project, 'exit': [a[1], b[1]], 'only1': sorted(la - lb)[:8],
                               f'only{args.k}': sorted(lb - la)[:8]}), flush=True)
-    print(f'{differ} / {len(jobs)} projects differ between 1 and {args.k} checkers')
+    memory = f' (--checker-memory {args.memory})' if args.memory != 'off' else ''
+    print(f'{differ} / {len(jobs)} projects differ between 1 and {args.k} checkers{memory}')
     sys.exit(1 if differ else 0)
 
 

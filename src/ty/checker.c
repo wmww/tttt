@@ -529,6 +529,16 @@ void checker_drop(Checker* me) {
     free(me);
 }
 
+u64 checker_memory(Checker const* me) {
+    u64 bytes = my arena.total;
+    bytes += ((u64)my atoms.cap + my types.cap + my intersection_props.cap + my links.cap) * sizeof(InternEntry);
+    bytes += (u64)my node_links.cap * sizeof(LinkEntry);
+    for (u32 i = 0; i < TY_RELATION_COUNT; i++) bytes += (u64)my relations[i].cap * (sizeof(u64) + 1);
+    // (lazy_slots_add_type()'s chunks)
+    u64 chunk = sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS;
+    return bytes + ((u64)my next_type_id + chunk / sizeof(Ty const*) - 1) / (chunk / sizeof(Ty const*)) * chunk;
+}
+
 // A bigint keyed by its decimal text, which the type keeps (the value's text may not live as long): an atom's.
 // Out of line: literal_type() is hot and bigints are rare
 [[gnu::noinline]] static Value bigint_normalized(Checker* me, Value const* value) {

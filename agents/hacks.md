@@ -4,6 +4,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 src` finds the code-side markers; every significant one has an entry here.
 
 ## Global state, memory, parallelism
+- `check_share()` / `checker_memory()` (`program.c`, `ty/checker.c`) (permanent, plan 67): recycling relies on no
+  diagnostic depending on a checker's history, which is false in a few places that tsgo shares
+  (undefinedProperties member order: 4 vscode `.d.ts`) and a few it doesn't (bugs/sourcesweep_checker.md "History
+  dependences recycling exposes"). `checker_memory()` leaves out the LazyMemo pages so the cut points don't depend on
+  the parser threads' slot numbering: they are real memory the budget doesn't see. The budget policy (256 MB total,
+  128 floor) is a wall-time compromise measured on 8 corpora, no warm-up model.
 - `reexec_with_huge_pages` (`main.c`) (permanent: 5-20% wall time until the AST has arenas that madvise like the
   checker's, `bugs/perf_leads.md`): glibc reads `GLIBC_TUNABLES` only at startup, so tttt re-execs itself with
   `glibc.malloc.hugetlb=1` (not under valgrind or `TTTT_NO_REEXEC`).

@@ -3,7 +3,8 @@
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
 every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
 (scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
-(scripts/kdiff.py, the suite's --dump at 1 and 16 checkers).
+(scripts/kdiff.py, the suite's --dump at 1 and 16 checkers) and of the checker's history (a fresh checker per file,
+--checker-memory 0, plan 67).
 
   scripts/oracles.py                  # everything (~15 min)
   scripts/oracles.py --quick          # suite and corpora only (~1 min)
@@ -97,8 +98,18 @@ def kdiff():
     print(f'kdiff (1 vs 16 checkers): suite {suite_differ} files differ, sources ' + (m.group(0) if m else '?') +
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
 
+def recycle():
+    # (Plan 67: a fresh checker per file, --checker-memory 0, against one checker that never recycles, on the source
+    # sweep: what a file's diagnostics depend on beyond its own checks, a stronger order-independence oracle than K)
+    out = run(['scripts/kdiff.py', '-k', '1', '-m', '0'], timeout=3600)
+    m = re.search(r'(\d+ / \d+) projects differ', out)
+    projects = [re.search(r'"project": "([^"]+)"', l).group(1) for l in out.splitlines() if l.startswith('{')]
+    print(f'recycle (fresh checker per file vs one): sources {m.group(1) if m else "?"} differ' +
+          (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
+
 ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
-           'perf': perf, 'dts': dts, 'kdiff': kdiff}
+           'perf': perf, 'dts': dts, 'kdiff': kdiff,
+           'recycle': recycle}
 
 def main():
     ap = argparse.ArgumentParser()

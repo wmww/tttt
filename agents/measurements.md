@@ -9,6 +9,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 67 stage 1, checker recycling (2026-10-15, todo entry 1)
+Default `--checker-memory 256` (split between the checkers, at least 128 MB each). Peaks: vscode K1 4190 -> **2575**
+MB (+2.4% wall), T4 4786 -> **2858** (+3.6%); type-fest K1 738 -> 380 (+16% wall), T4 857 -> 603; effect T4 797 ->
+717; drizzle T4 648 -> 589; zod K1 443 -> 382; webpack, vue, tsc unchanged (table in plans/67). Suite 13660 / 13672,
+0 lost; every oracle as in the triage below except dtsdiff files 74466 -> 74462 (vscode's undefinedProperties order),
+plus the new `recycle` oracle (fresh checker per file): source sweep 4 / 3363 differ (inbox-zero, lucide, sequelize
+x2). **Instructions (callgrind, `--checkers 1`, so recycling at 256 MB)**: tsc 4.724, type-fest **23.403 (+21%)**,
+valibot 3.510, react 1.510, nest 1.188, webpack 10.047, zod **5.426 (+6.5%)**, xstate 2.767, drizzle **6.893
+(+14%)**, vue 6.640, effect **10.616 (+2.2%)**, vscode **96.585 (+7.3%)**, excalidraw 7.921, tanstack-router 5.413 G.
+That's the fresh checkers' warm-ups, in the corpora that recycle (type-fest 2 recycles, drizzle 1, vscode 9). Compare
+instructions with `--checker-memory off` to see the checker's own work.
+
 ## Triage (2026-10-15, todo entry 10)
 Suite **13660 / 13672** (+3 own tests: an unused redeclaration, the binary marker as a token), 0 lost. Every other
 oracle identical to entry 9 below (corpora all 0/0 but vue 0/2, DT 8594 / 8595, `$ExpectType` 68639, flagflip 18 / 6
@@ -48,7 +60,7 @@ valibot 3.456, react 1.506, nest 1.185, webpack 10.000, zod 5.075, xstate 2.726,
 
 ## tttt vs bun on this machine, checker recycling (2026-10-14, plan 67 planning, 70ffccdc)
 Bun 1.4.3 runs here (`npm pack @oven/bun-linux-x64@1.4.3`). Peak MB / wall s, `/usr/bin/time`; B = the prototype's
-recycle budget (`agents/plans/67_recycling_prototype.diff`, not in the tree). The full table (B=32..256, T4) is in
+recycle budget (the prototype's arena-only measure; stage 1's results are above). The full table (B=32..256, T4) is in
 plans/67_memory_against_bun.md.
 | corpus | tttt K1 | K1 B=128 | tttt T4 | T4 B=128 | bun-1 | bun-4 |
 |---|---|---|---|---|---|---|

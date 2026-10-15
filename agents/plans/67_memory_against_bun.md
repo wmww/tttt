@@ -15,7 +15,7 @@ levelling off): ~190 KB per checked file that is never read again. vscode K1: 17
 names, **4261** peak (checker arena 1534 MB, 2.4M types, the rest its malloc tables). At T4 the arena sum is 1.82 GB
 (+19% over K1: the duplication across checkers is small next to what each one accumulates).
 
-**Recycling the checker** (prototype: `67_recycling_prototype.diff`, env `TTTT_RECYCLE_MB=B`: at a file boundary,
+**Recycling the checker** (the prototype, env `TTTT_RECYCLE_MB=B`, since productised as stage 1: at a file boundary,
 once the checker's arena passes B MB, run the unused/declaration pass for the files it checked, drop it, continue
 the share in a fresh `checker_new()`): output **byte-identical on every corpus tried, at every budget, even B=0** (a
 fresh checker per file: tsc 49 recycles, effect 574, webpack 367, drizzle 281; valgrind clean on a small project with
@@ -61,39 +61,39 @@ Bun's whole vscode run (program included) is 1.44 GB.
   and tsgo doesn't do it. **Not now.** Insights decides after stages 1-2 whether bun's remaining gap (program memory,
   ~1.4x) is worth it; the competitive picture after stage 1 is the table above with tttt at 0.7-1.9x bun's memory.
 
-## Stage 1: checker recycling (one session)
-Productise the prototype (the diff applies to 70ffccdc's program.c; read it, don't apply it blind):
-1. **The segment loop** in `check_share()`: files are checked as now; after a file, if the checker's memory is over
-   the budget and the share has files left, run the unused/declaration pass for the segment's files
-   (`unused_report` reads member marks the checker made while checking them, so it must run in that checker, before
-   the drop), drop the checker, `checker_new()` + `ty_init_global_types()` and go on. Recycling depends only on the
-   checker's own allocations on its own fixed file sequence, so it is deterministic whatever the threads do.
-2. **The budget**: measure arena + the malloc tables (LazyMemo pages, intern tables, relation caches; a
-   `checker_memory()` summing them) rather than the arena alone. Pick the policy from the table above and a perfsweep
-   run: a total checker budget split across the checkers (T4 at 4 x 32-64 MB is where effect/webpack/zod get near
-   bun) with a floor, and something for drizzle-like warm-ups (e.g. recycle only once the checker holds more than a
-   few times what it held after its segment's first file). Expose it as a tttt-own option (`--checker-memory MB`, 0 =
-   never recycle; like `--checkers`, not in tsc's CLI) and record the choice in documentation.md.
-3. **Consumers of a file's checker after the check**: `program_checker_of()` (expect_types.c, the suite harness's
-   types/symbols walk: "expression types are only complete in the checker that walked the file") needs the checker
-   that checked the file, which recycling dropped. Don't recycle when the run needs them (the harness, `--expect-types`;
-   a flag on the Program set by those callers). Plan 64's declaration writer must run inside the segment like
-   `declaration_diagnostics_check()` does (say so in plan 64). `my checker` is replaced by checker 0's last one:
-   check every reader of `Program.checker` and of `checkers[]` after typecheck (`--time` prints per checker: print
-   the sum of the dropped ones' times and the recycle count too).
-4. **Errors and painted state**: each share's ErrorCtx outlives its checkers; audit that nothing in an Error points
-   into checker memory (the prototype's valgrind run says no for one project; run `scripts/test.sh -d`-style valgrind
-   on two or three multi-file corpora-like probes with `--checker-memory 0`), and the `painted_kept` bookkeeping.
+## Stage 1: checker recycling (done 2026-10-15, todo entry 1 of the seventeenth window)
+`--checker-memory MB` (`program_set_checker_memory()`; default 256 MB split between the checkers, at least 128 MB
+each; `0` is a fresh checker per file, `off` never recycles; the library/harness default and `--expect-types` never
+recycle). `check_share()` checks a share in segments and runs the after-check pass in the segment's checker
+(`check_segment_after()`: unused, declaration diagnostics and emit). `checker_memory()` is the arena plus the
+intern/link/relation tables and the type directory. It leaves out the LazyMemo pages, whose count depends on how
+the parser threads numbered the slots. `--time` prints each share's recycle count and peak.
+**The warm-up guard was dropped**: a share's first files are the default library's declarations, so "N times
+what the segment's first file held" never stopped a recycle. type-fest's cost comes from one later file
+(`extract-rest-element.ts`, +159 ms in a fresh checker), which no cheap measure predicts.
 
-### Validation
-- Output: `scripts/checkerdiff.py`-style and kdiff-style comparisons with the budget forced to 0 (a fresh checker per
-  file) against no recycling: every corpus byte-identical, `scripts/kdiff.py`'s source sweep and `--dt` with
-  `--checker-memory 0` instead of K (add the mode; it is a stronger order-independence oracle than K=16 and worth
-  keeping in `scripts/oracles.py`). `scripts/threadcheck.sh`, the suite (0 lost: the harness doesn't recycle).
-- Memory/time: the table above rerun at the chosen default (`scripts/bench.sh`), perfsweep (no project slower than
-  ~5% in check time, peak RSS ratio median against tsgo recorded), `scripts/instrcount.sh` (instructions may move
-  either way: fewer caches but warm-ups). Targets: vscode K1 <= 2.6 GB and T4 <= 3.1 GB at <= +5% wall; no corpus
-  above its current peak; type-fest, effect, zod, drizzle at T4 within 1.5x of bun-4.
+At the default (MB = `/usr/bin/time` peak; "off" from the same run):
+
+| corpus | K1 off | K1 | recycles | T4 off | T4 | recycles |
+|---|---|---|---|---|---|---|
+| vscode | 13.18 s / 4190 | 13.50 / **2575** | 9 | 5.80 / 4786 | 6.01 / **2858** | 18 |
+| type-fest | 1.42 / 738 | 1.65 / 380 | 2 | 0.78 / 857 | 0.82 / 603 | 4 |
+| effect | 1.50 / 705 | 1.49 / 534 | 1 | 0.74 / 797 | 0.74 / 717 | 2 |
+| drizzle | 0.80 / 450 | 0.87 / 389 | 1 | 0.50 / 648 | 0.50 / 589 | 2 |
+| webpack | 1.33 / 533 | 1.33 / 534 | 0 | 0.70 / 629 | 0.70 / 630 | 0 |
+| zod | 0.69 / 443 | 0.72 / 382 | 1 | 0.37 / 521 | 0.37 / 519 | 0 |
+| vue, tsc | unchanged | | 0 | unchanged | | 0 |
+
+Targets met on vscode (K1 <= 2.6 GB, T4 <= 3.1 GB, +2.4% / +3.6% wall). No corpus is above its old peak. type-fest
+K1 costs +16% (two recycles); every T4 run is within +5%. **Not met**: "type-fest, effect, zod, drizzle at T4 within
+1.5x of bun-4": type-fest 1.05x, drizzle 1.7x, zod 1.6x, effect 2.3x. 64 MB per checker gets them closer, but vscode
+pays +6% wall and type-fest/drizzle +8-12%. Plain budget alternatives at T4: 64 MB x4 is 2591 MB at +6% on vscode,
+128 MB x4 2850 at +3%. Below ~600 MB the program and the libraries are most of the peak, which is stage 2's question.
+
+Validation: corpora byte-identical at `--checker-memory 0` against `off` (`scripts/checkerdiff.py -k 1 -m 0`), the
+suite 0 lost (the harness doesn't recycle), valgrind clean on two DT packages and a probe with errors at `0`,
+`scripts/oracles.py` all as before but dtsdiff 74466 -> 74462 (the undefinedProperties order, above) and the new
+`recycle` oracle at 4 / 3363 (bugs/sourcesweep_checker.md "History dependences recycling exposes").
 
 ## Stage 2: the program's memory (one or two sessions)
 Re-measure first (memtrack after names, arenasites, vscode and webpack): stage 1 makes the program ~90% of vscode's

@@ -27,8 +27,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
+// --checker-memory's default (plan 67 stage 1)
+#define DEFAULT_CHECKER_MEMORY_MB 256
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
 
 typedef struct Options {
     bool quiet;   // -q: don't print diagnostics (tsgo's), only the summary
@@ -44,6 +49,7 @@ typedef struct Options {
     bool build; // -b: paths are projects, each checked with everything it references, in build order
     bool stop_build_on_errors; // --stopBuildOnErrors
     u32 checkers; // --checkers
+    u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
@@ -488,6 +494,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_set_realpath(program, real_path_of, nullptr);
     program_set_file_size(program, file_size_of, nullptr);
     program_set_checkers(program, opts->checkers);
+    // (--expect-types reads each file's types in the checker that checked it)
+    if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -676,6 +684,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
                     " MB, ", checker->next_type_id, " types");
+                if (checker->recycles) {
+                    out_eprintln(out, "time: checker ", i, " recycled ", checker->recycles, " times, held at most ",
+                        (i64)(checker->peak_memory >> 20), " MB");
+                }
                 // (Comparable with tsc --extendedDiagnostics's cache sizes, which count failures and nested pairs too)
                 out_eprintln(out, "time: checker ", i, " relation cache: assignable ", checker->relations[TY_RELATION_ASSIGNABLE].len,
                     ", comparable ", checker->relations[TY_RELATION_COMPARABLE].len, ", subtype ",
@@ -1027,6 +1039,9 @@ static void print_help(void) {
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
+        "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
+        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) "; 0: a fresh checker per file, off: never).\n"
+        "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
         "                most K of them)\n"
         "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
@@ -1045,7 +1060,10 @@ static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
     // Every core parses and binds; checking uses at most `checkers` of them (0: one per core, fewer for a small program,
     // auto_checker_count(): the output doesn't depend on the count, plan 62)
-    Options opts = { .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores };
+    Options opts = {
+        .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores,
+        .checker_memory = (u64)DEFAULT_CHECKER_MEMORY_MB << 20,
+    };
     bool single_threaded = false;
     // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it
     // (TS5093): every such error is reported, then nothing is done
@@ -1110,6 +1128,11 @@ static int run(int argc, const char** argv) {
             return 1;
         } else if (streq(argv[i], "--checkers") && count_value(argc, argv, i)) {
             opts.checkers = (u32)atoi(argv[++i]);
+        } else if (streq(argv[i], "--checker-memory") && i + 1 < argc &&
+            (streq(argv[i + 1], "off") || (isdigit((unsigned char)argv[i + 1][0]) && atoll(argv[i + 1]) >= 0))
+        ) {
+            i++;
+            opts.checker_memory = streq(argv[i], "off") ? UINT64_MAX : (u64)atoll(argv[i]) << 20;
         } else if (streq(argv[i], "--threads") && count_value(argc, argv, i)) {
             opts.threads = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--builders") && count_value(argc, argv, i)) {

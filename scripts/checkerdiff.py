@@ -10,6 +10,7 @@ byte-identical.
   scripts/checkerdiff.py                   # every corpus, K=4
   scripts/checkerdiff.py -k 2 webpack zod  # some corpora, K=2
   scripts/checkerdiff.py --file x.ts       # one file (or a -p directory) instead of the corpora
+  scripts/checkerdiff.py -k 1 -m 0         # a fresh checker per file against one that never recycles
 """
 import argparse
 import collections
@@ -25,9 +26,10 @@ from realworld import CORPORA
 HEADER = re.compile(r'^(\S.*?:\d+:\d+ - )?error TS\d+: ')
 
 
-def run(options, checkers, timeout):
+def run(options, checkers, timeout, memory='off'):
     build = list(options[:2]) if options[:1] == ['-b'] else []  # (-b first: tsc's TS6369)
-    proc = subprocess.run(['./release/tttt', *build, '--pretty', 'true', '--keep-going', '--checkers', str(checkers), *options[len(build):]],
+    proc = subprocess.run(['./release/tttt', *build, '--pretty', 'true', '--keep-going', '--checkers', str(checkers),
+                           '--checker-memory', memory, *options[len(build):]],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     return re.sub(r'\x1b\[[0-9;]*m', '', proc.stdout.decode(errors='replace'))
 
@@ -51,10 +53,10 @@ def diagnostics(text):
     return out
 
 
-def compare(name, options, k, timeout, examples):
+def compare(name, options, k, timeout, examples, memory='off'):
     one = run(options, 1, timeout)
-    many = run(options, k, timeout)
-    again = run(options, k, timeout)
+    many = run(options, k, timeout, memory)
+    again = run(options, k, timeout, memory)
     d1, dk = diagnostics(one), diagnostics(many)
     c1, ck = collections.Counter(d1), collections.Counter(dk)
     lost, gained = c1 - ck, ck - c1
@@ -72,6 +74,9 @@ def main():
     ap.add_argument('corpora', nargs='*', help='corpora (default: all of them but zod-root)')
     ap.add_argument('-k', type=int, default=4, help='checker count to compare with 1 (default 4)')
     ap.add_argument('--file', help='a file or -p project instead of the corpora')
+    ap.add_argument('-m', '--memory', default='off',
+                    help='--checker-memory of the K runs (default off; 0: a fresh checker per file, plan 67) against '
+                         'one checker that never recycles')
     ap.add_argument('--examples', type=int, default=5)
     ap.add_argument('--timeout', type=int, default=300)
     args = ap.parse_args()
@@ -79,12 +84,12 @@ def main():
     ok = True
     if args.file:
         options = ['-p', args.file] if os.path.isdir(args.file) or args.file.endswith('.json') else [args.file]
-        ok = compare(args.file, options, args.k, args.timeout, args.examples)
+        ok = compare(args.file, options, args.k, args.timeout, args.examples, args.memory)
     else:
         subprocess.run(['thirdparty/ensure-corpora.sh'], check=True, stdout=subprocess.DEVNULL)
         for name in args.corpora or [c for c in CORPORA if c != 'zod-root']:
             path = os.path.relpath(os.path.realpath(CORPORA[name]))
-            ok = compare(name, ['-p', path], args.k, args.timeout, args.examples) and ok
+            ok = compare(name, ['-p', path], args.k, args.timeout, args.examples, args.memory) and ok
     sys.exit(0 if ok else 1)
 
 

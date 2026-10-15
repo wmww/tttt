@@ -19,9 +19,8 @@ ratio 1.62, dts 1345 / 1408, dtsdiff 940 / 1233 projects (74466 / 76294 files). 
 completion, then pay down what the suite push left (plan 71), plan core scaling (plan 72). **The suite's last 12 are
 off the table** (vision.md): no session works on them unless real code shows the same mechanism.
 
-1. **Plan 67 stage 1**: checker recycling (`--checker-memory MB`, the budget policy, `--checker-memory 0` as an
-   order-independence oracle in `scripts/oracles.py`). Targets in the plan: vscode K1 <= 2.6 GB, T4 <= 3.1 GB at
-   <= +5% wall.
+1. Done (plan 67 stage 1): `--checker-memory` (default 256 MB, at least 128 per checker). vscode K1 4190 -> 2575 MB,
+   T4 4786 -> 2858 at +2-4% wall; type-fest K1 +16% wall and +21% instructions; oracle `recycle` 4 / 3363.
 2. **Plan 64 stage 4**: the CLI writes `.d.ts` (output paths, noEmitOnError, emit option diagnostics, `-b`,
    `clidiff.py`'s emit mode), inside plan 67's recycling segments; the dts component joins the headline count.
 3. **Plan 67 stage 2**, first session: re-measure the program, binder scopes (~-100 MB on vscode).

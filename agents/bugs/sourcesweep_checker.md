@@ -315,3 +315,18 @@ subtype pass). Left:
   generic function), not reduced further.
 - tttt misses tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for
   `import('<abs path>/node_modules/dompurify').Config` (a CJS package's default namespace) in a probe; not looked at.
+
+## History dependences recycling exposes (plan 67 stage 1, 2026-10-15)
+`scripts/kdiff.py -k 1 -m 0` (a fresh checker per file against one that never recycles; `scripts/oracles.py`'s
+`recycle`) lists 4 / 3363 source sweep projects, where K=16 lists 1. In each, the never-recycling run is the one that
+matches tsc. The default budget (256 MB) doesn't recycle any of them, so the sweeps don't show them:
+- **inbox-zero/apps/web**: the `x?: undefined` member order of widened object literals (tsgo's per-checker
+  undefinedProperties cache, `widen_object_literal()`'s KEY_UNDEFINED_PROPERTY). tsgo depends on its history here too.
+  The same mechanism changes 4 vscode `.d.ts` files at the default budget (dtsdiff 74466 -> 74462:
+  `terminal/test/browser/xterm/recordings/rich/windows11_pwsh7_*.d.ts`, `data?:`/`id?: undefined` swapped). Accepted:
+  only a checker's history can reproduce it.
+- **sequelize, sequelize/packages/core**: TS7022 on `models` (sequelize-typescript.ts:335) is lost with a fresh checker
+  per file. That's circularity that depends on what an earlier file resolved first. Reduce it with `TTTT_CHECK_ONLY` /
+  `TTTT_DEBUG_CYCLE=1`: does tsgo report it on that file alone?
+- **lucide**: the elaboration line `Type 'RenderedElement' is not assignable to type 'ReactNode'` is missing with a
+  fresh checker per file (a relation cached or a type made earlier changes the elaboration).
