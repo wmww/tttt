@@ -3132,11 +3132,24 @@ static int resolve_order_cmp(void const* a, void const* b) {
 // The resolve walk of every file (plan 45). TypeScript files are walked in any order, on --threads threads, each into a
 // ResolveShard of its own; then, in program order, each TypeScript file's shard is replayed and merged and each
 // JavaScript file walked. The order of everything that reaches the binder is the same for any thread count
+// TTTT_RESOLVE_TIMES: the time since *last under the given name on stderr, and *last reset
+static void resolve_step_done(char const* name, double* last) {
+    if (!debug_env.resolve_times) return;
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    double now = (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+    if (*last) eprintln("resolve: ", name, " ", now - *last, " ms");
+    *last = now;
+}
+
 static void program_resolve_walk(Program* me) {
     isize file_count = vec_source_file_ptr_size(&my source_files_ordered);
     ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
     ResolveLane lane = { .program = me, .shards = shards };
+    double last = 0;
+    resolve_step_done("", &last);
     binder_mark_serial_resolves(my binder);
+    resolve_step_done("mark serial resolves", &last);
     lane.files = c_new_n(SourceFile*, file_count ? file_count : 1);
     lane.shard_of = c_new_n(u32, file_count ? file_count : 1);
     // Biggest first, so that one big file doesn't start last
@@ -3182,11 +3195,13 @@ static void program_resolve_walk(Program* me) {
         pthread_attr_destroy(&attr);
     }
     my errs->frozen = false;
+    resolve_step_done("parallel walk", &last);
     for (isize i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
         if (resolves_in_parallel(source)) resolve_shard_merge(&shards[i]);
         else resolve_file(source, my errs);
     }
+    resolve_step_done("shard merge and serial files", &last);
     free(lane.files);
     free(lane.shard_of);
     free(shards);
@@ -3262,6 +3277,8 @@ void program_resolve_names(Program* me) {
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
     program_order_stdlib_first(me);
+    double last = 0;
+    resolve_step_done("", &last);
 
     // Declare: symbols, the scopes of files and namespaces, exports
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -3288,6 +3305,7 @@ void program_resolve_names(Program* me) {
     binder_declare_global_augmentations(my binder);
     program_check_builtin_global_names(me);
     binder_check_ambient_module_exports(my binder, my errs);
+    resolve_step_done("declare", &last);
 
     if (my options.no_resolve) {
         for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -3333,6 +3351,7 @@ void program_resolve_names(Program* me) {
     }
 
     program_mark_init_resolved_imports(me);
+    resolve_step_done("between declare and link", &last);
     // Link: what every module name refers to (ambient modules are all declared now), `export *` tables and every alias. Nothing writes to a symbol after this
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
@@ -3342,14 +3361,18 @@ void program_resolve_names(Program* me) {
     }
     binder_link(my binder);
     binder_check_export_star_conflicts(my binder, my errs);
+    resolve_step_done("link", &last);
 
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way
     program_resolve_walk(me);
+    resolve_step_done("walk", &last);
 
     binder_resolve_remaining_aliases(my binder);
+    resolve_step_done("remaining aliases", &last);
 
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
+    resolve_step_done("comment directives", &last);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

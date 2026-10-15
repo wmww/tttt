@@ -9,6 +9,11 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 72, where the serial time is (2026-10-15, todo entry 8)
+The phase split per thread count (vscode, webpack, effect), the loader's own non-parse work (vscode ~350 ms at T1,
+194k `newfstatat` for 34k paths), declare+link (vscode 150 ms), check work at K = 1 / 4 / 12 (+8-17%) and per-checker
+imbalance at K12 (1.3-3.1x the mean): the table is in plans/72_core_scaling.md, which is what a re-measurement replaces.
+
 ## Plan 71, the hacks.md audit (2026-10-15, todo entry 7)
 Suite **13697 / 13739** (lost noImplicitAnyUnionNormalizedObjectLiteral1 and
 declarationEmitAugmentationUsesCorrectSourceFile, argued in tsgo_divergences.md; +1 own test). `scripts/oracles.py`:

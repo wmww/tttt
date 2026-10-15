@@ -95,6 +95,7 @@ You will use scripts to help you run tests, but some scripts and options are mor
 - `TTTT_DEBUG_RELATE=1` logs every top-level type relation query (source, target, ids, result), handy with `scripts/run.sh` or `./release/tttt` on a small file
 - `TTTT_DEBUG_RELATE_NESTED=1` logs every nested pair too (depth, result, whether it made a variance measurement unreliable), printed when each finishes; `TTTT_DUMP_VARIANCES=1` prints measured variances (1 co, 2 contra, 3 bi, 4 independent, +8 unreliable, +16 unmeasurable)
 - `scripts/variancetrace.py PROJECT [--block NAME]`: variance measurements against an instrumented tsgo (built once into /tmp, the shared checkout untouched): which stored variances differ, and with `--block` both sides' comparisons inside NAME's measurement (`TTTT_DEBUG_VARIANCE=1` is tttt's side of the log)
+- `TTTT_RESOLVE_TIMES=1` times name resolution's steps (declare, link, the walk...), `TTTT_LOAD_POOL_STATS=1` the load pool's
 - `TTTT_FILE_TIMES=1` prints each checked file's check time (and its unused/declaration pass) on stderr: `sort -k3 -n -r` finds the file a slow project spends its time in
 - `TTTT_CHECK_ONLY=substring` checks only the files whose path contains it, in a fresh checker (the rest of the program loaded): reproduces at one checker an output that depends on which file a checker saw first (`scripts/kdiff.py`)
 - `TTTT_DEBUG_CONTAINERS=1` prints getSymbolChain's sorted candidate containers (module, specifier) and which one names each symbol: why an `import("...")` names one module rather than another

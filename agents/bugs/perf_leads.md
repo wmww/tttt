@@ -152,7 +152,8 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
   modules and namespace exports shared by files: per-file tables merged in program order (tsc's mergeSymbolTable
   order). Making merged type parameters in declare (tsc makes them in its binder) would also let the files
   `binder_mark_serial_resolves()` walks on the main thread go parallel (18 files / 0.9 MB of vscode). Measure the
-  serial remainder against the wall at vscode scale first: below ~10% isn't worth it.
+  serial remainder against the wall at vscode scale first: below ~10% isn't worth it. Plan 72 (2026-10-15) measured
+  it: vscode 150 ms, webpack 48, ~8% / ~16% at 12 cores: "not now", after the loader's serial work (plan 72 stage 1).
 - **Lexical import pre-scan for the load pool** (tsc's preProcessFile: `import`/`export ... from`, `require(`,
   `import(`, `/// <reference`) so a file's children are queued before its full parse. Discovery is a critical path
   for deep `.d.ts` import chains (nest: 4 workers no faster than 2 in the 2026-09-28 prototype), but the landed pool

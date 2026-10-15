@@ -10,7 +10,8 @@ went to bugs/type_core.md and the member-symbol copies to hacks.md, /tmp's old s
   64 KB of checked source), so on the 12-core machine the corpora check with 12 checkers where they had 4. Please run
   `scripts/bench.sh --checkers "4 8 12 16"` there and paste the output into measurements.md (next to the bun table):
   the per-K wall times and RSS decide whether the default should be capped below the core count (this 4-vCPU box can't
-  measure past 4; the 2026-10-11 bun session saw 12 checkers 30-50% faster than 4 at +13..40% RSS).
+  measure past 4; the 2026-10-11 bun session saw 12 checkers 30-50% faster than 4 at +13..40% RSS). Plan 72 asks for
+  one more line per corpus there (its last section): `TTTT_RESOLVE_TIMES=1 TTTT_LOAD_POOL_STATS=1 ... --time`.
 - **TS5088 missing** (plan 64 stage 4, 2026-10-15): tsgo reports "The inferred type of 'X' references a type with a
   cyclic structure which cannot be trivially serialized" (a declaration diagnostic, it blocks the file's .d.ts) in
   headlessui's `@headlessui-react`/`-vue` (`src/utils/disposables.ts`, `src/machine.ts`, `src/hooks/use-disposables.ts`);

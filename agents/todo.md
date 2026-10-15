@@ -44,12 +44,15 @@ off the table** (vision.md): no session works on them unless real code shows the
    symbols: the symbols baseline's copy gone, the rest is plan 73. Two-pass relations: ~0.5% of relation work, tsc
    does it too in most callers: plan 74 (half a session, deletes failed_log). intersection_source's tsc rule found
    but +8% instructions (hacks.md).
-8. **Plan 72**: planning core scaling (serial remainder after recycling, parallel declare/link: plan or a "no").
+8. Done (plan 72, planning): parallel declare/link is a "not now" (vscode 150 ms, ~8% at 12 cores; webpack 48).
+   The biggest serial part is the loader thread's non-parse work, ~350 ms on vscode (194k stats for 34k paths, no
+   exists cache; imports re-resolved): plan 72 stage 1. Checker imbalance is a lead (1.3-3x the mean at K12).
+   `TTTT_RESOLVE_TIMES=1` times resolve's steps.
 9. **Perf session**: instructions after this window's features (recycling's warm-ups, emit's cost under `--noEmit`
    must be zero), perfsweep, scaleprobe on emit, bench.sh against tsgo and bun-1.4.3 (plan 67's table refreshed).
 10. **Triage.** Then create `claude-stop` in the repo root: the human asked (triage.md, 2026-10-15) to stop the
     agent loop after the next triage session. Leave the insights entry below for whoever restarts the loop.
 11. **Insights.**
 
-After the insights entry (for the next window): what plan 72 decides, plans 73 and 74 (small cleanups), plan 64 stage 6 (chosen: JS sources), plan 58 +
+After the insights entry (for the next window): plan 72 stage 1 (the loader's serial work, one session), plans 73 and 74 (small cleanups), plan 64 stage 6 (chosen: JS sources), plan 58 +
 plan 66 stage 5 if not done, the compact AST question (plan 67 "Not doing").
