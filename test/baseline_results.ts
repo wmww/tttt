@@ -111,7 +111,25 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPackageCopyNotContainer': {
+        errors: true,
+        symbols: true,
+        types: false,
+        dts: true,
+    },
+    'ttttDeclarationPatternPaintedByExport': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationPatternParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationReexportModeMismatch': {
         errors: true,
         symbols: true,
         types: true,
@@ -9717,7 +9735,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitObjectAssignedDefaultExport': {
         errors: true,
@@ -10065,7 +10083,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitSymlinkPaths(target=es2015)': {
         errors: true,
@@ -11135,7 +11153,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'destructuredLateBoundNameHasCorrectTypes': {
         errors: true,
@@ -31885,7 +31903,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'subpathImportsJS': {
         errors: true,
