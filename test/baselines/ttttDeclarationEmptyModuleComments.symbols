@@ -1,0 +1,9 @@
+//// [test/cases/ttttDeclarationEmptyModuleComments.ts] ////
+
+=== ttttDeclarationEmptyModuleComments.ts ===
+
+/**
+ * @license
+ * x
+ */
+

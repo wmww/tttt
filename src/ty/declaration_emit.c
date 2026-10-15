@@ -4909,6 +4909,7 @@ static void emit_file(Walk* me, Container top) {
         if (span_valid(i->span) && i->tag != STATEMENT_SOURCE_DIRECTIVE) last = i;
     }
     if (last) decl_comments_file_end(&my comments, my out, span_end_ptr(last->span));
+    else decl_comments_empty_file_end(&my comments, my out);
 }
 
 static bool js_declaration_diagnostics_wanted(SourceFile const* file);

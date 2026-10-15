@@ -364,9 +364,19 @@ void decl_comments_leading(DeclComments const* me, cstr* out, u32 indent, char c
     write_comments(me, out, indent, &comments, false);
 }
 
+static void file_end_from(DeclComments const* me, cstr* out, char const* pos);
+
 void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end) {
     if (!me || me->off || !decl_comments_in_file(me, end)) return;
-    char const* pos = full_start(me->file, end);
+    file_end_from(me, out, full_start(me->file, end));
+}
+
+void decl_comments_empty_file_end(DeclComments const* me, cstr* out) {
+    if (!me || me->off) return;
+    file_end_from(me, out, me->detached_end ? me->detached_end : text_start(me->file));
+}
+
+static void file_end_from(DeclComments const* me, cstr* out, char const* pos) {
     Comments comments;
     comment_ranges(me->file, pos, false, &comments);
     filter_kept(&comments);

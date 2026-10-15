@@ -117,6 +117,24 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationEmptyFileComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationEmptyFileDetachedComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationEmptyModuleComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationEmptyTupleLines': {
         errors: true,
         symbols: true,

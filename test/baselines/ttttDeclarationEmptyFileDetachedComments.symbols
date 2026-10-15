@@ -1,0 +1,9 @@
+//// [test/cases/ttttDeclarationEmptyFileDetachedComments.ts] ////
+
+=== ttttDeclarationEmptyFileDetachedComments.ts ===
+
+/*! detached */
+
+/** second */
+/** third */
+

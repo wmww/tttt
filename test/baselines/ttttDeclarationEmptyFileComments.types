@@ -1,0 +1,9 @@
+//// [test/cases/ttttDeclarationEmptyFileComments.ts] ////
+
+=== ttttDeclarationEmptyFileComments.ts ===
+
+/**
+ * @license
+ * x
+ */
+

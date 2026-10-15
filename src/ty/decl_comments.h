@@ -37,6 +37,8 @@ void decl_comments_intervening(DeclComments const* me, cstr* out, u32 indent, ch
 void decl_comments_after_delimiter(DeclComments const* me, cstr* out, u32 indent, char const* token, bool prefix_space);
 // The comments after the file's last statement (tsc's emitDetachedCommentsAfterStatementList), `end` its end
 void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end);
+// The same in a file without statements: every comment past the detached ones (the statement list ends at its start)
+void decl_comments_empty_file_end(DeclComments const* me, cstr* out);
 // A node's end from the end of its span, which may take in the whitespace and comments after it: back over those. With
 // `separators`, past the one of them that follows (a member's `;`, which is part of it)
 char const* decl_comments_end(DeclComments const* me, char const* end, char const* separators);
