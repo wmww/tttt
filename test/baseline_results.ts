@@ -117,6 +117,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationElidedAnyComputedMember': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationElidedComputedMember': {
         errors: true,
         symbols: true,
@@ -8999,7 +9005,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitComputedPropertyNameEnum3': {
         errors: true,

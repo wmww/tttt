@@ -2244,6 +2244,12 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
 static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* member) {
     if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr) return true;
     Ty const* key = ty_expr_type(me, member->key.expr);
+    // (One the declaration transformer visits: only a late bound name's, tsgo's visitDeclarationSubtree elides the rest)
+    if (d.transformer_node && d.multiline && !compiler_options()->isolated_declarations) {
+        Expr const* expr = member->key.expr;
+        bool literal = expr->tag == EXPR_LITERAL || (expr->tag == EXPR_UNARY_OP && expr->unary_op->expr.tag == EXPR_LITERAL);
+        return literal || (key->kind == TY_LITERAL && expr_is_entity_name(expr));
+    }
     return key->kind == TY_LITERAL ||
         ((d.types_baseline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
 }
