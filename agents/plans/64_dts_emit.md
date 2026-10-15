@@ -4,6 +4,26 @@ Scoped 2026-10-14 (todo entry 9). **Recommendation: yes, TypeScript sources firs
 about one session each (stage 2 may take two); JavaScript declaration emit only if the data after stage 4 asks for
 it.**
 
+## Status (2026-10-15, todo entry 2 of the seventeenth window): stages 1-4 done
+- **Stage 4 done**: the CLI is `tsc` where the options only emit declarations (main.c's `implicit_no_emit`,
+  `write_declarations()`; documentation.md "What the CLI emits"), `-b` too; `--listEmittedFiles`, noEmitOnError,
+  TS5055/TS5056 blocking, TS5033, a stderr note for JS sources. Output paths were already there (TS5055's
+  `emit_output_path()`); `SourceFile.declaration_output_path` now carries them, and `/// <reference path>` is rewritten
+  relative to it. `--no-write` (tttt's own) and every oracle script passing `--noEmit` / `--no-write`: the `-b` corpora
+  are `emitDeclarationOnly`. **No `.tsbuildinfo`** (decision 5): a later `tsc -b` rebuilds everything, and tttt reads
+  none either; nothing asks for one yet. Writing is sequential (cheap: see measurements.md).
+- **The dts component counts in the headline** since this stage (suite 13611 / 13677; dts 1358 / 1409).
+- **`scripts/clidiff.py --emit`** (bwrap overlay over the checkout, both CLIs emitting as they are): 396
+  `emitDeclarationOnly` source sweep projects, 164 identical (stdout, exit code, written tree), 145 more but for tsgo's
+  `.d.ts.map` files (stage 5), 28 `missing files` (JS sources, stage 6), 52 `file text` (dtsdiff's buckets), 7 checker
+  differences (as under `--noEmit`). `scripts/dtsdiff.py` now compares what the CLI writes (in the same sandbox as tsgo):
+  942 / 1233 projects, 74463 / 76294 files. `dtsdiff.py --kdiff 16` (tttt's writes at 1 and 16 checkers): 3 / 292
+  projects of a quarter sample differ (arktype, discord.js/packages/docgen, ui), all by the order of the optional
+  `x?: undefined`/`never` members of normalized object literal unions: the per-checker undefinedProperties history
+  tsgo shares (plan 67 stage 1 accepted the same in 4 vscode files).
+- Not met from stage 4's list: dtsdiff's ">= 90% of source sweep projects": 76%; the gap is JS sources (83 projects,
+  stage 6) and checker type text (197 projects, todo's real-code entry). Emit's cost: measurements.md.
+
 ## Status (2026-10-15, todo entry 7): stages 1-3 done
 - **Stage 1 done** (2026-10-14). Suite `dts` component (1408 TS tests have declaration outputs, 344 with JS inputs counted
   apart; `baseline_tests --dts`, `scripts/dtsstats.py` buckets failures), `scripts/dtsdiff.py` (1233 projects, 76294

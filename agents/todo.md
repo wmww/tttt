@@ -21,8 +21,9 @@ off the table** (vision.md): no session works on them unless real code shows the
 
 1. Done (plan 67 stage 1): `--checker-memory` (default 256 MB, at least 128 per checker). vscode K1 4190 -> 2575 MB,
    T4 4786 -> 2858 at +2-4% wall; type-fest K1 +16% wall and +21% instructions; oracle `recycle` 4 / 3363.
-2. **Plan 64 stage 4**: the CLI writes `.d.ts` (output paths, noEmitOnError, emit option diagnostics, `-b`,
-   `clidiff.py`'s emit mode), inside plan 67's recycling segments; the dts component joins the headline count.
+2. Done (plan 64 stage 4): the CLI writes `.d.ts` where the options only emit declarations (`-b` too), dts counts in
+   the headline (suite 13611 / 13677, dts 1358 / 1409), `clidiff.py --emit` 164 + 145 (maps only) / 396, dtsdiff
+   through the CLI 942 / 1233. Every oracle script passes `--noEmit` / `--no-write` now (CLAUDE.md).
 3. **Plan 67 stage 2**, first session: re-measure the program, binder scopes (~-100 MB on vscode).
 4. **Plan 67 stage 2**, second session: plan 63 stage 1b items by MB per effort; write vscode's breakdown next to
    bun's so the next insights can decide on the compact AST.

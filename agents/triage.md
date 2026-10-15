@@ -11,3 +11,12 @@ went to bugs/type_core.md and the member-symbol copies to hacks.md, /tmp's old s
   `scripts/bench.sh --checkers "4 8 12 16"` there and paste the output into measurements.md (next to the bun table):
   the per-K wall times and RSS decide whether the default should be capped below the core count (this 4-vCPU box can't
   measure past 4; the 2026-10-11 bun session saw 12 checkers 30-50% faster than 4 at +13..40% RSS).
+- **TS5088 missing** (plan 64 stage 4, 2026-10-15): tsgo reports "The inferred type of 'X' references a type with a
+  cyclic structure which cannot be trivially serialized" (a declaration diagnostic, it blocks the file's .d.ts) in
+  headlessui's `@headlessui-react`/`-vue` (`src/utils/disposables.ts`, `src/machine.ts`, `src/hooks/use-disposables.ts`);
+  tttt writes those files instead (dtsdiff's 2 `extra file` projects). Unimplemented check: `scripts/dtsdiff.py -f
+  headlessui`.
+- **Content-mapped files' declaration outputs** (plan 64 stage 4): tsgo names a `.vue` file's output `x.d.vue.ts`
+  (ChangeToDeclarationExtension with the content mapper's extensions) and emits a supplemental module's
+  (`component.vue.0.d.ts`, with a `/// <reference path>` to it); tttt writes `x.vue.d.ts` and no supplemental one
+  (`contentMapperSupplementalModule`, the suite's dts component).

@@ -14,6 +14,16 @@ and global diagnostics (no file, or in the config) hide the semantic ones (every
 `--keep-going` reports everything. Message text names files by absolute path, like tsc's CLI
 (`source_file_set_message_cwd()`); locations are relative to the working directory.
 
+**What the CLI emits** (plan 64 stage 4): it is `tsc --noEmit` unless the options only emit declarations
+(`emitDeclarationOnly` with `declaration` or `composite`, `noEmit` not set): `apply_compiler_options()` sets `noEmit`
+otherwise (`Options.implicit_no_emit`, not with `-b` or `--noEmit` on the command line). Emitting, `check_files()` writes
+each file's `SourceFile.declaration_output` to its `declaration_output_path` (`write_declarations()`): nothing after any
+diagnostic with noEmitOnError, nothing over a path TS5055/TS5056 blocked (`program_emit_blocked()`), TS5033 for a failed
+write, `--listEmittedFiles`; a JavaScript source's declarations aren't written (a note on stderr: plan 64 stage 6). `-b`
+does the same per project. JavaScript is never emitted, and no `.tsbuildinfo` is written (a later `tsc -b` rebuilds
+everything). `--no-write` emits but writes nothing: **every oracle script passes `--noEmit` with `-p` and `--no-write`
+with `-b`** (the two `-b` corpora are `emitDeclarationOnly`); a new tool must too, or it writes into shared checkouts.
+
 Completely written in C. Code lives in [src](src/). The only dependency is [cleat](https://codeberg.org/sphi/cleat), an MIT-licensed standard library for C which comes with its own vendored copy of the STC container library (no relation to the swc-related project of the same name). It's included in this repository under [thirdparty/cleat](thirdparty/cleat/), and automatically compiled by the build system. `thirdparty/refresh.sh` re-downloads it at the pinned commit.
 
 ### baseline_tests
@@ -77,7 +87,7 @@ The `Program` struct owns the source code buffers and ASTs of all loaded files, 
 Each `Program` owns one (`program_options()`, change it before loading files). Code that parses, resolves names or checks reads the current program's through the thread-local `compiler_options()`, which `program.c` sets around each phase (and its load pool and checker threads for themselves). Most options are parsed but not acted on yet. The resolution options (`baseUrl`, `paths` with the directory they are relative to, `rootDirs`, `typeRoots`, `types`, `moduleSuffixes`, `customConditions`, `config_dir`) are strings and `StrList`s as written; `module_resolution.c` makes them absolute.
 
 ### Test configurations
-A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone. The **dts** component (plan 64) is the declaration files of a test's `.js` baseline (the sections after the input files and the JavaScript outputs, before a `DtsFileErrors` section), compared per file by output name with tttt's `SourceFile.declaration_output`; tests with JavaScript inputs are counted apart (JavaScript declaration emit isn't done), and the component isn't part of the headline pass count yet (`dts: true/false` in `baseline_results.ts` only for tests that have it).
+A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone. The **dts** component (plan 64) is the declaration files of a test's `.js` baseline (the sections after the input files and the JavaScript outputs, before a `DtsFileErrors` section), compared per file by output name with tttt's `SourceFile.declaration_output`, in program order (tsgo's emit order), by output name (the base name of `SourceFile.declaration_output_path`, the path without the test path prefixes with `@fullEmitPaths`); tests with JavaScript inputs are counted apart (JavaScript declaration emit isn't done). A test with the component passes only if it passes too (`dts: true/false` in `baseline_results.ts` only for tests that have it). tttt's own tests keep their `.js` baseline (the dts component) when they set `@declaration` or `@composite`.
 
 ### Symbols, tables, scopes (the binder, `scope.h`/`scope.c`)
 The model is tsc's, because the symbols baseline, the merging rules and the diagnostics encode it:
@@ -376,9 +386,11 @@ those on the node's line, only JSDoc-like and pinned ones (OnlyPrintJSDocStyle) 
 ones. The writer calls them around statements, members, parameters, specifiers; `TyDisplay.comments` around reused and
 printed members (properties printed from types copy their declaration's: setCommentRange). A namespace body drops its members' `export`s unless a
 painted declaration needs an `export {};` (offsets in `Walk.export_offsets`), a module whose output has no import or
-export gets `export {};`. The suite compares it as the `dts` component (`baseline_tests --dts`, the `.js` baselines'
-declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (`tttt --dts-dump DIR`). The
-CLI doesn't emit yet (plan 64 stage 4).
+export gets `export {};`. A preserved `/// <reference path>` names the referenced file's declaration output relative to
+this file's (`SourceFile.declaration_output_path`, which `program_typecheck()` sets for every file when emitting;
+`SourceDirectiveStatement.referenced`). The suite compares it as the `dts` component (`baseline_tests --dts`, the `.js` baselines'
+declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (the CLI's writes, in a sandbox), the
+CLI's stdout, exit code and written tree with `scripts/clidiff.py --emit`.
 
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).

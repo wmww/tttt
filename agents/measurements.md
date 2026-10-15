@@ -9,6 +9,19 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 64 stage 4, the CLI emits declarations (2026-10-15, todo entry 2)
+Suite **13611 / 13677 with the dts component counted** (dts 1358 / 1409; 13660 / 13672 before, without it), 11 gained,
+0 lost. Corpora 0 / 0 but vue 0 / 2, DT sweep 8594 / 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep
+sample 814 / 822, kdiff 1 / 3363 (inbox-zero), recycle 4 / 3363, scenarios 211 / 0 (+1). Declaration emit:
+`dtsdiff.py` (now the CLI's writes) 942 / 1233 projects, 74463 / 76294 files; `clidiff.py --emit` on the 396
+`emitDeclarationOnly` source sweep projects: 164 match, 145 declarationMap only, 28 missing files (JS), 52 file text,
+4 diagnostics + 3 text (as under --noEmit); `dtsdiff.py --kdiff 16 --sample 4` 3 / 292 (member order, see plan 64).
+**Emit's cost** (`--checkers 1 --threads 1 --checker-memory off`, best of 3, against `--noEmit --declaration`):
+drizzle 823 -> 834 ms (+1.3%, 519 files), effect 1511 -> 1568 (+3.8%, 950), valibot 474 -> 495 (+4.4%, 1105).
+**Instructions** (callgrind, `--noEmit` now explicit, unchanged from stage 67's): tsc 4.724, type-fest 23.400, valibot
+3.510, react 1.509, nest 1.188, webpack 10.052, zod 5.427, xstate 2.767, drizzle 6.893, vue 6.639, effect 10.617,
+vscode 96.588, excalidraw 7.921, tanstack-router 5.414 G.
+
 ## Plan 67 stage 1, checker recycling (2026-10-15, todo entry 1)
 Default `--checker-memory 256` (split between the checkers, at least 128 MB each). Peaks: vscode K1 4190 -> **2575**
 MB (+2.4% wall), T4 4786 -> **2858** (+3.6%); type-fest K1 738 -> 380 (+16% wall), T4 857 -> 603; effect T4 797 ->

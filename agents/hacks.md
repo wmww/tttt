@@ -582,9 +582,10 @@ src` finds the code-side markers; every significant one has an entry here.
   a statement are written first and taken back if nothing follows (`w_leading()`/`w_unless_written()`), a class's
   `_base` variable is inserted before them (`Walk.statement_start`). CRLF output is a pass over the finished text.
   Import type options are copied from the source with brace spacing normalized (`display_node_identifier()`, invalid
-  ones `{ with: {} }` by a text check, `import_type_options_valid()`). Preserved `/// <reference path>` directives keep
-  their relative path with the extension changed (tsgo makes it relative to the output directory). The harness
-  matches tttt's files to the baseline's by output name (not tsgo's emit order) and doesn't do `@fullEmitPaths`.
+  ones `{ with: {} }` by a text check, `import_type_options_valid()`). `track_computed_name()` resolves a late bound
+  name from the file's scope (`Walk.scope`), not from the declaration (tsc's enclosingDeclaration): a function's
+  parameters are found by name in `Walk.root`'s function (`{ [field]: T }` in a return type), anything else declared
+  inside a function isn't.
   A cloned template literal type (`display_pseudo()` PSEUDO_STRING_LITERAL) escapes tabs and CRs in the source text
   rather than reprinting the cooked value.
 - Declaration emit's comments (`ty/decl_comments.c`): tsc's printer decides by node positions (`pos`, `end`,
@@ -850,9 +851,12 @@ src` finds the code-side markers; every significant one has an entry here.
   f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
 - `may_have_readonly_member` (check.c): a perf gate before writing through a union of keys, exact where it answers
   false, conservative (true) for unions, intersections, tuples and callables. (permanent: perf, not an approximation)
-- The CLI is `tsc --noEmit` by default (`run()` in main.c adds `--noEmit true` unless the command line names noEmit;
-  not for `-b`, which is tsc -b's and emits). `scenarios.py` drops the emit-only codes (`EMIT_ONLY_CODES`:
-  TS5011/5055/5056) from tsgo's expected output of emitting commands.
+- The CLI is `tsc --noEmit` unless the options only emit declarations (`apply_compiler_options()` sets noEmit when
+  `Options.implicit_no_emit`; not for `-b` or a command line naming noEmit): a config that would emit JavaScript is
+  checked as if it said `noEmit`, which hides its emit-only option diagnostics (TS5055/5056 of the .js paths) and
+  makes noEmitOnError's exit code 2 where tsc's is 1. `scenarios.py` drops the emit-only codes (`EMIT_ONLY_CODES`:
+  TS5011/5055/5056) from tsgo's expected output of emitting commands. No `.tsbuildinfo` is written (plan 64
+  decision 5).
 - `TTTT_TYPESCRIPT_VERSION` (main.c, `--version`) is hand-written: "7.1.0-dev", what the pinned tsgo prints. Bump
   with the oracle.
 - `declaration_diagnostics_wanted()`: JavaScript files only get the full walk with isolatedDeclarations

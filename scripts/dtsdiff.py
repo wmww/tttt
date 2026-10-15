@@ -178,7 +178,7 @@ def tsgo_texts(name, record):
     return texts
 
 
-def run_tttt(name, timeout, mem_gb):
+def run_tttt(name, timeout, mem_gb, checkers=None):
     """tttt as tsc on the project with the overrides, in tsgo's sandbox: {output path relative to the out dir: text}
     (what it wrote, like tsgo's), status"""
     cwd, p = project_spec(name)
@@ -187,7 +187,8 @@ def run_tttt(name, timeout, mem_gb):
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', '--threads', '1', *flags],
+        k = ['--checkers', str(checkers), '--threads', str(min(checkers, 4))] if checkers else ['--threads', '1']
+        proc = subprocess.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', *k, *flags],
                               cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
@@ -325,6 +326,24 @@ def show(args, records):
         sys.stdout.writelines(l if l.endswith('\n') else l + '\n' for l in diff)
 
 
+def kdiff(args, records):
+    projects = sorted(p for p, r in records.items() if 'skip' not in r and (not args.filter or re.search(args.filter, p)))
+    if args.sample:
+        projects = [p for p in projects if zlib.crc32(p.encode()) % args.sample == 0]
+
+    def both(p):
+        one, s1, _, _ = run_tttt(p, args.timeout, args.mem_gb, 1)
+        many, s2, _, _ = run_tttt(p, args.timeout, args.mem_gb, args.kdiff)
+        return p, s1, s2, sorted(f for f in set(one) | set(many) if one.get(f) != many.get(f))
+    differ = 0
+    with concurrent.futures.ThreadPoolExecutor(max(1, args.jobs // 4)) as pool:
+        for p, s1, s2, files in pool.map(both, projects):
+            if files or s1 != s2:
+                differ += 1
+                print(f'{p}: {len(files)} files differ ({s1} / {s2}) {" ".join(files[:4])}', flush=True)
+    print(f'kdiff emit: {differ} / {len(projects)} projects write other declarations at {args.kdiff} checkers')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-f', '--filter', help='regex the project (corpus:NAME or REPO/path) must match (re.search)')
@@ -339,6 +358,8 @@ def main():
     ap.add_argument('--timeout', type=int, default=300)
     ap.add_argument('--mem-gb', type=int, default=16)
     ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--kdiff', type=int, metavar='K', help="tttt's own writes at 1 and K checkers (byte-identical: "
+                    "tsgo's emit doesn't depend on its checker count either), no tsgo")
     args = ap.parse_args()
     global LAST
 
@@ -353,6 +374,8 @@ def main():
         subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
     if args.show:
         return show(args, records)
+    if args.kdiff:
+        return kdiff(args, records)
     skipped = [p for p, r in records.items() if 'skip' in r]
     projects = sorted(p for p, r in records.items() if 'skip' not in r)
     if args.filter:
