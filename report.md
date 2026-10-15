@@ -266,3 +266,24 @@ TypeScript 7.1's content mappers (10 tests), then a second sweep. About 12 tests
 built to a working first version this window. tttt will also start using all cores by default. One session will
 plan a structural fix for memory before we write more memory code. If some test turns out to be impossible to
 pass honestly, we'll report it here with the reason instead of special-casing it.
+
+## 2026-10-15 — insights (after the sixteenth window)
+On your "100% green" request: 13556 of TypeScript 7's 13568 tests pass (99.9%, up from 99.2%). We're stopping
+there until TypeScript 7.1.0 is released and we re-pin. Of the last 12, five are cases where the expected output
+depends on how TypeScript's test harness runs. Their order of work differs from what the real `tsc` does, and the
+real `tsc` agrees with us on those. One is a caching bug in TypeScript itself. Each of the other seven needs a
+multi-session mechanism to pass one test. The last push to fix such tests made our hack list 13% longer. Chasing
+these seven further would mean imitating TypeScript's internals rather than its behaviour. The reasons are in
+`agents/bugs/tsgo_divergences.md`.
+
+Real code improved along with the tests. Every pinned project now matches TypeScript exactly except two missing
+diagnostics in Vue, and 3344 of 3363 real projects match. tttt now uses every core by default, and its output stays
+identical at any thread count. `.d.ts` generation went from nothing to a working writer in three sessions: 97.6% of
+the files it produces across ~1200 real projects are byte-identical to TypeScript's. It doesn't write files from the
+command line yet.
+
+**Next window:** finish both of those. Memory comes first. A prototype that periodically discards and restarts the
+type checker cut VS Code's peak memory by about 40% with identical output, and it gets built properly first. After
+that, `tsc --emitDeclarationOnly`-style output with declaration maps, then trimming the syntax tree's memory. One
+session will audit and pay down the hacks the last test push added, and one will plan how to use 12+ cores well.
+Still open for you: the 12-core benchmark in `agents/triage.md`.

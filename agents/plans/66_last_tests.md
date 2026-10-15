@@ -78,7 +78,7 @@ Component letters are the *failing* components (E errors, S symbols, T types).
      mutuallyRecursiveInference (the harness's JS emit finds the error first; tsgo's CLI matches tttt),
      genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (a tsgo instantiation-cache key
      collision), numericExportNameDeclaration (types baseline only; **weakest argument**: it rests on which entry point
-     resolves a symbol first, i.e. order, with no user-visible difference. Insights should decide whether to accept it).
+     resolves a symbol first, i.e. order, with no user-visible difference; **accepted by the insights of 2026-10-15**).
    - Filed, mechanism known (7): recursiveConditionalTypes (object-literal getter properties typed lazily, ~1 session,
      type_core.md), jsFunctionWithPrototypeNoErrorTruncationNoCrash (three literal checks + syntactic printing of
      parameterless functions + the node builder's per-declaration serialized-type cache, display.md: plan-sized for one
@@ -87,6 +87,8 @@ Component letters are the *failing* components (E errors, S symbols, T types).
      circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (missing_checks.md: two fixes
      tried and dropped), recursiveMappedTypes (part argued, the CLI-visible part in missing_checks.md),
      crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1 (type_core.md).
+**Closed by the insights of 2026-10-15 except stage 5**: the 7 filed mechanisms are worked only if real code shows
+   them or other work makes them cheap (each is plan-sized for one test; the fidelity they'd add is to tsgo artifacts).
 5. After plan 58 (re-pin to 7.1.0 stable, ~2% of the suite moves) the target moves: one fan-out for the new failures.
 
 ## Validation

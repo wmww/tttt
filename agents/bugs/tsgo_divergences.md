@@ -30,6 +30,8 @@ ever exists (the human: out of scope, vision.md):
   types baseline says `any` (probes n5-n9: dropping the defineProperty line gives `2` with declarations, dropping
   `@declaration` gives `any`), so the printed type depends only on which entry point resolved the symbol first.
   Nothing a user sees differs: tsgo's CLI reports no diagnostics either way, like tttt, and the types aren't printed.
+  **Accepted** (insights 2026-10-15): revisit only if plan 64 stage 6 (JS `.d.ts`) makes tttt's declaration walk
+  resolve it first anyway.
 Not in this class after all (tsgo's CLI differs from tttt too): circularBaseTypes and manyCompilerErrorsInTheTwoFiles
 (fixed 2026-10-15); recursiveMappedTypes is partly (below), its CLI-visible part is in missing_checks.md.
 
