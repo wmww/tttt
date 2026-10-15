@@ -1959,6 +1959,39 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     d = brace_open(d);
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, d, i)) continue;
+        // Declaration emit: accessors as written, in their order (the transformer visits the declarations)
+        InterfaceAccessor const* accessor = i->accessor;
+        if (d.multiline && accessor && (i->key.tag == INTERFACE_KEY_NAME || i->key.tag == INTERFACE_KEY_EXPR) &&
+            (span_valid(accessor->getter_name) || span_valid(accessor->setter_name))
+        ) {
+            Span declarations[2] = {
+                i->declaration, vec_span_size(&accessor->declarations) > 1 ? *vec_span_at(&accessor->declarations, 1) : span_null
+            };
+            bool getter_first = span_valid(accessor->getter_name) &&
+                (!span_valid(accessor->setter_name) || accessor->getter_name.buf < accessor->setter_name.buf);
+            for (u32 n = 0; n < 2; n++) {
+                bool getter = (n == 0) == getter_first;
+                if (!span_valid(getter ? accessor->getter_name : accessor->setter_name)) continue;
+                Span declaration = declarations[n];
+                member_begin_node(d, declaration);
+                out(d, getter ? c_sv("get ") : c_sv("set "));
+                if (i->key.tag == INTERFACE_KEY_EXPR) display_node_computed_name(me, d, i->key.expr);
+                else out(d, span_sv(i->key.span));
+                TypeNode const* type = !getter && i->has_write_type ? &accessor->write_type : &i->type;
+                if (getter) {
+                    out_lit(d, "(): ");
+                } else {
+                    out_lit(d, "(");
+                    out(d, span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) : c_sv("value"));
+                    out_lit(d, ": ");
+                }
+                if (type->parsed) display_node(me, d, type);
+                else out(reused_if(d, false), c_sv("any"));
+                if (!getter) out_lit(d, ")");
+                member_end_node(d, declaration, ";,");
+            }
+            continue;
+        }
         member_begin_node(d, i->declaration);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
@@ -4027,6 +4060,67 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 else display_member_name(me, d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
+                member_end_node(d, comments, ";");
+            }
+            continue;
+        }
+        // Declaration emit: a class's accessors print as they are declared, a getter then a setter (tsc's
+        // addPropertyToElementList: an accessor of a class without a property declaration)
+        PropDeclRare const* accessors = prop_decl_rare(declared->decl);
+        if (d.multiline && d.tracker && !prop->synthetic && accessors->class_auto_accessor && type != ty_intrinsic(me, TY_ERROR)) {
+            // (An auto-accessor's are made up: tsc's fakeGetterDeclaration and its setter of `arg`)
+            Span comments = prop_comment_span(d, prop, 0);
+            TypeNode const* node = prop != declared && mentions(me, type, d.fresh_params) ? nullptr : declared->decl->node;
+            member_begin_node(d, comments);
+            out_lit(d, "get ");
+            display_member_name(me, d, prop);
+            out_lit(d, "(): ");
+            display_annotated(me, d, node, type, false);
+            member_end_node(d, comments, ";");
+            member_begin(d);
+            out_lit(d, "set ");
+            display_member_name(me, d, prop);
+            out_lit(d, "(arg: ");
+            ty_display(me, d, type);
+            out_lit(d, ")");
+            member_end(d);
+            continue;
+        }
+        if (d.multiline && d.tracker && !prop->synthetic && !declared->synthetic && (declared->flags & PROP_ACCESSOR) && !(declared->flags & PROP_FIELD) &&
+            (accessors->class_getter || accessors->class_setter) && type != ty_intrinsic(me, TY_ERROR)
+        ) {
+            bool fresh = prop != declared && mentions(me, type, d.fresh_params);
+            if (accessors->class_getter) {
+                Span comments = prop_comment_span(d, prop, 0);
+                member_begin_node(d, comments);
+                out_lit(d, "get ");
+                display_member_name(me, d, prop);
+                out_lit(d, "(): ");
+                FunctionImpl const* getter = accessors->class_getter;
+                display_annotated(me, d, fresh || !getter->ret_explicit ? nullptr : &getter->ret, type, false);
+                member_end_node(d, comments, ";");
+            }
+            if (accessors->class_setter) {
+                Span comments = prop_comment_span(d, prop, accessors->class_getter ? 1 : 0);
+                member_begin_node(d, comments);
+                out_lit(d, "set ");
+                display_member_name(me, d, prop);
+                out_lit(d, "(");
+                FunctionImpl const* setter = accessors->class_setter;
+                Ty const* write = prop_write_type(me, prop);
+                if (vec_function_arg_size(&setter->args)) {
+                    Binding const* param = &vec_function_arg_at(&setter->args, 0)->initializer.binding;
+                    cstr name = cstr_null;
+                    append_binding_pattern(&name, param);
+                    out(reused_if(d, true), cstr_sv(&name));
+                    cstr_drop(&name);
+                    out_lit(d, ": ");
+                    display_annotated(me, d, fresh || !param->has_explicit_type ? nullptr : binding_type(param), write ? write : type, false);
+                } else {
+                    out_lit(d, "arg: ");
+                    ty_display(me, d, write ? write : type);
+                }
+                out_lit(d, ")");
                 member_end_node(d, comments, ";");
             }
             continue;

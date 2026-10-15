@@ -574,6 +574,11 @@ typedef struct PropDeclRare {
     Symbol const* spread_namespace; // The namespace or module whose export spread_variable is (symbols baseline)
     // A type member getter with a body (TS1183) and no return annotation: its type is the body's return type
     FunctionImpl const* getter_body;
+    // A class accessor's get and set declarations: declaration emit prints the property as them in an object type (tsc's
+    // addPropertyToElementList)
+    FunctionImpl const* class_getter;
+    FunctionImpl const* class_setter;
+    bool class_auto_accessor; // `accessor x`: printed as a getter and a setter the same way
 } PropDeclRare;
 
 typedef struct PropDecl {

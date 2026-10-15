@@ -1574,6 +1574,7 @@ static void builder_add_class_items(
                 prop->thisless = binding_is_thisless(i->field.has_explicit_type, &i->field.explicit_type,
                     i->field.value.tag != EXPR_IMPLICIT_ANY);
                 if (!i->field.is_auto_accessor) prop->flags |= PROP_FIELD;
+                else prop_decl_rare_mut(me, prop->decl)->class_auto_accessor = true;
                 if (i->field.is_optional) prop->flags |= PROP_OPTIONAL;
                 if (i->field.is_readonly) prop->flags |= PROP_READONLY;
             }   break;
@@ -1620,6 +1621,13 @@ static void builder_add_class_items(
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
                     if (has_getter) prop->flags |= PROP_CLASS_GETTER;
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                        ClassItem const* other = it.item;
+                        if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
+                        PropDeclRare* rare = prop_decl_rare_mut(me, prop->decl);
+                        if (other->method.accessor == CLASS_ACCESSOR_GET && !rare->class_getter) rare->class_getter = &other->method.func;
+                        if (other->method.accessor == CLASS_ACCESSOR_SET && !rare->class_setter) rare->class_setter = &other->method.func;
+                    }
                     if (has_getter) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
