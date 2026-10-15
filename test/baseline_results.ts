@@ -81,6 +81,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeclarationAbstractClassLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationAugmentedModuleName': {
         errors: true,
         symbols: true,
@@ -40602,7 +40608,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'classDoesNotDependOnPrivateMember': {
         errors: true,
