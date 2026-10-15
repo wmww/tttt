@@ -2151,10 +2151,38 @@ static void check_late_indexes(Walk* me, ClassDecl const* cls) {
     free(members);
 }
 
+// A JavaScript class's `this.x = v` members become properties (tsgo's collectThisPropertyAssignments), whose type the
+// pseudochecker never infers (typeFromExpandoProperty: NoResult without a JSDoc type): under isolatedDeclarations each
+// is TS9013 at its first assignment. (A base class's members that one overrides: not handled, ReportInferenceFallback
+// on the class)
+static void check_js_this_properties(Walk* me, ClassDecl const* cls) {
+    Symbol const* symbol = cls->symbol;
+    SymbolTable const* members = symbol ? symbol_rare(symbol)->members : nullptr;
+    for (u32 i = 0; members && i < members->count; i++) {
+        Symbol const* member = members->entries[i].symbol;
+        if (!member->decl_count) continue;
+        SymbolDecl const* decl = &member->decls[0];
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT ||
+            (decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD)
+        ) {
+            continue;
+        }
+        csview name = symbol_entry_name(&members->entries[i]);
+        if (csview_equals(name, "constructor") || class_decl_find_member(cls, name, false) || symbol_decl_jsdoc_type(decl)) continue;
+        Expr const* value = decl->node;
+        Span whole = decl->full;
+        if (value && span_source(expr_outer_span(value)) == span_source(whole) && span_end_ptr(expr_outer_span(value)) > span_start_ptr(whole)) {
+            whole = span_make_in(whole, span_start_ptr(whole), span_end_ptr(expr_outer_span(value)));
+        }
+        report(me, whole, 9013, msg_expression);
+    }
+}
+
 static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     check_late_indexes(me, cls);
+    if (my file->is_js) check_js_this_properties(me, cls);
     for_each (i, vec_class_item, &cls->items) {
         if (is_internal_declaration(i->span)) continue;
         my member_static = class_item_is_static((ClassItem*)i);

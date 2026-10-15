@@ -20447,7 +20447,7 @@ const baselines = {
         dts: true,
     },
     'isolatedDeclarationsJsThisPropertyAssignmentInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
