@@ -38,7 +38,12 @@ off the table** (vision.md): no session works on them unless real code shows the
    JS sources are 77 of the 156 left), source sweep 3344 -> **3352 / 3363** (0 lost), DT **8595 / 8595**, suite
    13625 / 13675 -> 13698 / 13735 (dts 1440 / 1465, +60 own tests), vue 0 / 2 argued plan-sized (bugs/sourcesweep_checker.md). Leftovers in
    bugs/dts_emit.md and bugs/sourcesweep_checker.md.
-7. **Plan 71**: the hacks.md audit (963 lines -> ~600; the member-symbol copies; one reporting relation run?).
+7. Done (plan 71): hacks.md 963 -> 573 lines (notes to documentation.md, stale entries gone, the rest debt with its
+   correct rule and oracle). Four artifact hacks removed (OBJECT_WIDENED_COPY, merge_detached, the literal fresh twin,
+   infer_from_objects' shortcut -> tsc's rule), 2 tests argued in tsgo_divergences.md; suite 13697 / 13739. Member
+   symbols: the symbols baseline's copy gone, the rest is plan 73. Two-pass relations: ~0.5% of relation work, tsc
+   does it too in most callers: plan 74 (half a session, deletes failed_log). intersection_source's tsc rule found
+   but +8% instructions (hacks.md).
 8. **Plan 72**: planning core scaling (serial remainder after recycling, parallel declare/link: plan or a "no").
 9. **Perf session**: instructions after this window's features (recycling's warm-ups, emit's cost under `--noEmit`
    must be zero), perfsweep, scaleprobe on emit, bench.sh against tsgo and bun-1.4.3 (plan 67's table refreshed).
@@ -46,5 +51,5 @@ off the table** (vision.md): no session works on them unless real code shows the
     agent loop after the next triage session. Leave the insights entry below for whoever restarts the loop.
 11. **Insights.**
 
-After the insights entry (for the next window): what plan 72 decides, plan 64 stage 6 (chosen: JS sources), plan 58 +
+After the insights entry (for the next window): what plan 72 decides, plans 73 and 74 (small cleanups), plan 64 stage 6 (chosen: JS sources), plan 58 +
 plan 66 stage 5 if not done, the compact AST question (plan 67 "Not doing").

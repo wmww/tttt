@@ -9,6 +9,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 71, the hacks.md audit (2026-10-15, todo entry 7)
+Suite **13697 / 13739** (lost noImplicitAnyUnionNormalizedObjectLiteral1 and
+declarationEmitAugmentationUsesCorrectSourceFile, argued in tsgo_divergences.md; +1 own test). `scripts/oracles.py`:
+corpora 0 / 0 but vue 0 / 2, DT 8595 / 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep sample 817 / 822,
+perfsweep median 0.21, worst types ratio 1.62, dts projects 1077 / 1233 (files 95611 / 96726), kdiff 1 / 3363.
+Instructions (callgrind, `--noEmit`): tsc 4.723, type-fest 23.420, valibot 3.463, react 1.512, nest 1.189, webpack
+10.051, zod 5.426, xstate 2.771, drizzle 6.917, vue 6.635, effect 10.612, vscode 96.780, excalidraw 7.930,
+tanstack-router 5.412 G (flat against entry 5). Plan 74's relation counts: the reporting run is ~0.5% of relation
+calls on the suite without relationComplexityError (which alone reruns 5.25M calls to TS2859) and < 0.5% on the corpora.
+
 ## Real-code fan-out (2026-10-15, todo entry 6)
 Four agents (A import specifiers / painting, B the declaration writer's reused-node text, C checker types in `.d.ts`,
 D source sweep diagnostics), ~60 picks, 0 lost at every merge. `scripts/oracles.py`: suite **13698 / 13735** (dts
