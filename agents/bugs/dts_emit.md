@@ -56,6 +56,14 @@ size on real code, each with an example:
   `MergeObjectTypes`, typedoc `IntrinsicElements`, effect `fiberRuntime.d.ts` (`import type * as Either`), excalidraw
   `actionProperties.d.ts`. `scripts/dtsdiff.py --last -k import` lists them; reduce one to a probe and find the display
   path that prints without tracking (the four fixed ones were all of that kind).
+- **B's second pass leftovers** (2026-10-15): pi durable's `A & (B | C)` printed distributed (`(A & B) | (A & C)`:
+  a union origin, checker-side); trpc's `TypeError<'...'>` property of CreateTRPCClientOptions (tsgo reuses the
+  annotation, tttt reprints with `| undefined` and double quotes; a two-file probe matches, the real case doesn't);
+  graphql-js `class GraphQLEnumType/* <T> */  implements` (tsgo copies a plain comment after a class name, two
+  spaces); arktype bounds `OneCharComparator` and vscode instantiationService `const enum TraceType` locals tsgo keeps
+  (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an `infer T extends object` tsgo
+  prints anew, renamed `T_1`, tttt reuses and maps), `map: missing at AbstractTable ({)` (sequelize), the other
+  single-file map buckets.
 - **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
