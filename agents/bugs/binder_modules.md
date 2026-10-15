@@ -9,12 +9,6 @@ merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detac
 `export =` is a cloned namespace import (SymbolRare.export_equals_clone), combined value+interface imports
 (SymbolAlias.combined_type). The suite has no test of these left; new divergences go here.
 
-## Symbol display of duplicates and merged members
-- nodeModulesJson (symbols, x4): `config3.version` through `import * as config3 from "./config.json"` in a .cts
-  prints `Symbol(version, ...)` unquoted, the JSON property's own declaration line `"version"` quoted. The property
-  reaches the namespace import through getTypeWithSyntheticDefaultImportType's spread; which symbol on that path
-  lacks the declarations (getNameOfSymbolAsWritten would quote them) wasn't found.
-
 ## Bigint property names
 - Done 2026-10-14 by syntax: span_is_bigint_name() (span.h) is what the member builders, duplicate checks and symbol
   merges skip; the members keep their number text as name_string (a JS name lookup of `"1"` won't find them either,
@@ -40,7 +34,7 @@ skipped silently, where tsc reports it against the resolved target. (Moved from 
 - TS expandos follow tsgo's binder, but the binder still adds 6.0's SYMBOL_DECL_EXPANDO to the host (filtered in
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
-  time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1 symbols).
+  time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1's symbols, which this broke, pass since: recheck whether it still happens).
 
 ## Escaped identifiers: what's left
 Names with unicode escapes (`\u0061`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`

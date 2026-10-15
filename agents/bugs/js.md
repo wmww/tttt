@@ -16,8 +16,6 @@ what remains is below, each with what was found.
 - A JS variable with both a TS annotation (TS8010) and a JSDoc `@type` on a function initializer: tsgo's reparser
   makes the `@type` the function's FullSignature, so the function prints as the tag's signature (`(this: Foo) =>
   void`); tttt keeps the contextual typing. Artificial.
-- importTypeInJSDoc (TYP): `constructor(x: MyClass.Bar)` in a .d.ts with `export = MyClass` (class + namespace) prints
-  `import("./externs").Bar` in tttt, `MyClass.Bar` as written in tsgo.
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (TYP): see bugs/display.md "Fresh object literal types".
 
 ## JSDoc diagnostics

@@ -50,7 +50,6 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   (`for (#x in o)` says TS1451).
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
   one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test.
-- nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
@@ -91,34 +90,6 @@ Each one mutant:
   tttt prints `ComponentOptionsProperties<Data>`.
 
 ## Triage drain 2026-10-07 (agent D): checker items re-checked, not fixed
-- tsxStatelessFunctionComponentOverload1 (TS7031 for `declare function f({y1: string})`): tsc reports it when
-  something computes the parameter's type (here overload resolution), since checkVariableLikeDeclaration returns early
-  for renamed elements of bodiless signatures; tttt skips them eagerly (binding_add_implicit_any_type_errors'
-  `bodiless && renaming`). Reporting from lazy type computation (ty_error_at) needs care with several checkers each
-  computing it; one test. (2026-10-14 probe: `declare function f({y1: string})` never called, or only named in
-  `typeof f`, has no TS7031 in tsgo; called once, it has.)
-- awaitedTypeNoLib (2026-10-12): the narrowing matches (both keep the union); the difference is inference. With
-  `PromiseLike` unresolved (noLib: the nested `T extends PromiseLike<unknown> ? never : T` extends an error type; the
-  same with lib and `T extends any ? never : T`), tsgo infers `R = TResult` for `rp<R>(result: Thenable<R>, resolve:
-  Receiver<R>)` called with `Thenable<NotPromise<T>> | NotPromise<T>` and `Receiver<T>`, tttt `NotPromise<T>` (no
-  TS2345). Not when the argument is `Thenable<NotPromise<T>>` alone. Likely the union source's NotPromise<T> member
-  adds a candidate (its apparent type through the any-extends conditional) or makes the covariant candidate fail
-  isTypeAssignableTo(..., contra candidate). The TS2318 'Awaited' follows from the TS2345 (the missing-await
-  suggestion's getAwaitedTypeOfPromise). Reduce with `type NotPromise<T> = T extends
-  Thenable<unknown> ? T : T extends any ? never : T`.
-- awaitedTypeNoLib (2026-10-14, agent B; the relation half is fixed by 5edf168b, the Awaited TS2318 by 88f22cc7): what's
-  left is the base constraint of `NotPromise<TResult>`: tsgo simplifies `T extends PromiseLike<unknown> ? never : T`
-  (PromiseLike an error type under noLib) to never before computing it (getResolvedBaseConstraint ->
-  getSimplifiedConditionalType), so the base constraint is `Thenable<unknown>` and inference from the union argument
-  adds `unknown`, making R = TResult and the TS2345. Commit c2aaa6c2 did that (resolved_base_constraint() simplifying
-  the conditionals may_simplify_conditional() let through, mikro-orm/seeder types unchanged) and was reverted (277199cd):
-  it lost tanstack-table/packages/angular-table (sourcesweep, +TS2345 at tests/test-utils.ts:20). The cause there is a
-  separate bug: `ty_definitely_assignable(keyof M<T>, string)` is true for `M<T> = { [K in keyof T as T[K] extends
-  Sig<any> ? K : never]?: ... }` because under the restrictive instantiation (conditional.c, restrictive_type_param())
-  the TY_KEYOF relation instantiates the name type to never (`keys never` in structured_related's TY_KEYOF case), so
-  `Extract<keyof M<T>, string>` simplified to `keyof M<T>`, whose base constraint is string | number | symbol. Probe:
-  that M, `for (const k in inputs) { const s: string = k; }` with `inputs: M<T>`, `T extends NonNullable<unknown>`.
-  Fix that, then re-apply c2aaa6c2.
 - Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
   self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
   tttt. Still so.
@@ -240,14 +211,9 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 - Seed-4 mutation leftovers (`MUTATE_DIR=/tmp/tc-mutate4 scripts/mutate.py --last`, 21 left, lib DOM union order WONTFIX):
   missing TS2339 x3, spurious TS2304 x3, TS2420, TS1109, TS2347, TS2741, TS2403, TS2355, TS2359, TS2551->TS2339,
   spurious TS2322 (mut2988); elaboration paths mut4551/mut7482. Not looked at.
-## Inference
-tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get tsc's TS2769 report), variadicTuples1
-(types).
-
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
 (function_local_symbol_decls() and check_export_merge() patch over it; hacks.md "Exported and local declarations").
-Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
 
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
@@ -260,10 +226,6 @@ Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting
   ...)` don't, nested targets of a reporting assignment do. tttt reports TS1255/TS1042 in the parser always (silent
   in for-of) and TS1162 (`object_check_grammar`) never in targets. Fix: move them to the checker's grammar check, run
   for a target only when the right side is contextually sensitive. Low value.
-- importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
-  TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
-  pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
-- typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
 - Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".
 
@@ -278,9 +240,6 @@ Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting
   member; tttt omits it.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
   `@ts-expect-error`). Not reduced.
-- Elaboration chains: recursiveConditionalTypes.
-- tsxStatelessFunctionComponentsWithTypeArguments4: the overload in the message prints `{ b: number; a: unknown }` in
-  tsc, `b: unknown` in tttt (inference for that overload).
 - Lesson (ex plan 34): a message change can crash on real code the suite doesn't have (`ty_prop_written_name` on a
   mapped property, caught by type-fest only): run the corpora after printer/elaboration changes.
 - **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
@@ -366,10 +325,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   deprecated signatures (a function's reference is decided by the call's signature in tsc: isUncalledFunctionReference),
   `@deprecated` on a declaration whose statement isn't right after the comment (declaration_deprecated() goes back over
   keywords only: the second declarator of `const a = 1, b = 2`). The CLI never prints suggestions.
-- syntheticProtectedProperties (symbols only since 2026-10-12): tsgo's createUnionOrIntersectionProperty gives the
-  synthetic property a parent when its members have one value declaration (`hasNonUniformValueDeclaration`, a
-  synthetic member without one skipped): `w2.content` of `(Mock & Base) | (Mock & Dummy)` is `Mock.content` in the
-  symbols baseline, tttt prints `content`. The accessibility itself is check.c's synthetic_access().
 - types/ember/v2 (DT sweep): `import Ember from "ember"` in a test with `declare global { interface Function extends
   Ember.FunctionPrototypeExtensions {} }`, the package a script whose `declare module "ember"` is what the import
   means: tsgo reports TS2306 "is not a module" (then TS2339s), apparently because the alias is resolved while the

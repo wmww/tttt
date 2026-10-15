@@ -69,10 +69,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
   `module.exports = f` of a function declaration prints `typeof f` (require_property_value_only.ts); a JS `const S =
   Symbol()` read through a `@type {typeof S}` const prints `symbol` in tsc (jsdoc_accessor_type.ts).
-- A function declaration's name prints with the function as enclosing declaration, its parameters in scope: a JSDoc
-  `{{y: typeof b}} b` reuses `typeof b` only when b resolves to the same symbol there (tsc prints `typeof
-  import("index").b` for a plain outer function, `typeof b` when b has expandos; tttt the other way round).
-  callbackTag4.
 ## Underlines (node reuse)
 - `() => 'foo' as const`: tsc's underline reuses the `"foo"` (`^^^^^^     `), tttt underlines the whole return type.
 - readonly_through_prettify.ts: `| undefined` of optional properties under exactOptional-less strict: tsc's
@@ -98,28 +94,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `Symbol(a)`. Setting `.reuse` in `spread_props_of` (ty/expr.c) did it but lost 14 tests: `spread_into`, excess
   property checks and JSX spread attributes read the builder's other fields (and object literal widening may rebuild
   the properties).
-- Late-bound computed members merge with the written member of the same name, named and ordered like it (`[c0]` with
-  c0 = "1" after `1:` is `T0[1]`, Decls in binding order): dynamicNamesErrors (2026-10-04 fan-out leftover). tsgo
-  shows `T0[c0]` with the late declaration first, which its combineSymbolTables(early, late) doesn't explain as read
-  (2026-10-12, agent C): instrument lateBindMember/combineSymbolTables before changing anything.
-- **Cross-file merges with an alias** (2026-10-12, agent C): tsgo's checker-time mergeSymbol resolves a target alias
-  (resolveSymbol) and checks the excludes against what it resolves to; on a conflict it reports and keeps the two
-  symbols apart (`return source`). tttt's binder merges by flags at bind time, aliases unresolved, so these show one
-  symbol where tsgo has two (or the other way round): checkerInitializationCrash (`export import VNode =
-  react.ReactNode` in one `declare global` vs `type VNode` in another), importEqualsError45874,
-  duplicateVarsAcrossFileBoundaries (`import p = P` vs a later file's `var p`), moduleAugmentationWithNonExistentNamedImport
-  (`export as namespace Bar` vs an augmentation's `namespace Bar`). Needs the global/augmentation merge to resolve
-  aliases first (or defer those merges to after binding, like tsgo's initializeChecker).
-- **Global augmentations merge after every script's globals** (tsgo's initializeChecker merges the files' locals, then
-  the `declare global` blocks): a script's `interface RawJSON` is the first declaration of the merged symbol even
-  though lib.es2026.json.d.ts (a module with `declare global`) comes first in the program (jsonRawJSON2). tttt adds
-  declarations in file order (clone_parent_symbol copies the lib's first). Declaration order also decides an
-  interface's member and overload order, so a fix should keep declarations partitioned (script ones, then
-  augmentation ones) wherever a global symbol gets one.
-- typeAliasesDoNotMerge (types): `export type A = {}; type A = {}`: tsgo prints the second alias as
-  `import("./typeAliasesDoNotMerge").A`, i.e. the conflicting symbol has the file's module as parent (fast path of
-  getAliasForSymbolInContainer), not a symbol in scope. Where tsgo's binder puts it (exports with the file as parent?)
-  wasn't checked.
 
 ## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
 - **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
@@ -132,13 +106,8 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   types (`VisitNode<S, A> & VisitNode<S, B>`, each a function | object union). A self-made imitation matches tsc;
   reduce with `scripts/expectprobe.py` (a cut-down project: tsconfig with idx.d.ts = babel__traverse's index.d.ts and the
   test's first 18 lines; the reducer drifts, keep the `"./idx"` import and `t.Aliases` text).
-- variadicTuples1, last line: `function c2<T extends unknown[]>() { return (...args: [...T]) => 1; }` prints the
-  returned arrow's rest parameter `T` (tsc `[...T]`); through a local variable it's right. The signature's rest
-  parameter type is T, not the tuple, so when the annotation can't be reused (it mentions c2's fresh T) the type
-  prints bare. Wherever the rest param's `[...T]` is normalized to T (call.c's rest_variadic?), the display needs the
-  tuple.
-- Elaboration chain shapes (recursiveConditionalTypes; conditionalTypes1/2 fixed by normalizing the target and the
-  apparent intersection source, 2026-10-14):
+- Elaboration chain shapes (conditionalTypes1/2 fixed by normalizing the target and the apparent intersection source,
+  2026-10-14; recursiveConditionalTypes' errors pass since, no suite test left):
   tsc's chains interleave lines from a failed constraint attempt with the later ones (`T` to `NonNullable<T>`: the
   source constraint `string | undefined` against `T & {}`, then "'undefined' is assignable to the constraint of type
   'T', but...", then T against `{}` *nested under it*), i.e. its errorInfo save/restore around
@@ -160,9 +129,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
   property fails with an expression it can descend into, and stops at the first reported one per literal).
-## Leftovers of plan 35 (silent type differences, retired 2026-10-09; components as of the tsgo 7.1 suite)
-- isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
-  saw the types side; the errors component fails now).
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
@@ -171,7 +137,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   binding's rest has its binding's symbol since 2026-10-14). Not probed.
 - Union order left (checker identity, not display):
   - `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
-- **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
+- **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`; the suite's tests pass):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and
   truncation is sticky. Ported (TyDisplay.approx counts where tsgo's node builder counts, `display_over()`). Left:
   a reused annotation counts its reprinted text plus one (tsgo: its source range with the leading trivia, newlines and
@@ -180,17 +146,13 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   count their source range. tttt prints those types as checker types, so a JSON module's object (msw/test's
   package.json exports) truncates later than tsgo. Only an object literal property's function expression with
   annotated parameters is exempted from elision, as its pseudo type is.
-- declarationMapCrossFileNodeReuse: `function c(): () => "a" | "b" { return () => "a"; }` prints the returned arrow as
-  `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
-  gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
 - mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
 - Relation paths that differ from tsgo's (not elaboration rules): reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels;
   missing_checks.md has the two fixes tried).
-- The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
-  declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
+- The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax) is plan 55.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by
   adbed7b9): tsgo's symbol has both declarations of `c` (`Decl(1, 70), Decl(1, 82)`), tttt only the first: the
   homomorphic mapped property over the conditional's union keeps one declaration.
@@ -204,17 +166,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 
 ## Suite tail leftovers (2026-10-12 fan-out, agent C: TS tests failing types/symbols only)
 Looked at, root cause where found, not fixed (one test each unless named):
-- genericClassesRedeclaration: `class C extends StringHashTable<T>` in a second `declare namespace TypeScript` block
-  where StringHashTable is declared twice: tsgo prints the base as `TypeScript.StringHashTable<T>` (the conflicting
-  second class, a symbol outside the exports table, needs qualification); tttt resolves to the table's.
-- mergedClassWithNamespacePrototype: `namespace prototype` inside a namespace merged with `declare class Foo` merges
-  into the class's prototype property symbol in tsgo (NamespaceModuleExcludes is none), so it prints `typeof
-  prototype`; tttt `typeof Foo.prototype`.
-- typeofImportDefer: `typeof import.defer("./a").Foo` recovers to an import type with a missing string literal;
-  tsgo's symbols are `Symbol(unknown)` for the missing literal and `Symbol(unknown.defer)` for the qualifier (an
-  unresolved but non-null module), tttt prints nothing. An unresolved `import("./nope")` prints nothing in both.
-- jsonRawJSON2, the cross-file alias merges: see "Symbols
-  baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
 - $ExpectType leftovers (2026-10-14, agent D; 68637/68640):
@@ -229,16 +180,6 @@ Looked at, root cause where found, not fixed (one test each unless named):
   - tsgo keeps the intersection it distributed as the union's origin for display (getIntersectionType's
     createOriginUnionOrIntersectionType): `(VisitNode<S, any> & VisitNode<S, t.Aliases>) | undefined` where tttt prints
     the distributed `((F | O) & (F | O)) | undefined` expanded. Seen in a babel__traverse probe, no $ExpectType on it.
-
-## Unfiled suite failures (triage 2026-10-14, plan 66; first differing line only, not investigated)
-- objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier (types): a shorthand `get e` (recovery) is
-  `readonly e: any` to tttt, `readonly e: void` to tsgo: the recovered getter's return type.
-- fixSignatureCaching (types): one line inside the huge object literal type of the mobile-detect closure differs
-  (`grep '^[-+]>'` and compare the tails; the first lines are identical for >1 KB).
-- circularTypeofWithVarOrFunc (types): `func : () => typeAlias3` where tsgo prints `() => any` (the circular
-  `typeof` alias resolves to any; tttt keeps the alias name).
-- jsxNamespacePrefixInNameReact (types): `>a : any` where tsgo prints `undefined` (jsxNamespacePrefixInName passes
-  everything but a similar types line).
 
 ## Fresh object literal types vs their widened/regular types (identity)
 tsgo's object literal expression has a fresh type of its own; the declared type of what it initializes is another

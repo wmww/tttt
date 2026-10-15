@@ -141,15 +141,6 @@ passing tests).
   tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
   label names, so the two tuples are one type and the union collapses.
 ## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
-- circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
-- recursiveConditionalTypes (types only since 2026-10-14; no spurious TS2589 any more): (1) `unbox(b4)` with
-  `b4: { value: { value: { value: typeof b4 }}}` against `RecBox<T> = T | Box<RecBox<T>>`: tsgo infers T one level
-  shallower (`{ value: { value: typeof b4 } }`, tttt `{ value: typeof b4 }`): where inferToMultipleTypes' naked
-  inference stops relative to invokeOnce's circularity (both sides deeply nested at depth 2, source identities are the
-  three type literal symbols). Trace both with the inference-side analogue of the relater.go logging (agent B's
-  /tmp/b-tsgo overlay recipe: patch invokeOnce to print source/target/expandingFlags). (2) the getter `{ get value()
-  { return this; } }` inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<...>`
-  (the contextual `this` of a getter in a literal whose contextual type is the inferred union), tttt `{}`. Medium each.
 - recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (ttttRecursiveUnionInferenceDepth), and the
   getter's lazy typing since (ttttLiteralGetterDuringResolution: an object literal getter a call's resolution types
   has `this` any in an argument literal, the literal's own type in a literal nested in one; computed uncached so the
@@ -259,12 +250,6 @@ passing tests).
   contextual types of yield expressions); `ty_generator_context` filters only unions.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
-- Object literal methods of one name are one binder symbol in tsc (PropertyExcludes is None): `{ foo(x: 'hi') {}, foo(x:
-  'a') {} }` is `{ foo(x: "hi"): void; foo(x: "a"): void }`, each name typed with both signatures
-  (stringLiteralTypesInImplementationSignatures2, callSignaturesWithParameterInitializers2; ex plan 35).
-- A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
-  callSignaturesWithParameterInitializers2 types; duplicateClassElements symbols;
-  symbolProperty44 (late-bound name vs method).
 - Type member accessors (done 2026-10-15, duplicateIdentifierChecks): each `get`/`set` signature is an InterfaceMember
   of its own (accessor_kind), interface_members_bind() partitions a member list like tsc's declareSymbol (a conflicting
   declaration is a symbol of its own, `conflicting`, not a member; an accessor conflicting with another kind makes the
@@ -295,8 +280,6 @@ passing tests).
   pushTypeResolution): a spurious or missing TS5115 on real code is first checked against it (log the
   instantiation and members-in-flight stacks in members_reentered_unguarded(); an instrumented tsgo printing
   runtime.Callers' frames at a failed pushTypeResolution shows tsgo's guard).
-- distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
-  `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
 - Variances still measured differently from tsgo on xstate (25 of 160 type parameters, 2026-10-12; compare with
   tsgo's `--generateTrace` getVariancesWorker events, script idea: dump both, key by symbol name): mostly the
   unreliable/unmeasurable flags (tsgo `out (unreliable)` where tttt has plain or invariant) and some independent vs
@@ -320,20 +303,6 @@ passing tests).
   doesn't take that intersection's `Dimensions`. Logging recipe: overlay nodebuilderimpl.go (fmt.Fprintf at
   typeToTypeNode / visitAndTransformType), `go test -overlay ... -c ./internal/testrunner`, run it like
   scripts/tsgoprobe.sh with TTTT_TESTDATA; split the logs into prints where the length drops.
-- reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
-  TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
-- inferFromGenericFunctionReturnTypes3 (agent B 2026-10-14): `baz(makeFoo(Enum.A), makeFoo(Enum.A))` with
-  `baz<U>(x: Func<U>, y: Func<U>)`: the second makeFoo's return mapper comes from the main inference (U already Enum, so
-  T -> Enum, the argument's literal regularized, T = Enum.A), where tsgo's returnMapper comes from a separate inference
-  from the contextual type instantiated with the *outer return mapper* only (T -> U, the literal stays fresh and widens:
-  Func<Enum>). That's call.c's infer_type_arguments HACK (hacks.md "Return mapper"): the faithful version (FAITHFUL
-  experiment: return_inference_mapper of a separate return_inf always) fixes this test and loses
-  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference. In ...Inference1 tttt then gives
-  `effectFn(function (a) {...})` no contextual type: `function () { return { fn: effectFn(...) } }`'s return context
-  is AEff, instantiated by the return mapper (AEff -> S, layerEffect's type parameter), whose apparent type has no `fn`.
-  tsgo types `a` as string there; how is still unexplained (its contextual signature for the outer function is
-  `() => AEff` and instantiateContextualType only uses the non-fixing mapper with ContextFlags.Signature). Next step:
-  instrument tsgo's getContextualTypeForObjectLiteralElement / instantiateContextualType on that test.
 - Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
   inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
   literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348

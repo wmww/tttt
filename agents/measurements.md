@@ -173,7 +173,7 @@ mutation seeds 61/62, D flagflip/`$ExpectType`, A its untouched items); 71 picks
 ## Checker count (2026-10-13, todo entry 1, plan 62)
 Output at `--checkers 16` against 1: suite dump 0 / 39636 files differ, corpora 16 / 16 identical, DT sweep 0 / 8595,
 source sweep 19 / 3363 (13 already at K=4; tsgo 1/4/16 identical on all 19 but inbox-zero's undefinedProperties).
-Types / arena / RSS per K for six corpora and the FENNEL prototype (worse): plans/62_checkers_follow_cores.md.
+Types / arena / RSS per K for six corpora and the FENNEL prototype (worse): plan 62 (done, deleted 2026-10-15: `git show 7c7c13db:agents/plans/62_checkers_follow_cores.md`).
 Times: suite K=1 13 s, K=16 21 s; `scripts/kdiff.py` source sweep 7 min, `--dt` 4.5 min (4 jobs).
 
 ## Triage (2026-10-13, todo entry 10)

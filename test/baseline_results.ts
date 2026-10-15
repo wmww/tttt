@@ -35,6 +35,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBinaryMarkerAfterExpression': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBinaryMarkerAfterIdentifier': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCircularAliasArity': {
         errors: true,
         symbols: true,
@@ -496,6 +506,11 @@ const baselines = {
         types: true,
     },
     'ttttUnresolvedTypeOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedRedeclaration': {
         errors: true,
         symbols: true,
         types: true,

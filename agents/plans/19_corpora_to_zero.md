@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-10-09 (tsgo 7.1 oracle, plan 54)**: spurious / missing against tsgo's own diagnostics: every corpus 0 / 0
-but webpack 0 / 5, drizzle 3, vue 4, effect 3 / 0 (measurements.md has the latest). The per-corpus sections below were
+**Status 2026-10-15 (tsgo 7.1 oracle, plan 54)**: spurious / missing against tsgo's own diagnostics: every corpus 0 / 0
+but vue 0 / 2 (measurements.md has the latest). The per-corpus sections below were
 written against tsc 6 (4d4f005c) and earlier pins: their counts are history, their mechanisms still apply.
 bugs/tsgo_divergences.md has what the tsc 6 era left in the corpus configs.
 
