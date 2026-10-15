@@ -45,9 +45,15 @@ typedef struct SpecifierRequest {
     csview target; // The file to name (a referenced project's source by its source)
     csview redirect; // Its output declaration file if it's a referenced project's source, tried first, else empty
     csview project_dir; // The tsconfig's directory, else empty (the current directory)
+    // The specifier of an import of the importing file that resolves to target (computeModuleSpecifiers'
+    // existingSpecifier), else empty: it is the answer if target itself is one of the paths to the file (a realpath
+    // in pnpm's store isn't when a link to it is known)
+    csview existing;
 } SpecifierRequest;
 
 // The best specifier (getModuleSpecifiers' first): a package name through a node_modules when one can reach the file, a
-// `paths` mapping, else relative (which may go through some node_modules, which is what TS2742 is about). Existing
-// imports of the file are the caller's to look at first (computeModuleSpecifiers' existingSpecifier)
+// `paths` mapping, else relative (which may go through some node_modules, which is what TS2742 is about), unless an
+// existing import names it (SpecifierRequest.existing)
 cstr module_specifier_generate(SpecifierRequest const* request);
+// tsc's containsIgnoredPath: in pnpm's `.pnpm` store or the like (never named when a link to it is known)
+bool module_path_is_ignored(csview path);

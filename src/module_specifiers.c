@@ -45,6 +45,10 @@ static bool contains_ignored_path(csview path) {
         csview_find_sv(path, c_sv("/.#")) != c_NPOS;
 }
 
+bool module_path_is_ignored(csview path) {
+    return contains_ignored_path(path);
+}
+
 static csview last_segment(csview path) {
     isize i = path.size;
     while (i > 0 && path.buf[i - 1] != '/') i--;
@@ -1229,6 +1233,14 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
     gen.prefer_js = emit_mode == SPECIFIER_MODE_ESM;
     gen.file_preferred = ending_preference(&gen, request->importing_default_mode);
     ModulePaths paths = all_module_paths(&gen);
+    // (The import resolved to the realpath, which only matches that path)
+    if (request->existing.size) {
+        for (u32 i = 0; i < paths.len; i++) {
+            if (!csview_equals_sv(cstr_sv(&paths.items[i].path), request->target)) continue;
+            module_paths_drop(&paths);
+            return cstr_from_sv(request->existing);
+        }
+    }
     bool target_in_node_modules = false;
     for (u32 i = 0; i < paths.len; i++) target_in_node_modules |= paths.items[i].in_node_modules;
     // A package name through node_modules, else a `paths` mapping, else relative

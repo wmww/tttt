@@ -3820,6 +3820,7 @@ cstr program_module_specifier_ending(
     u32 import_count = 0;
     // (Only the first import of it counts: one of another mode means none, tsgo's computeModuleSpecifiers)
     bool seen_target = false;
+    csview existing = {0};
     for (u32 i = 0; i < importing->module_ref_count; i++) {
         ModuleRef const* ref = importing->module_refs[i];
         if (ref->is_declaration || ref->ambient_only || ref == importing->helpers_ref || ref == importing->jsx_runtime_ref) continue;
@@ -3828,8 +3829,12 @@ cstr program_module_specifier_ending(
         if (ref->file != target || seen_target) continue;
         seen_target = true;
         if (mode != wanted && mode != SPECIFIER_MODE_NONE && wanted != SPECIFIER_MODE_NONE) continue;
+        existing = cstr_sv(&ref->path);
+    }
+    // (Only a file in pnpm's store or the like may not be among its own paths: the rest needs no paths computed)
+    if (existing.size && !module_path_is_ignored(cstr_sv(&target->canonical_path))) {
         free(imports);
-        return cstr_clone(ref->path);
+        return cstr_from_sv(existing);
     }
     csview cwd = program_cwd(me);
     cstr importing_path = absolute_path_of(cwd, cstr_sv(&importing->canonical_path));
@@ -3855,6 +3860,7 @@ cstr program_module_specifier_ending(
         .target = cstr_sv(&target_path),
         .redirect = output,
         .project_dir = cstr_sv(&project_dir),
+        .existing = existing,
     };
     cstr ret = module_specifier_generate(&request);
     c_drop(cstr, &importing_path, &target_path, &project_dir);

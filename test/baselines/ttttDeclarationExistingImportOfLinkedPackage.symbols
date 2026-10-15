@@ -1,0 +1,19 @@
+//// [test/cases/ttttDeclarationExistingImportOfLinkedPackage.ts] ////
+
+=== /node_modules/.pnpm/lib@1.0.0/node_modules/lib/index.d.ts ===
+export interface Opts { a: number }
+>Opts : Symbol(Opts, Decl(index.d.ts, 0, 0))
+>a : Symbol(Opts.a, Decl(index.d.ts, 0, 23))
+
+export declare function make(): Opts;
+>make : Symbol(make, Decl(index.d.ts, 0, 35))
+>Opts : Symbol(Opts, Decl(index.d.ts, 0, 0))
+
+=== /a.ts ===
+import { make } from "lib/index";
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+export const x = make();
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
