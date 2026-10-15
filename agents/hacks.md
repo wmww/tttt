@@ -316,9 +316,12 @@ src` finds the code-side markers; every significant one has an entry here.
   without undefined (readers add it), tsc intersects the parts' getTypeOfSymbol, which has it. Where every part is
   optional, the read types are used only when one part has undefined already and they're all one type (a mapped `Pick`
   of an optional property next to the declared one: react-select), and not under exactOptionalPropertyTypes (the
-  missing type: arktype). Intersecting the read types always, as tsc does, ran zod and zod-root out of memory and
-  changed type-fest and effect's diagnostics; intersecting them whenever one has undefined made tiptap's
-  NodeViewContent a TS2590 (2026-10-15): something downstream depends on the declared types; not looked into.
+  missing type: arktype). Intersecting the read types always, as tsc does: the zod/zod-root out-of-memory and the
+  type-fest/effect changes were all exactOptionalPropertyTypes' missing type (zod has the option); with the rule off
+  under it, every oracle is clean (2026-10-15, second look), except tiptap/demos' NodeViewContent.tsx:19, a TS2590
+  (cross product too big) from the JSX spread of `ComponentProps<T>` with T over every intrinsic element: some
+  intersection of the elements' props with read types still distributes in tttt where tsc's has identical members.
+  That is what keeps the narrow rule; find which property's parts differ in identity and the rule can go.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
 - `Checker.outer_inference` (the call inferring now) is dynamic state, where tsc finds a node's inference context
