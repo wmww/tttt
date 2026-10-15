@@ -171,6 +171,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExpandoMemberShadows': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationExpandoNameValue': {
         errors: true,
         symbols: true,

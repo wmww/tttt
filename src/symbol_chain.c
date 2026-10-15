@@ -95,8 +95,18 @@ static void add_locals_with_exports(ChainCtx* me, SymbolTable const* locals, Sym
     add_table(me, exports, true);
 }
 
+// The expando members of the function whose namespace declaration emit writes (symbol_chain_set_expando_host()), on
+// this thread
+static thread_local SymbolTable const* expando_scope;
+
+void symbol_chain_set_expando_host(Symbol const* host) {
+    expando_scope = host ? host->exports : nullptr;
+}
+
 static void chain_ctx_init(ChainCtx* me, Scope const* enclosing) {
     *me = (ChainCtx){ .enclosing = enclosing, .binder = enclosing->binder };
+    // (Inside the namespace the members are written in, their names come first: tsgo's enclosing declaration is it)
+    if (expando_scope) add_table(me, expando_scope, true);
     for (Scope const* scope = enclosing; scope; scope = scope->parent) {
         switch (scope->kind) {
             case SCOPE_BLOCK:
@@ -515,10 +525,10 @@ static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, Sy
     if (!symbol) return false;
     Checker* checker = current_checker;
     bool cacheable = checker && !my visited_count && !my in_global_this;
-    u64 key[4] = { KEY_ACCESSIBLE_CHAIN, (u64)(uintptr_t)my enclosing, (u64)(uintptr_t)symbol,
-        (u64)meaning | (u64)my container_lookup << 32 | (u64)my only_external_aliasing << 33 };
+    u64 key[5] = { KEY_ACCESSIBLE_CHAIN, (u64)(uintptr_t)my enclosing, (u64)(uintptr_t)symbol,
+        (u64)meaning | (u64)my container_lookup << 32 | (u64)my only_external_aliasing << 33, (u64)(uintptr_t)expando_scope };
     if (cacheable) {
-        ChainMemo const* memo = intern_get(&checker->links, key, 4);
+        ChainMemo const* memo = intern_get(&checker->links, key, 5);
         if (memo) {
             if (memo->found) *out = memo->chain;
             return memo->found;
@@ -531,7 +541,7 @@ static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, Sy
         ChainMemo* memo = arena_new(&checker->arena, ChainMemo);
         memo->found = found;
         memo->chain = chain;
-        *intern_slot(checker, &checker->links, key, 4) = memo;
+        *intern_slot(checker, &checker->links, key, 5) = memo;
     }
     return found;
 }

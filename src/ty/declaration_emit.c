@@ -1747,7 +1747,9 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
         if (value && value->tag == EXPR_IDENTIFIER) check_entity_expression(me, value);
         bool outer = fallback_begin(me);
         my fell_back = true;
+        symbol_chain_set_expando_host(symbol);
         fallback_end(me, outer, ty_type_of_symbol(my checker, member));
+        symbol_chain_set_expando_host(nullptr);
         emit_leave(me, saved);
         my member_static = outer_static, my member_in_class = outer_in_class;
     }
@@ -3738,7 +3740,9 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, Span name, bool
             w_lit(me, "var ");
             w(me, renamed ? csview_from(generated) : member_name);
             w_lit(me, ": ");
+            symbol_chain_set_expando_host(host);
             w_type(me, ty_widened_literal(my checker, ty_type_of_symbol(my checker, member)));
+            symbol_chain_set_expando_host(nullptr);
             w_lit(me, ";\n");
             my indent--;
             my out = outer;

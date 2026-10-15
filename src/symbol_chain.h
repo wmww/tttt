@@ -85,6 +85,9 @@ typedef cstr (*ModuleSpecifierFn)(void* ctx, struct SourceFile const* file);
 // The import or export declaration (its ModuleRef) whose name the chains asked for next on this thread are printed for,
 // null for none (tsgo's enclosing declaration inside one: its usage mode finds the file's imports again)
 void symbol_chain_set_usage(struct ModuleRef const* usage_ref);
+// The function whose expando members declaration emit is writing as a namespace's (`declare namespace f { var x: T }`),
+// null for none: their names shadow the file's in the chains asked for meanwhile
+void symbol_chain_set_expando_host(Symbol const* host);
 void symbol_chain_set_module_specifier(ModuleSpecifierFn fn, void* ctx);
 // Symbols are named from inside a named class expression's body on this thread until the matching leave: a CommonJS
 // export's class is named by its own name there, not through the module (tsc's enclosing declaration)

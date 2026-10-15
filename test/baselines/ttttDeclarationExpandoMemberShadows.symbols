@@ -1,0 +1,61 @@
+//// [test/cases/ttttDeclarationExpandoMemberShadows.ts] ////
+
+=== /visitors.ts ===
+function verify$1(x: number): void {}
+>verify$1 : Symbol(verify$1, Decl(visitors.ts, 0, 0))
+>x : Symbol(x, Decl(visitors.ts, 0, 18))
+
+export { verify$1 as verify };
+>verify$1 : Symbol(verify$1, Decl(visitors.ts, 0, 0))
+>verify : Symbol(verify, Decl(visitors.ts, 1, 8))
+
+=== /a.ts ===
+import * as visitors from "./visitors";
+>visitors : Symbol(visitors, Decl(a.ts, 0, 6))
+
+export { visitors };
+>visitors : Symbol(visitors, Decl(a.ts, 1, 8))
+
+export default function traverse(n: number) {}
+>traverse : Symbol(traverse, Decl(a.ts, 1, 20))
+>n : Symbol(n, Decl(a.ts, 2, 33))
+
+traverse.visitors = visitors;
+>traverse.visitors : Symbol(traverse.visitors, Decl(a.ts, 2, 46))
+>traverse : Symbol(traverse, Decl(a.ts, 1, 20))
+>visitors : Symbol(traverse.visitors, Decl(a.ts, 2, 46))
+>visitors : Symbol(visitors, Decl(a.ts, 0, 6))
+
+traverse.verify = visitors.verify;
+>traverse.verify : Symbol(traverse.verify, Decl(a.ts, 3, 29))
+>traverse : Symbol(traverse, Decl(a.ts, 1, 20))
+>verify : Symbol(traverse.verify, Decl(a.ts, 3, 29))
+>visitors.verify : Symbol(visitors.verify, Decl(visitors.ts, 1, 8))
+>visitors : Symbol(visitors, Decl(a.ts, 0, 6))
+>verify : Symbol(visitors.verify, Decl(visitors.ts, 1, 8))
+
+=== /b.ts ===
+import * as visitors from "./visitors";
+>visitors : Symbol(visitors, Decl(b.ts, 0, 6))
+
+import { verify } from "./visitors";
+>verify : Symbol(verify, Decl(b.ts, 1, 8))
+
+export default function walk(n: number) {}
+>walk : Symbol(walk, Decl(b.ts, 1, 36))
+>n : Symbol(n, Decl(b.ts, 2, 29))
+
+walk.verify = visitors.verify;
+>walk.verify : Symbol(walk.verify, Decl(b.ts, 2, 42))
+>walk : Symbol(walk, Decl(b.ts, 1, 36))
+>verify : Symbol(walk.verify, Decl(b.ts, 2, 42))
+>visitors.verify : Symbol(visitors.verify, Decl(visitors.ts, 1, 8))
+>visitors : Symbol(visitors, Decl(b.ts, 0, 6))
+>verify : Symbol(visitors.verify, Decl(visitors.ts, 1, 8))
+
+walk.v2 = verify;
+>walk.v2 : Symbol(walk.v2, Decl(b.ts, 3, 30))
+>walk : Symbol(walk, Decl(b.ts, 1, 36))
+>v2 : Symbol(walk.v2, Decl(b.ts, 3, 30))
+>verify : Symbol(verify, Decl(b.ts, 1, 8))
+

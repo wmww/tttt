@@ -1,0 +1,65 @@
+//// [test/cases/ttttDeclarationExpandoMemberShadows.ts] ////
+
+=== /visitors.ts ===
+function verify$1(x: number): void {}
+>verify$1 : (x: number) => void
+>x : number
+
+export { verify$1 as verify };
+>verify$1 : (x: number) => void
+>verify : (x: number) => void
+
+=== /a.ts ===
+import * as visitors from "./visitors";
+>visitors : typeof visitors
+
+export { visitors };
+>visitors : typeof visitors
+
+export default function traverse(n: number) {}
+>traverse : { (n: number): void; visitors: typeof visitors; verify: (x: number) => void; }
+>n : number
+
+traverse.visitors = visitors;
+>traverse.visitors = visitors : typeof visitors
+>traverse.visitors : typeof visitors
+>traverse : { (n: number): void; visitors: typeof visitors; verify: (x: number) => void; }
+>visitors : typeof visitors
+>visitors : typeof visitors
+
+traverse.verify = visitors.verify;
+>traverse.verify = visitors.verify : (x: number) => void
+>traverse.verify : (x: number) => void
+>traverse : { (n: number): void; visitors: typeof visitors; verify: (x: number) => void; }
+>verify : (x: number) => void
+>visitors.verify : (x: number) => void
+>visitors : typeof visitors
+>verify : (x: number) => void
+
+=== /b.ts ===
+import * as visitors from "./visitors";
+>visitors : typeof visitors
+
+import { verify } from "./visitors";
+>verify : (x: number) => void
+
+export default function walk(n: number) {}
+>walk : { (n: number): void; verify: (x: number) => void; v2: (x: number) => void; }
+>n : number
+
+walk.verify = visitors.verify;
+>walk.verify = visitors.verify : (x: number) => void
+>walk.verify : (x: number) => void
+>walk : { (n: number): void; verify: (x: number) => void; v2: (x: number) => void; }
+>verify : (x: number) => void
+>visitors.verify : (x: number) => void
+>visitors : typeof visitors
+>verify : (x: number) => void
+
+walk.v2 = verify;
+>walk.v2 = verify : (x: number) => void
+>walk.v2 : (x: number) => void
+>walk : { (n: number): void; verify: (x: number) => void; v2: (x: number) => void; }
+>v2 : (x: number) => void
+>verify : (x: number) => void
+
