@@ -2079,7 +2079,9 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             }
             continue;
         }
-        member_begin_node(d, i->declaration);
+        // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
+        Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
+        member_begin_node(d, comment_span);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
@@ -2144,7 +2146,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 break;
         }
-        member_end_node(d, i->declaration, ";,");
+        member_end_node(d, comment_span, ";,");
     }
     brace_close(outer);
 }

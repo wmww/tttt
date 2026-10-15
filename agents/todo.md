@@ -32,8 +32,11 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
 6. Done (2026-10-14): plan 64 stage 1 (dts component: 1408 TS tests, `scripts/dtsstats.py`; `scripts/dtsdiff.py`:
    1233 projects / 76294 files, agent) and most of stage 2: the writer (`ty/declaration_emit.c`), dts 1192 / 1408,
    dtsdiff 400 / 1233 projects, 48974 / 76294 files. Plan 64 "Status" lists what's left.
-7. **Plan 64 stage 2 finished + stage 3 (comments)**: the non-comment buckets of plan 64 "Status" first (target >= 85%
-   of the TS dts tests), then comments (23448 dtsdiff files, ~67 suite tests).
+7. Done (2026-10-15): plan 64 stages 2-3. dts 1192 -> 1345 / 1408 (95.5%), dtsdiff 400 -> 922 / 1233 projects,
+   48974 -> 74279 / 76294 files; comments (`ty/decl_comments.c`), expandos as tsgo 7.1 builds them, late bound index
+   members, export default of function/class expressions, accessors as get/set... The dts component stays out of the
+   headline count until stage 4 (23 of its 63 failures are output paths and declaration maps). What's left:
+   bugs/dts_emit.md, plan 64 "Status".
 8. **Plan 66 stage 3**: the harness emits declarations before collecting diagnostics like tsgo's
    `harnessutil.CompileFiles`; re-bucket plan 66 bucket 2. Then plan 64 stage 3's long tail if it overran.
 9. **Plan 66 stage 4: second fan-out** on what's left of the suite, every remaining test fixed, planned or argued in

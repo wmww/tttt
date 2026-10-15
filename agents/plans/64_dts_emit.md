@@ -141,6 +141,8 @@ it.**
   declarations byte-identical (or each remaining file written up in a bugs file).
 
 ### Stage 4: the CLI and `-b` (one session)
+- (From stage 3, 2026-10-15: the `dts` component joins the headline pass count here, once output paths make the 15
+  path tests passable: folding it in at stage 3 would have put stage-4/5 features into plan 66's queue.)
 - Output paths as tsgo's `outputpaths` computes them (outDir, declarationDir, rootDir or the common source
   directory, `.d.mts`/`.d.cts` from `.mts`/`.cts`, no output for `.d.ts` inputs), noEmitOnError (skip writing, exit
   1), TS5055/TS5056/TS6059 and the other emit-time option diagnostics tsgo reports, `--listEmittedFiles`, exit codes

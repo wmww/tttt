@@ -526,17 +526,28 @@ src` finds the code-side markers; every significant one has an entry here.
   gets a new type, tttt interns literal types by shape, so this is decided by the flag rather than by identity.
 - Declaration emit's writer (`declaration_emit.c`, plan 64, the `emit_*()` functions): a second walk with its own
   per-node-kind functions next to the diagnostics walk's `check_*()` ones, sharing visibility, painting and
-  `serialize_*()`: what the two decide about members (privates, overloads, dynamic names) can drift apart. Known gaps:
-  class accessor properties in printed object types are `readonly x` (tsgo writes `get x()`/`set x()` for a class's
-  accessors, nodebuilderimpl's addPropertyToElementList), interface/type literal accessor pairs are reprinted as a
-  property (`InterfaceMember` merges the pair), an index signature's extra parameters are dropped, expando members
-  only for identifier names (a local name that conflicts isn't renamed; generated `_a` names are a per-file counter,
-  not tsgo's unique-name generator), `_default` picks `_default_N` by `scope_resolve()`. CRLF output is a pass over
-  the finished text. Import type options (`import("m", { with: ... })`) are copied from the source with brace spacing
-  normalized (`display_node_identifier()`, only in multiline mode); tsgo rebuilds them from the parsed attributes
-  (invalid ones differ). Preserved `/// <reference path>` directives keep their relative path with the extension
-  changed (tsgo makes it relative to the output directory). The harness matches tttt's files to the baseline's by output
-  name (not tsgo's emit order) and doesn't do `@fullEmitPaths`.
+  `serialize_*()`: what the two decide about members (privates, overloads, dynamic names, late bound index members:
+  `late_index_members()` serves both) can drift apart. Known gaps: an index signature's extra parameters are dropped;
+  the unique-name generator is approximated (`file_has_word()`: a whole-word search of the file text, tsc keeps the
+  set of identifiers the scanner saw; `undefined` is special-cased as resolvable in `emit_expando_namespace()`);
+  `w_literal_value()` rewrites `(typeof E)["x"]` text into `E["x"]` after printing the type; the leading comments of
+  a statement are written first and taken back if nothing follows (`w_leading()`/`w_unless_written()`), a class's
+  `_base` variable is inserted before them (`Walk.statement_start`). CRLF output is a pass over the finished text.
+  Import type options are copied from the source with brace spacing normalized (`display_node_identifier()`, invalid
+  ones `{ with: {} }` by a text check, `import_type_options_valid()`). Preserved `/// <reference path>` directives keep
+  their relative path with the extension changed (tsgo makes it relative to the output directory). The harness
+  matches tttt's files to the baseline's by output name (not tsgo's emit order) and doesn't do `@fullEmitPaths`.
+  A cloned template literal type (`display_pseudo()` PSEUDO_STRING_LITERAL) escapes tabs and CRs in the source text
+  rather than reprinting the cooked value.
+- Declaration emit's comments (`ty/decl_comments.c`): tsc's printer decides by node positions (`pos`, `end`,
+  containerPos) on synthesized nodes; tttt calls the comment functions at the places it knows a node starts or ends
+  (`span.buf`, span ends trimmed back over trivia by `decl_comments_end()`), so a node kind not hooked writes no
+  comments (union and tuple members, whose TypeNodes have no span; type-level trailing comments like
+  `a: string /** c */;`). The comment ranges come from what the lexer hopped (`SourceFile.comments`, only recorded
+  where declarations are emitted): backtracking may record a comment twice (deduplicated by start) and the JSDoc type
+  parser's hops aren't recorded. TyDisplay prints a written type literal's accessors and an object type's class
+  accessors as `get`/`set` only in multiline (declaration emit) mode, `TyDisplay.transformer_node` approximates what
+  tsc's declaration transformer visits (written annotations) against what its node builder reuses.
 - isolatedDeclarations reporting (`declaration_emit.c`, plan 55): tttt has no parents, so `locate()` finds a
   reported node by walking the declaration being serialized along the pseudo builder's descent (for
   findNearestDeclaration and createExpressionError's parent); a node the printer reports from another declaration of

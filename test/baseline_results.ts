@@ -10118,7 +10118,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitVarInElidedBlock': {
         errors: true,

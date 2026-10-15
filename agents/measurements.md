@@ -9,6 +9,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 64 stages 2-3 (2026-10-15, todo entry 7): declaration emit with comments
+Suite dts component: **1345 / 1408** (95.5%, from 1192). `scripts/dtsdiff.py`: **922 / 1233 projects, 74279 / 76294
+files** byte-identical (from 402 / 49020; comments were 23448 of the mismatching files, now ~180; JS sources are 693 of
+the remaining ~2000, bugs/dts_emit.md). Corpora files: 14617 / 14846. Everything else identical to the session start:
+suite 13618 / 13663, 0 lost; corpora (webpack 0/1, vue 0/3, effect 3/0), DT 8594 / 8595, `$ExpectType` 68637,
+flagflip 42 / 6 / 3, source sweep sample 811 / 822, perfsweep median 0.22 (load), worst types ratio 1.62.
+Instructions (callgrind, flat: comments are recorded only where declarations are emitted): tsc 4.696, type-fest
+19.261, valibot 3.460, react 1.504, nest 1.185, webpack 10.009, zod 5.076, xstate 2.732, drizzle 5.994, vue 6.597,
+effect 10.239, vscode 89.350, excalidraw 7.853, tanstack-router 5.390 G.
+
 ## Plan 64 stage 1 + most of stage 2 (2026-10-14, todo entry 6): the declaration writer
 Suite dts component (not in the headline count): **1192 / 1408** TS tests (344 with JS inputs apart), from 0.
 `scripts/dtsdiff.py`: **402 / 1233 projects, 49020 / 76294 files** byte-identical to tsgo (comments are 23448 of the
