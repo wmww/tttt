@@ -1588,20 +1588,31 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             bool optional_result = all_optional && any_member;
             // (Under exactOptionalPropertyTypes that's the missing type: `{ x: X | undefined } & { x?: X }` has a
             // required x of `X | missing`, which an optional target property doesn't take)
-            // (Only those all optional where some part's type has undefined already: otherwise intersecting the declared
-            // types and adding undefined on reading is the same, and cheaper)
-            bool normalize = optional_parts && compiler_options()->strict_null_checks;
-            // (Not under exactOptionalPropertyTypes, where an optional part's read type has the missing type, which an
-            // explicit undefined of another part would make undefined: arktype's `{ path?: undefined }` parts)
-            if (normalize && optional_result && compiler_options()->exact_optional_property_types) normalize = false;
-            if (normalize && optional_result) {
-                bool has_undefined = false;
-                for (u32 i = 0; i < len && !has_undefined; i++) has_undefined = union_has_undefined(parts[i]);
-                normalize = has_undefined;
-            }
-            if (normalize) {
+            if (optional_parts && !optional_result && compiler_options()->strict_null_checks) {
                 for (u32 i = 0; i < len; i++) {
                     if (optional_part[i]) parts[i] = ty_optional_prop_type(me, parts[i]);
+                }
+            }
+            // All optional: the declared types are intersected, readers add undefined. Unless one part's type has
+            // undefined already and the parts' read types are one type: that one (react-select's
+            // `Partial<P<Option>> & Omit<AsyncProps<...>, K>`, a declared `value?: PropsValue<Option>` and a mapped Pick's
+            // `PropsValue<Option> | undefined`, whose declared intersection distributes into `Option & MultiValue<Option>`
+            // members tsc doesn't have). HACK: tsc always intersects the read types (hacks.md); not under
+            // exactOptionalPropertyTypes, whose missing type an explicit undefined would make undefined
+            if (optional_parts && optional_result && len > 1 && compiler_options()->strict_null_checks &&
+                !compiler_options()->exact_optional_property_types
+            ) {
+                bool has_undefined = false;
+                for (u32 i = 0; i < len && !has_undefined; i++) has_undefined = union_has_undefined(parts[i]);
+                Ty const* same = nullptr;
+                for (u32 i = 0; i < len && has_undefined; i++) {
+                    Ty const* read = optional_part[i] ? ty_optional_prop_type(me, parts[i]) : parts[i];
+                    if (!same) same = read;
+                    else if (same != read) has_undefined = false;
+                }
+                if (has_undefined && same) {
+                    parts[0] = same;
+                    len = 1;
                 }
             }
             ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
