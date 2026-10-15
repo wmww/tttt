@@ -1164,6 +1164,7 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
             Symbol const* enum_symbol = name_type->literal.enum_decl;
             csview member_name = name_type->literal.enum_member->name;
             if (enum_symbol && symbol_accessible_without_modules_at(d.enclosing, enum_symbol, SYMBOL_VALUE)) {
+                if (d.tracker) d.tracker->track_symbol(d.tracker, enum_symbol, SYMBOL_VALUE);
                 out_lit(d, "[");
                 out_symbol_name(me, d, enum_symbol, SYMBOL_VALUE);
                 if (is_identifier_name(member_name)) {
@@ -3748,9 +3749,30 @@ static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* pro
     display_member_name(me, d, prop);
 }
 
+// Declaration emit: the entity names of a reused binding pattern's computed keys are tracked (painting the imports
+// they are)
+static void track_pattern_keys(Checker* me, TyDisplay d, Binding const* pattern) {
+    if (!d.tracker || !d.enclosing) return;
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) track_pattern_keys(me, d, i);
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) {
+            if (i->computed_key && expr_is_entity_name(i->computed_key)) {
+                Expr const* leftmost = entity_leftmost(i->computed_key);
+                if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword) {
+                    Symbol const* found = scope_resolve(d.enclosing, span_sv(leftmost->inner_span), SYMBOL_VALUE);
+                    if (found) d.tracker->track_symbol(d.tracker, found, SYMBOL_VALUE);
+                }
+            }
+            track_pattern_keys(me, d, &i->target);
+        }
+    }
+}
+
 // A parameter as its declaration says (pseudoParameterToNode): `type` its type in the signature
 static void display_pseudo_param(Checker* me, TyDisplay d, PseudoParam const* param, Ty const* type) {
     Binding const* binding = &param->arg->initializer.binding;
+    track_pattern_keys(me, d, binding);
     if (param->rest) out(reused_if(d, true), c_sv("..."));
     if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
         cstr pattern = cstr_init();

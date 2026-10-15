@@ -1347,8 +1347,13 @@ static void pseudo_to_node_in(Walk* me, Pseudo const* pseudo, ObjectExprItem con
     print_part(me, pseudo, in_return);
 }
 
+static void check_pattern_keys(Walk* me, Binding const* pattern);
+
 static void pseudo_params_to_node(Walk* me, PseudoParam const* params, u32 count) {
-    for (u32 i = 0; i < count; i++) pseudo_to_node(me, params[i].type);
+    for (u32 i = 0; i < count; i++) {
+        if (params[i].arg) check_pattern_keys(me, &params[i].arg->initializer.binding);
+        pseudo_to_node(me, params[i].type);
+    }
 }
 
 // pseudoTypeToNode, for what it reports (nothing is printed: the reused nodes' names are checked, see reuse_type())
@@ -1385,6 +1390,10 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
             my in_object_literal = true;
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
+                // (A computed name is written as it is: its entity named, checkEntityNameVisibility)
+                if (member->item->computed_key && pseudo_is_entity_name(member->item->computed_key)) {
+                    check_entity_expression(me, member->item->computed_key);
+                }
                 if (member->function) reuse_signature(me, member->function);
                 pseudo_params_to_node(me, member->params, member->param_count);
                 bool property = member->kind == PSEUDO_MEMBER_PROPERTY && member->item->tag == OBJECT_ITEM_PROPERTY;
@@ -2049,7 +2058,8 @@ typedef struct LateIndexMember {
 static uint8_t late_index_kind(Expr const* key) {
     if (!key || !is_dynamic_name(key)) return 0;
     Ty const* type = lazy_type_get((LazyType*)&key->lazy_type);
-    if (!type || (type->flags & (TYF_ANY | TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return 0;
+    if (!type || (type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return 0;
+    if (type->flags & TYF_ANY) return pseudo_is_entity_name(key) ? 2 : 0; // (assignable to number first)
     if (type->flags & TYF_NUMBER) return 2;
     if (type->flags & TYF_ES_SYMBOL) return 3;
     if (type->flags & (TYF_STRING | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return 1;
