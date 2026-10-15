@@ -111,6 +111,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationSynthesizedLiterals': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationTypeComments': {
         errors: true,
         symbols: true,
@@ -34508,7 +34514,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'unionCallMixedTypeParameterPresence': {
         errors: true,

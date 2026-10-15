@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationSynthesizedLiterals.ts] ////
+
+=== ttttDeclarationSynthesizedLiterals.ts ===
+// The literals declaration emit makes (createLiteralConstValue: an enum member's, a readonly field's, export default's
+// value) are ASCII-escaped; a literal expression's clone (pseudo types) escapes its value again keeping its quotes
+export const colors = { reset: "\x1b[0m", e: "é", t: `\x1b` } as const;
+>colors : Symbol(colors, Decl(ttttDeclarationSynthesizedLiterals.ts, 2, 12))
+>reset : Symbol(reset, Decl(ttttDeclarationSynthesizedLiterals.ts, 2, 23))
+>e : Symbol(e, Decl(ttttDeclarationSynthesizedLiterals.ts, 2, 41))
+>t : Symbol(t, Decl(ttttDeclarationSynthesizedLiterals.ts, 2, 49))
+>const : Symbol(const)
+
+export enum E { Shrug = "¯\\_(ツ)_/¯", X = "\x1b" }
+>E : Symbol(E, Decl(ttttDeclarationSynthesizedLiterals.ts, 2, 71))
+>Shrug : Symbol(E.Shrug, Decl(ttttDeclarationSynthesizedLiterals.ts, 3, 15))
+>X : Symbol(E.X, Decl(ttttDeclarationSynthesizedLiterals.ts, 3, 37))
+
+export class C { readonly a = "\x1b"; static readonly b = 'é'; }
+>C : Symbol(C, Decl(ttttDeclarationSynthesizedLiterals.ts, 3, 50))
+>a : Symbol(C.a, Decl(ttttDeclarationSynthesizedLiterals.ts, 4, 16))
+>b : Symbol(C.b, Decl(ttttDeclarationSynthesizedLiterals.ts, 4, 37))
+
+export const arr = ["\x1b", 'é'] as const;
+>arr : Symbol(arr, Decl(ttttDeclarationSynthesizedLiterals.ts, 5, 12))
+>const : Symbol(const)
+
+export function f() { return "\x1b" as const; }
+>f : Symbol(f, Decl(ttttDeclarationSynthesizedLiterals.ts, 5, 42))
+>const : Symbol(const)
+
+export let g: { x: "\x1b" } = { x: "\x1b" };
+>g : Symbol(g, Decl(ttttDeclarationSynthesizedLiterals.ts, 7, 10))
+>x : Symbol(x, Decl(ttttDeclarationSynthesizedLiterals.ts, 7, 15))
+>x : Symbol(x, Decl(ttttDeclarationSynthesizedLiterals.ts, 7, 31))
+
+export default "\xe9\x1b";
+

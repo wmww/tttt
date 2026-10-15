@@ -1,0 +1,51 @@
+//// [test/cases/ttttDeclarationSynthesizedLiterals.ts] ////
+
+=== ttttDeclarationSynthesizedLiterals.ts ===
+// The literals declaration emit makes (createLiteralConstValue: an enum member's, a readonly field's, export default's
+// value) are ASCII-escaped; a literal expression's clone (pseudo types) escapes its value again keeping its quotes
+export const colors = { reset: "\x1b[0m", e: "é", t: `\x1b` } as const;
+>colors : { readonly reset: "\u001B[0m"; readonly e: "é"; readonly t: `\u001B`; }
+>{ reset: "\x1b[0m", e: "é", t: `\x1b` } as const : { readonly reset: "\u001B[0m"; readonly e: "é"; readonly t: `\u001B`; }
+>{ reset: "\x1b[0m", e: "é", t: `\x1b` } : { readonly reset: "\u001B[0m"; readonly e: "é"; readonly t: `\u001B`; }
+>reset : "\u001B[0m"
+>"\x1b[0m" : "\u001B[0m"
+>e : "é"
+>"é" : "é"
+>t : "\u001B"
+>`\x1b` : "\u001B"
+
+export enum E { Shrug = "¯\\_(ツ)_/¯", X = "\x1b" }
+>E : E
+>Shrug : E.Shrug
+>"¯\\_(ツ)_/¯" : "¯\\_(ツ)_/¯"
+>X : E.X
+>"\x1b" : "\u001B"
+
+export class C { readonly a = "\x1b"; static readonly b = 'é'; }
+>C : C
+>a : "\u001B"
+>"\x1b" : "\u001B"
+>b : "é"
+>'é' : "é"
+
+export const arr = ["\x1b", 'é'] as const;
+>arr : readonly ["\u001B", "é"]
+>["\x1b", 'é'] as const : readonly ["\u001B", "é"]
+>["\x1b", 'é'] : readonly ["\u001B", "é"]
+>"\x1b" : "\u001B"
+>'é' : "é"
+
+export function f() { return "\x1b" as const; }
+>f : () => "\u001B"
+>"\x1b" as const : "\u001B"
+>"\x1b" : "\u001B"
+
+export let g: { x: "\x1b" } = { x: "\x1b" };
+>g : { x: "\u001B"; }
+>x : "\u001B"
+>{ x: "\x1b" } : { x: "\u001B"; }
+>x : "\u001B"
+>"\x1b" : "\u001B"
+
+export default "\xe9\x1b";
+

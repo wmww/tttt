@@ -2860,7 +2860,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
         at = span_make((SourceFile*)my file, start, start);
     }
     return (TyDisplay){
-        .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
+        .target = target, .target_start = cstr_size(target), .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
         .multiline = true, .indent = my indent, .comments = &my comments,
         .printed_params = my in_return ? &my return_params : nullptr,
     };
@@ -3336,7 +3336,9 @@ static bool w_own_unique_symbol(Walk* me, Ty const* type, Symbol const* symbol) 
 static void w_literal_value(Walk* me, Ty const* type) {
     // (A string is a string literal node it makes, which the printer escapes to ASCII)
     if (type->kind == TY_LITERAL && type->literal.string && !(type->flags & TYF_ENUM_LITERAL)) {
-        ty_display_synthesized_string(emit_display(me, my out), atom_sv(type->literal.string));
+        TyDisplay d = emit_display(me, my out);
+        d.tracker = nullptr; // (No length limit: it isn't a type the node builder serializes)
+        ty_display_synthesized_string(d, atom_sv(type->literal.string));
         return;
     }
     isize_t start = cstr_size(my out);
@@ -3768,7 +3770,7 @@ static void emit_field(Walk* me, ClassItem const* item, char const* member_end) 
     Expr const* init = &item->field.value;
     if (item->field.is_readonly && init->tag != EXPR_IMPLICIT_ANY && is_literal_const_field(item) && !item->field.has_explicit_type) {
         w_lit(me, " = ");
-        w_type(me, lazy_type_get((LazyType*)&item->field.lazy_type));
+        w_literal_value(me, lazy_type_get((LazyType*)&item->field.lazy_type));
         w_lit(me, ";");
         m(me, member_end);
         w_lit(me, "\n");
@@ -4239,7 +4241,7 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
         }
         if (value) {
             w_lit(me, " = ");
-            w_type(me, value);
+            w_literal_value(me, value); // (A string escaped to ASCII: a string literal node it makes)
         }
         // (The member ends after its initializer)
         m_span(me, i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value), true);
@@ -4716,7 +4718,7 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     if (literal_value) {
         cstr_drop(&text);
         w_lit(me, " = ");
-        w_type(me, expr_type);
+        w_literal_value(me, expr_type);
     } else {
         w_lit(me, ": ");
         w_serialized(me, &text);

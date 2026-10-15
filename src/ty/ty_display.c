@@ -71,7 +71,7 @@ static void set_over(TyDisplay d) {
 static void out(TyDisplay d, csview sv) {
     if (d.tracker && d.tracker->truncated) return;
     cstr_append_sv(d.target, sv);
-    if (d.tracker && cstr_size(d.target) > DECLARATION_MAX_LENGTH) {
+    if (d.tracker && cstr_size(d.target) - d.target_start > DECLARATION_MAX_LENGTH) {
         d.tracker->truncated = true;
         d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
     }
@@ -901,23 +901,10 @@ static void out_declared_name_impl(Checker* me, TyDisplay d, Ty const* declared,
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
 // A no-substitution template literal node (a cooked text, escaped again for backticks: tsgo's escapeString with a
 // backtick quote, which leaves line feeds, and `${` escaped)
+static void display_template_text(TyDisplay d, csview sv);
 static void display_template_string(TyDisplay d, csview sv) {
     out_lit(d, "`");
-    for (isize_t i = 0; i < sv.size; i++) {
-        char c = sv.buf[i];
-        if (c == '`' || c == '\\') {
-            char escaped[2] = { '\\', c };
-            out(d, csview_from_n(escaped, 2));
-        } else if (c == '$' && i + 1 < sv.size && sv.buf[i + 1] == '{') {
-            out_lit(d, "\\$");
-        } else if (c == '\r') {
-            out_lit(d, "\\r");
-        } else if (c == '\t') {
-            out_lit(d, "\\t");
-        } else {
-            out(d, csview_from_n(&sv.buf[i], 1));
-        }
-    }
+    display_template_text(d, sv);
     out_lit(d, "`");
 }
 static void display_string_literal(TyDisplay d, csview sv) {
@@ -2791,10 +2778,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                     break;
                 }
                 if (node->value_span.size && node->value_span.buf[0] == '`') {
-                    if (!node->synthesized) {
-                        out_template_raw(d, span_sv(node->value_span));
-                        break;
-                    }
+                    // (A no-substitution template has no raw text: a clone prints its cooked text escaped)
                     display_template_string(d, cstr_sv(&node->value.string));
                     break;
                 }
@@ -4453,19 +4437,19 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             // printer's template text)
             approx_add(d, reused_node_length(pseudo->expr->inner_span));
             csview text = span_sv(pseudo->expr->inner_span);
-            if (!text.size || text.buf[0] != '`') {
-                map_span(d, pseudo->expr->inner_span, false);
-                out(reused_if(d, true), text);
-                map_span(d, pseudo->expr->inner_span, true);
+            Ty const* literal = ty_expr_type(me, pseudo->expr);
+            TyDisplay reused = reused_if(d, true);
+            if (literal->kind != TY_LITERAL || !literal->literal.string) {
+                out(reused, text);
                 return;
             }
-            TyDisplay reused = reused_if(d, true);
-            for (isize_t i = 0, from = 0; i <= text.size; i++) {
-                if (i < text.size && text.buf[i] != '\t' && text.buf[i] != '\r') continue;
-                out(reused, csview_slice(text, from, i));
-                if (i < text.size) out(reused, text.buf[i] == '\t' ? c_sv("\\t") : c_sv("\\r"));
-                from = i + 1;
-            }
+            // (Its value escaped again, with NoAsciiEscaping: the clone has no source text, it keeps its quotes; a
+            // no-substitution template has no raw text)
+            map_span(d, pseudo->expr->inner_span, false);
+            csview value = atom_sv(literal->literal.string);
+            if (text.size && text.buf[0] == '`') display_template_string(reused, value);
+            else display_quoted_string(reused, value, text.size && text.buf[0] == '\'', false);
+            map_span(d, pseudo->expr->inner_span, true);
             return;
         }
         case PSEUDO_NUMERIC_LITERAL:

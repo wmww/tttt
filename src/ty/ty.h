@@ -2478,6 +2478,8 @@ typedef struct DeclTracker {
 
 typedef struct TyDisplay {
     cstr* target;
+    // Where in `target` the type starts (declaration emit writes into the file's text: the length limit is the type's)
+    isize_t target_start;
     // A message's type: tsc's approximateLength so far, which decides where it is cut short (see display_over()). Null
     // elsewhere, and inside a reused annotation (counted by its text)
     u32* approx;
