@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationReexportModeMismatch.ts] ////
+
+=== /src/access/types.ts ===
+export type Statements = { readonly [resource: string]: readonly string[] };
+>Statements : Statements
+>resource : string
+
+=== /src/access/index.ts ===
+export * from "./types";
+import type { Statements } from "./types";
+>Statements : Statements
+
+export declare function createAccessControl<const T extends Statements>(s: T): {
+>createAccessControl : <const T extends Statements>(s: T) => { newRole<const R extends Statements>(statements: R): R; statements: T; }
+>s : T
+
+    newRole<const R extends Statements>(statements: R): R;
+>newRole : <const R extends Statements>(statements: R) => R
+>statements : R
+
+    statements: T;
+>statements : T
+
+};
+=== /src/index.ts ===
+
+export * from "./access";
+=== /src/plugins/admin/statement.ts ===
+import { createAccessControl } from "../../access";
+>createAccessControl : <const T extends import("../../access").Statements>(s: T) => { newRole<const R extends import("../../access").Statements>(statements: R): R; statements: T; }
+
+export const ac = createAccessControl({ user: ["create", "list"] } as const);
+>ac : { newRole<const R extends import("../../access").Statements>(statements: R): R; statements: { readonly user: readonly ["create", "list"]; }; }
+>createAccessControl({ user: ["create", "list"] } as const) : { newRole<const R extends import("../../access").Statements>(statements: R): R; statements: { readonly user: readonly ["create", "list"]; }; }
+>createAccessControl : <const T extends import("../../access").Statements>(s: T) => { newRole<const R extends import("../../access").Statements>(statements: R): R; statements: T; }
+>{ user: ["create", "list"] } as const : { readonly user: readonly ["create", "list"]; }
+>{ user: ["create", "list"] } : { readonly user: readonly ["create", "list"]; }
+>user : readonly ["create", "list"]
+>["create", "list"] : readonly ["create", "list"]
+>"create" : "create"
+>"list" : "list"
+

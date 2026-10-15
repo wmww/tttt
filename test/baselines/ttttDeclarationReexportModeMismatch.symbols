@@ -1,0 +1,45 @@
+//// [test/cases/ttttDeclarationReexportModeMismatch.ts] ////
+
+=== /src/access/types.ts ===
+export type Statements = { readonly [resource: string]: readonly string[] };
+>Statements : Symbol(Statements, Decl(types.ts, 0, 0))
+>resource : Symbol(resource, Decl(types.ts, 0, 37))
+
+=== /src/access/index.ts ===
+export * from "./types";
+import type { Statements } from "./types";
+>Statements : Symbol(Statements, Decl(index.ts, 1, 13))
+
+export declare function createAccessControl<const T extends Statements>(s: T): {
+>createAccessControl : Symbol(createAccessControl, Decl(index.ts, 1, 42))
+>T : Symbol(T, Decl(index.ts, 2, 44))
+>Statements : Symbol(Statements, Decl(index.ts, 1, 13))
+>s : Symbol(s, Decl(index.ts, 2, 72))
+>T : Symbol(T, Decl(index.ts, 2, 44))
+
+    newRole<const R extends Statements>(statements: R): R;
+>newRole : Symbol(newRole, Decl(index.ts, 2, 80))
+>R : Symbol(R, Decl(index.ts, 3, 12))
+>Statements : Symbol(Statements, Decl(index.ts, 1, 13))
+>statements : Symbol(statements, Decl(index.ts, 3, 40))
+>R : Symbol(R, Decl(index.ts, 3, 12))
+>R : Symbol(R, Decl(index.ts, 3, 12))
+
+    statements: T;
+>statements : Symbol(statements, Decl(index.ts, 3, 58))
+>T : Symbol(T, Decl(index.ts, 2, 44))
+
+};
+=== /src/index.ts ===
+
+export * from "./access";
+=== /src/plugins/admin/statement.ts ===
+import { createAccessControl } from "../../access";
+>createAccessControl : Symbol(createAccessControl, Decl(statement.ts, 0, 8))
+
+export const ac = createAccessControl({ user: ["create", "list"] } as const);
+>ac : Symbol(ac, Decl(statement.ts, 1, 12))
+>createAccessControl : Symbol(createAccessControl, Decl(statement.ts, 0, 8))
+>user : Symbol(user, Decl(statement.ts, 1, 39))
+>const : Symbol(const)
+

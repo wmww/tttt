@@ -1,0 +1,39 @@
+//// [test/cases/ttttDeclarationPackageCopyNotContainer.ts] ////
+
+=== /node_modules/.pnpm/next@1.0.0_a/node_modules/next/index.d.ts ===
+export interface Handler { x: number }
+>Handler : Symbol(Handler, Decl(index.d.ts, 0, 0))
+>x : Symbol(Handler.x, Decl(index.d.ts, 0, 26))
+
+=== /node_modules/.pnpm/next@1.0.0_b/node_modules/next/index.d.ts ===
+export interface Handler { x: number }
+>Handler : Symbol(Handler, Decl(index.d.ts, 0, 0))
+>x : Symbol(Handler.x, Decl(index.d.ts, 0, 26))
+
+=== /node_modules/.pnpm/lib2@1.0.0/node_modules/lib2/sub.d.ts ===
+import type { Handler } from "next";
+>Handler : Symbol(Handler, Decl(sub.d.ts, 0, 13))
+
+export type { Handler } from "next";
+>Handler : Symbol(Handler, Decl(sub.d.ts, 1, 13))
+
+export declare function handler(): Handler;
+>handler : Symbol(handler, Decl(sub.d.ts, 1, 36))
+>Handler : Symbol(Handler, Decl(sub.d.ts, 0, 13))
+
+=== /a/src/main.ts ===
+import type { Handler } from "next";
+>Handler : Symbol(Handler, Decl(main.ts, 0, 13))
+
+export const h: Handler | undefined = undefined;
+>h : Symbol(h, Decl(main.ts, 1, 12))
+>Handler : Symbol(Handler, Decl(main.ts, 0, 13))
+>undefined : Symbol(undefined)
+
+=== /b/src/y.ts ===
+import { handler } from "lib2/sub";
+>handler : Symbol(handler, Decl(y.ts, 0, 8))
+
+export default handler();
+>handler : Symbol(handler, Decl(y.ts, 0, 8))
+

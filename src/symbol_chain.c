@@ -40,6 +40,7 @@ typedef struct ChainCtx {
     // Looking for a chain to a container of the symbol being named (getSymbolChain of a parent), see
     // namespace_import_is_clone()
     bool container_lookup;
+    ModuleRef const* usage_ref; // symbol_chain_set_usage()
     // tsc's visitedSymbolTablesMap: the tables being searched for each symbol, so that aliases of each other end
     VisitedTable visited[64];
     u32 visited_count;
@@ -668,7 +669,8 @@ static u32 program_modules_exporting(ChainCtx* me, Symbol const* symbol, Symbol 
         u32 files = program_source_count(program);
         for (u32 i = 0; i < files && slot->count < CONTAINERS_MAX; i++) {
             SourceFile const* other = program_source_at((Program*)program, i);
-            if (!other->is_module || !other->scope || !other->scope->container) continue;
+            // (A second copy of a package is no file of tsgo's program: its filesByPath maps it to the first)
+            if (!other->is_module || !other->scope || !other->scope->container || other->package_redirect) continue;
             Symbol const* module = other->scope->container;
             if (alias_in_container(me, module, symbol)) slot->items[slot->count++] = module;
         }
@@ -678,24 +680,73 @@ static u32 program_modules_exporting(ChainCtx* me, Symbol const* symbol, Symbol 
     return count;
 }
 
+// The import or export whose specifier the name being printed is part of (TyDisplay.usage_ref), on this thread
+static thread_local ModuleRef const* chain_usage_ref;
+
+void symbol_chain_set_usage(ModuleRef const* usage_ref) {
+    chain_usage_ref = usage_ref;
+}
+
+// What tsgo's resolveExternalModuleName(enclosingDeclaration, import) finds the import to be again: an ambient module
+// by its name, a file only through a resolution of the same name in the mode it looks it up in, the usage mode of the
+// import or export the enclosing declaration is in, else the file's default. With `module: esnext` (bundler resolution)
+// the default is none while the imports were resolved as ESM: no import is found from outside the import declarations
+static Symbol const* import_found_again(SourceFile const* file, ModuleRef const* ref, SpecifierMode wanted) {
+    if (!current_checker || !ref->module->module || !ref->module->module->file) return ref->module;
+    Program const* program = current_checker->program;
+    for (u32 i = 0; i < file->module_ref_count; i++) {
+        ModuleRef const* other = file->module_refs[i];
+        if (other != ref && !csview_equals_sv(cstr_sv(&other->path), cstr_sv(&ref->path))) continue;
+        if (other->is_declaration || other->ambient_only || other->module_state != ALIAS_DONE || !other->module) continue;
+        if (program_usage_mode(program, file, other) == wanted) return other->module;
+    }
+    return nullptr;
+}
+
+typedef struct ContainerList {
+    u32 count;
+    Symbol const* items[CONTAINERS_MAX];
+} ContainerList;
+
+// tsgo's getAlternativeContainingModules: the modules of the enclosing file's imports that export the symbol (perhaps
+// through `export *`), remembered per (symbol, file) by the checker once some are found (tsc's extendedContainersByFile,
+// which only a lookup from inside an import declaration fills under bundler resolution), else every module of the
+// program that does
 static u32 alternative_modules_uncached(ChainCtx* me, SourceFile const* file, Symbol const* symbol, Symbol const** out, u32 cap) {
+    Checker* checker = current_checker;
+    u64 key[3] = { KEY_EXTENDED_CONTAINERS, (u64)(uintptr_t)symbol, (u64)(uintptr_t)file };
+    ContainerList const* memo = checker ? intern_get(&checker->links, key, 3) : nullptr;
+    if (memo) {
+        u32 count = memo->count < cap ? memo->count : cap;
+        memcpy(out, memo->items, count * sizeof(*out));
+        return count;
+    }
+    SpecifierMode wanted = !checker ? SPECIFIER_MODE_NONE : my usage_ref ? program_usage_mode(checker->program, file, my usage_ref) :
+        program_default_resolution_mode(checker->program, file);
     u32 count = 0;
     for (u32 i = 0; i < file->module_ref_count && count < cap; i++) {
         ModuleRef const* ref = file->module_refs[i];
         // (not the `declare module`s, nor the imports tsc synthesizes)
         if (ref->is_declaration || ref->ambient_only || ref == file->helpers_ref || ref == file->jsx_runtime_ref) continue;
         if (ref->module_state != ALIAS_DONE || !ref->module) continue;
-        if (alias_in_container(me, ref->module, symbol)) out[count++] = ref->module;
+        Symbol const* module = import_found_again(file, ref, wanted);
+        if (module && alias_in_container(me, module, symbol)) out[count++] = module;
     }
-    if (count || !current_checker) return count;
+    if (count && checker) {
+        ContainerList* list = arena_new(&checker->arena, ContainerList);
+        list->count = count;
+        memcpy(list->items, out, count * sizeof(*out));
+        *intern_slot(checker, &checker->links, key, 3) = list;
+    }
+    if (count || !checker) return count;
     return program_modules_exporting(me, symbol, out, cap);
 }
 
 static u32 alternative_modules(ChainCtx* me, Symbol const* symbol, Symbol const** out, u32 cap) {
     SourceFile const* file = my enclosing ? my enclosing->file : nullptr;
     if (!file || !cap) return 0;
-    // (a walk is of one file)
-    if (!alias_index_generation) return alternative_modules_uncached(me, file, symbol, out, cap);
+    // (a walk is of one file, from outside its import declarations)
+    if (!alias_index_generation || my usage_ref) return alternative_modules_uncached(me, file, symbol, out, cap);
     if (!extended_containers) extended_containers = calloc(EXTENDED_CONTAINER_SLOTS, sizeof(ExtendedContainers));
     ExtendedContainers* slot = &extended_containers[((uintptr_t)symbol >> 4) % EXTENDED_CONTAINER_SLOTS];
     if (slot->symbol != symbol || slot->generation != alias_index_generation) {
@@ -898,6 +949,7 @@ SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 me
     ChainCtx* ctx = malloc(sizeof(ChainCtx));
     chain_ctx_init(ctx, enclosing);
     ctx->yield_module = yield_module;
+    ctx->usage_ref = chain_usage_ref;
     symbol_chain(ctx, symbol, meaning, true, 0, &ret);
     free(ctx);
     return ret;

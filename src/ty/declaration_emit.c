@@ -3378,6 +3378,19 @@ static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_co
     w_serialized(me, &text);
 }
 
+// tsgo's getBindingNameVisible of a pattern: some name in it is visible (painted by an alias, `export { a }`)
+static bool binding_name_visible(Walk* me, Binding const* pattern, bool module_top_level) {
+    if (pattern->tag == BINDING_IDENTIFIER) {
+        return was_painted(me, pattern->symbol) || (module_top_level && is_exported_local(me, pattern->symbol));
+    }
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) if (binding_name_visible(me, i, module_top_level)) return true;
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) if (binding_name_visible(me, &i->target, module_top_level)) return true;
+    }
+    return false;
+}
+
 static bool binding_declares_names(Binding const* pattern) {
     if (pattern->tag == BINDING_IDENTIFIER) return true;
     if (pattern->tag == BINDING_ARRAY) {
@@ -3440,8 +3453,9 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             continue;
         }
         if (binding->tag != BINDING_IDENTIFIER) {
-            // (Without initializers in it, the pattern is written with its type; an empty one isn't)
-            if (!visible) continue;
+            // (Without initializers in it, the pattern is written with its type, whole when a name in it is visible;
+            // an empty one isn't)
+            if (!visible && !binding_name_visible(me, binding, container.module_top_level)) continue;
             if (!binding_declares_names(binding)) continue;
             if (written++) w_lit(me, ", ");
             m_span(me, binding->content_span, false);

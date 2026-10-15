@@ -522,6 +522,14 @@ static void out_module_attributes(TyDisplay d, Symbol const* module) {
     out_lit(d, " } }");
 }
 
+// symbol_chain_at() from where the display is, inside the import or export whose name is printed if it is
+static SymbolChain display_chain_at(TyDisplay d, Symbol const* symbol, u32 meaning, bool yield_module) {
+    if (d.usage_ref) symbol_chain_set_usage(d.usage_ref);
+    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, yield_module);
+    if (d.usage_ref) symbol_chain_set_usage(nullptr);
+    return chain;
+}
+
 // `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode), named from a place
 // as program_module_display_name() says
 static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
@@ -659,7 +667,7 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
     // message (typeToString's UseAliasDefinedOutsideCurrentScope: no module symbol is yielded, what nothing reaches is
     // its bare name)
-    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.types_baseline || d.tracker);
+    SymbolChain chain = display_chain_at(d, symbol, meaning, d.types_baseline || d.tracker);
     u32 start = 0;
     // (What an augmented `export =` assigns is a module to tsc's printer, not named by its own local, see
     // is_external_module_symbol() in symbol_chain.c, and not as the module it is assigned to either)
@@ -857,7 +865,7 @@ static void out_declared_name_impl(Checker* me, TyDisplay d, Ty const* declared,
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol != symbol_members(symbol) && namespace_import_is_clone(symbol)) {
         // The clone `import * as ns` makes is named by the import where that reaches it, else as the module
-        SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.types_baseline || d.tracker);
+        SymbolChain chain = display_chain_at(d, symbol, meaning, d.types_baseline || d.tracker);
         out_symbol_name(me, d, chain.len ? symbol : symbol_members(symbol), meaning);
         return;
     }
@@ -1272,7 +1280,7 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
         // yielded, the variable prints by its bare name
         UniqueSymbolDecl const* decl = unique->literal.unique;
         if (d.enclosing && !d.tracker && decl->owner && !span_valid(decl->member)) {
-            SymbolChain chain = symbol_chain_at(d.enclosing, decl->owner, SYMBOL_VALUE, true);
+            SymbolChain chain = display_chain_at(d, decl->owner, SYMBOL_VALUE, true);
             if (chain.len && chain.items[0]->is_module) {
                 out(d, span_sv(ty_symbol_display_name(decl->owner)));
                 out_lit(d, "]");
@@ -1774,7 +1782,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             Symbol const* target = identifier->target;
             if (target && span_valid(identifier->name)) {
                 u32 meaning = identifier_type_import_typeof(identifier) ? SYMBOL_VALUE : SYMBOL_TYPE;
-                SymbolChain chain = symbol_chain_at(d.enclosing, target, meaning, true);
+                SymbolChain chain = display_chain_at(d, target, meaning, true);
                 if (chain.len && chain.items[0]->is_module && chain.items[0]->module && chain.items[0]->module->file) {
                     module = chain.items[0];
                 }

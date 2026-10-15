@@ -1,0 +1,36 @@
+//// [test/cases/ttttDeclarationPackageCopyNotContainer.ts] ////
+
+=== /node_modules/.pnpm/next@1.0.0_a/node_modules/next/index.d.ts ===
+export interface Handler { x: number }
+>x : number
+
+=== /node_modules/.pnpm/next@1.0.0_b/node_modules/next/index.d.ts ===
+export interface Handler { x: number }
+>x : number
+
+=== /node_modules/.pnpm/lib2@1.0.0/node_modules/lib2/sub.d.ts ===
+import type { Handler } from "next";
+>Handler : Handler
+
+export type { Handler } from "next";
+>Handler : Handler
+
+export declare function handler(): Handler;
+>handler : () => Handler
+
+=== /a/src/main.ts ===
+import type { Handler } from "next";
+>Handler : Handler
+
+export const h: Handler | undefined = undefined;
+>h : Handler | undefined
+>undefined : undefined
+
+=== /b/src/y.ts ===
+import { handler } from "lib2/sub";
+>handler : () => import("lib2/sub.js").Handler
+
+export default handler();
+>handler() : import("lib2/sub").Handler
+>handler : () => import("lib2/sub").Handler
+

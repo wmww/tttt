@@ -1,0 +1,30 @@
+//// [test/cases/ttttDeclarationPatternPaintedByExport.ts] ////
+
+=== /node_modules/lib/index.d.ts ===
+export interface Bundle<T> { a: () => T; b: () => T; c: () => T }
+>a : () => T
+>b : () => T
+>c : () => T
+
+export declare function make<T>(): Bundle<T>;
+>make : <T>() => Bundle<T>
+
+=== /a.ts ===
+import { make } from "lib";
+>make : <T>() => import("lib").Bundle<T>
+
+const { a, b } = make<string>();
+>a : () => string
+>b : () => string
+>make<string>() : import("lib").Bundle<string>
+>make : <T>() => import("lib").Bundle<T>
+
+const { c } = make<number>();
+>c : () => number
+>make<number>() : import("lib").Bundle<number>
+>make : <T>() => import("lib").Bundle<T>
+
+export { a, b };
+>a : () => string
+>b : () => string
+
