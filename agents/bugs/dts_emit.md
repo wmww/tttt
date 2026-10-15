@@ -34,9 +34,17 @@ size on real code, each with an example:
   (not a reused node) isn't painted in some paths: excalidraw `actionProperties.d.ts` (ExcalidrawFreeDrawElement),
   effect `fiberRuntime.d.ts` (`import type * as Either`). Find which display path prints the name without
   `d.tracker->track_symbol()`.
-- **Comments in lists without spans**: TypeNode has no span, so intervening comments inside unions
-  (`A | /* B | */ C`) and tuples' line comments (`// readonly because contravariant`, effect `MetricPolling.d.ts`)
-  aren't copied.
+- **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
+  parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
+  a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
+  comments on their own line before a list delimiter (emitListItems' emitLeadingComments(previousSibling.End()));
+  comments of nodes the node builder copies (tsgo's clones keep positions: `setTextRange`); trpc's `'global-errorFormatter'`
+  of an `as const` pseudo type mapped where tsgo doesn't map it (dtsdiff `map: extra at string (message)`,
+  `'RATE_LIMIT`); feathers' `language: 'js' | 'ts'` and comments of a spread's properties where tsgo prints the type
+  (`"js" | "ts"`, no comments, an intersection member repeated: a spread of an intersection with prompt answers,
+  checker-side); an overloaded function's type is instantiated by a class expression's `this` although it has no
+  outer type parameters (display looks through it: anonymous_type_query(); the fix belongs in instantiate_anonymous()'s
+  free parameters).
 - **Unknown-symbol naming (tsgo quirk, matched)**: tsgo names an unresolved type through any import alias that also
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps) and paints
   that import; tttt prints the same name but doesn't paint the import.

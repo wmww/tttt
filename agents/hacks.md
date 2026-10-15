@@ -954,3 +954,8 @@ src` finds the code-side markers; every significant one has an entry here.
   factories), not tsgo's whole CompilerOptions JSON (paths, lib, strings...): a mapper reading those gets nothing.
 - Not done: the `locale` initialize parameter, mapper protocol/stderr logging, declaration emit names for mapped files
   (tttt doesn't emit), `-b`'s tsbuildinfo `contentMapperIdentities` (tttt writes none).
+- `anonymous_type_query()` (ty_display.c) looks through instantiations of a file's overloaded function's type to print
+  `typeof f`: tsgo never instantiates them (no outer type parameters), tttt does (instantiate_anonymous() treats an
+  overloaded function's free parameters as unknown). The real fix is knowing those free parameters.
+- `node_in_mapped_file()` (ty_display.c): a reused TypeNode doesn't know its file, so declaration maps find it from one
+  of its spans, or for a keyword by comparing the text at its offset in the mapped file.
