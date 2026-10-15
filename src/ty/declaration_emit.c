@@ -1,4 +1,5 @@
 #include "ty/declaration_emit.h"
+#include "ty/decl_comments.h"
 #include "ty/ty_internal.h"
 #include "statement.h"
 #include "class_decl.h"
@@ -196,6 +197,7 @@ typedef struct Walk {
     u32 generated_names; // The printer's generated names given so far (`_a`, `_b`...)
     u32* export_offsets;
     u32 export_offset_count, export_offset_cap;
+    DeclComments comments; // The comments copied from the source (decl_comments.h)
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -2619,7 +2621,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     }
     return (TyDisplay){
         .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
-        .multiline = true, .indent = my indent,
+        .multiline = true, .indent = my indent, .comments = &my comments,
     };
 }
 
@@ -2627,8 +2629,41 @@ static void w(Walk* me, csview text) { cstr_append_sv(my out, text); }
 static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers);
 #define w_lit(me, s) w(me, c_sv(s))
 
+static bool w_at_line_start(Walk* me) { return !cstr_size(my out) || cstr_str(my out)[cstr_size(my out) - 1] == '\n'; }
+
+// (Nothing after a leading comment that ended on the line the declaration starts: `/** a */ a: T;`)
 static void w_indent(Walk* me) {
+    if (!w_at_line_start(me)) return;
     for (u32 i = 0; i < my indent; i++) w_lit(me, "    ");
+}
+
+// A line break unless at the start of a line (tsc's writeLine)
+static void w_line(Walk* me) {
+    if (!w_at_line_start(me)) w_lit(me, "\n");
+}
+
+// The leading comments of a node about to be written, from the first token at `token` (decl_comments.h). Returns where
+// they started: w_unless_written() takes them back when nothing was written after them
+static isize_t w_leading(Walk* me, char const* token) {
+    isize_t start = cstr_size(my out);
+    decl_comments_leading(&my comments, my out, my indent, token);
+    return start;
+}
+
+// After a node: false (and its leading comments taken back) if nothing was written since they were, else its trailing
+// comments after `end`, before the line break that ends it
+static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char const* end) {
+    if (cstr_size(my out) == written_from) {
+        cstr_erase(my out, start, cstr_size(my out) - start);
+        return false;
+    }
+    if (!end) return true;
+    isize_t size = cstr_size(my out);
+    bool line_break = size && cstr_str(my out)[size - 1] == '\n';
+    if (line_break) cstr_erase(my out, size - 1, 1);
+    decl_comments_trailing(&my comments, my out, end);
+    if (line_break) w_lit(me, "\n");
+    return true;
 }
 
 // (While a w_*() helper prints, what the tracker's callbacks serialize isn't written)
@@ -2736,12 +2771,21 @@ static void w_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg
     w_serialized(me, &text);
 }
 
+// A parameter in a list, with the comments around it (tsc's emitListItems)
+static void w_parameter_with_comments(Walk* me, FunctionImpl const* fn, FunctionArg const* arg) {
+    decl_comments_intervening(&my comments, my out, my indent, arg->span.buf);
+    w_leading(me, arg->span.buf);
+    w_indent(me);
+    w_parameter(me, fn, arg, false);
+    decl_comments_trailing(&my comments, my out, span_end_ptr(arg->span));
+}
+
 static void w_parameters(Walk* me, FunctionImpl const* fn, bool private_member) {
     w_lit(me, "(");
     if (!private_member) {
         for_each (i, vec_function_arg, &fn->args) {
             if (i_index) w_lit(me, ", ");
-            w_parameter(me, fn, i, false);
+            w_parameter_with_comments(me, fn, i);
         }
     }
     w_lit(me, ")");
@@ -3208,6 +3252,8 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             Ty const* key_type = lazy_type_get((LazyType*)&key->lazy_type);
             if (!pseudo_is_entity_name(key) || !key_type || !(key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) continue;
         }
+        isize_t member_start = w_leading(me, i->span.buf);
+        isize_t member_written_from = cstr_size(my out);
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
@@ -3259,7 +3305,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                         for_each (j, vec_function_arg, &fn->args) {
                             Binding const* binding = &j->initializer.binding;
                             if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-                            w_parameter(me, fn, j, false);
+                            w_parameter_with_comments(me, fn, j);
                             written = true;
                             break;
                         }
@@ -3292,6 +3338,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             }
             default: break;
         }
+        w_unless_written(me, member_start, member_written_from, decl_comments_end(&my comments, span_end_ptr(i->span), ";"));
     }
     my member_static = outer_static, my member_in_class = outer_in_class;
     my indent--;
@@ -3354,7 +3401,12 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
     u32 written = 0;
     for_each (i, vec_enum_case, &decl->cases) {
         if (is_internal_declaration(i->full_name)) continue;
-        if (written++) w_lit(me, ",\n");
+        if (written++) {
+            w_lit(me, ",");
+            decl_comments_after_delimiter(&my comments, my out, my indent, i->full_name.buf, false);
+            w_line(me);
+        }
+        w_leading(me, i->full_name.buf);
         w_indent(me);
         w(me, span_sv(i->full_name));
         // (Its value where it has one: getEnumMemberValue)
@@ -3377,8 +3429,9 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
             w_lit(me, " = ");
             w_type(me, value);
         }
+        decl_comments_trailing(&my comments, my out, span_end_ptr(i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value)));
     }
-    if (written) w_lit(me, "\n");
+    if (written) w_line(me);
     my indent--;
     w_indent(me);
     w_lit(me, "}\n");
@@ -3649,8 +3702,17 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     cstr_drop(&name);
 }
 
+static void emit_statement_inner(Walk* me, Statement const* statement, Container container);
+
 static void emit_statement(Walk* me, Statement const* statement, Container container) {
     if (is_internal_declaration(statement->span)) return;
+    isize_t start = w_leading(me, statement->span.buf);
+    isize_t written_from = cstr_size(my out);
+    emit_statement_inner(me, statement, container);
+    w_unless_written(me, start, written_from, span_end_ptr(statement->span));
+}
+
+static void emit_statement_inner(Walk* me, Statement const* statement, Container container) {
     switch (statement->tag) {
         case STATEMENT_IMPORT_EXPORT: emit_port(me, statement, container); return;
         case STATEMENT_DECL_VARIABLE: emit_variable_statement(me, statement, container); return;
@@ -3730,6 +3792,8 @@ static void emit_directives(Walk* me) {
 
 // The second walk: the file's `.d.ts`
 static void emit_file(Walk* me, Container top) {
+    my comments = (DeclComments){ .file = my file, .off = compiler_options()->remove_comments };
+    decl_comments_detached(&my comments, my out);
     emit_directives(me);
     emit_statements(me, &my file->ast.statements, top);
     // (A module whose declarations wouldn't say so, or one with a declaration that isn't exported and nothing that says
@@ -3737,6 +3801,11 @@ static void emit_file(Walk* me, Container top) {
     if (my file->is_module && (!my has_module_indicator || (my needs_scope_fix && !my has_scope_marker))) {
         w_lit(me, "export {};\n");
     }
+    Statement const* last = nullptr;
+    for_each (i, vec_statement, &my file->ast.statements) {
+        if (span_valid(i->span) && i->tag != STATEMENT_SOURCE_DIRECTIVE) last = i;
+    }
+    if (last) decl_comments_file_end(&my comments, my out, span_end_ptr(last->span));
 }
 
 bool declaration_diagnostics_wanted(SourceFile const* file) {

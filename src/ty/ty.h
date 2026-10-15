@@ -2471,6 +2471,8 @@ typedef struct TyDisplay {
     // the printer's MultiLineTypeLiteralMembers), `indent` levels of 4 spaces deep where the type starts
     bool multiline;
     u32 indent;
+    // Declaration emit: the comments of the file being written, copied around reused members (decl_comments.h)
+    struct DeclComments const* comments;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

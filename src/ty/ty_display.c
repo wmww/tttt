@@ -1,5 +1,6 @@
 #include "ty/pseudo.h"
 #include "ty/ty_internal.h"
+#include "ty/decl_comments.h"
 #include "scope.h"
 #include "program.h"
 #include "function_impl.h"
@@ -89,13 +90,40 @@ static void out_indent(TyDisplay d) {
     }
 }
 
-// Before a member (with the members' TyDisplay)
+// Before a member (with the members' TyDisplay; not after a leading comment on its line)
 static void member_begin(TyDisplay d) {
-    if (d.multiline) out_indent(d);
+    isize_t size = cstr_size(d.target);
+    if (d.multiline && (!size || cstr_str(d.target)[size - 1] == '\n')) out_indent(d);
 }
 
 static void member_end(TyDisplay d) {
     out(d, d.multiline ? c_sv(";\n") : c_sv("; "));
+}
+
+// Declaration emit: where a property printed from its type was declared, whose comments it copies (tsgo's
+// setCommentRange of its valueDeclaration in addPropertyToElementList, or of the signature's declaration: `index`)
+static Span prop_comment_span(TyDisplay d, Prop const* prop, u32 index) {
+    if (!d.comments || !d.multiline) return span_null;
+    while (prop->target) prop = prop->target;
+    u32 count = prop->decl->decl_span_count;
+    if (!count) return span_null;
+    return prop->decl->decl_spans[index < count ? index : 0];
+}
+
+// A reused member's leading comments, and its end with its trailing ones (declaration emit's, decl_comments.h)
+static void member_begin_node(TyDisplay d, Span declaration) {
+    if (d.multiline && d.comments && span_valid(declaration)) decl_comments_leading(d.comments, d.target, d.indent, declaration.buf);
+    member_begin(d);
+}
+
+static void member_end_node(TyDisplay d, Span declaration, char const* separators) {
+    if (!d.multiline || !d.comments || !span_valid(declaration)) {
+        member_end(d);
+        return;
+    }
+    out_lit(d, ";");
+    decl_comments_trailing(d.comments, d.target, decl_comments_end(d.comments, span_end_ptr(declaration), separators));
+    out_lit(d, "\n");
 }
 
 // (With the TyDisplay brace_open() was given)
@@ -1749,6 +1777,21 @@ static void display_node_signature(Checker* me, TyDisplay d, FunctionImpl const*
     param_names_leave(d, saved);
 }
 
+// Declaration emit: the comments around a reused parameter (tsc's emitListItems, decl_comments.h)
+static void param_comments_begin_at(TyDisplay d, Span span) {
+    if (!d.comments || !span_valid(span)) return;
+    decl_comments_intervening(d.comments, d.target, d.indent, span.buf);
+    decl_comments_leading(d.comments, d.target, d.indent, span.buf);
+    isize_t size = cstr_size(d.target);
+    if (size && cstr_str(d.target)[size - 1] == '\n') out_indent(d);
+}
+
+static void param_comments_begin(TyDisplay d, FunctionArg const* arg) { param_comments_begin_at(d, arg->span); }
+
+static void param_comments_end(TyDisplay d, FunctionArg const* arg) {
+    if (d.comments && span_valid(arg->span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(arg->span));
+}
+
 static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
     if (function->is_abstract_constructor) out_lit(d, "abstract ");
     if (function->is_constructor || function->is_abstract_constructor) out_lit(d, "new ");
@@ -1756,6 +1799,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
     out_lit(d, "(");
     for_each (i, vec_function_arg, &function->args) {
         if (i_index) out_lit(d, ", ");
+        if (!function->jsdoc_type) param_comments_begin(d, i);
         Binding const* binding = &i->initializer.binding;
         if (i->rest) out_lit(d, "...");
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
@@ -1771,6 +1815,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
         if (binding->has_explicit_type) display_node(me, d, binding_type(binding));
         else out(reused_if(d, false), c_sv("any")); // tsc gives it a synthesized `any`
+        if (!function->jsdoc_type) param_comments_end(d, i);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
@@ -1840,6 +1885,8 @@ static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* memb
         ((d.types_baseline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
 }
 
+static void param_comments_begin_at(TyDisplay d, Span span);
+
 static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
     bool empty = true;
     for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, d, i);
@@ -1851,7 +1898,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     d = brace_open(d);
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, d, i)) continue;
-        member_begin(d);
+        member_begin_node(d, i->declaration);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
@@ -1878,6 +1925,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             case INTERFACE_KEY_INDEX:
                 if (i->readonly) out_lit(d, "readonly ");
                 out_lit(d, "[");
+                param_comments_begin_at(d, i->key.index->name);
                 out(d, span_sv(i->key.index->name));
                 out_lit(d, ": ");
                 display_node(me, d, &i->key.index->type);
@@ -1905,7 +1953,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 break;
         }
-        member_end(d);
+        member_end_node(d, i->declaration, ";,");
     }
     brace_close(outer);
 }
@@ -3499,7 +3547,9 @@ static void display_pseudo_params(Checker* me, TyDisplay d, PseudoParam const* p
             type = sig && index < sig->param_count ? sig->params[index].type : nullptr;
             index++;
         }
+        param_comments_begin(d, params[i].arg);
         display_pseudo_param(me, d, &params[i], type);
+        param_comments_end(d, params[i].arg);
     }
     out_lit(d, ")");
 }
@@ -3644,7 +3694,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 Prop const* prop = members ? pseudo_member_prop(members, member->item) : nullptr;
                 Ty const* type = prop ? ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0) : nullptr;
                 bool readonly = is_const || (member->kind == PSEUDO_MEMBER_PROPERTY && member->readonly);
-                member_begin(member_d);
+                member_begin_node(member_d, member->item->span);
                 if (readonly) out_lit(member_d, "readonly ");
                 // (tsgo's reuseName: the name as a property name node would print it, counted as reused)
                 approx_add(member_d, reused_node_length(member->item->name_span));
@@ -3674,7 +3724,11 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         if (prop) display_member_name(me, name_d, prop);
                         out_lit(member_d, "(");
                         Ty const* write = prop ? prop_write_type(me, prop) : nullptr;
-                        if (member->param_count) display_pseudo_param(me, member_d, &member->params[0], write ? write : type);
+                        if (member->param_count) {
+                            param_comments_begin(member_d, member->params[0].arg);
+                            display_pseudo_param(me, member_d, &member->params[0], write ? write : type);
+                            param_comments_end(member_d, member->params[0].arg);
+                        }
                         out_lit(member_d, ")");
                         break;
                     }
@@ -3685,7 +3739,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         display_pseudo(me, member_d, member->type, type);
                         break;
                 }
-                member_end(member_d);
+                member_end_node(member_d, member->item->span, nullptr);
             }
             brace_close(d);
             return;
@@ -3864,12 +3918,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
                 // (A method named `new` is quoted: it would read as a construct signature)
-                member_begin(d);
+                Span comments = prop_comment_span(d, prop, j);
+                member_begin_node(d, comments);
                 if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
                 else display_member_name(me, d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
-                member_end(d);
+                member_end_node(d, comments, ";");
             }
             continue;
         }
@@ -3882,7 +3937,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (write && write != type && type != ty_intrinsic(me, TY_ERROR) && write != ty_intrinsic(me, TY_ERROR)) {
                 // (Two signatures: three each, the setter's parameter its name and three)
                 approx_add(d, 3 + 3 + 3 + (prop_decl_rare(declared->decl)->setter ? 5 : (u32)prop_decl_rare(declared->decl)->setter_param.size));
-                member_begin(d);
+                member_begin_node(d, prop_comment_span(d, prop, 0));
                 out_lit(d, "get ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(): ");
@@ -3892,8 +3947,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 // (Instantiated, an annotation that still says it: `get done(): true`)
                 bool fresh = prop != declared && (mentions(me, type, d.fresh_params) || mentions(me, write, d.fresh_params));
                 display_annotated(me, d, fresh ? nullptr : read_node, type, false);
-                member_end(d);
-                member_begin(d);
+                member_end_node(d, prop_comment_span(d, prop, 0), ";");
+                member_begin_node(d, prop_comment_span(d, prop, 1));
                 out_lit(d, "set ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(");
@@ -3911,7 +3966,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                     binding_type(&vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding) : prop_decl_rare(declared->decl)->write_node;
                 display_annotated(me, d, fresh ? nullptr : write_node, write, false);
                 out_lit(d, ")");
-                member_end(d);
+                member_end_node(d, prop_comment_span(d, prop, 1), ";");
                 continue;
             }
         }
@@ -3933,7 +3988,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             }
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
-                member_begin(d);
+                member_begin_node(d, prop_comment_span(d, prop, 0));
                 if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
                 TyDisplay name_d = d;
                 name_d.tracker = nullptr; // (named from its own declaration, see track_property())
@@ -3941,13 +3996,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 out_lit(d, ": ");
                 display_pseudo_with_fallback(me, d, pseudo, item_type);
-                member_end(d);
+                member_end_node(d, prop_comment_span(d, prop, 0), ";");
                 continue;
             }
             // (Its error nodes reported: its type is printed without reporting again)
             if (pseudo->kind == PSEUDO_INFERRED && pseudo->count) suppress = true;
         }
-        member_begin(d);
+        member_begin_node(d, prop_comment_span(d, prop, 0));
         if (prop->flags & PROP_READONLY) {
             approx_add(d, 9);
             out_lit(d, "readonly ");
@@ -4057,7 +4112,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         else if (annotation && reuses_nodes(d) && annotation_is(me, annotation, optional ? type : shown, optional)) display_node(me, d, annotation);
         else display_annotated(me, type_d, annotation, shown, optional);
-        member_end(d);
+        member_end_node(d, prop_comment_span(d, prop, 0), ";");
     }
     approx_add(d, 2); // (tsc's createTypeNodeFromObjectType)
     brace_close(brace_outer);

@@ -257,7 +257,7 @@ def classify(expected, actual):
     elif i >= len(a) or i >= len(b):
         bucket = 'missing lines' if i >= len(b) else 'extra lines'
     else:
-        head = lambda s: re.split(r'[:=(<]', s, 1)[0]
+        head = lambda s: re.split(r'[:=(<]', s, maxsplit=1)[0]
         same_head = head(x) == head(y) and re.search(r'[:=(<]', x) and re.search(r'[:=(<]', y)
         bucket = 'type text' if same_head else 'other'
     return bucket, i + 1, x, y

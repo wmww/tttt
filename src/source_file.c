@@ -157,6 +157,7 @@ void source_file_drop(SourceFile* me) {
     free(my module_refs);
     free(my comment_directives);
     free(my deprecated_jsdoc_ends);
+    free(my comments);
     free(my expando_containers);
     free(my unused);
     free(my parse_error_starts);
@@ -590,6 +591,38 @@ void source_file_add_deprecated_jsdoc(SourceFile* me, const char* end) {
         sizeof(const char*) * (my deprecated_jsdoc_count - index));
     my deprecated_jsdoc_ends[index] = end;
     my deprecated_jsdoc_count++;
+}
+
+void source_file_add_comment(SourceFile* me, const char* start, const char* end) {
+    char const* text = cstr_str(&my contents);
+    u32 from = (u32)(start - text), to = (u32)(end - text);
+    // (Almost always past every one seen so far: an append)
+    u32 index = my comment_count;
+    while (index && my comments[2 * index - 2] >= from) {
+        if (my comments[2 * index - 2] == from) return;
+        index--;
+    }
+    if (my comment_count == my comment_cap) {
+        my comment_cap = my comment_cap ? my comment_cap * 2 : 64;
+        my comments = realloc(my comments, sizeof(u32) * 2 * my comment_cap);
+        panic_if(!my comments, "out of memory");
+    }
+    memmove(my comments + 2 * index + 2, my comments + 2 * index, sizeof(u32) * 2 * (my comment_count - index));
+    my comments[2 * index] = from;
+    my comments[2 * index + 1] = to;
+    my comment_count++;
+}
+
+char const* source_file_comment_ending_at(SourceFile const* me, const char* end) {
+    char const* text = cstr_str(&my contents);
+    u32 at = (u32)(end - text);
+    u32 low = 0, high = my comment_count;
+    while (low < high) {
+        u32 mid = low + (high - low) / 2;
+        if (my comments[2 * mid + 1] < at) low = mid + 1;
+        else high = mid;
+    }
+    return low < my comment_count && my comments[2 * low + 1] == at ? text + my comments[2 * low] : nullptr;
 }
 
 bool source_file_deprecated_jsdoc_ends_at(SourceFile const* me, const char* end) {

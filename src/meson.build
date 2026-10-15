@@ -52,6 +52,7 @@ core_files = files(
     'ty/members.c',
     'ty/enums.c',
     'ty/declaration_emit.c',
+    'ty/decl_comments.c',
     'ty/pseudo.c',
     'ty/instantiate.c',
     'ty/lower.c',

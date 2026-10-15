@@ -96,6 +96,8 @@ typedef struct ParserShared {
     // JavaScript files: every `/** */` comment hopped so far (not `/**/`), sorted by start. Hosts find theirs by looking
     // back from their first token (jsdoc_before())
     VecJsDocRange jsdoc_comments;
+    // Where declarations are emitted: every comment is recorded (SourceFile.comments)
+    bool record_comments;
     // Parsing a type inside a JSDoc comment: a line's leading `*` is whitespace, `*/` ends everything, the JSDoc-only
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
@@ -1020,6 +1022,7 @@ static inline bool hop_comment(Parser* parent) {
             if (*c == '/') c++;
             while (c < parent->pos && is_js_ascii_space(*c)) c++;
             if (*c == '@' && c < parent->pos) note_comment_directive(parent, start, c, parent->pos);
+            if (parent->shared->record_comments && !parent->shared->in_jsdoc) source_file_add_comment((SourceFile*)parent->shared->source, start, parent->pos);
         }   break;
 
         case '*': {
@@ -1050,6 +1053,7 @@ static inline bool hop_comment(Parser* parent) {
                 while (last_line_start[-1] != '\n') last_line_start--;
             }
             parent->pos = pos;
+            if (parent->shared->record_comments && !parent->shared->in_jsdoc) source_file_add_comment((SourceFile*)parent->shared->source, start, pos);
             if (start[2] == '*' && start[3] != '/' && parent->shared->source->is_js) note_jsdoc_comment(parent, start, pos);
             if (start[2] == '*' && start[3] != '/' && compiler_options()->capture_suggestions) note_deprecated_jsdoc(parent, start, pos);
             // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
@@ -14557,6 +14561,8 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         .top_level_await = top_level_await,
         .await_statements = top_level_await ? *await_statements : nullptr,
         .first_pass_count = top_level_await ? *await_count : 0,
+        .record_comments = !source->is_declaration && !source->is_stdlib &&
+            (compiler_options()->declaration || compiler_options()->composite),
     };
 
     Parser p = {
