@@ -285,6 +285,23 @@ passing tests).
 - TS5114/TS5115/TS2589 limits: tsgo's eager-base runaway is modelled since 2026-10-15 (members.c probe_eager_bases(),
   documentation.md "Eager base runaways"). recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
   recursiveIndexedAccessSimplification has its TS4109 since aa320754, but lacks the TS2322 at `return ['marker',
+- TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
+  instantiation depth limit in tttt (plan 65's eager-base runaway: tsgo's resolveStructuredTypeMembers has no in-flight
+  guard; an instrumented tsgo's stack at the limit, 2026-10-14: keyofGeneric... loops resolveTypeReferenceMembers ->
+  instantiate Model<ModelAttributes<T>> -> Exclude<keyof PersonModel, ...> -> getIndexType -> PersonModel's members ->
+  its base again, entered from checkClassLikeDeclaration's typeWithThis-to-base relation (isWeakType); mutually...
+  loops through `X[X['a']]` (an indexed access on the non-generic X, resolved eagerly) -> X's members -> base L<X> ->
+  T<X[X['a']]>). mutuallyRecursiveInference also needs the harness's emit order (plan 64): the CLI reports TS5114 at
+  `class X` (9,7) from the type-argument constraint check, the suite baseline at `this.a` (12,9), which the JS emit's
+  resolver checks first. recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
+  recursiveIndexedAccessSimplification (agent B 2026-10-15: the cause is the union member, probe `type Recur<T> = (T
+  extends unknown[] ? {} : { [K in keyof T]?: Recur<T[K]> }) | [...Recur<T>[number][]]; function f<T>(r: Recur<T>) {
+  const n: number = r; }`: tsgo prints `Recur<T>[number][] | ...`, tttt `any[] | ...`. tsgo resolves a tuple with a
+  variadic element eagerly and normalizes `[...A]` to the deferred array A, whose element `Recur<T>[number]` stays a
+  deferred indexed access (the alias union is a generic object type); tttt's array element resolves to the error type
+  through the TS4109 cycle, so `[string, ...Recur<T>[]]` is assignable to `any[]` and the TS2322 is never made. Check
+  how lower.c's deferred array/tuple references lower `Recur<T>[number]` inside the alias's own body) has its TS4109
+  since aa320754, but lacks the TS2322 at `return ['marker',
   ...l]` and the two TS2589 (8,12)/(12,37): the instantiations of `Recur<T>` in join/a run into the limit in tsgo
   (each a fresh deferred reference with its own args), tttt's relation at the return is never even made (no
   TTTT_DEBUG_RELATE line: probably a cut-short instantiation remembered from the alias check, not reported again,
