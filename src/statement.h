@@ -21,20 +21,24 @@ typedef struct WithStatement WithStatement;
 // Variable initialization
 
 typedef struct VariableStatement {
-    enum {
+    enum : uint8_t {
         VAR_INIT_VAR,
         VAR_INIT_LET,
         VAR_INIT_CONST,
         VAR_INIT_USING,
         VAR_INIT_AWAIT_USING,
     } keyword;
-    VecInitializedBinding initializers;
-    Span span; // From the keyword to the end of the last declaration
-    Span await_span; // `await using`: the `await`
     bool at_top_level; // `await using` outside of any function
     bool in_sync_function; // `await using` in a function that isn't async (TS2852, said by the resolve walk)
     bool in_static_block; // `await using` in a class `static {}` block
+    VecInitializedBinding initializers;
+    Span span; // From the keyword to the end of the last declaration (`await` of `await using`: variable_statement_await_span())
 } VariableStatement;
+
+// `await using`: the `await`
+static inline Span variable_statement_await_span(VariableStatement const* me) {
+    return span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 5);
+}
 
 void variable_statement_drop(VariableStatement* me);
 // const, using and await using (tsc's isVarConstLike)

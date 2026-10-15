@@ -431,9 +431,9 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     Scope const* scope = symbol->alias->scope;
     if (item->value_use_checked || !scope || scope->file != names->file) return;
     if (port_item_check_namespace_import_use(symbol, names)) return;
-    if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&item->alias_path)) return;
+    if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&port_item_alias(item)->path)) return;
     item->value_use_checked = true;
-    Span first = *vec_span_front(&item->alias_path);
+    Span first = *vec_span_front(&port_item_alias(item)->path);
     if (!first.size || scope_get_value(scope, span_sv(first), nullptr)) return;
     scope_report_value_not_found(scope, first, false, binder_errs(scope->binder));
 }

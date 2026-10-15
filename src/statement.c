@@ -38,7 +38,7 @@ void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclState
 // tsc's checkAwaitGrammar for an `await using` in a function that isn't async, with the function to mark async
 static void variable_statement_check_await_place(VariableStatement const* me, Scope* names, ErrorCtx* errs) {
     if (my keyword == VAR_INIT_AWAIT_USING && my in_sync_function && !my in_static_block) {
-        await_check_grammar(AWAIT_IN_FUNCTION, AWAIT_KIND_USING, my await_span, scope_containing_function(names), errs);
+        await_check_grammar(AWAIT_IN_FUNCTION, AWAIT_KIND_USING, variable_statement_await_span(me), scope_containing_function(names), errs);
     }
 }
 
@@ -86,7 +86,7 @@ static void variable_statement_check_using(VariableStatement* me, bool for_in, b
             "'await using' statements cannot be used inside a class static block.");
     } else if (is_await) {
         // (In a function the parser reported it)
-        await_check_grammar(my at_top_level ? AWAIT_AT_TOP_LEVEL : AWAIT_ALLOWED, AWAIT_KIND_USING, my await_span, nullptr, errs);
+        await_check_grammar(my at_top_level ? AWAIT_AT_TOP_LEVEL : AWAIT_ALLOWED, AWAIT_KIND_USING, variable_statement_await_span(me), nullptr, errs);
     }
     for_each (i, vec_initialized_binding, &my initializers) {
         if (i->binding.tag == BINDING_IDENTIFIER) continue;

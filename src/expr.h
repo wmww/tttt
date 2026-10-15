@@ -819,7 +819,7 @@ typedef struct TemplateExpr {
 // Object
 
 typedef struct ObjectExprItem {
-    enum {
+    enum : uint8_t {
         OBJECT_ITEM_PROPERTY, // `a: 1`
         OBJECT_ITEM_SHORTHAND, // `a`, value is an identifier expr with the same span as the name
         OBJECT_ITEM_METHOD, // `a() {}`, value is a function expr
@@ -827,16 +827,13 @@ typedef struct ObjectExprItem {
         OBJECT_ITEM_SETTER, // `set a(v) {}`, value is a function expr
         OBJECT_ITEM_SPREAD, // `...a`, no name
     } tag;
-    Span span;
-    cstr name_string; // Empty for spreads and computed keys
-    Span name_span; // Includes the brackets of a computed key
-    bool name_is_value;
-    bool optional_method; // `m?() {}` (TS1162): still an optional member to tsc's binder
+    bool name_is_value : 1;
+    bool optional_method : 1; // `m?() {}` (TS1162): still an optional member to tsc's binder
     // A private name inside a class body: a property of the literal's type (tsc's binder names it in the class's
     // private scope), else it is dropped. Set by expr_lookup_names()
-    bool private_name_in_class;
+    bool private_name_in_class : 1;
     // `import("m", { with: {...} })`: the `with` property's object is a const context (tsgo's isInlineImportAttributes)
-    bool inline_import_attributes;
+    bool inline_import_attributes : 1;
     // The literal is somewhere tsgo's pseudochecker sees as contextually typed (isContextuallyTyped: in a call, a type
     // assertion, an annotated declaration's initializer...), and in a const context as far as syntax goes
     // (IsInConstContext, FlowBuilder.const_context). Set by expr_lookup_names(), see ty/pseudo.h
@@ -844,6 +841,9 @@ typedef struct ObjectExprItem {
     bool pseudo_const : 1;
     // `a?: 1`, `a?` (TS1162 unless a destructuring target): 1 + the offset of the `?` from the end of the name, 0: none
     uint16_t question_offset;
+    Span span;
+    cstr name_string; // Empty for spreads and computed keys
+    Span name_span; // Includes the brackets of a computed key
     Expr* computed_key; // Owned, null unless the key is `[expr]`
     Expr value;
     struct ObjectExprItemRare* rare; // Owned, null when all of it is: read through object_item_rare()

@@ -26,7 +26,7 @@
 typedef struct SourceFile SourceFile;
 
 typedef struct PortItem {
-    enum {
+    enum : uint8_t {
         PORT_NOOP = 0,          // import {...} from './abc' (noop is used for main item, which is empty)
         PORT_IMPORT_DEFAULT,    // import foo from './abc'
         PORT_IMPORT_GATHER,     // import * as foo from './abc'
@@ -39,44 +39,46 @@ typedef struct PortItem {
         PORT_REEXPORT_SPECIFIC, // export {foo as bar} from './abc'
         // export default ... is handled by STATEMENT_EXPORT_DEFAULT_EXPR
     } tag;
+    bool type_only : 1; // Has the "type" keyword for the main import
+    bool type_modifier : 1; // A specifier with its own `type` (`{ type a }`)
+    bool export_import : 1; // `export import foo = ...`
+    bool declared : 1; // `declare import foo = ...` (TS1029 or so, but ambient)
+    bool not_top_level : 1; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
+    bool is_require : 1; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
+    bool require_binding : 1; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)
+    bool jsdoc : 1; // Of an `@import` tag (PortStatement.jsdoc)
+    // Of a source phase import (PortStatement.source_phase): its module isn't resolved, the default binding is the
+    // module's source (tsgo's getTargetOfImportClause), the others nothing (TS18112)
+    bool source_phase : 1;
+    // PORT_IMPORT_ALIAS: an unresolved `import x = A.B` was used as a value, which checked `A` as a value (tsc's
+    // markAliasSymbolAsReferenced: checkExpressionCached of the module reference)
+    bool value_use_checked; // (A whole byte: written by checkers, the bit fields only before checking)
+    // Of a statement in a namespace (TS1147), which resolves nothing: a use of the alias does (tsc's resolveAlias)
+    bool in_namespace : 1;
+    // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
+    // (checkGrammarModuleElementContext): what resolving it says is said by no one
+    bool wrong_context : 1;
+    // An import attribute value isn't a string literal (TS2837/TS2858): the clause isn't checked, nothing its resolution
+    // finds is reported (tsc's checkExternalImportOrExportDeclaration returning false)
+    bool clause_unchecked : 1;
+    // Its name conflicted (TS2300): a symbol of its own outside the scope's table (tsc's declareSymbol), which
+    // checkUnusedLocalsAndParameters never sees
+    bool duplicate : 1;
+    // An import's name that is a string (TS1003): declared with a missing name, decl_name still spans the string
+    bool decl_name_missing : 1;
     Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
     Span keyword_span; // The statement's `import` or `export` (set when the item is declared)
     Span source_name; // Only used for _SPECIFIC ports
-    VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
-    VecSymbolCPtr alias_path_symbols; // What each item of alias_path found (maybe an alias), shorter if resolution failed
-    Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
-    Span clause; // PORT_IMPORT_DEFAULT: the import clause, `A, { b }` (tsc's error node for the default import)
+    // Owned, PORT_IMPORT_ALIAS (allocated by the parser, null for the other tags): read it with port_item_alias()
+    struct PortItemAlias* alias_;
+    union {
+        Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
+        Span clause; // PORT_IMPORT_DEFAULT: the import clause, `A, { b }` (tsc's error node for the default import)
+    };
     ModuleRef* module_ref; // The module to import from, null for forms that have none
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
-    bool type_only; // Has the "type" keyword for the main import
-    bool type_modifier; // A specifier with its own `type` (`{ type a }`)
-    bool export_import; // `export import foo = ...`
-    bool declared; // `declare import foo = ...` (TS1029 or so, but ambient)
-    bool not_top_level; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
-    bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
-    bool require_binding; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)
-    bool jsdoc; // Of an `@import` tag (PortStatement.jsdoc)
-    // Of a source phase import (PortStatement.source_phase): its module isn't resolved, the default binding is the
-    // module's source (tsgo's getTargetOfImportClause), the others nothing (TS18112)
-    bool source_phase;
-    // PORT_IMPORT_ALIAS: an unresolved `import x = A.B` was used as a value, which checked `A` as a value (tsc's
-    // markAliasSymbolAsReferenced: checkExpressionCached of the module reference)
-    bool value_use_checked;
-    // Of a statement in a namespace (TS1147), which resolves nothing: a use of the alias does (tsc's resolveAlias)
-    bool in_namespace;
-    // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
-    // (checkGrammarModuleElementContext): what resolving it says is said by no one
-    bool wrong_context;
-    // An import attribute value isn't a string literal (TS2837/TS2858): the clause isn't checked, nothing its resolution
-    // finds is reported (tsc's checkExternalImportOrExportDeclaration returning false)
-    bool clause_unchecked;
-    // Its name conflicted (TS2300): a symbol of its own outside the scope's table (tsc's declareSymbol), which
-    // checkUnusedLocalsAndParameters never sees
-    bool duplicate;
-    // An import's name that is a string (TS1003): declared with a missing name, decl_name still spans the string
-    bool decl_name_missing;
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
@@ -96,6 +98,18 @@ static inline bool port_item_is_export(PortItem const* me) {
             break;
     }
     return false;
+}
+
+// PortItem.alias_
+typedef struct PortItemAlias {
+    VecSpan path; // The dotted name after the =
+    VecSymbolCPtr path_symbols; // What each item of path found (maybe an alias), shorter if resolution failed
+} PortItemAlias;
+
+// An empty one for the tags that have none
+static inline PortItemAlias const* port_item_alias(PortItem const* me) {
+    static PortItemAlias const none = {0};
+    return my alias_ ? my alias_ : &none;
 }
 
 void port_item_drop(PortItem* me);
@@ -125,9 +139,6 @@ typedef struct PortStatement {
     bool is_import_require; // `import a = require("m")`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes
         // a compile error
-    Span target_path_span; // Span of the path string (read the path with port_statement_target_path())
-    ModuleRef* module_ref; // Made by the parser when there is a target path
-    ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)
     // Directly in a namespace body (not an ambient module's), set by port_statement_add_names(): an import of a module
     // is TS1147, an export declaration TS1194 (unless the namespace is ambient and nothing is re-exported)
@@ -137,6 +148,9 @@ typedef struct PortStatement {
     // relative module (TS2439)
     bool in_ambient_module;
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
+    Span target_path_span; // Span of the path string (read the path with port_statement_target_path())
+    ModuleRef* module_ref; // Made by the parser when there is a target path
+    ImportAttributes* attributes; // Owned, null if there are none
     struct PortStatementRare* rare; // Owned, null when all of it is: read through port_statement_rare()
 } PortStatement;
 

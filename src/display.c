@@ -1037,7 +1037,7 @@ static void display_port_statement(Display d, PortStatement const* me) {
         case PORT_IMPORT_ALIAS:
             display_colored_span(d, color_name, my main.decl_name);
             display_lit(d, " = ");
-            for_each (i, vec_span, &my main.alias_path) {
+            for_each (i, vec_span, &port_item_alias(&my main)->path) {
                 if (i_index != 0) {
                     display_lit(d, ".");
                 }

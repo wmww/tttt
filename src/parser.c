@@ -11547,11 +11547,11 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     } else {
         parse_fail(&require_p);
         statement->main.tag = PORT_IMPORT_ALIAS;
-        statement->main.alias_path = vec_span_init();
+        statement->main.alias_ = c_new(PortItemAlias, {0});
         while (true) {
             Span part;
             // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
-            bool first = vec_span_is_empty(&statement->main.alias_path);
+            bool first = vec_span_is_empty(&statement->main.alias_->path);
             bool reserved = false;
             if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true)))
                 : !parse_identifier_or_keyword(&p, &part)
@@ -11562,10 +11562,10 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 } else {
                     parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
                 }
-                vec_span_push(&statement->main.alias_path, span_from_pos(&p)); // (a missing name)
+                vec_span_push(&statement->main.alias_->path, span_from_pos(&p)); // (a missing name)
                 break;
             }
-            vec_span_push(&statement->main.alias_path, part);
+            vec_span_push(&statement->main.alias_->path, part);
             Parser dot = parser(&p);
             hop_whitespace(&dot);
             if (!hop_char(&dot, '.')) {
@@ -12445,7 +12445,6 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             return parse_fail(&p);
         }
         ret->keyword = VAR_INIT_AWAIT_USING;
-        ret->await_span = span_from_sv(p.shared->source, csview_from_n(start.start, 5));
         ret->at_top_level = p.shared->function_depth == 0;
         ret->in_static_block = p.shared->in_static_block;
         ret->in_sync_function = !p.shared->in_async && p.shared->function_depth > 0;

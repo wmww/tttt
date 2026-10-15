@@ -2826,11 +2826,11 @@ static Symbol* resolve_if_pure_alias(Symbol* me) {
 static Symbol* resolve_import_alias_path(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->binder->errs;
-    if (vec_span_is_empty(&item->alias_path)) return nullptr;
-    Span first = *vec_span_front(&item->alias_path);
+    if (vec_span_is_empty(&port_item_alias(item)->path)) return nullptr;
+    Span first = *vec_span_front(&port_item_alias(item)->path);
     if (!first.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
     Symbol* target;
-    if (vec_span_size(&item->alias_path) == 1) {
+    if (vec_span_size(&port_item_alias(item)->path) == 1) {
         // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace)
         target = scope_resolve(my alias->scope, span_sv(first), SYMBOL_NAMESPACE);
         if (target == me) target = nullptr;
@@ -2849,7 +2849,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             return nullptr;
         }
         unused_mark_referenced(my alias->scope, target, SYMBOL_ANY_MEANING);
-        vec_symbol_cptr_push(&item->alias_path_symbols, target);
+        vec_symbol_cptr_push(&item->alias_->path_symbols, target);
         return resolve_if_pure_alias(target);
     }
 
@@ -2860,12 +2860,12 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         return nullptr;
     }
     unused_mark_referenced(my alias->scope, target, SYMBOL_NAMESPACE);
-    vec_symbol_cptr_push(&item->alias_path_symbols, target);
+    vec_symbol_cptr_push(&item->alias_->path_symbols, target);
     target = resolve_if_pure_alias(target);
-    for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
-        Span name = *vec_span_at(&item->alias_path, i);
+    for (isize i = 1; target && i < vec_span_size(&port_item_alias(item)->path); i++) {
+        Span name = *vec_span_at(&port_item_alias(item)->path, i);
         if (!name.size) return nullptr; // (A missing name)
-        bool last = i == vec_span_size(&item->alias_path) - 1;
+        bool last = i == vec_span_size(&port_item_alias(item)->path) - 1;
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
         Symbol* found = (Symbol*)symbol_namespace_member(container, span_sv(name));
@@ -2876,7 +2876,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
             if (next && !last && (symbol_resolved_flags(next) & SYMBOL_TYPE)) {
                 // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
-                Span right = *vec_span_at(&item->alias_path, i + 1);
+                Span right = *vec_span_at(&port_item_alias(item)->path, i + 1);
                 error_ctx_error_d(errs, right, 2713, "Cannot access '", name, ".", right, "' because '", name,
                     "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                     "' in '", name, "' with '", name, "[\"", right, "\"]'?");
@@ -2890,7 +2890,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             return nullptr;
         }
         target = next;
-        vec_symbol_cptr_push(&item->alias_path_symbols, found);
+        vec_symbol_cptr_push(&item->alias_->path_symbols, found);
     }
     return target;
 }
@@ -3560,11 +3560,11 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // name as an expression when the target is unknown, which checks A as a value: markAliasReferenced)
             if ((!target || target->is_placeholder) && (found->flags & SYMBOL_ALIAS) && found->alias && found->alias->item &&
                 found->alias->item->tag == PORT_IMPORT_ALIAS && !found->alias->item->value_use_checked &&
-                vec_span_size(&found->alias->item->alias_path) && found->alias->scope
+                vec_span_size(&port_item_alias(found->alias->item)->path) && found->alias->scope
             ) {
                 PortItem* alias_item = found->alias->item;
                 alias_item->value_use_checked = true;
-                Span first = *vec_span_front(&alias_item->alias_path);
+                Span first = *vec_span_front(&port_item_alias(alias_item)->path);
                 if (first.size && !scope_get_value(found->alias->scope, span_sv(first), nullptr)) {
                     scope_report_value_not_found(found->alias->scope, first, false, found->alias->scope->binder->errs);
                 }
@@ -3761,9 +3761,9 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Sym
             // `import A = a.B`: never type-only itself (tsgo's getTargetOfImportEqualsDeclaration marks nothing), but
             // a pure alias it names passes its mark on (resolveIndirectionAlias); a type-only part further left is
             // the declaration's own error, see port_statement_typecheck
-            isize n = vec_symbol_cptr_size(&item->alias_path_symbols);
-            if (n != vec_span_size(&item->alias_path)) return nullptr;
-            Symbol const* last = n ? *vec_symbol_cptr_at(&item->alias_path_symbols, n - 1) : nullptr;
+            isize n = vec_symbol_cptr_size(&port_item_alias(item)->path_symbols);
+            if (n != vec_span_size(&port_item_alias(item)->path)) return nullptr;
+            Symbol const* last = n ? *vec_symbol_cptr_at(&port_item_alias(item)->path_symbols, n - 1) : nullptr;
             if (!last || !(last->flags & SYMBOL_ALIAS) || (last->flags & (SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE))) return nullptr;
             me = last;
             continue;

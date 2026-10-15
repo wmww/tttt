@@ -2636,8 +2636,8 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
     // A painted `import x = A.B` paints A (tsc's isDeclarationVisible of the alias marks what it references)
     if (statement->tag == STATEMENT_IMPORT_EXPORT && statement->import_export->main.tag == PORT_IMPORT_ALIAS) {
         PortItem const* item = &statement->import_export->main;
-        if (take_painted(me, item->symbol) && vec_symbol_cptr_size(&item->alias_path_symbols)) {
-            paint(me, *vec_symbol_cptr_at(&item->alias_path_symbols, 0));
+        if (take_painted(me, item->symbol) && vec_symbol_cptr_size(&port_item_alias(item)->path_symbols)) {
+            paint(me, *vec_symbol_cptr_at(&port_item_alias(item)->path_symbols, 0));
         }
         return;
     }
@@ -2714,8 +2714,8 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
         case STATEMENT_IMPORT_EXPORT: {
             // `export import x = A.B` paints A (checkEntityNameVisibility)
             PortItem const* item = &statement->import_export->main;
-            if (item->tag == PORT_IMPORT_ALIAS && item->export_import && vec_symbol_cptr_size(&item->alias_path_symbols)) {
-                paint(me, *vec_symbol_cptr_at(&item->alias_path_symbols, 0));
+            if (item->tag == PORT_IMPORT_ALIAS && item->export_import && vec_symbol_cptr_size(&port_item_alias(item)->path_symbols)) {
+                paint(me, *vec_symbol_cptr_at(&port_item_alias(item)->path_symbols, 0));
             }
             check_import(me, statement);
             return;
@@ -4132,7 +4132,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             w_lit(me, ")");
             if (is_file) my has_module_indicator = true;
         } else {
-            for_each (i, vec_span, &item->alias_path) {
+            for_each (i, vec_span, &port_item_alias(item)->path) {
                 if (i_index) w_lit(me, ".");
                 w(me, span_sv(*i));
             }

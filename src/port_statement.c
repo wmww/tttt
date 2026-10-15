@@ -20,8 +20,11 @@ bool port_item_check_namespace_import_use(Symbol const* alias, Scope const* name
 }
 
 void port_item_drop(PortItem* me) {
-    vec_span_drop(&my alias_path);
-    vec_symbol_cptr_drop(&my alias_path_symbols);
+    if (my alias_) {
+        vec_span_drop(&my alias_->path);
+        vec_symbol_cptr_drop(&my alias_->path_symbols);
+        free(my alias_);
+    }
 }
 
 void import_attribute_drop(ImportAttribute* me) {
@@ -447,16 +450,16 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // (Each prefix of the name, longest first: what it names, unresolved, and that alias's type-only declaration)
     PortItem const* alias_type_only = nullptr;
     if (my main.tag == PORT_IMPORT_ALIAS && !my main.type_only && !my jsdoc && my main.symbol &&
-        !vec_span_is_empty(&my main.alias_path) && symbol_resolve_alias(my main.symbol)
+        !vec_span_is_empty(&port_item_alias(&my main)->path) && symbol_resolve_alias(my main.symbol)
     ) {
-        for (isize i = vec_symbol_cptr_size(&my main.alias_path_symbols); i-- > 0 && !alias_type_only;) {
-            Symbol const* part = *vec_symbol_cptr_at(&my main.alias_path_symbols, i);
+        for (isize i = vec_symbol_cptr_size(&port_item_alias(&my main)->path_symbols); i-- > 0 && !alias_type_only;) {
+            Symbol const* part = *vec_symbol_cptr_at(&port_item_alias(&my main)->path_symbols, i);
             if (part && (part->flags & SYMBOL_ALIAS)) alias_type_only = symbol_type_only_declaration(part);
         }
     }
     if (alias_type_only) {
         bool exported = port_item_is_export(alias_type_only);
-        Span first = *vec_span_front(&my main.alias_path), last = *vec_span_back(&my main.alias_path);
+        Span first = *vec_span_front(&port_item_alias(&my main)->path), last = *vec_span_back(&port_item_alias(&my main)->path);
         Error* error = error_ctx_error_d(errs, span_make_in(first, span_start_ptr(first), span_end_ptr(last)),
             exported ? 1379 : 1380, "An import alias cannot reference a declaration that was ",
             exported ? "exported using 'export type'." : "imported using 'import type'.");
@@ -505,10 +508,10 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // tsc's checkImportEqualsDeclaration: `import x = A.B` whose target is a value, where the first name as a value or
     // namespace is something other than a namespace (the lookup of the alias found a namespace further out)
     PortItem const* alias = &my main;
-    if (alias->tag == PORT_IMPORT_ALIAS && alias->symbol && alias->symbol->alias && vec_span_size(&alias->alias_path)) {
+    if (alias->tag == PORT_IMPORT_ALIAS && alias->symbol && alias->symbol->alias && vec_span_size(&port_item_alias(alias)->path)) {
         Symbol const* target = symbol_resolve_alias(alias->symbol);
         if (target && !target->is_placeholder && symbol_resolved_flags(target) & SYMBOL_VALUE) {
-            Span first = *vec_span_at(&alias->alias_path, 0);
+            Span first = *vec_span_at(&port_item_alias(alias)->path, 0);
             Symbol const* found = scope_resolve(alias->symbol->alias->scope, span_sv(first), SYMBOL_VALUE | SYMBOL_NAMESPACE);
             if (found && !(symbol_resolved_flags(found) & SYMBOL_NAMESPACE)) {
                 error_ctx_error_d(errs, first, 2437, "Module '", first, "' is hidden by a local declaration with the same name.");
@@ -529,7 +532,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         if (alias->export_import && !ambient && !alias->declared && (unknown || value) &&
             !compiler_options()->verbatim_module_syntax
         ) {
-            Span first = *vec_span_at(&alias->alias_path, 0);
+            Span first = *vec_span_at(&port_item_alias(alias)->path, 0);
             Scope const* scope = alias->symbol->alias->scope;
             Symbol const* value_found = scope_resolve(scope, span_sv(first), SYMBOL_VALUE);
             if (!value_found && scope_resolve(scope, span_sv(first), SYMBOL_NAMESPACE)) {
