@@ -5788,7 +5788,7 @@ const baselines = {
         types: true,
     },
     'complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

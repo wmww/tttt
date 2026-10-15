@@ -436,6 +436,7 @@ Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
 }
 
 // tsc's typeCouldHaveTopLevelSingletonTypes: if so, a literal source is shown as it is
+static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed);
 static bool could_have_singletons(Checker* me, Ty const* ty) {
     if (ty->flags & TYF_BOOLEAN) return false;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
@@ -449,8 +450,12 @@ static bool could_have_singletons(Checker* me, Ty const* ty) {
         return constraint && constraint != ty && could_have_singletons(me, constraint);
     }
     if (ty->kind == TY_STRING_MAPPING || (ty->flags & TYF_DEFERRED)) {
-        // Through its constraint, like any instantiable type: Uppercase<string> is some string
-        Ty const* constraint = ty_base_constraint(me, ty);
+        // Through its constraint one step at a time, like any instantiable type (tsc's getConstraintOfType):
+        // Uppercase<string> is some string; `Cond<T>["k"]` goes through the conditional's constraint
+        // `({ k: T } & A)["k"]`, which has none and isn't a unit type, not on to the property's literal type
+        // (Without constraint_of_type()'s circularity gate: computing base constraints while printing a message
+        // changed what later inferences found cached, recursiveConditionalTypes' unbox(b4))
+        Ty const* constraint = ty->kind == TY_INDEXED ? constraint_of_indexed(me, ty) : ty_base_constraint(me, ty);
         if (constraint && constraint != ty) return could_have_singletons(me, constraint);
     }
     return ty->kind == TY_LITERAL ||
@@ -4039,8 +4044,11 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
 
 // tsc's getIndexedAccessTypeOrUndefined without an access node: null for a property that isn't there
 static Ty const* indexed_or_null_flagged(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    // (Deferred like tsc's shouldDeferIndexedAccessType: a union or intersection an instantiation may reduce too,
+    // `({ type: T } & EmailChannel)["type"]`, isGenericReducibleType)
     if (ty_is_generic_object(me, object) || ty_is_generic_index(index) || (object->flags & TYF_ANY) ||
-        (index->flags & (TYF_ERROR | TYF_NEVER))
+        (index->flags & (TYF_ERROR | TYF_NEVER)) ||
+        ((object->kind == TY_UNION || object->kind == TY_INTERSECTION) && ty_is_generic_reducible(me, object))
     ) {
         return ty_indexed_include_undefined(me, object, index, include_undefined);
     }

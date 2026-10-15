@@ -223,6 +223,10 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `"email" | "text"`, to `ChannelOfType<T, EmailChannel>["type"] & ...`, twice: some constraint/apparent-type step
   tttt doesn't take; a relation trace would show it), reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels).
+  reactReduxLikeDeferredInferenceAllowsAssignment and
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
+  mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
+  `use(): this`).
 - The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
   declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by
