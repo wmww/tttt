@@ -3807,6 +3807,17 @@ cstr program_module_specifier_ending(
     return ret;
 }
 
+csview module_ambient_name(Symbol const* module) {
+    for (u32 i = 0; i < module->decl_count; i++) {
+        if (module->decls[i].kind != SYMBOL_DECL_NAMESPACE) continue;
+        NamespaceDecl const* ns = module->decls[i].node;
+        if (!ns->is_ambient_module || ns->name.size < 2) continue;
+        csview name = csview_slice(span_sv(ns->name), 1, ns->name.size - 1);
+        if (!ns->is_augmentation || !module_name_is_relative(name)) return name;
+    }
+    return c_sv("");
+}
+
 static cstr program_common_source_dir(Program* me);
 cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override, ModuleRef const* usage) {
     SourceFile const* target = module->module ? module->module->file : nullptr;
@@ -3815,6 +3826,8 @@ cstr program_module_display_name(Program* me, Symbol const* module, SourceFile c
     if (!target || target->is_json || !from) {
         return module_name_for_error(module, nullptr, false);
     }
+    csview ambient = module_ambient_name(module);
+    if (ambient.size) return cstr_d("\"", ambient, "\"");
     SpecifierMode ending = override ? override : usage ? program_usage_mode(me, from, usage) : SPECIFIER_MODE_NONE;
     cstr specifier = program_module_specifier_ending(me, from, target, override, ending);
     cstr ret = cstr_d("\"", specifier, "\"");

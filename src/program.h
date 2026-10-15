@@ -135,6 +135,9 @@ SpecifierMode program_usage_mode(Program const* me, SourceFile const* file, Modu
 // module specifier an import in `from` would write (`"./b"`). An ambient module, a JSON file, no place, or an outFile
 // bundle (tsc: non-relative from the common source directory, not ported) as module_name_for_error()
 cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override, ModuleRef const* usage);
+// tsgo's tryGetModuleNameFromAmbientModule (its first loop): a module file that a `declare module "m" {}` augments by a
+// non-relative name is named "m" by every import type (unquoted, empty if none)
+csview module_ambient_name(Symbol const* module);
 // Different for every program this process makes (what memos that outlive a program key on, rather than its address)
 u32 program_serial(Program const* me);
 // tsc's getDefaultResolutionModeForFile

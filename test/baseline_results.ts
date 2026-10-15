@@ -75,6 +75,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeclarationAugmentedModuleName': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationComputedParameterName': {
         errors: true,
         symbols: true,

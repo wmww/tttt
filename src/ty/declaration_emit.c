@@ -657,6 +657,8 @@ static bool reaches_into_node_modules(cstr const* specifier) {
 // symbolToTypeNode's import type: TS2883 when its specifier can only reach the module through a node_modules (in
 // node16/nodenext, unless the other resolution mode's specifier can, with a `resolution-mode` attribute)
 static cstr unsafe_specifier(Walk* me, SourceFile const* target) {
+    // (A module named by the augmentation of it: tryGetModuleNameFromAmbientModule)
+    if (target->scope && target->scope->container && module_ambient_name(target->scope->container).size) return cstr_null;
     CompilerOptions const* o = compiler_options();
     bool node_next = o->module_resolution == MODULE_RESOLUTION_NODE16 || o->module_resolution == MODULE_RESOLUTION_NODENEXT;
     Program* program = my checker->program;

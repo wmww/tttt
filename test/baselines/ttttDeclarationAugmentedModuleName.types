@@ -1,0 +1,51 @@
+//// [test/cases/ttttDeclarationAugmentedModuleName.ts] ////
+
+=== /node_modules/vitest/node_modules/vite/index.d.ts ===
+export interface UserConfig { root?: string }
+>root : string | undefined
+
+export interface Other { x: number }
+>x : number
+
+=== /node_modules/vitest/index.d.ts ===
+import { UserConfig } from "vite";
+>UserConfig : any
+
+export { UserConfig as ViteUserConfig, Other } from "vite";
+>UserConfig : any
+>ViteUserConfig : any
+>Other : any
+
+declare module "vite" {
+>"vite" : typeof import("vite")
+
+    interface UserConfig { test?: { include?: string[] } }
+>test : { include?: string[]; } | undefined
+>include : string[] | undefined
+}
+export declare function defineConfig(config: UserConfig): UserConfig;
+>defineConfig : (config: UserConfig) => UserConfig
+>config : UserConfig
+
+export declare function other(): import("vite").Other;
+>other : () => import("vite").Other
+
+=== /a.ts ===
+import { defineConfig, other } from "vitest";
+>defineConfig : (config: import("vite").UserConfig) => import("vite").UserConfig
+>other : () => import("vite").Other
+
+export default defineConfig({ test: { include: [] } });
+>defineConfig({ test: { include: [] } }) : import("vite").UserConfig
+>defineConfig : (config: import("vite").UserConfig) => import("vite").UserConfig
+>{ test: { include: [] } } : { test: { include: never[]; }; }
+>test : { include: never[]; }
+>{ include: [] } : { include: never[]; }
+>include : never[]
+>[] : never[]
+
+export const o = other();
+>o : import("vite").Other
+>other() : import("vite").Other
+>other : () => import("vite").Other
+

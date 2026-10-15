@@ -791,6 +791,8 @@ static cstr parent_specifier(Symbol const* parent, SourceFile const* from) {
         if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
         return cstr_from_sv(name);
     }
+    csview ambient = module_ambient_name(parent);
+    if (ambient.size) return cstr_from_sv(ambient);
     if (module_specifier_fn) return module_specifier_fn(module_specifier_ctx, file);
     // (tsc 6 always has a host where there is an enclosing file: the specifier from there)
     if (from && current_checker) {
