@@ -306,7 +306,12 @@ static bool try_entry(
     // have a property T too: tsc's getExternalModuleMember combines them into a symbol of their own
     // (combineValueAndTypeSymbols), which names neither)
     Symbol const* value_target = entry->alias ? entry->alias->value_target : nullptr;
-    if (value_target && value_target->decl_count && value_target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) return false;
+    // (Only when the value has the property: the binder makes one for any name, whether it does is up to the checker)
+    if (value_target && value_target->decl_count && value_target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
+        (!current_checker || !ty_export_equals_property_missing(current_checker, value_target))
+    ) {
+        return false;
+    }
     Symbol const* resolved = resolve_alias(entry);
     if (!resolved) return false;
     return candidate_list(me, symbol, meaning, entry, resolved, ignore_qualification, out);

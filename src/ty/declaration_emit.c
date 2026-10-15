@@ -4294,6 +4294,15 @@ static void emit_directives(Walk* me) {
 // The second walk: the file's `.d.ts`
 static void emit_file(Walk* me, Container top) {
     my comments = (DeclComments){ .file = my file, .off = compiler_options()->remove_comments };
+    // (The shebang is kept: the printer's emitShebangIfNeeded)
+    csview text = cstr_sv(&my file->contents);
+    if (csview_starts_with(text, "\xEF\xBB\xBF")) text = csview_slice(text, 3, text.size);
+    if (csview_starts_with(text, "#!")) {
+        isize_t line = 0;
+        while (line < text.size && text.buf[line] != '\n' && text.buf[line] != '\r') line++;
+        w(me, csview_slice(text, 0, line));
+        w_lit(me, "\n");
+    }
     decl_comments_detached(&my comments, my out);
     emit_directives(me);
     emit_statements(me, &my file->ast.statements, top);
