@@ -1,0 +1,67 @@
+//// [test/cases/ttttOverloadedStaticMethodTypeof.ts] ////
+
+=== ttttOverloadedStaticMethodTypeof.ts ===
+// An overloaded static method's type is written `typeof C.m` like a single-signature one's (tsgo's
+// shouldWriteTypeOfFunctionSymbol: isStaticMethodSymbol), not as its signatures (zod's recordType)
+export class ZodRecord<K, V> {
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>K : Symbol(K, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 23))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 25))
+
+  static create<V>(v: V): ZodRecord<string, V>;
+>create : Symbol(ZodRecord.create, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 30), Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 47), Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 51))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 16))
+>v : Symbol(v, Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 19))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 16))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 16))
+
+  static create<K, V>(k: K, v: V): ZodRecord<K, V>;
+>create : Symbol(ZodRecord.create, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 30), Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 47), Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 51))
+>K : Symbol(K, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 16))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 18))
+>k : Symbol(k, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 22))
+>K : Symbol(K, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 16))
+>v : Symbol(v, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 27))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 18))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>K : Symbol(K, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 16))
+>V : Symbol(V, Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 18))
+
+  static create(a: any, b?: any): any { return null; }
+>create : Symbol(ZodRecord.create, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 30), Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 47), Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 51))
+>a : Symbol(a, Decl(ttttOverloadedStaticMethodTypeof.ts, 5, 16))
+>b : Symbol(b, Decl(ttttOverloadedStaticMethodTypeof.ts, 5, 23))
+
+  static single(x: number): number { return x; }
+>single : Symbol(ZodRecord.single, Decl(ttttOverloadedStaticMethodTypeof.ts, 5, 54))
+>x : Symbol(x, Decl(ttttOverloadedStaticMethodTypeof.ts, 6, 16))
+>x : Symbol(x, Decl(ttttOverloadedStaticMethodTypeof.ts, 6, 16))
+
+  m(x: number) { return x; }
+>m : Symbol(ZodRecord.m, Decl(ttttOverloadedStaticMethodTypeof.ts, 6, 48))
+>x : Symbol(x, Decl(ttttOverloadedStaticMethodTypeof.ts, 7, 4))
+>x : Symbol(x, Decl(ttttOverloadedStaticMethodTypeof.ts, 7, 4))
+}
+const recordType = ZodRecord.create;
+>recordType : Symbol(recordType, Decl(ttttOverloadedStaticMethodTypeof.ts, 9, 5))
+>ZodRecord.create : Symbol(ZodRecord.create, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 30), Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 47), Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 51))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>create : Symbol(ZodRecord.create, Decl(ttttOverloadedStaticMethodTypeof.ts, 2, 30), Decl(ttttOverloadedStaticMethodTypeof.ts, 3, 47), Decl(ttttOverloadedStaticMethodTypeof.ts, 4, 51))
+
+const singleType = ZodRecord.single;
+>singleType : Symbol(singleType, Decl(ttttOverloadedStaticMethodTypeof.ts, 10, 5))
+>ZodRecord.single : Symbol(ZodRecord.single, Decl(ttttOverloadedStaticMethodTypeof.ts, 5, 54))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>single : Symbol(ZodRecord.single, Decl(ttttOverloadedStaticMethodTypeof.ts, 5, 54))
+
+export { recordType, singleType };
+>recordType : Symbol(recordType, Decl(ttttOverloadedStaticMethodTypeof.ts, 11, 8))
+>singleType : Symbol(singleType, Decl(ttttOverloadedStaticMethodTypeof.ts, 11, 20))
+
+export const inst = new ZodRecord<1, 2>().m;
+>inst : Symbol(inst, Decl(ttttOverloadedStaticMethodTypeof.ts, 12, 12))
+>new ZodRecord<1, 2>().m : Symbol(ZodRecord.m, Decl(ttttOverloadedStaticMethodTypeof.ts, 6, 48))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttOverloadedStaticMethodTypeof.ts, 0, 0))
+>m : Symbol(ZodRecord.m, Decl(ttttOverloadedStaticMethodTypeof.ts, 6, 48))
+

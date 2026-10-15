@@ -1,0 +1,55 @@
+//// [test/cases/ttttOverloadedStaticMethodTypeof.ts] ////
+
+=== ttttOverloadedStaticMethodTypeof.ts ===
+// An overloaded static method's type is written `typeof C.m` like a single-signature one's (tsgo's
+// shouldWriteTypeOfFunctionSymbol: isStaticMethodSymbol), not as its signatures (zod's recordType)
+export class ZodRecord<K, V> {
+>ZodRecord : ZodRecord<K, V>
+
+  static create<V>(v: V): ZodRecord<string, V>;
+>create : { <V>(v: V): ZodRecord<string, V>; <K, V_1>(k: K, v: V_1): ZodRecord<K, V_1>; }
+>v : V
+
+  static create<K, V>(k: K, v: V): ZodRecord<K, V>;
+>create : { <V_1>(v: V_1): ZodRecord<string, V_1>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+>k : K
+>v : V
+
+  static create(a: any, b?: any): any { return null; }
+>create : { <V>(v: V): ZodRecord<string, V>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+>a : any
+>b : any
+
+  static single(x: number): number { return x; }
+>single : (x: number) => number
+>x : number
+>x : number
+
+  m(x: number) { return x; }
+>m : (x: number) => number
+>x : number
+>x : number
+}
+const recordType = ZodRecord.create;
+>recordType : { <V>(v: V): ZodRecord<string, V>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+>ZodRecord.create : { <V>(v: V): ZodRecord<string, V>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+>ZodRecord : typeof ZodRecord
+>create : { <V>(v: V): ZodRecord<string, V>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+
+const singleType = ZodRecord.single;
+>singleType : (x: number) => number
+>ZodRecord.single : (x: number) => number
+>ZodRecord : typeof ZodRecord
+>single : (x: number) => number
+
+export { recordType, singleType };
+>recordType : { <V>(v: V): ZodRecord<string, V>; <K, V>(k: K, v: V): ZodRecord<K, V>; }
+>singleType : (x: number) => number
+
+export const inst = new ZodRecord<1, 2>().m;
+>inst : (x: number) => number
+>new ZodRecord<1, 2>().m : (x: number) => number
+>new ZodRecord<1, 2>() : ZodRecord<1, 2>
+>ZodRecord : typeof ZodRecord
+>m : (x: number) => number
+

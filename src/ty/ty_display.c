@@ -5100,8 +5100,11 @@ static Symbol const* anonymous_type_query(TyDisplay d, Ty const* ty, csview* mem
     ) {
         return ty->anonymous.merged_value;
     }
-    if (d.enclosing && ty->anonymous.function) {
-        FunctionImpl const* method = ty->anonymous.function;
+    // (An overloaded method's type has its signatures, the first one's declaration says which method it is)
+    FunctionImpl const* static_method = ty->anonymous.function ? ty->anonymous.function :
+        !ty->anonymous.object_literal && ty->anonymous.overload_count ? ty->anonymous.overloads[0] : nullptr;
+    if (d.enclosing && static_method) {
+        FunctionImpl const* method = static_method;
         Symbol const* owner = function_impl_rare(method)->static_method_of;
         csview name = span_valid(function_impl_member_name(method)) ? span_sv(function_impl_member_name(method)) : c_sv("");
         if (name.size >= 2 && name.buf[0] == '[' && name.buf[name.size - 1] == ']') {

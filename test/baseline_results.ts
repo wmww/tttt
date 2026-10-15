@@ -607,6 +607,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOverloadedStaticMethodTypeof': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttOverrideSymbolMemberName': {
         errors: true,
         symbols: true,
