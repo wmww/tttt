@@ -53,3 +53,15 @@ Not in this class after all (tsgo's CLI differs from tttt too): circularBaseType
   `Child<ListWidget>` of `"each"`, checkTypeReferenceNode during the interface's check) together with the TS2502 on
   `"each"`. tttt's TS2615 lands on (79,1) only because it misses the cycle at the interface (below), so fixing that
   moves it to the CLI's place. The CLI-order bugs left are filed in missing_checks.md ("Circularity").
+
+# Suite tests whose expected output is a tsgo type-identity artifact (plan 71 item 1, 2026-10-15)
+Hacks that reproduced one test's tsgo artifact (union order by creation, a type's identity) were removed when the
+oracles (corpora, DT sweep, source sweep, `$ExpectType`, flagflip) didn't move; the tests they were written for are
+argued here instead. Nothing a user sees differs in any of them.
+- noImplicitAnyUnionNormalizedObjectLiteral1 (types only): `bar` prints `{ c: string; p: string; s: string; } | { c?:
+  undefined; p: any; s: any; }` where tsgo prints the other order. A union's members are ordered by type id, and
+  under strictNullChecks false tsgo's getWidenedTypeWithContext remakes every object literal member of a widening
+  union (getWidenedTypeOfObjectLiteral makes a new type even when nothing in it widens), so the order is that of
+  their re-creation. tttt's structural intern hands the unchanged member back (its id stays older than the widened
+  one's). Reproducing it took a flag that made a structurally identical copy of each member (`OBJECT_WIDENED_COPY`,
+  removed 2026-10-15): an extra type per member for an order only the types baseline shows.

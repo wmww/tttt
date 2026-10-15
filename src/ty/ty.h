@@ -1992,9 +1992,6 @@ typedef enum ObjectLiteralKind {
     // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral, binding patterns), which
     // has no inferable index (isObjectTypeWithInferableIndex)
     OBJECT_NO_INFERABLE_INDEX = 1 << 5,
-    // Or'ed with the kind: a copy of the same literal, another type (tsc's widening makes every object literal anew,
-    // see widen_nullable_copy())
-    OBJECT_WIDENED_COPY = 1 << 6,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
