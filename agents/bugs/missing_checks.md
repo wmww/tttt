@@ -250,13 +250,6 @@ Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting
 - importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
   TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
   pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
-- reachabilityChecksNoCrash1 (2026-10-14: `x > { const out = [], for: 1, const v }` in a module gives `const: any` in
-  tsgo too, the last one's, like tttt; the test's `const: never[]` needs its exact recovered shape): the diagnostics' positions match now (reparseTopLevelAwait sections, 2026-10-12); left
-  is the type of a recovered object literal with two `const` properties, `{ const out = [], for: await (<missing>
-  const v ... }`: tsc's object type says `const: never[]` (the first one's) where every probe of duplicate properties
-  (`{ a: [], a: 1 }`) gives the last one's, as tttt does (`any`, from the unresolved `v`). Reduce with a module
-  (`export {}`, target esnext) and `x > { const out = [], for await (const v of a) {} }`; suspect the reparse's
-  syntax cursor reusing the first pass's nodes, or the second `const` not being a PropertyAssignment in tsgo.
 - typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
 - Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".

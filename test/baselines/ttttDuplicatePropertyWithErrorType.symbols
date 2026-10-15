@@ -1,0 +1,40 @@
+//// [test/cases/ttttDuplicatePropertyWithErrorType.ts] ////
+
+=== ttttDuplicatePropertyWithErrorType.ts ===
+// A property written twice is TS1117 even when the first value is an assignment (not a destructuring pattern), and
+// when the last value is the error type the property prints as its first declaration's type (tsgo's
+// serializeTypeForDeclaration of the merged symbol), in the types and in operator errors.
+export {}
+declare let x: boolean;
+>x : Symbol(x, Decl(ttttDuplicatePropertyWithErrorType.ts, 4, 11))
+
+declare let out: never[];
+>out : Symbol(out, Decl(ttttDuplicatePropertyWithErrorType.ts, 5, 11))
+
+const o1 = { a: out = [], a: unresolved1 };
+>o1 : Symbol(o1, Decl(ttttDuplicatePropertyWithErrorType.ts, 6, 5))
+>a : Symbol(a, Decl(ttttDuplicatePropertyWithErrorType.ts, 6, 12), Decl(ttttDuplicatePropertyWithErrorType.ts, 6, 25))
+>out : Symbol(out, Decl(ttttDuplicatePropertyWithErrorType.ts, 5, 11))
+>a : Symbol(a, Decl(ttttDuplicatePropertyWithErrorType.ts, 6, 12), Decl(ttttDuplicatePropertyWithErrorType.ts, 6, 25))
+
+const o2 = { b: 1, b: unresolved2 };
+>o2 : Symbol(o2, Decl(ttttDuplicatePropertyWithErrorType.ts, 7, 5))
+>b : Symbol(b, Decl(ttttDuplicatePropertyWithErrorType.ts, 7, 12), Decl(ttttDuplicatePropertyWithErrorType.ts, 7, 18))
+>b : Symbol(b, Decl(ttttDuplicatePropertyWithErrorType.ts, 7, 12), Decl(ttttDuplicatePropertyWithErrorType.ts, 7, 18))
+
+x > { c: out = [], c: unresolved3 };
+>x : Symbol(x, Decl(ttttDuplicatePropertyWithErrorType.ts, 4, 11))
+>c : Symbol(c, Decl(ttttDuplicatePropertyWithErrorType.ts, 8, 5), Decl(ttttDuplicatePropertyWithErrorType.ts, 8, 18))
+>out : Symbol(out, Decl(ttttDuplicatePropertyWithErrorType.ts, 5, 11))
+>c : Symbol(c, Decl(ttttDuplicatePropertyWithErrorType.ts, 8, 5), Decl(ttttDuplicatePropertyWithErrorType.ts, 8, 18))
+
+x > { d: "s", d: unresolved4 };
+>x : Symbol(x, Decl(ttttDuplicatePropertyWithErrorType.ts, 4, 11))
+>d : Symbol(d, Decl(ttttDuplicatePropertyWithErrorType.ts, 9, 5), Decl(ttttDuplicatePropertyWithErrorType.ts, 9, 13))
+>d : Symbol(d, Decl(ttttDuplicatePropertyWithErrorType.ts, 9, 5), Decl(ttttDuplicatePropertyWithErrorType.ts, 9, 13))
+
+x > { e: 1, f: () => 1 };
+>x : Symbol(x, Decl(ttttDuplicatePropertyWithErrorType.ts, 4, 11))
+>e : Symbol(e, Decl(ttttDuplicatePropertyWithErrorType.ts, 10, 5))
+>f : Symbol(f, Decl(ttttDuplicatePropertyWithErrorType.ts, 10, 11))
+

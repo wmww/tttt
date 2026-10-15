@@ -3296,7 +3296,7 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
 }
 
 static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
-    if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors || is_destructuring_target(me)) return;
+    if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors || my assignment_pattern) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
@@ -3638,8 +3638,12 @@ static void report_operator_error(Ty const* left, Ty const* right, Expr const* e
         right = right_base;
     }
     BinaryOp written = expr->binary_op->op;
+    // (Shown like tsc's getTypeNamesForErrorDisplay: an object literal or function expression from where it's written)
+    cstr left_str, right_str;
+    ty_display_pair_cstr(checker, left, right, &left_str, &right_str);
     Error* e = error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(written).str,
-        "' cannot be applied to types '", left, "' and '", right, "'.");
+        "' cannot be applied to types '", left_str, "' and '", right_str, "'.");
+    c_drop(cstr, &left_str, &right_str);
     if (with_await) error_add_related_d(e, expr->inner_span, 2773, "Did you forget to use 'await'?");
 }
 
@@ -3878,8 +3882,11 @@ static bool binary_op_typecheck(
                 left = left_base;
                 right = right_base;
             }
+            cstr left_str, right_str;
+            ty_display_pair_cstr(checker, left, right, &left_str, &right_str);
             Error* e = error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(op).str,
-                "' cannot be applied to types '", left, "' and '", right, "'.");
+                "' cannot be applied to types '", left_str, "' and '", right_str, "'.");
+            c_drop(cstr, &left_str, &right_str);
             if (with_await) error_add_related_d(e, expr->inner_span, 2773, "Did you forget to use 'await'?");
         }   break;
 

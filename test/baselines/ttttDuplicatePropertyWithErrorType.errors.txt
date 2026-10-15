@@ -1,0 +1,48 @@
+ttttDuplicatePropertyWithErrorType.ts(7,27): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttDuplicatePropertyWithErrorType.ts(7,30): error TS2304: Cannot find name 'unresolved1'.
+ttttDuplicatePropertyWithErrorType.ts(8,20): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttDuplicatePropertyWithErrorType.ts(8,23): error TS2304: Cannot find name 'unresolved2'.
+ttttDuplicatePropertyWithErrorType.ts(9,1): error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ c: never[]; }'.
+ttttDuplicatePropertyWithErrorType.ts(9,20): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttDuplicatePropertyWithErrorType.ts(9,23): error TS2304: Cannot find name 'unresolved3'.
+ttttDuplicatePropertyWithErrorType.ts(10,1): error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ d: string; }'.
+ttttDuplicatePropertyWithErrorType.ts(10,15): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttDuplicatePropertyWithErrorType.ts(10,18): error TS2304: Cannot find name 'unresolved4'.
+ttttDuplicatePropertyWithErrorType.ts(11,1): error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ e: number; f: () => number; }'.
+
+
+==== ttttDuplicatePropertyWithErrorType.ts (11 errors) ====
+    // A property written twice is TS1117 even when the first value is an assignment (not a destructuring pattern), and
+    // when the last value is the error type the property prints as its first declaration's type (tsgo's
+    // serializeTypeForDeclaration of the merged symbol), in the types and in operator errors.
+    export {}
+    declare let x: boolean;
+    declare let out: never[];
+    const o1 = { a: out = [], a: unresolved1 };
+                              ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                                 ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'unresolved1'.
+    const o2 = { b: 1, b: unresolved2 };
+                       ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                          ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'unresolved2'.
+    x > { c: out = [], c: unresolved3 };
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ c: never[]; }'.
+                       ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                          ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'unresolved3'.
+    x > { d: "s", d: unresolved4 };
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ d: string; }'.
+                  ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'unresolved4'.
+    x > { e: 1, f: () => 1 };
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '>' cannot be applied to types 'boolean' and '{ e: number; f: () => number; }'.
+    

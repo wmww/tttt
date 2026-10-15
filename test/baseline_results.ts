@@ -90,6 +90,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDuplicatePropertyWithErrorType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttElaborateAfterSpreadElement': {
         errors: true,
         symbols: true,
@@ -28713,9 +28718,9 @@ const baselines = {
         types: true,
     },
     'reachabilityChecksNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactDefaultPropsInferenceSuccess': {
         errors: true,

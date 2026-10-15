@@ -1,0 +1,61 @@
+//// [test/cases/ttttDuplicatePropertyWithErrorType.ts] ////
+
+=== ttttDuplicatePropertyWithErrorType.ts ===
+// A property written twice is TS1117 even when the first value is an assignment (not a destructuring pattern), and
+// when the last value is the error type the property prints as its first declaration's type (tsgo's
+// serializeTypeForDeclaration of the merged symbol), in the types and in operator errors.
+export {}
+declare let x: boolean;
+>x : boolean
+
+declare let out: never[];
+>out : never[]
+
+const o1 = { a: out = [], a: unresolved1 };
+>o1 : { a: never[]; }
+>{ a: out = [], a: unresolved1 } : { a: never[]; }
+>a : never[]
+>out = [] : never[]
+>out : never[]
+>[] : never[]
+>a : never[]
+>unresolved1 : any
+
+const o2 = { b: 1, b: unresolved2 };
+>o2 : { b: number; }
+>{ b: 1, b: unresolved2 } : { b: number; }
+>b : number
+>1 : 1
+>b : number
+>unresolved2 : any
+
+x > { c: out = [], c: unresolved3 };
+>x > { c: out = [], c: unresolved3 } : boolean
+>x : boolean
+>{ c: out = [], c: unresolved3 } : { c: never[]; }
+>c : never[]
+>out = [] : never[]
+>out : never[]
+>[] : never[]
+>c : never[]
+>unresolved3 : any
+
+x > { d: "s", d: unresolved4 };
+>x > { d: "s", d: unresolved4 } : boolean
+>x : boolean
+>{ d: "s", d: unresolved4 } : { d: string; }
+>d : string
+>"s" : "s"
+>d : string
+>unresolved4 : any
+
+x > { e: 1, f: () => 1 };
+>x > { e: 1, f: () => 1 } : boolean
+>x : boolean
+>{ e: 1, f: () => 1 } : { e: number; f: () => number; }
+>e : number
+>1 : 1
+>f : () => number
+>() => 1 : () => number
+>1 : 1
+

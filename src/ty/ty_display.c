@@ -3886,6 +3886,14 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             if (pseudo->kind == PSEUDO_NO_RESULT) pseudo_report(rep, pseudo_no_result_node(pseudo));
             else pseudo_report_inferred_node(rep, pseudo, nullptr, nullptr);
             if (pseudo->kind == PSEUDO_INFERRED && pseudo->signature_return) d.suppress_fallback = true;
+            // (A NoResult is printed as its declaration's symbol's type, tsgo's serializeTypeForDeclaration of it: only
+            // reached for an error type, which the pseudo type stands for. An object literal member written again is
+            // the first one's symbol, typed by that first one: `{ a: x = [], a: unresolved }` prints `a: never[]`)
+            if (ty && (ty->flags & TYF_ERROR) && pseudo->kind == PSEUDO_NO_RESULT &&
+                pseudo->decl_kind == PSEUDO_DECL_OBJECT_MEMBER && pseudo->item->tag == OBJECT_ITEM_PROPERTY
+            ) {
+                ty = ty_widened_literal(me, ty_mutable_location_type(me, &pseudo->item->value, nullptr));
+            }
             if (ty) ty_display(me, d, ty);
             else out_lit(d, "any");
             return;
