@@ -303,6 +303,31 @@ passing tests).
   cached `{ w: number; h: number; }` object that tttt prints afresh: a type identity difference (tsgo's object is the
   same type as one printed earlier in the line, tttt's another instance), inside `Partial<A & B & ...>` arguments.
   Find which instance (spread/intersection property types) and why tttt makes a new one; ~a session.
+  2026-10-15 (agent D, instrumented tsgo probe binary logging approximateLength at every typeToTypeNode, against the
+  same log from ty_display()): the first divergence is earlier, at length ~11k (text offset ~6.8k of the line),
+  `... & N["props"] & Dimensions> | undefined) & Dimensions)) | (Partial<...`: tsgo visits `undefined` and then
+  goes straight to the next union, never visiting the trailing `& Dimensions` as a type (no typeToTypeNode call: it
+  is most likely a reused existing node, the `& Dimensions` of `props: TLShapePartial<...>["props"] & Dimensions` in
+  ShapePartialWithDimensions, counted by its source range), while tttt prints Dimensions again (+~26 there). Further
+  on the alias type arguments are walked differently (tsgo: a union with an origin of intersections, tttt: an
+  intersection), so the counts drift. Next step: why tttt's node reuse (reused_node_length(), tryReuseExistingTypeNode)
+  doesn't take that intersection's `Dimensions`. Logging recipe: overlay nodebuilderimpl.go (fmt.Fprintf at
+  typeToTypeNode / visitAndTransformType), `go test -overlay ... -c ./internal/testrunner`, run it like
+  scripts/tsgoprobe.sh with TTTT_TESTDATA; split the logs into prints where the length drops.
+- reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
+  TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
+- inferFromGenericFunctionReturnTypes3 (agent B 2026-10-14): `baz(makeFoo(Enum.A), makeFoo(Enum.A))` with
+  `baz<U>(x: Func<U>, y: Func<U>)`: the second makeFoo's return mapper comes from the main inference (U already Enum, so
+  T -> Enum, the argument's literal regularized, T = Enum.A), where tsgo's returnMapper comes from a separate inference
+  from the contextual type instantiated with the *outer return mapper* only (T -> U, the literal stays fresh and widens:
+  Func<Enum>). That's call.c's infer_type_arguments HACK (hacks.md "Return mapper"): the faithful version (FAITHFUL
+  experiment: return_inference_mapper of a separate return_inf always) fixes this test and loses
+  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference. In ...Inference1 tttt then gives
+  `effectFn(function (a) {...})` no contextual type: `function () { return { fn: effectFn(...) } }`'s return context
+  is AEff, instantiated by the return mapper (AEff -> S, layerEffect's type parameter), whose apparent type has no `fn`.
+  tsgo types `a` as string there; how is still unexplained (its contextual signature for the outer function is
+  `() => AEff` and instantiateContextualType only uses the non-fixing mapper with ContextFlags.Signature). Next step:
+  instrument tsgo's getContextualTypeForObjectLiteralElement / instantiateContextualType on that test.
 - Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
   inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
   literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348
