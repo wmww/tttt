@@ -2996,10 +2996,15 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
     // tsc's instantiateMappedType makes a fresh key parameter constrained by the instantiated constraint, whose base
     // constraint (getResolvedBaseConstraint, pushed) is resolved when the constraint is asked for: a cycle through it
     // (`interface Y extends X<Y>` with `type X<T> = { [K in keyof T]: ... }`: `keyof Y` needs Y's bases, in flight)
-    // makes it circular, TS2313 at the declared constraint, and the constraint the error type
-    ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, mapped);
+    // makes it circular, TS2313 at the declared constraint, and the constraint the error type. Only where that's the
+    // first time the instantiated constraint is computed: instantiateMappedType itself instantiates it (unpushed, the
+    // wildcard check) unless the mapped type is homomorphic and its type variable changes (then it maps over that)
+    Ty const* variable = source->modifiers_type && source->constraint->kind == TY_KEYOF ?
+        ty_actual_type_variable(me, source->constraint->keyof.operand) : nullptr;
+    bool pushed = variable && variable->kind == TY_TYPE_PARAM && ty_instantiate(me, variable, mapper) != variable;
+    if (pushed) ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, mapped);
     mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
-    if (ty_resolving_pop(me)) mapped_key_circular(me, source, mapped);
+    if (pushed && ty_resolving_pop(me)) mapped_key_circular(me, source, mapped);
     // The template and the `as` clause see the mapped type's own key parameter, not a mapping of it that the mapper
     // carries from an enclosing instance of the same mapped type: in `type X<T> = { [K in keyof T]: F<T[K]> }` where
     // F's body mentions X again, the inner X's mapper is composed from the outer one's, K included (tsc's
