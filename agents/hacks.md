@@ -131,9 +131,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   declares a `{}` container's expandos in the literal's own symbol; tttt shares the host's exports, so an expando named
   like a dotted JSDoc typedef's namespace (`@typedef {T} Host.a.B` next to `Host.a = {}`) merges into it. The value side
   is the expando's alone, a type-side reference shows both. Correct: a literal symbol table (jsEnumCrossFileExport).
-- `SymbolRare.merge_detached` (`merge_into_exports()`, `ty_type_of_symbol()`): an alias a cross-file merge went through
-  keeps tsgo's pre-merge aliasTarget; only its flags are kept, so a target with a value gives the merged type (tsgo:
-  the unmerged one's). The symbol chain skips the alias in tables (declarationEmitAugmentationUsesCorrectSourceFile).
 - `attribute_type_accepts()`/`attributes_subtype()`/`best_pattern_module()`: which pattern ambient module (`declare
   module "*.css" with { type: "css" }`) an import with attributes matches is decided syntactically, not by tsgo's
   isTypeAssignableTo/isTypeStrictSubtypeOf (literal annotations exact, unions as sets, `string`/type references accept
@@ -182,10 +179,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - TS7023/TS7024 own-context circularity (`ty_function_context_is_self`) and TS7011/TS7018 reportability
   (`ty_function_decide_widening_reportable()`) are decided where the return type is inferred, through the anchor or
   else the first contextual signature (`KEY_CONTEXT_RETURN`), not the check of the moment's.
-- `infer_from_objects()`: a generic mapped target `{ [P in C]: T[P] }` sends the source to T as if homomorphic (standing
-  in for reverse mapping) unless C is a conditional, intersection-limited or an uninferred `keyof X` (unions with
-  literal keys still do); Pick's K gets the source's keys outside return inference only; `infer_to_mapped()` finding
-  nothing returns. Correct: always the reverse mapped type (lazy since plan 42).
 - Skip-sensitive rounds (`resolve_with_signatures`): tsc's SkipContextSensitive round checks every argument, sensitive
   functions as anyFunctionType; tttt leaves them out of `check_args_until_unfit` (`skipped_function_unfit()`) and
   relates literal ones afterwards (`first_unfit_skipped_literal()`), so a literal is related after the arguments behind
@@ -294,8 +287,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   re-checking; `type_decl_span` covers declared types, function type nodes and type literals only (renaming `as`
   properties lose declarations).
 - `RelationState.intersection_source`: tsc keeps IntersectionState.Source down into the members' properties, tttt only
-  for the members. Keeping it (one line in `structured_related_impl`) is suite-clean but gives vue a spurious TS2769
-  (`h(Suspense, ...)` in runtime-core hydration.spec.ts): the real bug is elsewhere.
+  for the members. tsc's rule (drop `st->intersection_source = false` in `structured_related_impl`) plus relating a
+  conditional's constraints without the state in `conditional_source_related()` (tsc's plain isRelatedTo; without it
+  mikro-orm's QueryBuilder.having gets a spurious TS2352, ttttIntersectionSourceConditionalConstraint) leaves every
+  oracle unchanged but costs the tsc corpus +8.2% instructions (zod +2.3%): `TKind -> PunctuationSyntaxKind` recurses
+  once more under the Source key, its Maybe results aren't cached, 20k `SK_i & TKind -> SK_j` pairs follow (60 before).
+  Fix that caching (tsc's maybe keys for Source-keyed pairs), then apply the rule.
 - `structured_related_members`: the whole-source fallback for an intersection target covers conditional sources only
   (tsc: any instantiable source goes on to its constraints).
 - `props_related` skips the same property by `Prop` identity plus a rule for object literal accessors of one function
@@ -426,16 +423,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Instantiation limit: an exhausted budget's results are memoized like tsc's (`test/probes/instantiation_limit/`), but
   tttt instantiates more eagerly (variance measurement, eager members), so a tttt-only TS2589 poisons what tsc would
   still compute; a cut-short conditional instance is re-reported only within its epoch.
-- `lower_node()` TYPE_VALUE makes a literal's fresh twin nothing needs (permanent, perf, unexplained: without it the
-  tsc corpus costs 1% more in union_with_origin).
 - Deep nesting identity: ObjectFlags.FromTypeNode only for array/tuple nodes (`reference_from_type_node()`), not
   generic interface references: a partial port of isDeeplyNestedType's recursion identity.
 - `item_is_literal()` (ty_display.c): an object literal property valued by an array/object literal isn't printed from
   syntax in the unwidened type, told syntactically because tttt's tuples/arrays have no fresh twin (tsgo:
-  ContainsObjectOrArrayLiteral). Correct fix: fresh array/tuple literal types.
-- `OBJECT_WIDENED_COPY` (`widen_nullable_copy()`): artifact, see below. Only the non-strict nullable widening remakes
-  unchanged object literal members (creation-order emulation); the strict object widening (`ty_widened_objects()`)
-  doesn't.
+  ContainsObjectOrArrayLiteral). A real rule, not an artifact (without it only
+  declarationEmitUsingAlternativeContainingModules1/2 lose their types). Correct fix: fresh array/tuple literal types.
 - `reference_from_type_node()` / `recursion_identity()`: ObjectFlags.FromTypeNode is only ported for tuple type nodes;
   interface/class references written as nodes keep the target identity because signature relations don't instantiate
   fresh references per level (performanceComparisonOf...Signatures would hit TS2589). Order-dependent like tsc's.
