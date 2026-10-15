@@ -1081,8 +1081,9 @@ static bool is_identifier_name(csview sv) {
             if (!(first ? unicode_is_identifier_start(code) : unicode_is_identifier_part(code))) return false;
             continue;
         }
+        // (`#` only starts a private name: `#x`, not `#` alone or inside)
         bool valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||
-            c == '#';
+            (c == '#' && i == 0 && sv.size > 1 && !(sv.buf[1] >= '0' && sv.buf[1] <= '9'));
         if (!valid) return false;
         i++;
     }
@@ -1273,6 +1274,8 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
         out_lit(d, "]");
         return;
     }
+    // (A string named `#x` isn't a private name)
+    if (identifier && sv.buf[0] == '#' && string_named) identifier = false;
     if (identifier) out(d, sv);
     else if (!string_named && is_numeric_name(sv)) out(d, sv);
     else display_quoted_string(d, sv, single, true);
@@ -4375,6 +4378,28 @@ static void display_pseudo_in(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
 // An object literal member's name: a computed one as written (tsgo's reuseName), else as the property prints
 static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* prop, ObjectExprItem const* item) {
     if (d.multiline && item && span_valid(item->name_span) && item->name_span.buf[0] == '[') {
+        // (A literal's is renamed by its text: an identifier, a non-negative number, else a string, tsgo's reuseName
+        // with classifyPropertyName)
+        Expr const* key = item->computed_key;
+        if (key && key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) {
+            csview text = atom_sv(prop->name);
+            bool method_new = item->tag == OBJECT_ITEM_METHOD && csview_equals(text, "new");
+            if (!method_new && (is_identifier_name(text) && text.buf[0] != '#')) {
+                out(d, text);
+            } else if (!method_new && is_numeric_name(text)) {
+                // (Kept: a number's printed by its value)
+                if (key->literal.tag == VALUE_NUMBER) {
+                    out_lit(d, "[");
+                    out(d, text);
+                    out_lit(d, "]");
+                } else {
+                    out(d, span_sv(item->name_span));
+                }
+            } else {
+                display_quoted_string(d, text, false, true);
+            }
+            return;
+        }
         out(d, span_sv(item->name_span));
         return;
     }

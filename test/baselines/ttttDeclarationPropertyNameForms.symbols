@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationPropertyNameForms.ts] ////
+
+=== ttttDeclarationPropertyNameForms.ts ===
+// Property names: `#` alone isn't an identifier; an object literal's computed literal name is renamed by its text
+// (tsgo's reuseName): an identifier, a non-negative number, else a string
+export const tokens = { "#": 1, "a b": 2, x: 3 } as const;
+>tokens : Symbol(tokens, Decl(ttttDeclarationPropertyNameForms.ts, 2, 12))
+>"#" : Symbol("#", Decl(ttttDeclarationPropertyNameForms.ts, 2, 23))
+>"a b" : Symbol("a b", Decl(ttttDeclarationPropertyNameForms.ts, 2, 31))
+>x : Symbol(x, Decl(ttttDeclarationPropertyNameForms.ts, 2, 41))
+>const : Symbol(const)
+
+export const langs = { ['da-DK']: { name: "d" }, ['x']: 1, [`y`]: 2 };
+>langs : Symbol(langs, Decl(ttttDeclarationPropertyNameForms.ts, 3, 12))
+>['da-DK'] : Symbol(['da-DK'], Decl(ttttDeclarationPropertyNameForms.ts, 3, 22))
+>'da-DK' : Symbol(['da-DK'], Decl(ttttDeclarationPropertyNameForms.ts, 3, 22))
+>name : Symbol(name, Decl(ttttDeclarationPropertyNameForms.ts, 3, 35))
+>['x'] : Symbol(['x'], Decl(ttttDeclarationPropertyNameForms.ts, 3, 48))
+>'x' : Symbol(['x'], Decl(ttttDeclarationPropertyNameForms.ts, 3, 48))
+>[`y`] : Symbol([`y`], Decl(ttttDeclarationPropertyNameForms.ts, 3, 58))
+>`y` : Symbol([`y`], Decl(ttttDeclarationPropertyNameForms.ts, 3, 58))
+
+export class L { m() { return { ['_rolumns']: [] as never[] }; } }
+>L : Symbol(L, Decl(ttttDeclarationPropertyNameForms.ts, 3, 70))
+>m : Symbol(L.m, Decl(ttttDeclarationPropertyNameForms.ts, 4, 16))
+>['_rolumns'] : Symbol(['_rolumns'], Decl(ttttDeclarationPropertyNameForms.ts, 4, 31))
+>'_rolumns' : Symbol(['_rolumns'], Decl(ttttDeclarationPropertyNameForms.ts, 4, 31))
+
+const SYM = "meta";
+>SYM : Symbol(SYM, Decl(ttttDeclarationPropertyNameForms.ts, 5, 5))
+
+export const o = { [SYM]: 1 };
+>o : Symbol(o, Decl(ttttDeclarationPropertyNameForms.ts, 6, 12))
+>[SYM] : Symbol([SYM], Decl(ttttDeclarationPropertyNameForms.ts, 6, 18))
+>SYM : Symbol(SYM, Decl(ttttDeclarationPropertyNameForms.ts, 5, 5))
+
+export const nums = { ['0']: 1, [1e3]: 2, ['01']: 3, ['#x']: 4 };
+>nums : Symbol(nums, Decl(ttttDeclarationPropertyNameForms.ts, 7, 12))
+>['0'] : Symbol(['0'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 21))
+>'0' : Symbol(['0'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 21))
+>[1e3] : Symbol([1e3], Decl(ttttDeclarationPropertyNameForms.ts, 7, 31))
+>1e3 : Symbol([1e3], Decl(ttttDeclarationPropertyNameForms.ts, 7, 31))
+>['01'] : Symbol(['01'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 41))
+>'01' : Symbol(['01'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 41))
+>['#x'] : Symbol(['#x'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 52))
+>'#x' : Symbol(['#x'], Decl(ttttDeclarationPropertyNameForms.ts, 7, 52))
+

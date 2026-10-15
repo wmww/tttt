@@ -249,6 +249,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPropertyNameForms': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationReadonlyEnumFieldPaints': {
         errors: true,
         symbols: true,

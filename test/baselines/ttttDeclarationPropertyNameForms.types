@@ -1,0 +1,67 @@
+//// [test/cases/ttttDeclarationPropertyNameForms.ts] ////
+
+=== ttttDeclarationPropertyNameForms.ts ===
+// Property names: `#` alone isn't an identifier; an object literal's computed literal name is renamed by its text
+// (tsgo's reuseName): an identifier, a non-negative number, else a string
+export const tokens = { "#": 1, "a b": 2, x: 3 } as const;
+>tokens : { readonly "#": 1; readonly "a b": 2; readonly x: 3; }
+>{ "#": 1, "a b": 2, x: 3 } as const : { readonly "#": 1; readonly "a b": 2; readonly x: 3; }
+>{ "#": 1, "a b": 2, x: 3 } : { readonly "#": 1; readonly "a b": 2; readonly x: 3; }
+>"#" : 1
+>1 : 1
+>"a b" : 2
+>2 : 2
+>x : 3
+>3 : 3
+
+export const langs = { ['da-DK']: { name: "d" }, ['x']: 1, [`y`]: 2 };
+>langs : { "da-DK": { name: string; }; x: number; y: number; }
+>{ ['da-DK']: { name: "d" }, ['x']: 1, [`y`]: 2 } : { "da-DK": { name: string; }; x: number; y: number; }
+>['da-DK'] : { name: string; }
+>'da-DK' : "da-DK"
+>{ name: "d" } : { name: string; }
+>name : string
+>"d" : "d"
+>['x'] : number
+>'x' : "x"
+>1 : 1
+>[`y`] : number
+>`y` : "y"
+>2 : 2
+
+export class L { m() { return { ['_rolumns']: [] as never[] }; } }
+>L : L
+>m : () => { _rolumns: never[]; }
+>{ ['_rolumns']: [] as never[] } : { _rolumns: never[]; }
+>['_rolumns'] : never[]
+>'_rolumns' : "_rolumns"
+>[] as never[] : never[]
+>[] : never[]
+
+const SYM = "meta";
+>SYM : "meta"
+>"meta" : "meta"
+
+export const o = { [SYM]: 1 };
+>o : { meta: number; }
+>{ [SYM]: 1 } : { meta: number; }
+>[SYM] : number
+>SYM : "meta"
+>1 : 1
+
+export const nums = { ['0']: 1, [1e3]: 2, ['01']: 3, ['#x']: 4 };
+>nums : { "0": number; 1000: number; "01": number; "#x": number; }
+>{ ['0']: 1, [1e3]: 2, ['01']: 3, ['#x']: 4 } : { "0": number; 1000: number; "01": number; "#x": number; }
+>['0'] : number
+>'0' : "0"
+>1 : 1
+>[1e3] : number
+>1e3 : 1000
+>2 : 2
+>['01'] : number
+>'01' : "01"
+>3 : 3
+>['#x'] : number
+>'#x' : "#x"
+>4 : 4
+
