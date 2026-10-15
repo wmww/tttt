@@ -1,0 +1,59 @@
+// @declaration: true
+// @declarationMap: true
+// @strict: true
+// @target: es2022
+// @module: esnext
+// @lib: es2022
+// Declaration maps (plan 64 stage 5): every node declaration emit reuses is mapped from its start to its end, what it
+// makes up isn't (tsgo's emitSourceMapsBeforeNode/AfterNode)
+
+// @filename: b.ts
+export type X = number;
+
+// @filename: a.ts
+/** doc */
+export interface I<T extends string = "a"> extends Base {
+    readonly a?: number;
+    b(x: T, ...rest: string[]): void;
+    [key: string]: any;
+    new (): I<T>;
+}
+interface Base { z: string | number[] }
+export declare function f(a: number, b?: string): Promise<void>;
+export function g(a = 1, { b }: { b: string }) { return a; }
+export const c = 1, d = "x";
+export let e = [1, 2];
+export class C<U> extends Array<U> implements Base {
+    z = "";
+    private p!: number;
+    constructor(public q: number, readonly r?: string) { super(); }
+    get x(): number { return 1; }
+    set x(v) {}
+    static m<V>(v: V): V { return v; }
+    private async n() {}
+    #priv = 1;
+}
+export type A = { a: 1; b: [x: number, y?: string] } | keyof Base | typeof c | -1;
+export enum E { A = 1, B, C = "c" }
+export namespace N.M { export const x = 1; }
+export default class { }
+export { Base as B2 };
+import type { X } from "./b";
+export type Y = X;
+export abstract class D { abstract m(): void; protected n?(): this; }
+type M<T> = { readonly [K in keyof T]-?: T[K] extends infer R ? R : never };
+export type M2 = M<{a: 1}>;
+export declare const t: `a${string}`;
+export const fn = (self: Iterable<unknown>, x?: number, ...r: string[]): self is Iterable<never> => true;
+export const gn = <A, B>(self: Iterable<readonly [A, B]>): Iterable<A> => null!;
+export const o = { a: 1, b(x: number): string { return "" }, get c(): number { return 1 }, "d-e": 2, n: -5 };
+export function h({ a, b: [c] }: { a: number, b: [string] }, [d]: number[]) {}
+export class K { [Symbol.iterator](): Iterator<number> { return null! } }
+export const s = Symbol();
+export declare function assertNode(node?: object | null): asserts node is Object;
+export type T2 = { [K in "a" | "b" as `x${K}`]-?: K };
+export interface Variance<in out V, const W> { v: V; w: W }
+export type Ctor = abstract new (...args: any) => any;
+export type P = typeof import("./b");
+export function expando() {}
+expando.prop = 1;

@@ -23,6 +23,12 @@ for f in "$TEST_DIR"/baselines/local/conformance/*; do
     # (Their header names the file where it is in this repo, like the suite's do)
     case "$f" in *.errors.txt|*.symbols|*.types)
         sed '1s|^//// \[tests/cases/conformance/|//// [test/cases/|' "$f" >test/baselines/"$(basename "$f")";;
+    # (Declaration maps, in the dts component too: of tests with declarationMap)
+    *.js.map)
+        base=$(basename "$f" .js.map); base=${base%%(*}
+        if grep -qiE '@declarationMap: *true' test/cases/"$base".ts* 2>/dev/null; then
+            cp "$f" test/baselines/"$(basename "$f")"
+        fi;;
     # (The emit, for the dts component: only of tests that emit declarations)
     *.js)
         base=$(basename "$f" .js); base=${base%%(*}

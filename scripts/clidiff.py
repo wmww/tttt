@@ -13,8 +13,8 @@ corpora; tsc is the pinned tsgo 7.1 (thirdparty/typescript/built/tsc).
 or composite), where tttt is a drop-in `tsc`: both run in a bubblewrap sandbox with an overlay over the checkout
 (writes land in a /tmp upper directory, the checkout is untouched), and stdout, the exit code and the written files
 (.tsbuildinfo aside: tttt writes none) must be identical. Verdicts as above, then by the written files (--verbose lists
-them): `declarationMap` (only tsgo's .d.ts.map files and their trailers differ, plan 64 stage 5), `missing files` (tsgo
-wrote more: JavaScript sources' declarations, plan 64 stage 6), `file text` (dtsdiff.py's business).
+them): `file text` (a .d.ts differs: dtsdiff.py's business), `declarationMap` (only .d.ts.map files differ: dtsdiff.py's
+too), `missing files` (tsgo wrote more: JavaScript sources' declarations, plan 64 stage 6).
 
 Exit codes: tttt follows tsc 7 (1 with any diagnostic under --noEmit, 2 when the program has no file). Projects tsc
 takes more than --max-ms for (the source sweep's cached
@@ -81,13 +81,13 @@ def compare_emit(cwd, project, checkout, args):
         return 'timeout', tsc_out, out, tsc_code, code
     verdict, *_ = compare_output(normalize(tsc_out), normalize(out), tsc_code, code)
     if verdict == 'match' and files != tsc_files:
-        # (tttt writes no declaration maps yet, plan 64 stage 5: without them and their trailers, do the rest match?)
-        unmapped = {f: re.sub(rb'\n//# sourceMappingURL=[^\n]*$', b'\n', t) for f, t in tsc_files.items()
-                    if not re.search(r'\.d\.[cm]?ts\.map$', f)}
         # (Files tsgo writes and tttt doesn't are JavaScript sources' mostly, plan 64 stage 6; other text is
-        # dtsdiff.py's business)
-        text = any(f in unmapped and unmapped[f] != t for f, t in files.items()) or any(f not in unmapped for f in files)
-        verdict = 'declarationMap' if unmapped == files else 'file text' if text else 'missing files'
+        # dtsdiff.py's business, the declaration maps too)
+        is_map = lambda f: re.search(r'\.d\.[cm]?ts\.map$', f)
+        text = any(f in tsc_files and tsc_files[f] != t and not is_map(f) for f, t in files.items()) or \
+            any(f not in tsc_files for f in files)
+        maps = any(f in tsc_files and tsc_files[f] != t and is_map(f) for f, t in files.items())
+        verdict = 'file text' if text else 'declarationMap' if maps else 'missing files'
         if args.verbose:
             differ = sorted(f for f in set(files) | set(tsc_files) if files.get(f) != tsc_files.get(f))
             print(f'    {project}: {len(differ)} files differ: {" ".join(differ[:6])}', flush=True)

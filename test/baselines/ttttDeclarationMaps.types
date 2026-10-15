@@ -1,0 +1,215 @@
+//// [test/cases/ttttDeclarationMaps.ts] ////
+
+=== b.ts ===
+export type X = number;
+>X : number
+
+=== a.ts ===
+/** doc */
+export interface I<T extends string = "a"> extends Base {
+    readonly a?: number;
+>a : number | undefined
+
+    b(x: T, ...rest: string[]): void;
+>b : (x: T, ...rest: string[]) => void
+>x : T
+>rest : string[]
+
+    [key: string]: any;
+>key : string
+
+    new (): I<T>;
+}
+interface Base { z: string | number[] }
+>z : string | number[]
+
+export declare function f(a: number, b?: string): Promise<void>;
+>f : (a: number, b?: string) => Promise<void>
+>a : number
+>b : string | undefined
+
+export function g(a = 1, { b }: { b: string }) { return a; }
+>g : (a: number | undefined, { b }: { b: string; }) => number
+>a : number
+>1 : 1
+>b : string
+>b : string
+>a : number
+
+export const c = 1, d = "x";
+>c : 1
+>1 : 1
+>d : "x"
+>"x" : "x"
+
+export let e = [1, 2];
+>e : number[]
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+export class C<U> extends Array<U> implements Base {
+>C : C<U>
+>Array : U[]
+
+    z = "";
+>z : string
+>"" : ""
+
+    private p!: number;
+>p : number
+
+    constructor(public q: number, readonly r?: string) { super(); }
+>q : number
+>r : string | undefined
+>super() : void
+>super : ArrayConstructor
+
+    get x(): number { return 1; }
+>x : number
+>1 : 1
+
+    set x(v) {}
+>x : number
+>v : number
+
+    static m<V>(v: V): V { return v; }
+>m : <V>(v: V) => V
+>v : V
+>v : V
+
+    private async n() {}
+>n : () => Promise<void>
+
+    #priv = 1;
+>#priv : number
+>1 : 1
+}
+export type A = { a: 1; b: [x: number, y?: string] } | keyof Base | typeof c | -1;
+>A : A
+>a : 1
+>b : [x: number, y?: string | undefined]
+>c : 1
+>-1 : -1
+>1 : 1
+
+export enum E { A = 1, B, C = "c" }
+>E : E
+>A : E.A
+>1 : 1
+>B : E.B
+>C : E.C
+>"c" : "c"
+
+export namespace N.M { export const x = 1; }
+>N : typeof N
+>M : typeof M
+>x : 1
+>1 : 1
+
+export default class { }
+export { Base as B2 };
+>Base : any
+>B2 : any
+
+import type { X } from "./b";
+>X : number
+
+export type Y = X;
+>Y : number
+
+export abstract class D { abstract m(): void; protected n?(): this; }
+>D : D
+>m : () => void
+>n : (() => this) | undefined
+
+type M<T> = { readonly [K in keyof T]-?: T[K] extends infer R ? R : never };
+>M : M<T>
+
+export type M2 = M<{a: 1}>;
+>M2 : M<{ a: 1; }>
+>a : 1
+
+export declare const t: `a${string}`;
+>t : `a${string}`
+
+export const fn = (self: Iterable<unknown>, x?: number, ...r: string[]): self is Iterable<never> => true;
+>fn : (self: Iterable<unknown>, x?: number, ...r: string[]) => self is Iterable<never>
+>(self: Iterable<unknown>, x?: number, ...r: string[]): self is Iterable<never> => true : (self: Iterable<unknown>, x?: number, ...r: string[]) => self is Iterable<never>
+>self : Iterable<unknown>
+>x : number | undefined
+>r : string[]
+>true : true
+
+export const gn = <A, B>(self: Iterable<readonly [A, B]>): Iterable<A> => null!;
+>gn : <A, B>(self: Iterable<readonly [A, B]>) => Iterable<A>
+><A, B>(self: Iterable<readonly [A, B]>): Iterable<A> => null! : <A, B>(self: Iterable<readonly [A, B]>) => Iterable<A>
+>self : Iterable<readonly [A, B]>
+>null! : never
+
+export const o = { a: 1, b(x: number): string { return "" }, get c(): number { return 1 }, "d-e": 2, n: -5 };
+>o : { a: number; b(x: number): string; readonly c: number; "d-e": number; n: number; }
+>{ a: 1, b(x: number): string { return "" }, get c(): number { return 1 }, "d-e": 2, n: -5 } : { a: number; b(x: number): string; readonly c: number; "d-e": number; n: number; }
+>a : number
+>1 : 1
+>b : (x: number) => string
+>x : number
+>"" : ""
+>c : number
+>1 : 1
+>"d-e" : number
+>2 : 2
+>n : number
+>-5 : -5
+>5 : 5
+
+export function h({ a, b: [c] }: { a: number, b: [string] }, [d]: number[]) {}
+>h : ({ a, b: [c] }: { a: number; b: [string]; }, [d]: number[]) => void
+>a : number
+>b : any
+>c : string
+>a : number
+>b : [string]
+>d : number
+
+export class K { [Symbol.iterator](): Iterator<number> { return null! } }
+>K : K
+>[Symbol.iterator] : () => Iterator<number>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>null! : never
+
+export const s = Symbol();
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+export declare function assertNode(node?: object | null): asserts node is Object;
+>assertNode : (node?: object | null) => asserts node is Object
+>node : object | null | undefined
+
+export type T2 = { [K in "a" | "b" as `x${K}`]-?: K };
+>T2 : T2
+
+export interface Variance<in out V, const W> { v: V; w: W }
+>v : V
+>w : W
+
+export type Ctor = abstract new (...args: any) => any;
+>Ctor : Ctor
+>args : any
+
+export type P = typeof import("./b");
+>P : typeof import("./b")
+
+export function expando() {}
+>expando : { (): void; prop: number; }
+
+expando.prop = 1;
+>expando.prop = 1 : 1
+>expando.prop : number
+>expando : { (): void; prop: number; }
+>prop : number
+>1 : 1
+
