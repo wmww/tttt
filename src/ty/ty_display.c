@@ -1748,6 +1748,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         // name reaches it (then the reference prints its type)
         Symbol const* target = identifier->target;
         if (reuse == IDENTIFIER_RENAMED) {
+            if (d.tracker) d.tracker->track_symbol(d.tracker, target, SYMBOL_TYPE); // (lookupSymbolChain tracks it)
             out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
             display_node_args(me, d, &identifier->generic_params);
         } else {
@@ -1830,7 +1831,7 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
     }
     // (Declaration emit: tracked, see display_node_identifier())
     Symbol const* symbol = leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword ? leftmost->identifier.symbol : nullptr;
-    if (d.tracker && symbol && !symbol->is_parameter && !symbol->is_local && d.enclosing) {
+    if (d.tracker && symbol && !symbol->is_parameter && d.enclosing) {
         Symbol const* found = scope_resolve(d.enclosing, span_sv(leftmost->inner_span), SYMBOL_VALUE);
         if (found) d.tracker->track_symbol(d.tracker, found, SYMBOL_VALUE);
     }

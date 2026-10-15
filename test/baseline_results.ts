@@ -28974,7 +28974,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: false,
-        dts: false,
+        dts: true,
     },
     'recursiveConditionalTypes2': {
         errors: true,
@@ -40406,7 +40406,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'dependentDestructuredVariablesFromNestedPatterns': {
         errors: true,
