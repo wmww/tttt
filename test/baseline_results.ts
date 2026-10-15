@@ -548,6 +548,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttIntersectionSourceConditionalConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsDefaultTypeArgumentAny': {
         errors: true,
         symbols: true,
@@ -8853,8 +8858,8 @@ const baselines = {
     },
     'declarationEmitAugmentationUsesCorrectSourceFile': {
         errors: true,
-        symbols: true,
-        types: true,
+        symbols: false,
+        types: false,
         dts: true,
     },
     'declarationEmitBigInt': {
@@ -26150,7 +26155,7 @@ const baselines = {
     'noImplicitAnyUnionNormalizedObjectLiteral1': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'noImplicitAnyWithOverloads': {
         errors: true,

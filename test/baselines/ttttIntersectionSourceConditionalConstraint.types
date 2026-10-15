@@ -1,0 +1,49 @@
+//// [test/cases/ttttIntersectionSourceConditionalConstraint.ts] ////
+
+=== ttttIntersectionSourceConditionalConstraint.ts ===
+// An intersection source's conditional member relates its constraints without IntersectionState.Source (tsc's
+// isRelatedTo): its `{}` still has an inferable index signature (mikro-orm's QueryBuilder.having)
+type IsNever<T> = [T] extends [never] ? true : false;
+>IsNever : IsNever<T>
+>true : true
+>false : false
+
+type Keys<R extends string> = { [K in R]?: string };
+>Keys : Keys<R>
+
+type Cond<R extends string> = IsNever<R> extends true ? {} : Keys<R>;
+>Cond : Cond<R>
+>true : true
+
+type Filter<T> = { -readonly [K in keyof T]?: T[K] | null };
+>Filter : Filter<T>
+
+type Query<T, R extends string = never> = Filter<T> & Cond<R>;
+>Query : Query<T, R>
+
+declare const key: symbol;
+>key : symbol
+
+function having<T, R extends string>(cond: Query<T, R> | string) {
+>having : <T, R extends string>(cond: Query<T, R> | string) => Query<T, R>
+>cond : string | Query<T, R>
+
+    if (typeof cond === "string") {
+>typeof cond === "string" : boolean
+>typeof cond : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>cond : string | Query<T, R>
+>"string" : "string"
+
+        cond = { [key]: [] } as Query<T, R>;
+>cond = { [key]: [] } as Query<T, R> : Query<T, R>
+>cond : string | Query<T, R>
+>{ [key]: [] } as Query<T, R> : Query<T, R>
+>{ [key]: [] } : { [key]: never[]; }
+>[key] : never[]
+>key : symbol
+>[] : never[]
+    }
+    return cond;
+>cond : Query<T, R>
+}
+

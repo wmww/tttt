@@ -74,7 +74,7 @@ typedef struct RelationState {
     // Relating the members of an intersection source (tsc's IntersectionState.Source): a member has no inferable index
     // signature, the intersection as a whole is related afterwards. Set for the members' relations (part of their cache
     // key), and turned into member_of_intersection_source for their own structure only. HACK: tsc keeps the state
-    // down into their properties; doing that here made zod's deep-partial test run into the instantiation limits
+    // down into their properties; doing that here costs the tsc corpus 8% instructions (hacks.md, Relations)
     bool intersection_source;
     bool member_of_intersection_source;
     // Reporting: a tuple source related as the array it extends (structured_related_members) is still named as the

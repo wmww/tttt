@@ -1,0 +1,68 @@
+//// [test/cases/ttttIntersectionSourceConditionalConstraint.ts] ////
+
+=== ttttIntersectionSourceConditionalConstraint.ts ===
+// An intersection source's conditional member relates its constraints without IntersectionState.Source (tsc's
+// isRelatedTo): its `{}` still has an inferable index signature (mikro-orm's QueryBuilder.having)
+type IsNever<T> = [T] extends [never] ? true : false;
+>IsNever : Symbol(IsNever, Decl(ttttIntersectionSourceConditionalConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 2, 13))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 2, 13))
+
+type Keys<R extends string> = { [K in R]?: string };
+>Keys : Symbol(Keys, Decl(ttttIntersectionSourceConditionalConstraint.ts, 2, 53))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 3, 10))
+>K : Symbol(K, Decl(ttttIntersectionSourceConditionalConstraint.ts, 3, 33))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 3, 10))
+
+type Cond<R extends string> = IsNever<R> extends true ? {} : Keys<R>;
+>Cond : Symbol(Cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 3, 52))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 4, 10))
+>IsNever : Symbol(IsNever, Decl(ttttIntersectionSourceConditionalConstraint.ts, 0, 0))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 4, 10))
+>Keys : Symbol(Keys, Decl(ttttIntersectionSourceConditionalConstraint.ts, 2, 53))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 4, 10))
+
+type Filter<T> = { -readonly [K in keyof T]?: T[K] | null };
+>Filter : Symbol(Filter, Decl(ttttIntersectionSourceConditionalConstraint.ts, 4, 69))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 12))
+>K : Symbol(K, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 30))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 12))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 12))
+>K : Symbol(K, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 30))
+
+type Query<T, R extends string = never> = Filter<T> & Cond<R>;
+>Query : Symbol(Query, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 60))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 6, 11))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 6, 13))
+>Filter : Symbol(Filter, Decl(ttttIntersectionSourceConditionalConstraint.ts, 4, 69))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 6, 11))
+>Cond : Symbol(Cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 3, 52))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 6, 13))
+
+declare const key: symbol;
+>key : Symbol(key, Decl(ttttIntersectionSourceConditionalConstraint.ts, 8, 13))
+
+function having<T, R extends string>(cond: Query<T, R> | string) {
+>having : Symbol(having, Decl(ttttIntersectionSourceConditionalConstraint.ts, 8, 26))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 16))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 18))
+>cond : Symbol(cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 37))
+>Query : Symbol(Query, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 60))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 16))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 18))
+
+    if (typeof cond === "string") {
+>cond : Symbol(cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 37))
+
+        cond = { [key]: [] } as Query<T, R>;
+>cond : Symbol(cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 37))
+>[key] : Symbol([key], Decl(ttttIntersectionSourceConditionalConstraint.ts, 11, 16))
+>key : Symbol(key, Decl(ttttIntersectionSourceConditionalConstraint.ts, 8, 13))
+>Query : Symbol(Query, Decl(ttttIntersectionSourceConditionalConstraint.ts, 5, 60))
+>T : Symbol(T, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 16))
+>R : Symbol(R, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 18))
+    }
+    return cond;
+>cond : Symbol(cond, Decl(ttttIntersectionSourceConditionalConstraint.ts, 9, 37))
+}
+
