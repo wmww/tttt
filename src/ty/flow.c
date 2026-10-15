@@ -2167,6 +2167,51 @@ static bool some_member_is_empty_object(Checker* me, Ty const* ty) {
     return false;
 }
 
+// tsc's Primitive type flags on a non-union (literals, enums, unique symbols, templates, void-likes, null)
+static bool is_primitive_value(Ty const* ty) {
+    return !(ty->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER | TYF_NON_PRIMITIVE | TYF_OBJECT | TYF_TYPE_PARAM |
+        TYF_INTERSECTION | TYF_DEFERRED));
+}
+
+// tsc's isUniformUnionType: a union of primitives only (tsc's PrimitiveUnion: no object, any, unknown, void,
+// intersection or instantiable member) whose enum members all come from one enum and aren't mixed with string or
+// number literals
+static bool is_uniform_union(Ty const* ty) {
+    if (ty->kind != TY_UNION) return false;
+    Symbol const* enum_decl = nullptr;
+    bool has_literal = false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        if (member->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID | TYF_NEVER | TYF_OBJECT | TYF_INTERSECTION |
+            TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
+            return false;
+        }
+        if (member->kind == TY_LITERAL && (member->flags & (TYF_ENUM_LITERAL | TYF_ENUM))) {
+            if (has_literal) return false;
+            if (!enum_decl) enum_decl = member->literal.enum_decl;
+            else if (enum_decl != member->literal.enum_decl) return false;
+        } else if (member->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+            if (enum_decl) return false;
+            has_literal = true;
+        }
+    }
+    return true;
+}
+
+// tsc's unionContainsType (matchSymbol false) for a non-nullable value: the member itself, or the primitive it's a
+// literal of
+static bool union_contains_value(Checker* me, Ty const* union_ty, Ty const* value) {
+    TyList members = union_ty->composite.types;
+    Ty const* primitive = nullptr;
+    if (value->flags & TYF_STRING_LITERAL) primitive = ty_intrinsic(me, TY_STRING);
+    else if (value->flags & (TYF_ENUM | TYF_NUMBER_LITERAL)) primitive = ty_intrinsic(me, TY_NUMBER);
+    else if (value->flags & TYF_BIGINT_LITERAL) primitive = ty_intrinsic(me, TY_BIGINT);
+    for (u32 i = 0; i < members.len; i++) {
+        if (members.data[i] == value || members.data[i] == primitive) return true;
+    }
+    return false;
+}
+
 static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, Expr const* value, bool assume_true) {
     Checker* me = q->me;
     if (type->flags & TYF_ANY) return type;
@@ -2191,6 +2236,13 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
                 return value_type;
             }
             if (value_type->flags & TYF_OBJECT) return ty_intrinsic(me, TY_NON_PRIMITIVE);
+        }
+        // A union of primitives with a member the value is (or a primitive it's a literal of) narrows to the value's
+        // regular twin: `u === "a"` with u a `string | undefined` is a regular "a", which a return type or a `let`
+        // then keeps (`string` alone goes the filtering way below and keeps the fresh one, which widens)
+        if (!double_equals && value_type->kind != TY_UNION && is_primitive_value(value_type) && is_uniform_union(type)) {
+            Ty const* regular = ty_regular(me, value_type);
+            if (union_contains_value(me, type, regular)) return regular;
         }
         Ty const* filtered = filter_type(me, type, double_equals ? is_comparable_or_coercible : is_comparable_to, value_type);
         return replace_primitives_with_literals(me, filtered, value_type);

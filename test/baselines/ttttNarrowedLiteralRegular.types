@@ -1,0 +1,83 @@
+//// [test/cases/ttttNarrowedLiteralRegular.ts] ////
+
+=== ttttNarrowedLiteralRegular.ts ===
+// `u === "a"` narrows a union of primitives that has `string` (or "a") to the regular "a" (tsc's isUniformUnionType
+// path of narrowTypeByEquality): it doesn't widen in a return type or a `let`. A plain `string` narrows by filtering
+// to the fresh "a", which does
+declare const s: string;
+>s : string
+
+declare const u: string | undefined;
+>u : string | undefined
+
+declare const sn: string | number;
+>sn : string | number
+
+export const v = (() => {
+>v : "lmdb" | "sqlite" | undefined
+>(() => {    const env = u?.trim();    if (env === 'lmdb' || env === 'sqlite') {        return env;    }    return undefined;})() : "lmdb" | "sqlite" | undefined
+>(() => {    const env = u?.trim();    if (env === 'lmdb' || env === 'sqlite') {        return env;    }    return undefined;}) : () => "lmdb" | "sqlite" | undefined
+>() => {    const env = u?.trim();    if (env === 'lmdb' || env === 'sqlite') {        return env;    }    return undefined;} : () => "lmdb" | "sqlite" | undefined
+
+    const env = u?.trim();
+>env : string | undefined
+>u?.trim() : string | undefined
+>u?.trim : (() => string) | undefined
+>u : string | undefined
+>trim : (() => string) | undefined
+
+    if (env === 'lmdb' || env === 'sqlite') {
+>env === 'lmdb' || env === 'sqlite' : boolean
+>env === 'lmdb' : boolean
+>env : string | undefined
+>'lmdb' : "lmdb"
+>env === 'sqlite' : boolean
+>env : string | undefined
+>'sqlite' : "sqlite"
+
+        return env;
+>env : "lmdb" | "sqlite"
+    }
+    return undefined;
+>undefined : undefined
+
+})();
+export function f() {
+>f : () => "a" | 1
+
+    if (u === 'a') return u;
+>u === 'a' : boolean
+>u : string | undefined
+>'a' : "a"
+>u : "a"
+
+    return 1;
+>1 : 1
+}
+export function g() {
+>g : () => "a" | 1
+
+    if (s === 'a') return s;
+>s === 'a' : boolean
+>s : string
+>'a' : "a"
+>s : "a"
+
+    return 1;
+>1 : 1
+}
+export function h() {
+>h : () => "x" | 1
+
+    if (sn === 1) { let q = sn; return q; }
+>sn === 1 : boolean
+>sn : string | number
+>1 : 1
+>q : 1
+>sn : 1
+>q : 1
+
+    return "x";
+>"x" : "x"
+}
+

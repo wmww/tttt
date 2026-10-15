@@ -1,0 +1,65 @@
+//// [test/cases/ttttNarrowedLiteralRegular.ts] ////
+
+=== ttttNarrowedLiteralRegular.ts ===
+// `u === "a"` narrows a union of primitives that has `string` (or "a") to the regular "a" (tsc's isUniformUnionType
+// path of narrowTypeByEquality): it doesn't widen in a return type or a `let`. A plain `string` narrows by filtering
+// to the fresh "a", which does
+declare const s: string;
+>s : Symbol(s, Decl(ttttNarrowedLiteralRegular.ts, 3, 13))
+
+declare const u: string | undefined;
+>u : Symbol(u, Decl(ttttNarrowedLiteralRegular.ts, 4, 13))
+
+declare const sn: string | number;
+>sn : Symbol(sn, Decl(ttttNarrowedLiteralRegular.ts, 5, 13))
+
+export const v = (() => {
+>v : Symbol(v, Decl(ttttNarrowedLiteralRegular.ts, 6, 12))
+
+    const env = u?.trim();
+>env : Symbol(env, Decl(ttttNarrowedLiteralRegular.ts, 7, 9))
+>u?.trim : Symbol(String.trim, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttNarrowedLiteralRegular.ts, 4, 13))
+>trim : Symbol(String.trim, Decl(lib.es5.d.ts, --, --))
+
+    if (env === 'lmdb' || env === 'sqlite') {
+>env : Symbol(env, Decl(ttttNarrowedLiteralRegular.ts, 7, 9))
+>env : Symbol(env, Decl(ttttNarrowedLiteralRegular.ts, 7, 9))
+
+        return env;
+>env : Symbol(env, Decl(ttttNarrowedLiteralRegular.ts, 7, 9))
+    }
+    return undefined;
+>undefined : Symbol(undefined)
+
+})();
+export function f() {
+>f : Symbol(f, Decl(ttttNarrowedLiteralRegular.ts, 12, 5))
+
+    if (u === 'a') return u;
+>u : Symbol(u, Decl(ttttNarrowedLiteralRegular.ts, 4, 13))
+>u : Symbol(u, Decl(ttttNarrowedLiteralRegular.ts, 4, 13))
+
+    return 1;
+}
+export function g() {
+>g : Symbol(g, Decl(ttttNarrowedLiteralRegular.ts, 16, 1))
+
+    if (s === 'a') return s;
+>s : Symbol(s, Decl(ttttNarrowedLiteralRegular.ts, 3, 13))
+>s : Symbol(s, Decl(ttttNarrowedLiteralRegular.ts, 3, 13))
+
+    return 1;
+}
+export function h() {
+>h : Symbol(h, Decl(ttttNarrowedLiteralRegular.ts, 20, 1))
+
+    if (sn === 1) { let q = sn; return q; }
+>sn : Symbol(sn, Decl(ttttNarrowedLiteralRegular.ts, 5, 13))
+>q : Symbol(q, Decl(ttttNarrowedLiteralRegular.ts, 22, 23))
+>sn : Symbol(sn, Decl(ttttNarrowedLiteralRegular.ts, 5, 13))
+>q : Symbol(q, Decl(ttttNarrowedLiteralRegular.ts, 22, 23))
+
+    return "x";
+}
+

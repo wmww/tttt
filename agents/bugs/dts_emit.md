@@ -17,9 +17,7 @@ size on real code, each with an example:
   literals normalized with `?: undefined` members (excalidraw `actions/*`, angular-cli javascript-optimizer-worker).
   Probably a checker-wide property order question: check what tttt's display iterates against tsgo's
   getPropertiesOfType order before patching the printer.
-- **Narrowed literal freshness**: `const v = (() => { if (s === "a" || s === "b") return s; })()` is `"a" | "b"` in
-  tsgo's `.d.ts`, tttt widens it to `string`: tttt's narrowing-by-equality literals are fresh where tsgo's are regular
-  by the time a return type unions them (both widen `cond ? "a" : "b"`). angular-cli `environment-options.d.ts`.
+
 - **Painting gaps** ("import", ~200 files): an import used only by a name the node builder prints from a type
   (not a reused node) isn't painted in some paths: excalidraw `actionProperties.d.ts` (ExcalidrawFreeDrawElement),
   effect `fiberRuntime.d.ts` (`import type * as Either`). Find which display path prints the name without

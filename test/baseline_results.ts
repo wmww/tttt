@@ -357,6 +357,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNarrowedLiteralRegular': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttNeverIndexRecord': {
         errors: true,
         symbols: true,
