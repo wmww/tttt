@@ -29,7 +29,7 @@ HEADER = re.compile(r'^(\S.*?:\d+:\d+ - )?error TS\d+: ')
 def run(options, checkers, timeout, memory='off'):
     build = list(options[:2]) if options[:1] == ['-b'] else []  # (-b first: tsc's TS6369)
     proc = subprocess.run(['./release/tttt', *build, '--pretty', 'true', '--keep-going', '--checkers', str(checkers),
-                           '--checker-memory', memory, *options[len(build):]],
+                           '--checker-memory', memory, *(['--no-write'] if build else ['--noEmit']), *options[len(build):]],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     return re.sub(r'\x1b\[[0-9;]*m', '', proc.stdout.decode(errors='replace'))
 

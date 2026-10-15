@@ -144,6 +144,7 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my decl_override);
     if (my declaration_output) cstr_drop(my declaration_output);
     free(my declaration_output);
+    cstr_drop(&my declaration_output_path);
     cstr_drop(&my bundled_path);
     cstr_drop(&my package_json);
     for (u32 i = 0; i < my module_ref_count; i++) {

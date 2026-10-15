@@ -169,7 +169,8 @@ def main():
     try:
         opts = args.options.split()
         # (`-b` must be the first argument, like tsc's TS6369)
-        cmd = [os.path.join(ROOT, 'release/tttt'), *(opts + ['--pretty', 'false'] if opts[:1] == ['-b'] else ['--pretty', 'false'] + opts), *args.entry]
+        # (-b emits, tsc's too: tttt writes nothing into the checkout. -p is tsc --noEmit's oracle)
+        cmd = [os.path.join(ROOT, 'release/tttt'), *(opts + ['--pretty', 'false', '--no-write'] if opts[:1] == ['-b'] else ['--pretty', 'false', '--noEmit'] + opts), *args.entry]
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))

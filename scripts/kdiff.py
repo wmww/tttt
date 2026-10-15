@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def run(project, cwd, k, timeout, memory='off'):
     try:
         r = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--checkers', str(k),
-                            '--checker-memory', memory, '-p', project], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
+                            '--checker-memory', memory, '--noEmit', '-p', project], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                            env={**os.environ, 'TTTT_NO_REEXEC': '1'})
         return r.stdout.decode(errors='replace'), r.returncode
     except subprocess.TimeoutExpired:

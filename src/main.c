@@ -28,6 +28,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <errno.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default (plan 67 stage 1)
@@ -54,6 +55,11 @@ typedef struct Options {
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
     const char* dts_dump; // --dts-dump DIR: write each emitted declaration file to DIR + its source's absolute path
+    bool list_emitted_files; // --listEmittedFiles: `TSFILE: path` for each file written, after the diagnostics
+    bool no_write; // --no-write: emit as tsc would, but write nothing (tools on shared checkouts: `-b` emits)
+    // Not -b and no noEmit on the command line: tttt is `tsc --noEmit` unless the options make it
+    // `tsc --emitDeclarationOnly` (apply_compiler_options())
+    bool implicit_no_emit;
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -68,6 +74,7 @@ typedef struct Output {
     bool buffered;
     cstr out, err;
     ErrorSummary summary; // Of the diagnostics printed
+    cstr emitted; // --listEmittedFiles: the `TSFILE: ` lines of the program, printed with its diagnostics
     bool pretty; // How the last program printed its diagnostics
 } Output;
 
@@ -256,6 +263,11 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
                 return err_d("Bad value '", opts->option_values[i], "' for option --", name);
         }
     }
+    // tttt writes declarations (plan 64), not JavaScript: it emits like tsc only where tsc would only emit declarations,
+    // else it is `tsc --noEmit`
+    if (opts->implicit_no_emit && !(options->emit_declaration_only && (options->declaration || options->composite))) {
+        ignore compiler_options_set(options, c_sv("noEmit"), c_sv("true"));
+    }
     compiler_options_resolve(options);
     return ok;
 }
@@ -311,6 +323,8 @@ static intptr_t print_diagnostics(Options const* opts, Output* out, Program* pro
             }
         }
     }
+    cstr_append_sv(&text, cstr_sv(&out->emitted));
+    cstr_clear(&out->emitted);
     if (program && (opts->list_files || opts->list_files_only)) {
         for (intptr_t i = 0; i < program_get_file_count(program); i++) {
             cstr path = source_file_message_path(program_source_at(program, (u32)i));
@@ -480,6 +494,38 @@ static void dump_declarations(char const* dir, Program const* program) {
     cstr_drop(&cwd);
 }
 
+// tsc --emitDeclarationOnly (plan 64): writes each file's declarations (SourceFile.declaration_output) where tsc would
+// (SourceFile.declaration_output_path), but not over a path TS5055/TS5056 blocked. A failed write is tsc's TS5033 in
+// errs. JavaScript sources' declarations aren't written: said on stderr (plan 64 stage 6). Returns whether anything
+// failed
+static bool write_declarations(Options const* opts, Output* out, Program* program, ErrorCtx* errs) {
+    bool failed = false;
+    u32 js = 0;
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        SourceFile const* source = program_source_at(program, i);
+        if (source->is_js && !source->is_json && program_source_may_be_emitted(program, source)) js++;
+        csview path = cstr_sv(&source->declaration_output_path);
+        if (!source->declaration_output || !path.size || program_emit_blocked(program, path) || opts->no_write) continue;
+        FailableResult made = fs_mkdir(fs, dirname_of(path));
+        FailableResult written = made.error ? made : fs_write_file(fs, path, cstr_sv(source->declaration_output));
+        if (made.error) failable_result_drop(&written);
+        try (written) if_err (e) {
+            ignore e;
+            int code = errno;
+            current_error_destroy();
+            error_ctx_global_error_d(errs, 5033, "Could not write file '", path, "': ", code ? strerror(code) : "error", ".");
+            failed = true;
+            continue;
+        }
+        if (opts->list_emitted_files) cstr_append_d(&out->emitted, DEFAULT_DISPLAY, "TSFILE: ", path, "\n");
+    }
+    if (js) {
+        output_flush(out);
+        eprintln("tttt: declarations of JavaScript files aren't emitted yet: ", (i64)js, " not written");
+    }
+    return failed;
+}
+
 // Checks one program, logically returning the exit code to leave with: the files on the command line (with the
 // config's options if there's a config), else the config's files. With a config the program sees the projects it
 // references through their sources (projects is where they're loaded, project the config's). Problems with the checked
@@ -525,7 +571,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (!has_inputs) {
         // A solution config: only references (tsc says nothing, and builds nothing without -b). -b doesn't build it,
         // so not even its options are checked
-        bool solution = config.size && project_set_at(projects, project)->reference_count;
+        // (tsgo: a `references` array, even an empty one, makes a config without files no mistake: no TS18003)
+        bool solution = config.size && (project_set_at(projects, project)->reference_count ||
+            project_set_at(projects, project)->has_references);
         // (tsgo's -b: a config without files and with a `references` array, even an empty one, is a solution: nothing
         // is built, only its config's parsing diagnostics are reported, and those are ExitStatus 1)
         bool build_solution = opts->build && config.size && project_set_at(projects, project)->has_references;
@@ -536,11 +584,14 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         report_errors(&shown, errs);
         intptr_t config_errors = print_diagnostics(opts, out, program, &shown);
         if (counts) counts->errors += config_errors;
+        // (An emitting program with noEmitOnError skipped its emit: 1)
+        CompilerOptions const* options = program_options(program);
+        bool skipped = !options->no_emit && options->no_emit_on_error;
         str_list_drop(&root_files);
         destroy_program(program, errs, last);
         // (tsgo: diagnostics and no file to emit is ExitStatus.DiagnosticsPresent_OutputsGenerated, 2)
         if (build_solution) return ok(config_errors ? 1 : 0);
-        if (solution || no_inputs) return ok(config_errors ? 2 : 0);
+        if (solution || no_inputs) return ok(config_errors ? (skipped ? 1 : 2) : 0);
         return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
     double last_time = now_ms();
@@ -615,10 +666,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
 
     int ret = 0;
-    // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones. With
-    // noEmitOnError, emitting (handleNoEmitOptions) reports all of them anyway, ungated
+    // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones (noEmitOnError's
+    // handleNoEmitOptions gates them alike in tsgo 7)
     CompilerOptions const* options = program_options(program);
-    bool ungated = opts->keep_going || (options->no_emit_on_error && !options->no_emit);
+    bool ungated = opts->keep_going;
     intptr_t kinds[DIAGNOSTIC_KIND_COUNT];
     count_diagnostic_kinds(errs, kinds);
     bool syntactic = kinds[DIAGNOSTIC_SYNTACTIC];
@@ -658,7 +709,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             typecheck = emit_declarations;
         }
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
-        if (opts->dts_dump) program_set_emit_declarations(program, true);
+        if (opts->dts_dump || (options->emit_declaration_only && emit_declarations)) program_set_emit_declarations(program, true);
         if (typecheck) program_typecheck(program);
         if (opts->dts_dump && typecheck) dump_declarations(opts->dts_dump, program);
         // (Global diagnostics the checking itself finds, `using`'s TS2318 for a missing Disposable, hide nothing:
@@ -714,6 +765,12 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // (A declaration diagnostic blocks its file's .d.ts: tsgo's emitDeclarationFile says EmitSkipped)
     bool declaration_blocked = false;
     for_each (e, vec_error, &shown) declaration_blocked |= e->declaration;
+    // tsc --emitDeclarationOnly: nothing is written after a diagnostic with noEmitOnError (handleNoEmitOptions)
+    if (options->emit_declaration_only && emit_declarations && typecheck &&
+        !(options->no_emit_on_error && vec_error_size(&shown)) && write_declarations(opts, out, program, errs)) {
+        report_errors(&shown, errs);
+        if (!ret) ret = 1;
+    }
     intptr_t printed = print_diagnostics(opts, out, program, &shown);
     if (opts->expect_types && typecheck) {
         output_flush(out);
@@ -739,6 +796,7 @@ static void print_summary(Output* out, bool pretty, bool with_files) {
         cstr_drop(&text);
     }
     error_summary_drop(&out->summary);
+    cstr_drop(&out->emitted);
 }
 
 static int command_line_error(int pretty, unsigned code, cstr message);
@@ -942,6 +1000,7 @@ static_failable build(Options const* opts, returns int) {
         cstr_drop(&b.jobs[i].out.out);
         cstr_drop(&b.jobs[i].out.err);
         error_summary_drop(&b.jobs[i].out.summary);
+        cstr_drop(&b.jobs[i].out.emitted);
         failable_result_drop(&b.jobs[i].result);
         project_redirects_destroy(b.jobs[i].redirects);
     }
@@ -1020,7 +1079,8 @@ static bool locale_is_valid(char const* locale) {
 
 static void print_help(void) {
     println(
-        "The Tess TypeScript Typechecker: checks like `tsc --noEmit` (nothing is emitted)\n\n"
+        "The Tess TypeScript Typechecker: checks like `tsc --noEmit`, and emits like `tsc` where the options\n"
+        "only emit declarations (emitDeclarationOnly; JavaScript is never emitted)\n\n"
         "USAGE: tttt [OPTIONS] [TSPATH...]\n\n"
         "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
         "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards. Referenced\n"
@@ -1033,6 +1093,7 @@ static void print_help(void) {
         "  -q, --quiet   don't print diagnostics (only the summary, when pretty)\n"
         "  --listFiles   print the program's files after its diagnostics\n"
         "  --listFilesOnly  print the program's files and stop\n"
+        "  --listEmittedFiles  print the written declaration files after the diagnostics\n"
         "  -v, --version print the version of TypeScript tttt checks like\n"
         "  --checkers K  check with K checkers (default: one per thread, at most one per 64 KB of checked\n"
         "                source). Each gets contiguous runs of the files; the output doesn't depend on K\n"
@@ -1052,6 +1113,7 @@ static void print_help(void) {
         "  --no-lib      don't load the standard library\n"
         "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
         "  --dts-dump DIR  write each file's declaration emit to DIR + the file's absolute path (.d.ts)\n"
+        "  --no-write    emit like tsc but write nothing (tools on shared checkouts: -b emits)\n"
         "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)"
     );
 }
@@ -1108,6 +1170,10 @@ static int run(int argc, const char** argv) {
             opts.ignore_config = true;
         } else if (streq(argv[i], "--listFiles")) {
             opts.list_files = true;
+        } else if (streq(argv[i], "--no-write")) {
+            opts.no_write = true;
+        } else if (streq(argv[i], "--listEmittedFiles")) {
+            opts.list_emitted_files = true;
         } else if (streq(argv[i], "--listFilesOnly")) {
             opts.list_files_only = true;
         } else if ((streq(argv[i], "-p") || streq(argv[i], "--project")) && i + 1 < argc) {
@@ -1191,18 +1257,11 @@ static int run(int argc, const char** argv) {
         return 0;
     }
     if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
-    // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise. -b is
-    // tsc -b's, which emits
+    // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise or the
+    // options only emit declarations. -b is tsc -b's, which emits
     bool no_emit_given = false;
     for (intptr_t i = 0; i < opts.option_count; i++) no_emit_given |= !strcasecmp(opts.option_names[i], "noEmit");
-    if (!opts.build && !no_emit_given) {
-        if (opts.option_count == MAX_COMPILER_OPTION_ARGS) {
-            eprintln("tttt: too many options");
-            return 1;
-        }
-        opts.option_names[opts.option_count] = "noEmit";
-        opts.option_values[opts.option_count++] = "true";
-    }
+    opts.implicit_no_emit = !opts.build && !no_emit_given;
 
     {
         // (tsc's CLI names files in message text by absolute path)

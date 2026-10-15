@@ -115,7 +115,7 @@ def run_tttt(corpus, flags, timeout=600, mem_gb=12):
     cwd, project = corpus_cwd(corpus)
     limit = mem_gb << 30
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '-p', project,
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--noEmit', '-p', project,
                                *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode

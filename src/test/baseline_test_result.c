@@ -105,14 +105,16 @@ static u32 js_baseline_declarations(csview text, u32 inputs, JsSection* out, u32
     return found;
 }
 
-// The output name tsgo's harness shows for a TypeScript file's declarations (outputpaths.ChangeToDeclarationExtension)
-static cstr declaration_output_name(csview path) {
-    csview base = basename_of(path);
-    if (csview_ends_with(base, ".mts")) return cstr_d(csview_slice(base, 0, base.size - 4), ".d.mts");
-    if (csview_ends_with(base, ".cts")) return cstr_d(csview_slice(base, 0, base.size - 4), ".d.cts");
-    isize dot = base.size;
-    while (dot > 0 && base.buf[dot - 1] != '.') dot--;
-    return cstr_d(dot ? csview_slice(base, 0, dot - 1) : base, ".d.ts");
+// The output name tsgo's harness shows for a file's declarations (its fileOutput): the output path without the test
+// path prefixes with @fullEmitPaths, else its base name
+static cstr declaration_output_name(BaselineTestCase const* test_case, SourceFile const* source) {
+    csview path = cstr_sv(&source->declaration_output_path);
+    if (!test_case->full_emit_paths) return cstr_from_sv(basename_of(path));
+    static const char* const prefixes[] = { "/.src/", "/.lib/", "/.ts/" };
+    for (isize i = 0; i < (isize)c_arraylen(prefixes); i++) {
+        if (csview_starts_with(path, prefixes[i])) return cstr_from_sv(csview_slice(path, (isize)strlen(prefixes[i]), path.size));
+    }
+    return cstr_from_sv(path);
 }
 
 // The dts component: tttt's declaration outputs against those of the `.js` baseline, in the baseline's order
@@ -143,27 +145,31 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
         cstr_drop(&expected);
         return;
     }
-    // Ours: each test file's declaration output, by output name
+    // Ours: each file's declaration output, by output name, in program order (tsgo's emit order)
+    Program const* program = test_case->program;
+    u32 source_count = program_source_count(program);
     cstr expected_text = cstr_null, ours = cstr_null;
-    bool* used = calloc((size_t)vec_baseline_test_file_size(&test_case->files) + 1, sizeof(bool));
+    bool* used = calloc((size_t)source_count + 1, sizeof(bool));
     for (u32 k = 0; k < count; k++) {
         cstr_append_sv(&expected_text, sections[k].text);
-        for_each (i, vec_baseline_test_file, &test_case->files) {
-            if (used[i_index] || i->superseded || !i->source || !i->source->declaration_output) continue;
-            cstr name = declaration_output_name(cstr_sv(&i->path));
+        for (u32 i = 0; i < source_count; i++) {
+            SourceFile const* source = program_source_at(program, i);
+            if (used[i] || !source->declaration_output) continue;
+            cstr name = declaration_output_name(test_case, source);
             bool same = csview_equals_sv(cstr_sv(&name), sections[k].name);
             cstr_drop(&name);
             if (!same) continue;
-            used[i_index] = true;
-            cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", sections[k].name, "]\r\n", *i->source->declaration_output);
+            used[i] = true;
+            cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", sections[k].name, "]\r\n", *source->declaration_output);
             break;
         }
     }
     // (What tttt emits that the baseline doesn't have, after)
-    for_each (i, vec_baseline_test_file, &test_case->files) {
-        if (used[i_index] || i->superseded || !i->source || !i->source->declaration_output) continue;
-        cstr name = declaration_output_name(cstr_sv(&i->path));
-        cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", name, "]\r\n", *i->source->declaration_output);
+    for (u32 i = 0; i < source_count; i++) {
+        SourceFile const* source = program_source_at(program, i);
+        if (used[i] || !source->declaration_output) continue;
+        cstr name = declaration_output_name(test_case, source);
+        cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", name, "]\r\n", *source->declaration_output);
         cstr_drop(&name);
     }
     free(used);
@@ -324,7 +330,7 @@ void baseline_test_result_run(
             cstr ours = cstr_null;
             for_each (i, vec_baseline_test_file, &test_case.files) {
                 if (i->superseded || !i->source || !i->source->declaration_output) continue;
-                cstr output_name = declaration_output_name(cstr_sv(&i->path));
+                cstr output_name = declaration_output_name(&test_case, i->source);
                 cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", output_name, "]\r\n", *i->source->declaration_output);
                 cstr_drop(&output_name);
             }
@@ -343,12 +349,13 @@ void baseline_test_result_run(
     );
 }
 
+// (The dts component counts where a test has one, plan 64 stage 4)
 bool baseline_test_result_is_pass(BaselineTestResult const* me) {
-    return my errors_passed && my symbols_passed && my types_passed;
+    return my errors_passed && my symbols_passed && my types_passed && (!my has_dts || my dts_passed);
 }
 
 bool baseline_test_result_was_pass(BaselineTestResult const* me) {
-    return my errors_prev && my symbols_prev && my types_prev;
+    return my errors_prev && my symbols_prev && my types_prev && (!my has_dts_prev || my dts_prev);
 }
 
 bool baseline_test_result_has_new_pass(BaselineTestResult const* me) {

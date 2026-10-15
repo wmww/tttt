@@ -129,6 +129,9 @@ typedef struct Program {
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
     bool emit_declarations; // program_set_emit_declarations()
+    // Output paths TS5055/TS5056 were reported for (relative to the working directory): tsc's hasEmitBlockingDiagnostics,
+    // nothing is written there
+    hmap_source_file_ptr emit_blocked;
     bool global_diagnostics_reported; // program_report_global_diagnostics()
     ErrorCtx* declaration_errs; // One per checker while typechecking: the declaration diagnostics of its files
     u32 threads; // program_set_threads(), 0: 1
@@ -249,6 +252,7 @@ static void program_drop(Program* me) {
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
+    hmap_source_file_ptr_drop(&my emit_blocked);
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
@@ -977,6 +981,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     );
                     // (tsc's getSourceFileFromReferenceWorker)
                     if (referenced == source) statement->source_directive->self_reference = true;
+                    statement->source_directive->referenced = referenced;
                     if (!referenced && !cstr_size(&statement->source_directive->unbuilt_output)) {
                         // Reported when names are resolved (it is no reason not to typecheck), named after the file's
                         // name as messages have it by then
@@ -2381,9 +2386,12 @@ static bool emit_source_may_be_emitted(Program const* me, SourceFile const* sour
     return !same;
 }
 
-// Reports one output path (tsc's verifyEmitFilePath): TS5055 if it is an input file, TS5056 the second time
+// Reports one output path (tsc's verifyEmitFilePath): TS5055 if it is an input file, TS5056 the second time. Either
+// blocks writing there
 static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* seen) {
+    bool blocked = false;
     if (program_find_source(me, cstr_sv(&output))) {
+        blocked = true;
         Error* error = error_ctx_global_error_d(
             my errs, 5055, "Cannot write file '", output, "' because it would overwrite input file."
         );
@@ -2401,11 +2409,28 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
         error_ctx_global_error_d(
             my errs, 5056, "Cannot write file '", output, "' because it would be overwritten by multiple input files."
         );
-        cstr_drop(&key);
+        blocked = true;
     } else {
-        hmap_source_file_ptr_insert(seen, key, nullptr);
+        hmap_source_file_ptr_insert(seen, cstr_clone(key), nullptr);
+    }
+    if (blocked && !hmap_source_file_ptr_contains(&my emit_blocked, cstr_sv(&key))) {
+        hmap_source_file_ptr_insert(&my emit_blocked, key, nullptr);
+    } else {
+        cstr_drop(&key);
     }
     cstr_drop(&output);
+}
+
+bool program_emit_blocked(Program* me, csview output) {
+    if (!hmap_source_file_ptr_size(&my emit_blocked)) return false;
+    cstr key = relative_path_of(program_cwd(me), output);
+    bool ret = hmap_source_file_ptr_contains(&my emit_blocked, cstr_sv(&key));
+    cstr_drop(&key);
+    return ret;
+}
+
+bool program_source_may_be_emitted(Program const* me, SourceFile const* source) {
+    return emit_source_may_be_emitted(me, source);
 }
 
 // The end of tsc's verifyCompilerOptions: no output file may overwrite an input file or another output file
@@ -2417,8 +2442,8 @@ static csview path_root_of(csview path) {
 }
 
 // tsc's computeCommonSourceDirectoryOfFilenames on the files that may be emitted (getComputedCommonSourceDirectory),
-// empty without any
-static cstr computed_common_dir(Program* me, csview cwd) {
+// base_dir without any
+static cstr computed_common_dir(Program* me, csview cwd, csview base_dir) {
     cstr common_dir = cstr_null;
     bool first = true;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -2442,8 +2467,8 @@ static cstr computed_common_dir(Program* me, csview cwd) {
         cstr_drop(&absolute);
     }
     // (Nothing emitted, all declaration files or no files at all: tsc's computeCommonSourceDirectoryOfFilenames
-    // says the current directory)
-    if (first) cstr_assign_sv(&common_dir, cwd);
+    // says the program's base directory, a config's directory or the current one)
+    if (first) cstr_assign_sv(&common_dir, base_dir);
     return common_dir;
 }
 
@@ -2455,8 +2480,8 @@ static void program_verify_inferred_root_dir(Program* me) {
     bool declaration_dir = (o->declaration || o->composite) && cstr_size(&o->declaration_dir);
     if (!cstr_size(&o->out_dir) && !declaration_dir && !cstr_size(&o->out_file)) return;
     csview cwd = program_cwd(me);
-    cstr dir59 = computed_common_dir(me, cwd);
     cstr config_dir = absolute_path_of(cwd, cstr_sv(&o->config_dir));
+    cstr dir59 = computed_common_dir(me, cwd, cstr_sv(&config_dir));
     cstr relative = cstr_size(&dir59) ? relative_path_of(cstr_sv(&config_dir), cstr_sv(&dir59)) : cstr_null;
     bool same = !cstr_size(&relative) || cstr_equals(&relative, ".") ||
         (o->case_insensitive_file_names && csview_iequals_sv(cstr_sv(&dir59), cstr_sv(&config_dir)));
@@ -2500,7 +2525,7 @@ static cstr program_common_source_dir(Program* me) {
         // (A project never infers its root from its files, 6.0: TS5011 says where 5.x put it)
         common_dir = cstr_clone(o->config_dir);
     } else {
-        common_dir = computed_common_dir(me, cstr_sv(&cwd));
+        common_dir = computed_common_dir(me, cstr_sv(&cwd), cstr_sv(&cwd));
     }
     cstr_drop(&cwd);
     return common_dir;
@@ -2524,6 +2549,30 @@ static bool program_rewrite_crosses_projects(Program* me, SourceFile const* targ
     bool ret = !cstr_eq(&roots, &outs);
     c_drop(cstr, &own_root, &other_root, &own_out, &other_out, &roots, &outs);
     return ret;
+}
+
+// Each file's declaration output path (SourceFile.declaration_output_path, absolute): tsc's GetOutputPathsFor with the
+// declaration path forced, so a file that isn't emitted has one too (a `/// <reference path>` to it is rewritten to it)
+// and a declaration file is its own
+static void program_set_declaration_paths(Program* me) {
+    CompilerOptions const* o = &my options;
+    csview cwd = program_cwd(me);
+    csview dir = cstr_size(&o->declaration_dir) ? cstr_sv(&o->declaration_dir) : cstr_sv(&o->out_dir);
+    cstr common_dir = dir.size ? program_common_source_dir(me) : cstr_null;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (source->is_stdlib || source->is_json || source->is_config) continue;
+        csview path = source_file_display_path(source);
+        // (A declaration file is its own: what a reference to it names)
+        if (source->is_declaration) {
+            cstr_take(&source->declaration_output_path, absolute_path_of(cwd, path));
+            continue;
+        }
+        cstr output = emit_output_path(me, path, dir, cstr_sv(&common_dir), emit_declaration_extension(path));
+        cstr_take(&source->declaration_output_path, absolute_path_of(cwd, cstr_sv(&output)));
+        cstr_drop(&output);
+    }
+    cstr_drop(&common_dir);
 }
 
 static void program_verify_emit_paths(Program* me) {
@@ -3553,6 +3602,7 @@ void program_typecheck(Program* me) {
     bool declaration_diagnostics =
         my emit_declarations || !(program_declaration_diagnostics_gated(me) && my declaration_diagnostics_earlier);
     my declaration_errs = declaration_diagnostics ? c_new_n(ErrorCtx, count) : nullptr;
+    if (my emit_declarations) program_set_declaration_paths(me);
     for (u32 c = 0; c < count; c++) {
         if (my declaration_errs) my declaration_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
         checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };

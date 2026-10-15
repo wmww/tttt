@@ -96,7 +96,7 @@ def run_tsgo(project, timeout, mem_gb, jobs):
 
 def run_tttt(project, timeout, mem_gb):
     cwd, p = project_args(project)
-    text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--pretty', 'false', '--checkers', '1',
+    text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', '--checkers', '1',
                                    '--threads', '1', '--time'], cwd, timeout, mem_gb)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)

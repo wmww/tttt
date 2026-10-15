@@ -236,6 +236,10 @@ typedef struct SourceFile {
     cstr decl_override; // Used for the tests
     // The `.d.ts` declaration emit wrote for it (program_set_emit_declarations(), plan 64), null if none. Owned
     cstr* declaration_output;
+    // Where its `.d.ts` goes (absolute, tsc's getDeclarationEmitOutputFilePath), set by program_typecheck() for every
+    // file when declarations are emitted (a declaration file's is itself): the CLI writes there, `/// <reference path>`s
+    // are rewritten relative to it. Empty otherwise
+    cstr declaration_output_path;
     // A default lib's name in tsgo's CLI (bundled:///libs/lib.es5.d.ts, lib.d.ts for default.d.ts): tsgo reads its libs
     // from the executable, so its messages name them by that URL, not relative to the working directory
     cstr bundled_path;

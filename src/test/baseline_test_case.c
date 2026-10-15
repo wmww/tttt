@@ -327,6 +327,10 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         my no_types_and_symbols = tag_equals(value, "true");
         return;
     }
+    if (tag_equals(key, "fullemitpaths")) {
+        my full_emit_paths = tag_equals(value, "true");
+        return;
+    }
     if (tag_equals(key, "capturesuggestions")) {
         program_options(my program)->capture_suggestions = tag_equals(value, "true");
         return;

@@ -50,7 +50,7 @@ def run_tttt(package, asserts, timeout, mem_gb):
     start = time.time()
     try:
         proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--threads', '1',
-                               '--checkers', '1', '--expect-types', spans.name, '-p', package], cwd=DT,
+                               '--checkers', '1', '--noEmit', '--expect-types', spans.name, '-p', package], cwd=DT,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
                               env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))

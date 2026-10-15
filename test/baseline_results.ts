@@ -75,6 +75,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeclarationComputedParameterName': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
@@ -206,6 +212,11 @@ const baselines = {
         types: true,
     },
     'ttttInferenceContextNotInDeclarationInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInferredRootDirNothingEmitted': {
         errors: true,
         symbols: true,
         types: true,
@@ -5724,13 +5735,13 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'commonSourceDirectory_dts': {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'commonjsAccessExports': {
         errors: true,
@@ -10195,7 +10206,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitWithDefaultAsComputedName(target=es2015)': {
         errors: true,
@@ -29635,7 +29646,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'requireOfJsonFileWithAlwaysStrictWithoutErrors': {
         errors: true,
@@ -29651,7 +29662,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'requireOfJsonFileWithEmptyObject': {
         errors: true,
@@ -57767,25 +57778,25 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'nodeModulesSynchronousCallErrors(module=node18)': {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'nodeModulesSynchronousCallErrors(module=node20)': {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'nodeModulesSynchronousCallErrors(module=nodenext)': {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'nodeModulesTopLevelAwait(module=node16)': {
         errors: true,

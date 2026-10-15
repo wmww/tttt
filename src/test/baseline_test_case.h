@@ -152,6 +152,7 @@ typedef struct BaselineTestCase {
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
+    bool full_emit_paths; // @fullEmitPaths: the `.js` baseline names outputs by their paths, not their base names
     cstr formatted_errors;
     cstr formatted_pretty_errors;
     bool pretty; // `@pretty: true`: the diagnostics at the top are tsc's pretty ones, and a summary ends the baseline

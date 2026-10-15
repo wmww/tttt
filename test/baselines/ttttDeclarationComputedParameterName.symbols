@@ -1,0 +1,32 @@
+//// [test/cases/ttttDeclarationComputedParameterName.ts] ////
+
+=== ttttDeclarationComputedParameterName.ts ===
+// A computed property name naming a parameter, in an inferred return type: the parameter is as visible as its
+// function (no TS4060), and the name is written as it is
+export function insensitiveEq(field: string, value: string) {
+>insensitiveEq : Symbol(insensitiveEq, Decl(ttttDeclarationComputedParameterName.ts, 0, 0))
+>field : Symbol(field, Decl(ttttDeclarationComputedParameterName.ts, 2, 30))
+>value : Symbol(value, Decl(ttttDeclarationComputedParameterName.ts, 2, 44))
+
+    return {
+        [field]: {
+>[field] : Symbol([field], Decl(ttttDeclarationComputedParameterName.ts, 3, 12))
+>field : Symbol(field, Decl(ttttDeclarationComputedParameterName.ts, 2, 30))
+
+            $regex: value,
+>$regex : Symbol($regex, Decl(ttttDeclarationComputedParameterName.ts, 4, 18))
+>value : Symbol(value, Decl(ttttDeclarationComputedParameterName.ts, 2, 44))
+
+            $options: "i" as const,
+>$options : Symbol($options, Decl(ttttDeclarationComputedParameterName.ts, 5, 26))
+>const : Symbol(const)
+
+        },
+    };
+}
+export const arrow = (key: string) => ({ [key]: 1 });
+>arrow : Symbol(arrow, Decl(ttttDeclarationComputedParameterName.ts, 10, 12))
+>key : Symbol(key, Decl(ttttDeclarationComputedParameterName.ts, 10, 22))
+>[key] : Symbol([key], Decl(ttttDeclarationComputedParameterName.ts, 10, 40))
+>key : Symbol(key, Decl(ttttDeclarationComputedParameterName.ts, 10, 22))
+

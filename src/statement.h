@@ -284,6 +284,7 @@ typedef struct SourceDirectiveStatement {
     // A path to a referenced project's source whose output declaration file isn't built: TS6305 (absolute paths)
     cstr unbuilt_output, unbuilt_source;
     bool self_reference; // A path to the file it is in: TS1006
+    struct SourceFile const* referenced; // A path's file, once the program loaded it (declaration emit rewrites it)
 } SourceDirectiveStatement;
 
 // Loop statements

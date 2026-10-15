@@ -109,7 +109,7 @@ def main():
                 with open(os.path.join(tmp, 'tsconfig.json'), 'w') as f:
                     f.write('{"compilerOptions":{"strict":true,"lib":["es2020"],"noEmit":true,"allowJs":true,'
                             f'"checkJs":true,"jsx":"preserve"}},"files":["a.{ext}"]}}')
-                t, m = run([os.path.join(ROOT, 'release/tttt'), '-p', '.', '--checkers', '1'], tmp, args.timeout)
+                t, m = run([os.path.join(ROOT, 'release/tttt'), '-p', '.', '--noEmit', '--checkers', '1'], tmp, args.timeout)
                 line = f'{kind:12} {n:7} | tttt ' + (f'{t:7.2f} s {m:6} MB' if t is not None else '  timeout')
                 if not args.no_tsgo:
                     t, m = run([TSGO, '-p', '.', '--singleThreaded'], tmp, args.timeout)

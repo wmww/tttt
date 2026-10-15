@@ -7,14 +7,12 @@ long as tsgo emits at least one file there. Both sides run with the same overrid
   --noEmit false --declaration --emitDeclarationOnly --declarationMap false --noEmitOnError false
   --outDir T --declarationDir T --tsBuildInfoFile /tmp/...
 
-and tsgo runs in a bubblewrap sandbox where only /tmp is writable: a file outside rootDir (which defaults to the
+and both run in a bubblewrap sandbox where only /tmp is writable: a file outside rootDir (which defaults to the
 config's directory in TS 6+) has its output written beside its source, whatever outDir says (tsc's
 getSourceFilePathInNewDir combines outDir with the absolute path). The first --tsc run without the sandbox wrote 4128
-.d.ts files into thirdparty/sources. In the sandbox those fail with TS5033; the manifest lists them (`unwritten`) and
-tttt's dumps of them are ignored. tttt writes nothing itself; `--dts-dump DIR` (src/main.c) dumps each file's emit to DIR + the
-source's absolute path with the declaration extension. The two are matched by the common source directory C: tsgo
-writes C/x/y.ts to T/x/y.d.ts, so C is the prefix the most tttt dumps share once a tsgo relative path is cut off their
-end (fallback: the config's directory, when tttt dumped nothing matchable).
+.d.ts files into thirdparty/sources. In the sandbox those fail with TS5033; the manifest lists them (`unwritten`).
+tttt is run as the CLI (plan 64 stage 4: it writes declarations where the options only emit those), and what it wrote
+under T is compared with what tsgo wrote, by path relative to T.
 
 tsgo's side is cached in test/dts/manifests.jsonl.gz: per project the relative output paths and a sha256 prefix of each,
 tsgo's exit code, the files tsgo reported declaration diagnostics in (tsgo doesn't write those), and the pins (the
@@ -181,15 +179,15 @@ def tsgo_texts(name, record):
 
 
 def run_tttt(name, timeout, mem_gb):
-    """tttt on the project with the overrides and --dts-dump: {absolute output path: text}, status"""
+    """tttt as tsc on the project with the overrides, in tsgo's sandbox: {output path relative to the out dir: text}
+    (what it wrote, like tsgo's), status"""
     cwd, p = project_spec(name)
     tmp = tempfile.mkdtemp(prefix='dtsdiff-tttt-')
-    _, flags = overrides(os.path.join(tmp, 'out'), os.path.join(tmp, 'tsbuildinfo'))
-    dump = os.path.join(tmp, 'dump')
+    out_dir, flags = overrides(os.path.join(tmp, 'out'), os.path.join(tmp, 'tsbuildinfo'))
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([TTTT, '-p', p, '--pretty', 'false', '--threads', '1', *flags, '--dts-dump', dump],
+        proc = subprocess.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', '--threads', '1', *flags],
                               cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
@@ -199,29 +197,13 @@ def run_tttt(name, timeout, mem_gb):
         status, out = 'timeout', e.stdout or b''
     wall = time.time() - start
     texts = {}
-    for d, _, files in os.walk(dump):
+    for d, _, files in os.walk(os.path.join(tmp, 'out')):
         for f in files:
             path = os.path.join(d, f)
-            # (Through symlinks: the worktrees' thirdparty/corpora, as tsgo's paths name it)
-            texts[os.path.realpath('/' + os.path.relpath(path, dump))] = open(path, 'rb').read().decode('utf-8', errors='surrogateescape')
+            texts[os.path.relpath(path, out_dir)] = open(path, 'rb').read().decode('utf-8', errors='surrogateescape')
     shutil.rmtree(tmp)
     tail = '' if status == 'ok' else '\n'.join(l for l in out.decode(errors='replace').split('\n') if l.strip())[-600:]
     return texts, status, wall, tail
-
-
-def common_dir(name, tsgo_files, tttt_paths):
-    """The directory tsgo's relative output paths are relative to, found from tttt's dumped absolute ones"""
-    votes = collections.Counter()
-    for rel in tsgo_files:
-        if rel.startswith('..'):
-            continue
-        suffix = '/' + rel
-        for a in tttt_paths:
-            if a.endswith(suffix):
-                votes[a[:-len(suffix)]] += 1
-    if votes:
-        return votes.most_common(1)[0][0]
-    return project_dir(name)
 
 
 def is_comment(line):
@@ -266,24 +248,21 @@ def classify(expected, actual):
 def compare(name, record, tttt_texts, tsgo_texts_fn):
     """Per file of the project: (relative path, bucket or None, line, tsgo's line, tttt's line)"""
     files = record['files']
-    tttt_hashes = {a: text_hash(t.encode('utf-8', errors='surrogateescape')) for a, t in tttt_texts.items()}
-    base = common_dir(name, files, tttt_texts)
-    rows, seen, expected = [], set(), None
+    tttt_hashes = {r: text_hash(t.encode('utf-8', errors='surrogateescape')) for r, t in tttt_texts.items()}
+    rows, expected = [], None
     for rel, h in sorted(files.items()):
-        a = os.path.normpath(os.path.join(base, rel))
-        seen.add(a)
-        if a not in tttt_hashes:
+        if rel not in tttt_hashes:
             rows.append((rel, 'missing file', 0, '', ''))
-        elif tttt_hashes[a] == h:
+        elif tttt_hashes[rel] == h:
             rows.append((rel, None, 0, '', ''))
         else:
             if expected is None:
                 expected = tsgo_texts_fn()
-            rows.append((rel, *classify(expected.get(rel, ''), tttt_texts[a])))
-    blocked = {os.path.splitext(f)[0] for f in record.get('blocked', [])}
-    for a in sorted(set(tttt_texts) - seen - set(record.get('unwritten', []))):
-        stem = re.sub(r'\.d\.[cm]?ts$', '', a)
-        rel = os.path.relpath(a, base)
+            rows.append((rel, *classify(expected.get(rel, ''), tttt_texts[rel])))
+    # (A file tsgo reported a declaration diagnostic in has no output: by its name without the extensions)
+    blocked = {os.path.basename(re.sub(r'\.[cm]?tsx?$', '', f)) for f in record.get('blocked', [])}
+    for rel in sorted(set(tttt_texts) - set(files)):
+        stem = os.path.basename(re.sub(r'\.d\.[cm]?ts$', '', rel))
         rows.append((rel, 'extra file (tsgo: declaration diagnostic)' if stem in blocked else 'extra file', 0, '', ''))
     return rows
 
@@ -332,13 +311,11 @@ def show(args, records):
     if status != 'ok':
         print(f'tttt: {status}\n{tail}')
     expected = tsgo_texts(name, record)
-    base = common_dir(name, record['files'], texts)
-    print(f'common source directory: {base}')
     want = args.show[1] if len(args.show) > 1 else None
-    for rel in sorted(set(record['files']) | {os.path.relpath(a, base) for a in texts}):
+    for rel in sorted(set(record['files']) | set(texts)):
         if want and want not in rel:
             continue
-        got = texts.get(os.path.normpath(os.path.join(base, rel)))
+        got = texts.get(rel)
         exp = expected.get(rel)
         if got == exp:
             continue

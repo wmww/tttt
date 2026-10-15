@@ -19,7 +19,7 @@ for name, path in realworld.CORPORA.items():
     if len(sys.argv) < 2 or name in sys.argv[1:]: print(name, flag, os.path.relpath(os.path.realpath(path)))' "$@")
 failed=0
 while read -r name flag path; do
-    run() { ./release/tttt $flag "$path" --pretty --keep-going --checkers "$CHECKERS" --threads "$1" > "$out/$name.$2" 2>&1; }
+    run() { ./release/tttt $flag "$path" --no-write --pretty --keep-going --checkers "$CHECKERS" --threads "$1" > "$out/$name.$2" 2>&1; }
     run 1 base
     status=identical
     for i in 1 2 3; do

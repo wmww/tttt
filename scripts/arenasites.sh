@@ -16,7 +16,7 @@ if test ! -e $B; then
     meson setup $B --buildtype release -Dc_args='-g -DTTTT_ARENA_SITES' > /dev/null
 fi
 ninja -C $B tttt > /dev/null
-OUT=$(TTTT_NO_REEXEC=1 $B/tttt -q --keep-going --checkers 1 --threads 1 --time "${ARGS[@]}" 2>&1 > /dev/null || true)
+OUT=$(TTTT_NO_REEXEC=1 $B/tttt -q --keep-going --checkers 1 --threads 1 --time --no-write "${ARGS[@]}" 2>&1 > /dev/null || true)
 echo "$OUT" | grep "checker 0"
 BASE=$(nm $B/tttt | awk '$3 == "arena_alloc" { print $1 }')
 for kind in arena-site type-site; do

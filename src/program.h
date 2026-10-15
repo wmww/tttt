@@ -113,6 +113,11 @@ void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
 // Declaration emit (plan 64): program_typecheck() also writes each emitted file's `.d.ts` text into its
 // SourceFile.declaration_output, on the checker that checked it. Call it before program_typecheck()
 void program_set_emit_declarations(Program* me, bool emit);
+// Whether tsc would emit the file at all (sourceFileMayBeEmitted: not a declaration file, a library's, a referenced
+// project's)
+bool program_source_may_be_emitted(Program const* me, SourceFile const* source);
+// Whether an output path (absolute) is one TS5055/TS5056 said can't be written (tsc's IsEmitBlocked)
+bool program_emit_blocked(Program* me, csview output);
 
 // How a declaration file of `importing` (a file of this program) would name the module `target` (tsc's
 // getSpecifierForModuleSymbol): an import of the file that resolves to it, else module_specifier_generate(). override:

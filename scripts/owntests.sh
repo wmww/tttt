@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates the expected baselines of tttt's own regression tests (test/cases/tttt*.ts, tsc-suite style: `// @option`
 # and `// @filename` headers) from tsgo 7.1, the oracle: test/baselines/NAME.{errors.txt,symbols,types} (.errors.txt
-# only when there are errors, none of .symbols/.types with @noTypesAndSymbols, a NAME(option=value) set per
+# only when there are errors, none of .symbols/.types with @noTypesAndSymbols, NAME.js (the dts component) with
+# @declaration or @composite, a NAME(option=value) set per
 # configuration; an empty NAME.noerrors when tsgo reports no errors). baseline_tests runs these tests with the suite (`--own-tests`, on by default).
 # Usage: scripts/owntests.sh [test/cases/ttttFoo.ts...] (default: all of them; old baselines of those tests are replaced)
 set -euo pipefail
@@ -21,7 +22,13 @@ scripts/tsgoprobe.sh "$TEST_DIR" >/dev/null
 for f in "$TEST_DIR"/baselines/local/conformance/*; do
     # (Their header names the file where it is in this repo, like the suite's do)
     case "$f" in *.errors.txt|*.symbols|*.types)
-        sed '1s|^//// \[tests/cases/conformance/|//// [test/cases/|' "$f" >test/baselines/"$(basename "$f")";; esac
+        sed '1s|^//// \[tests/cases/conformance/|//// [test/cases/|' "$f" >test/baselines/"$(basename "$f")";;
+    # (The emit, for the dts component: only of tests that emit declarations)
+    *.js)
+        base=$(basename "$f" .js); base=${base%%(*}
+        if grep -qiE '@(declaration|composite): *true' test/cases/"$base".ts* 2>/dev/null; then
+            sed '1s|^//// \[tests/cases/conformance/|//// [test/cases/|' "$f" >test/baselines/"$(basename "$f")"
+        fi;; esac
 done
 # tsgo reported nothing: say so explicitly (baseline_tests fails an own test with neither file)
 for f in "$@"; do

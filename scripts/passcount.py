@@ -12,10 +12,15 @@ if '--match' in args:
     match = re.compile(args[i + 1], re.I)
     del args[i:i + 2]
 text = open(args[0] if args else 'test/baseline_results.ts').read()
-tests = re.findall(r"'([^']*)': \{\s*errors: (true|false),\s*symbols: (true|false),\s*types: (true|false)", text)
+# (dts, the declaration emit, where a test has it: part of a full pass since plan 64 stage 4)
+tests = re.findall(r"'([^']*)': \{\s*errors: (true|false),\s*symbols: (true|false),\s*types: (true|false),"
+                   r"(?:\s*dts: (true|false),)?", text)
 if match:
     tests = [t for t in tests if match.search(t[0])]
 e = [t[1] == 'true' for t in tests]
 s = [t[2] == 'true' for t in tests]
 t = [t[3] == 'true' for t in tests]
-print(f'full {sum(a and b and c for a, b, c in zip(e, s, t))} / {len(e)}  errors {sum(e)}  symbols {sum(s)}  types {sum(t)}')
+d = [t[4] != 'false' for t in tests]
+dts = [t[4] == 'true' for t in tests if t[4]]
+print(f'full {sum(a and b and c and x for a, b, c, x in zip(e, s, t, d))} / {len(e)}  errors {sum(e)}  symbols {sum(s)}  '
+      f'types {sum(t)}  dts {sum(dts)} / {len(dts)}')

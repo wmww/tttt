@@ -733,6 +733,14 @@ static void track_computed_name(DeclTracker* tracker, csview name, SourceFile co
         track_symbol(tracker, found, SYMBOL_VALUE);
         return;
     }
+    // (A function's parameters are in scope in its return type, tsc's enclosingDeclaration being the function, and as
+    // visible as the function: `{ [field]: T }`)
+    if (my root.kind == ROOT_FUNCTION && my root.function) {
+        for_each (i, vec_function_arg, &my root.function->args) {
+            Binding const* binding = &i->initializer.binding;
+            if (binding->tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(binding->content_span), first)) return;
+        }
+    }
     Scope const* module = file && file->scope ? scope_external_module(file->scope) : nullptr;
     if (module && module != scope_external_module(my scope)) {
         cstr module_name = module_name_for_error(module->container, nullptr, false);
@@ -4351,6 +4359,16 @@ static void emit_directives(Walk* me) {
             if ((int)directive->tag != tags[k] || !directive->preserve) continue;
             csview path = cstr_sv(&directive->path);
             while (csview_starts_with(path, "./")) path = csview_slice(path, 2, path.size);
+            // (A path names the referenced file's declaration output relative to this one's, tsc's getReferencedFiles;
+            // one the program didn't load is dropped)
+            cstr relative = cstr_null;
+            if (tags[k] == SOURCE_DIRECTIVE_REFERENCE_PATH && cstr_size(&my file->declaration_output_path)) {
+                SourceFile const* referenced = directive->referenced;
+                if (!referenced || !cstr_size(&referenced->declaration_output_path)) continue;
+                relative = relative_path_of(dirname_of(cstr_sv(&my file->declaration_output_path)),
+                    cstr_sv(&referenced->declaration_output_path));
+                path = cstr_sv(&relative);
+            }
             w_lit(me, "/// <reference ");
             w(me, csview_from(kinds[k]));
             w_lit(me, "=\"");
@@ -4368,6 +4386,7 @@ static void emit_directives(Walk* me) {
             if (directive->resolution_override == IMPORT_RESOLUTION_IMPORT) w_lit(me, "resolution-mode=\"import\" ");
             if (directive->resolution_override == IMPORT_RESOLUTION_REQUIRE) w_lit(me, "resolution-mode=\"require\" ");
             w_lit(me, "preserve=\"true\" />\n");
+            cstr_drop(&relative);
         }
     }
 }

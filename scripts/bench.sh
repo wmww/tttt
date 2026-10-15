@@ -53,13 +53,13 @@ REAL=thirdparty/corpora/TypeScript6/src/compiler
 REAL_ARGS="--noEmit --composite false --incremental false --emitDeclarationOnly false"
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
-measure "tttt" ./release/tttt -q --keep-going -p $REAL
-measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $REAL
-for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K -p $REAL; done
+measure "tttt" ./release/tttt -q --keep-going --noEmit -p $REAL
+measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded --noEmit -p $REAL
+for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K --noEmit -p $REAL; done
 measure "tsgo" $TSGO $REAL_ARGS -p $REAL
 measure "tsgo single-threaded" $TSGO $REAL_ARGS --singleThreaded -p $REAL
 echo "tttt phases (one run):"
-./release/tttt -q --time --keep-going -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
+./release/tttt -q --time --keep-going --noEmit -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
 # The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy; tttt matches tsgo on them but for a few
 # (scripts/realworld.py --corpus NAME). tsgo isn't clean on webpack (JS: TS 7's reduced JS support). zod (plan 19) is
@@ -72,13 +72,13 @@ for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpac
     TSGO_ARGS="-p $DIR"
     echo
     echo "corpus $CORPUS: $($TSGO -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
-    measure "tttt" ./release/tttt -q --keep-going -p $DIR
-    measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -p $DIR
-    for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K -p $DIR; done
+    measure "tttt" ./release/tttt -q --keep-going --noEmit -p $DIR
+    measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded --noEmit -p $DIR
+    for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K --noEmit -p $DIR; done
     measure "tsgo" $TSGO --noEmit $TSGO_ARGS
     measure "tsgo single-threaded" $TSGO --noEmit --singleThreaded $TSGO_ARGS
     echo "tttt phases (one run):"
-    (./release/tttt -q --time --keep-going -p $DIR 2>&1 > /dev/null || true) | grep -a '^time:' | sed 's/^/  /'
+    (./release/tttt -q --time --keep-going --noEmit -p $DIR 2>&1 > /dev/null || true) | grep -a '^time:' | sed 's/^/  /'
 done
 
 # Project references (plan 41): -b on TypeScript 6's src/, 13 projects. tsgo -b emits (a referencing project reads the
@@ -92,11 +92,11 @@ cp -r $TS6/src $TS6/scripts $TS6/package.json $BUILD/
 ln -s "$PWD/$TS6/node_modules" $BUILD/node_modules
 echo
 echo "-b $TS6/src: $(find $TS6/src -name '*.ts' | wc -l) files, $(find $TS6/src -name tsconfig.json | wc -l) configs"
-measure "tttt" ./release/tttt -b $TS6/src -q --keep-going
+measure "tttt" ./release/tttt -b $TS6/src --no-write -q --keep-going
 measure "tsgo -b" sh -c "rm -rf $BUILD/built && $PWD/$TSGO -b $BUILD/src"
 measure "tsgo -b single-threaded" sh -c "rm -rf $BUILD/built && $PWD/$TSGO -b --singleThreaded $BUILD/src"
 echo "tttt phases (one run with --builders 1, summed over the projects):"
-(./release/tttt -b $TS6/src -q --time --keep-going --builders 1 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
+(./release/tttt -b $TS6/src --no-write -q --time --keep-going --builders 1 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
     awk '{ name = $0; sub(/^time: /, "", name); sub(/ [0-9.]+ ms.*/, "", name); match($0, /[0-9.]+ ms/);
         sum[name] += substr($0, RSTART, RLENGTH - 3) } END { for (n in sum) printf "  %s %.0f ms\n", n, sum[n] }'
 rm -rf $BUILD

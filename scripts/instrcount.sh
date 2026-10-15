@@ -25,7 +25,7 @@ declare -A C=(
 )
 NAMES=("$@")
 test ${#NAMES[@]} -gt 0 || NAMES=(tsc type-fest valibot react nest webpack zod xstate drizzle vue effect vscode excalidraw tanstack-router)
-ARGS=(--checkers 1 --threads 1 -q --keep-going -p)
+ARGS=(--checkers 1 --threads 1 -q --keep-going --noEmit -p)
 # perf needs kernel.perf_event_paranoid <= 2 (some days the machine has 4): then callgrind counts instead, all corpora
 # at once (a few minutes; its counts run ~3% above perf's, so compare only numbers of the same tool)
 if TTTT_NO_REEXEC=1 perf stat -x, -e instructions:u true 2>&1 | grep -q instructions:u; then

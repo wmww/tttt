@@ -277,7 +277,7 @@ def main():
                 cmd = [exe, '-p', project, '--noEmit', '--singleThreaded', '--tsBuildInfoFile', os.path.join(OUT, 'x.tsbuildinfo')]
                 env = dict(os.environ, TSGO_DEBUG_VAR='1')
             else:
-                cmd = [os.path.join(ROOT, 'release/tttt'), '-p', project, '--checkers', '1']
+                cmd = [os.path.join(ROOT, 'release/tttt'), '-p', project, '--noEmit', '--checkers', '1']
                 env = dict(os.environ, TTTT_DEBUG_VARIANCE='1')
             subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=err)
         logs[side] = read_log(path, side == 'tsgo')
