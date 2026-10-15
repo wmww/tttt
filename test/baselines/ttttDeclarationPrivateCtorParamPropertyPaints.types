@@ -1,0 +1,25 @@
+//// [test/cases/ttttDeclarationPrivateCtorParamPropertyPaints.ts] ////
+
+=== /l.ts ===
+export class Ref { release() {} }
+>Ref : Ref
+>release : () => void
+
+=== /c.ts ===
+import { Ref } from "./l";
+>Ref : typeof Ref
+
+export class M {
+>M : M
+
+    private constructor(readonly ref: Ref) {}
+>ref : Ref
+
+    static make() { return new M(new Ref()); }
+>make : () => M
+>new M(new Ref()) : M
+>M : typeof M
+>new Ref() : Ref
+>Ref : typeof Ref
+}
+

@@ -1,0 +1,70 @@
+//// [test/cases/ttttDeclarationPaintedMergedDeclarations.ts] ////
+
+=== /l.ts ===
+export class URI { static isUri(x: any): x is URI { return true; } }
+>URI : URI
+>isUri : (x: any) => x is URI
+>x : any
+>true : true
+
+export interface Item { label: string }
+>label : string
+
+=== /c.ts ===
+import { URI, Item } from "./l";
+>URI : typeof URI
+>Item : any
+
+namespace Pick {
+>Pick : typeof Pick
+
+    export function is(thing: object | undefined): thing is Pick { return !!thing && URI.isUri((<Pick>thing).filepath); }
+>is : (thing: object | undefined) => thing is Pick
+>thing : object | undefined
+>!!thing && URI.isUri((<Pick>thing).filepath) : boolean
+>!!thing : boolean
+>!thing : boolean
+>thing : object | undefined
+>URI.isUri((<Pick>thing).filepath) : boolean
+>URI.isUri : (x: any) => x is URI
+>URI : typeof URI
+>isUri : (x: any) => x is URI
+>(<Pick>thing).filepath : URI
+>(<Pick>thing) : Pick
+><Pick>thing : Pick
+>thing : object
+>filepath : URI
+}
+interface Pick extends Item { filepath: URI; }
+>filepath : URI
+
+export function promote(existing: Pick[]): void {}
+>promote : (existing: Pick[]) => void
+>existing : Pick[]
+
+=== /d.ts ===
+import { Item } from "./l";
+>Item : any
+
+interface Provider { item: Item }
+>item : Item
+
+declare function createDecorator<T>(name: string): { _: T };
+>createDecorator : <T>(name: string) => { _: T; }
+>name : string
+>_ : T
+
+const IService = createDecorator<IService>("s");
+>IService : { _: IService; }
+>createDecorator<IService>("s") : { _: IService; }
+>createDecorator : <T>(name: string) => { _: T; }
+>"s" : "s"
+
+interface IService { register(provider: Provider): void; }
+>register : (provider: Provider) => void
+>provider : Provider
+
+export class Main { constructor(service: IService) {} }
+>Main : Main
+>service : IService
+

@@ -178,6 +178,11 @@ typedef struct Walk {
     u32 painted_count, painted_cap;
     bool* painted_done;
     bool late_pass; // Walking the statements again for painted ones only
+    // The painted symbols this late pass took: each of their declarations is walked (a namespace and the interface it
+    // merges with, both painted by one name)
+    Symbol const** late_taken;
+    u32 late_taken_count;
+    u32 late_taken_cap;
     // A module's local declarations that `export { x }` or `export default x` name (tsc's collectLinkedAliases makes
     // them visible)
     Symbol const** exported_locals;
@@ -2279,6 +2284,10 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                             Root outer_root = my root;
                             my root = (Root){ .kind = ROOT_FUNCTION, .function = ctor };
                             serialize_parameter(me, ctor, j, false);
+                            // (A private constructor's signature isn't written, its parameter properties are: their
+                            // annotations are checked here, check_written_signature() skips them)
+                            Binding const* binding = &j->initializer.binding;
+                            if (private_ctor && binding->has_explicit_type) check_written_type(me, binding_type(binding));
                             my root = outer_root;
                             emit_leave(me, saved);
                         }
@@ -2653,6 +2662,14 @@ static Symbol const* statement_declared_symbol(Statement const* statement) {
     }
 }
 
+static void late_taken_push(Walk* me, Symbol const* symbol) {
+    if (my late_taken_count == my late_taken_cap) {
+        my late_taken_cap = my late_taken_cap ? my late_taken_cap * 2 : 8;
+        my late_taken = realloc(my late_taken, my late_taken_cap * sizeof(*my late_taken));
+    }
+    my late_taken[my late_taken_count++] = symbol;
+}
+
 static void check_statement(Walk* me, Statement const* statement, Container container) {
     if (!my late_pass) {
         check_statement_now(me, statement, container);
@@ -2666,7 +2683,9 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
             bool painted = i->binding.tag == BINDING_IDENTIFIER && !is_exported_local(me, i->binding.symbol) &&
                 take_painted(me, i->binding.symbol);
-            if (painted) check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
+            if (!painted) continue;
+            late_taken_push(me, i->binding.symbol);
+            check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
         }
         my late_pass = true;
         return;
@@ -2689,9 +2708,14 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
     }
     if (!statement_declares_name(statement->tag)) return;
     Symbol const* symbol = statement_declared_symbol(statement);
-    if (!is_painted_pending(me, symbol)) return;
+    bool again = false;
+    for (u32 i = 0; symbol && i < my late_taken_count && !again; i++) again = my late_taken[i] == symbol;
+    if (!again) {
+        if (!is_painted_pending(me, symbol)) return;
+        take_painted(me, symbol);
+        late_taken_push(me, symbol);
+    }
     my late_pass = false;
-    take_painted(me, symbol);
     check_statement_now(me, statement, (Container){ .global = true });
     my late_pass = true;
 }
@@ -5068,6 +5092,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     for (u32 walked = 0; walked < walk.painted_count;) {
         u32 count = walk.painted_count;
         walk.late_pass = true;
+        walk.late_taken_count = 0;
         check_statements(&walk, &file->ast.statements, top);
         walk.late_pass = false;
         // (one no statement declares has nothing to walk)
@@ -5141,6 +5166,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     free(walk.exported_locals);
     free(walk.painted);
     free(walk.painted_done);
+    free(walk.late_taken);
     for (u32 i = 0; i < walk.specifier_count; i++) c_drop(cstr, &walk.specifiers[i].plain, &walk.specifiers[i].unsafe);
     free(walk.specifiers);
 }

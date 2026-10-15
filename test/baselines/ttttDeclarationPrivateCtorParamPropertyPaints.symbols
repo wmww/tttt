@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationPrivateCtorParamPropertyPaints.ts] ////
+
+=== /l.ts ===
+export class Ref { release() {} }
+>Ref : Symbol(Ref, Decl(l.ts, 0, 0))
+>release : Symbol(Ref.release, Decl(l.ts, 0, 18))
+
+=== /c.ts ===
+import { Ref } from "./l";
+>Ref : Symbol(Ref, Decl(c.ts, 0, 8))
+
+export class M {
+>M : Symbol(M, Decl(c.ts, 0, 26))
+
+    private constructor(readonly ref: Ref) {}
+>ref : Symbol(M.ref, Decl(c.ts, 2, 24))
+>Ref : Symbol(Ref, Decl(c.ts, 0, 8))
+
+    static make() { return new M(new Ref()); }
+>make : Symbol(M.make, Decl(c.ts, 2, 45))
+>M : Symbol(M, Decl(c.ts, 0, 26))
+>Ref : Symbol(Ref, Decl(c.ts, 0, 8))
+}
+

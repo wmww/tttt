@@ -1,0 +1,79 @@
+//// [test/cases/ttttDeclarationPaintedMergedDeclarations.ts] ////
+
+=== /l.ts ===
+export class URI { static isUri(x: any): x is URI { return true; } }
+>URI : Symbol(URI, Decl(l.ts, 0, 0))
+>isUri : Symbol(URI.isUri, Decl(l.ts, 0, 18))
+>x : Symbol(x, Decl(l.ts, 0, 32))
+>x : Symbol(x, Decl(l.ts, 0, 32))
+>URI : Symbol(URI, Decl(l.ts, 0, 0))
+
+export interface Item { label: string }
+>Item : Symbol(Item, Decl(l.ts, 0, 68))
+>label : Symbol(Item.label, Decl(l.ts, 1, 23))
+
+=== /c.ts ===
+import { URI, Item } from "./l";
+>URI : Symbol(URI, Decl(c.ts, 0, 8))
+>Item : Symbol(Item, Decl(c.ts, 0, 13))
+
+namespace Pick {
+>Pick : Symbol(Pick, Decl(c.ts, 0, 32), Decl(c.ts, 3, 1))
+
+    export function is(thing: object | undefined): thing is Pick { return !!thing && URI.isUri((<Pick>thing).filepath); }
+>is : Symbol(is, Decl(c.ts, 1, 16))
+>thing : Symbol(thing, Decl(c.ts, 2, 23))
+>thing : Symbol(thing, Decl(c.ts, 2, 23))
+>Pick : Symbol(Pick, Decl(c.ts, 0, 32), Decl(c.ts, 3, 1))
+>thing : Symbol(thing, Decl(c.ts, 2, 23))
+>URI.isUri : Symbol(URI.isUri, Decl(l.ts, 0, 18))
+>URI : Symbol(URI, Decl(c.ts, 0, 8))
+>isUri : Symbol(URI.isUri, Decl(l.ts, 0, 18))
+>(<Pick>thing).filepath : Symbol(Pick.filepath, Decl(c.ts, 4, 29))
+>Pick : Symbol(Pick, Decl(c.ts, 0, 32), Decl(c.ts, 3, 1))
+>thing : Symbol(thing, Decl(c.ts, 2, 23))
+>filepath : Symbol(Pick.filepath, Decl(c.ts, 4, 29))
+}
+interface Pick extends Item { filepath: URI; }
+>Pick : Symbol(Pick, Decl(c.ts, 0, 32), Decl(c.ts, 3, 1))
+>Item : Symbol(Item, Decl(c.ts, 0, 13))
+>filepath : Symbol(Pick.filepath, Decl(c.ts, 4, 29))
+>URI : Symbol(URI, Decl(c.ts, 0, 8))
+
+export function promote(existing: Pick[]): void {}
+>promote : Symbol(promote, Decl(c.ts, 4, 46))
+>existing : Symbol(existing, Decl(c.ts, 5, 24))
+>Pick : Symbol(Pick, Decl(c.ts, 0, 32), Decl(c.ts, 3, 1))
+
+=== /d.ts ===
+import { Item } from "./l";
+>Item : Symbol(Item, Decl(d.ts, 0, 8))
+
+interface Provider { item: Item }
+>Provider : Symbol(Provider, Decl(d.ts, 0, 27))
+>item : Symbol(Provider.item, Decl(d.ts, 1, 20))
+>Item : Symbol(Item, Decl(d.ts, 0, 8))
+
+declare function createDecorator<T>(name: string): { _: T };
+>createDecorator : Symbol(createDecorator, Decl(d.ts, 1, 33))
+>T : Symbol(T, Decl(d.ts, 2, 33))
+>name : Symbol(name, Decl(d.ts, 2, 36))
+>_ : Symbol(_, Decl(d.ts, 2, 52))
+>T : Symbol(T, Decl(d.ts, 2, 33))
+
+const IService = createDecorator<IService>("s");
+>IService : Symbol(IService, Decl(d.ts, 3, 5), Decl(d.ts, 3, 48))
+>createDecorator : Symbol(createDecorator, Decl(d.ts, 1, 33))
+>IService : Symbol(IService, Decl(d.ts, 3, 5), Decl(d.ts, 3, 48))
+
+interface IService { register(provider: Provider): void; }
+>IService : Symbol(IService, Decl(d.ts, 3, 5), Decl(d.ts, 3, 48))
+>register : Symbol(IService.register, Decl(d.ts, 4, 20))
+>provider : Symbol(provider, Decl(d.ts, 4, 30))
+>Provider : Symbol(Provider, Decl(d.ts, 0, 27))
+
+export class Main { constructor(service: IService) {} }
+>Main : Symbol(Main, Decl(d.ts, 4, 58))
+>service : Symbol(service, Decl(d.ts, 5, 32))
+>IService : Symbol(IService, Decl(d.ts, 3, 5), Decl(d.ts, 3, 48))
+
