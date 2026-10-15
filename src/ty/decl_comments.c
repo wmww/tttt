@@ -270,6 +270,11 @@ bool decl_comments_last_contains(DeclComments const* me, char const* token, char
     return false;
 }
 
+bool decl_comments_spans_lines(DeclComments const* me, char const* token, char const* end) {
+    if (!me || !decl_comments_in_file(me, token)) return false;
+    return !same_line(full_start(me->file, token), end);
+}
+
 bool decl_comments_in_file(DeclComments const* me, char const* token) {
     if (!me || !me->file || !token) return false;
     char const* text = cstr_str(&me->file->contents);

@@ -1497,6 +1497,8 @@ static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node
     if (parens) out(reused_if(d, false), c_sv(")"));
 }
 
+static void param_comments_begin_at(TyDisplay d, Span span);
+
 static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* args) {
     if (!vec_spanned_type_size(args)) return;
     // (The arguments aren't constituents or elements of what the reference is one of)
@@ -1505,7 +1507,9 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
     out_lit(d, "<");
     for_each (i, vec_spanned_type, args) {
         if (i_index) out_lit(d, ", ");
+        param_comments_begin_at(d, i->span); // (Declaration emit: the comments around it, emitListItems)
         display_node(me, d, &i->type); // (A generic function type first stays bare, see display_list())
+        if (d.comments && span_valid(i->span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->span));
     }
     out_lit(d, ">");
 }
@@ -2246,10 +2250,11 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // (Declaration emit: written on several lines, one element per line: the printer's MultiLineTupleTypeElements,
             // a reused tuple node not being SingleLine)
             bool lines = false;
-            if (d.multiline && d.transformer_node && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
+            if (d.multiline && d.transformer_node && d.comments && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
+                // (From its full start: a tuple on a line of its own after `=` is multi-line, tsc's pos)
                 char const* close = span_end_ptr(node->tuple.span);
                 while (close > node->tuple.span.buf && close[-1] != ']') close--;
-                lines = memchr(node->tuple.span.buf, '\n', (size_t)(close - node->tuple.span.buf)) != nullptr;
+                lines = decl_comments_spans_lines(d.comments, node->tuple.span.buf, close);
             }
             TyDisplay element_d = d;
             if (lines) element_d.indent++;
