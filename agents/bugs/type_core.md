@@ -153,10 +153,20 @@ passing tests).
 - circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
 - recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (an inference pair met again on the visiting
   stack is let through once, ttttRecursiveUnionInferenceDepth). Left: the getter `{ get value() { return this; } }`
-  inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<{ readonly value: { readonly
-  value: any } }>` (getContextualThisParameterType: the widened non-nullable contextual type of the containing
-  literal, RecBox<T> instantiated by the inference context's mapper while the call is inferred), tttt `{}`; so the
-  call's result is `{}` too. Medium: what tttt's contextual `this` of an object literal getter sees during inference.
+  inside the unboxed literal. Mechanism found 2026-10-15 (agent A, tsgo probes): tsgo types an object literal's
+  accessors lazily (checkObjectLiteral only checkNodeDeferred's them; methods and function expressions get their return
+  type during the literal's check, contextuallyCheckFunctionExpressionOrObjectLiteralMethod). For a literal (nested)
+  in a call argument the getter is first typed by the call's own resolution (inferFromProperties, the applicability
+  relation) after the argument's pushed contextual type is popped, so its literal's contextual type comes from
+  getContextualTypeForArgumentAtIndex with resolvingSignature: any. So `declare function h(b: Box<number>): void;
+  h({ get value() { return this; } })` has `value: any` and no error in tsgo (tttt: TS2322, a spurious diagnostic), while
+  the deferred body check later types the `this` node with the resolved signature (`>this : Box<number>`, and its
+  symbol). A getter the resolution never touches (no property of its name in the parameter type: `g({ m() {..}, get
+  z() { return this; } })` with `{ m(): T }`) is typed after resolution, with the resolved contextual type. Tried in
+  tttt (getter `this` = any while the outermost literal's call is in flight): the getter types came right but the
+  `this` expression's cached type and symbol became any (tttt types the getter during the literal's check and caches
+  the body's expressions). Needs the getter's return type computed without caching its body's expression types, or
+  a real deferred accessor type; ~a session (the probes are the snippets above).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
