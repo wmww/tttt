@@ -255,6 +255,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPaintedMergedDeclarations': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationPatternPaintedByExport': {
         errors: true,
         symbols: true,
@@ -262,6 +268,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationPatternParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationPrivateCtorParamPropertyPaints': {
         errors: true,
         symbols: true,
         types: true,
