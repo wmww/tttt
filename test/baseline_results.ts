@@ -110,6 +110,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEagerBaseRunawayNullKeyProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEagerBaseRunawayRecursiveBase': {
         errors: true,
         symbols: true,

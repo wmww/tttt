@@ -331,8 +331,8 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   `--singleThreaded`) tsgo reports the TS5115 at the .d.ts's `interface Root extends Container<undefined, Selector>`
   instead and no TS7006. Repro: /tmp-style project with postcss-selector-parser.d.ts and `selector.each(n => { if
   (n.type === 'pseudo') n.nodes[0].each(ss => ss) })`. Emulating the poisoning means modelling which of tsgo's caches
-  its deepest round fills: not planned. Flagflip: in vue's sloppy/nosnc cells tsgo's TS5115 is at :102 where tttt
-  reports :94 (nosnc) or nothing (sloppy): where the runaway is first met moves with the flags in both.
+  its deepest round fills: not planned. (vue's sloppy/nosnc flagflip cells match since 2026-10-15: a nullable
+  related to a union asks for its key property first, and a function declaration's return type after its body.)
 - Flag-specific ones left (flagflip, 2026-10-14 agent D):
   - vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562, an auto-typed `let v` assigned from itself
     in a loop (`while (u-- > 0) { result[u] = v; v = p[v] }`): tsgo's *final* type of v there is any (a probe's `const z:

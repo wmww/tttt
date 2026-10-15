@@ -1,0 +1,26 @@
+// @strict: true
+// @strictNullChecks: false
+// @noEmit: true
+// @noTypesAndSymbols: true
+// Without strictNullChecks `null` is related to a union member by member, and tsc asks for the union's key property
+// first (getMatchingUnionConstituentForType), resolving every member's `type`: here that is where
+// postcss-selector-parser's eager-base runaway (TS5115) is met, at the declaration
+type Diff<T, U> = T extends U ? never : T;
+interface Container<C extends Node = Node> { first: C; }
+interface Root extends Container<Root> { type: "root" }
+interface _Selector<S> extends Container<Diff<Node, S>> { type: "selector" }
+type Selector = _Selector<Selector>;
+interface A { type: "a" }
+interface B { type: "b" }
+interface C { type: "c" }
+interface D { type: "d" }
+interface E { type: "e" }
+interface F { type: "f" }
+interface G { type: "g" }
+interface H { type: "h" }
+interface I { type: "i" }
+type Node = Root | Selector | A | B | C | D | E | F | G | H | I;
+export function find() {
+    let node: Node | null = null;
+    return node;
+}

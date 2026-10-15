@@ -686,6 +686,9 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
         st->relation != TY_RELATION_IDENTITY &&
         (!is_subtype_relation(st->relation) || (tf & TYF_BOOLEAN) || !(tf & (TYF_UNION | TYF_INTERSECTION)))
     ) {
+        // (tsc relates it to a union member by member, asking for the union's key property first, which resolves the
+        // members' properties: postcss-selector-parser's eager-base runaway in vue's sloppy configs is met there)
+        if (t->kind == TY_UNION && !(tf & TYF_BOOLEAN) && st->relation != TY_RELATION_COMPARABLE) ty_union_key_property(me, t);
         return true;
     }
     if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) {

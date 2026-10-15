@@ -1278,8 +1278,9 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // (A function expression's return type is asked for before its body is checked, whatever the body says: tsc's
     // checkFunctionExpressionOrObjectLiteralMethodDeferred, where a missing Promise value is reported)
     if (my is_expression && my has_body && !my ret_explicit && !my is_generator) ty_function_return_type(current_checker, me);
-    // (A generator's return type is only asked for after its body is checked: tsc's checkFunctionOrMethodDeclaration)
-    if (!my is_generator) function_check_widened_return(me, errs);
+    // (A declaration's or generator's return type is only asked for after its body is checked: tsc's
+    // checkFunctionOrMethodDeclaration)
+    if (!my is_generator && my is_expression) function_check_widened_return(me, errs);
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
     Ty const* tagged_return = !my ret_explicit && !my is_generator &&
@@ -1314,6 +1315,6 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // A generator declaration or class method without a return annotation: its return type, which is where a missing
     // global Generator/IterableIterator is reported (tsc's checkFunctionOrMethodDeclaration asks for it for that)
     if (my is_generator && !my is_expression && my has_body && !my ret_explicit) ty_function_return_type(current_checker, me);
-    if (my is_generator) function_check_widened_return(me, errs);
+    if (my is_generator || !my is_expression) function_check_widened_return(me, errs);
     function_check_circular_return(me, errs);
 }
