@@ -1,0 +1,121 @@
+//// [test/cases/ttttMethodLiteralDefaultFreeParams.ts] ////
+
+=== ttttMethodLiteralDefaultFreeParams.ts ===
+// A method whose unannotated parameter has a literal default (`strict = true`) has a signature that mentions only its
+// annotations: reading a property of the class through `T[keyof T]` in a conditional type doesn't resolve its return
+// type, which here needs the keys of the mapped types being resolved (mikro-orm's EntityDTO with a `toJSON(strict =
+// true): Omit<EntityDTO<this>, ...>` entity: the second mapped type's keys stayed deferred)
+type IsOpt<T, K extends keyof T> = T[K] extends { brand: true } ? false : K extends OptKeys<T> ? true : false;
+>IsOpt : Symbol(IsOpt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 11))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 13))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 11))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 11))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 13))
+>brand : Symbol(brand, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 49))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 13))
+>OptKeys : Symbol(OptKeys, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 110))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 11))
+
+type OptKeys<T> = { [K in keyof T]-?: undefined extends T[K] ? K : never }[keyof T];
+>OptKeys : Symbol(OptKeys, Decl(ttttMethodLiteralDefaultFreeParams.ts, 4, 110))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 13))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 21))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 13))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 13))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 21))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 21))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 13))
+
+type Req<T, K extends keyof T> = IsOpt<T, K> extends false ? K : never;
+>Req : Symbol(Req, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 84))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 11))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 9))
+>IsOpt : Symbol(IsOpt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 11))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 11))
+
+type Opt<T, K extends keyof T> = IsOpt<T, K> extends false ? never : K;
+>Opt : Symbol(Opt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 71))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 11))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 9))
+>IsOpt : Symbol(IsOpt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 11))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 11))
+
+type DTO<T> = { [K in keyof T as Req<T, K>]: T[K] } & { [K in keyof T as Opt<T, K>]?: T[K] };
+>DTO : Symbol(DTO, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 71))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 17))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>Req : Symbol(Req, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 84))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 17))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 17))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 57))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>Opt : Symbol(Opt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 71))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 57))
+>T : Symbol(T, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 9))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 57))
+
+class B {
+>B : Symbol(B, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 93))
+
+    title!: string;
+>title : Symbol(B.title, Decl(ttttMethodLiteralDefaultFreeParams.ts, 9, 9))
+
+    perex?: string;
+>perex : Symbol(B.perex, Decl(ttttMethodLiteralDefaultFreeParams.ts, 10, 19))
+
+    toJSON(strict = true): Omit<DTO<this>, "x"> { return null!; }
+>toJSON : Symbol(B.toJSON, Decl(ttttMethodLiteralDefaultFreeParams.ts, 11, 19))
+>strict : Symbol(strict, Decl(ttttMethodLiteralDefaultFreeParams.ts, 12, 11))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>DTO : Symbol(DTO, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 71))
+}
+type E3<X> = { [K in keyof X as Req<X, K>]: 1 };
+>E3 : Symbol(E3, Decl(ttttMethodLiteralDefaultFreeParams.ts, 13, 1))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 8))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 16))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 8))
+>Req : Symbol(Req, Decl(ttttMethodLiteralDefaultFreeParams.ts, 5, 84))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 8))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 16))
+
+type E4<X> = { [K in keyof X as Opt<X, K>]: 1 };
+>E4 : Symbol(E4, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 48))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 15, 8))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 15, 16))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 15, 8))
+>Opt : Symbol(Opt, Decl(ttttMethodLiteralDefaultFreeParams.ts, 6, 71))
+>X : Symbol(X, Decl(ttttMethodLiteralDefaultFreeParams.ts, 15, 8))
+>K : Symbol(K, Decl(ttttMethodLiteralDefaultFreeParams.ts, 15, 16))
+
+const x2: keyof E3<B> = 5;
+>x2 : Symbol(x2, Decl(ttttMethodLiteralDefaultFreeParams.ts, 16, 5))
+>E3 : Symbol(E3, Decl(ttttMethodLiteralDefaultFreeParams.ts, 13, 1))
+>B : Symbol(B, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 93))
+
+const x3: keyof E4<B> = 5;
+>x3 : Symbol(x3, Decl(ttttMethodLiteralDefaultFreeParams.ts, 17, 5))
+>E4 : Symbol(E4, Decl(ttttMethodLiteralDefaultFreeParams.ts, 14, 48))
+>B : Symbol(B, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 93))
+
+declare const dto: DTO<B>;
+>dto : Symbol(dto, Decl(ttttMethodLiteralDefaultFreeParams.ts, 18, 13))
+>DTO : Symbol(DTO, Decl(ttttMethodLiteralDefaultFreeParams.ts, 7, 71))
+>B : Symbol(B, Decl(ttttMethodLiteralDefaultFreeParams.ts, 8, 93))
+
+const p: number = dto.perex;
+>p : Symbol(p, Decl(ttttMethodLiteralDefaultFreeParams.ts, 19, 5))
+>dto.perex : Symbol(perex, Decl(ttttMethodLiteralDefaultFreeParams.ts, 10, 19))
+>dto : Symbol(dto, Decl(ttttMethodLiteralDefaultFreeParams.ts, 18, 13))
+>perex : Symbol(perex, Decl(ttttMethodLiteralDefaultFreeParams.ts, 10, 19))
+

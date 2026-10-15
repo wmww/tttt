@@ -23,10 +23,6 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
   reduce that instance (getReducedType is only asked in some places) or it compares the two references by variance
   before reaching it. Not reduced further. (The TS2344 x3 there went with never-reduction through type variables'
   constraints, 2026-10-14.)
-- **mikro-orm EntityManager.mongo.test.ts:1268 +TS2769** (mikro-orm and mikro-orm/tests): `orm.em.create(Author,
-  cache, { managed: true })` with `cache = wrap(jon).toObject()` (an EntityDTO<Author>): tsc takes the first overload
-  (`data: Data & IsSubset<RequiredEntityData<Entity, never, Convert>, Data>`), tttt rejects it and reports the last
-  (`{ partial: true }` missing). Inference of Data from an EntityDTO through IsSubset; not reduced.
 - **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
   type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
   across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
@@ -53,8 +49,7 @@ dependencies in package ids, landed by agent D). Left:
   vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
 - **arktype** (fn.test.ts:286, this.test.ts:190, type.test.ts:138/140), **redux-toolkit** (module.ts:656, react/module.ts:216:
-  see agent A 2026-10-12 above), **mikro-orm** (the -TS5088/-TS2883 declaration
-  diagnostics in mikro-orm/tests), **monkeytype** SearchableAutoSetting.tsx,
+  see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx,
   **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
   looked at this round.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
@@ -66,8 +61,6 @@ Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union tar
 check before normalization, intersection typesDefinitelyUnrelated), crawlee (Partial<C> over `C extends X<P>`, vi.fn
 reverse mapping of callables), base-ui TS2740 (Pick<T, K | "a"> keys), folo (untyped call args contextual any),
 msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctions in conditional args), super-productivity (TS2347 on tagged templates). Left:
-- mikro-orm/tests +TS2769 EntityManager.mongo.test.ts:1268 and -TS5088 x9 / -TS2883 x2 (declaration diagnostics):
-  not looked at. (Its +TS2345 x13, +TS2322 x3 and +TS2615 x3 went with plan 61 stage 2.)
 - better-auth +TS2339 `signUpEmail` on `InferAPI<Prettify<{ [x: string]: any }>>` (get-migration-schema.test.ts:293
   and 15 sites in other test files once that file is the only root): reproduces with a tsconfig extending the
   package's (composite/incremental/emitDeclarationOnly turned off, its references by absolute path) whose only file is

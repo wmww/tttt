@@ -449,6 +449,14 @@ src` finds the code-side markers; every significant one has an entry here.
 - `alias_is_local()` (lower.c): tsc's isLocalTypeAlias is "has a containing function"; tttt uses TypeDecl.local (any
   block or function body), which also counts a type alias in a top-level block.
 
+- **`definitely_unrelated()`'s `mentions_type_variables()` walk** (conditional.c): to know which type parameters the
+  permissive instantiation replaces, it walks members, and for an instance of a function type whose free parameters
+  aren't known syntactically (`ty_function_free_params()`: an unannotated parameter whose initializer isn't a
+  primitive literal, an unannotated return with a body) it resolves the signatures' return types. tsc's
+  getPermissiveInstantiation is lazy and never does, so such a return type that needs what is being resolved (the keys
+  of the mapped type whose `as` clause asked: mikro-orm's `toJSON(strict = true): Omit<EntityDTO<this>, I>`) leaves a
+  conditional deferred for good. Literal defaults are known since 2026-10-15; anything else still takes the walk.
+
 ## Relations (`ty/relate.c`)
 - Two passes where tsc has one: tttt relates a pair without explaining, then again to explain, where tsc's
   checkTypeRelatedTo explains during its only run. The failures the first run cached on its way would make the

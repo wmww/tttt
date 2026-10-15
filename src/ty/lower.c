@@ -1067,14 +1067,28 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 }
 
 // A signature written as a type, or an overload signature. A parameter without a type is `any`
+// An unannotated parameter whose type is its initializer's, a primitive literal's (`strict = true`), mentions no type
+// parameter; an annotated one's initializer doesn't make its type
+static bool initializer_mentions_no_type_params(InitializedBinding const* binding) {
+    Expr const* value = initialized_binding_value(binding);
+    if (value->tag != EXPR_LITERAL) return false;
+    switch (value->literal.tag) {
+        case VALUE_NULL: case VALUE_BOOLEAN: case VALUE_NUMBER: case VALUE_STRING: case VALUE_BIGINT: return true;
+        default: return false;
+    }
+}
+
 static void collect_free_params_of_function(Checker* me, FunctionImpl const* function, FreeParams* out) {
     if (function->jsdoc_callback) out->unknown = true;
     u32 saved_bound = out->bound_len;
     collect_free_params_of_generic(me, &function->generic, out);
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type) collect_free_params(me, binding_type(&i->initializer.binding), out);
-        // Not syntax: the type of an expression, which could be about any type parameter in scope
-        if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) out->unknown = true;
+        if (i->initializer.binding.has_explicit_type) {
+            collect_free_params(me, binding_type(&i->initializer.binding), out);
+        } else if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY && !initializer_mentions_no_type_params(&i->initializer)) {
+            // Not syntax: the type of an expression, which could be about any type parameter in scope
+            out->unknown = true;
+        }
     }
     if (function->has_body && !function->ret_explicit) out->unknown = true;
     collect_free_params(me, &function->ret, out);
@@ -1117,7 +1131,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
             !function->is_type && !function->jsdoc_type && !function->jsdoc_callback && !function->jsdoc_typed &&
             span_source(function->full_span) && !span_source(function->full_span)->is_js && (function->ret_explicit || !function->has_body);
         for_each (i, vec_function_arg, &function->args) {
-            if (!i->initializer.binding.has_explicit_type) eligible = false;
+            if (!i->initializer.binding.has_explicit_type && !initializer_mentions_no_type_params(&i->initializer)) eligible = false;
         }
         if (eligible) {
             FreeParams found = {0};

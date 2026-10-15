@@ -1,0 +1,67 @@
+//// [test/cases/ttttMethodLiteralDefaultFreeParams.ts] ////
+
+=== ttttMethodLiteralDefaultFreeParams.ts ===
+// A method whose unannotated parameter has a literal default (`strict = true`) has a signature that mentions only its
+// annotations: reading a property of the class through `T[keyof T]` in a conditional type doesn't resolve its return
+// type, which here needs the keys of the mapped types being resolved (mikro-orm's EntityDTO with a `toJSON(strict =
+// true): Omit<EntityDTO<this>, ...>` entity: the second mapped type's keys stayed deferred)
+type IsOpt<T, K extends keyof T> = T[K] extends { brand: true } ? false : K extends OptKeys<T> ? true : false;
+>IsOpt : IsOpt<T, K>
+>brand : true
+>true : true
+>false : false
+>true : true
+>false : false
+
+type OptKeys<T> = { [K in keyof T]-?: undefined extends T[K] ? K : never }[keyof T];
+>OptKeys : OptKeys<T>
+
+type Req<T, K extends keyof T> = IsOpt<T, K> extends false ? K : never;
+>Req : Req<T, K>
+>false : false
+
+type Opt<T, K extends keyof T> = IsOpt<T, K> extends false ? never : K;
+>Opt : Opt<T, K>
+>false : false
+
+type DTO<T> = { [K in keyof T as Req<T, K>]: T[K] } & { [K in keyof T as Opt<T, K>]?: T[K] };
+>DTO : DTO<T>
+
+class B {
+>B : B
+
+    title!: string;
+>title : string
+
+    perex?: string;
+>perex : string | undefined
+
+    toJSON(strict = true): Omit<DTO<this>, "x"> { return null!; }
+>toJSON : (strict?: boolean) => Omit<DTO<this>, "x">
+>strict : boolean
+>true : true
+>null! : never
+}
+type E3<X> = { [K in keyof X as Req<X, K>]: 1 };
+>E3 : E3<X>
+
+type E4<X> = { [K in keyof X as Opt<X, K>]: 1 };
+>E4 : E4<X>
+
+const x2: keyof E3<B> = 5;
+>x2 : "title" | "toJSON"
+>5 : 5
+
+const x3: keyof E4<B> = 5;
+>x3 : "perex"
+>5 : 5
+
+declare const dto: DTO<B>;
+>dto : DTO<B>
+
+const p: number = dto.perex;
+>p : number
+>dto.perex : string | undefined
+>dto : DTO<B>
+>perex : string | undefined
+
