@@ -1,0 +1,107 @@
+//// [test/cases/ttttAsyncGenericPromiseReturn.ts] ////
+
+=== ttttAsyncGenericPromiseReturn.ts ===
+// An async function returning a generic that could be a promise keeps it: the return expression awaits to Awaited<T>,
+// which the inferred Promise<...> unwraps (tsc's checkAwaitedType then unwrapAwaitedType), not to its constraint's
+// promised type (any)
+export async function f1<T extends () => Promise<any>>() { return null! as Promise<ReturnType<T>>; }
+>f1 : <T extends () => Promise<any>>() => Promise<ReturnType<T>>
+>null! as Promise<ReturnType<T>> : Promise<ReturnType<T>>
+>null! : never
+
+export async function f2<T extends () => Promise<number>>() { return null! as Promise<ReturnType<T>>; }
+>f2 : <T extends () => Promise<number>>() => Promise<ReturnType<T>>
+>null! as Promise<ReturnType<T>> : Promise<ReturnType<T>>
+>null! : never
+
+export async function f3<T extends Promise<any>>() { return null! as Promise<T>; }
+>f3 : <T extends Promise<any>>() => Promise<T>
+>null! as Promise<T> : Promise<T>
+>null! : never
+
+export async function f4<T extends Record<string, () => Promise<any>>, K extends keyof T>() { return null! as Promise<ReturnType<T[K]>>; }
+>f4 : <T extends Record<string, () => Promise<any>>, K extends keyof T>() => Promise<ReturnType<T[K]>>
+>null! as Promise<ReturnType<T[K]>> : Promise<ReturnType<T[K]>>
+>null! : never
+
+export async function f5<T extends () => Promise<any>>() { return null! as ReturnType<T>; }
+>f5 : <T extends () => Promise<any>>() => Promise<ReturnType<T>>
+>null! as ReturnType<T> : ReturnType<T>
+>null! : never
+
+export async function f6<T extends Record<string, () => Promise<any>>, K extends keyof T>() { return null! as ReturnType<T[K]>; }
+>f6 : <T extends Record<string, () => Promise<any>>, K extends keyof T>() => Promise<ReturnType<T[K]>>
+>null! as ReturnType<T[K]> : ReturnType<T[K]>
+>null! : never
+
+type CustomEvents = Record<string, (documentName: string, payload: any) => Promise<any>>;
+>CustomEvents : CustomEvents
+>documentName : string
+>payload : any
+
+export class X<TCE extends CustomEvents> {
+>X : X<TCE>
+
+  constructor(private readonly ev: TCE) {}
+>ev : TCE
+
+  private async local<TName extends Extract<keyof TCE, string>>(n: TName) {
+>local : <TName extends Extract<keyof TCE, string>>(n: TName) => Promise<ReturnType<TCE[TName]>>
+>n : TName
+
+    const result = await this.ev[n]("", 1);
+>result : any
+>await this.ev[n]("", 1) : any
+>this.ev[n]("", 1) : Promise<any>
+>this.ev[n] : TCE[TName]
+>this.ev : TCE
+>this : this
+>ev : TCE
+>n : TName
+>"" : ""
+>1 : 1
+
+    return result as Promise<ReturnType<TCE[TName]>>;
+>result as Promise<ReturnType<TCE[TName]>> : Promise<ReturnType<TCE[TName]>>
+>result : any
+  }
+  async h1<TName extends Extract<keyof TCE, string>>(n: TName) {
+>h1 : <TName extends Extract<keyof TCE, string>>(n: TName) => Promise<ReturnType<TCE[TName]>>
+>n : TName
+
+    return this.local(n);
+>this.local(n) : Promise<ReturnType<TCE[TName]>>
+>this.local : <TName_1 extends Extract<keyof TCE, string>>(n: TName_1) => Promise<ReturnType<TCE[TName_1]>>
+>this : this
+>local : <TName_1 extends Extract<keyof TCE, string>>(n: TName_1) => Promise<ReturnType<TCE[TName_1]>>
+>n : TName
+  }
+  async h2<TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) {
+>h2 : <TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) => Promise<ReturnType<TCE[TName]> | undefined>
+>n : TName
+>b : boolean
+
+    if (b) return;
+>b : boolean
+
+    return null! as Promise<ReturnType<TCE[TName]>>;
+>null! as Promise<ReturnType<TCE[TName]>> : Promise<ReturnType<TCE[TName]>>
+>null! : never
+  }
+  async h3<TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) {
+>h3 : <TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) => Promise<ReturnType<TCE[TName]> | undefined>
+>n : TName
+>b : boolean
+
+    if (b) return;
+>b : boolean
+
+    return this.local(n);
+>this.local(n) : Promise<ReturnType<TCE[TName]>>
+>this.local : <TName_1 extends Extract<keyof TCE, string>>(n: TName_1) => Promise<ReturnType<TCE[TName_1]>>
+>this : this
+>local : <TName_1 extends Extract<keyof TCE, string>>(n: TName_1) => Promise<ReturnType<TCE[TName_1]>>
+>n : TName
+  }
+}
+

@@ -3911,7 +3911,7 @@ Ty const* ty_promise_like_of(Checker* me, Ty const* ty) {
 // HACK: tsc's unwrapAwaitedType, applied to what a return of an async function returns. tsc relates `Awaited<X>` to X
 // through the default constraint of the conditional type, which tttt can't
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty) {
-    ty = awaited_type(me, ty, false);
+    ty = awaited_type(me, ty, true);
     Symbol const* awaited = awaited_alias(me);
     if (!awaited) return ty;
     if (ty->alias == awaited && ty->alias_args.len == 1) return ty->alias_args.data[0];

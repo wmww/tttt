@@ -1,0 +1,149 @@
+//// [test/cases/ttttAsyncGenericPromiseReturn.ts] ////
+
+=== ttttAsyncGenericPromiseReturn.ts ===
+// An async function returning a generic that could be a promise keeps it: the return expression awaits to Awaited<T>,
+// which the inferred Promise<...> unwraps (tsc's checkAwaitedType then unwrapAwaitedType), not to its constraint's
+// promised type (any)
+export async function f1<T extends () => Promise<any>>() { return null! as Promise<ReturnType<T>>; }
+>f1 : Symbol(f1, Decl(ttttAsyncGenericPromiseReturn.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 3, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 3, 25))
+
+export async function f2<T extends () => Promise<number>>() { return null! as Promise<ReturnType<T>>; }
+>f2 : Symbol(f2, Decl(ttttAsyncGenericPromiseReturn.ts, 3, 100))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 4, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 4, 25))
+
+export async function f3<T extends Promise<any>>() { return null! as Promise<T>; }
+>f3 : Symbol(f3, Decl(ttttAsyncGenericPromiseReturn.ts, 4, 103))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 5, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 5, 25))
+
+export async function f4<T extends Record<string, () => Promise<any>>, K extends keyof T>() { return null! as Promise<ReturnType<T[K]>>; }
+>f4 : Symbol(f4, Decl(ttttAsyncGenericPromiseReturn.ts, 5, 82))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 25))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>K : Symbol(K, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 70))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 25))
+>K : Symbol(K, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 70))
+
+export async function f5<T extends () => Promise<any>>() { return null! as ReturnType<T>; }
+>f5 : Symbol(f5, Decl(ttttAsyncGenericPromiseReturn.ts, 6, 138))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 7, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 7, 25))
+
+export async function f6<T extends Record<string, () => Promise<any>>, K extends keyof T>() { return null! as ReturnType<T[K]>; }
+>f6 : Symbol(f6, Decl(ttttAsyncGenericPromiseReturn.ts, 7, 91))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 25))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>K : Symbol(K, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 70))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 25))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 25))
+>K : Symbol(K, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 70))
+
+type CustomEvents = Record<string, (documentName: string, payload: any) => Promise<any>>;
+>CustomEvents : Symbol(CustomEvents, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 129))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>documentName : Symbol(documentName, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 36))
+>payload : Symbol(payload, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 57))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+export class X<TCE extends CustomEvents> {
+>X : Symbol(X, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 89))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>CustomEvents : Symbol(CustomEvents, Decl(ttttAsyncGenericPromiseReturn.ts, 8, 129))
+
+  constructor(private readonly ev: TCE) {}
+>ev : Symbol(X.ev, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 14))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+
+  private async local<TName extends Extract<keyof TCE, string>>(n: TName) {
+>local : Symbol(X.local, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 42))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 12, 22))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 12, 64))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 12, 22))
+
+    const result = await this.ev[n]("", 1);
+>result : Symbol(result, Decl(ttttAsyncGenericPromiseReturn.ts, 13, 9))
+>this.ev : Symbol(X.ev, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 14))
+>this : Symbol(X, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 89))
+>ev : Symbol(X.ev, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 14))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 12, 64))
+
+    return result as Promise<ReturnType<TCE[TName]>>;
+>result : Symbol(result, Decl(ttttAsyncGenericPromiseReturn.ts, 13, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 12, 22))
+  }
+  async h1<TName extends Extract<keyof TCE, string>>(n: TName) {
+>h1 : Symbol(X.h1, Decl(ttttAsyncGenericPromiseReturn.ts, 15, 3))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 16, 11))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 16, 53))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 16, 11))
+
+    return this.local(n);
+>this.local : Symbol(X.local, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 42))
+>this : Symbol(X, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 89))
+>local : Symbol(X.local, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 42))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 16, 53))
+  }
+  async h2<TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) {
+>h2 : Symbol(X.h2, Decl(ttttAsyncGenericPromiseReturn.ts, 18, 3))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 11))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 53))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 11))
+>b : Symbol(b, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 62))
+
+    if (b) return;
+>b : Symbol(b, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 62))
+
+    return null! as Promise<ReturnType<TCE[TName]>>;
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 19, 11))
+  }
+  async h3<TName extends Extract<keyof TCE, string>>(n: TName, b: boolean) {
+>h3 : Symbol(X.h3, Decl(ttttAsyncGenericPromiseReturn.ts, 22, 3))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 11))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TCE : Symbol(TCE, Decl(ttttAsyncGenericPromiseReturn.ts, 10, 15))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 53))
+>TName : Symbol(TName, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 11))
+>b : Symbol(b, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 62))
+
+    if (b) return;
+>b : Symbol(b, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 62))
+
+    return this.local(n);
+>this.local : Symbol(X.local, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 42))
+>this : Symbol(X, Decl(ttttAsyncGenericPromiseReturn.ts, 9, 89))
+>local : Symbol(X.local, Decl(ttttAsyncGenericPromiseReturn.ts, 11, 42))
+>n : Symbol(n, Decl(ttttAsyncGenericPromiseReturn.ts, 23, 53))
+  }
+}
+
