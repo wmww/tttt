@@ -71,7 +71,8 @@ static void set_over(TyDisplay d) {
 static void out(TyDisplay d, csview sv) {
     if (d.tracker && d.tracker->truncated) return;
     cstr_append_sv(d.target, sv);
-    if (d.tracker && cstr_size(d.target) - d.target_start > DECLARATION_MAX_LENGTH) {
+    // (Not what the declaration transformer visits: only the node builder serializes with a limit)
+    if (d.tracker && !d.transformer_node && cstr_size(d.target) - d.target_start > DECLARATION_MAX_LENGTH) {
         d.tracker->truncated = true;
         d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
     }
@@ -4479,6 +4480,7 @@ static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, S
 
 // pseudoTypeToNode. `ty`: what it is equivalent to, printed where the pseudo type says nothing (Inferred, NoResult)
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
+    if (d.transformer_node) d.target_start = cstr_size(d.target); // (The length limit is the node builder's)
     d.transformer_node = false;
     bool strict = compiler_options()->strict_null_checks;
     switch (pseudo->kind) {
@@ -5689,7 +5691,9 @@ static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
-    d.transformer_node = false; // (The node builder's from here on)
+    // (The node builder's from here on, and so is the length limit)
+    if (d.transformer_node) d.target_start = cstr_size(d.target);
+    d.transformer_node = false;
     bool over = false; // (One per print: tsc's context.truncating)
     if (!d.over) d.over = &over;
     u32 approximate_length = 0; // (Where nothing truncates: see NO_TRUNCATION_MAXIMUM_LENGTH)
