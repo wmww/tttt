@@ -254,14 +254,19 @@ earlier:
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (types): `Color.prototype = { negate: function () { return this } }`:
   tsgo's `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`. Only the
   parameterless methods (negate, greyscale) expand; the context-sensitive ones (untyped `ratio`) don't, toJSON is any.
-  Instrumented tsgo (2026-10-15, agent C; getContextualThisParameterType/getReturnTypeOfSignature/getTypeOfSymbol
-  logged): per checker, the `prototype` symbol's type P (id 98) is resolved first, from an object literal type checked
-  before the one checkExpressionCached keeps (F, id 100; so the literal is checked twice, P isn't widened from F);
-  every method's `this` and return type is getWidenedType(F) = W (id 101, getContextualThisParameterType without a
-  contextual type), resolved in checkDeferredNodes. Printing P: negate's W isn't P, so it expands once (inside W every
-  method returns W: any). Why the context-sensitive methods of P don't print W is still open: their function types in
-  P's literal must be other ones than F's (checked in another check mode by the first literal check, returning P?).
-  Next: log which check of the literal makes P (checkMode, caller) and the return types of P's own methods. ~1 session.
+  Instrumented tsgo (2026-10-15, agent C; checkObjectLiteral, getContextualThisParameterType, getReturnTypeOfSignature
+  and getTypeOfSymbol logged): the literal is checked three times per checker, by getWidenedTypeForAssignmentDeclaration
+  (the `prototype` symbol's type P, id 98), by the statement's checkBinaryExpression, and by the checkExpressionCached in
+  getContextualThisParameterType (F, id 100). The methods' function types are made once (ids 87-96, cached per
+  function symbol) and shared by all three; every method's `this` and return type is getWidenedType(F) = W (id 101),
+  resolved in checkDeferredNodes. So P's methods all return W, yet the printer expands W under negate and greyscale
+  only: what decides it is in tsgo's node builder (the methods with a parameter, `(ratio: any)`, print W as `any`),
+  not in the checker. Lead: visitAndTransformType caches each serialized type per enclosing declaration
+  (links.serializedTypes, keyed by type id and flags, skipped once reportedDiagnostic/encounteredError is set), so a
+  method's function type first printed *inside* W's expansion (its W cut to `any` there) may be reused as is at P's
+  level; which methods that hits depends on the order and on when the cache gets disabled. tttt has no such cache.
+  Next: log visitAndTransformType's cache hits/stores and visitedTypes while printing P, then model it in ty_display
+  (a per-print cache of what was printed for a type at a given point, with tsgo's disabling rules). ~1 session.
 - A JavaScript `{}` container's initializer (`var o = {}; o.self = o`): tsgo prints `>{} : { self: { self: any; }; }`,
   tttt `{ self: any; }` (the variable's lines agree). In ttttLocalExpandoCyclicPrint's probe, left out of the test.
 Size: a fresh/regular distinction for object literal types at display (or a real fresh type identity, which
