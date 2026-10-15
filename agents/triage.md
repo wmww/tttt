@@ -20,3 +20,4 @@ went to bugs/type_core.md and the member-symbol copies to hacks.md, /tmp's old s
   (ChangeToDeclarationExtension with the content mapper's extensions) and emits a supplemental module's
   (`component.vue.0.d.ts`, with a `/// <reference path>` to it); tttt writes `x.vue.d.ts` and no supplemental one
   (`contentMapperSupplementalModule`, the suite's dts component).
+- from human: please stop the agent loop after the next triage session
