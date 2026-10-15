@@ -147,7 +147,7 @@ passing tests).
   tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
   label names, so the two tuples are one type and the union collapses.
 ## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
-- circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
+- circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
 - recursiveConditionalTypes (types only since 2026-10-14; no spurious TS2589 any more): (1) `unbox(b4)` with
   `b4: { value: { value: { value: typeof b4 }}}` against `RecBox<T> = T | Box<RecBox<T>>`: tsgo infers T one level
   shallower (`{ value: { value: typeof b4 } }`, tttt `{ value: typeof b4 }`): where inferToMultipleTypes' naked

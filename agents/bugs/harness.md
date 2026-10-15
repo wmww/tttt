@@ -5,7 +5,7 @@
   diagnostics it baselines, and the emit resolver checks expressions (a property access's constant value, `x.foo`)
   first. What's resolved first then shows: TS2313's "Circularity originates in type at this location" (TS2751, tsgo's
   getResolvedBaseConstraint relates it to currentNode when that's elsewhere) points at the first property access
-  through the type parameter in typeParameterWithInvalidConstraintType, circularBaseTypes,
+  through the type parameter in typeParameterWithInvalidConstraintType,
   incorrectRecursiveMappedTypeConstraint and recursiveMappedTypes, and a `new x()` with `T extends T` says `{}` there
   but `unknown` in the CLI. tttt (noEmit) checks in the CLI's order; the mechanism (record the current node when
   the constraint walk finds the cycle, relate it in generic_typecheck()) was tried 2026-10-12 and dropped: it can't

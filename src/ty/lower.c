@@ -3948,7 +3948,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // type; tttt's often asks first. A generic reference inside the node being checked stands for it
             CurrentNode saved_node = my current_node;
             if (vec_spanned_type_size(&node->identifier->generic_params) &&
-                span_contains_span(ty_current_node_span(me), node->identifier->name)
+                span_contains_span(my current_node.expr ? ty_current_node_span(me) : my current_node.span, node->identifier->name)
             ) {
                 my current_node = (CurrentNode){ .span = identifier_type_span(node->identifier) };
             }

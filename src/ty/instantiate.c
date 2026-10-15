@@ -14,7 +14,8 @@
 // The branch a conditional type resolved to: when it is a conditional type itself, it doesn't count towards the
 // instantiation depth (see Checker.instantiation_tail_count)
 Span ty_current_node_span(Checker* me) {
-    return my current_node.expr ? expr_error_span(my current_node.expr) : my current_node.span;
+    if (my current_node.expr) return expr_error_span(my current_node.expr);
+    return span_valid(my current_node.error_span) ? my current_node.error_span : my current_node.span;
 }
 
 void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {

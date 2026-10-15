@@ -2971,12 +2971,35 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     return builder_finish(me, &builder);
 }
 
+// An instantiated mapped type's key parameter turned out circular (see ty_mapped_info_instantiate()): tsc's
+// getResolvedBaseConstraint reports TS2313 at its constraint declaration, with where the check started (currentNode)
+// as related information unless one is inside the other
+static void mapped_key_circular(Checker* me, MappedInfo const* source, MappedInfo* mapped) {
+    mapped->constraint = ty_intrinsic(me, TY_ERROR);
+    Symbol const* symbol = source->type_param->param.symbol;
+    InterfaceMember const* member = symbol ? symbol_find_node(symbol, SYMBOL_DECL_MAPPED_KEY) : nullptr;
+    if (!member || !span_valid(member->key.mapped->in_type_span) || my errs->phase != ERROR_PHASE_TYPECHECK) return;
+    Span at = member->key.mapped->in_type_span;
+    Error* e = error_ctx_error_d(my errs, at, 2313, "Type parameter '", member->key.mapped->type_name,
+        "' has a circular constraint.");
+    Span current = my current_node.expr ? ty_current_node_span(me) : my current_node.span;
+    if (span_valid(current) && !span_contains_span(current, at) && !span_contains_span(at, current)) {
+        error_add_related_d(e, ty_current_node_span(me), 2751, "Circularity originates in type at this location.");
+    }
+}
+
 // `this_only`: the mapper only says what `this` is, so members that can't mention it are shared rather than
 // instantiated (tsc's createInstantiatedSymbolTable with mappingThisOnly)
 MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
     MappedInfo* mapped = arena_new(&my arena, MappedInfo);
     *mapped = *source;
+    // tsc's instantiateMappedType makes a fresh key parameter constrained by the instantiated constraint, whose base
+    // constraint (getResolvedBaseConstraint, pushed) is resolved when the constraint is asked for: a cycle through it
+    // (`interface Y extends X<Y>` with `type X<T> = { [K in keyof T]: ... }`: `keyof Y` needs Y's bases, in flight)
+    // makes it circular, TS2313 at the declared constraint, and the constraint the error type
+    ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, mapped);
     mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
+    if (ty_resolving_pop(me)) mapped_key_circular(me, source, mapped);
     // The template and the `as` clause see the mapped type's own key parameter, not a mapping of it that the mapper
     // carries from an enclosing instance of the same mapped type: in `type X<T> = { [K in keyof T]: F<T[K]> }` where
     // F's body mentions X again, the inner X's mapper is composed from the outer one's, K included (tsc's

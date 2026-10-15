@@ -960,6 +960,7 @@ typedef struct FlowSharedEntry {
 typedef struct CurrentNode {
     Span span;
     struct Expr const* expr; // If set, the node is this expression (the span isn't)
+    Span error_span; // If set, where an error at the node goes (tsc's getErrorSpanForNode: a declaration's name)
 } CurrentNode;
 
 // What Checker.deferred holds (tsc's checkDeferredNode cases tttt has)

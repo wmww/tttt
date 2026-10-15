@@ -176,10 +176,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
   checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes.
-  - circularBaseTypes: `type X<T> = { [K in keyof T]: string } & { b: string }; interface Y extends X<Y>`: tsc's
-    TS2313 lands on `K` (resolving Y's bases instantiates X<Y>, whose key constraint `keyof Y` needs Y's members while
-    its bases are in flight; getResolvedBaseConstraint has `(K, ImmediateBaseConstraint)` pushed, the error goes at
-    the current node). tttt has the TS2310 on Y but never meets K's constraint in flight.
   - circularConstraintYieldsAppropriateError: `class Foo extends NextType<Foo>` with `NextType<C extends { someProp:
     any }, T = C['someProp']> extends BaseType<T>`: tsc reports TS2415 and TS2339 'bar' (the base resolves circularly
     to an error: the cycle is entered from the default's instantiation, reading Foo's `someProp` while Foo's bases

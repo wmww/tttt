@@ -3782,7 +3782,7 @@ const baselines = {
         types: true,
     },
     'circularBaseTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
         dts: true,
