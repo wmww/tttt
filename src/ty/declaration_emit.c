@@ -198,6 +198,10 @@ typedef struct Walk {
     u32* export_offsets;
     u32 export_offset_count, export_offset_cap;
     DeclComments comments; // The comments copied from the source (decl_comments.h)
+    // The writer: the type parameters declared where the declaration being written is (its own too), which a type
+    // parameter the node builder prints may shadow (tsc's typeParameterShadowsOtherTypeParameterInScope)
+    Ty const** scope_params;
+    u32 scope_param_count, scope_param_cap;
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -466,13 +470,34 @@ static void print_inferred(Walk* me, Ty const* type) { print_type(me, type, my p
 // ... `reports`: what the printer prints from syntax reports (tsgo's typeToTypeNode without suppressReportInferenceFallback)
 static TyDisplay emit_display(Walk* me, cstr* target);
 
+static TyParamNames walk_param_names(Walk* me) {
+    return (TyParamNames){ .in_scope = { .data = my scope_params, .len = my scope_param_count } };
+}
+
+// Enters a declaration's type parameters (see Walk.scope_params): returns what to leave with
+static u32 enter_type_params(Walk* me, Generic const* generic) {
+    u32 saved = my scope_param_count;
+    if (!my out || !generic || generic_empty(generic)) return saved;
+    TyList params = ty_type_params_of(my checker, generic);
+    for (u32 i = 0; i < params.len; i++) {
+        if (my scope_param_count == my scope_param_cap) {
+            my scope_param_cap = my scope_param_cap ? my scope_param_cap * 2 : 8;
+            my scope_params = realloc(my scope_params, my scope_param_cap * sizeof(Ty const*));
+        }
+        my scope_params[my scope_param_count++] = params.data[i];
+    }
+    return saved;
+}
+
+static void leave_type_params(Walk* me, u32 saved) { my scope_param_count = saved; }
+
 static void print_type(Walk* me, Ty const* type, bool reports) {
     if (type && my type_out) {
         cstr* target = my type_out;
         cstr* outer_pseudo = my pseudo_out;
         my pseudo_out = my type_out = nullptr;
         cstr text = cstr_init();
-        TyParamNames names = {0};
+        TyParamNames names = walk_param_names(me);
         TyDisplay d = emit_display(me, &text);
         d.param_names = &names;
         d.suppress_fallback = !reports;
@@ -1385,7 +1410,7 @@ static void pseudo_to_node_with_fallback(Walk* me, Pseudo const* pseudo, Ty cons
             // (What the tracker's callbacks serialize meanwhile isn't written)
             my pseudo_out = my type_out = nullptr;
             cstr text = cstr_init();
-            TyParamNames names = {0};
+            TyParamNames names = walk_param_names(me);
             TyDisplay d = emit_display(me, &text);
             d.param_names = &names;
             ty_display_pseudo(my checker, d, pseudo, type);
@@ -2817,7 +2842,7 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
 
 static void w_node(Walk* me, TypeNode const* node) {
     SINKS_OFF;
-    TyParamNames names = {0};
+    TyParamNames names = walk_param_names(me);
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display_node(my checker, d, node);
@@ -2827,7 +2852,7 @@ static void w_node(Walk* me, TypeNode const* node) {
 
 static void w_type(Walk* me, Ty const* type) {
     SINKS_OFF;
-    TyParamNames names = {0};
+    TyParamNames names = walk_param_names(me);
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display(my checker, d, type);
@@ -2837,7 +2862,7 @@ static void w_type(Walk* me, Ty const* type) {
 
 static void w_type_params(Walk* me, Generic const* generic) {
     SINKS_OFF;
-    TyParamNames names = {0};
+    TyParamNames names = walk_param_names(me);
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display_type_params(my checker, d, generic);
@@ -2958,7 +2983,7 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     TyPredicate const* predicate = sig ? signature_predicate(my checker, sig) : nullptr;
     if (predicate) {
         SINKS_OFF;
-        TyParamNames names = {0};
+        TyParamNames names = walk_param_names(me);
         TyDisplay d = emit_display(me, my out);
         d.param_names = &names;
         ty_display_predicate(my checker, d, predicate);
@@ -3294,7 +3319,9 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
     cstr modifiers = cstr_from_sv(csview_slice(cstr_sv(my out), (isize_t)modifiers_start, cstr_size(my out)));
     w_lit(me, "function ");
     w(me, span_sv(fn->name));
+    u32 scope_saved = enter_type_params(me, &fn->generic);
     w_signature(me, fn, false);
+    leave_type_params(me, scope_saved);
     w_lit(me, ";\n");
     if (first && statement->decl.props.exported != DECL_EXPORTED_YES_DEFAULT) {
         emit_expando_namespace(me, symbol, span_sv(fn->name), cstr_sv(&modifiers));
@@ -3438,7 +3465,7 @@ static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
                     w_type(me, type ? type : ty_intrinsic(my checker, TY_ANY));
                 } else if (m->member->type.tag == TYPE_CALLABLE && m->member->is_method) {
                     SINKS_OFF;
-                    TyParamNames names = {0};
+                    TyParamNames names = walk_param_names(me);
                     TyDisplay d = emit_display(me, my out);
                     d.param_names = &names;
                     ty_display_node_signature(my checker, d, m->member->type.callable->function, " => ");
@@ -3504,6 +3531,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     }
     w_lit(me, " {\n");
     Scope const* outer_scope = my scope;
+    u32 class_scope_saved = enter_type_params(me, &cls->generic);
     my indent++;
     bool private_names = false;
     for_each (i, vec_class_item, &cls->items) {
@@ -3558,7 +3586,9 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     w_member_modifiers(me, i->access, i->method.is_abstract, i->method.is_static, false, false);
                     w(me, item_name(i));
                     if (i->method.is_optional) w_lit(me, "?");
+                    u32 method_scope_saved = enter_type_params(me, &fn->generic);
                     if (!private_member) w_signature(me, fn, false);
+                    leave_type_params(me, method_scope_saved);
                     w_lit(me, ";\n");
                     break;
                 }
@@ -3624,6 +3654,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     my member_static = outer_static, my member_in_class = outer_in_class;
     my indent--;
     my scope = outer_scope;
+    leave_type_params(me, class_scope_saved);
     w_indent(me);
     w_lit(me, "}\n");
     cstr_drop(&base_variable_name);
@@ -4280,6 +4311,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         writable->declaration_output = output;
     }
     free(walk.export_offsets);
+    free(walk.scope_params);
     symbol_chain_set_painted(nullptr, nullptr);
     symbol_chain_set_module_specifier(nullptr, nullptr);
     Checker* checker = walk.checker;
