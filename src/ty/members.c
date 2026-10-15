@@ -1000,6 +1000,9 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
     return false;
 }
 
+// (SymbolLinks.base_cycle; BASE_CYCLE_CONSTRUCTOR: the class's `extends` expression needed the class, see class_base())
+enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2, BASE_CYCLE_REENTERED = 4, BASE_CYCLE_CONSTRUCTOR = 8 };
+
 // An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
 // Unlike tsc, not `any`: a class extending `any` has no base as far as class_base() goes
 static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
@@ -1058,7 +1061,23 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         // Any other expression (a mixin call, a class expression, a variable of a constructor type): what its first
         // construct signature that takes the written type arguments returns. TODO: the static side, several signatures
         if (extends->tag == EXPR_IMPLICIT_ANY) return false;
-        Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+        // (Under tsc's pushTypeResolution(ResolvedBaseConstructorType): an expression that needs the class's bases is
+        // circular, TS2506, and the class has no base)
+        SymbolLinks* links = class_decl->symbol ? ty_symbol_links(me, class_decl->symbol) : nullptr;
+        if (links && (links->base_cycle & BASE_CYCLE_CONSTRUCTOR)) return false;
+        if (ty_resolving_find(me, RESOLVING_BASE_CONSTRUCTOR, class_decl)) {
+            ty_resolving_cycle(me, RESOLVING_BASE_CONSTRUCTOR, class_decl);
+            return false;
+        }
+        ty_resolving_push(me, RESOLVING_BASE_CONSTRUCTOR, class_decl);
+        my base_constructors_in_flight++;
+        Ty const* expr_type = ty_expr_type(me, extends);
+        my base_constructors_in_flight--;
+        if (ty_resolving_pop(me) && links) {
+            links->base_cycle |= BASE_CYCLE_CONSTRUCTOR;
+            return false;
+        }
+        Ty const* constructor = ty_apparent_type(me, expr_type);
         if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
         Members const* members = ty_members(me, constructor);
         Ty const* constructed = nullptr;
@@ -2349,7 +2368,6 @@ bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     return has_base_type(me, source, target);
 }
 
-enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2, BASE_CYCLE_REENTERED = 4 };
 
 typedef struct BaseWalk {
     Symbol const* target;
@@ -2391,6 +2409,13 @@ bool ty_bases_reentered(Checker* me, Symbol const* symbol) {
     if (declared->kind != TY_DECLARED) return false;
     ty_members(me, declared);
     return ty_symbol_links(me, symbol)->base_cycle & BASE_CYCLE_REENTERED;
+}
+
+bool ty_class_base_constructor_circular(Checker* me, ClassDecl const* class_decl) {
+    if (!class_decl->symbol) return false;
+    Ty const* declared = ty_declared_type_of(me, class_decl->symbol);
+    if (declared->kind == TY_DECLARED) ty_members(me, declared);
+    return ty_symbol_links(me, class_decl->symbol)->base_cycle & BASE_CYCLE_CONSTRUCTOR;
 }
 
 bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
@@ -2663,7 +2688,7 @@ static void early_declared_members(Checker* me, Ty const* ty) {
         for (u32 k = 0; k < 2; k++) {
             if (states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members) states[k]->members = members;
         }
-        ty_resolving_cycle(me, RESOLVING_BASES, ty);
+        ty_resolving_cycle_across_calls(me, RESOLVING_BASES, ty);
         return;
     }
     Symbol const* decl = ty->declared.symbol;
@@ -2826,7 +2851,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
                 // (Bases that lead back are a cycle tsc finds elsewhere: TS2506 in getBaseConstructorTypeOfClass, or
                 // the interfaces' own TS2310, see ty_interface_in_base_cycle())
-                if (kept < bases.len || !bases.len) links->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
+                if ((links->base_cycle & BASE_CYCLE_CONSTRUCTOR) && !bases.len) links->base_cycle |= BASE_CYCLE_REENTERED;
+                else if (kept < bases.len || !bases.len) links->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
                 else links->base_cycle |= BASE_CYCLE_REENTERED;
                 bases.len = kept;
                 written_bases.len = kept;
@@ -3040,7 +3066,7 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
 // Members of a class or interface asked for while they are resolved: if it's while its bases are, they are circular
 static void members_reentered(Checker* me, Ty const* ty) {
     if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
-    if (ty->kind == TY_DECLARED) ty_resolving_cycle(me, RESOLVING_BASES, ty);
+    if (ty->kind == TY_DECLARED) ty_resolving_cycle_across_calls(me, RESOLVING_BASES, ty);
 }
 
 // The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw

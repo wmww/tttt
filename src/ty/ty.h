@@ -1062,6 +1062,7 @@ struct Checker {
     u32 resolving_len;
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
+    u32 base_constructors_in_flight; // RESOLVING_BASE_CONSTRUCTOR entries on the stack (relate.c's tuple index relation)
     // The classes and interfaces whose bases are being lowered, innermost first, with their own members so far (see
     // resolve_declared_members())
     struct BasesFrame* bases_frames;
@@ -1999,6 +2000,7 @@ typedef enum ResolvingKind {
     RESOLVING_SIGNATURE_RETURN,
     RESOLVING_BASES, // The bases of a declared class or interface type
     RESOLVING_BASE_CONSTRAINT, // A type whose base constraint is computed (relate.c base_constraint())
+    RESOLVING_BASE_CONSTRUCTOR, // A ClassDecl whose `extends` expression is evaluated (members.c class_base())
 } ResolvingKind;
 typedef struct Resolving {
     void const* key;
@@ -2015,6 +2017,11 @@ static inline bool ty_resolving_pop(Checker* me) {
     return my resolving[--my resolving_len].circular;
 }
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight
+// The same, also below the barrier of a call resolution (resolving_start). tsc re-enters what is in flight below its
+// resolutionStart: the second round resolves the same things again, now above the barrier (the calls on the way are
+// already resolvingSignature, which doesn't move it), and finds the cycle there. For the bases of a class or interface,
+// where that second round's TS2310/TS2506 are what's left of it
+void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const* key);
 // A root binding pattern's LazyType (`key`) was asked for while in flight: the cycle starts at the first of its names
 // resolved since, if any was
 void ty_resolving_pattern_cycle(Checker* me, void const* key, struct Binding const* pattern);
@@ -2164,6 +2171,9 @@ bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol);
 // Whether the members of the class or interface were asked for while its bases were resolved (tsc's getBaseTypes
 // failing popTypeResolution: TS2310 at every declaration). Resolves them
 bool ty_bases_reentered(Checker* me, Symbol const* symbol);
+// Whether evaluating the class's `extends` expression needed the class itself (tsc's getBaseConstructorTypeOfClass
+// failing popTypeResolution: TS2506 at the class). Resolves its bases
+bool ty_class_base_constructor_circular(Checker* me, struct ClassDecl const* class_decl);
 // Whether TS2310 goes on this declaration (a direct `extends` of itself only where it's written)
 bool ty_interface_decl_reports_base_cycle(Checker* me, Symbol const* symbol, struct InterfaceDecl const* decl);
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name

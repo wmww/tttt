@@ -1,0 +1,47 @@
+//// [test/cases/ttttBaseExpressionTupleIndexCycle.ts] ////
+
+=== ttttBaseExpressionTupleIndexCycle.ts ===
+// Effect's Schema.TaggedClass<_A>()(...): the base expression's call relates a tuple against a tuple of another
+// target, whose number index relation meets Ann<_A> and needs _A's bases again (TS2310 + TS2506)
+interface Ann<A> { pretty?: () => (x: A) => string }
+>Ann : Symbol(Ann, Decl(ttttBaseExpressionTupleIndexCycle.ts, 0, 0))
+>A : Symbol(A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 14))
+>pretty : Symbol(Ann.pretty, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 18))
+>x : Symbol(x, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 35))
+>A : Symbol(A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 14))
+
+type Annots<Self, A> = readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?];
+>Annots : Symbol(Annots, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 52))
+>Self : Symbol(Self, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 12))
+>A : Symbol(A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 17))
+>Ann : Symbol(Ann, Decl(ttttBaseExpressionTupleIndexCycle.ts, 0, 0))
+>Self : Symbol(Self, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 12))
+>Ann : Symbol(Ann, Decl(ttttBaseExpressionTupleIndexCycle.ts, 0, 0))
+>Self : Symbol(Self, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 12))
+>Ann : Symbol(Ann, Decl(ttttBaseExpressionTupleIndexCycle.ts, 0, 0))
+>A : Symbol(A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 17))
+
+declare function TaggedClass<Self>(): <F extends object>(tag: string, fields: F, annotations?: Annots<Self, F>) => new () => F & { _tag: string };
+>TaggedClass : Symbol(TaggedClass, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 77))
+>Self : Symbol(Self, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 29))
+>F : Symbol(F, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 39))
+>tag : Symbol(tag, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 57))
+>fields : Symbol(fields, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 69))
+>F : Symbol(F, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 39))
+>annotations : Symbol(annotations, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 80))
+>Annots : Symbol(Annots, Decl(ttttBaseExpressionTupleIndexCycle.ts, 2, 52))
+>Self : Symbol(Self, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 29))
+>F : Symbol(F, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 39))
+>F : Symbol(F, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 39))
+>_tag : Symbol(_tag, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 130))
+
+class _A extends TaggedClass<_A>()("A", { id: 1 }, [undefined, undefined, { pretty: () => (x) => "" }]) {}
+>_A : Symbol(_A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 146))
+>TaggedClass : Symbol(TaggedClass, Decl(ttttBaseExpressionTupleIndexCycle.ts, 3, 77))
+>_A : Symbol(_A, Decl(ttttBaseExpressionTupleIndexCycle.ts, 4, 146))
+>id : Symbol(id, Decl(ttttBaseExpressionTupleIndexCycle.ts, 5, 41))
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+>pretty : Symbol(pretty, Decl(ttttBaseExpressionTupleIndexCycle.ts, 5, 75))
+>x : Symbol(x, Decl(ttttBaseExpressionTupleIndexCycle.ts, 5, 91))
+

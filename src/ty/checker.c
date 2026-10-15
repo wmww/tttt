@@ -3509,6 +3509,15 @@ void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
     }
 }
 
+void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const* key) {
+    for (u32 i = my resolving_len; i-- > 0;) {
+        if (my resolving[i].key == key && my resolving[i].kind == kind) {
+            for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
+            return;
+        }
+    }
+}
+
 void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pattern) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key != key || my resolving[i].kind != RESOLVING_PATTERN) continue;

@@ -1,0 +1,38 @@
+//// [test/cases/ttttBaseExpressionTupleIndexCycle.ts] ////
+
+=== ttttBaseExpressionTupleIndexCycle.ts ===
+// Effect's Schema.TaggedClass<_A>()(...): the base expression's call relates a tuple against a tuple of another
+// target, whose number index relation meets Ann<_A> and needs _A's bases again (TS2310 + TS2506)
+interface Ann<A> { pretty?: () => (x: A) => string }
+>pretty : (() => (x: A) => string) | undefined
+>x : A
+
+type Annots<Self, A> = readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?];
+>Annots : Annots<Self, A>
+
+declare function TaggedClass<Self>(): <F extends object>(tag: string, fields: F, annotations?: Annots<Self, F>) => new () => F & { _tag: string };
+>TaggedClass : <Self>() => <F extends object>(tag: string, fields: F, annotations?: Annots<Self, F>) => new () => F & { _tag: string; }
+>tag : string
+>fields : F
+>annotations : Annots<Self, F> | undefined
+>_tag : string
+
+class _A extends TaggedClass<_A>()("A", { id: 1 }, [undefined, undefined, { pretty: () => (x) => "" }]) {}
+>_A : _A
+>TaggedClass<_A>()("A", { id: 1 }, [undefined, undefined, { pretty: () => (x) => "" }]) : new () => { id: number; } & { _tag: string; }
+>TaggedClass<_A>() : <F extends object>(tag: string, fields: F, annotations?: Annots<_A, F> | undefined) => new () => F & { _tag: string; }
+>TaggedClass : <Self>() => <F extends object>(tag: string, fields: F, annotations?: Annots<Self, F>) => new () => F & { _tag: string; }
+>"A" : "A"
+>{ id: 1 } : { id: number; }
+>id : number
+>1 : 1
+>[undefined, undefined, { pretty: () => (x) => "" }] : [undefined, undefined, { pretty: () => (x: { id: number; }) => string; }]
+>undefined : undefined
+>undefined : undefined
+>{ pretty: () => (x) => "" } : { pretty: () => (x: { id: number; }) => string; }
+>pretty : () => (x: { id: number; }) => string
+>() => (x) => "" : () => (x: { id: number; }) => string
+>(x) => "" : (x: { id: number; }) => string
+>x : { id: number; }
+>"" : ""
+

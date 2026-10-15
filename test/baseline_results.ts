@@ -20,6 +20,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBaseExpressionTupleIndexCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBasicGlobalNamespaceAugmentation': {
         errors: true,
         symbols: true,

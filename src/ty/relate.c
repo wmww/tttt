@@ -6062,7 +6062,22 @@ static Ternary structured_related_members(
             Ty const* constraint = base_constraint(me, source, nullptr);
             if (constraint && constraint != source) return is_related_to_side(me, st, constraint, target, report, 2);
         }
-        return tuples_related(me, st, source, target, report);
+        Ternary elements = tuples_related(me, st, source, target, report);
+        // tsc relates tuples of different targets structurally: the elements, then the number index signatures, the
+        // union of the source's elements against the union of the target's. That is implied by the elements (tttt
+        // skips it), but it can relate a source element to another position's target element, which can reach a
+        // type whose resolution is in flight. HACK: only done where that changes anything tttt reports, while a
+        // class's `extends` expression is evaluated (TS2506: effect's `class _A extends TaggedClass<_A>()(..., [undefined,
+        // undefined, { pretty: () => (x) => "" }])`, where `{ pretty }` meets `Ann<_A>` and _A's bases)
+        if (elements && my base_constructors_in_flight && is_tuple(source) && is_tuple(target) &&
+            st->relation != TY_RELATION_IDENTITY && source->reference.target != target->reference.target
+        ) {
+            Ty const* number = ty_intrinsic(me, TY_NUMBER);
+            IndexInfo const* ti = ty_applicable_index_info(me, apparent_type(me, target), number);
+            IndexInfo const* si = ti ? ty_applicable_index_info(me, apparent_type(me, source), number) : nullptr;
+            if (si) elements &= is_related_to(me, st, si->value, ti->value, false);
+        }
+        return elements;
     }
     if (target_is_tuple && source->kind == TY_ANONYMOUS) {
         // A homomorphic mapped type over a type parameter constrained to a tuple is a tuple (its apparent type)

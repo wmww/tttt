@@ -490,6 +490,15 @@ src` finds the code-side markers; every significant one has an entry here.
   (`OBJECT_NO_INFERABLE_INDEX`) and the global empty object; other symbolless synthetic types (spreads? reverse mapped
   types?) may wrongly relate to index signatures.
 
+- relate.c's tuple-to-tuple branch relates the number index signatures of tuples of different targets (tsc's
+  indexSignaturesRelatedTo after propertiesRelatedTo) only while a class's `extends` expression is evaluated
+  (`Checker.base_constructors_in_flight`): the relation is implied by the elements, tsc's only observable effect is
+  relating a source element to another position's target element, which can need the class's bases (TS2506, effect's
+  TaggedClass). Done always it cost valibot 1.4%.
+- `ty_resolving_cycle_across_calls()`: bases re-entered below a call's resolving_start are marked circular from their
+  entry up, standing for tsc's second round (which re-enters, then finds the cycle above its resolutionStart). Only
+  for RESOLVING_BASES; the other kinds keep the barrier.
+
 ## Type core (`src/ty/`)
 - A type parameter source against a union target takes its hoisted constraint (`constraint & T`, tsc's
   getEffectiveConstraintOfIntersection in structuredTypeRelatedTo) only when that relation is a definite True

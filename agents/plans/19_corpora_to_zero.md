@@ -225,24 +225,10 @@ a tuple is a variadic element, not a rest array: Schema.ts 9010 (`variadic_gener
 by intersect_unions(), with intersection targets' property types made lazily for 3+ parts as tsc defers them:
 fiberRuntime 1397 (`union_call_cross_product_too_complex.ts`).
 
-Left (TS2578, 3; implemented and measured 2026-10-14, plan 70: costs valibot 1.4%), dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A
-extends Schema.TaggedClass<_A>()("A", {...}, [undefined, undefined, { pretty: () => (x) => ... }])`. Reduced
-(instrumented tsc stack): getBaseConstructorTypeOfClass checks the call; the annotations tuple related to the
-`readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?]` parameter also goes through indexSignaturesRelatedTo (the
-tuple's number index, `undefined | { pretty }`, against the union of the target's elements), which tries
-`{ pretty: (x: F) => .. }` against Ann<_A> first, relates `_A` to F structurally (getUnmatchedProperty) and resolves
-_A's base types while its base constructor type is on the resolution stack. tttt relates tuples element-wise only (no
-index-signature step), so the cycle never happens; modelling it needs both (a) tuple-to-tuple index relation (hot path:
-only for side effects like this) and (b) a ResolvedBaseConstructorType resolution entry (class_base() seeing its own
-extends expression in flight; note BASE_CYCLE_IN_CYCLE is also set for ordinary class cycles, which tsc reports as
-TS2506 only). Probe:
-```ts
-interface Ann<A> { readonly pretty?: (x: A) => string; readonly title?: string }
-type ClassAnn<Self, A> = Ann<Self> | readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?]
-declare function Tagged<Self>(): <F>(tag: string, fields: F, ann?: ClassAnn<Self, F>) => new () => { readonly _tag: string } & F
-export class _A extends Tagged<_A>()("A", { id: 1 }, [undefined, undefined, { pretty: (x) => "" }]) {}
-```
-- `x[key]` constraint position: only an identifier object so far (`a.b[key]` isn't, TODO in expr.c).
+Done (2026-10-15): the 3 TS2578 (dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28, `class _A extends
+Schema.TaggedClass<_A>()(...)` where tsc reports TS2310 + TS2506): the base constructor resolution entry, bases
+re-entered across a call's resolution barrier, and the tuple-to-tuple number index relation while a base expression is
+evaluated (`ttttBaseExpressionTupleIndexCycle`).
 
 ### vscode (0; 129 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 5) as the large application: VS Code at 156e400b (2025-03-28, the last

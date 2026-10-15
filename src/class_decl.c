@@ -1429,7 +1429,10 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     Ty const* base = my extends.tag != EXPR_IMPLICIT_ANY ? ty_class_base_instance(checker, me) : nullptr;
     // A class that extends itself through its bases (tsc's circularity in getBaseConstructorTypeOfClass), and then
     // nothing is compared
-    if (base && ty_has_base_type(checker, base, declared)) {
+    if (my extends.tag != EXPR_IMPLICIT_ANY && ty_class_base_constructor_circular(checker, me)) {
+        error_ctx_error_d(errs, span, 2506, "'", span, "' is referenced directly or indirectly in its own base expression.");
+        base = nullptr;
+    } else if (base && ty_has_base_type(checker, base, declared)) {
         error_ctx_error_d(errs, span, 2506, "'", span, "' is referenced directly or indirectly in its own base expression.");
         base = nullptr;
     }
@@ -2420,6 +2423,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
+        // The bases first, whose resolution evaluates the expression under its in-flight entry (tsc's getBaseTypes
+        // before checkSourceElement(baseTypeNode.Expression()): TS2506 where the expression needs the class)
+        if (my symbol) ty_class_base_constructor_circular(current_checker, me);
         expr_typecheck(&my extends, errs);
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
         if (extends_type->flags & TYF_NULL) {
