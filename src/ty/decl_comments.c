@@ -366,6 +366,16 @@ void decl_comments_leading(DeclComments const* me, cstr* out, u32 indent, char c
 
 static void file_end_from(DeclComments const* me, cstr* out, char const* pos);
 
+void decl_comments_leading_at(DeclComments const* me, cstr* out, u32 indent, char const* pos) {
+    if (!me || me->off || !decl_comments_in_file(me, pos)) return;
+    Comments comments;
+    comment_ranges(me->file, pos, false, &comments);
+    filter_kept(&comments);
+    if (!comments.count) return;
+    if (!same_line(pos, comments.ranges[0].start)) write_line(out);
+    write_comments(me, out, indent, &comments, false);
+}
+
 void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end) {
     if (!me || me->off || !decl_comments_in_file(me, end)) return;
     file_end_from(me, out, full_start(me->file, end));

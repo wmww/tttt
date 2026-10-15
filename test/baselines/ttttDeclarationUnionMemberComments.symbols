@@ -1,0 +1,29 @@
+//// [test/cases/ttttDeclarationUnionMemberComments.ts] ////
+
+=== ttttDeclarationUnionMemberComments.ts ===
+// Comments on the lines between a union member and the `|` after it (emitListItems' leading comments at the
+// previous element's end): written before the delimiter
+export type K =
+>K : Symbol(K, Decl(ttttDeclarationUnionMemberComments.ts, 0, 0))
+
+	/** first */
+	| 'match'
+	/** second */
+	| 'mismatch'
+	// line comment
+	| 'x' /** same line */
+	| 'y';
+export namespace N {
+>N : Symbol(N, Decl(ttttDeclarationUnionMemberComments.ts, 9, 7))
+
+	export type T =
+>T : Symbol(T, Decl(ttttDeclarationUnionMemberComments.ts, 10, 20))
+
+		| { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberComments.ts, 12, 5))
+
+		/** obj */
+		| { b: 2 };
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberComments.ts, 14, 5))
+}
+

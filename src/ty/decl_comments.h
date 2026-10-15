@@ -27,6 +27,9 @@ typedef struct DeclComments {
 void decl_comments_detached(DeclComments* me, cstr* out);
 // The leading comments of the node whose first token starts at `token` (the node's position is its full start)
 void decl_comments_leading(DeclComments const* me, cstr* out, u32 indent, char const* token);
+// The leading comments at `pos` itself (no full start walked back to): those on the lines after it, before the next
+// token (emitListItems' comments between a list element's end and the delimiter after it)
+void decl_comments_leading_at(DeclComments const* me, cstr* out, u32 indent, char const* pos);
 // The trailing comments after `end`, a node's end
 void decl_comments_trailing(DeclComments const* me, cstr* out, char const* end);
 // The comments on the line before a list element (a parameter, a variable declaration after the first: tsc's

@@ -2417,10 +2417,24 @@ static void out_intervening_comments(TyDisplay d, char const* start) {
 
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
     bool first = true;
+    TypeNode const* previous = nullptr;
     for_each (i, vec_type, list) {
         if (i->placeholder) continue;
-        if (!first) out(d, csview_from(separator));
+        if (!first) {
+            // (Declaration emit: the comments on the lines between the previous element and the delimiter, unless it
+            // ends the list's node: emitListItems' emitLeadingComments(previousSibling.End()))
+            if (d.transformer_node && d.multiline && d.comments && !d.comments->off && previous && !previous->synthesized) {
+                char const* end = decl_map_type_end(previous, d.comments->file);
+                if (end && end != d.comments_container_end) {
+                    isize_t before = cstr_size(d.target);
+                    decl_comments_leading_at(d.comments, d.target, d.indent, end);
+                    if (cstr_size(d.target) != before && decl_map_last_char(cstr_sv(d.target)) == '\n') out_indent(d);
+                }
+            }
+            out(d, csview_from(separator));
+        }
         first = false;
+        previous = i;
         if (!i->synthesized && i->pos) out_intervening_comments(d, decl_map_type_start(i, d.comments ? d.comments->file : nullptr));
         // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
         // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the

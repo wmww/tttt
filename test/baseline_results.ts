@@ -279,6 +279,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnionMemberComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
