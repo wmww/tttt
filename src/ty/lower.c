@@ -3954,13 +3954,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_SYMBOL: return ty_intrinsic(me, TY_ES_SYMBOL);
         case TYPE_UNIQUE_SYMBOL: return ty_unique_symbol(me, &node->unique_symbol);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
-        case TYPE_VALUE: {
-            // HACK (perf only): the fresh twin is made here too, which nothing needs, but without it (and with the memo
-            // in lower()) the tsc corpus costs 1% more instructions, more union_with_origin work: unexplained
-            Ty const* ret = ty_literal(me, &node->value);
-            ty_fresh_literal(me, ret);
-            return ret;
-        }
+        case TYPE_VALUE: return ty_literal(me, &node->value);
         case TYPE_IDENTIFIER: {
             if (alias || ctx.in_alias) {
                 Ty const* deferred = deferred_interface_reference(me, node, ctx, alias, alias_args);
