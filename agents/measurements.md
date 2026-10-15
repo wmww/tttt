@@ -9,6 +9,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 67 stage 2 item 1, binder scopes (2026-10-15, todo entry 3)
+**vscode's program at K1**: resident after names 2281 -> **2255 MB** = malloc heap 1736 (the AST: memtrack, 38%
+zero words; top: c_safe_memcpy 251, property_dot_new 201, source text 174, parse_append_statement_sequence 147,
+vec_expr 128, object literal items 115) + binder arena ~480 (arenasites, pops subtracted now: Symbol+SymbolAlias 162,
+flow nodes ~110, SymbolDecl 60, symbol tables 57, Scope 67 -> ~51, ScopeRare 17) + libs. Scopes kept 747k -> 533k of
+1.43M made. Peaks (`/usr/bin/time`): vscode K1 2642 -> 2610 MB, T4 2874 (2858 in stage 1's table: recycling
+peaks wobble), webpack K1 545 / T4 640 (names 309). Suite 13611 / 13677, 0 lost; every oracle as in stage 4's entry
+below but dts 943 / 1233 projects (74464 files); threadcheck identical; output byte-identical under
+`-DTTTT_POISON_SCOPES` (suite, vscode, type-fest, effect, webpack). **Instructions** flat: tsc 4.725, type-fest
+23.393, valibot 3.510, react 1.510, nest 1.190, webpack 10.053, zod 5.428, xstate 2.768, drizzle 6.893, vue 6.641,
+effect 10.620, vscode 96.584, excalidraw 7.922, tanstack-router 5.418 G.
+
 ## Plan 64 stage 4, the CLI emits declarations (2026-10-15, todo entry 2)
 Suite **13611 / 13677 with the dts component counted** (dts 1358 / 1409; 13660 / 13672 before, without it), 11 gained,
 0 lost. Corpora 0 / 0 but vue 0 / 2, DT sweep 8594 / 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep

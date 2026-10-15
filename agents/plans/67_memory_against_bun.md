@@ -96,11 +96,20 @@ suite 0 lost (the harness doesn't recycle), valgrind clean on two DT packages an
 `recycle` oracle at 4 / 3363 (bugs/sourcesweep_checker.md "History dependences recycling exposes").
 
 ## Stage 2: the program's memory (one or two sessions)
-Re-measure first (memtrack after names, arenasites, vscode and webpack): stage 1 makes the program ~90% of vscode's
-peak, so the ranking is by MB of the program now.
-1. **Binder scopes**: count scopes by kind and by whether they ever get locals or children that need them; drop the
-   ones tsgo doesn't have (tsc's container/block-scoped-container rules: `ContainerFlags`), or make them walk-only
-   (popped off the binder arena, hacks.md has the rules). Target ~-100 MB on vscode.
+**The re-measurement (2026-10-15, todo entry 3)**: vscode K1 resident after names **2281 MB = the malloc heap 1736
+(the AST, memtrack; 38% zero words) + the binder arena ~505 + libs/text**. The "Scope 123 MB" above was
+`scripts/arenasites.sh` counting allocations `scope_release()` popped again (fixed: pops are taken off their site
+now). True binder arena by site on vscode: Symbol 162 MB (with SymbolAlias), flow nodes ~110, SymbolDecl 60, symbol
+tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
+1. **Binder scopes (done 2026-10-15, todo entry 3)**: scopes and ScopeRares in an arena of their own
+   (`binder_scope_arena()`), so flow nodes and symbols made during a walk no longer keep walk-only scopes alive;
+   `scope_release()` also requires no locals and no symbol/declaration made meanwhile; new release sites (class
+   field, `this`, strict and decorator scopes, `self` scopes). vscode: 747k -> 533k scopes kept, resident after names
+   2281 -> **2255 MB**, K1 peak 2642 -> **2610**. What's left is 324k function scopes (87k declare nothing, but
+   `FunctionImpl.body.scope` is what the types printer names from) and blocks/loops that declare something. A Scope
+   diet (96 -> 64 bytes: `flow` is walk-only, `binder`/`file` derivable) would be ~-17 MB more: not worth its churn.
+   **The binder is not the lever**: every binder diet together (Symbol bit fields, decl_cap, scopes) is < 60 MB of
+   vscode's 2.25 GB program. The AST is 1.74 GB of it.
 2. **Plan 63 stage 1b** items by MB per effort (its list; Expr 72 -> 64 is the big one and a session alone).
 3. Write down vscode's breakdown after it (measurements.md "Memory breakdown"), with bun's numbers next to it, so the
    insights session can decide on the compact AST with data.

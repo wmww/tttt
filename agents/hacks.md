@@ -172,12 +172,14 @@ src` finds the code-side markers; every significant one has an entry here.
   back over whitespace only; a comment between `:` and the missing value puts tsc's at the comment's end.
 
 ## Binder and name resolution (`scope.c`)
-- `scope_release()` (permanent: plan 43's memory): walk-only scopes (parameter list, return type, block statement,
-  type literal, interface `this`, computed name/decorator) are popped off the binder arena when still its latest
-  allocation and no pending report (`PendingNotFound`, `PendingExportMerge`) took them. The proof is "everything that
-  can point at a scope is allocated after it in the same arena": a new place that stores a `Scope*` outside the arena
-  (AST, malloc'd lists) must block the release like the pending reports do. Check by poisoning (memset 0xA5) instead
-  of popping.
+- `scope_release()` (permanent: plans 43 and 67's memory): walk-only scopes (parameter list, return type, block
+  statement, type literal, interface and class `this`, class field, class strict, `self`, computed name/decorator)
+  are popped off the scope arena (`binder_scope_arena()`, scopes and ScopeRares only) when still its latest
+  allocation (no child scope kept), they declare nothing, no symbol or SymbolDecl was made meanwhile
+  (`ScopePendingMark.made`: SymbolDecl.block, SymbolAlias.scope) and no pending report (`PendingNotFound`,
+  `PendingExportMerge`, deferred events) took them. A new place that stores a `Scope*` (AST, malloc'd lists, binder
+  arena) must block the release like the pending reports do, or clear its pointer (`Block.scope`). Check with a
+  `-DTTTT_POISON_SCOPES` build: released scopes stay 0xA5 (suite and corpora output must be byte-identical).
 - Scope chains are shorter than the AST's nesting: `if` branches that are blocks, loops, `switch`, `try`, `return`...
   get no block scope of their own (`branch_names_scope()`); a `declare` declaration in an ambient context gets no
   `scope_new_self()` scope unless unused checks are on.

@@ -24,7 +24,9 @@ off the table** (vision.md): no session works on them unless real code shows the
 2. Done (plan 64 stage 4): the CLI writes `.d.ts` where the options only emit declarations (`-b` too), dts counts in
    the headline (suite 13611 / 13677, dts 1358 / 1409), `clidiff.py --emit` 164 + 145 (maps only) / 396, dtsdiff
    through the CLI 942 / 1233. Every oracle script passes `--noEmit` / `--no-write` now (CLAUDE.md).
-3. **Plan 67 stage 2**, first session: re-measure the program, binder scopes (~-100 MB on vscode).
+3. Done (plan 67 stage 2 item 1): scopes in their own arena, more walk-only scopes released: vscode after names
+   2281 -> 2255 MB (the ~-100 MB estimate was arenasites counting popped scopes, fixed). The binder is < 25% of the
+   program and every binder diet together < 60 MB: the AST (1.74 GB) is the lever (plan 67 stage 2).
 4. **Plan 67 stage 2**, second session: plan 63 stage 1b items by MB per effort; write vscode's breakdown next to
    bun's so the next insights can decide on the compact AST.
 5. **Plan 64 stage 5**: declarationMap; end by deciding stage 6 (JS sources) with the count the plan asks for.
