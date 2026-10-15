@@ -1706,6 +1706,8 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
     // (Indexing never is never, the silent one included: tsc's getPropertyTypeForIndexType returns an any or never
     // object type as it is, so `(...args: A)` with an outer A silenced infers nothing)
     if (rest->flags & TYF_NEVER) return rest;
+    // (Indexing an any is that any, an unresolved name's included: `(...p: Missing)` gives each parameter `Missing`)
+    if (rest->flags & TYF_ANY) return rest;
     return ty_intrinsic(me, TY_ANY);
 }
 

@@ -1,0 +1,57 @@
+//// [test/cases/ttttUnresolvedRestPosition.ts] ////
+
+=== ttttUnresolvedRestPosition.ts ===
+// A rest parameter of an unresolved type gives each position that type (tsc's getIndexedAccessType of an any is the
+// any itself): `execute(client)` contextually typed by `(...p: Missing["x"])` is `client: Missing`
+import type { ClientEvents } from 'nonexistent-module';
+>ClientEvents : Symbol(ClientEvents, Decl(ttttUnresolvedRestPosition.ts, 2, 13))
+
+type Ev = { execute(...parameters: ClientEvents["x"]): void };
+>Ev : Symbol(Ev, Decl(ttttUnresolvedRestPosition.ts, 2, 55))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 3, 11))
+>parameters : Symbol(parameters, Decl(ttttUnresolvedRestPosition.ts, 3, 20))
+>ClientEvents : Symbol(ClientEvents, Decl(ttttUnresolvedRestPosition.ts, 2, 13))
+
+export const a = { execute(client) {} } satisfies Ev;
+>a : Symbol(a, Decl(ttttUnresolvedRestPosition.ts, 4, 12))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 4, 18))
+>client : Symbol(client, Decl(ttttUnresolvedRestPosition.ts, 4, 27))
+>Ev : Symbol(Ev, Decl(ttttUnresolvedRestPosition.ts, 2, 55))
+
+export const b: Ev = { execute(client) {} };
+>b : Symbol(b, Decl(ttttUnresolvedRestPosition.ts, 5, 12))
+>Ev : Symbol(Ev, Decl(ttttUnresolvedRestPosition.ts, 2, 55))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 5, 22))
+>client : Symbol(client, Decl(ttttUnresolvedRestPosition.ts, 5, 31))
+
+export const c = { execute(client, d) {} } satisfies Ev;
+>c : Symbol(c, Decl(ttttUnresolvedRestPosition.ts, 6, 12))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 6, 18))
+>client : Symbol(client, Decl(ttttUnresolvedRestPosition.ts, 6, 27))
+>d : Symbol(d, Decl(ttttUnresolvedRestPosition.ts, 6, 34))
+>Ev : Symbol(Ev, Decl(ttttUnresolvedRestPosition.ts, 2, 55))
+
+type Ev2 = { execute(p: ClientEvents["x"]): void };
+>Ev2 : Symbol(Ev2, Decl(ttttUnresolvedRestPosition.ts, 6, 56))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 7, 12))
+>p : Symbol(p, Decl(ttttUnresolvedRestPosition.ts, 7, 21))
+>ClientEvents : Symbol(ClientEvents, Decl(ttttUnresolvedRestPosition.ts, 2, 13))
+
+export const e = { execute(client) {} } satisfies Ev2;
+>e : Symbol(e, Decl(ttttUnresolvedRestPosition.ts, 8, 12))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 8, 18))
+>client : Symbol(client, Decl(ttttUnresolvedRestPosition.ts, 8, 27))
+>Ev2 : Symbol(Ev2, Decl(ttttUnresolvedRestPosition.ts, 6, 56))
+
+type Ev3 = { execute(...p: ClientEvents): void };
+>Ev3 : Symbol(Ev3, Decl(ttttUnresolvedRestPosition.ts, 8, 54))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 9, 12))
+>p : Symbol(p, Decl(ttttUnresolvedRestPosition.ts, 9, 21))
+>ClientEvents : Symbol(ClientEvents, Decl(ttttUnresolvedRestPosition.ts, 2, 13))
+
+export const g = { execute(client) {} } satisfies Ev3;
+>g : Symbol(g, Decl(ttttUnresolvedRestPosition.ts, 10, 12))
+>execute : Symbol(execute, Decl(ttttUnresolvedRestPosition.ts, 10, 18))
+>client : Symbol(client, Decl(ttttUnresolvedRestPosition.ts, 10, 27))
+>Ev3 : Symbol(Ev3, Decl(ttttUnresolvedRestPosition.ts, 8, 54))
+

@@ -1,0 +1,58 @@
+//// [test/cases/ttttUnresolvedRestPosition.ts] ////
+
+=== ttttUnresolvedRestPosition.ts ===
+// A rest parameter of an unresolved type gives each position that type (tsc's getIndexedAccessType of an any is the
+// any itself): `execute(client)` contextually typed by `(...p: Missing["x"])` is `client: Missing`
+import type { ClientEvents } from 'nonexistent-module';
+>ClientEvents : any
+
+type Ev = { execute(...parameters: ClientEvents["x"]): void };
+>Ev : Ev
+>execute : (...parameters: ClientEvents["x"]) => void
+>parameters : ClientEvents
+
+export const a = { execute(client) {} } satisfies Ev;
+>a : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } satisfies Ev : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } : { execute(client: ClientEvents): void; }
+>execute : (client: ClientEvents) => void
+>client : ClientEvents
+
+export const b: Ev = { execute(client) {} };
+>b : Ev
+>{ execute(client) {} } : { execute(client: ClientEvents): void; }
+>execute : (client: ClientEvents) => void
+>client : ClientEvents
+
+export const c = { execute(client, d) {} } satisfies Ev;
+>c : { execute(client: ClientEvents, d: ClientEvents): void; }
+>{ execute(client, d) {} } satisfies Ev : { execute(client: ClientEvents, d: ClientEvents): void; }
+>{ execute(client, d) {} } : { execute(client: ClientEvents, d: ClientEvents): void; }
+>execute : (client: ClientEvents, d: ClientEvents) => void
+>client : ClientEvents
+>d : ClientEvents
+
+type Ev2 = { execute(p: ClientEvents["x"]): void };
+>Ev2 : Ev2
+>execute : (p: ClientEvents["x"]) => void
+>p : ClientEvents
+
+export const e = { execute(client) {} } satisfies Ev2;
+>e : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } satisfies Ev2 : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } : { execute(client: ClientEvents): void; }
+>execute : (client: ClientEvents) => void
+>client : ClientEvents
+
+type Ev3 = { execute(...p: ClientEvents): void };
+>Ev3 : Ev3
+>execute : (...p: ClientEvents) => void
+>p : ClientEvents
+
+export const g = { execute(client) {} } satisfies Ev3;
+>g : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } satisfies Ev3 : { execute(client: ClientEvents): void; }
+>{ execute(client) {} } : { execute(client: ClientEvents): void; }
+>execute : (client: ClientEvents) => void
+>client : ClientEvents
+

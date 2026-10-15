@@ -558,6 +558,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnresolvedRestPosition': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttUnresolvedTypeOrder': {
         errors: true,
         symbols: true,
