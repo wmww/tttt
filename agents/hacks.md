@@ -317,13 +317,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `has_inferable_index`: every anonymous object type has an inferable index except `OBJECT_NO_INFERABLE_INDEX` and the
   global empty object; tsc's isObjectTypeWithInferableIndex wants a symbol, so other symbolless synthetic types
   (spreads? reverse mapped?) may wrongly relate to index signatures.
-- Artifact models (each fitted to one project/probe; removal candidates in plan 71's audit): `canonical_signature()`
-  skips erasing (vue `toHandlerKey` TS2322), tuple number-index relation only under `Checker.base_constructors_in_flight`
+- Artifact models (each fitted to one real project or probe, kept because real code needs it until the underlying
+  rule is found): `canonical_signature()` skips erasing (vue `toHandlerKey` TS2322), tuple number-index relation only under `Checker.base_constructors_in_flight`
   (effect TS2506), `ty_resolving_cycle_across_calls()` (tsc's second resolution round, RESOLVING_BASES), the mapped-type
   rule in `relation_line_said()` (vitest TS2344), `intersection_props_related`'s TS2741 member choice (a valibot probe).
 
 ## Type core (`src/ty/`)
-- Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; artifact, see below).
+- Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; a deliberate artifact
+  model: webpack and zod need it).
   Approximations: probes run only when the reference's arguments mention a type whose members are in flight or whose
   bases mention itself at depth >= 2 (`mentions_declared()`, perf: valibot's depth-1 `BaseIssue<T>` is skipped); the
   guard is "the resolving stack is unchanged since the re-entered members started", with `RESOLVING_MAPPED_CONSTRAINT`
