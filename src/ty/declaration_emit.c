@@ -2950,8 +2950,16 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             continue;
         }
         if (written++) w_lit(me, ", ");
+        decl_comments_intervening(&my comments, my out, my indent, binding->content_span.buf);
+        w_leading(me, binding->content_span.buf);
+        if (cstr_size(my out)) w_indent(me); // (The list is written apart: empty, it is in the middle of a line)
         w(me, span_sv(binding->content_span));
         w_variable_type(me, i, is_const);
+        // (The declaration ends after its initializer, else its type)
+        Expr const* init = initialized_binding_value(i);
+        Span end = init->tag != EXPR_IMPLICIT_ANY ? expr_outer_span(init) :
+            binding->has_explicit_type ? binding_explicit_type_span(binding) : binding->content_span;
+        if (span_valid(end)) decl_comments_trailing(&my comments, my out, span_end_ptr(end));
     }
     my out = outer;
     if (written) {
@@ -3509,12 +3517,80 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
 }
 
 // ` from "m" with { ... }`: the specifier and attributes as written
+// (The printer's ImportAttributes list, PreserveLines: the first attribute on the brace's line, the others and the
+// closing brace on a line of their own where they were, an attribute as `name: value`)
 static void w_specifier(Walk* me, PortStatement const* port) {
     w(me, span_sv(port->target_path_span));
-    if (port->attributes) {
-        w_lit(me, " ");
-        w(me, span_sv(port->attributes->span));
+    ImportAttributes const* attributes = port->attributes;
+    if (!attributes) return;
+    w_lit(me, " ");
+    if (!vec_import_attribute_size(&attributes->elements)) {
+        w(me, span_sv(attributes->span));
+        return;
     }
+    w(me, span_sv(attributes->keyword));
+    w_lit(me, " { ");
+    char const* previous_end = nullptr;
+    for_each (i, vec_import_attribute, &attributes->elements) {
+        char const* start = i->name.buf;
+        if (previous_end) {
+            w_lit(me, ",");
+            if (memchr(previous_end, '\n', (size_t)(start - previous_end))) {
+                w_lit(me, "\n");
+                my indent++;
+                w_indent(me);
+                my indent--;
+            } else {
+                w_lit(me, " ");
+            }
+        }
+        w(me, span_sv(i->name));
+        w_lit(me, ": ");
+        w(me, span_sv(expr_outer_span(&i->value)));
+        previous_end = span_end_ptr(expr_outer_span(&i->value));
+    }
+    char const* close = span_end_ptr(attributes->span) - 1;
+    if (memchr(previous_end, '\n', (size_t)(close - previous_end))) {
+        w_lit(me, "\n");
+        w_indent(me);
+        w_lit(me, "}");
+    } else {
+        w_lit(me, " }");
+    }
+}
+
+// `{ a, type b as c }`: an import or export declaration's specifiers (`kept` the ones written, null for all), with their
+// comments, an export's trailing comma as written (the printer's NamedImportsOrExportsElements)
+static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, bool trailing_comma) {
+    u32 written = 0;
+    PortItem const* last = nullptr;
+    for_each (i, vec_port_item, &port->items) {
+        if (kept && !kept[i_index]) continue;
+        w(me, written++ ? c_sv(", ") : c_sv("{ "));
+        char const* start = span_valid(i->full_span) ? i->full_span.buf : nullptr;
+        if (start) {
+            decl_comments_intervening(&my comments, my out, my indent, start);
+            w_leading(me, start);
+            w_indent(me);
+        }
+        if (i->type_modifier) w_lit(me, "type ");
+        w(me, span_sv(i->source_name));
+        if (!span_eq(i->source_name, i->decl_name) && span_valid(i->decl_name)) {
+            w_lit(me, " as ");
+            w(me, span_sv(i->decl_name));
+        }
+        if (start) decl_comments_trailing(&my comments, my out, span_end_ptr(i->full_span));
+        last = i;
+    }
+    if (!written) {
+        w_lit(me, "{}");
+        return;
+    }
+    if (trailing_comma && last && span_valid(last->full_span)) {
+        char const* after = decl_comments_end(&my comments, span_end_ptr(last->full_span), ",");
+        if (after != span_end_ptr(last->full_span) && after[-1] == ',') w_lit(me, ",");
+    }
+    w_lit(me, " }");
 }
 
 // An import or export declaration (transformImportDeclaration: an import keeps the names emitted declarations use)
@@ -3552,17 +3628,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             w_lit(me, "* as ");
             w(me, span_sv(port->main.decl_name));
         } else {
-            w(me, vec_port_item_size(&port->items) ? c_sv("{ ") : c_sv("{"));
-            for_each (i, vec_port_item, &port->items) {
-                if (i_index) w_lit(me, ", ");
-                if (i->type_modifier) w_lit(me, "type ");
-                w(me, span_sv(i->source_name));
-                if (!span_eq(i->source_name, i->decl_name) && span_valid(i->decl_name)) {
-                    w_lit(me, " as ");
-                    w(me, span_sv(i->decl_name));
-                }
-            }
-            w(me, vec_port_item_size(&port->items) ? c_sv(" }") : c_sv("}"));
+            w_port_items(me, port, nullptr, true);
         }
         if (specifier.size) {
             w_lit(me, " from ");
@@ -3631,19 +3697,10 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_lit(me, "* as ");
         w(me, span_sv(port->main.decl_name));
     } else if (named) {
-        w_lit(me, "{ ");
-        u32 written = 0;
-        for_each (i, vec_port_item, &port->items) {
-            if (!KEPT(i->symbol)) continue;
-            if (written++) w_lit(me, ", ");
-            if (i->type_modifier) w_lit(me, "type ");
-            w(me, span_sv(i->source_name));
-            if (!span_eq(i->source_name, i->decl_name)) {
-                w_lit(me, " as ");
-                w(me, span_sv(i->decl_name));
-            }
-        }
-        w_lit(me, " }");
+        bool* kept = malloc(sizeof(bool) * (size_t)vec_port_item_size(&port->items));
+        for_each (i, vec_port_item, &port->items) kept[i_index] = KEPT(i->symbol);
+        w_port_items(me, port, kept, false);
+        free(kept);
     }
     w_lit(me, " from ");
     w_specifier(me, port);

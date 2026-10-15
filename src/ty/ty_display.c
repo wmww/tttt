@@ -1679,6 +1679,15 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         }
         return;
     }
+    // (Declaration emit: what the name refers to here is tracked, painting the import it may be: tsc's
+    // trackExistingEntityName)
+    Symbol const* first = qualified ? (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
+        *vec_symbol_cptr_at(identifier_type_namespace_symbols(identifier), 0) : nullptr) : symbol;
+    if (d.tracker && first && !(first->flags & SYMBOL_TYPE_PARAMETER) && !first->is_parameter && d.enclosing) {
+        Symbol const* found = scope_resolve(d.enclosing, span_sv(qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) :
+            identifier->name), qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
+        if (found) d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
+    }
     for_each (i, vec_span, identifier_type_namespaces(identifier)) {
         out(d, span_sv(*i));
         out_lit(d, ".");
@@ -1743,15 +1752,24 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         display_node_fallback(me, d, node);
         return;
     }
+    // (Declaration emit: tracked, see display_node_identifier())
+    Symbol const* symbol = leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword ? leftmost->identifier.symbol : nullptr;
+    if (d.tracker && symbol && !symbol->is_parameter && !symbol->is_local && d.enclosing) {
+        Symbol const* found = scope_resolve(d.enclosing, span_sv(leftmost->inner_span), SYMBOL_VALUE);
+        if (found) d.tracker->track_symbol(d.tracker, found, SYMBOL_VALUE);
+    }
     out_lit(d, "typeof ");
     display_entity_expr(me, d, node->typeof_->expr);
 }
+
+static void param_comments_begin_at(TyDisplay d, Span span);
 
 static void display_node_type_params(Checker* me, TyDisplay d, Generic const* generic) {
     if (generic_empty(generic)) return;
     out_lit(d, "<");
     for_each (i, vec_generic_item, &generic->items) {
         if (i_index) out_lit(d, ", ");
+        if (!span_valid(i->jsdoc_tag)) param_comments_begin_at(d, span_valid(i->full_span) ? i->full_span : i->name);
         if (i->is_const) out_lit(d, "const ");
         if (i->is_in) out_lit(d, "in ");
         if (i->is_out) out_lit(d, "out ");
@@ -1765,6 +1783,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
             out_lit(d, " = ");
             display_node(me, d, i->fallback);
         }
+        if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->full_span));
     }
     out_lit(d, ">");
 }
