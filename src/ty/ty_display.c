@@ -2630,6 +2630,8 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                 }
                 TyDisplay outer = d;
                 d = element_d;
+                // (Its leading comments are written above: an element starting there leaves them)
+                if (lines && span_valid(i->span)) d.comments_container_start = i->span.buf;
                 // (A named member, a rest type `...T` and an optional type `T?` are nodes: from the element's start to its
                 // end)
                 bool element_node = span_valid(i->maybe_name) || i->rest || i->optional;

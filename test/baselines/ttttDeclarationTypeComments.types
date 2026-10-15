@@ -24,7 +24,7 @@ export type L = 0 /** Facebook */ | 1 /** Google */ | 2;
 >L : L
 
 export type S = A | /* B | */ C | D;
->S : S
+>S : import("./ttttDeclarationTypeComments").S
 
 export type W = /* daily */ "x" | /* general */ "y";
 >W : W
@@ -61,10 +61,25 @@ export interface P {
 >id : ((radix?: number) => string) | null
 }
 export type R = readonly (A | /* pending */ {
->R : R
+>R : import("./ttttDeclarationTypeComments").R
 
     x: 1;
 >x : 1
 
 })[];
+type R = 1; type S = 2;
+>R : import("./ttttDeclarationTypeComments").R
+>S : import("./ttttDeclarationTypeComments").S
+
+export type GlobalState = [
+>GlobalState : GlobalState
+
+  /** Event revalidators */
+  R,
+  /** Mutation */
+  S /** after */,
+  /** named */
+  n: R,
+  ...rest: S[]
+];
 

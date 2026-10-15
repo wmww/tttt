@@ -26,6 +26,16 @@ export interface P {
 export type R = readonly (A | /* pending */ {
     x: 1;
 })[];
+type R = 1; type S = 2;
+export type GlobalState = [
+  /** Event revalidators */
+  R,
+  /** Mutation */
+  S /** after */,
+  /** named */
+  n: R,
+  ...rest: S[]
+];
 
 
 //// [ttttDeclarationTypeComments.js]
@@ -61,4 +71,15 @@ export interface P {
 export type R = readonly (A | /* pending */ {
     x: 1;
 })[];
+type R = 1;
+type S = 2;
+export type GlobalState = [
+    /** Event revalidators */
+    R,
+    /** Mutation */
+    S /** after */,
+    /** named */
+    n: R,
+    ...rest: S[]
+];
 export {};

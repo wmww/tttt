@@ -86,4 +86,27 @@ export type R = readonly (A | /* pending */ {
 >x : Symbol(x, Decl(ttttDeclarationTypeComments.ts, 22, 45))
 
 })[];
+type R = 1; type S = 2;
+>R : Symbol(R, Decl(ttttDeclarationTypeComments.ts, 21, 1), Decl(ttttDeclarationTypeComments.ts, 24, 5))
+>S : Symbol(S, Decl(ttttDeclarationTypeComments.ts, 9, 56), Decl(ttttDeclarationTypeComments.ts, 25, 11))
+
+export type GlobalState = [
+>GlobalState : Symbol(GlobalState, Decl(ttttDeclarationTypeComments.ts, 25, 23))
+
+  /** Event revalidators */
+  R,
+>R : Symbol(R, Decl(ttttDeclarationTypeComments.ts, 21, 1), Decl(ttttDeclarationTypeComments.ts, 24, 5))
+
+  /** Mutation */
+  S /** after */,
+>S : Symbol(S, Decl(ttttDeclarationTypeComments.ts, 9, 56), Decl(ttttDeclarationTypeComments.ts, 25, 11))
+
+  /** named */
+  n: R,
+>R : Symbol(R, Decl(ttttDeclarationTypeComments.ts, 21, 1), Decl(ttttDeclarationTypeComments.ts, 24, 5))
+
+  ...rest: S[]
+>S : Symbol(S, Decl(ttttDeclarationTypeComments.ts, 9, 56), Decl(ttttDeclarationTypeComments.ts, 25, 11))
+
+];
 
