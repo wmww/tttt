@@ -2583,7 +2583,22 @@ static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file) {
     return end - start >= (isize_t)n && !memcmp(start, keyword, n);
 }
 
+static void display_node_mapped_inner(Checker* me, TyDisplay d, TypeNode const* node);
 static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node) {
+    // (tsgo's emitTypeNode: in an `extends` clause, a conditional type has to be parenthesized, the parentheses outside
+    // the node's mappings; they end the clause's context)
+    bool extends_parens = d.in_extends && !node->parenthesized && node->tag == TYPE_TERNARY;
+    if (!extends_parens) {
+        display_node_mapped_inner(me, d, node);
+        return;
+    }
+    d.in_extends = false;
+    out(reused_if(d, false), c_sv("("));
+    display_node_mapped_inner(me, d, node);
+    out(reused_if(d, false), c_sv(")"));
+}
+
+static void display_node_mapped_inner(Checker* me, TyDisplay d, TypeNode const* node) {
     if (D_MAP(d) && !node_in_mapped_file(node, D_MAP(d))) d.no_map = true;
     if (D_MAP(d)) {
         // (A node printed as its type isn't mapped, nor is one that has no position here)
@@ -2639,15 +2654,13 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         return;
     }
     d.reused = !node->synthesized;
-    // (tsgo's emitTypeNode: in an `extends` clause, a conditional type has to be parenthesized; parentheses end the
-    // clause's context, and so do the parts emitted "outside extends")
-    bool extends_parens = d.in_extends && !node->parenthesized && node->tag == TYPE_TERNARY;
-    if (node->parenthesized || extends_parens) d.in_extends = false;
+    // (Parentheses end an `extends` clause's context, and so do the parts emitted "outside extends": see
+    // display_node_mapped())
+    if (node->parenthesized) d.in_extends = false;
     if (!(node->tag == TYPE_CALLABLE || node->tag == TYPE_ARRAY || node->tag == TYPE_INDEXED || node->tag == TYPE_KEYOF ||
             node->tag == TYPE_TERNARY || node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION || node->tag == TYPE_JSDOC)) {
         d.in_extends = false;
     }
-    if (extends_parens) out(reused_if(d, false), c_sv("("));
     // (Only a fallback of this very node, see display_node_identifier() and display_node_typeof(), is an element)
     bool array_element = d.array_element_node && !node->parenthesized;
     bool constituent = d.constituent_node && !node->parenthesized;
@@ -2937,7 +2950,6 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         map_at(d, decl_map_type_inner_end(node, D_MAP(d)));
         out_lit(d, ")");
     }
-    if (extends_parens) out(reused_if(d, false), c_sv(")"));
 }
 
 // Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property
