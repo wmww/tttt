@@ -1,0 +1,40 @@
+//// [test/cases/ttttRecursiveUnionInferenceDepth.ts] ////
+
+=== ttttRecursiveUnionInferenceDepth.ts ===
+// A union target met again deeper in an inference walk (`RecBox<T>` inside `Box<RecBox<T>>`) still finds its object
+// member in progress, a circularity, and infers the source at that level to the naked `T` too: candidates from three
+// levels, the common supertype the last, `{ value: { value: typeof b4 } }` (recursiveConditionalTypes)
+interface Box<T> { value: T };
+>Box : Symbol(Box, Decl(ttttRecursiveUnionInferenceDepth.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 14))
+>value : Symbol(Box.value, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 18))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 14))
+
+type RecBox<T> = T | Box<RecBox<T>>;
+>RecBox : Symbol(RecBox, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 30))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 4, 12))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 4, 12))
+>Box : Symbol(Box, Decl(ttttRecursiveUnionInferenceDepth.ts, 0, 0))
+>RecBox : Symbol(RecBox, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 30))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 4, 12))
+
+declare function unbox<T>(box: RecBox<T>): T
+>unbox : Symbol(unbox, Decl(ttttRecursiveUnionInferenceDepth.ts, 4, 36))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 5, 23))
+>box : Symbol(box, Decl(ttttRecursiveUnionInferenceDepth.ts, 5, 26))
+>RecBox : Symbol(RecBox, Decl(ttttRecursiveUnionInferenceDepth.ts, 3, 30))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 5, 23))
+>T : Symbol(T, Decl(ttttRecursiveUnionInferenceDepth.ts, 5, 23))
+
+declare let b4: { value: { value: { value: typeof b4 }}};
+>b4 : Symbol(b4, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 11))
+>value : Symbol(value, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 17))
+>value : Symbol(value, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 26))
+>value : Symbol(value, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 35))
+>b4 : Symbol(b4, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 11))
+
+const r = unbox(b4);
+>r : Symbol(r, Decl(ttttRecursiveUnionInferenceDepth.ts, 7, 5))
+>unbox : Symbol(unbox, Decl(ttttRecursiveUnionInferenceDepth.ts, 4, 36))
+>b4 : Symbol(b4, Decl(ttttRecursiveUnionInferenceDepth.ts, 6, 11))
+

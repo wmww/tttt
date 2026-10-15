@@ -355,6 +355,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRecursiveUnionInferenceDepth': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRenamedBodilessImplicitAny': {
         errors: true,
         symbols: true,

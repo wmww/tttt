@@ -150,6 +150,13 @@ passing tests).
   /tmp/b-tsgo overlay recipe: patch invokeOnce to print source/target/expandingFlags). (2) the getter `{ get value()
   { return this; } }` inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<...>`
   (the contextual `this` of a getter in a literal whose contextual type is the inferred union), tttt `{}`. Medium each.
+- circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
+- recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (an inference pair met again on the visiting
+  stack is let through once, ttttRecursiveUnionInferenceDepth). Left: the getter `{ get value() { return this; } }`
+  inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<{ readonly value: { readonly
+  value: any } }>` (getContextualThisParameterType: the widened non-nullable contextual type of the containing
+  literal, RecBox<T> instantiated by the inference context's mapper while the call is inferred), tttt `{}`; so the
+  call's result is `{}` too. Medium: what tttt's contextual `this` of an object literal getter sees during inference.
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`

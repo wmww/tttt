@@ -1727,9 +1727,14 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         return;
     }
     if (inf->depth == INFER_MAX_DEPTH) return;
-    // An object pair on the stack is in `visited` too, which stops it below
-    for (u32 i = 0; i < inf->depth && !(target->flags & TYF_OBJECT); i++) {
-        if (inf->visiting_sources[i] == source && inf->visiting_targets[i] == target) return;
+    // An object pair on the stack is in `visited` too, which stops it below. Another pair is let through once more (tsc
+    // has no such guard: its object pairs below stop it, invokeOnce): a union target met again, `b4`'s literal to
+    // `RecBox<T> = T | Box<RecBox<T>>`, then finds its object member in progress, a circularity, and infers the
+    // source to the naked T at that level too (recursiveConditionalTypes)
+    if (!(target->flags & TYF_OBJECT)) {
+        u32 seen = 0;
+        for (u32 i = 0; i < inf->depth; i++) seen += inf->visiting_sources[i] == source && inf->visiting_targets[i] == target;
+        if (seen > 1) return;
     }
     inf->visiting_sources[inf->depth] = source;
     inf->visiting_targets[inf->depth] = target;

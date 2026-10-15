@@ -1,0 +1,29 @@
+//// [test/cases/ttttRecursiveUnionInferenceDepth.ts] ////
+
+=== ttttRecursiveUnionInferenceDepth.ts ===
+// A union target met again deeper in an inference walk (`RecBox<T>` inside `Box<RecBox<T>>`) still finds its object
+// member in progress, a circularity, and infers the source at that level to the naked `T` too: candidates from three
+// levels, the common supertype the last, `{ value: { value: typeof b4 } }` (recursiveConditionalTypes)
+interface Box<T> { value: T };
+>value : T
+
+type RecBox<T> = T | Box<RecBox<T>>;
+>RecBox : RecBox<T>
+
+declare function unbox<T>(box: RecBox<T>): T
+>unbox : <T>(box: RecBox<T>) => T
+>box : RecBox<T>
+
+declare let b4: { value: { value: { value: typeof b4 }}};
+>b4 : { value: { value: { value: typeof b4; }; }; }
+>value : { value: { value: typeof b4; }; }
+>value : { value: typeof b4; }
+>value : { value: { value: { value: typeof b4; }; }; }
+>b4 : { value: { value: { value: typeof b4; }; }; }
+
+const r = unbox(b4);
+>r : { value: { value: typeof b4; }; }
+>unbox(b4) : { value: { value: typeof b4; }; }
+>unbox : <T>(box: RecBox<T>) => T
+>b4 : { value: { value: { value: typeof b4; }; }; }
+
