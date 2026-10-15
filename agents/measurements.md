@@ -9,6 +9,19 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Real-code fan-out (2026-10-15, todo entry 6)
+Four agents (A import specifiers / painting, B the declaration writer's reused-node text, C checker types in `.d.ts`,
+D source sweep diagnostics), ~60 picks, 0 lost at every merge. `scripts/oracles.py`: suite **13698 / 13735** (dts
+1440 / 1465; from 13625 / 13675, +60 own tests), corpora all 0/0 but vue 0/2 (argued plan-sized), DT **8595 / 8595**
+(from 8594), `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep **3352 / 3363** full (from 3344, 0 lost; sample
+817 / 822), perfsweep median 0.21, worst types ratio 1.63, **dtsdiff 1077 / 1233 projects, 95611 / 96726 files** (from
+932 / 94352; "type text" 197 -> ~45 projects, JS sources 77 of the 156 left), kdiff 1 / 3363, recycle 4 / 3363.
+Instructions (callgrind, `--noEmit`), flat against the session start: tsc 4.722, type-fest 23.451, valibot 3.465
+(-1.3%), react 1.513, nest 1.189, webpack 10.052, zod 5.426, xstate 2.770, drizzle 6.915, vue 6.636, effect 10.613,
+vscode 96.778 (+0.25%), excalidraw 7.916, tanstack-router 5.409 G. One mid-session +1.7% drizzle / +1.2% nest (the
+declaration-diagnostics pass searching every module per unresolvable import lookup, under --noEmit too) was fixed
+with tsgo's program-wide container index.
+
 ## Plan 64 stage 5, declaration maps (2026-10-15, todo entry 5)
 Suite **13625 / 13675** (dts **1372 / 1410**: the dts component compares the `.js.map` baselines' `.d.ts.map`
 sections, 13 tests gained, own test `ttttDeclarationMaps`), 0 lost. dtsdiff's manifests regenerated with the configs'

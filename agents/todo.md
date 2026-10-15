@@ -34,14 +34,16 @@ off the table** (vision.md): no session works on them unless real code shows the
    932 / 1233 projects with maps compared (942 without), clidiff `--emit` 309 / 396 (164); suite 13625 / 13675 (the
    dts component compares `.d.ts.map` sections: +13). Stage 6 (JS sources, 82 projects / 27 blocked by it alone):
    yes, after entry 6's type text.
-6. **Real code**: the full source sweep's 19 projects, dtsdiff's checker-type buckets ("type text": fresh vs regular
-   narrowed literals, mapped-type key order, `import()` specifiers), vue 0 / 2, DT's last one. Fan out if the buckets
-   are disjoint (vision.md "Fan-out merge discipline").
-7. **Plan 71**: the hacks.md audit (908 lines -> ~600; the member-symbol copies; one reporting relation run?).
+6. Done (fan-out, 4 agents, ~60 picks): dtsdiff 932 -> **1077 / 1233** projects (type text 197 -> ~45 projects;
+   JS sources are 77 of the 156 left), source sweep 3344 -> **3352 / 3363** (0 lost), DT **8595 / 8595**, suite
+   13625 / 13675 -> 13698 / 13735 (dts 1440 / 1465, +60 own tests), vue 0 / 2 argued plan-sized (bugs/sourcesweep_checker.md). Leftovers in
+   bugs/dts_emit.md and bugs/sourcesweep_checker.md.
+7. **Plan 71**: the hacks.md audit (963 lines -> ~600; the member-symbol copies; one reporting relation run?).
 8. **Plan 72**: planning core scaling (serial remainder after recycling, parallel declare/link: plan or a "no").
 9. **Perf session**: instructions after this window's features (recycling's warm-ups, emit's cost under `--noEmit`
    must be zero), perfsweep, scaleprobe on emit, bench.sh against tsgo and bun-1.4.3 (plan 67's table refreshed).
-10. **Triage.**
+10. **Triage.** Then create `claude-stop` in the repo root: the human asked (triage.md, 2026-10-15) to stop the
+    agent loop after the next triage session. Leave the insights entry below for whoever restarts the loop.
 11. **Insights.**
 
 After the insights entry (for the next window): what plan 72 decides, plan 64 stage 6 (chosen: JS sources), plan 58 +

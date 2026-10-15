@@ -1,7 +1,8 @@
 # Declaration emit: what still differs from tsgo (plan 64)
 
-State 2026-10-15 (after todo entry 7): suite dts 1345 / 1408; `scripts/dtsdiff.py` 922 / 1233 projects, ~74300 / 76294
-files byte-identical. `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
+State 2026-10-15 (after todo entry 6's fan-out): suite dts component in the headline; `scripts/dtsdiff.py` **1077 / 1233
+projects, 95611 / 96726 files** byte-identical (77 of the remaining projects / ~800 files are JS sources, stage 6).
+`scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 
 - **JavaScript sources** ("missing file", ~690 files): JS declaration emit is plan 64 stage 6 (not started). crawlee,
