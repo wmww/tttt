@@ -3829,16 +3829,27 @@ typedef struct {
     Prop const* props[];
 } ThisProps;
 
+static bool free_params_have(TyList params, Ty const* param) {
+    for (u32 i = 0; i < params.len; i++) if (params.data[i] == param) return true;
+    return false;
+}
+
 static ThisProps const* array_this_props(Checker* me, MembersBuilder const* builder, u32 first, Ty const* target) {
     void const* known = intern_get(&my links, (u64[]){ KEY_ARRAY_THIS_PROPS, (u64)(uintptr_t)target }, 2);
     if (known) return known;
     Ty const* this_param = target->declared.this_param;
-    Prop const* found[64];
+    Prop const* found[256];
     u32 count = 0;
     for (u32 i = first; i < builder->props_count && count < c_arraylen(found); i++) {
         Prop const* declared = builder->props[i]->target;
-        if (!declared || declared->thisless) continue;
-        if (ty_mentions_any(me, prop_type(me, declared), &this_param, 1)) found[count++] = declared;
+        if (!declared) continue;
+        Ty const* type = prop_type(me, declared);
+        // (Or may: a method of an interface declared more than once (Array, in every lib) whose anonymous type has
+        // `this` among its free type parameters, tsc's isTypeParameterPossiblyReferenced. Every tuple's `slice` is
+        // a type of its own then, `x.slice` of a union of two tuples a union of two)
+        bool possibly = type->kind == TY_ANONYMOUS && !type->anonymous.target && !type->anonymous.free_params_unknown &&
+            free_params_have(type->anonymous.free_params, this_param);
+        if (possibly || (!declared->thisless && ty_mentions_any(me, type, &this_param, 1))) found[count++] = declared;
     }
     ThisProps* ret = arena_alloc(&my arena, sizeof(ThisProps) + sizeof(Prop const*) * (count ? count : 1));
     ret->count = count;
