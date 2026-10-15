@@ -5641,13 +5641,14 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         }
                         TypeNode type = type_any;
                         bool typed_setter = false;
-                        Span setter_param = span_null;
+                        Span setter_param = span_null, setter_pattern = span_null;
                         if (is_getter) {
                             type = type_move(&item.method.func.ret);
                         } else if (vec_function_arg_size(&item.method.func.args)) {
                             FunctionArg* arg = &item.method.func.args.data[0];
                             typed_setter = arg->initializer.binding.has_explicit_type;
                             if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
+                            else setter_pattern = arg->initializer.binding.content_span;
                             type = binding_take_type(&arg->initializer.binding);
                         }
                         InterfaceMember* target = existing;
@@ -5657,6 +5658,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             vec_span_push(&pair->declarations, item.span);
                             interface_member_accessor(existing)->second_name = item.method.name_span;
                             if (!is_getter) existing->accessor->setter_param = setter_param;
+                            if (!is_getter && span_valid(setter_pattern)) existing->accessor->setter_pattern = setter_pattern;
                             // The setter's parameter type is what writes are checked against (tsc's getWriteTypeOfSymbol)
                             if (is_getter) {
                                 if (existing->setter_first && !existing->has_write_type) {
@@ -5688,6 +5690,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             );
                             member.setter_first = typed_setter;
                             if (span_valid(setter_param)) interface_member_accessor(&member)->setter_param = setter_param;
+                            if (span_valid(setter_pattern)) interface_member_accessor(&member)->setter_pattern = setter_pattern;
                             list_push(vec_interface_member, &members, member);
                             target = vec_interface_member_back_mut(&members);
                         }

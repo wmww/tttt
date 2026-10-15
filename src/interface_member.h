@@ -47,6 +47,7 @@ typedef struct InterfaceAccessor {
     // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
     Span second_name;
     Span setter_param;
+    Span setter_pattern; // A setter's parameter that is a binding pattern, as written (declaration emit reprints it)
     // For noImplicitAny (tsc's getTypeOfAccessors): the getter's and setter's names (null if none), the setter's
     // parameter name when it has no type annotation, and whether either accessor says the type (a getter's return
     // annotation or body, a setter's parameter annotation)

@@ -2045,7 +2045,8 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     out_lit(d, "(): ");
                 } else {
                     out_lit(d, "(");
-                    out(d, span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) : c_sv("value"));
+                    out(d, span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) :
+                        span_valid(accessor->setter_pattern) ? span_sv(accessor->setter_pattern) : c_sv("value"));
                     out_lit(d, ": ");
                 }
                 if (type->parsed) display_node(me, d, type);
@@ -2243,7 +2244,8 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             for_each (i, vec_tuple_element, &node->tuple.elements) {
                 if (lines) {
                     out(d, i_index ? c_sv(",\n") : c_sv("\n"));
-                    out_indent(element_d);
+                    if (d.comments && span_valid(i->span)) decl_comments_leading(d.comments, d.target, element_d.indent, i->span.buf);
+                    member_begin(element_d);
                 } else if (i_index) {
                     out_lit(d, ", ");
                 }
@@ -2337,6 +2339,17 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             break;
         case TYPE_JSDOC: display_node(me, d, &node->jsdoc->type); break;
         case TYPE_PREDICATE:
+            // (Declaration emit writes it as written)
+            if (d.transformer_node && d.multiline) {
+                TypePredicateNode const* predicate = node->predicate;
+                if (predicate->asserts) out_lit(d, "asserts ");
+                out(d, span_sv(predicate->name));
+                if (predicate->has_type) {
+                    out_lit(d, " is ");
+                    display_node(me, d, &predicate->type);
+                }
+                break;
+            }
             if (node->predicate->asserts) out_lit(d, "void");
             else out_lit(d, "boolean");
             break;
@@ -3793,6 +3806,18 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
     switch (pseudo->kind) {
         case PSEUDO_DIRECT:
             if (pseudo->predicate) {
+                // (Declaration emit reuses the predicate node: a setter's parameter typed by its getter's return)
+                TypePredicateNode const* node = pseudo->function ? pseudo->function->predicate : nullptr;
+                if (d.multiline && node) {
+                    TyDisplay reused = reused_if(d, true);
+                    if (node->asserts) out_lit(reused, "asserts ");
+                    out(reused, node->is_this ? c_sv("this") : span_sv(node->name));
+                    if (node->has_type) {
+                        out_lit(reused, " is ");
+                        display_node(me, d, &node->type);
+                    }
+                    return;
+                }
                 ty_display(me, d, ty_intrinsic(me, TY_BOOLEAN));
                 return;
             }

@@ -3159,6 +3159,17 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     cstr_drop(&declarations);
 }
 
+// The printer's next generated name (tsc's makeTempVariableName): `_a` to `_z` but `_i` and `_n` (kept for loops), then
+// `_0`, `_1`...
+static void generated_name(Walk* me, char* out, size_t size) {
+    u32 n;
+    do {
+        n = my generated_names++;
+    } while (n == 8 || n == 13);
+    if (n < 26) snprintf(out, size, "_%c", 'a' + n);
+    else snprintf(out, size, "_%u", n - 26);
+}
+
 // A reserved word (tsc's isNonContextualKeyword: what can't name a variable)
 static bool is_reserved_word(csview name) {
     static char const* const words[] = {
@@ -3209,12 +3220,33 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, cs
         statements[count++] = (ExpandoStatement){ .text = (t), .exported = (e), .declaration = (d) }; \
     } while (0)
     cstr* outer = my out;
+    // (In source order: the binder's is evaluation order, a for loop's body before its incrementor)
+    typedef struct { Symbol const* member; u32 decl; char const* at; } Assignment;
+    Assignment* assignments = nullptr;
+    u32 assignment_count = 0;
     for (u32 i = 0; i < host->exports->count; i++) {
         Symbol const* member = host->exports->entries[i].symbol;
         csview member_name;
         if (!expando_member_written(me, member, &member_name)) continue;
         for (u32 j = 0; j < member->decl_count; j++) {
             if (member->decls[j].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+            assignments = realloc(assignments, (assignment_count + 1) * sizeof(Assignment));
+            assignments[assignment_count++] = (Assignment){ member, j, member->decls[j].full.buf };
+        }
+    }
+    for (u32 i = 1; i < assignment_count; i++) {
+        for (u32 k = i; k > 0 && assignments[k - 1].at > assignments[k].at; k--) {
+            Assignment t = assignments[k];
+            assignments[k] = assignments[k - 1];
+            assignments[k - 1] = t;
+        }
+    }
+    for (u32 a = 0; a < assignment_count; a++) {
+        Symbol const* member = assignments[a].member;
+        csview member_name;
+        expando_member_written(me, member, &member_name);
+        {
+            u32 j = assignments[a].decl;
             Expr const* value = member->decls[j].node;
             if (value && value->tag == EXPR_IDENTIFIER) {
                 if (!has_export) {
@@ -3232,12 +3264,14 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, cs
                 continue;
             }
             // (A name that resolves here or a keyword can't be the variable's: a generated one, exported as the property)
-            bool renamed = is_reserved_word(member_name) ||
-                (my scope && scope_resolve(my scope, member_name, SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE));
+            Symbol const* resolved = my scope ? scope_resolve(my scope, member_name, SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE) : nullptr;
+            // (Not a keyword type: `any` has no symbol in tsc)
+            if (resolved && resolved->decl_count && resolved->decls[0].kind == SYMBOL_DECL_BUILTIN) resolved = nullptr;
+            // (`undefined` is a global symbol in tsc)
+            bool renamed = is_reserved_word(member_name) || resolved || csview_equals(member_name, "undefined");
             char generated[16] = "";
             if (renamed) {
-                u32 n = my generated_names++;
-                snprintf(generated, sizeof generated, n < 26 ? "_%c" : "_%c%u", 'a' + n % 26, n / 26);
+                generated_name(me, generated, sizeof generated);
             }
             cstr text = cstr_init();
             my out = &text;
@@ -3266,6 +3300,7 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, cs
         }
     }
 #undef EXPANDO_PUSH
+    free(assignments);
     if (count) {
         w_indent(me);
         // (In a namespace body whose exports are stripped, this one's is too: see Walk.export_offsets)
