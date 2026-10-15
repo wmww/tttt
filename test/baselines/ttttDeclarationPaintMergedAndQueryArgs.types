@@ -1,0 +1,62 @@
+//// [test/cases/ttttDeclarationPaintMergedAndQueryArgs.ts] ////
+
+=== ttttDeclarationPaintMergedAndQueryArgs.ts ===
+// Painting: a local type merged with an exported value of its name (tsc's binder merges them into one local
+// symbol), and the type arguments of a type query (`typeof f<T>`)
+export const Kind = { A: 'a', B: 'b' } as const;
+>Kind : { readonly A: 'a'; readonly B: 'b'; }
+>{ A: 'a', B: 'b' } as const : { readonly A: 'a'; readonly B: 'b'; }
+>{ A: 'a', B: 'b' } : { readonly A: 'a'; readonly B: 'b'; }
+>A : "a"
+>'a' : "a"
+>B : "b"
+>'b' : "b"
+
+type Kind = (typeof Kind)[keyof typeof Kind];
+>Kind : Kind
+>Kind : { readonly A: 'a'; readonly B: 'b'; }
+>Kind : { readonly A: 'a'; readonly B: 'b'; }
+
+export interface M { [Kind.A]?: number; }
+>[Kind.A] : number | undefined
+>Kind.A : "a"
+>Kind : { readonly A: 'a'; readonly B: 'b'; }
+>A : "a"
+
+declare function Table<T>(x: T): T;
+>Table : <T>(x: T) => T
+>x : T
+
+type User = { id: string };
+>User : User
+>id : string
+
+type Story = Array<typeof Table<User>>;
+>Story : Story
+>Table : <T>(x: T) => T
+
+export default {} as Story;
+>{} as Story : Story
+>{} : {}
+
+type One = ">" | "<";
+>One : One
+
+export type Start<s extends string> = s extends `${infer c}${string}` ? c extends One ? [c & One] : never : never;
+>Start : Start<s>
+
+const enum TraceType { None, Creation }
+>TraceType : TraceType
+>None : TraceType.None
+>Creation : TraceType.Creation
+
+export class Trace { constructor(public type: TraceType) {} static make() { return new Trace(TraceType.None); } }
+>Trace : Trace
+>type : TraceType
+>make : () => Trace
+>new Trace(TraceType.None) : Trace
+>Trace : typeof Trace
+>TraceType.None : TraceType.None
+>TraceType : typeof TraceType
+>None : TraceType.None
+

@@ -554,7 +554,17 @@ static bool fallback_end(Walk* me, bool outer, Ty const* type) {
 
 // A declaration of this file that an emitted declaration names: if it isn't visible, it is emitted too
 static void paint(Walk* me, Symbol const* symbol) {
-    if (!symbol || symbol->exported || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return;
+    if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return;
+    // An exported one is visible. A local type of its name in the file is the same symbol to tsc (`export const K`
+    // and `type K`: the binder merges the type into the export's local symbol), whose declarations
+    // isEntityNameVisible makes visible together
+    if (symbol->exported) {
+        Symbol const* local = my file->scope ? scope_resolve(my file->scope, symbol->name, SYMBOL_TYPE) : nullptr;
+        if (local && local != symbol && !local->exported && (local->flags & (SYMBOL_TYPE_ALIAS | SYMBOL_INTERFACE))) {
+            paint(me, local);
+        }
+        return;
+    }
     bool here = false;
     for (u32 i = 0; i < symbol->decl_count && !here; i++) here = span_source(symbol->decls[i].name) == my file;
     if (!here) return;
@@ -2526,6 +2536,15 @@ static void check_written_type(Walk* me, TypeNode const* type) {
                         name, "' refers to a private member. Write an explicit type here.");
                 }
                 check_entity_expression(me, type->typeof_->expr);
+                // (And its type arguments, `typeof f<T>`: type nodes of the query)
+                for (Expr const* e = type->typeof_->expr; e->tag == EXPR_PROPERTY || e->tag == EXPR_GENERIC_PARAMS;) {
+                    if (e->tag == EXPR_GENERIC_PARAMS) {
+                        for_each (i, vec_spanned_type, &e->generic_params->params) check_written_type(me, &i->type);
+                        e = &e->generic_params->expr;
+                    } else {
+                        e = &e->property->expr;
+                    }
+                }
             }
             return;
         case TYPE_INDEXED:

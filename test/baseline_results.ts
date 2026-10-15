@@ -249,6 +249,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPaintMergedAndQueryArgs': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationPatternPaintedByExport': {
         errors: true,
         symbols: true,

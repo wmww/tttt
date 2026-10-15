@@ -1,0 +1,71 @@
+//// [test/cases/ttttDeclarationPaintMergedAndQueryArgs.ts] ////
+
+=== ttttDeclarationPaintMergedAndQueryArgs.ts ===
+// Painting: a local type merged with an exported value of its name (tsc's binder merges them into one local
+// symbol), and the type arguments of a type query (`typeof f<T>`)
+export const Kind = { A: 'a', B: 'b' } as const;
+>Kind : Symbol(Kind, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 12))
+>A : Symbol(A, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 21))
+>B : Symbol(B, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 29))
+>const : Symbol(const)
+
+type Kind = (typeof Kind)[keyof typeof Kind];
+>Kind : Symbol(Kind, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 12), Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 48))
+>Kind : Symbol(Kind, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 12))
+>Kind : Symbol(Kind, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 12))
+
+export interface M { [Kind.A]?: number; }
+>M : Symbol(M, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 3, 45))
+>[Kind.A] : Symbol(M[Kind.A], Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 4, 20))
+>Kind.A : Symbol(A, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 21))
+>Kind : Symbol(Kind, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 12))
+>A : Symbol(A, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 2, 21))
+
+declare function Table<T>(x: T): T;
+>Table : Symbol(Table, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 4, 41))
+>T : Symbol(T, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 23))
+>x : Symbol(x, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 26))
+>T : Symbol(T, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 23))
+>T : Symbol(T, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 23))
+
+type User = { id: string };
+>User : Symbol(User, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 35))
+>id : Symbol(id, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 6, 13))
+
+type Story = Array<typeof Table<User>>;
+>Story : Symbol(Story, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 6, 27))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Table : Symbol(Table, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 4, 41))
+>User : Symbol(User, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 5, 35))
+
+export default {} as Story;
+>Story : Symbol(Story, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 6, 27))
+
+type One = ">" | "<";
+>One : Symbol(One, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 8, 27))
+
+export type Start<s extends string> = s extends `${infer c}${string}` ? c extends One ? [c & One] : never : never;
+>Start : Symbol(Start, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 9, 21))
+>s : Symbol(s, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 18))
+>s : Symbol(s, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 18))
+>c : Symbol(c, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 56))
+>c : Symbol(c, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 56))
+>One : Symbol(One, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 8, 27))
+>c : Symbol(c, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 56))
+>One : Symbol(One, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 8, 27))
+
+const enum TraceType { None, Creation }
+>TraceType : Symbol(TraceType, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 114))
+>None : Symbol(TraceType.None, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 22))
+>Creation : Symbol(TraceType.Creation, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 28))
+
+export class Trace { constructor(public type: TraceType) {} static make() { return new Trace(TraceType.None); } }
+>Trace : Symbol(Trace, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 39))
+>type : Symbol(Trace.type, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 12, 33))
+>TraceType : Symbol(TraceType, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 114))
+>make : Symbol(Trace.make, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 12, 59))
+>Trace : Symbol(Trace, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 39))
+>TraceType.None : Symbol(TraceType.None, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 22))
+>TraceType : Symbol(TraceType, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 10, 114))
+>None : Symbol(TraceType.None, Decl(ttttDeclarationPaintMergedAndQueryArgs.ts, 11, 22))
+
