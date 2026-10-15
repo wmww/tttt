@@ -5642,6 +5642,9 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         TypeNode type = type_any;
                         bool typed_setter = false;
                         Span setter_param = span_null, setter_pattern = span_null;
+                        // A setter's pattern parameter keeps its annotation, which the member borrows (see
+                        // InterfaceAccessor.setter_function): the first such setter of the name
+                        bool keep_setter = false;
                         if (is_getter) {
                             type = type_move(&item.method.func.ret);
                         } else if (vec_function_arg_size(&item.method.func.args)) {
@@ -5649,8 +5652,15 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             typed_setter = arg->initializer.binding.has_explicit_type;
                             if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
                             else setter_pattern = arg->initializer.binding.content_span;
-                            type = binding_take_type(&arg->initializer.binding);
+                            keep_setter = (arg->initializer.binding.tag == BINDING_OBJECT || arg->initializer.binding.tag == BINDING_ARRAY) &&
+                                !(existing && existing->accessor && existing->accessor->setter_function);
+                            if (keep_setter) {
+                                if (typed_setter) type = *binding_type(&arg->initializer.binding);
+                            } else {
+                                type = binding_take_type(&arg->initializer.binding);
+                            }
                         }
+                        bool borrowed = keep_setter && typed_setter;
                         InterfaceMember* target = existing;
                         if (existing) {
                             InterfaceAccessor* pair = interface_member_accessor(existing);
@@ -5664,17 +5674,20 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                                 if (existing->setter_first && !existing->has_write_type) {
                                     existing->accessor->write_type = existing->type;
                                     existing->has_write_type = true;
-                                } else {
+                                    existing->accessor->write_type_borrowed = existing->accessor->type_borrowed;
+                                } else if (!existing->accessor->type_borrowed) {
                                     type_drop(&existing->type);
                                 }
+                                existing->accessor->type_borrowed = false;
                                 existing->type = type;
                                 existing->setter_first = false;
                             } else if (typed_setter && !existing->has_write_type) {
                                 existing->accessor->write_type = type;
+                                existing->accessor->write_type_borrowed = borrowed;
                                 existing->has_write_type = true;
                                 existing->readonly = false;
                             } else {
-                                type_drop(&type);
+                                if (!borrowed) type_drop(&type);
                                 existing->readonly = false;
                             }
                         } else {
@@ -5689,12 +5702,22 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                                 type
                             );
                             member.setter_first = typed_setter;
+                            if (borrowed) interface_member_accessor(&member)->type_borrowed = true;
                             if (span_valid(setter_param)) interface_member_accessor(&member)->setter_param = setter_param;
                             if (span_valid(setter_pattern)) interface_member_accessor(&member)->setter_pattern = setter_pattern;
                             list_push(vec_interface_member, &members, member);
                             target = vec_interface_member_back_mut(&members);
                         }
                         InterfaceAccessor* sides = interface_member_accessor(target);
+                        if (keep_setter) {
+                            FunctionImpl* setter = c_new(FunctionImpl, item.method.func);
+                            function_impl_set_member_name(setter, item.method.name_span);
+                            setter->accessor = (uint8_t)item.method.accessor;
+                            sides->setter_function = c_new(Expr, expr_function(setter->full_span, setter));
+                            item.method.func = (FunctionImpl){0};
+                            item.method.func.ret_explicit = setter->ret_explicit;
+                            item.method.func.has_body = setter->has_body;
+                        }
                         if (is_getter && item.method.func.has_body && !sides->getter_body) {
                             // (Kept, TS1183: tsc binds and checks the body, and infers the getter's type from it)
                             FunctionImpl* body = c_new(FunctionImpl, item.method.func);

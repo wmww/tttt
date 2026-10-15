@@ -62,6 +62,14 @@ typedef struct InterfaceAccessor {
     // binds and walks like any, and whose return type is the getter's type when it has no annotation
     struct Expr* getter_body;
     bool getter_body_infers; // The getter has no return annotation: its type is getter_body's return type
+    // A setter whose parameter is a binding pattern: the setter as a function expression (EXPR_FUNCTION, owned, null if
+    // none), whose parameter scope declares the pattern's names (tsc binds the accessor like any signature: `set
+    // x({ name: alias }: Named & { o: typeof alias })` resolves `alias`, TS2842 for an unused renaming). The
+    // parameter's annotation stays the function's: the member's `type` or `write_type` is that same node, borrowed
+    // (not resolved nor dropped through the member)
+    struct Expr* setter_function;
+    bool type_borrowed; // InterfaceMember.type is setter_function's parameter annotation
+    bool write_type_borrowed; // write_type is
 } InterfaceAccessor;
 
 // PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these

@@ -248,8 +248,8 @@ passing tests).
 - A merged property+accessor (one symbol since TS 7's excludes) still has 6.0's type: objectLiteralErrors,
   callSignaturesWithParameterInitializers2 types; duplicateClassElements symbols;
   symbolProperty44 (late-bound name vs method).
-- **Accessor members of interfaces and type literals as declarations of their own** (duplicateIdentifierChecks,
-  declarationEmitBindingPatternsUnused; agent B 2026-10-14, plan-sized, ~1 session): the parser merges a name's
+- **Accessor members of interfaces and type literals as declarations of their own** (duplicateIdentifierChecks;
+  agent B 2026-10-14, plan-sized, ~1 session; part (b) done for pattern parameters 2026-10-15, see below): the parser merges a name's
   `get`/`set` signatures into one InterfaceMember (parser.c's CLASS_ITEM_METHOD accessor branch: InterfaceAccessor
   keeps a setter's parameter *name* and type only). tsgo keeps each accessor a declaration: (a) the binder merges them
   into symbols by SymbolFlags excludes (tsgo ast/symbolflags.go: GetAccessor excludes Value & ~(SetAccessor | Property),
@@ -257,8 +257,12 @@ passing tests).
   declaration becoming a symbol of its own that isn't in the members table: duplicateIdentifierChecks' symbols print one
   `Symbol(I3.x, ...)` per such partition, for classes too (C3..C8: the symbols walker needs the partition, the type
   keeps the first symbol); (b) a setter's parameter is a real parameter with a scope: `set x({ name: alias }: Named &
-  { o: typeof alias })` binds `alias` (TS2842 unused renaming, `typeof alias` resolves; tttt says TS2304) and the types
-  baseline shows the setter parameter (`>value : number` lines). Shape: InterfaceMember gets a FunctionImpl per
+  { o: typeof alias })` binds `alias` (TS2842 unused renaming, `typeof alias` resolves) and the types
+  baseline shows the setter parameter (`>value : number` lines). Done for a pattern parameter only
+  (InterfaceAccessor.setter_function keeps the setter's FunctionImpl, whose annotation the member's type or write type
+  borrows: declarationEmitBindingPatternsUnused passes); an identifier parameter still has setter_param/write_type,
+  and at a setter-first pair's setter name tsgo prints the setter's annotation (`typeof alias` reused) where tttt
+  prints the getter's (probe: `type T = { set x({ name: alias }: N & { o: typeof alias }); get x(): N & { o: string } }`). Shape: InterfaceMember gets a FunctionImpl per
   accessor like a method signature; builder_add_interface merges get/set into the prop (write type from the setter's
   parameter) as now; the TS2300 partition logic moves to one helper both the duplicate check and the walker use.
 - TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the

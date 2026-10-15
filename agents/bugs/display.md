@@ -171,12 +171,13 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   annotation (`get x(): number { return "" }`, tsc's TS2322: the annotation moved to the member's type, the kept
   FunctionImpl has none), and a setter's body isn't kept at all (`set x(v: number) { v.toFixed() }`: nothing in it
   is bound or walked; its parameter's annotation is moved to the write type, so keeping it needs a TypeNode copy or a
-  shared node). Same root as declarationEmitBindingPatternsUnused (a setter's parameter scope). No suite test left.
+  shared node). A setter whose parameter is a pattern now keeps its FunctionImpl with the annotation shared
+  (InterfaceAccessor.setter_function, borrowed type: 2026-10-15), the model to extend to every setter. No suite test
+  left.
 - accessorBodyInTypeContext (types): `type A = { get foo() { return 0 } }` (TS1183) is `foo: number` in tsc, its body
   walked (`>0 : 0`); tttt's parser turns a type literal's accessor into an InterfaceMember and drops the FunctionImpl
   (body, parameter scope), so the getter is any and nothing in it is bound or walked. Same root as
-  declarationEmitBindingPatternsUnused and duplicateIdentifierChecks (type_core.md "Accessor members of interfaces and
-  type literals"). Needs InterfaceMember to keep the accessor's
+  duplicateIdentifierChecks (type_core.md "Accessor members of interfaces and type literals"). Needs InterfaceMember to keep the accessor's
   FunctionImpl (boxed in InterfaceAccessor), the binder to walk it, and the getter's type inferred from the body when
   unannotated. Parser + binder + checker; a session.
 - vscode/eopt elaboration choice (TS2412 at `viewModel` in tsc vs TS2375 at a nested `styles: { a: st.a }` literal in

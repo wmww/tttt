@@ -866,7 +866,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // In source order: the first accessor's types come before the second's name
             Span second_name = interface_member_second_name(me), setter_param = interface_member_setter_param(me);
             bool pair = span_valid(second_name);
-            bool setter_first = pair && span_valid(setter_param) && setter_param.buf < second_name.buf;
+            // (A setter's pattern parameter: its names, then its annotation, see InterfaceAccessor.setter_function)
+            FunctionImpl* setter_function = my accessor && my accessor->setter_function ? my accessor->setter_function->function : nullptr;
+            Span setter_at = span_valid(setter_param) ? setter_param : setter_function ? my accessor->setter_pattern : span_null;
+            bool setter_first = pair && span_valid(setter_at) && setter_at.buf < second_name.buf;
             // (A getter's body, TS1183: what's in it, after the getter's type)
             FunctionImpl* getter_body = my accessor && my accessor->getter_body ? my accessor->getter_body->function : nullptr;
             if (pair && !setter_first) type_compile_test_info(&my type, ctx);
@@ -876,6 +879,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
                 if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
             }
+            if (setter_function && setter_first) function_impl_compile_test_info(setter_function, ctx);
             if (pair) {
                 VecSpan second_decls = vec_span_init();
                 if (shared) {
@@ -895,6 +899,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
                 if (pair && my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
             }
+            if (setter_function && pair && !setter_first) function_impl_compile_test_info(setter_function, ctx);
             if (pair) {
                 if (setter_first) type_compile_test_info(&my type, ctx);
                 if (setter_first && getter_body) function_impl_compile_test_info(getter_body, ctx);
@@ -975,8 +980,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
 
         case INTERFACE_KEY_CALLABLE: break;
     }
-    type_compile_test_info(&my type, ctx);
-    if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
+    if (!my accessor || !my accessor->type_borrowed) type_compile_test_info(&my type, ctx);
+    if (my has_write_type && !my accessor->write_type_borrowed) type_compile_test_info(&my accessor->write_type, ctx);
+    // (A setter's pattern parameter: its names, then its annotation, see InterfaceAccessor.setter_function)
+    if (my accessor && my accessor->setter_function) function_impl_compile_test_info(my accessor->setter_function->function, ctx);
     if (my accessor && my accessor->initializer) expr_compile_test_info(my accessor->initializer, ctx);
     // (A getter's body, TS1183: what's in it, not the function)
     if (my accessor && my accessor->getter_body) function_impl_compile_test_info(my accessor->getter_body->function, ctx);

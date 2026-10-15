@@ -777,6 +777,11 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
     if (count && span_valid(name)) ty_check_overloads_compatible(current_checker, me, name, overloads, names, count, errs);
 }
 
+void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs) {
+    if (my has_body || !span_source(my full_span) || span_source(my full_span)->is_declaration) return;
+    for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     if (!my has_body && span_source(my full_span) && !span_source(my full_span)->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);

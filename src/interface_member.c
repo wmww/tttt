@@ -42,9 +42,13 @@ void interface_member_drop(InterfaceMember* me) {
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
-    type_drop(&my type);
+    if (!my accessor || !my accessor->type_borrowed) type_drop(&my type);
     if (my accessor) {
-        if (my has_write_type) type_drop(&my accessor->write_type);
+        if (my has_write_type && !my accessor->write_type_borrowed) type_drop(&my accessor->write_type);
+        if (my accessor->setter_function) {
+            expr_drop(my accessor->setter_function);
+            free(my accessor->setter_function);
+        }
         vec_span_drop(&my accessor->declarations);
         if (my accessor->initializer) {
             expr_drop(my accessor->initializer);
@@ -116,10 +120,12 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         TypeFlow const* saved_flow = type_flow_enter_mapped_template(me);
         type_lookup_names(&my type, names, errs);
         type_flow_restore(saved_flow);
-    } else {
+    } else if (!my accessor || !my accessor->type_borrowed) {
         type_lookup_names(&my type, names, errs);
     }
-    if (my has_write_type) type_lookup_names(&my accessor->write_type, names, errs);
+    if (my has_write_type && !my accessor->write_type_borrowed) type_lookup_names(&my accessor->write_type, names, errs);
+    // (A setter's pattern parameter: its annotation is resolved in the setter's parameter scope, see setter_function)
+    if (my accessor && my accessor->setter_function) expr_lookup_names(my accessor->setter_function, names, errs);
     // (Resolved silently: the grammar error said it all)
     if (my accessor && my accessor->initializer) expr_lookup_names(my accessor->initializer, names, nullptr);
     if (my accessor && my accessor->getter_body) expr_lookup_names(my accessor->getter_body, names, nullptr);
@@ -186,6 +192,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
             interface_member_check_implicit_any(me, errs);
             // (A getter's body, TS1183, is checked all the same: tsc's checkAccessorDeclaration)
             if (my accessor && my accessor->getter_body) function_impl_typecheck(my accessor->getter_body->function, errs);
+            // (A setter's pattern parameter: TS2842 for an unused renaming, tsc's checkSignatureDeclaration)
+            if (my accessor && my accessor->setter_function) function_impl_check_unused_renamings(my accessor->setter_function->function, errs);
             // (tsc's checkVariableLikeDeclaration of a property signature)
             if (!my is_method && !my key.name_is_member_function && span_is_bigint_name(my key.span, my key.name_is_value)) {
                 error_ctx_error_d(errs, my key.span, 1539, "A 'bigint' literal cannot be used as a property name.");

@@ -8465,9 +8465,9 @@ const baselines = {
         dts: true,
     },
     'declarationEmitBindingPatternsUnused': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
         dts: true,
     },
     'declarationEmitBundlerConditions': {

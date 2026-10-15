@@ -53,8 +53,6 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
-- declarationEmitBindingPatternsUnused: type_core.md "Accessor members of interfaces and type literals" (with
-  duplicateIdentifierChecks and display.md's accessorBodyInTypeContext: one refactor).
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
 
 ## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
