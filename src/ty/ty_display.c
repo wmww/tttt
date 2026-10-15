@@ -1081,8 +1081,9 @@ cstr ty_prop_name_cstr(Checker* me, Atom const* name) {
 cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     Prop const* root = prop;
     while (root->target) root = root->target;
-    // (a mapped type's properties are instantiations of its template, under other names)
-    Span name = root->name == prop->name ? root->decl->name_span : span_null;
+    // (a mapped type's properties are instantiations of its template, under other names, but declared where the
+    // property they map is: tsc's mapped symbol's declarations)
+    Span name = prop->mapped ? prop->decl->name_span : root->name == prop->name ? root->decl->name_span : span_null;
     // (tsc's getNameOfSymbolAsWritten: a name that isn't an identifier as written, `"a"`, `2.0`, `["a"]`)
     if (span_valid(name) && name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'' || name.buf[0] == '[')) {
         return cstr_from_sv(span_sv(name));

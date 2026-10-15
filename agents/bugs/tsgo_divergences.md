@@ -34,3 +34,10 @@ manyCompilerErrorsInTheTwoFiles (two missing TS1134 parse errors).
   first's result. Reproducing it means a deliberately colliding cache key (and a SingleSignatureType notion tttt
   doesn't have) whose result depends on which `this` asked first: the bug the test was written against, regressed in
   tsgo. Not reproduced; re-check when the oracle is re-pinned (plan 58).
+- recursiveMappedTypes (2026-10-15, agent B): the baseline's TS2615 at (79,1) (`x.type`) is found by the JS emit's
+  import elision: an instrumented tsgo's stack at that error is emitJSFile -> ImportElisionTransformer ->
+  EmitResolver.MarkLinkedReferencesRecursively -> markPropertyAliasReferenced -> checkExpressionCached(x) ->
+  ListChild -> Child<ListWidget> -> getTypeOfMappedSymbol, before any checking; tsgo's CLI reports it at (74,13) (the
+  `Child<ListWidget>` of `"each"`, checkTypeReferenceNode during the interface's check) together with the TS2502 on
+  `"each"`. tttt's TS2615 lands on (79,1) only because it misses the cycle at the interface (below), so fixing that
+  moves it to the CLI's place. The CLI-order bugs left are filed in missing_checks.md ("Circularity").

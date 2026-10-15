@@ -4525,7 +4525,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);
         prop->type_state = LAZY_STATE_DONE;
-        cstr name = ty_prop_name_cstr(me, prop->name);
+        cstr name = ty_prop_written_name(me, prop);
         Ty const* mapped_type = intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2);
         // (tsc's getTypeOfMappedSymbol sets containsError where pushTypeResolution fails, before it reports)
         if (mapped_type && (mapped_type->flags & TYF_OBJECT)) {

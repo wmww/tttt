@@ -182,8 +182,19 @@ type/typecheck walks don't reproduce; none has a cheap rule.
     are in flight); tttt reports TS2310 and keeps `bar`.
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
   n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
-- recursiveMappedTypes (TS2502/TS2615 in a mapped type over
-  keyof).
+- recursiveMappedTypes against tsgo's CLI (the suite baseline is JS-emit order: tsgo_divergences.md): (1) no TS2502
+  on ListWidget's `"each": Child<ListWidget>` (and its type stays `Child<ListWidget>`, tsc's `any`): tsgo's
+  instantiateMappedType instantiates the non-homomorphic Child's constraint `NonOptionalKeys<ListWidget>` eagerly while
+  `"each"`'s declared type is resolved (getTypeFromTypeNode of the reference in checkTypeReferenceNode), which indexes
+  the inner mapped type's `each` (pushed, TS2615 at currentNode) and reaches `"each"` in flight; tttt instantiates
+  the constraint only when the members are resolved (ty_mapped_info_instantiate()), later. Mirroring the eager
+  instantiation in instantiate_anonymous() is the fix, but costs an instantiation per mapped type instance (the
+  comments there on valibot's cost): measure. (2) A spurious TS2589 next to the TS5114 at `Circular<tup>`: tttt's
+  recursion through a homomorphic mapped type over a tuple uses one instantiation-stack frame per level where tsgo uses
+  several, so tttt's 4-ary recursion goes ~100 levels deep and runs into the 5M count (tsgo: 28k instantiations).
+  Make the frames per level match (which of tsgo's instantiateType calls tttt skips). (3) TS2751 related info of the
+  declared-key TS2313 (Recurse2's `K` at currentNode `Recurse2` in Recurse1's `keyof Recurse2`): tttt reports
+  declared-key circularity at the member's check, never where it was found.
 ## Limits
 - TS2589 by instantiation *count* (valibot under sloppy/nosnc flagflip cells, ~60 diagnostics; investigated
   2026-10-06 against tsc 6, judged plan-sized, not attempted): tsc's hits are the 5M count limit, from cache hits it
