@@ -32,12 +32,6 @@ clone is a *different* symbol than the one a later lookup finds:
   31))` and `typeof module."./test"` where tttt says `module.exports`.
 - es6ExportEqualsInterop (`z2.a` named `a2`) involves no clone at all (stage 0 logged none): a symbol-chain naming
   bug of its own.
-- jsExportMemberMergedWithModuleAugmentation2: `module.exports = { a: "ok" }` is a Property|ValueModule export= to
-  tsc's binder (bindModuleExportsAssignment), so `declare module "./test" { export const a: number }` merges into it
-  (tttt: TS2671, merge_augmentations() wants SYMBOL_NAMESPACE), and getInitializerTypeFromAssignmentDeclaration unions
-  the literal's `a` with the export's (`{ a: string | number }`) and reports TS2300 at both when they come from
-  different files. Needs: the JS export= assignment symbol as an augmentable namespace, the union with the
-  cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
 ## Merges tsc decides after aliases resolve
 Done for cross-file merges into aliases (binder_link_alias_merges(), merge_into_umd_globals()); what is left is the

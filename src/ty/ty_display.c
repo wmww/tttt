@@ -597,6 +597,14 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
         out(d, symbol->is_default_export && (parent->is_module || quoted_parent) ? c_sv("default") : span_sv(ty_symbol_display_name(symbol)));
         return;
     }
+    // An augmentation that merged into nothing (TS2671/TS2649) is a module symbol of its own to tsgo, without a file:
+    // named by its name (getSpecifierForModuleSymbol, IsModuleWithStringLiteralName)
+    if (symbol->is_augmentation && !symbol->is_module && symbol->name.size >= 2) {
+        out_lit(d, "import(\"");
+        out(d, csview_slice(symbol->name, 1, symbol->name.size - 1));
+        out_lit(d, "\")");
+        return;
+    }
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
     // message (typeToString's UseAliasDefinedOutsideCurrentScope: no module symbol is yielded, what nothing reaches is
     // its bare name)

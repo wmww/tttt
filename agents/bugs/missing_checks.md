@@ -234,8 +234,7 @@ tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't ge
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
 (function_local_symbol_decls() and check_export_merge() patch over it; hacks.md "Exported and local declarations").
-Still wrong: jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import and a declaration: TS2300 vs
-our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
+Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
 
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
