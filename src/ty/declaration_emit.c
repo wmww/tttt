@@ -2341,6 +2341,7 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
     my member_static = my member_in_class = false;
     for_each (i, vec_interface_member, members) {
         if (decl && i->origin_interface && i->origin_interface != decl) continue;
+        if (span_valid(i->declaration) && is_internal_declaration(i->declaration)) continue;
         Span at = interface_member_error_span(i);
         if (i->key.tag == INTERFACE_KEY_CALLABLE && span_valid(i->declaration)) {
             // (A signature's node ends after its `;` or `,`)

@@ -365,7 +365,14 @@ spaces, one declaration or member per line; `newLine` crlf in the harness, which
 it writes are what the `serialize_*()` functions decide, written into `Walk.type_out`: the pseudo type where it says
 the declaration's type (`ty_display_pseudo()`), else the checker's type. Written annotations go through
 `ty_display_node()`. `TyDisplay.multiline` prints object types and type literals one member per line (mapped types the
-node builder makes stay single line, written ones don't). A namespace body drops its members' `export`s unless a
+node builder makes stay single line, written ones don't); `TyDisplay.transformer_node` marks nodes the declaration
+transformer visits (written annotations) apart from those the node builder reuses (single line mapped types and tuples,
+numbers normalized). Comments are copied like tsc's printer does (`ty/decl_comments.c`): the parser records every
+comment's range where declarations are emitted (`SourceFile.comments`), which gives a node's full start (back from its
+first token over whitespace and comments); leading comments are those past the first line break after it, trailing ones
+those on the node's line, only JSDoc-like and pinned ones (OnlyPrintJSDocStyle) except list elements' intervening
+ones. The writer calls them around statements, members, parameters, specifiers; `TyDisplay.comments` around reused and
+printed members (properties printed from types copy their declaration's: setCommentRange). A namespace body drops its members' `export`s unless a
 painted declaration needs an `export {};` (offsets in `Walk.export_offsets`), a module whose output has no import or
 export gets `export {};`. The suite compares it as the `dts` component (`baseline_tests --dts`, the `.js` baselines'
 declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (`tttt --dts-dump DIR`). The

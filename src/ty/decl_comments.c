@@ -280,6 +280,19 @@ bool decl_comments_spans_lines(DeclComments const* me, char const* token, char c
     return !same_line(full_start(me->file, token), end);
 }
 
+bool decl_comments_leading_contains(DeclComments const* me, char const* token, char const* needle) {
+    if (!me || !decl_comments_in_file(me, token)) return false;
+    Comments comments;
+    comment_ranges(me->file, full_start(me->file, token), false, &comments);
+    size_t length = strlen(needle);
+    for (u32 i = 0; i < comments.count; i++) {
+        for (char const* c = comments.ranges[i].start; c + length <= comments.ranges[i].end; c++) {
+            if (memcmp(c, needle, length) == 0) return true;
+        }
+    }
+    return false;
+}
+
 bool decl_comments_in_file(DeclComments const* me, char const* token) {
     if (!me || !me->file || !token) return false;
     char const* text = cstr_str(&me->file->contents);

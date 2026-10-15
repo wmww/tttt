@@ -4,26 +4,27 @@ Scoped 2026-10-14 (todo entry 9). **Recommendation: yes, TypeScript sources firs
 about one session each (stage 2 may take two); JavaScript declaration emit only if the data after stage 4 asks for
 it.**
 
-## Status (2026-10-14, todo entry 6)
-- **Stage 1 done.** Suite `dts` component (1408 TS tests have declaration outputs, 344 with JS inputs counted apart;
-  `baseline_tests --dts`, `scripts/dtsstats.py` buckets failures), `scripts/dtsdiff.py` (1233 projects, 76294 files;
-  tsgo runs in a `bwrap` sandbox: tsgo writes a file outside rootDir next to its source whatever `--outDir` says),
-  `tttt --dts-dump DIR`.
-- **Stage 2 mostly done in the same session**: the writer is `src/ty/declaration_emit.c`'s second walk (renamed from
-  declaration_diagnostics.c, documentation.md "Declaration emit"). **dts 1192 / 1408 (84.7%); dtsdiff 400 / 1233
-  projects, 48974 / 76294 files.** The walk itself got two fixes on the way (the late pass skipped what was painted
-  inside visible namespaces; heritage type arguments were checked outside the extends clause's context): no suite
-  change, but TS4xxx inside painted namespaces can now appear on real code (watch the corpora).
-- **Left for stage 2** (`scripts/dtsstats.py`, non-comment buckets, ~150 tests): class accessors in printed object types
-  as `get`/`set` (tsgo's addPropertyToElementList rule; may move types baselines too), interface accessor pairs,
-  `T_1` renaming across an object literal's methods (each method is its own scope), expando shapes beyond the basic one
-  (default-exported functions, nested assignments, late-bound names, conflicting local names), an import named only
-  in a computed name or binding pattern not painted, import-equals chains (`import X = A.B` whose `A` is an import),
-  `typeof f` vs written signatures for a variable initialized with an overloaded function, union member order (display),
-  `@fullEmitPaths` in the harness (13 tests; needs stage 4's output paths), some files tsgo emits that tttt doesn't
-  (moduleAugmentationInAmbientModule2-4: blocked by a declaration diagnostic tsgo doesn't report?). dtsdiff's "import"
-  (1546 files), "type text" (620) and "other" (680) buckets are the real-code side of the same.
-- **Stage 3 (comments) is the biggest bucket by far**: 23448 dtsdiff files and ~67 suite tests differ first on a comment.
+## Status (2026-10-15, todo entry 7): stages 1-3 done
+- **Stage 1 done** (2026-10-14). Suite `dts` component (1408 TS tests have declaration outputs, 344 with JS inputs counted
+  apart; `baseline_tests --dts`, `scripts/dtsstats.py` buckets failures), `scripts/dtsdiff.py` (1233 projects, 76294
+  files; tsgo runs in a `bwrap` sandbox), `tttt --dts-dump DIR`.
+- **Stages 2 and 3 done**: the writer is `src/ty/declaration_emit.c`'s second walk, comments are `src/ty/decl_comments.c`
+  (documentation.md "Declaration emit"). **dts 1345 / 1408 (95.5%); dtsdiff 922 / 1233 projects, 74279 / 76294 files
+  (97.4%).** Corpora, sweeps and instructions unchanged.
+- **Left in the suite (63)**: output paths (`@fullEmitPaths`-like section names, relative reference paths: 15 tests,
+  stage 4), declarationMap (8, stage 5), then singles: late bound names through an alias of a property of a variable's
+  type (`[Op.or]`), an export= namespace's member naming the unknown symbol, index signatures with several parameters
+  (`giant`), error-recovery shapes (`export import "m"`, `export * from X`, `[element: string?]`), a painted
+  non-exported binding pattern written whole (`declare const { foo }: ...`, 3 tests), type literal union order
+  (`comparisonReverseMappedTypes`), union member comments (TypeNode has no span), a mixin's private class members
+  (`declarationEmitLocalClassDeclarationMixin`), `this is X` from a reverse mapped type, and a few checker types.
+  `scripts/dtsstats.py` lists them.
+- **Left on real code** (dtsdiff buckets): "missing file" 693 (JavaScript sources: stage 6), "type text" ~630 (mostly
+  checker types: an IIFE's narrowed literal union printed widened (tttt's narrowed literals are fresh where tsgo's
+  return-type reads are regular: triage.md), zod's mapped-type key order, `import()` specifiers naming an internal
+  path where tsgo names the package (`import("@apollo/client")`)), "member order" ~170 (tsgo's getNamedMembers sorts by
+  compareSymbols: class instance types of mixins and zod-style flattened mapped types list members in another order),
+  "import" ~200 (painting gaps: names printed from types that track nothing), "comment" ~180, "other" ~140.
 
 ## Why
 - The human left `.d.ts` emit to us (vision.md); JS emit stays out of scope (esbuild and co.).

@@ -45,5 +45,7 @@ bool decl_comments_last_contains(DeclComments const* me, char const* token, char
 // Whether a node from its full start (back from `token` over whitespace and comments) to `end` spans lines (tsc's
 // declaration transformer makes a tuple written on one line SingleLine that way)
 bool decl_comments_spans_lines(DeclComments const* me, char const* token, char const* end);
+// Whether a leading comment of the node at `token` contains `needle` (tsc's isInternalDeclaration: `@internal`)
+bool decl_comments_leading_contains(DeclComments const* me, char const* token, char const* needle);
 // Whether a node starts at `token` in the file the comments are copied from
 bool decl_comments_in_file(DeclComments const* me, char const* token);

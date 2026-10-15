@@ -2039,6 +2039,12 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     d = brace_open(d);
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, d, i)) continue;
+        // Declaration emit: stripInternal leaves out a member with `@internal` in a leading comment
+        if (d.comments && compiler_options()->strip_internal && span_valid(i->declaration) &&
+            decl_comments_leading_contains(d.comments, i->declaration.buf, "@internal")
+        ) {
+            continue;
+        }
         // Declaration emit: accessors as written, in their order (the transformer visits the declarations)
         InterfaceAccessor const* accessor = i->accessor;
         if (d.multiline && accessor && (i->key.tag == INTERFACE_KEY_NAME || i->key.tag == INTERFACE_KEY_EXPR) &&
