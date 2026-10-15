@@ -9,8 +9,7 @@ size on real code, each with an example:
 - **Import specifier choice** (agent A 2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
   in the enclosing location's mode, no container cap, no package copies as containers, existing imports only through
   their realpath, program-wide dependency links by package directory, exports conditions by the target's format;
-  `TTTT_DEBUG_CONTAINERS=1` shows the candidates). Left (~5 projects): babel-traverse `typeof import("./visitors.ts")
-  .verify` where tttt prints `typeof visitors.verify` (a namespace import's member through `export var`); mcp-sdk/examples
+  `TTTT_DEBUG_CONTAINERS=1` shows the candidates). Left (~4 projects): mcp-sdk/examples
   `import("node_modules/hono/dist/types/hono")` vs tttt's `.../dist/types` (an index ending through a `paths`-like
   bare specifier); babel's `eslint.config.d.ts` (`@eslint/config-helpers` vs `eslint/config`) and react-three-fiber
   (`three` vs `three/src/Three.Core.js`), uninvestigated. corpus:react's `@testing-library/react` vs `/dom` is a worktree
@@ -64,6 +63,16 @@ size on real code, each with an example:
   (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an `infer T extends object` tsgo
   prints anew, renamed `T_1`, tttt reuses and maps), `map: missing at AbstractTable ({)` (sequelize), the other
   single-file map buckets.
+- **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
+  fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
+  painted destructurings' types; vscode and hexo/graphql-codegen now match). Left, one or two files each:
+  react-navigation `useNavigationHelpers` (tsgo names PartialState `CommonActions<State>`: a chain through the
+  `export * as CommonActions` namespace, quirk to understand first), gemini-cli `MessageBusType`, qwik
+  `FunctionComponent`/`_EFFECT_BACK_REF`, yup `MergeObjectTypes`, typedoc `IntrinsicElements`, effect
+  `test/Effect/query*.test` (`Context`), excalidraw `ExcalidrawFreeDrawElement`, apollo-client `core/index`, fp-ts
+  `index`, better-auth test-utils, reselect, slate-hyperscript, shadcn templates, vitest `logger`/`console`; and the
+  other way, discord.js structures keeps `ActivityType` where tsgo drops it. `scripts/dtsdiff.py --last -k import`;
+  each is a name printed (or written) without `track_symbol()`, or a statement the late pass doesn't walk.
 - **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
