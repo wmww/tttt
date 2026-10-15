@@ -1,0 +1,45 @@
+//// [test/cases/ttttSpreadNestedMappedAnnotation.ts] ////
+
+=== ttttSpreadNestedMappedAnnotation.ts ===
+// A spread property of a mapped type of a mapped type (`Pick<Readonly<A & B>, K>`) reuses the annotation it comes from,
+// through every mapped type that says the same (excalidraw selection.d.ts: `editingGroupId: AppState["editingGroupId"]`)
+interface AppState { editingGroupId: string | null; other: number }
+>editingGroupId : string | null
+>other : number
+
+type Common = { x: AppState["other"] };
+>Common : Common
+>x : number
+
+type Canvas = Readonly<Common & { editingGroupId: AppState["editingGroupId"] }>;
+>Canvas : Readonly<Common & { editingGroupId: AppState["editingGroupId"]; }>
+>editingGroupId : string | null
+
+type Canvas2 = Common & { editingGroupId: AppState["editingGroupId"] };
+>Canvas2 : Canvas2
+>editingGroupId : string | null
+
+declare const p1: Pick<Canvas, "editingGroupId">;
+>p1 : Pick<Readonly<Common & { editingGroupId: AppState["editingGroupId"]; }>, "editingGroupId">
+
+declare const p2: Pick<Canvas2, "editingGroupId">;
+>p2 : Pick<Canvas2, "editingGroupId">
+
+declare const p3: Readonly<Canvas2>;
+>p3 : Readonly<Canvas2>
+
+export const s1 = { ...p1 };
+>s1 : { editingGroupId: AppState["editingGroupId"]; }
+>{ ...p1 } : { editingGroupId: AppState["editingGroupId"]; }
+>p1 : Pick<Readonly<Common & { editingGroupId: AppState["editingGroupId"]; }>, "editingGroupId">
+
+export const s2 = { ...p2 };
+>s2 : { editingGroupId: AppState["editingGroupId"]; }
+>{ ...p2 } : { editingGroupId: AppState["editingGroupId"]; }
+>p2 : Pick<Canvas2, "editingGroupId">
+
+export const s3 = { ...p3 };
+>s3 : { x: AppState["other"]; editingGroupId: AppState["editingGroupId"]; }
+>{ ...p3 } : { x: AppState["other"]; editingGroupId: AppState["editingGroupId"]; }
+>p3 : Readonly<Canvas2>
+

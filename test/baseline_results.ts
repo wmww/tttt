@@ -698,6 +698,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadNestedMappedAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttSpreadReadonlyMemberSymbol': {
         errors: true,
         symbols: true,

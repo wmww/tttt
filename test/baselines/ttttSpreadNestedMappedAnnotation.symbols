@@ -1,0 +1,55 @@
+//// [test/cases/ttttSpreadNestedMappedAnnotation.ts] ////
+
+=== ttttSpreadNestedMappedAnnotation.ts ===
+// A spread property of a mapped type of a mapped type (`Pick<Readonly<A & B>, K>`) reuses the annotation it comes from,
+// through every mapped type that says the same (excalidraw selection.d.ts: `editingGroupId: AppState["editingGroupId"]`)
+interface AppState { editingGroupId: string | null; other: number }
+>AppState : Symbol(AppState, Decl(ttttSpreadNestedMappedAnnotation.ts, 0, 0))
+>editingGroupId : Symbol(AppState.editingGroupId, Decl(ttttSpreadNestedMappedAnnotation.ts, 2, 20))
+>other : Symbol(AppState.other, Decl(ttttSpreadNestedMappedAnnotation.ts, 2, 51))
+
+type Common = { x: AppState["other"] };
+>Common : Symbol(Common, Decl(ttttSpreadNestedMappedAnnotation.ts, 2, 67))
+>x : Symbol(x, Decl(ttttSpreadNestedMappedAnnotation.ts, 3, 15))
+>AppState : Symbol(AppState, Decl(ttttSpreadNestedMappedAnnotation.ts, 0, 0))
+
+type Canvas = Readonly<Common & { editingGroupId: AppState["editingGroupId"] }>;
+>Canvas : Symbol(Canvas, Decl(ttttSpreadNestedMappedAnnotation.ts, 3, 39))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Common : Symbol(Common, Decl(ttttSpreadNestedMappedAnnotation.ts, 2, 67))
+>editingGroupId : Symbol(editingGroupId, Decl(ttttSpreadNestedMappedAnnotation.ts, 4, 33))
+>AppState : Symbol(AppState, Decl(ttttSpreadNestedMappedAnnotation.ts, 0, 0))
+
+type Canvas2 = Common & { editingGroupId: AppState["editingGroupId"] };
+>Canvas2 : Symbol(Canvas2, Decl(ttttSpreadNestedMappedAnnotation.ts, 4, 80))
+>Common : Symbol(Common, Decl(ttttSpreadNestedMappedAnnotation.ts, 2, 67))
+>editingGroupId : Symbol(editingGroupId, Decl(ttttSpreadNestedMappedAnnotation.ts, 5, 25))
+>AppState : Symbol(AppState, Decl(ttttSpreadNestedMappedAnnotation.ts, 0, 0))
+
+declare const p1: Pick<Canvas, "editingGroupId">;
+>p1 : Symbol(p1, Decl(ttttSpreadNestedMappedAnnotation.ts, 6, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Canvas : Symbol(Canvas, Decl(ttttSpreadNestedMappedAnnotation.ts, 3, 39))
+
+declare const p2: Pick<Canvas2, "editingGroupId">;
+>p2 : Symbol(p2, Decl(ttttSpreadNestedMappedAnnotation.ts, 7, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Canvas2 : Symbol(Canvas2, Decl(ttttSpreadNestedMappedAnnotation.ts, 4, 80))
+
+declare const p3: Readonly<Canvas2>;
+>p3 : Symbol(p3, Decl(ttttSpreadNestedMappedAnnotation.ts, 8, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Canvas2 : Symbol(Canvas2, Decl(ttttSpreadNestedMappedAnnotation.ts, 4, 80))
+
+export const s1 = { ...p1 };
+>s1 : Symbol(s1, Decl(ttttSpreadNestedMappedAnnotation.ts, 9, 12))
+>p1 : Symbol(p1, Decl(ttttSpreadNestedMappedAnnotation.ts, 6, 13))
+
+export const s2 = { ...p2 };
+>s2 : Symbol(s2, Decl(ttttSpreadNestedMappedAnnotation.ts, 10, 12))
+>p2 : Symbol(p2, Decl(ttttSpreadNestedMappedAnnotation.ts, 7, 13))
+
+export const s3 = { ...p3 };
+>s3 : Symbol(s3, Decl(ttttSpreadNestedMappedAnnotation.ts, 11, 12))
+>p3 : Symbol(p3, Decl(ttttSpreadNestedMappedAnnotation.ts, 8, 13))
+

@@ -3358,9 +3358,16 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         // `s?: string` mapped is)
         bool same_as_mapped = mapped_from && (prop->flags & PROP_OPTIONAL ? optional_type(me, declared_type) : declared_type) ==
             (mapped_from->flags & PROP_OPTIONAL ? optional_type(me, prop_type(me, mapped_from)) : prop_type(me, mapped_from));
-        if (!annotation && same_as_mapped) {
-            while (mapped_from->target) mapped_from = mapped_from->target;
-            annotation = ty_prop_annotation(mapped_from);
+        // (Through a mapped type of a mapped type, `Pick<Readonly<A>, K>`, to the annotation it all comes from, while
+        // each says the same)
+        for (u32 depth = 0; !annotation && same_as_mapped && depth < 8; depth++) {
+            Prop const* root = mapped_from;
+            while (root->target) root = root->target;
+            annotation = ty_prop_annotation(root);
+            Prop const* next = prop_decl_rare(mapped_from->decl)->mapped_from;
+            same_as_mapped = next && (mapped_from->flags & PROP_OPTIONAL ? optional_type(me, prop_type(me, mapped_from)) : prop_type(me, mapped_from)) ==
+                (next->flags & PROP_OPTIONAL ? optional_type(me, prop_type(me, next)) : prop_type(me, next));
+            mapped_from = next;
         }
         // (Declared where the property it maps is, which orders it: tsc's mapped symbol's declarations)
         Prop const* declared_at = origin;
