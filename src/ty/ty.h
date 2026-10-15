@@ -1142,6 +1142,10 @@ struct Checker {
     // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
     // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
     u32 flow_uncached;
+    // An object literal getter whose type a call's resolution asks for first: its `this` is any (ty_contextual_this_type(),
+    // see ty_object_literal_accessor_type())
+    struct FunctionImpl const* lazy_getter;
+    bool lazy_getter_nested; // Its literal is inside the argument: no contextual type at all, `this` is the literal's type
     // The binding patterns whose implied types are being computed as contextual types (tsc's
     // contextualBindingPatterns): a reference inside one to its own elements is `any` (`const [a, b = a] = [1]`)
     struct Binding const* contextual_patterns[16];

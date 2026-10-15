@@ -3488,6 +3488,13 @@ static Ty const* call_return_type(
     resolution = arena_new(&my arena, CallResolution);
     *resolution = (CallResolution){ .in_flight = true };
     ty_link_set(me, KEY_CALL_RESOLUTION, node, resolution);
+    // (Which call its object literal arguments are of: a getter in them is typed by this resolution, see
+    // ty_object_literal_accessor_type())
+    if (node == call && !tagged_template) {
+        for_each (i, vec_expr, &call->args) {
+            if (i->tag == EXPR_OBJECT) ty_link_set(me, KEY_LITERAL_ARG_OF, i, call);
+        }
+    }
     Candidate chosen = {0};
     CallOutcome outcome = {0};
     ErrorCtx errs = { .phase = ERROR_PHASE_TYPECHECK };
@@ -3533,6 +3540,11 @@ Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call) {
 Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call) {
     CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
     return resolution && !resolution->in_flight ? resolution->sig : nullptr;
+}
+
+bool ty_call_resolution_in_flight(Checker* me, CallExpr const* call) {
+    CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
+    return resolution && resolution->in_flight;
 }
 
 bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Signature const** sig, TyMapper const** mapper, Ty const** param_type) {

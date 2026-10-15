@@ -1,0 +1,71 @@
+//// [test/cases/ttttLiteralGetterDuringResolution.ts] ////
+
+=== ttttLiteralGetterDuringResolution.ts ===
+// tsc types an object literal's getters lazily: one in a call's argument is first typed by the call's resolution, once
+// the argument's contextual type is popped, so its `this` is the resolving signature's any (no TS2322 below). The
+// deferred check of its body later types `this` with the resolved signature. A getter the resolution never asks for
+// (`z`: no property of its name in the parameter type) is typed afterwards, with the resolved contextual type
+interface Box<T> { value: T };
+>Box : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 4, 14))
+>value : Symbol(Box.value, Decl(ttttLiteralGetterDuringResolution.ts, 4, 18))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 4, 14))
+
+declare function h(b: Box<number>): void;
+>h : Symbol(h, Decl(ttttLiteralGetterDuringResolution.ts, 4, 30))
+>b : Symbol(b, Decl(ttttLiteralGetterDuringResolution.ts, 5, 19))
+>Box : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+
+h({ get value() { return this; } });
+>h : Symbol(h, Decl(ttttLiteralGetterDuringResolution.ts, 4, 30))
+>value : Symbol(value, Decl(ttttLiteralGetterDuringResolution.ts, 6, 3))
+>this : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+
+declare function k(b: { value: number, w: string }): void;
+>k : Symbol(k, Decl(ttttLiteralGetterDuringResolution.ts, 6, 36))
+>b : Symbol(b, Decl(ttttLiteralGetterDuringResolution.ts, 7, 19))
+>value : Symbol(value, Decl(ttttLiteralGetterDuringResolution.ts, 7, 23))
+>w : Symbol(w, Decl(ttttLiteralGetterDuringResolution.ts, 7, 38))
+
+k({ w: "", get value() { return this.w; } });
+>k : Symbol(k, Decl(ttttLiteralGetterDuringResolution.ts, 6, 36))
+>w : Symbol(w, Decl(ttttLiteralGetterDuringResolution.ts, 8, 3))
+>value : Symbol(value, Decl(ttttLiteralGetterDuringResolution.ts, 8, 10))
+>this.w : Symbol(w, Decl(ttttLiteralGetterDuringResolution.ts, 7, 38))
+>this : Symbol(__type, Decl(ttttLiteralGetterDuringResolution.ts, 7, 21))
+>w : Symbol(w, Decl(ttttLiteralGetterDuringResolution.ts, 7, 38))
+
+const o: Box<number> = { get value() { return this; } };
+>o : Symbol(o, Decl(ttttLiteralGetterDuringResolution.ts, 9, 5))
+>Box : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+>value : Symbol(value, Decl(ttttLiteralGetterDuringResolution.ts, 9, 24))
+>this : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+
+declare function g<T>(box: Box<T>): T
+>g : Symbol(g, Decl(ttttLiteralGetterDuringResolution.ts, 9, 56))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 10, 19))
+>box : Symbol(box, Decl(ttttLiteralGetterDuringResolution.ts, 10, 22))
+>Box : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 10, 19))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 10, 19))
+
+g({ get value() { return this; } });
+>g : Symbol(g, Decl(ttttLiteralGetterDuringResolution.ts, 9, 56))
+>value : Symbol(value, Decl(ttttLiteralGetterDuringResolution.ts, 11, 3))
+>this : Symbol(Box, Decl(ttttLiteralGetterDuringResolution.ts, 0, 0))
+
+declare function m<T>(b: { m(): T }): T;
+>m : Symbol(m, Decl(ttttLiteralGetterDuringResolution.ts, 11, 36))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 12, 19))
+>b : Symbol(b, Decl(ttttLiteralGetterDuringResolution.ts, 12, 22))
+>m : Symbol(m, Decl(ttttLiteralGetterDuringResolution.ts, 12, 26))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 12, 19))
+>T : Symbol(T, Decl(ttttLiteralGetterDuringResolution.ts, 12, 19))
+
+const y = m({ m() { return 1; }, get z() { return this; } });
+>y : Symbol(y, Decl(ttttLiteralGetterDuringResolution.ts, 13, 5))
+>m : Symbol(m, Decl(ttttLiteralGetterDuringResolution.ts, 11, 36))
+>m : Symbol(m, Decl(ttttLiteralGetterDuringResolution.ts, 13, 13))
+>z : Symbol(z, Decl(ttttLiteralGetterDuringResolution.ts, 13, 32))
+>this : Symbol(__type, Decl(ttttLiteralGetterDuringResolution.ts, 12, 24))
+

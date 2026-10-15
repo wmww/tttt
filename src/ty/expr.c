@@ -1333,6 +1333,11 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
     bool in_js = span_source(function->full_span) && span_source(function->full_span)->is_js;
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
+    if (my lazy_getter == function && !my lazy_getter_nested) return ty_intrinsic(me, TY_ANY);
+    if (my lazy_getter == function) {
+        Expr const* literal = function_impl_rare(function)->this_literal;
+        return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
+    }
     if (function_impl_rare(function)->this_literal && !function_impl_rare(function)->this_literal_parenthesized) {
         Expr const* literal = function_impl_rare(function)->this_literal;
         u64 ignored_serial = 0;
@@ -4540,6 +4545,44 @@ void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* er
     }
 }
 
+// tsc types an object literal's accessors lazily (checkObjectLiteral only defers their check): one in a literal that is
+// (inside) an argument of a call is first typed by that call's resolution, inferring from or relating the literal to the
+// parameter, once the argument's pushed contextual type is popped. Its literal's contextual type is then the argument's
+// of resolvingSignature, any (getContextualTypeForArgumentAtIndex), and so is a getter's `this`:
+// `h({ get value() { return this; } })` has `value: any`. Only a getter the resolution asks for: the literal's contextual
+// type has a property of its name. tttt types it while checking the literal, during that resolution
+static bool getter_typed_by_resolution(Checker* me, FunctionImpl const* accessor, bool* nested) {
+    Expr const* literal = function_impl_rare(accessor)->this_literal;
+    if (!literal || function_impl_rare(accessor)->this_literal_parenthesized || literal->tag != EXPR_OBJECT) return false;
+    bool in_js = span_source(accessor->full_span) && span_source(accessor->full_span)->is_js;
+    if (!compiler_options()->no_implicit_this && !in_js) return false;
+    Expr const* outermost = literal;
+    for (u32 depth = 0; depth < 32; depth++) {
+        Expr const* parent = intern_get(&my links, (u64[]){ KEY_LITERAL_PARENT, (u64)(uintptr_t)outermost }, 2);
+        if (!parent) break;
+        outermost = parent;
+    }
+    CallExpr const* call = ty_link_get(me, KEY_LITERAL_ARG_OF, outermost);
+    if (!call || !ty_call_resolution_in_flight(me, call)) return false;
+    // (The argument's contextual type is any; a literal inside it has none, getTypeOfPropertyOfContextualType of any)
+    *nested = outermost != literal;
+    Ty const* contextual = ty_link_get(me, KEY_LITERAL_CONTEXT, literal);
+    if (!contextual) return false;
+    for_each (i, vec_object_expr_item, &literal->object) {
+        if (i->tag != OBJECT_ITEM_GETTER || i->value.tag != EXPR_FUNCTION || i->value.function != accessor) continue;
+        if (i->computed_key) return false;
+        Atom const* name = checker_atom(me, cstr_sv(&i->name_string));
+        Ty const* apparent = ty_apparent_type(me, contextual);
+        TyList parts = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+        for (u32 k = 0; k < parts.len; k++) {
+            if (!(parts.data[k]->flags & TYF_OBJECT)) continue;
+            if (ty_find_prop(me, parts.data[k], name).found) return true;
+        }
+        return false;
+    }
+    return false;
+}
+
 Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter) {
     Signature const* sig = single_call_signature(me, ty_function_type(me, accessor));
     if (!sig) return any_type(me);
@@ -4547,6 +4590,18 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     // (Without one, tsc's getReturnTypeFromBody widens a unit type only, no contextual type for an accessor: a union of
     // literals stays)
     if (getter) {
+        // (Typed by a call's resolution: `this` is any, see getter_typed_by_resolution(). Without remembering what the
+        // body's expressions are then: tsc's deferred check of the body types them once the call is resolved)
+        bool nested = false;
+        if (!accessor->ret_explicit && !my lazy_getter && getter_typed_by_resolution(me, accessor, &nested)) {
+            my lazy_getter = accessor;
+            my lazy_getter_nested = nested;
+            my flow_uncached++;
+            Ty const* ret = signature_return_type(me, sig);
+            my flow_uncached--;
+            my lazy_getter = nullptr;
+            return !ty_is_unit(ret) ? ret : widen_literals(me, ret);
+        }
         Ty const* ret = signature_return_type(me, sig);
         return accessor->ret_explicit || !ty_is_unit(ret) ? ret : widen_literals(me, ret);
     }

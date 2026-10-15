@@ -151,22 +151,17 @@ passing tests).
   { return this; } }` inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<...>`
   (the contextual `this` of a getter in a literal whose contextual type is the inferred union), tttt `{}`. Medium each.
 - circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
-- recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (an inference pair met again on the visiting
-  stack is let through once, ttttRecursiveUnionInferenceDepth). Left: the getter `{ get value() { return this; } }`
-  inside the unboxed literal. Mechanism found 2026-10-15 (agent A, tsgo probes): tsgo types an object literal's
-  accessors lazily (checkObjectLiteral only checkNodeDeferred's them; methods and function expressions get their return
-  type during the literal's check, contextuallyCheckFunctionExpressionOrObjectLiteralMethod). For a literal (nested)
-  in a call argument the getter is first typed by the call's own resolution (inferFromProperties, the applicability
-  relation) after the argument's pushed contextual type is popped, so its literal's contextual type comes from
-  getContextualTypeForArgumentAtIndex with resolvingSignature: any. So `declare function h(b: Box<number>): void;
-  h({ get value() { return this; } })` has `value: any` and no error in tsgo (tttt: TS2322, a spurious diagnostic), while
-  the deferred body check later types the `this` node with the resolved signature (`>this : Box<number>`, and its
-  symbol). A getter the resolution never touches (no property of its name in the parameter type: `g({ m() {..}, get
-  z() { return this; } })` with `{ m(): T }`) is typed after resolution, with the resolved contextual type. Tried in
-  tttt (getter `this` = any while the outermost literal's call is in flight): the getter types came right but the
-  `this` expression's cached type and symbol became any (tttt types the getter during the literal's check and caches
-  the body's expressions). Needs the getter's return type computed without caching its body's expression types, or
-  a real deferred accessor type; ~a session (the probes are the snippets above).
+- recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (ttttRecursiveUnionInferenceDepth), and the
+  getter's lazy typing since (ttttLiteralGetterDuringResolution: an object literal getter a call's resolution types
+  has `this` any in an argument literal, the literal's own type in a literal nested in one; computed uncached so the
+  body's deferred check types `this` with the resolved signature, ty_object_literal_accessor_type()). Left, the
+  nested case: tsgo's `this` there is the widened literal *after* its check, whose getter property is the getter
+  itself, a self-referential type (W = { readonly value: W }: an instrumented tsgo's inference walks W.value back to
+  W); tttt types the getter while checking the literal, so `this` is the literal as far as it is built, and unbox's
+  inference then gets one candidate more (`{ readonly value: any }` where tsgo infers `{ readonly value: { readonly
+  value: any } }`), and the deferred `this` prints differently. Needs object literal getter properties typed lazily
+  (a Prop whose type is the getter's, resolved on first ask, shared by the widened copy): a session, broad (widening,
+  freshness, relations of literals).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`

@@ -402,6 +402,9 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     memo->state = LAZY_STATE_IN_FLIGHT;
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
+    // (An object literal getter a call's resolution types: nothing in its body is remembered, see
+    // ty_object_literal_accessor_type())
+    if (my lazy_getter == function) my flow_uncached = isolation.uncached;
     // Unless the function is an argument of the call inferring now, nothing in its body is an argument of that call
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;

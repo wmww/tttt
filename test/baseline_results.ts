@@ -290,6 +290,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLiteralGetterDuringResolution': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLocalAliasAfterExport': {
         errors: true,
         symbols: true,

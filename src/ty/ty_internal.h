@@ -88,6 +88,7 @@ enum {
     KEY_BINDING_ACCESS_KEY, // ObjectBindingItem -> the computed key its element's type was read with (the one TS2538 is about)
     KEY_LITERAL_INFERENCE, // Object literal Expr -> the serial (cast, never 0) of the OuterInference its KEY_LITERAL_CONTEXT came from
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
+    KEY_LITERAL_ARG_OF, // Object literal Expr -> the CallExpr it is an argument of (set when the call is first resolved)
     KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function -> TyDeclGroup
     KEY_DECL_GROUP_OF,  // Symbol, declaration (block) -> TyDeclGroup
     KEY_JSX_ATTRIBUTE,  // JsxAttribute -> the type its element's attributes checked it as (last check)
@@ -331,6 +332,7 @@ void ty_record_call_anchors(Checker* me, CallExpr const* call); // expr.c
 // checked against if that is known (else null). False while unresolved, or when the arguments' contextual types were
 // the resolved ones already (a non-generic call of one signature)
 bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Signature const** sig, TyMapper const** mapper, Ty const** param_type); // call.c
+bool ty_call_resolution_in_flight(Checker* me, CallExpr const* call); // call.c
 Ty const* ty_mapped_template_fresh(Checker* me, MappedInfo const* mapped); // relate.c
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference

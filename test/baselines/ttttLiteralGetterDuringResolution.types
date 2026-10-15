@@ -1,0 +1,70 @@
+//// [test/cases/ttttLiteralGetterDuringResolution.ts] ////
+
+=== ttttLiteralGetterDuringResolution.ts ===
+// tsc types an object literal's getters lazily: one in a call's argument is first typed by the call's resolution, once
+// the argument's contextual type is popped, so its `this` is the resolving signature's any (no TS2322 below). The
+// deferred check of its body later types `this` with the resolved signature. A getter the resolution never asks for
+// (`z`: no property of its name in the parameter type) is typed afterwards, with the resolved contextual type
+interface Box<T> { value: T };
+>value : T
+
+declare function h(b: Box<number>): void;
+>h : (b: Box<number>) => void
+>b : Box<number>
+
+h({ get value() { return this; } });
+>h({ get value() { return this; } }) : void
+>h : (b: Box<number>) => void
+>{ get value() { return this; } } : { readonly value: any; }
+>value : any
+>this : Box<number>
+
+declare function k(b: { value: number, w: string }): void;
+>k : (b: { value: number; w: string; }) => void
+>b : { value: number; w: string; }
+>value : number
+>w : string
+
+k({ w: "", get value() { return this.w; } });
+>k({ w: "", get value() { return this.w; } }) : void
+>k : (b: { value: number; w: string; }) => void
+>{ w: "", get value() { return this.w; } } : { w: string; readonly value: any; }
+>w : string
+>"" : ""
+>value : any
+>this.w : string
+>this : { value: number; w: string; }
+>w : string
+
+const o: Box<number> = { get value() { return this; } };
+>o : Box<number>
+>{ get value() { return this; } } : { readonly value: Box<number>; }
+>value : Box<number>
+>this : Box<number>
+
+declare function g<T>(box: Box<T>): T
+>g : <T>(box: Box<T>) => T
+>box : Box<T>
+
+g({ get value() { return this; } });
+>g({ get value() { return this; } }) : any
+>g : <T>(box: Box<T>) => T
+>{ get value() { return this; } } : { readonly value: any; }
+>value : any
+>this : Box<any>
+
+declare function m<T>(b: { m(): T }): T;
+>m : <T>(b: { m(): T; }) => T
+>b : { m(): T; }
+>m : () => T
+
+const y = m({ m() { return 1; }, get z() { return this; } });
+>y : number
+>m({ m() { return 1; }, get z() { return this; } }) : number
+>m : <T>(b: { m(): T; }) => T
+>{ m() { return 1; }, get z() { return this; } } : { m(): number; readonly z: { m(): number; }; }
+>m : () => number
+>1 : 1
+>z : { m(): number; }
+>this : { m(): number; }
+
