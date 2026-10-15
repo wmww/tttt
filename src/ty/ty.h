@@ -1645,6 +1645,9 @@ struct ClassItem;
 Ty const* ty_class_field_symbol_type(Checker* me, struct ClassDecl const* class_decl, struct ClassItem const* field);
 // `import { x }` of a property of what `export =` names (SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) that it doesn't have
 bool ty_export_equals_property_missing(Checker* me, Symbol const* property);
+// What an import tsc combines means as a type (SymbolAlias.combined_type): the combined interface when the value has the
+// property, else null (the alias's own target)
+Symbol const* ty_alias_combined_type(Checker* me, Symbol const* alias);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
 // What `import("m")` promises: the module's value, with a synthetic `default` for an `export =` module
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct SourceFile const* importer);

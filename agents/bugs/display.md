@@ -227,9 +227,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound (tsgo's chain relates `string`, not T's constraint
   `"email" | "text"`, to `ChannelOfType<T, EmailChannel>["type"] & ...`, twice: some constraint/apparent-type step
   tttt doesn't take; a relation trace would show it), reactReduxLikeDeferredInferenceAllowsAssignment and
-  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
-  mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
-  `use(): this`).
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels).
 - The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
   declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by

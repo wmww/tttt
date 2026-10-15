@@ -178,10 +178,6 @@ passing tests).
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
-- mergedDeclarations7: tsc's combineValueAndTypeSymbols (a named import from an `export =` whose value has property
-  `Passport` and whose namespace exports interface `Passport`) makes a transient symbol whose declared type is a
-  *fresh* interface type with its own `this`, so `use(): this` fails structurally (TS2322 "could be instantiated with
-  a different subtype"). Needs a synthetic merged symbol with its own declared type. Quirk, low value.
 ## Narrowing and flow
 - **Destructured references and widening** (ex plan 49; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
   a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*

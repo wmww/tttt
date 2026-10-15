@@ -204,8 +204,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   tsgo's deeper lines also index through the true branch's substitution (`TI[keyof TI & Extract<string, keyof TD>]`,
   tttt `TI[Extract<string, keyof TD>]`), which keeps its chain shorter. Probe: Shared/Matching with `<TI, TD>` assigned
   (/tmp-style: `function f<TI, TD>(m: Matching<TI, TD>) { const s: Shared<TI, TD> = m; }`). Medium-large.
-  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),
-  inferFromGenericFunctionReturnTypes3.
+  Also: inferFromGenericFunctionReturnTypes3.
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
   }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target
   `Array<IWorkspaceFileEditDto | IWorkspaceTextEditDto | IWorkspaceCellEditDto>`, `Dto<T>` a conditional over a

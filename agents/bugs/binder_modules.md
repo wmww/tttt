@@ -20,12 +20,6 @@ clone is a *different* symbol than the one a later lookup finds:
   type `{ default: () => Moment; }`, moment's own symbol keeps 4 declarations); tttt merges into moment. Needs the
   namespace-import clone (TyAnonymous.module_clone / synthetic_default) to be a binder symbol augmentations can
   target.
-- mergedDeclarations7: `import { Passport } from "passport"` of an `export =` const+namespace. tsc's
-  getExternalModuleMember combines the namespace's interface `Passport` with the const's property `Passport`
-  (combineValueAndTypeSymbols): a fresh transient symbol with the interface's flags, so getDeclaredTypeOfSymbol makes
-  a *second* `Passport` interface type with its own `this`; `passport.use()` (PassportStatic) is then not assignable
-  to it (TS2322, "'this' could be instantiated with a different subtype"), printed `Passport` vs `passport.Passport`.
-  A tsc quirk; emulating it means a declared type per combined alias symbol (PortItem value_target + type target).
 - jsExportMemberMergedWithModuleAugmentation: `module.exports = { Abcde }` (shorthand only) binds each property as an
   alias export, no export= (tsc's bindModuleExportsAssignment); the augmentation merges into the file's module
   symbol (a clone recorded as its merged symbol), printed `Symbol("./test", Decl(test.js, 0, 0), Decl(index.ts, 0,

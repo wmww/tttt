@@ -1417,6 +1417,9 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
 // Whether `found`, where the type is printed, is the `symbol` the written name resolved to
 static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symbol) {
     if (same_symbol(me, found, symbol)) return true;
+    // (An import tsc combines is a type of its own: SymbolAlias.combined_type)
+    Symbol const* combined = ty_alias_combined_type(me, found);
+    if (combined) return combined == symbol;
     // (Another alias of the same thing: `m4.d` written under `import m4 = require("./m")` in one file is reused in
     // another that imports the module as m4 too; or the thing itself, where an imported name is printed in the file
     // that declares it)

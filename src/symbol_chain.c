@@ -241,6 +241,8 @@ static bool is_accessible(
     if (!from_table) return false;
     // (An alias a cross-file merge went through is in no table to tsgo: the clone of its target replaced it)
     if (symbol_rare(from_table)->merge_detached) return false;
+    // (Nor does an import that tsc combines (SymbolAlias.combined_type) name the interface: it is a symbol of its own)
+    if (from_table != symbol && current_checker && ty_alias_combined_type(current_checker, from_table)) return false;
     Symbol const* named = resolved ? resolved : from_table;
     if (named != symbol && identity(me, named) != identity(me, symbol)) {
         // (tsgo's isAccessible resolves an alias that resolves to another alias on: an alias merged with a type, `type
@@ -612,9 +614,22 @@ static Symbol const* alias_in_container(ChainCtx* me, Symbol const* container, S
 // The module whose `export =` is the container (tsc's getFileSymbolIfFileSymbolExportEqualsContainer)
 static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container) {
     if (!container->decl_count) return nullptr;
-    SourceFile const* file = span_source(container->decls[0].name);
-    if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
-    Symbol const* module = file->scope->container;
+    // (The ambient module a declaration is in counts too, `declare module "m" { namespace n {} export = n }`:
+    // tsgo's getExternalModuleContainer)
+    Scope const* block = container->decls[0].block;
+    while (block && block->kind != SCOPE_MODULE && !(block->kind == SCOPE_NAMESPACE && block->container &&
+        block->container->is_module && block->container->module && !block->container->module->file)
+    ) {
+        block = block->parent;
+    }
+    Symbol const* module = nullptr;
+    if (block && block->kind == SCOPE_NAMESPACE) {
+        module = block->container;
+    } else {
+        SourceFile const* file = span_source(container->decls[0].name);
+        if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
+        module = file->scope->container;
+    }
     Symbol const* export_equals = module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
     return export_equals && same_reference(me, export_equals, container) ? module : nullptr;
 }

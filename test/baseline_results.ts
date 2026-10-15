@@ -23157,9 +23157,9 @@ const baselines = {
         types: true,
     },
     'mergedDeclarations7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mergedEnumDeclarationCodeGen': {
         errors: true,

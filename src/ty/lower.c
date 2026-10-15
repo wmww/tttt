@@ -597,6 +597,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         }
     }
     Symbol const* decl = canonical(me, identifier->target);
+    // An import of an interface that the value of the module's `export =` has as a property too: tsc's combined symbol,
+    // whose declared type is an interface of its own (SymbolAlias.combined_type)
+    Symbol const* combined = decl && !identifier_type_namespace_count(identifier) ? ty_alias_combined_type(me, identifier->symbol) : nullptr;
+    if (combined) decl = combined;
     if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
         !identifier_type_namespace_count(identifier) && !span_valid(identifier_type_import_span(identifier))
     ) {
@@ -1589,6 +1593,11 @@ static Ty const* export_equals_property_type_of(Checker* me, Symbol const* symbo
         return ret;
     }
     return ty_prop_type_of(me, assigned, name);
+}
+
+Symbol const* ty_alias_combined_type(Checker* me, Symbol const* alias) {
+    if (!alias || !(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->combined_type) return nullptr;
+    return ty_export_equals_property_missing(me, alias->alias->value_target) ? nullptr : alias->alias->combined_type;
 }
 
 bool ty_export_equals_property_missing(Checker* me, Symbol const* property) {

@@ -220,6 +220,10 @@ typedef struct SymbolAlias {
     // combineValueAndTypeSymbols). `export default F` of a local type F and an exported value F: the value (tsc's
     // local symbol with an exportSymbol). Null otherwise
     Symbol* value_target;
+    // ... when the type half is an interface: tsc's combined symbol, an interface of its own with the interface's
+    // declarations (getDeclaredTypeOfSymbol makes a second interface type, with a `this` of its own). Which one a type
+    // reference means is up to the checker: the combined one only if the value has the property (lower_identifier())
+    Symbol* combined_type;
     // An import or re-export of a name its module only exports through `export type *`: that star
     PortItem const* type_only_star;
     // JavaScript `exports.C = class {}`: the class expression, whose symbol is the target (tsc's isAliasableExpression)

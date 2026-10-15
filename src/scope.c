@@ -3474,6 +3474,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
                     });
                     if (!found) return property;
                     my alias->value_target = property;
+                    Symbol* type = (Symbol*)resolve_if_pure_alias(found);
+                    if (type && (type->flags & SYMBOL_TYPE) == SYMBOL_INTERFACE && !(type->flags & (SYMBOL_VALUE | SYMBOL_NAMESPACE))) {
+                        Symbol* combined = binder_new_symbol(my binder, type->name, SYMBOL_INTERFACE);
+                        combined->name_span = type->name_span;
+                        for (u32 i = 0; i < type->decl_count; i++) symbol_add_decl(combined, type->decls[i]);
+                        my alias->combined_type = combined;
+                    }
                 }
                 // (Neither the namespace nor the value has it: TS2305 below)
             }
