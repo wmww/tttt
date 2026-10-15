@@ -2996,6 +2996,8 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
 static void w_node(Walk* me, TypeNode const* node) {
     SINKS_OFF;
     TyParamNames names = walk_param_names(me);
+    // (JavaScript's annotations go through the node builder, tsgo's TryJSTypeNodeToTypeNode)
+    names.as_written = !my file->is_js;
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     ty_display_node(my checker, d, node);

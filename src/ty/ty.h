@@ -2424,6 +2424,9 @@ typedef struct TyParamName {
 } TyParamName;
 typedef struct TyParamNames {
     TyList in_scope; // The declared type parameters in scope where the type is printed, innermost last
+    // Declaration emit copying an annotation as written (tsgo's declaration transformer visits it, the node builder
+    // never sees it): no type parameter is renamed (`infer T` inside `type A<T>` stays T)
+    bool as_written;
     // The names given so far (tsc's typeParameterNames and typeParameterNamesByText): a signature is a scope, it drops
     // the names given inside it on its way out
     TyParamName* given;

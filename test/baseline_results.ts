@@ -223,6 +223,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferShadowAsWritten': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttInferenceContextNotInDeclarationInitializer': {
         errors: true,
         symbols: true,

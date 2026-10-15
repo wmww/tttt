@@ -1,0 +1,95 @@
+//// [test/cases/ttttInferShadowAsWritten.ts] ////
+
+=== ttttInferShadowAsWritten.ts ===
+// An annotation the declaration transformer copies as written keeps its `infer` names, even when they shadow a type
+// parameter in scope; a type the node builder prints (an inferred one) renames them (T_1)
+export type A<T> = T extends { a: infer T } ? T : never;
+>A : Symbol(A, Decl(ttttInferShadowAsWritten.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 2, 14))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 2, 14))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 2, 30))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 2, 39))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 2, 39))
+
+export type B<T> = T extends { a: infer T extends string } ? T : never;
+>B : Symbol(B, Decl(ttttInferShadowAsWritten.ts, 2, 56))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 3, 14))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 3, 14))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 3, 30))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 3, 39))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 3, 39))
+
+export type C<T> = T extends [infer U, infer U] ? U : never;
+>C : Symbol(C, Decl(ttttInferShadowAsWritten.ts, 3, 71))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 4, 14))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 4, 14))
+>U : Symbol(U, Decl(ttttInferShadowAsWritten.ts, 4, 35), Decl(ttttInferShadowAsWritten.ts, 4, 44))
+>U : Symbol(U, Decl(ttttInferShadowAsWritten.ts, 4, 35), Decl(ttttInferShadowAsWritten.ts, 4, 44))
+>U : Symbol(U, Decl(ttttInferShadowAsWritten.ts, 4, 35), Decl(ttttInferShadowAsWritten.ts, 4, 44))
+
+export declare const g: <T>(x: T) => T extends { a: infer T } ? T : never;
+>g : Symbol(g, Decl(ttttInferShadowAsWritten.ts, 5, 20))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 5, 25))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 5, 28))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 5, 25))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 5, 25))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 5, 48))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 5, 57))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 5, 57))
+
+export const h = <T,>(x: T) => null! as T extends { a: infer T } ? T : never;
+>h : Symbol(h, Decl(ttttInferShadowAsWritten.ts, 6, 12))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 6, 18))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 6, 22))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 6, 18))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 6, 18))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 6, 51))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 6, 60))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 6, 60))
+
+export const k = (x: <T>(a: T) => T extends {a: infer T} ? T : never) => x;
+>k : Symbol(k, Decl(ttttInferShadowAsWritten.ts, 7, 12))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 7, 18))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 7, 22))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 7, 25))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 7, 22))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 7, 22))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 7, 45))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 7, 53))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 7, 53))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 7, 18))
+
+export function k2<T>(x: T extends {a: infer T} ? T : never) { return x; }
+>k2 : Symbol(k2, Decl(ttttInferShadowAsWritten.ts, 7, 75))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 8, 19))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 8, 22))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 8, 19))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 8, 36))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 8, 44))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 8, 44))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 8, 22))
+
+export function k3<T>(x: { p: T extends {a: infer T} ? T : never }) { return x.p; }
+>k3 : Symbol(k3, Decl(ttttInferShadowAsWritten.ts, 8, 74))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 9, 19))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 9, 22))
+>p : Symbol(p, Decl(ttttInferShadowAsWritten.ts, 9, 26))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 9, 19))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 9, 41))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 9, 49))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 9, 49))
+>x.p : Symbol(p, Decl(ttttInferShadowAsWritten.ts, 9, 26))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 9, 22))
+>p : Symbol(p, Decl(ttttInferShadowAsWritten.ts, 9, 26))
+
+export class C<T> { m(x: T extends {a: infer T} ? T : never) { return x; } }
+>C : Symbol(C, Decl(ttttInferShadowAsWritten.ts, 9, 83))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 10, 15))
+>m : Symbol(C.m, Decl(ttttInferShadowAsWritten.ts, 10, 19))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 10, 22))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 10, 15))
+>a : Symbol(a, Decl(ttttInferShadowAsWritten.ts, 10, 36))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 10, 44))
+>T : Symbol(T, Decl(ttttInferShadowAsWritten.ts, 10, 44))
+>x : Symbol(x, Decl(ttttInferShadowAsWritten.ts, 10, 22))
+

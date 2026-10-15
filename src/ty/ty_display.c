@@ -1337,7 +1337,7 @@ static bool declares_value_param_named(FunctionImpl const* function, Ty const* p
 }
 static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
     TyParamNames* names = d.param_names;
-    if (!names || param->param.state->is_this) return param->param.name;
+    if (!names || names->as_written || param->param.state->is_this) return param->param.name;
     for (u32 i = names->len; i--;) {
         if (names->given[i].param != param) continue;
         if (names->used < i + 1) names->used = i + 1;

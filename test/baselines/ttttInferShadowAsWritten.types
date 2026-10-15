@@ -1,0 +1,59 @@
+//// [test/cases/ttttInferShadowAsWritten.ts] ////
+
+=== ttttInferShadowAsWritten.ts ===
+// An annotation the declaration transformer copies as written keeps its `infer` names, even when they shadow a type
+// parameter in scope; a type the node builder prints (an inferred one) renames them (T_1)
+export type A<T> = T extends { a: infer T } ? T : never;
+>A : A<T>
+>a : T_1
+
+export type B<T> = T extends { a: infer T extends string } ? T : never;
+>B : B<T>
+>a : T_1
+
+export type C<T> = T extends [infer U, infer U] ? U : never;
+>C : C<T>
+
+export declare const g: <T>(x: T) => T extends { a: infer T } ? T : never;
+>g : <T>(x: T) => T extends { a: infer T_1; } ? T_1 : never
+>x : T
+>a : T_1
+
+export const h = <T,>(x: T) => null! as T extends { a: infer T } ? T : never;
+>h : <T>(x: T) => T extends { a: infer T_1; } ? T_1 : never
+><T,>(x: T) => null! as T extends { a: infer T } ? T : never : <T>(x: T) => T extends { a: infer T_1; } ? T_1 : never
+>x : T
+>null! as T extends { a: infer T } ? T : never : T extends { a: infer T_1; } ? T_1 : never
+>null! : never
+>a : T_1
+
+export const k = (x: <T>(a: T) => T extends {a: infer T} ? T : never) => x;
+>k : (x: <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never) => <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never
+>(x: <T>(a: T) => T extends {a: infer T} ? T : never) => x : (x: <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never) => <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never
+>x : <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never
+>a : T
+>a : T_1
+>x : <T>(a: T) => T extends { a: infer T_1; } ? T_1 : never
+
+export function k2<T>(x: T extends {a: infer T} ? T : never) { return x; }
+>k2 : <T>(x: T extends { a: infer T_1; } ? T_1 : never) => T extends { a: infer T_1; } ? T_1 : never
+>x : T extends { a: infer T_1; } ? T_1 : never
+>a : T_1
+>x : T extends { a: infer T_1; } ? T_1 : never
+
+export function k3<T>(x: { p: T extends {a: infer T} ? T : never }) { return x.p; }
+>k3 : <T>(x: { p: T extends { a: infer T_1; } ? T_1 : never; }) => T extends { a: infer T_1; } ? T_1 : never
+>x : { p: T extends { a: infer T_1; } ? T_1 : never; }
+>p : T extends { a: infer T_1; } ? T_1 : never
+>a : T_1
+>x.p : T extends { a: infer T_1; } ? T_1 : never
+>x : { p: T extends { a: infer T_1; } ? T_1 : never; }
+>p : T extends { a: infer T_1; } ? T_1 : never
+
+export class C<T> { m(x: T extends {a: infer T} ? T : never) { return x; } }
+>C : import("./ttttInferShadowAsWritten").C<T>
+>m : (x: T extends { a: infer T_1; } ? T_1 : never) => T extends { a: infer T_1; } ? T_1 : never
+>x : T extends { a: infer T_1; } ? T_1 : never
+>a : T_1
+>x : T extends { a: infer T_1; } ? T_1 : never
+
