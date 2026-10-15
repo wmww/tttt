@@ -31,6 +31,11 @@ export function M<T>(x: T) {
   abstract class P { data!: T[]; static s = 1; }
   return x ? P : undefined;
 }
+// (A class's prototype counts for the shape: one construct signature with it is a type literal)
+export function N<T>(x: T) {
+  class P { data!: T[]; }
+  return Object.assign(P, { s: 1 });
+}
 
 
 //// [ttttDeclarationAbstractClassLiteral.js]
@@ -80,6 +85,13 @@ export function M(x) {
     }
     return x ? P : undefined;
 }
+// (A class's prototype counts for the shape: one construct signature with it is a type literal)
+export function N(x) {
+    class P {
+        data;
+    }
+    return Object.assign(P, { s: 1 });
+}
 
 
 //// [ttttDeclarationAbstractClassLiteral.d.ts]
@@ -112,3 +124,10 @@ export declare function M<T>(x: T): ((abstract new () => {
 }) & {
     s: number;
 }) | undefined;
+export declare function N<T>(x: T): {
+    new (): {
+        data: T[];
+    };
+} & {
+    s: number;
+};

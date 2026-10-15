@@ -94,4 +94,23 @@ export function M<T>(x: T) {
 >P : typeof P
 >undefined : undefined
 }
+// (A class's prototype counts for the shape: one construct signature with it is a type literal)
+export function N<T>(x: T) {
+>N : <T>(x: T) => typeof P & { s: number; }
+>x : T
+
+  class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return Object.assign(P, { s: 1 });
+>Object.assign(P, { s: 1 }) : typeof P & { s: number; }
+>Object.assign : { <T_1 extends {}, U>(target: T_1, source: U): T_1 & U; <T_1 extends {}, U, V>(target: T_1, source1: U, source2: V): T_1 & U & V; <T_1 extends {}, U, V, W>(target: T_1, source1: U, source2: V, source3: W): T_1 & U & V & W; (target: object, ...sources: any[]): any; }
+>Object : ObjectConstructor
+>assign : { <T_1 extends {}, U>(target: T_1, source: U): T_1 & U; <T_1 extends {}, U, V>(target: T_1, source1: U, source2: V): T_1 & U & V; <T_1 extends {}, U, V, W>(target: T_1, source1: U, source2: V, source3: W): T_1 & U & V & W; (target: object, ...sources: any[]): any; }
+>P : typeof P
+>{ s: 1 } : { s: number; }
+>s : number
+>1 : 1
+}
 

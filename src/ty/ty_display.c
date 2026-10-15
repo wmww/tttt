@@ -5092,7 +5092,8 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     }
     if (display_over(d) || anonymous_elided(d, ty)) return false; // (The placeholder is a keyword)
     Members const* members = ty_members(me, ty);
-    return !written_prop_count(d, members) && !members->index_count && !members->mapped &&
+    // (A class's `prototype` counts, even where it isn't written: `{ new (): C; }`, tsc's createTypeNodeFromObjectType)
+    return !members->prop_count && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
 }
 

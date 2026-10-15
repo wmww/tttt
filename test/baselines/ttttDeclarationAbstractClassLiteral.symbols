@@ -109,4 +109,23 @@ export function M<T>(x: T) {
 >P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 28))
 >undefined : Symbol(undefined)
 }
+// (A class's prototype counts for the shape: one construct signature with it is a type literal)
+export function N<T>(x: T) {
+>N : Symbol(N, Decl(ttttDeclarationAbstractClassLiteral.ts, 29, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 18))
+
+  class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 32, 11))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 18))
+
+  return Object.assign(P, { s: 1 });
+>Object.assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 31, 28))
+>s : Symbol(s, Decl(ttttDeclarationAbstractClassLiteral.ts, 33, 27))
+}
 
