@@ -20,4 +20,7 @@ went to bugs/type_core.md and the member-symbol copies to hacks.md, /tmp's old s
   (ChangeToDeclarationExtension with the content mapper's extensions) and emits a supplemental module's
   (`component.vue.0.d.ts`, with a `/// <reference path>` to it); tttt writes `x.vue.d.ts` and no supplemental one
   (`contentMapperSupplementalModule`, the suite's dts component).
+- **A unique symbol member's name in TS2540** (found by plan 71's audit): `const a = Symbol(); class C { get [a]()
+  { return ""; } } declare const c: C; c[a] = "x";` tsgo says `Cannot assign to '[a]'`, tttt `'__@a@62'` (the
+  internal name leaks into the message; other property-name messages likely print it too).
 - from human: please stop the agent loop after the next triage session
