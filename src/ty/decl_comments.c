@@ -244,6 +244,32 @@ char const* decl_comments_end(DeclComments const* me, char const* end, char cons
     return c < stop && *c && strchr(separators, *c) ? c + 1 : end;
 }
 
+bool decl_comments_last_contains(DeclComments const* me, char const* token, char const* needle) {
+    if (!me || !decl_comments_in_file(me, token)) return false;
+    char const* pos = full_start(me->file, token);
+    char const* end = text_end(me->file);
+    CommentRange last = {0};
+    while (pos < token) {
+        u32 n = line_break_at(pos, end);
+        if (!n) n = space_at(pos, end);
+        if (n) {
+            pos += n;
+            continue;
+        }
+        Comments one;
+        comment_ranges(me->file, pos, true, &one);
+        if (!one.count) break;
+        last = one.ranges[0];
+        pos = one.ranges[0].end;
+    }
+    if (!last.start) return false;
+    size_t length = strlen(needle);
+    for (char const* c = last.start; c + length <= last.end; c++) {
+        if (memcmp(c, needle, length) == 0) return true;
+    }
+    return false;
+}
+
 bool decl_comments_in_file(DeclComments const* me, char const* token) {
     if (!me || !me->file || !token) return false;
     char const* text = cstr_str(&me->file->contents);

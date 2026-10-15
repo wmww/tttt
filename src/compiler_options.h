@@ -127,6 +127,7 @@ typedef enum ModuleDetectionKind {
     X(resolve_package_json_imports, "resolvepackagejsonimports", false) \
     X(rewrite_relative_import_extensions, "rewriterelativeimportextensions", false) \
     /* (Command line only: content mappers may run. tttt runs no external code, so this only decides TS18068) */ \
+    X(emit_bom, "emitbom", false) \
     X(remove_comments, "removecomments", false) \
     X(run_external_code, "runexternalcode", false) \
     X(skip_default_lib_check, "skipdefaultlibcheck", false) \

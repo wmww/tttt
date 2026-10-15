@@ -2059,7 +2059,17 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
-                if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
+                // (`+readonly` and `+?` as written: the printer keeps the token)
+                bool plus_readonly = false, plus_optional = false;
+                if (d.multiline && span_valid(i->key.span)) {
+                    // (The key's span: from the modifiers to past the `?`)
+                    plus_readonly = i->key.span.buf[0] == '+';
+                    char const* close = span_end_ptr(i->key.span);
+                    while (close > i->key.span.buf && close[-1] != ']') close--;
+                    while (*close == ' ' || *close == '\t' || *close == '\n' || *close == '\r') close++;
+                    plus_optional = close < span_end_ptr(i->key.span) && close[0] == '+';
+                }
+                if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? (plus_readonly ? c_sv("+readonly ") : c_sv("readonly ")) : c_sv("-readonly "));
                 out_lit(d, "[");
                 if (d.param_names && i->key.mapped->owned_symbol) {
                     out_type_param_name(me, d, ty_type_param(me, i->key.mapped->owned_symbol), true);
@@ -2073,7 +2083,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     display_node(me, d, &i->key.mapped->as_type);
                 }
                 out_lit(d, "]");
-                if (i->key.mapped->optional) out(d, i->key.mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
+                if (i->key.mapped->optional) out(d, i->key.mapped->optional > 0 ? (plus_optional ? c_sv("+?") : c_sv("?")) : c_sv("-?"));
                 out_lit(d, ": ");
                 if (i->type.parsed) display_node(me, d, &i->type);
                 else out(reused_if(d, false), c_sv("any"));
@@ -2350,6 +2360,11 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                 }
                 bool single = node->value_span.size && node->value_span.buf[0] == '\'';
                 display_quoted_string(d, cstr_sv(&node->value.string), single, false);
+                break;
+            }
+            // (A number the declaration transformer visits prints as written: `1e999`)
+            if (d.transformer_node && d.multiline && node->value.tag == VALUE_NUMBER && span_valid(node->value_span)) {
+                out(d, span_sv(node->value_span));
                 break;
             }
             // Other literals print normalized (`0x10` is 16)
@@ -3700,6 +3715,15 @@ static void display_pseudo_in(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
     else out_lit(d, "any");
 }
 
+// An object literal member's name: a computed one as written (tsgo's reuseName), else as the property prints
+static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* prop, ObjectExprItem const* item) {
+    if (d.multiline && item && span_valid(item->name_span) && item->name_span.buf[0] == '[') {
+        out(d, span_sv(item->name_span));
+        return;
+    }
+    display_member_name(me, d, prop);
+}
+
 // A parameter as its declaration says (pseudoParameterToNode): `type` its type in the signature
 static void display_pseudo_param(Checker* me, TyDisplay d, PseudoParam const* param, Ty const* type) {
     Binding const* binding = &param->arg->initializer.binding;
@@ -3906,7 +3930,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                     case PSEUDO_MEMBER_METHOD: {
                         Signature const* sig = type ? ty_single_signature(me, type, false, false) : nullptr;
                         if (prop && csview_equals(atom_sv(prop->name), "new")) out_lit(name_d, "\"new\"");
-                        else if (prop) display_member_name(me, name_d, prop);
+                        else if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         if (is_const) out_lit(member_d, ": ");
                         u32 saved = param_names_enter(member_d); // (Its type parameters are its own)
                         TyDisplay method_d = member_d;
@@ -3921,14 +3945,14 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         break;
                     }
                     case PSEUDO_MEMBER_PROPERTY:
-                        if (prop) display_member_name(me, name_d, prop);
+                        if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         out_lit(member_d, ": ");
                         display_pseudo_in(me, member_d, member->type, type,
                             member->item->tag == OBJECT_ITEM_PROPERTY ? member->item : nullptr, nullptr, false);
                         break;
                     case PSEUDO_MEMBER_SETTER: {
                         out_lit(member_d, "set ");
-                        if (prop) display_member_name(me, name_d, prop);
+                        if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         out_lit(member_d, "(");
                         Ty const* write = prop ? prop_write_type(me, prop) : nullptr;
                         if (member->param_count) {
@@ -3941,7 +3965,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                     }
                     case PSEUDO_MEMBER_GETTER:
                         out_lit(member_d, "get ");
-                        if (prop) display_member_name(me, name_d, prop);
+                        if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         out_lit(member_d, "(): ");
                         display_pseudo(me, member_d, member->type, type);
                         break;

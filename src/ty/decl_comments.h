@@ -39,5 +39,8 @@ void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end);
 // A node's end from the end of its span, which may take in the whitespace and comments after it: back over those. With
 // `separators`, past the one of them that follows (a member's `;`, which is part of it)
 char const* decl_comments_end(DeclComments const* me, char const* end, char const* separators);
+// Whether the last comment between the previous token and `token` contains `needle` (tsc's isInternalDeclaration of a
+// parameter: `@internal`)
+bool decl_comments_last_contains(DeclComments const* me, char const* token, char const* needle);
 // Whether a node starts at `token` in the file the comments are copied from
 bool decl_comments_in_file(DeclComments const* me, char const* token);

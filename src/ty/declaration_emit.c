@@ -1949,8 +1949,12 @@ static void check_field(Walk* me, ClassItem const* item) {
     } else if (item->field.has_explicit_type) {
         check_written_type(me, &item->field.explicit_type);
     } else {
-        serialize_declaration(me, pseudo_of_field(my checker, item), type ? ty_widened_literal(my checker, type) : nullptr,
-            item->field.is_optional, false);
+        // (An optional property's type has undefined: tsc's addOptionality)
+        Ty const* shown = type ? ty_widened_literal(my checker, type) : nullptr;
+        if (shown && item->field.is_optional && my strict_null_checks && ty_without_undefined(my checker, shown) == shown) {
+            shown = ty_union(my checker, (Ty const*[]){ shown, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+        }
+        serialize_declaration(me, pseudo_of_field(my checker, item), shown, item->field.is_optional, false);
     }
     my root = outer_root;
     emit_leave(me, saved);
@@ -3546,6 +3550,8 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     for_each (i, vec_class_item, &cls->items) {
         if (i->tag != CLASS_ITEM_CONSTRUCTOR || !i->constructor.func.has_body) continue;
         for_each (j, vec_function_arg, &i->constructor.func.args) {
+            // (`@internal` in the comment before it: tsc's isInternalDeclaration of a parameter)
+            if (compiler_options()->strip_internal && decl_comments_last_contains(&my comments, j->span.buf, "@internal")) continue;
             if (is_parameter_property(j)) emit_parameter_property(me, &i->constructor.func, j);
         }
     }
@@ -3956,6 +3962,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         w_indent(me);
         if (item->export_import) w_lit(me, "export ");
         w_lit(me, "import ");
+        if (item->type_only) w_lit(me, "type ");
         w(me, span_sv(item->decl_name));
         w_lit(me, " = ");
         if (port->is_import_require) {
@@ -3973,9 +3980,12 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         return;
     }
     bool default_kept = port->main.tag == PORT_IMPORT_DEFAULT && KEPT(port->main.symbol);
-    bool gather_kept = port->main.tag == PORT_IMPORT_GATHER && KEPT(port->main.symbol);
+    // (`import d, * as ns`: the namespace import is one of the items)
+    PortItem const* gather = port->main.tag == PORT_IMPORT_GATHER ? &port->main : nullptr;
+    for_each (i, vec_port_item, &port->items) if (i->tag == PORT_IMPORT_GATHER) gather = i;
+    bool gather_kept = gather && KEPT(gather->symbol);
     u32 named = 0;
-    for_each (i, vec_port_item, &port->items) named += KEPT(i->symbol);
+    for_each (i, vec_port_item, &port->items) named += i->tag != PORT_IMPORT_GATHER && KEPT(i->symbol);
     if (!default_kept && !gather_kept && !named) {
         if (port->module_ref && port->module_ref->file && port->module_ref->file != my file &&
             import_required_by_augmentation(me, port->module_ref->file)
@@ -3999,7 +4009,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     }
     if (gather_kept) {
         w_lit(me, "* as ");
-        w(me, span_sv(port->main.decl_name));
+        w(me, span_sv(gather->decl_name));
     } else if (named) {
         bool* kept = malloc(sizeof(bool) * (size_t)vec_port_item_size(&port->items));
         for_each (i, vec_port_item, &port->items) kept[i_index] = KEPT(i->symbol);
@@ -4286,6 +4296,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         walk.errs = &scratch;
         walk.out = output;
         emit_file(&walk, top);
+        if (compiler_options()->emit_bom) cstr_insert(output, 0, "\xEF\xBB\xBF");
         walk.out = nullptr;
         if (compiler_options()->new_line == 1) {
             cstr crlf = cstr_with_capacity(cstr_size(output) + cstr_size(output) / 16);
