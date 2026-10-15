@@ -1,0 +1,61 @@
+//// [test/cases/ttttDestructuredNarrowingMissingProperty.ts] ////
+
+=== ttttDestructuredNarrowingMissingProperty.ts ===
+// sequelize's connection-options.ts: destructuring a generic union narrows the pattern by its constraint
+// (tsc's getNarrowedTypeOfSymbol), whose element lookup reports TS2339 again on the constraint
+declare const OT: unique symbol;
+>OT : Symbol(OT, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 13))
+
+declare class AD<O extends object = object> { [OT]: O; parse(url: string): O; }
+>AD : Symbol(AD, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 32))
+>O : Symbol(O, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 17))
+>[OT] : Symbol(AD[OT], Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 45))
+>OT : Symbol(OT, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 13))
+>O : Symbol(O, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 17))
+>parse : Symbol(AD.parse, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 54))
+>url : Symbol(url, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 61))
+>O : Symbol(O, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 17))
+
+type CO<T extends AD> = T[typeof OT];
+>CO : Symbol(CO, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 79))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 4, 8))
+>AD : Symbol(AD, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 32))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 4, 8))
+>OT : Symbol(OT, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 13))
+
+type Raw<T extends AD> = (CO<T> & { url?: string }) | string;
+>Raw : Symbol(Raw, Decl(ttttDestructuredNarrowingMissingProperty.ts, 4, 37))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 5, 9))
+>AD : Symbol(AD, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 32))
+>CO : Symbol(CO, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 79))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 5, 9))
+>url : Symbol(url, Decl(ttttDestructuredNarrowingMissingProperty.ts, 5, 35))
+
+function f<T extends AD>(dialect: T, options: Raw<T>): CO<T> {
+>f : Symbol(f, Decl(ttttDestructuredNarrowingMissingProperty.ts, 5, 61))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 11))
+>AD : Symbol(AD, Decl(ttttDestructuredNarrowingMissingProperty.ts, 2, 32))
+>dialect : Symbol(dialect, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 25))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 11))
+>options : Symbol(options, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 36))
+>Raw : Symbol(Raw, Decl(ttttDestructuredNarrowingMissingProperty.ts, 4, 37))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 11))
+>CO : Symbol(CO, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 79))
+>T : Symbol(T, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 11))
+
+  const { url, ...rest } = options;
+>url : Symbol(url, Decl(ttttDestructuredNarrowingMissingProperty.ts, 7, 9))
+>rest : Symbol(rest, Decl(ttttDestructuredNarrowingMissingProperty.ts, 7, 14))
+>options : Symbol(options, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 36))
+
+  if (url) { return dialect.parse(url); }
+>url : Symbol(url, Decl(ttttDestructuredNarrowingMissingProperty.ts, 7, 9))
+>dialect.parse : Symbol(AD.parse, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 54))
+>dialect : Symbol(dialect, Decl(ttttDestructuredNarrowingMissingProperty.ts, 6, 25))
+>parse : Symbol(AD.parse, Decl(ttttDestructuredNarrowingMissingProperty.ts, 3, 54))
+>url : Symbol(url, Decl(ttttDestructuredNarrowingMissingProperty.ts, 7, 9))
+
+  return rest;
+>rest : Symbol(rest, Decl(ttttDestructuredNarrowingMissingProperty.ts, 7, 14))
+}
+

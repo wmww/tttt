@@ -3506,7 +3506,10 @@ static bool some_pattern_symbol_assigned(Binding const* binding) {
 
 static Ty const* map_base_constraint(Checker* me, Ty const* ty, void const* arg) {
     (void)arg;
-    Ty const* constraint = ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
+    // (An intersection with a generic part too: `CO<T> & { url?: string }` is `object & { url?: string }`, tsc's
+    // getBaseConstraintOrType)
+    Ty const* constraint = ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED) ||
+        (ty->kind == TY_INTERSECTION && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ? ty_base_constraint(me, ty) : nullptr;
     return constraint ? constraint : ty;
 }
 
@@ -3542,6 +3545,27 @@ Ty const* ty_destructured_narrowed_type(Checker* me, Binding const* binding, Flo
     // generic's constraint that doesn't is TS2488 there next to the declared type's, `[number, number] | undefined`)
     if (pattern->tag == BINDING_ARRAY && my errs && my errs->phase == ERROR_PHASE_TYPECHECK) {
         ty_iterated_type(me, ITERATION_DESTRUCTURING, narrowed, pattern->content_span, my errs);
+    }
+    // (And that the element's property is in it, at the element: sequelize's `const { url, ...rest } = options` of a
+    // generic `Raw<T> | string` is TS2339 on the constraint too)
+    ObjectBindingItem const* item = pattern->tag == BINDING_OBJECT ? binding->parent_item : nullptr;
+    if (item && !item->computed_key && !item->private_name && my errs && my errs->phase == ERROR_PHASE_TYPECHECK &&
+        !(narrowed->flags & TYF_ANY)
+    ) {
+        // (Without the undefined an initializer rules out, or any nullable of an ambient parameter: tsc's
+        // getBindingElementTypeFromParentType, like binding_element_parent_type())
+        Expr const* initializer = pattern->parent ? pattern->default_value :
+            root_initializer(pattern) ? initialized_binding_value(root_initializer(pattern)) : nullptr;
+        Ty const* checked = narrowed;
+        if (compiler_options()->strict_null_checks && pattern->ambient && parameter) {
+            checked = ty_non_nullable(me, checked);
+        } else if (compiler_options()->strict_null_checks && initializer &&
+            !has_type_facts(me, ty_expr_type(me, initializer), TF_EQ_UNDEFINED)
+        ) {
+            checked = type_with_facts(me, checked, TF_NE_UNDEFINED);
+        }
+        if (!(checked->flags & TYF_NEVER)) ty_check_property_access(me, checked, ty_literal(me, &item->source), span_null,
+            span_valid(item->source_span) ? item->source_span : binding->content_span, false, true, my errs);
     }
     return ty_binding_element_type_from(me, binding, narrowed);
 }

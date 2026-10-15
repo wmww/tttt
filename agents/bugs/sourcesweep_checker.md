@@ -76,22 +76,10 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   A copy of the file outside the package (modules unresolved) shows another divergence: tsc infers `Auth<any>` (api
   any) from the error-typed config, tttt `Auth<BetterAuthOptions>` (api `FilteredAPI<Record<string, Endpoint>>`) and
   reports TS2722 there. Not reduced further. lynx-store.ts:65 -TS2345 x2 not looked at.
-- sequelize connection-options.ts:50 -TS2339 (2 projects): tsc reports TS2339 twice at `const { url, ...rest } =
-  options` (`options: RawConnectionOptions<Dialect>`, a generic union with string): once on `RawConnectionOptions<
-  Dialect>` (the declaration's check) and once on the constraint `string | (object & { url?: string })`, from the flow
-  analysis of a later `if (url)`: tsc's getInitialTypeOfBindingElement re-reads the initializer with getTypeOfExpression
-  (the binding pattern context substitutes constraints) and getTypeOfDestructuredProperty reports again at the name.
-  tttt's initial_binding_type() takes the binding's declared type for an unannotated element without defaults, so it
-  reports once. Reduced (tsc: 2 TS2339 at 7,11): `declare const OT: unique symbol; declare class AD<O extends object =
-  object> { [OT]: O; parse(url: string): O; } type CO<T extends AD> = T[typeof OT]; type Raw<T extends AD> = (CO<T> & {
-  url?: string }) | string; function f<T extends AD>(dialect: T, options: Raw<T>): CO<T> { const { url, ...rest } =
-  options; if (url) { return dialect.parse(url); } return rest; }`. Mirroring needs an error-reporting re-read of the
-  pattern's parent in initial_binding_type(); not done.
 - sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
   `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
-  reports it, so does a probe with IndexOptions alone); connection-options.ts:50 -TS2339: tsc reports TS2339 twice
-  there, once on `RawConnectionOptions<Dialect>` and once on its constraint `string | (object & { url?: string })`
-  (the binding pattern's contextual type makes the initializer's `options` substitute constraints); tttt only the first.
+  reports it, so does a probe with IndexOptions alone). Now (2026-10-15) it is data-types.ts:2353 instead (`enumOrArray =
+  first` under `@ts-expect-error`), not looked at.
 - folo renderer +TS2883 x7: declaration diagnostics tsc doesn't report, hidden until the TS2345s there were fixed
   (tttt's CLI drops them while other errors exist).
 
@@ -257,36 +245,6 @@ an error-constrained member is any-like but a union of them isn't (getUnionOrInt
 apparent type is the error type, and the union's property needs every member). tttt's check_access treats any union
 member with a type parameter as opaque. Needs reading tsc's getPropertyOfType for unions of intersections first; the
 lone-intersection case must stay silent.
-
-## `OmitConstructors<typeof Model>` is any in sequelize (imported alias), fine as a local copy
-Source sweep, sequelize (`-TS2488`, `-TS2339` in `packages/core`): `target.sequelize` with `target: ModelStatic` is
-`any` in tttt, `Sequelize<AbstractDialect<object, object>>` in tsc, so `for (const model of sequelize.models)` and
-friends lose their errors. `ModelStatic<M> = OmitConstructors<typeof Model> & { new (): M }` (`src/model.d.ts`),
-`OmitConstructors<T> = Pick<T, NonConstructorKeys<T>>` with
-`NonConstructorKeys<T> = { [P in keyof T]: T[P] extends new () => any ? never : P }[keyof T]` (`src/utils/types.ts`).
-
-Repro (a project under /tmp whose tsconfig extends `sequelize/packages/core/tsconfig.json`, `files: ["probe2.ts"]`,
-`rootDir: "/"`):
-
-```ts
-import type { Model } from "<abs>/sequelize/packages/core/src/model";
-import type { OmitConstructors } from "<abs>/sequelize/packages/core/src/utils/types.js";
-declare const o: OmitConstructors<typeof Model>;
-export const s3 = o.sequelize;   // tsc: Sequelize<AbstractDialect<object, object>>, tttt: any
-```
-
-Checked so far: `Pick<typeof Model, NCK>` written out in the probe file, and a local
-`type OC<T> = Pick<T, NCK2<T>>` (same definition) both give the right type; `(typeof Model)["sequelize"]`,
-`keyof typeof Model` (110 keys) and the mapped type's members match tsc. Only the imported alias is any, which smells
-like an instantiation cached while `typeof Model`'s static side was still being resolved (model.d.ts uses
-`ModelStatic` inside `Model` itself), or an alias-instantiation key collision. `TTTT_DEBUG_CYCLE=1` prints nothing.
-utils/types.ts also has an unresolved import (`@sequelize/utils`, NonUndefined/PartialBy), possibly relevant.
-
-Narrowed further: importing the same two aliases from a fresh file (`t2.ts`, copied definitions) gives the right
-type, importing them from sequelize's `utils/types.ts` gives any. So it's the *shared* instantiation
-`OmitConstructors<typeof Model>` that model.d.ts itself creates (through `ModelStatic`, used inside `Model`'s
-statics) that is wrong: most likely computed while `typeof Model` was in flight and cached as any. Circularity
-handling (agent C's area during the plan-52 fan-out).
 
 ## Spelling suggestions counted in check order: the deferred bodies are done, lazy type resolution isn't
 tsc gives at most 10 "Did you mean" suggestions per checker (`suggestionCount` / `maximumSuggestionCount` in

@@ -80,6 +80,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDestructuredNarrowingMissingProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,

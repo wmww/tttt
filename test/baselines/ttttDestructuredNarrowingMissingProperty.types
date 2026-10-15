@@ -1,0 +1,45 @@
+//// [test/cases/ttttDestructuredNarrowingMissingProperty.ts] ////
+
+=== ttttDestructuredNarrowingMissingProperty.ts ===
+// sequelize's connection-options.ts: destructuring a generic union narrows the pattern by its constraint
+// (tsc's getNarrowedTypeOfSymbol), whose element lookup reports TS2339 again on the constraint
+declare const OT: unique symbol;
+>OT : unique symbol
+
+declare class AD<O extends object = object> { [OT]: O; parse(url: string): O; }
+>AD : AD<O>
+>[OT] : O
+>OT : unique symbol
+>parse : (url: string) => O
+>url : string
+
+type CO<T extends AD> = T[typeof OT];
+>CO : CO<T>
+>OT : unique symbol
+
+type Raw<T extends AD> = (CO<T> & { url?: string }) | string;
+>Raw : Raw<T>
+>url : string | undefined
+
+function f<T extends AD>(dialect: T, options: Raw<T>): CO<T> {
+>f : <T extends AD>(dialect: T, options: Raw<T>) => CO<T>
+>dialect : T
+>options : Raw<T>
+
+  const { url, ...rest } = options;
+>url : any
+>rest : any
+>options : Raw<T>
+
+  if (url) { return dialect.parse(url); }
+>url : any
+>dialect.parse(url) : object
+>dialect.parse : (url: string) => object
+>dialect : T
+>parse : (url: string) => object
+>url : any
+
+  return rest;
+>rest : any
+}
+
