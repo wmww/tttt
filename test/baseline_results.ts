@@ -147,6 +147,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationEnumKeyPaintsImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationExistingImportOfLinkedPackage': {
         errors: true,
         symbols: true,
@@ -172,6 +178,18 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationExportsConditionByTargetFormat': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationInferredPredicatePaintsImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationLateBoundMemberPaints': {
         errors: true,
         symbols: true,
         types: true,
@@ -214,6 +232,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationPatternParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationReadonlyEnumFieldPaints': {
         errors: true,
         symbols: true,
         types: true,
@@ -8898,7 +8922,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitComputedNameWithQuestionToken': {
         errors: true,
