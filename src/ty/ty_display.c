@@ -1311,6 +1311,16 @@ static void param_names_leave(TyDisplay d, u32 saved) {
 
 static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symbol);
 
+static bool pattern_declares(Binding const* pattern, csview name, Symbol const* symbol) {
+    if (pattern->tag == BINDING_IDENTIFIER) return symbol && pattern->symbol == symbol && csview_equals_sv(span_sv(pattern->content_span), name);
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) if (pattern_declares(i, name, symbol)) return true;
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) if (pattern_declares(&i->target, name, symbol)) return true;
+    }
+    return false;
+}
+
 // tsc's trackExistingEntityName(): the first name of an entity name means the same where the type is printed
 static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csview first, u32 meaning) {
     // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
@@ -1328,13 +1338,21 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
                     if (!original) continue;
                     if (original->decl != param->decl || original->name != param->name) param = original;
                 }
+                // (A binding pattern's names are in the fake scope too: tsgo's enterNewScope)
+                if (param->decl && param->decl->initializer.binding.tag != BINDING_IDENTIFIER &&
+                    pattern_declares(&param->decl->initializer.binding, first, symbol)
+                ) {
+                    return true;
+                }
                 if (!csview_equals_sv(atom_sv(param->name), first)) continue;
                 return symbol && param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER &&
                     param->decl->initializer.binding.symbol == symbol;
             }
         }
     }
-    // (A parameter is only in scope inside its function: printed elsewhere it means nothing, tsc's symAtLocation)
+    // (A parameter is only in scope inside its function: printed elsewhere it means nothing, tsc's symAtLocation. Where
+    // the declaration transformer writes the signature's annotation, it is)
+    if (symbol && symbol->is_parameter && d.transformer_node) return true;
     if (symbol && symbol->is_parameter && span_valid(d.at) && symbol->decl_count && symbol->decls[0].block) {
         FunctionImpl const* function = symbol->decls[0].block->function;
         bool printed = false;
@@ -1838,6 +1856,50 @@ static void display_node_signature(Checker* me, TyDisplay d, FunctionImpl const*
     param_names_leave(d, saved);
 }
 
+// Declaration emit: the type a binding pattern without an annotation implies, its elements `any` (tsc's
+// getTypeFromBindingPattern as the node builder prints it): `{ a: any; }`, `[any, any]`
+static void display_binding_pattern_type(TyDisplay d, Binding const* pattern) {
+    if (pattern->tag == BINDING_ARRAY) {
+        out_lit(d, "[");
+        for_each (i, vec_binding, &pattern->array) {
+            if (i_index) out_lit(d, ", ");
+            if (i->rest) out_lit(d, "...");
+            if (i->tag == BINDING_ARRAY || i->tag == BINDING_OBJECT) display_binding_pattern_type(d, i);
+            else out(d, i->rest ? c_sv("any[]") : c_sv("any"));
+        }
+        out_lit(d, "]");
+        return;
+    }
+    if (pattern->tag != BINDING_OBJECT) {
+        out_lit(d, "any");
+        return;
+    }
+    u32 count = 0;
+    for_each (i, vec_object_binding_item, &pattern->object) count += !i->target.rest;
+    if (!count) {
+        out_lit(d, "{}");
+        return;
+    }
+    TyDisplay members = brace_open(d);
+    for_each (i, vec_object_binding_item, &pattern->object) {
+        if (i->target.rest) continue;
+        member_begin(members);
+        csview name = span_sv(i->source_span);
+        if (i->computed_key) name = span_sv(expr_outer_span(i->computed_key));
+        {
+            if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'') && is_identifier_name(csview_slice(name, 1, name.size - 1))) {
+                name = csview_slice(name, 1, name.size - 1);
+            }
+        }
+        out(members, name);
+        out_lit(members, ": ");
+        if (i->target.tag == BINDING_ARRAY || i->target.tag == BINDING_OBJECT) display_binding_pattern_type(members, &i->target);
+        else out_lit(members, "any");
+        member_end(members);
+    }
+    brace_close(d);
+}
+
 // Declaration emit: the comments around a reused parameter (tsc's emitListItems, decl_comments.h)
 static void param_comments_begin_at(TyDisplay d, Span span) {
     if (!d.comments || !span_valid(span)) return;
@@ -1875,7 +1937,8 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
         out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
         if (binding->has_explicit_type) display_node(me, d, binding_type(binding));
-        else out(reused_if(d, false), c_sv("any")); // tsc gives it a synthesized `any`
+        else if (d.multiline && binding->tag != BINDING_IDENTIFIER) display_binding_pattern_type(d, binding);
+        else out(reused_if(d, false), i->rest && d.multiline ? c_sv("any[]") : c_sv("any")); // tsc gives it a synthesized `any` (`any[]` a rest one, declaration emit)
         if (!function->jsdoc_type) param_comments_end(d, i);
     }
     out_lit(d, ")");
@@ -3795,6 +3858,10 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
         case PSEUDO_SIGNATURE: {
             Signature const* sig = ty ? ty_single_signature(me, ty, false, false) : nullptr;
             TyDisplay sig_d = reused_if(d, false);
+            // (Its parameters are in scope in its return type: tsgo's enterNewScope)
+            TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
+                .function = pseudo->function, .outer = d.printed_params };
+            if (sig) sig_d.printed_params = &printed;
             display_node_type_params(me, sig_d, &pseudo->function->generic);
             display_pseudo_params(me, sig_d, pseudo->params, pseudo->count, sig);
             out_lit(sig_d, " => ");
@@ -3842,10 +3909,14 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         else if (prop) display_member_name(me, name_d, prop);
                         if (is_const) out_lit(member_d, ": ");
                         u32 saved = param_names_enter(member_d); // (Its type parameters are its own)
-                        display_node_type_params(me, member_d, &member->function->generic);
-                        display_pseudo_params(me, member_d, member->params, member->param_count, sig);
-                        out(member_d, is_const ? c_sv(" => ") : c_sv(": "));
-                        display_pseudo_return(me, member_d, member->type, sig, member->function);
+                        TyDisplay method_d = member_d;
+                        TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
+                            .function = member->function, .outer = member_d.printed_params };
+                        if (sig) method_d.printed_params = &printed;
+                        display_node_type_params(me, method_d, &member->function->generic);
+                        display_pseudo_params(me, method_d, member->params, member->param_count, sig);
+                        out(method_d, is_const ? c_sv(" => ") : c_sv(": "));
+                        display_pseudo_return(me, method_d, member->type, sig, member->function);
                         param_names_leave(member_d, saved);
                         break;
                     }
