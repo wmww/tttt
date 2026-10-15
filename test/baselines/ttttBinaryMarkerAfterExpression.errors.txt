@@ -1,0 +1,16 @@
+ttttBinaryMarkerAfterExpression.ts(1,1): error TS1490: File appears to be binary.
+ttttBinaryMarkerAfterExpression.ts(3,7): error TS1005: ';' expected.
+
+
+==== ttttBinaryMarkerAfterExpression.ts (2 errors) ====
+    // A U+FFFD makes the rest of the file one token (NonTextFileMarkerTrivia): ";" expected at it, no TS1127
+    
+!!! error TS1490: File appears to be binary.
+    let v = 1;
+    v + 1 �
+          ~
+    let w = 2;
+    ~~~~~~~~~~
+    
+    
+!!! error TS1005: ';' expected.

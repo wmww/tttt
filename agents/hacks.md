@@ -373,6 +373,10 @@ src` finds the code-side markers; every significant one has an entry here.
   `KEY_LITERAL_PARENT` is a parent side table (permanent: ThisType markers of outer literals, plan 51).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
+- **"Which declarations make one member symbol" has several copies** (triage 2026-10-14): class_decl.c's
+  bind_member_symbols/computed_symbol_first, the checker's MembersBuilder, check.c's MemberTables, the symbols
+  baseline's computed_member_symbol_items. The symbols baseline should ask the checker's Prop decl spans everywhere, as
+  late_member_declarations() and ty_object_literal_member_symbol() do.
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a type parameter the node mentions is unmapped
   or mapped to something generic (tsc's couldContainTypeVariables says yes for any reference with a node). Precise
   where conditional.c's "infer constraint that stays generic" HACK needs it (react-relay); drizzle -24%, valibot +2%.

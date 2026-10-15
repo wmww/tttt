@@ -1132,7 +1132,8 @@ static int identifier_char_size_slow(const char* c, bool start) {
 static int invalid_char_size(Parser const* p, const char* c) {
     unsigned char b = (unsigned char)c[0];
     if (!b) return nul_at_inside_file(p, c) ? 1 : 0;
-    if (b >= 0x80) return unicode_whitespace_size(c) || identifier_char_size_slow(c, true) ? 0 : utf8_char_size(c);
+    // (A U+FFFD is the binary marker, a token of its own: hop_whitespace_slow())
+    if (b >= 0x80) return unicode_whitespace_size(c) || utf8_is_rune_error(c) || identifier_char_size_slow(c, true) ? 0 : utf8_char_size(c);
     if (b == '\\') return identifier_char_size_slow(c, true) ? 0 : 1;
     if (b && b < 0x20 && !is_js_ascii_space((char)b)) return 1;
     // A `#` that starts no private name (tsc's scanner still makes it a PrivateIdentifier token, with this error).
@@ -10156,10 +10157,19 @@ static bool parse_identifier_expr(Parser* parent, Expr* ret) {
 // JSX (tsc's parseJsxElementOrSelfClosingElementOrFragment and friends). There is no JSX scanner mode: text between
 // tags is read straight from the source, where `//` isn't a comment and `'` isn't a string
 
+static bool earlier_binary_error(Parser const* me, intptr_t before) {
+    for (intptr_t i = 0; i < before; i++) {
+        if (vec_error_at(&my shared->errors, i)->ts_code == 1490) return true;
+    }
+    return false;
+}
+
 static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
         if (is_js_syntax_code(last->ts_code) || last->grammar || is_semantic_code(last->ts_code)) continue;
+        // (tsc scans the binary marker once, tttt's hops cross it again: only the first TS1490 counts)
+        if (last->ts_code == 1490 && earlier_binary_error(me, i)) continue;
         // A scanner error came before the errors tttt reported at or after its token (tsc's scanner reports it when
         // the token is scanned): the latest of those is tsc's last error
         if (i == my shared->scanner_error_index && my shared->scanner_error_token && my shared->scanner_error_first <= i) {
@@ -13071,11 +13081,14 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
         parse_success(&p);
         return;
     }
-    // (a do-while's `;` is optional: tsc's parseOptional)
-    if (p.whitespace == WHITESPACE_NEWLINE || at_eof(&p, p.pos) || *p.pos == '}' || statement->tag == STATEMENT_FOR_LOOP) {
+    // (a do-while's `;` is optional: tsc's parseOptional. The binary marker the hop went over is a token of its own in
+    // tsc, NonTextFileMarkerTrivia: not the end of the file)
+    bool marker_next = p.shared->binary_marker && p.shared->binary_marker >= span_end_ptr(statement->span);
+    if (p.whitespace == WHITESPACE_NEWLINE || (at_eof(&p, p.pos) && !marker_next) || *p.pos == '}' || statement->tag == STATEMENT_FOR_LOOP) {
         parse_fail(&p);
         return;
     }
+    if (marker_next) p.pos = p.shared->binary_marker;
     if (statement->tag == STATEMENT_EXPR && statement->expr.tag == EXPR_IDENTIFIER &&
         !expr_is_perenthisized(&statement->expr)
     ) {
@@ -13085,6 +13098,9 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
     ) {
         // (tsc's parseErrorForMissingSemicolonAfter: `module \`M\` {` is a tagged template)
         parse_error(&p, statement->expr.template_->template_span, 1443, "Module declaration names may only use ' or \" quoted strings.");
+    } else if (marker_next) {
+        // (The marker is one token to the end of the file)
+        parse_error(&p, span_make(p.shared->source, p.pos, p.pos + strlen(p.pos)), 1005, "';' expected.");
     } else {
         expected_token_error(&p, ";");
     }

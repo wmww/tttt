@@ -1,0 +1,12 @@
+//// [test/cases/ttttBinaryMarkerAfterIdentifier.ts] ////
+
+=== ttttBinaryMarkerAfterIdentifier.ts ===
+// A U+FFFD makes the rest of the file one token (NonTextFileMarkerTrivia), not the end of the file: no ASI before it
+let v = 1;
+>v : Symbol(v, Decl(ttttBinaryMarkerAfterIdentifier.ts, 1, 3))
+
+v�;
+>v : Symbol(v, Decl(ttttBinaryMarkerAfterIdentifier.ts, 1, 3))
+
+let w = 2;
+

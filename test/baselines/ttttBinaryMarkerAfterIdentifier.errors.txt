@@ -1,0 +1,19 @@
+ttttBinaryMarkerAfterIdentifier.ts(1,1): error TS1490: File appears to be binary.
+ttttBinaryMarkerAfterIdentifier.ts(3,1): error TS1434: Unexpected keyword or identifier.
+ttttBinaryMarkerAfterIdentifier.ts(3,2): error TS1128: Declaration or statement expected.
+
+
+==== ttttBinaryMarkerAfterIdentifier.ts (3 errors) ====
+    // A U+FFFD makes the rest of the file one token (NonTextFileMarkerTrivia), not the end of the file: no ASI before it
+    
+!!! error TS1490: File appears to be binary.
+    let v = 1;
+    v�;
+    ~
+!!! error TS1434: Unexpected keyword or identifier.
+     ~~
+    let w = 2;
+    ~~~~~~~~~~
+    
+    
+!!! error TS1128: Declaration or statement expected.

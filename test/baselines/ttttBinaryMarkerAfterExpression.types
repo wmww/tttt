@@ -1,0 +1,15 @@
+//// [test/cases/ttttBinaryMarkerAfterExpression.ts] ////
+
+=== ttttBinaryMarkerAfterExpression.ts ===
+// A U+FFFD makes the rest of the file one token (NonTextFileMarkerTrivia): ";" expected at it, no TS1127
+let v = 1;
+>v : number
+>1 : 1
+
+v + 1 �
+>v + 1 : number
+>v : number
+>1 : 1
+
+let w = 2;
+

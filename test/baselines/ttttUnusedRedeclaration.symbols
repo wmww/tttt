@@ -1,0 +1,33 @@
+//// [test/cases/ttttUnusedRedeclaration.ts] ////
+
+=== ttttUnusedRedeclaration.ts ===
+// A conflicting declaration is a symbol of its own, not among the locals: only the first is unused
+const __VERSION = "1.0.0";
+>__VERSION : Symbol(__VERSION, Decl(ttttUnusedRedeclaration.ts, 1, 5))
+
+const __VERSION: number = 1;
+>__VERSION : Symbol(__VERSION, Decl(ttttUnusedRedeclaration.ts, 2, 5))
+
+function f() {
+>f : Symbol(f, Decl(ttttUnusedRedeclaration.ts, 2, 28))
+
+    let b = 1;
+>b : Symbol(b, Decl(ttttUnusedRedeclaration.ts, 5, 7))
+
+    let b = 2;
+>b : Symbol(b, Decl(ttttUnusedRedeclaration.ts, 6, 7))
+
+    var c = 1;
+>c : Symbol(c, Decl(ttttUnusedRedeclaration.ts, 7, 7), Decl(ttttUnusedRedeclaration.ts, 8, 7))
+
+    var c = 2;
+>c : Symbol(c, Decl(ttttUnusedRedeclaration.ts, 7, 7), Decl(ttttUnusedRedeclaration.ts, 8, 7))
+
+    class D {}
+>D : Symbol(D, Decl(ttttUnusedRedeclaration.ts, 8, 14))
+
+    let D = 1;
+>D : Symbol(D, Decl(ttttUnusedRedeclaration.ts, 10, 7))
+}
+export {};
+

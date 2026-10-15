@@ -183,6 +183,12 @@ passing tests).
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
+- (triage 2026-10-15, re-probed) An object literal method merged with a late-bound one (`declare const m: "mm"; {
+  mm() { return 1 }, [m](x: number) { return "" } }`): tsgo types both method nodes, the member and `o.mm` by the
+  merged binder symbol (`{ (): number; (x: number): string; }`, the literal `{ mm(): number; mm(x: number): string;
+  }`), tttt by the last alone. Two early `mm()`s are separate symbols to tsgo (last wins, tttt agrees). Needs a method
+  function type built from several FunctionImpls: `ObjectLiteralProp.methods`/`method_count` (check_object_literal) are
+  filled but never read, and `KEY_LITERAL_METHOD_OVERLOADS` is declared but unused: the natural home for it.
 ## Narrowing and flow
 - **Destructured references and widening** (ex plan 49; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
   a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*

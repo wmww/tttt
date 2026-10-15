@@ -1427,7 +1427,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
         symbol->name_span = props.name;
         symbol->exported = props.exported;
-        if (table == scope->locals) {
+        // (Not a conflict's symbol of its own, which isn't in the locals: tsc's unused check never sees it)
+        if (table == scope->locals && symbol_table_get_own(table, name, symbol_name_hash(name)) == symbol) {
             symbol->is_local = true;
             symbol->function = scope->function;
         }
