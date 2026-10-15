@@ -267,6 +267,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPaintedPatternTypePaints': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationPatternComments': {
         errors: true,
         symbols: true,
@@ -9478,7 +9484,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitExpressionInExtends7': {
         errors: true,
