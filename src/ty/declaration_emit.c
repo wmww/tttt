@@ -1819,6 +1819,9 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
     if (is_const && initialized && is_literal_const(me, binding->symbol)) {
         // A literal const is written with its initializer, which must be a literal (ensureNoInitializer)
         if (!is_primitive_literal_value(init, true)) report_variable(me, decl);
+        // (An enum member's names the enum: createLiteralConstValue's symbolToExpression, tracked)
+        Ty const* type = ty_type_of_symbol(my checker, binding->symbol);
+        if (type && (type->flags & TYF_ENUM_LITERAL)) print_type(me, type, false);
         return;
     }
     if (binding->has_explicit_type) {
@@ -3051,12 +3054,25 @@ static bool w_own_unique_symbol(Walk* me, Ty const* type, Symbol const* symbol) 
     return true;
 }
 
+// A literal type as the initializer that says it (tsc's createLiteralConstValue): an expression, so an enum member that
+// isn't an identifier is `E["a b"]`, not the type's `(typeof E)["a b"]`
+static void w_literal_value(Walk* me, Ty const* type) {
+    isize_t start = cstr_size(my out);
+    w_type(me, type);
+    csview written = csview_slice(cstr_sv(my out), start, cstr_size(my out));
+    if (!csview_starts_with(written, "(typeof ")) return;
+    isize_t close = csview_find_sv(written, c_sv(")["));
+    if (close == c_NPOS) return;
+    cstr_erase(my out, start + close, 1);
+    cstr_erase(my out, start, 8);
+}
+
 static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
     Expr const* init = initialized_binding_value(decl);
     if (is_const && init->tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol)) {
         w_lit(me, " = ");
-        w_type(me, ty_type_of_symbol(my checker, binding->symbol));
+        w_literal_value(me, ty_type_of_symbol(my checker, binding->symbol));
         return;
     }
     w_lit(me, ": ");
