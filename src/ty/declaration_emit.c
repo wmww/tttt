@@ -4392,13 +4392,20 @@ static void emit_file(Walk* me, Container top) {
     if (last) decl_comments_file_end(&my comments, my out, span_end_ptr(last->span));
 }
 
+static bool js_declaration_diagnostics_wanted(SourceFile const* file);
 bool declaration_diagnostics_wanted(SourceFile const* file) {
+    // (A JavaScript file's declaration emit has its diagnostics too, but the walk only knows TypeScript's declarations:
+    // only isolatedDeclarations' are reported there, and its CommonJS exports' (check_js_commonjs_exports()), see
+    // agents/hacks.md)
+    if (file->is_js && !compiler_options()->isolated_declarations) return false;
+    return js_declaration_diagnostics_wanted(file);
+}
+
+// declaration_diagnostics_wanted() whatever the file's language
+static bool js_declaration_diagnostics_wanted(SourceFile const* file) {
     CompilerOptions const* options = compiler_options();
     if (!options->declaration && !options->composite) return false;
     if (file->is_declaration || file->is_json || file->is_stdlib || file->is_config) return false;
-    // (A JavaScript file's declaration emit has its diagnostics too, but the walk only knows TypeScript's declarations:
-    // only isolatedDeclarations' are reported there, see agents/hacks.md)
-    if (file->is_js && !options->isolated_declarations) return false;
     // (tsc's sourceFileMayBeEmitted: not a package's file that an import found through a node_modules, even where a
     // `paths` mapping into a symlinked node_modules leads back into the workspace (isSourceFileFromExternalLibrary), nor
     // a referenced project's)
@@ -4422,9 +4429,51 @@ static void js_declaration_diagnostics_check(SourceFile const* file, ErrorCtx* e
     }
 }
 
+// The CommonJS exports of a JavaScript file that tsgo's declaration transformer writes with an inferred type: `module.exports
+// = x` of a variable of the file (`export = x` with x's declaration), `Object.defineProperty(exports, "n", { value: e })`
+// (a variable "n" of e's type). What those types name and nothing can (TS4023...). The rest of JavaScript declaration
+// emit (functions, classes, `exports.x = e`, JSDoc types) isn't walked: plan 64 stage 6
+static void check_js_commonjs_exports(Walk* me) {
+    for_each (i, vec_statement, &my file->ast.statements) {
+        if (i->tag != STATEMENT_EXPR) continue;
+        Expr const* expr = &i->expr;
+        if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_EQUAL && expr_is_module_exports(&expr->binary_op->left)) {
+            Expr const* value = &expr->binary_op->right;
+            if (value->tag != EXPR_IDENTIFIER || expr_is_perenthisized(value)) continue;
+            Symbol const* symbol = value->identifier.target;
+            if (!symbol || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) continue;
+            Binding const* binding = symbol->decls[0].node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER || span_source(binding->content_span) != my file ||
+                symbol_decl_jsdoc_type(&symbol->decls[0])
+            ) {
+                continue;
+            }
+            check_variable(me, (InitializedBinding const*)binding, symbol->is_const);
+            continue;
+        }
+        Span name;
+        if (!expr_is_define_property_call(expr, &name) || !expr_is_exports_object(vec_expr_at(&expr->call->args, 0))) continue;
+        Expr const* descriptor = vec_expr_at(&expr->call->args, 2);
+        if (descriptor->tag != EXPR_OBJECT) continue;
+        Expr const* value = nullptr;
+        for_each (j, vec_object_expr_item, &descriptor->object) {
+            if (j->tag == OBJECT_ITEM_PROPERTY && !j->computed_key && cstr_equals(&j->name_string, "value")) value = &j->value;
+        }
+        if (!value) continue;
+        Span key = vec_expr_at(&expr->call->args, 1)->inner_span;
+        Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, key, key);
+        Ty const* type = lazy_type_get((LazyType*)&value->lazy_type);
+        serialize_declaration(me, pseudo_of_expression(my checker, value, (PseudoPlace){0}), type ? ty_widened_literal(my checker, type) : nullptr, false, false);
+        emit_leave(me, saved);
+    }
+}
+
 void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool emit) {
     if (file->is_js) js_declaration_diagnostics_check(file, errs);
-    if (!declaration_diagnostics_wanted(file)) return;
+    // (A JavaScript file's own, outside isolatedDeclarations: its CommonJS exports only)
+    bool js_exports = file->is_js && file->is_commonjs && !compiler_options()->isolated_declarations &&
+        js_declaration_diagnostics_wanted(file);
+    if (!js_exports && !declaration_diagnostics_wanted(file)) return;
     isize_t errors_before = vec_error_size(&errs->errors);
     Walk walk = {
         .file = file,
@@ -4440,6 +4489,12 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     };
     symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
     symbol_chain_set_module_specifier(walk_module_specifier, &walk);
+    if (js_exports) {
+        // (No `.d.ts` of it: the walk doesn't know the rest of JavaScript declaration emit)
+        check_js_commonjs_exports(&walk);
+        emit = false;
+        goto walked;
+    }
     if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
     Container top = { .global = !file->is_module, .module_top_level = file->is_module };
     check_statements(&walk, &file->ast.statements, top);
@@ -4453,6 +4508,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         for (u32 i = 0; i < count; i++) walk.painted_done[i] = true;
         walked = count;
     }
+    walked:
     // The second walk writes the file, unless the first reported something about it (tsc doesn't write a declaration
     // file whose transform has diagnostics)
     if (emit && vec_error_size(&errs->errors) == errors_before) {
