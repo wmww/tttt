@@ -1,0 +1,32 @@
+ttttIntersectionOptionalPropsUndefined.ts(8,11): error TS2322: Type 'PV<O> | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+ttttIntersectionOptionalPropsUndefined.ts(9,11): error TS2322: Type 'PV<O> | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+ttttIntersectionOptionalPropsUndefined.ts(13,11): error TS2322: Type 'O' is not assignable to type 'number'.
+
+
+==== ttttIntersectionOptionalPropsUndefined.ts (3 errors) ====
+    // The property of an intersection whose parts all have it optional intersects their types with undefined (tsc's
+    // getTypeOfSymbol of each part): a declared `v?: PV<O>` and a mapped `Pick`'s (the indexed access, `PV<O> | undefined`)
+    // are one type, which doesn't distribute (react-select's useStateManager(useAsync(props)) inferred Option candidates
+    // `Option & MultiValue<Option>` from the distributed one)
+    type PV<O> = readonly O[] | O | null;
+    interface PB<O> { value: PV<O>; other: string }
+    function f<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">, y: { value?: PV<O> } & Pick<{ value?: PV<O> }, "value">) {
+        const n: number = x.value;
+              ~
+!!! error TS2322: Type 'PV<O> | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+        const m: number = y.value;
+              ~
+!!! error TS2322: Type 'PV<O> | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    }
+    declare function infer<O>(p: Partial<PB<O>> & { extra?: 1 }): O;
+    function g<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">) {
+        const o: number = infer(x);
+              ~
+!!! error TS2322: Type 'O' is not assignable to type 'number'.
+!!! related TS2208 ttttIntersectionOptionalPropsUndefined.ts:12:12: This type parameter might need an `extends number` constraint.
+    }
+    

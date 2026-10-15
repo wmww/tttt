@@ -141,10 +141,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   literal keys), and a probe importing the types alone gets the same as tsc in tttt: order-dependent circularity.
 - **tanstack-table table-core `rowModelSlots.test.ts:368` +TS2322**: AggregationFnListItem/AggregationFnRef relation
   over the large inferred feature type; not reduced.
-- **react-select `Async.tsx:33`, `AsyncCreatable.tsx:40` +TS2345 (2 projects each)**: `useStateManager(useAsync(props))`
-  infers Option as `Option | (Option & undefined) | (Option & MultiValue<Option>) | ...`: inference to
-  `StateManagerProps<O, M, G> & AdditionalProps` (a naked type parameter in an intersection target; tsc's
-  inferFromMatchingTypes for intersections) from useAsync's Omit/Pick result. A PropsValue-only probe infers O like tsc.
 - **dexie samples/dexie-cloud-todo-app +TS2502 `todoLists` (and TS2615 changeOwner)**: `todoLists!: DexieCloudTable<
   TodoList, 'id'>` where InsertType maps over TodoList's keys asking which are functions, and TodoList's methods' inferred
   return types read `db.todoLists`: tttt evaluates that during the property declaration's check, tsc lazily.
@@ -303,9 +299,6 @@ subtype pass). Left:
 - **es-toolkit/tests/types `compat.spec-d.ts:34` -TS2344** (flattenDeep vs lodash's, `Flat<T>` against es-toolkit's
   inline conditional): tsc's own order artifact. tsc reports it only with the whole spec file checked; the same line
   alone, or with the flatMap lines before it, is clean in tsc and tttt alike.
-- **react-select Async/AsyncCreatable +TS2345**: still the intersection-target inference of the entry above; reproduces
-  in a probe project importing useAsync/useStateManager by absolute path (`useStateManager(useAsync(props))` in a
-  generic function), not reduced further.
 - tttt misses tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for
   `import('<abs path>/node_modules/dompurify').Config` (a CJS package's default namespace) in a probe; not looked at.
 

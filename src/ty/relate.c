@@ -1496,6 +1496,15 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     return find_prop_in(me, ty, name, depth, false);
 }
 
+static bool union_has_undefined(Ty const* ty) {
+    if (ty->flags & TYF_UNDEFINED) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
+    }
+    return false;
+}
+
 static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
@@ -1572,11 +1581,22 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             ret.found = true;
             // tsc intersects the members' getTypeOfSymbol, which includes an optional property's undefined: in
             // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`.
-            // (When all are optional the result is optional and its readers add undefined themselves.)
+            // When all are optional too: `{ v?: A | B } & Pick<{ v?: A | B }, "v">` intersects `A | B | undefined`
+            // twice (one type, the mapped property's being the indexed access of the optional one), not `A | B` with
+            // `A | B | undefined`, which would distribute (react-select's useStateManager(useAsync(props)) inferred
+            // `Option & MultiValue<Option>` candidates from that). Its readers add undefined again, to no effect
             bool optional_result = all_optional && any_member;
             // (Under exactOptionalPropertyTypes that's the missing type: `{ x: X | undefined } & { x?: X }` has a
             // required x of `X | missing`, which an optional target property doesn't take)
-            if (optional_parts && !optional_result && compiler_options()->strict_null_checks) {
+            // (Only those all optional where some part's type has undefined already: otherwise intersecting the declared
+            // types and adding undefined on reading is the same, and cheaper)
+            bool normalize = optional_parts && compiler_options()->strict_null_checks;
+            if (normalize && optional_result) {
+                bool has_undefined = false;
+                for (u32 i = 0; i < len && !has_undefined; i++) has_undefined = union_has_undefined(parts[i]);
+                normalize = has_undefined;
+            }
+            if (normalize) {
                 for (u32 i = 0; i < len; i++) {
                     if (optional_part[i]) parts[i] = ty_optional_prop_type(me, parts[i]);
                 }

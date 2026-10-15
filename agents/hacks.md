@@ -312,6 +312,12 @@ src` finds the code-side markers; every significant one has an entry here.
   pattern contextual type eagerly, so it's gated on the initializer being an array or object literal. A lazily
   computed contextual type would decide it the way tsc does.
 
+- **Optional properties of intersections** (`find_prop_in()`, relate.c): tttt keeps an optional property's declared type
+  without undefined (readers add it), tsc intersects the parts' getTypeOfSymbol, which has it. Where every part is
+  optional, the parts are made read types only if one of them has undefined already (a mapped `Pick` of an optional
+  property: react-select). Doing it always, as tsc does, ran zod and zod-root out of memory and changed type-fest and
+  effect's diagnostics (2026-10-15): something downstream depends on the declared types; not looked into.
+
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
 - `Checker.outer_inference` (the call inferring now) is dynamic state, where tsc finds a node's inference context
   among its ancestors (getInferenceContext): every evaluation of something that isn't part of the argument must clear

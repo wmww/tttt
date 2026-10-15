@@ -1,0 +1,49 @@
+//// [test/cases/ttttIntersectionOptionalPropsUndefined.ts] ////
+
+=== ttttIntersectionOptionalPropsUndefined.ts ===
+// The property of an intersection whose parts all have it optional intersects their types with undefined (tsc's
+// getTypeOfSymbol of each part): a declared `v?: PV<O>` and a mapped `Pick`'s (the indexed access, `PV<O> | undefined`)
+// are one type, which doesn't distribute (react-select's useStateManager(useAsync(props)) inferred Option candidates
+// `Option & MultiValue<Option>` from the distributed one)
+type PV<O> = readonly O[] | O | null;
+>PV : PV<O>
+
+interface PB<O> { value: PV<O>; other: string }
+>value : PV<O>
+>other : string
+
+function f<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">, y: { value?: PV<O> } & Pick<{ value?: PV<O> }, "value">) {
+>f : <O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">, y: { value?: PV<O>; } & Pick<{ value?: PV<O>; }, "value">) => void
+>x : Partial<PB<O>> & Pick<Partial<PB<O>>, "value">
+>y : { value?: PV<O>; } & Pick<{ value?: PV<O>; }, "value">
+>value : PV<O> | undefined
+>value : PV<O> | undefined
+
+    const n: number = x.value;
+>n : number
+>x.value : PV<O> | undefined
+>x : Partial<PB<O>> & Pick<Partial<PB<O>>, "value">
+>value : PV<O> | undefined
+
+    const m: number = y.value;
+>m : number
+>y.value : PV<O> | undefined
+>y : { value?: PV<O>; } & Pick<{ value?: PV<O>; }, "value">
+>value : PV<O> | undefined
+}
+declare function infer<O>(p: Partial<PB<O>> & { extra?: 1 }): O;
+>infer : <O>(p: Partial<PB<O>> & { extra?: 1; }) => O
+>p : Partial<PB<O>> & { extra?: 1; }
+>extra : 1 | undefined
+
+function g<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">) {
+>g : <O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">) => void
+>x : Partial<PB<O>> & Pick<Partial<PB<O>>, "value">
+
+    const o: number = infer(x);
+>o : number
+>infer(x) : O
+>infer : <O_1>(p: Partial<PB<O_1>> & { extra?: 1; }) => O_1
+>x : Partial<PB<O>> & Pick<Partial<PB<O>>, "value">
+}
+

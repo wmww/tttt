@@ -1,0 +1,81 @@
+//// [test/cases/ttttIntersectionOptionalPropsUndefined.ts] ////
+
+=== ttttIntersectionOptionalPropsUndefined.ts ===
+// The property of an intersection whose parts all have it optional intersects their types with undefined (tsc's
+// getTypeOfSymbol of each part): a declared `v?: PV<O>` and a mapped `Pick`'s (the indexed access, `PV<O> | undefined`)
+// are one type, which doesn't distribute (react-select's useStateManager(useAsync(props)) inferred Option candidates
+// `Option & MultiValue<Option>` from the distributed one)
+type PV<O> = readonly O[] | O | null;
+>PV : Symbol(PV, Decl(ttttIntersectionOptionalPropsUndefined.ts, 0, 0))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 8))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 8))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 8))
+
+interface PB<O> { value: PV<O>; other: string }
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 13))
+>value : Symbol(PB.value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 17))
+>PV : Symbol(PV, Decl(ttttIntersectionOptionalPropsUndefined.ts, 0, 0))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 13))
+>other : Symbol(PB.other, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 31))
+
+function f<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">, y: { value?: PV<O> } & Pick<{ value?: PV<O> }, "value">) {
+>f : Symbol(f, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 47))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 11))
+>x : Symbol(x, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 14))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 11))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 11))
+>y : Symbol(y, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 64))
+>value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 69))
+>PV : Symbol(PV, Decl(ttttIntersectionOptionalPropsUndefined.ts, 0, 0))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 11))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 94))
+>PV : Symbol(PV, Decl(ttttIntersectionOptionalPropsUndefined.ts, 0, 0))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 11))
+
+    const n: number = x.value;
+>n : Symbol(n, Decl(ttttIntersectionOptionalPropsUndefined.ts, 7, 9))
+>x.value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 17))
+>x : Symbol(x, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 14))
+>value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 5, 17))
+
+    const m: number = y.value;
+>m : Symbol(m, Decl(ttttIntersectionOptionalPropsUndefined.ts, 8, 9))
+>y.value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 69), Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 94))
+>y : Symbol(y, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 64))
+>value : Symbol(value, Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 69), Decl(ttttIntersectionOptionalPropsUndefined.ts, 6, 94))
+}
+declare function infer<O>(p: Partial<PB<O>> & { extra?: 1 }): O;
+>infer : Symbol(infer, Decl(ttttIntersectionOptionalPropsUndefined.ts, 9, 1))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 23))
+>p : Symbol(p, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 26))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 23))
+>extra : Symbol(extra, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 47))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 23))
+
+function g<O>(x: Partial<PB<O>> & Pick<Partial<PB<O>>, "value">) {
+>g : Symbol(g, Decl(ttttIntersectionOptionalPropsUndefined.ts, 10, 64))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 11, 11))
+>x : Symbol(x, Decl(ttttIntersectionOptionalPropsUndefined.ts, 11, 14))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 11, 11))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>PB : Symbol(PB, Decl(ttttIntersectionOptionalPropsUndefined.ts, 4, 37))
+>O : Symbol(O, Decl(ttttIntersectionOptionalPropsUndefined.ts, 11, 11))
+
+    const o: number = infer(x);
+>o : Symbol(o, Decl(ttttIntersectionOptionalPropsUndefined.ts, 12, 9))
+>infer : Symbol(infer, Decl(ttttIntersectionOptionalPropsUndefined.ts, 9, 1))
+>x : Symbol(x, Decl(ttttIntersectionOptionalPropsUndefined.ts, 11, 14))
+}
+
