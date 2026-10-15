@@ -635,7 +635,8 @@ static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container
     return export_equals && same_reference(me, export_equals, container) ? module : nullptr;
 }
 
-#define CONTAINERS_MAX 8
+// (tsgo has no limit: a monorepo's packages may all re-export a symbol, crawlee's CrawleeLogger has 13 modules)
+#define CONTAINERS_MAX 64
 
 // tsc's getAlternativeContainingModules: the modules the enclosing file imports that export the symbol (perhaps through
 // `export *`), else every module of the program that does. Remembered per symbol during a declaration walk, which is of
@@ -705,7 +706,7 @@ static Symbol const* import_found_again(SourceFile const* file, ModuleRef const*
 
 typedef struct ContainerList {
     u32 count;
-    Symbol const* items[CONTAINERS_MAX];
+    Symbol const* items[];
 } ContainerList;
 
 // tsgo's getAlternativeContainingModules: the modules of the enclosing file's imports that export the symbol (perhaps
@@ -733,7 +734,7 @@ static u32 alternative_modules_uncached(ChainCtx* me, SourceFile const* file, Sy
         if (module && alias_in_container(me, module, symbol)) out[count++] = module;
     }
     if (count && checker) {
-        ContainerList* list = arena_new(&checker->arena, ContainerList);
+        ContainerList* list = arena_alloc(&checker->arena, sizeof(ContainerList) + count * sizeof(Symbol const*));
         list->count = count;
         memcpy(list->items, out, count * sizeof(*out));
         *intern_slot(checker, &checker->links, key, 3) = list;
@@ -870,7 +871,7 @@ static bool specifier_is_relative(csview path) {
 // relative, anything else by compareSymbols (a module that `export =`s the container is declared at its file's start,
 // so it comes before the container declared in it). Go's SortStableFunc on so few is an insertion sort, which this
 // is (the comparison isn't a total order, so the algorithm shows)
-static void sort_by_best_name(Symbol const** parents, u32 count, SourceFile const* from) {
+static void sort_by_best_name(Symbol const* symbol, Symbol const** parents, u32 count, SourceFile const* from) {
     if (count < 2) return;
     cstr specifiers[CONTAINERS_MAX];
     for (u32 i = 0; i < count; i++) specifiers[i] = parent_specifier(parents[i], from);
@@ -889,6 +890,14 @@ static void sort_by_best_name(Symbol const** parents, u32 count, SourceFile cons
             c_swap(&specifiers[j], &specifiers[j - 1]);
         }
     }
+    if (debug_env.debug_containers) {
+        for (u32 i = 0; i < count; i++) {
+            SourceFile const* file = parents[i]->is_module && parents[i]->module ? parents[i]->module->file : nullptr;
+            csview name = file ? cstr_sv(&file->canonical_path) : parents[i]->name;
+            fprintf(stderr, "CONTAINER %.*s from %s: %.*s [%s]\n", (int)symbol->name.size, symbol->name.buf,
+                from ? cstr_str(&from->canonical_path) : "-", (int)name.size, name.buf, cstr_str(&specifiers[i]));
+        }
+    }
     for (u32 i = 0; i < count; i++) cstr_drop(&specifiers[i]);
 }
 
@@ -905,13 +914,17 @@ static bool symbol_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, bool e
     if (depth < 8 && (!have || needs_qualification(me, chain.items[0], chain.len == 1 ? meaning : left_meaning(meaning)))) {
         Symbol const* parents[CONTAINERS_MAX];
         u32 parent_count = containers_of(me, have ? chain.items[0] : symbol, meaning, parents);
-        sort_by_best_name(parents, parent_count, my enclosing ? my enclosing->file : nullptr);
+        sort_by_best_name(symbol, parents, parent_count, my enclosing ? my enclosing->file : nullptr);
         for (u32 i = 0; i < parent_count; i++) {
             SymbolChain parent_chain = {0};
             bool was_container_lookup = my container_lookup;
             my container_lookup = true;
             bool found = symbol_chain(me, parents[i], left_meaning(meaning), false, depth + 1, &parent_chain);
             my container_lookup = was_container_lookup;
+            if (debug_env.debug_containers) {
+                fprintf(stderr, "CONTAINER %.*s: candidate %u %s (chain of %u)\n", (int)symbol->name.size, symbol->name.buf, i,
+                    found ? "taken" : "unreachable", parent_chain.len);
+            }
             if (!found) continue;
             Symbol const* members = symbol_members(parents[i]);
             Symbol const* export_equals = members && members->exports ? symbol_table_get(members->exports, c_sv("export=")) : nullptr;

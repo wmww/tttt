@@ -1,0 +1,35 @@
+//// [test/cases/ttttDeclarationExportsConditionByTargetFormat.ts] ////
+
+=== /node_modules/.pnpm/lib@1.0.0/node_modules/lib/dist/index.d.cts ===
+export interface Options { a: number }
+>a : number
+
+export declare function make(): Options;
+>make : () => Options
+
+=== /node_modules/.pnpm/lib@1.0.0/node_modules/lib/dist/index.d.ts ===
+export interface Options { a: number }
+>a : number
+
+export declare function make(): Options;
+>make : () => Options
+
+=== /b.ts ===
+import lib = require("lib");
+>lib : typeof lib
+
+export const make = lib.make;
+>make : () => lib.Options
+>lib.make : () => lib.Options
+>lib : typeof lib
+>make : () => lib.Options
+
+=== /a.ts ===
+import { make } from "./b";
+>make : () => import("lib").Options
+
+export const v = make();
+>v : import("lib").Options
+>make() : import("lib").Options
+>make : () => import("lib").Options
+

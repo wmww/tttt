@@ -32,6 +32,7 @@ typedef struct DebugEnv {
     bool debug_variance;       // TTTT_DEBUG_VARIANCE: the relations of variance measurements, like an instrumented tsgo
     bool parallel_resolve;     // TTTT_PARALLEL_RESOLVE: resolve names on --threads threads even for a few files (tests)
     bool file_times;           // TTTT_FILE_TIMES: each checked file's check time (with its deferred checks) on stderr
+    bool debug_containers;     // TTTT_DEBUG_CONTAINERS: getSymbolChain's sorted candidate containers and their specifiers
 } DebugEnv;
 extern DebugEnv debug_env;
 

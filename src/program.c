@@ -106,6 +106,9 @@ typedef struct Program {
     RealpathFn realpath; // program_set_realpath()
     void* realpath_ctx;
     SymlinkCache* symlinks; // What resolutions learned about symlinked directories, for program_module_specifier()
+    // Whether symlinks has the links of every emitted file's package's dependencies (program_dependency_links())
+    _Atomic bool dependency_links;
+    pthread_mutex_t dependency_links_lock;
     u32 serial; // program_serial()
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
@@ -198,6 +201,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
+    pthread_mutex_init(&ret->dependency_links_lock, nullptr);
     program_add_builtins(ret);
     return ret;
 }
@@ -258,6 +262,7 @@ static void program_drop(Program* me) {
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
     symlink_cache_destroy(my symlinks);
+    pthread_mutex_destroy(&my dependency_links_lock);
     for (u32 i = 0; i < my reference_count; i++) module_resolver_destroy(my reference_resolvers[i]);
     free(my reference_resolvers);
     cstr_drop(&my lib_dir);
@@ -3810,6 +3815,31 @@ cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFi
     return program_module_specifier_ending(me, importing, target, override, SPECIFIER_MODE_NONE);
 }
 
+// tsgo's Program.GetSymlinkCache, once: besides the resolutions' links, those of the runtime dependencies of the
+// package.json nearest to every file that may be emitted
+static void program_dependency_links(Program* me) {
+    if (atomic_load(&my dependency_links)) return;
+    pthread_mutex_lock(&my dependency_links_lock);
+    if (!atomic_load(&my dependency_links)) {
+        csview cwd = program_cwd(me);
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            SourceFile const* file = *i;
+            if (!program_source_may_be_emitted(me, file)) continue;
+            ModuleResolver* resolver = program_resolver_of(me, file);
+            cstr path = absolute_path_of(cwd, cstr_sv(&file->canonical_path));
+            FileFormat format = module_resolver_file_format(resolver, cstr_sv(&path));
+            csview package_json = cstr_sv(&format.package_json);
+            if (package_json.size > 13) {
+                symlink_cache_add_dependencies(my symlinks, resolver, csview_slice(package_json, 0, package_json.size - 13));
+            }
+            cstr_drop(&format.package_json);
+            cstr_drop(&path);
+        }
+        atomic_store(&my dependency_links, true);
+    }
+    pthread_mutex_unlock(&my dependency_links_lock);
+}
+
 cstr program_module_specifier_ending(
     Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override, SpecifierMode ending_mode
 ) {
@@ -3836,6 +3866,7 @@ cstr program_module_specifier_ending(
         free(imports);
         return cstr_from_sv(existing);
     }
+    program_dependency_links(me);
     csview cwd = program_cwd(me);
     cstr importing_path = absolute_path_of(cwd, cstr_sv(&importing->canonical_path));
     cstr target_path = absolute_path_of(cwd, cstr_sv(&target->canonical_path));

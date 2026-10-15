@@ -1,0 +1,53 @@
+//// [test/cases/ttttDeclarationManyContainers.ts] ////
+
+=== /src/lib/deep/types.ts ===
+export interface Logger { log(message: string): void }
+>Logger : Symbol(Logger, Decl(types.ts, 0, 0))
+>log : Symbol(Logger.log, Decl(types.ts, 0, 25))
+>message : Symbol(message, Decl(types.ts, 0, 30))
+
+export declare function make(): Logger;
+>make : Symbol(make, Decl(types.ts, 0, 54))
+>Logger : Symbol(Logger, Decl(types.ts, 0, 0))
+
+=== /src/lib/deep/r1.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r2.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r3.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r4.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r5.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r6.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r7.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r8.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r9.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r10.ts ===
+
+export * from "./types";
+=== /src/index.ts ===
+
+export * from "./lib/deep/types";
+=== /src/main/x.ts ===
+import { make } from "../lib/deep/types";
+>make : Symbol(make, Decl(x.ts, 0, 8))
+
+export const logger = make();
+>logger : Symbol(logger, Decl(x.ts, 1, 12))
+>make : Symbol(make, Decl(x.ts, 0, 8))
+

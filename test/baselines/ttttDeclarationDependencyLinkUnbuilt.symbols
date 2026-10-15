@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationDependencyLinkUnbuilt.ts] ////
+
+=== /packages/types/src/logger.ts ===
+export interface Logger { log(message: string): void }
+>Logger : Symbol(Logger, Decl(logger.ts, 0, 0))
+>log : Symbol(Logger.log, Decl(logger.ts, 0, 25))
+>message : Symbol(message, Decl(logger.ts, 0, 30))
+
+export declare function make(): Logger;
+>make : Symbol(make, Decl(logger.ts, 0, 54))
+>Logger : Symbol(Logger, Decl(logger.ts, 0, 0))
+
+=== /packages/core/src/b.ts ===
+export { make } from "../../types/src/logger";
+>make : Symbol(make, Decl(b.ts, 0, 8))
+
+=== /packages/core/src/a.ts ===
+import { make } from "./b";
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+export const logger = make();
+>logger : Symbol(logger, Decl(a.ts, 1, 12))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+

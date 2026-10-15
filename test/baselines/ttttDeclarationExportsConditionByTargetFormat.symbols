@@ -1,0 +1,38 @@
+//// [test/cases/ttttDeclarationExportsConditionByTargetFormat.ts] ////
+
+=== /node_modules/.pnpm/lib@1.0.0/node_modules/lib/dist/index.d.cts ===
+export interface Options { a: number }
+>Options : Symbol(Options, Decl(index.d.cts, 0, 0))
+>a : Symbol(Options.a, Decl(index.d.cts, 0, 26))
+
+export declare function make(): Options;
+>make : Symbol(make, Decl(index.d.cts, 0, 38))
+>Options : Symbol(Options, Decl(index.d.cts, 0, 0))
+
+=== /node_modules/.pnpm/lib@1.0.0/node_modules/lib/dist/index.d.ts ===
+export interface Options { a: number }
+>Options : Symbol(Options, Decl(index.d.ts, 0, 0))
+>a : Symbol(Options.a, Decl(index.d.ts, 0, 26))
+
+export declare function make(): Options;
+>make : Symbol(make, Decl(index.d.ts, 0, 38))
+>Options : Symbol(Options, Decl(index.d.ts, 0, 0))
+
+=== /b.ts ===
+import lib = require("lib");
+>lib : Symbol(lib, Decl(b.ts, 0, 0))
+
+export const make = lib.make;
+>make : Symbol(make, Decl(b.ts, 1, 12))
+>lib.make : Symbol(lib.make, Decl(index.d.cts, 0, 38))
+>lib : Symbol(lib, Decl(b.ts, 0, 0))
+>make : Symbol(lib.make, Decl(index.d.cts, 0, 38))
+
+=== /a.ts ===
+import { make } from "./b";
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+export const v = make();
+>v : Symbol(v, Decl(a.ts, 1, 12))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+

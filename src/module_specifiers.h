@@ -9,14 +9,17 @@
 // reaches into a node_modules (TS2742). Like module resolution, a function of the filesystem, the options and what the
 // program learned about symlinks. All paths absolute and normalised
 
-// Where the program met symlinked directories (tsc's SymlinkCache, getSymlinkedDirectoriesByRealpath): learned from
-// every resolution that followed a link, and from resolving the dependencies of the importing file's package.json
-// (tsc's getAllModulePathsWorker). Thread safe
+// Where the program met symlinked directories (tsgo's KnownSymlinks, DirectoriesByRealpath): learned from every
+// resolution that followed a link, and from resolving the runtime dependencies of the package.json of every file that
+// may be emitted (tsgo's Program.GetSymlinkCache). Thread safe
 typedef struct SymlinkCache SymlinkCache;
 SymlinkCache* symlink_cache_new(void);
 void symlink_cache_destroy(SymlinkCache* me);
 // A resolution found `original` to be `real` (ResolvedModule.original_path and path)
 void symlink_cache_add_resolution(SymlinkCache* me, csview original, csview real);
+// The links to the package directories the dependencies, peerDependencies and optionalDependencies of the package.json
+// in package_dir resolve to (once per directory)
+void symlink_cache_add_dependencies(SymlinkCache* me, ModuleResolver* resolver, csview package_dir);
 
 // tsc's ResolutionMode: undefined, CommonJS, ESNext
 typedef enum SpecifierMode : uint8_t {

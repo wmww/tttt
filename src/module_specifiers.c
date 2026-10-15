@@ -12,7 +12,6 @@
 typedef struct SymlinkDir {
     cstr real; // With a trailing separator
     cstr link; // Without
-    u32 scope; // 0: learned while loading, else 1 + the package scope whose dependencies' resolution found it
 } SymlinkDir;
 
 struct SymlinkCache {
@@ -20,8 +19,8 @@ struct SymlinkCache {
     SymlinkDir* dirs;
     u32 count;
     u32 cap;
-    // The package scopes (directory and mode) whose dependencies were resolved
-    StrList scopes;
+    // The package directories whose dependencies were resolved
+    StrList dependency_scopes;
 };
 
 SymlinkCache* symlink_cache_new(void) {
@@ -34,7 +33,7 @@ void symlink_cache_destroy(SymlinkCache* me) {
     if (!me) return;
     for (u32 i = 0; i < my count; i++) c_drop(cstr, &my dirs[i].real, &my dirs[i].link);
     free(my dirs);
-    str_list_drop(&my scopes);
+    str_list_drop(&my dependency_scopes);
     pthread_mutex_destroy(&my lock);
     free(me);
 }
@@ -68,22 +67,22 @@ static bool is_node_modules_or_scope(csview segment) {
 }
 
 // (under the lock)
-static void add_dir(SymlinkCache* me, csview link, csview real, u32 scope) {
+static void add_dir(SymlinkCache* me, csview link, csview real) {
     if (contains_ignored_path(link)) return;
     for (u32 i = 0; i < my count; i++) {
-        if ((my dirs[i].scope == 0 || my dirs[i].scope == scope) && cstr_equals_sv(&my dirs[i].link, link)) return;
+        if (cstr_equals_sv(&my dirs[i].link, link)) return;
     }
     if (my count == my cap) {
         my cap = my cap ? my cap * 2 : 16;
         my dirs = realloc(my dirs, my cap * sizeof(*my dirs));
     }
     cstr real_dir = real.size > 1 ? cstr_d(real, "/") : cstr_from("/");
-    my dirs[my count++] = (SymlinkDir){ .real = real_dir, .link = cstr_from_sv(link), .scope = scope };
+    my dirs[my count++] = (SymlinkDir){ .real = real_dir, .link = cstr_from_sv(link) };
 }
 
 // tsc's processResolution and guessDirectorySymlink: the deepest directories of the two paths whose rest is the same
 // (not across a node_modules or a scope directory, which are unlikely to be the link themselves)
-static void add_resolution(SymlinkCache* me, csview original, csview real, u32 scope) {
+static void add_resolution(SymlinkCache* me, csview original, csview real) {
     bool directory = false;
     while (true) {
         csview a_parent = parent_dir(real), b_parent = parent_dir(original);
@@ -94,23 +93,53 @@ static void add_resolution(SymlinkCache* me, csview original, csview real, u32 s
         original = b_parent;
         directory = true;
     }
-    if (directory) add_dir(me, original, real, scope);
+    if (directory) add_dir(me, original, real);
 }
 
 void symlink_cache_add_resolution(SymlinkCache* me, csview original, csview real) {
     pthread_mutex_lock(&my lock);
-    add_resolution(me, original, real, 0);
+    add_resolution(me, original, real);
     pthread_mutex_unlock(&my lock);
 }
 
-// The links to the directory real_dir (with a trailing separator) a specifier from the scope may take
-static StrList links_of(SymlinkCache* me, csview real_dir, u32 scope) {
+void symlink_cache_add_dependencies(SymlinkCache* me, ModuleResolver* resolver, csview package_dir) {
+    pthread_mutex_lock(&my lock);
+    for (isize i = 0; i < my dependency_scopes.count; i++) {
+        if (cstr_equals_sv(&my dependency_scopes.items[i], package_dir)) {
+            pthread_mutex_unlock(&my lock);
+            return;
+        }
+    }
+    str_list_push(&my dependency_scopes, package_dir);
+    // (under the lock: a checker asking for a specifier meanwhile waits for the links)
+    JsonValue const* package = module_resolver_package_json(resolver, package_dir);
+    cstr package_json = cstr_d(package_dir, "/package.json");
+    static char const* const fields[] = { "dependencies", "peerDependencies", "optionalDependencies" };
+    for (u32 f = 0; f < c_arraylen(fields); f++) {
+        JsonValue const* deps = json_get_tagged(package, fields[f], JSON_OBJECT);
+        for (isize i = 0; deps && i < deps->count; i++) {
+            ResolvedModule resolved = module_resolver_resolve_package_directory(
+                resolver, cstr_sv(&deps->members[i].key), cstr_sv(&package_json)
+            );
+            if (cstr_size(&resolved.original_path) && cstr_size(&resolved.path)) {
+                cstr original = cstr_d(resolved.original_path, "/package.json");
+                cstr real = cstr_d(resolved.path, "/package.json");
+                add_resolution(me, cstr_sv(&original), cstr_sv(&real));
+                c_drop(cstr, &original, &real);
+            }
+            resolved_module_drop(&resolved);
+        }
+    }
+    cstr_drop(&package_json);
+    pthread_mutex_unlock(&my lock);
+}
+
+// The links to the directory real_dir (with a trailing separator)
+static StrList links_of(SymlinkCache* me, csview real_dir) {
     StrList ret = {0};
     pthread_mutex_lock(&my lock);
     for (u32 i = 0; i < my count; i++) {
-        if ((my dirs[i].scope == 0 || my dirs[i].scope == scope) && cstr_equals_sv(&my dirs[i].real, real_dir)) {
-            str_list_push(&ret, cstr_sv(&my dirs[i].link));
-        }
+        if (cstr_equals_sv(&my dirs[i].real, real_dir)) str_list_push(&ret, cstr_sv(&my dirs[i].link));
     }
     pthread_mutex_unlock(&my lock);
     return ret;
@@ -935,6 +964,10 @@ static DirectoryResult directory_with_package_json(
     SpecifierMode import_mode = mode ? mode : my request->importing_default_mode;
     JsonValue const* exports = json_get(package, "exports");
     if (resolves_package_json_exports(my options)) {
+        // (tsgo's exports conditions follow the target's own format by its extension, where tsc took the importing
+        // file's mode)
+        if (ends_with(path, c_sv(".cjs")) || ends_with(path, c_sv(".cts"))) import_mode = SPECIFIER_MODE_COMMONJS;
+        else if (ends_with(path, c_sv(".mjs")) || ends_with(path, c_sv(".mts"))) import_mode = SPECIFIER_MODE_ESM;
         cstr name = package_name_from_types(js_substring(root, parts->top_level_package_name + 1, root.size));
         Conditions conditions = conditions_for(my options, import_mode);
         cstr found = exports && exports->tag != JSON_NULL ? from_exports(me, path, root, cstr_sv(&name), exports, &conditions) :
@@ -1076,61 +1109,19 @@ static void module_paths_drop(ModulePaths* me) {
     free(my items);
 }
 
-// getAllModulePathsWorker's first step: resolving every runtime dependency of the importing file's package.json, so
-// that the links to them are known. Returns the scope the links it found are filed under, 0 for none
-static u32 resolve_dependencies(Generator* me) {
-    SpecifierRequest const* r = my request;
-    if (path_contains_node_modules(r->importing)) return 0;
-    csview dir = nearest_package_json_dir(me, my source_dir);
-    if (!dir.size) return 0;
-    SymlinkCache* cache = r->symlinks;
-    cstr key = cstr_d(dir, "|", (int)r->override_mode);
-    pthread_mutex_lock(&cache->lock);
-    u32 scope = 0;
-    for (isize i = 0; i < cache->scopes.count; i++) {
-        if (cstr_eq(&cache->scopes.items[i], &key)) scope = (u32)i + 1;
-    }
-    if (scope) {
-        pthread_mutex_unlock(&cache->lock);
-        cstr_drop(&key);
-        return scope;
-    }
-    str_list_push(&cache->scopes, cstr_sv(&key));
-    scope = (u32)cache->scopes.count;
-    cstr_drop(&key);
-    // (under the lock: another checker asking for the same scope waits for its links)
-    JsonValue const* package = module_resolver_package_json(my resolver, dir);
-    cstr package_json = cstr_d(dir, "/package.json");
-    static char const* const fields[] = { "dependencies", "peerDependencies", "optionalDependencies" };
-    for (u32 f = 0; f < c_arraylen(fields); f++) {
-        JsonValue const* deps = json_get_tagged(package, fields[f], JSON_OBJECT);
-        for (isize i = 0; deps && i < deps->count; i++) {
-            ResolutionMode mode = r->override_mode == SPECIFIER_MODE_ESM ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
-            ResolvedModule resolved = module_resolver_resolve(
-                my resolver, cstr_sv(&deps->members[i].key), cstr_sv(&package_json), mode
-            );
-            if (cstr_size(&resolved.original_path) && cstr_size(&resolved.path)) {
-                add_resolution(cache, cstr_sv(&resolved.original_path), cstr_sv(&resolved.path), scope);
-            }
-            resolved_module_drop(&resolved);
-        }
-    }
-    cstr_drop(&package_json);
-    pthread_mutex_unlock(&cache->lock);
-    return scope;
-}
-
-// tsc's comparePathsByRedirect: redirects first, then fewer directories (stable otherwise)
+// tsc's comparePathsByRedirect: redirects first, then fewer directories, then by path
 static bool path_sorts_after(ModulePath const* a, ModulePath const* b, u32 b_depth) {
     if (a->is_redirect != b->is_redirect) return b->is_redirect;
-    return separators(cstr_sv(&a->path)) > b_depth;
+    u32 a_depth = separators(cstr_sv(&a->path));
+    if (a_depth != b_depth) return a_depth > b_depth;
+    // (tsgo's comparePathsByRedirect then compares the paths, case sensitively here, where tsc kept insertion order)
+    return strcmp(cstr_str(&a->path), cstr_str(&b->path)) > 0;
 }
 
 // tsc's getAllModulePathsWorker: every name of the target (through the links to a directory it's in, then itself),
 // ordered by how close they are to the importing file
 static ModulePaths all_module_paths(Generator* me) {
     SpecifierRequest const* r = my request;
-    u32 scope = r->symlinks ? resolve_dependencies(me) : 0;
     ModulePaths found = {0};
     csview target = r->target;
     // (A referenced project's source is named by its output declaration file first, then itself: tsgo's
@@ -1143,7 +1134,7 @@ static ModulePaths all_module_paths(Generator* me) {
     if (r->symlinks) {
         for (csview dir = parent_dir(target);;) {
             cstr key = dir.size > 1 ? cstr_d(dir, "/") : cstr_from("/");
-            StrList links = links_of(r->symlinks, cstr_sv(&key), scope);
+            StrList links = links_of(r->symlinks, cstr_sv(&key));
             cstr_drop(&key);
             if (links.count) {
                 // (A package doesn't import itself through its own link)

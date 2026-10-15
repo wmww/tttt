@@ -25,5 +25,6 @@ static void read_debug_env() {
         .debug_variance = getenv("TTTT_DEBUG_VARIANCE") != nullptr,
         .parallel_resolve = getenv("TTTT_PARALLEL_RESOLVE") != nullptr,
         .file_times = getenv("TTTT_FILE_TIMES") != nullptr,
+        .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
     };
 }

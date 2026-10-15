@@ -1,0 +1,52 @@
+//// [test/cases/ttttDeclarationManyContainers.ts] ////
+
+=== /src/lib/deep/types.ts ===
+export interface Logger { log(message: string): void }
+>log : (message: string) => void
+>message : string
+
+export declare function make(): Logger;
+>make : () => Logger
+
+=== /src/lib/deep/r1.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r2.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r3.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r4.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r5.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r6.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r7.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r8.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r9.ts ===
+
+export * from "./types";
+=== /src/lib/deep/r10.ts ===
+
+export * from "./types";
+=== /src/index.ts ===
+
+export * from "./lib/deep/types";
+=== /src/main/x.ts ===
+import { make } from "../lib/deep/types";
+>make : () => import("../lib/deep/types").Logger
+
+export const logger = make();
+>logger : import("../lib/deep/types").Logger
+>make() : import("../lib/deep/types").Logger
+>make : () => import("../lib/deep/types").Logger
+

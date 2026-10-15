@@ -1634,6 +1634,41 @@ ResolvedModule module_resolver_resolve(
     return ret;
 }
 
+ResolvedModule module_resolver_resolve_package_directory(ModuleResolver* me, csview name, csview containing_file) {
+    ResolvedModule ret = {0};
+    if (!name.size || module_name_is_relative(name)) return ret;
+    State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+    cstr dir = absolute_containing_dir(me, containing_file);
+    cstr mangled = mangle_scoped_name(name);
+    do {
+        csview here = cstr_sv(&dir);
+        isize base = here.size;
+        while (base > 0 && here.buf[base - 1] != '/') base--;
+        if (csview_equals(csview_slice(here, base, here.size), "node_modules")) continue;
+        cstr node_modules = join(here, c_sv("node_modules"));
+        if (directory_exists(&state, cstr_sv(&node_modules))) {
+            cstr candidate = join(cstr_sv(&node_modules), name);
+            if (!directory_exists(&state, cstr_sv(&candidate))) {
+                cstr_drop(&candidate);
+                cstr types = join(cstr_sv(&node_modules), c_sv("@types"));
+                candidate = join(cstr_sv(&types), cstr_sv(&mangled));
+                cstr_drop(&types);
+            }
+            if (directory_exists(&state, cstr_sv(&candidate))) {
+                cstr_take(&ret.path, candidate);
+                ret.kind = RESOLVED_DTS;
+                ret.is_external_library = true;
+                follow_symlinks(me, &ret);
+            } else {
+                cstr_drop(&candidate);
+            }
+        }
+        cstr_drop(&node_modules);
+    } while (!cstr_size(&ret.path) && go_up(&dir));
+    c_drop(cstr, &dir, &mangled);
+    return ret;
+}
+
 ResolvedModule module_resolver_resolve_type_reference(
     ModuleResolver* me, csview name, csview containing_file, ResolutionMode const* mode
 ) {

@@ -97,6 +97,10 @@ ResolvedModule module_resolver_resolve(
     csview containing_file,
     ResolutionMode mode
 );
+// tsc's resolvePackageDirectory: the directory of package `name` in the nearest node_modules (or its @types twin) up
+// from containing_file, whether or not anything in it resolves; path is followed through symlinks (original_path is
+// the link). Empty path if there is none
+ResolvedModule module_resolver_resolve_package_directory(ModuleResolver* me, csview name, csview containing_file);
 // `/// <reference types="name" />` and the entries of `types`. An empty containing_file is the options themselves
 // A `/// <reference types>` or `types` entry. mode is the reference's `resolution-mode` or else the containing file's
 // format, null if it has none (tsc's getModeForFileReference)
