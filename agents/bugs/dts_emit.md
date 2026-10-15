@@ -64,9 +64,7 @@ size on real code, each with an example:
   of an `as const` pseudo type mapped where tsgo doesn't map it (dtsdiff `map: extra at string (message)`,
   `'RATE_LIMIT`); feathers' `language: 'js' | 'ts'` and comments of a spread's properties where tsgo prints the type
   (`"js" | "ts"`, no comments, an intersection member repeated: a spread of an intersection with prompt answers,
-  checker-side); an overloaded function's type is instantiated by a class expression's `this` although it has no
-  outer type parameters (display looks through it: anonymous_type_query(); the fix belongs in instantiate_anonymous()'s
-  free parameters).
+  checker-side).
 - **Unknown-symbol naming (tsgo quirk, matched)**: tsgo names an unresolved type through any import alias that also
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps) and paints
   that import; tttt prints the same name but doesn't paint the import.

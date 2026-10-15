@@ -541,6 +541,39 @@ static bool declared_inside(Ty const* source, Span span) {
     return span_contains_span(span, source->param.symbol->name_span);
 }
 
+// The type parameters from outside that the overloads of a function symbol mention, false if not known: every overload
+// a declaration whose free parameters ty_function_free_params() knows (the implementation isn't a signature of it)
+static bool merged_overloads_free_params(Checker* me, Symbol const* symbol, TyList* out) {
+    if (!(symbol->flags & SYMBOL_FUNCTION)) return false;
+    Ty const** entries;
+    u32 count = ty_merged_value_entries(me, symbol, &entries);
+    bool known = count > 0;
+    TyBuf params = {0};
+    for (u32 i = 0; i < count && known; i++) {
+        Ty const* entry = entries[i];
+        if (entry->kind != TY_ANONYMOUS || !entry->anonymous.function) {
+            known = false;
+            break;
+        }
+        FunctionImpl const* function = entry->anonymous.function;
+        if (function->has_body) continue;
+        TyList own;
+        if (!ty_function_free_params(me, function, &own)) {
+            known = false;
+            break;
+        }
+        for (u32 j = 0; j < own.len; j++) {
+            bool seen = false;
+            for (u32 k = 0; k < params.len && !seen; k++) seen = params.data[k] == own.data[j];
+            if (!seen) ty_buf_push(&params, own.data[j]);
+        }
+    }
+    free(entries);
+    if (known) *out = ty_list_copy(me, params.data, params.len);
+    ty_buf_drop(&params);
+    return known;
+}
+
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
@@ -631,6 +664,16 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         !target->anonymous.merged_value && !target->anonymous.applies_type_args &&
         ty_function_free_params(me, target->anonymous.function, &free_params)
     ) {
+        free_params_unknown = false;
+    }
+    // An overloaded function's (its signatures all annotations): what its overloads mention, none for a file's or
+    // namespace's function (tsc's getObjectTypeInstantiation: no outer type parameters, the type itself)
+    TyList overload_params = {0};
+    if (free_params_unknown && !target->anonymous.function && !target->anonymous.is_reverse &&
+        target->anonymous.merged_value && !target->anonymous.applies_type_args &&
+        merged_overloads_free_params(me, target->anonymous.merged_value, &overload_params)
+    ) {
+        free_params = overload_params;
         free_params_unknown = false;
     }
     for (u32 i = 0; inner && i < inner->len; i++) {
