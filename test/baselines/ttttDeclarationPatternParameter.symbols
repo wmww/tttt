@@ -1,0 +1,39 @@
+//// [test/cases/ttttDeclarationPatternParameter.ts] ////
+
+=== ttttDeclarationPatternParameter.ts ===
+// A binding pattern parameter with an initializer, of a function whose return type is written: its type is the
+// signature's parameter's (resolved: the written return type didn't need it)
+export function notFound({ verbose = false } = {}): void {}
+>notFound : Symbol(notFound, Decl(ttttDeclarationPatternParameter.ts, 0, 0))
+>verbose : Symbol(verbose, Decl(ttttDeclarationPatternParameter.ts, 2, 26))
+
+export function g({ a, b = 1 }: { a: string; b?: number } = { a: "" }): void {}
+>g : Symbol(g, Decl(ttttDeclarationPatternParameter.ts, 2, 59))
+>a : Symbol(a, Decl(ttttDeclarationPatternParameter.ts, 3, 19))
+>b : Symbol(b, Decl(ttttDeclarationPatternParameter.ts, 3, 22))
+>a : Symbol(a, Decl(ttttDeclarationPatternParameter.ts, 3, 33))
+>b : Symbol(b, Decl(ttttDeclarationPatternParameter.ts, 3, 44))
+>a : Symbol(a, Decl(ttttDeclarationPatternParameter.ts, 3, 61))
+
+export function h([x, y] = [1, 2]): void {}
+>h : Symbol(h, Decl(ttttDeclarationPatternParameter.ts, 3, 79))
+>x : Symbol(x, Decl(ttttDeclarationPatternParameter.ts, 4, 19))
+>y : Symbol(y, Decl(ttttDeclarationPatternParameter.ts, 4, 21))
+
+export function k({ a: { b } } = { a: { b: 1 } }): void {}
+>k : Symbol(k, Decl(ttttDeclarationPatternParameter.ts, 4, 43))
+>a : Symbol(a, Decl(ttttDeclarationPatternParameter.ts, 5, 34))
+>b : Symbol(b, Decl(ttttDeclarationPatternParameter.ts, 5, 24))
+>a : Symbol(a, Decl(ttttDeclarationPatternParameter.ts, 5, 34))
+>b : Symbol(b, Decl(ttttDeclarationPatternParameter.ts, 5, 39))
+
+export const arrow = ({ verbose = false } = {}) => verbose;
+>arrow : Symbol(arrow, Decl(ttttDeclarationPatternParameter.ts, 6, 12))
+>verbose : Symbol(verbose, Decl(ttttDeclarationPatternParameter.ts, 6, 23))
+>verbose : Symbol(verbose, Decl(ttttDeclarationPatternParameter.ts, 6, 23))
+
+export class C { m({ v = 1 } = {}) {} }
+>C : Symbol(C, Decl(ttttDeclarationPatternParameter.ts, 6, 59))
+>m : Symbol(C.m, Decl(ttttDeclarationPatternParameter.ts, 7, 16))
+>v : Symbol(v, Decl(ttttDeclarationPatternParameter.ts, 7, 20))
+

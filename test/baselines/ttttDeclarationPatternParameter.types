@@ -1,0 +1,55 @@
+//// [test/cases/ttttDeclarationPatternParameter.ts] ////
+
+=== ttttDeclarationPatternParameter.ts ===
+// A binding pattern parameter with an initializer, of a function whose return type is written: its type is the
+// signature's parameter's (resolved: the written return type didn't need it)
+export function notFound({ verbose = false } = {}): void {}
+>notFound : ({ verbose }?: { verbose?: boolean | undefined; }) => void
+>verbose : boolean
+>false : false
+>{} : {}
+
+export function g({ a, b = 1 }: { a: string; b?: number } = { a: "" }): void {}
+>g : ({ a, b }?: { a: string; b?: number; }) => void
+>a : string
+>b : number
+>1 : 1
+>a : string
+>b : number | undefined
+>{ a: "" } : { a: string; }
+>a : string
+>"" : ""
+
+export function h([x, y] = [1, 2]): void {}
+>h : ([x, y]?: [number, number]) => void
+>x : number
+>y : number
+>[1, 2] : [number, number]
+>1 : 1
+>2 : 2
+
+export function k({ a: { b } } = { a: { b: 1 } }): void {}
+>k : ({ a: { b } }?: { a: { b: number; }; }) => void
+>a : any
+>b : number
+>{ a: { b: 1 } } : { a: { b: number; }; }
+>a : { b: number; }
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+
+export const arrow = ({ verbose = false } = {}) => verbose;
+>arrow : ({ verbose }?: { verbose?: boolean | undefined; }) => boolean
+>({ verbose = false } = {}) => verbose : ({ verbose }?: { verbose?: boolean | undefined; }) => boolean
+>verbose : boolean
+>false : false
+>{} : {}
+>verbose : boolean
+
+export class C { m({ v = 1 } = {}) {} }
+>C : C
+>m : ({ v }?: { v?: number | undefined; }) => void
+>v : number
+>1 : 1
+>{} : {}
+

@@ -111,6 +111,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPatternParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationSynthesizedLiterals': {
         errors: true,
         symbols: true,

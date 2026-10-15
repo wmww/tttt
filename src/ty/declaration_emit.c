@@ -1582,7 +1582,9 @@ static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg co
         return symbol ? ty_type_of_symbol(my checker, symbol) : nullptr;
     }
     // (a binding pattern's: its signature parameter's)
+    // (Resolved: a function with a written return type may not have needed its parameters yet)
     Signature const* sig = ty_function_signature(my checker, fn);
+    if (sig) signature_resolve(my checker, sig);
     for (u32 i = 0; sig && i < sig->param_count; i++) {
         if (sig->params[i].decl == arg) return sig->params[i].type;
     }
