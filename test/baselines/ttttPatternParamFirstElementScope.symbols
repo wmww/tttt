@@ -1,0 +1,48 @@
+//// [test/cases/ttttPatternParamFirstElementScope.ts] ////
+
+=== ttttPatternParamFirstElementScope.ts ===
+// tsgo quirk: where a signature is printed, only the first element of each parameter binding pattern is in its fake
+// scope (enterNewScope's pattern loop returns after one), so `typeof b` of `({ a, b }: T)` isn't reused there
+type Cfg = { app: number; animationState?: { a: 1 }; arr: [string, number] };
+>Cfg : Symbol(Cfg, Decl(ttttPatternParamFirstElementScope.ts, 0, 0))
+>app : Symbol(app, Decl(ttttPatternParamFirstElementScope.ts, 2, 12))
+>animationState : Symbol(animationState, Decl(ttttPatternParamFirstElementScope.ts, 2, 25))
+>a : Symbol(a, Decl(ttttPatternParamFirstElementScope.ts, 2, 44))
+>arr : Symbol(arr, Decl(ttttPatternParamFirstElementScope.ts, 2, 52))
+
+export const f = ({ app, animationState }: Cfg): { s?: typeof animationState; t: typeof app } => null!;
+>f : Symbol(f, Decl(ttttPatternParamFirstElementScope.ts, 3, 12))
+>app : Symbol(app, Decl(ttttPatternParamFirstElementScope.ts, 3, 19))
+>animationState : Symbol(animationState, Decl(ttttPatternParamFirstElementScope.ts, 3, 24))
+>Cfg : Symbol(Cfg, Decl(ttttPatternParamFirstElementScope.ts, 0, 0))
+>s : Symbol(s, Decl(ttttPatternParamFirstElementScope.ts, 3, 50))
+>animationState : Symbol(animationState, Decl(ttttPatternParamFirstElementScope.ts, 3, 24))
+>t : Symbol(t, Decl(ttttPatternParamFirstElementScope.ts, 3, 77))
+>app : Symbol(app, Decl(ttttPatternParamFirstElementScope.ts, 3, 19))
+
+export const g = ([x, y]: [number, string]): { a: typeof x; b: typeof y } => null!;
+>g : Symbol(g, Decl(ttttPatternParamFirstElementScope.ts, 4, 12))
+>x : Symbol(x, Decl(ttttPatternParamFirstElementScope.ts, 4, 19))
+>y : Symbol(y, Decl(ttttPatternParamFirstElementScope.ts, 4, 21))
+>a : Symbol(a, Decl(ttttPatternParamFirstElementScope.ts, 4, 46))
+>x : Symbol(x, Decl(ttttPatternParamFirstElementScope.ts, 4, 19))
+>b : Symbol(b, Decl(ttttPatternParamFirstElementScope.ts, 4, 59))
+>y : Symbol(y, Decl(ttttPatternParamFirstElementScope.ts, 4, 21))
+
+export const h = ({ arr: [p, q] }: Cfg): { a: typeof p; b: typeof q } => null!;
+>h : Symbol(h, Decl(ttttPatternParamFirstElementScope.ts, 5, 12))
+>arr : Symbol(arr, Decl(ttttPatternParamFirstElementScope.ts, 2, 52))
+>p : Symbol(p, Decl(ttttPatternParamFirstElementScope.ts, 5, 26))
+>q : Symbol(q, Decl(ttttPatternParamFirstElementScope.ts, 5, 28))
+>Cfg : Symbol(Cfg, Decl(ttttPatternParamFirstElementScope.ts, 0, 0))
+>a : Symbol(a, Decl(ttttPatternParamFirstElementScope.ts, 5, 42))
+>p : Symbol(p, Decl(ttttPatternParamFirstElementScope.ts, 5, 26))
+>b : Symbol(b, Decl(ttttPatternParamFirstElementScope.ts, 5, 55))
+>q : Symbol(q, Decl(ttttPatternParamFirstElementScope.ts, 5, 28))
+
+export const k = ([, y]: [number, string]): { b: typeof y } => null!;
+>k : Symbol(k, Decl(ttttPatternParamFirstElementScope.ts, 6, 12))
+>y : Symbol(y, Decl(ttttPatternParamFirstElementScope.ts, 6, 20))
+>b : Symbol(b, Decl(ttttPatternParamFirstElementScope.ts, 6, 45))
+>y : Symbol(y, Decl(ttttPatternParamFirstElementScope.ts, 6, 20))
+

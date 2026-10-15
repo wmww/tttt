@@ -1412,12 +1412,27 @@ static void param_names_leave(TyDisplay d, u32 saved) {
 
 static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symbol);
 
+// Whether any element of the pattern, nested ones too, declares `symbol`
+static bool pattern_has(Binding const* pattern, Symbol const* symbol) {
+    if (pattern->tag == BINDING_IDENTIFIER) return symbol && pattern->symbol == symbol;
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) if (pattern_has(i, symbol)) return true;
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) if (pattern_has(&i->target, symbol)) return true;
+    }
+    return false;
+}
+
+// (Only the first element of each pattern: tsgo's enterNewScope binds a pattern's elements in a loop that returns after
+// the first one, a hole included, so `typeof b` of `({ a, b }: T)` can't be reused where the signature is printed)
 static bool pattern_declares(Binding const* pattern, csview name, Symbol const* symbol) {
     if (pattern->tag == BINDING_IDENTIFIER) return symbol && pattern->symbol == symbol && csview_equals_sv(span_sv(pattern->content_span), name);
     if (pattern->tag == BINDING_ARRAY) {
-        for_each (i, vec_binding, &pattern->array) if (pattern_declares(i, name, symbol)) return true;
+        if (vec_binding_size(&pattern->array)) return pattern_declares(vec_binding_at(&pattern->array, 0), name, symbol);
     } else if (pattern->tag == BINDING_OBJECT) {
-        for_each (i, vec_object_binding_item, &pattern->object) if (pattern_declares(&i->target, name, symbol)) return true;
+        if (vec_object_binding_item_size(&pattern->object)) {
+            return pattern_declares(&vec_object_binding_item_at(&pattern->object, 0)->target, name, symbol);
+        }
     }
     return false;
 }
@@ -1428,6 +1443,7 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     // that by resolving from the signature's fake scope)
     // (A name the signatures being printed declare as a parameter means that parameter there: a rest tuple's expanded
     // elements are none that can be referenced, tsc's unknownSymbol)
+    bool hidden_by_quirk = false;
     if (meaning == SYMBOL_VALUE) {
         for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
             for (u32 j = 0; j < i->count; j++) {
@@ -1440,10 +1456,11 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
                     if (original->decl != param->decl || original->name != param->name) param = original;
                 }
                 // (A binding pattern's names are in the fake scope too: tsgo's enterNewScope)
-                if (param->decl && param->decl->initializer.binding.tag != BINDING_IDENTIFIER &&
-                    pattern_declares(&param->decl->initializer.binding, first, symbol)
-                ) {
-                    return true;
+                if (param->decl && param->decl->initializer.binding.tag != BINDING_IDENTIFIER) {
+                    if (pattern_declares(&param->decl->initializer.binding, first, symbol)) return true;
+                    // (One of its other names isn't: it means what it means where the type is printed, as if the
+                    // signature weren't)
+                    if (pattern_has(&param->decl->initializer.binding, symbol)) hidden_by_quirk = true;
                 }
                 if (!csview_equals_sv(atom_sv(param->name), first)) continue;
                 return symbol && param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER &&
@@ -1454,6 +1471,14 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     // (A parameter is only in scope inside its function: printed elsewhere it means nothing, tsc's symAtLocation. Where
     // the declaration transformer writes the signature's annotation, it is)
     if (symbol && symbol->is_parameter && d.transformer_node) return true;
+    // (Hidden by the quirk: unknown unless printed from inside the function, a declaration's name)
+    if (hidden_by_quirk && symbol->decl_count && symbol->decls[0].block) {
+        FunctionImpl const* function = symbol->decls[0].block->function;
+        if (!function || !span_valid(d.at) || !span_valid(function->full_span) || span_eq(d.at, function->full_span) ||
+            span_source(function->full_span) != span_source(d.at) || !span_contains_span(function->full_span, d.at)) {
+            return false;
+        }
+    }
     if (symbol && symbol->is_parameter && span_valid(d.at) && symbol->decl_count && symbol->decls[0].block) {
         FunctionImpl const* function = symbol->decls[0].block->function;
         bool printed = false;

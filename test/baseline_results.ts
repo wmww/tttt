@@ -639,6 +639,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPatternParamFirstElementScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttQualifiedNameValueThroughShadowingNamespace': {
         errors: true,
         symbols: true,

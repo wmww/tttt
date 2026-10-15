@@ -1,0 +1,54 @@
+//// [test/cases/ttttPatternParamFirstElementScope.ts] ////
+
+=== ttttPatternParamFirstElementScope.ts ===
+// tsgo quirk: where a signature is printed, only the first element of each parameter binding pattern is in its fake
+// scope (enterNewScope's pattern loop returns after one), so `typeof b` of `({ a, b }: T)` isn't reused there
+type Cfg = { app: number; animationState?: { a: 1 }; arr: [string, number] };
+>Cfg : Cfg
+>app : number
+>animationState : { a: 1; } | undefined
+>a : 1
+>arr : [string, number]
+
+export const f = ({ app, animationState }: Cfg): { s?: typeof animationState; t: typeof app } => null!;
+>f : ({ app, animationState }: Cfg) => { s?: { a: 1; } | undefined; t: typeof app; }
+>({ app, animationState }: Cfg): { s?: typeof animationState; t: typeof app } => null! : ({ app, animationState }: Cfg) => { s?: { a: 1; } | undefined; t: typeof app; }
+>app : number
+>animationState : { a: 1; } | undefined
+>s : { a: 1; } | undefined
+>animationState : { a: 1; } | undefined
+>t : number
+>app : number
+>null! : never
+
+export const g = ([x, y]: [number, string]): { a: typeof x; b: typeof y } => null!;
+>g : ([x, y]: [number, string]) => { a: typeof x; b: string; }
+>([x, y]: [number, string]): { a: typeof x; b: typeof y } => null! : ([x, y]: [number, string]) => { a: typeof x; b: string; }
+>x : number
+>y : string
+>a : number
+>x : number
+>b : string
+>y : string
+>null! : never
+
+export const h = ({ arr: [p, q] }: Cfg): { a: typeof p; b: typeof q } => null!;
+>h : ({ arr: [p, q] }: Cfg) => { a: typeof p; b: number; }
+>({ arr: [p, q] }: Cfg): { a: typeof p; b: typeof q } => null! : ({ arr: [p, q] }: Cfg) => { a: typeof p; b: number; }
+>arr : any
+>p : string
+>q : number
+>a : string
+>p : string
+>b : number
+>q : number
+>null! : never
+
+export const k = ([, y]: [number, string]): { b: typeof y } => null!;
+>k : ([, y]: [number, string]) => { b: string; }
+>([, y]: [number, string]): { b: typeof y } => null! : ([, y]: [number, string]) => { b: string; }
+>y : string
+>b : string
+>y : string
+>null! : never
+
