@@ -1,0 +1,75 @@
+//// [test/cases/ttttDeclarationCommentsOnce.ts] ////
+
+=== ttttDeclarationCommentsOnce.ts ===
+// Comments around reused type arguments and type parameter constraints once; a property without a valueDeclaration
+// (a mapped type's, a spread's fresh one) copies none
+type P<A, B> = [A, B];
+>P : Symbol(P, Decl(ttttDeclarationCommentsOnce.ts, 0, 0))
+>A : Symbol(A, Decl(ttttDeclarationCommentsOnce.ts, 2, 7))
+>B : Symbol(B, Decl(ttttDeclarationCommentsOnce.ts, 2, 9))
+>A : Symbol(A, Decl(ttttDeclarationCommentsOnce.ts, 2, 7))
+>B : Symbol(B, Decl(ttttDeclarationCommentsOnce.ts, 2, 9))
+
+export type S<T extends string /** constraint */, U = number /** dflt */> = P<
+>S : Symbol(S, Decl(ttttDeclarationCommentsOnce.ts, 2, 22))
+>T : Symbol(T, Decl(ttttDeclarationCommentsOnce.ts, 3, 14))
+>U : Symbol(U, Decl(ttttDeclarationCommentsOnce.ts, 3, 49))
+>P : Symbol(P, Decl(ttttDeclarationCommentsOnce.ts, 0, 0))
+
+  /**
+   * first arg
+   */
+  T,
+>T : Symbol(T, Decl(ttttDeclarationCommentsOnce.ts, 3, 14))
+
+  /** second */
+  U
+>U : Symbol(U, Decl(ttttDeclarationCommentsOnce.ts, 3, 49))
+
+>;
+export type Q<T = /* a */ string> = P<T /** after T */, 1>;
+>Q : Symbol(Q, Decl(ttttDeclarationCommentsOnce.ts, 10, 2))
+>T : Symbol(T, Decl(ttttDeclarationCommentsOnce.ts, 11, 14))
+>P : Symbol(P, Decl(ttttDeclarationCommentsOnce.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationCommentsOnce.ts, 11, 14))
+
+interface Options {
+>Options : Symbol(Options, Decl(ttttDeclarationCommentsOnce.ts, 11, 59))
+
+  /** doc a */
+  a?: boolean;
+>a : Symbol(Options.a, Decl(ttttDeclarationCommentsOnce.ts, 12, 19))
+
+  /** doc b */
+  b: number;
+>b : Symbol(Options.b, Decl(ttttDeclarationCommentsOnce.ts, 14, 14))
+}
+declare const o: Options;
+>o : Symbol(o, Decl(ttttDeclarationCommentsOnce.ts, 18, 13))
+>Options : Symbol(Options, Decl(ttttDeclarationCommentsOnce.ts, 11, 59))
+
+export const p1 = (x: Partial<Options>) => ({ ...o, ...x });
+>p1 : Symbol(p1, Decl(ttttDeclarationCommentsOnce.ts, 19, 12))
+>x : Symbol(x, Decl(ttttDeclarationCommentsOnce.ts, 19, 19))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Options : Symbol(Options, Decl(ttttDeclarationCommentsOnce.ts, 11, 59))
+>o : Symbol(o, Decl(ttttDeclarationCommentsOnce.ts, 18, 13))
+>x : Symbol(x, Decl(ttttDeclarationCommentsOnce.ts, 19, 19))
+
+export const p2 = (x: Partial<Options>) => x;
+>p2 : Symbol(p2, Decl(ttttDeclarationCommentsOnce.ts, 20, 12))
+>x : Symbol(x, Decl(ttttDeclarationCommentsOnce.ts, 20, 19))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Options : Symbol(Options, Decl(ttttDeclarationCommentsOnce.ts, 11, 59))
+>x : Symbol(x, Decl(ttttDeclarationCommentsOnce.ts, 20, 19))
+
+export const p3 = () => o as Readonly<Options>;
+>p3 : Symbol(p3, Decl(ttttDeclarationCommentsOnce.ts, 21, 12))
+>o : Symbol(o, Decl(ttttDeclarationCommentsOnce.ts, 18, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Options : Symbol(Options, Decl(ttttDeclarationCommentsOnce.ts, 11, 59))
+
+export const p4 = () => ({ ...o });
+>p4 : Symbol(p4, Decl(ttttDeclarationCommentsOnce.ts, 22, 12))
+>o : Symbol(o, Decl(ttttDeclarationCommentsOnce.ts, 18, 13))
+

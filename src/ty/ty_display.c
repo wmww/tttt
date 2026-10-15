@@ -148,6 +148,11 @@ static void member_end(TyDisplay d) {
 // setCommentRange of its valueDeclaration in addPropertyToElementList, or of the signature's declaration: `index`)
 static Span prop_comment_span(TyDisplay d, Prop const* prop, u32 index) {
     if (!d.comments || !d.multiline) return span_null;
+    // (Not of a property without a valueDeclaration: a mapped type's, a spread's fresh copy... see check.c's
+    // no_value_declaration())
+    for (Prop const* i = prop; i; i = i->target) {
+        if (i->mapped || (i->flags & PROP_NO_VALUE_DECLARATION) || prop_decl_rare(i->decl)->reverse_of) return span_null;
+    }
     while (prop->target) prop = prop->target;
     u32 count = prop->decl->decl_span_count;
     if (!count) return span_null;
@@ -1608,7 +1613,13 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
     for_each (i, vec_spanned_type, args) {
         if (i_index) out_lit(d, ", ");
         param_comments_begin_at(d, i->span); // (Declaration emit: the comments around it, emitListItems)
-        display_node(me, d, &i->type); // (A generic function type first stays bare, see display_list())
+        // (Written here: the argument's node leaves them)
+        TyDisplay arg_d = d;
+        if (d.comments && span_valid(i->span)) {
+            arg_d.comments_container_start = decl_map_type_start(&i->type, d.comments->file);
+            arg_d.comments_container_end = decl_map_type_end(&i->type, d.comments->file);
+        }
+        display_node(me, arg_d, &i->type); // (A generic function type first stays bare, see display_list())
         if (d.comments && span_valid(i->span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->span));
     }
     out_lit(d, ">");
@@ -1958,6 +1969,10 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         if (!span_valid(i->jsdoc_tag)) param_comments_begin_at(d, span_valid(i->full_span) ? i->full_span : i->name);
         TyDisplay param_d = d;
         if (span_valid(i->jsdoc_tag)) param_d.no_map = true;
+        // (A constraint or default ending the parameter leaves its trailing comments to it, written below)
+        if (d.comments && span_valid(i->full_span)) {
+            param_d.comments_container_end = decl_comments_end(d.comments, span_end_ptr(i->full_span), nullptr);
+        }
         map_span(param_d, i->full_span, false);
         // (Its modifiers are token nodes, in the order written)
         char const* word = D_MAP(param_d) && span_valid(i->full_span) ? i->full_span.buf : nullptr;

@@ -1,0 +1,61 @@
+//// [test/cases/ttttDeclarationCommentsOnce.ts] ////
+
+=== ttttDeclarationCommentsOnce.ts ===
+// Comments around reused type arguments and type parameter constraints once; a property without a valueDeclaration
+// (a mapped type's, a spread's fresh one) copies none
+type P<A, B> = [A, B];
+>P : P<A, B>
+
+export type S<T extends string /** constraint */, U = number /** dflt */> = P<
+>S : S<T, U>
+
+  /**
+   * first arg
+   */
+  T,
+  /** second */
+  U
+>;
+export type Q<T = /* a */ string> = P<T /** after T */, 1>;
+>Q : Q<T>
+
+interface Options {
+  /** doc a */
+  a?: boolean;
+>a : boolean | undefined
+
+  /** doc b */
+  b: number;
+>b : number
+}
+declare const o: Options;
+>o : Options
+
+export const p1 = (x: Partial<Options>) => ({ ...o, ...x });
+>p1 : (x: Partial<Options>) => { a?: boolean; b: number; }
+>(x: Partial<Options>) => ({ ...o, ...x }) : (x: Partial<Options>) => { a?: boolean; b: number; }
+>x : Partial<Options>
+>({ ...o, ...x }) : { a?: boolean; b: number; }
+>{ ...o, ...x } : { a?: boolean; b: number; }
+>o : Options
+>x : Partial<Options>
+
+export const p2 = (x: Partial<Options>) => x;
+>p2 : (x: Partial<Options>) => Partial<Options>
+>(x: Partial<Options>) => x : (x: Partial<Options>) => Partial<Options>
+>x : Partial<Options>
+>x : Partial<Options>
+
+export const p3 = () => o as Readonly<Options>;
+>p3 : () => Readonly<Options>
+>() => o as Readonly<Options> : () => Readonly<Options>
+>o as Readonly<Options> : Readonly<Options>
+>o : Options
+
+export const p4 = () => ({ ...o });
+>p4 : () => { a?: boolean; b: number; }
+>() => ({ ...o }) : () => { a?: boolean; b: number; }
+>({ ...o }) : { a?: boolean; b: number; }
+>{ ...o } : { a?: boolean; b: number; }
+>o : Options
+
