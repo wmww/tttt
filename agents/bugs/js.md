@@ -28,17 +28,12 @@ what remains is below, each with what was found.
   comment). No test.
 
 ## Declaration diagnostics in JS
-Only TS6424 and isolatedDeclarations are ported for JS (`js_declaration_diagnostics_check()`,
-`declaration_diagnostics_wanted()`): tsgo's declaration transformer runs on JS too (transform.go: CommonJS exports,
-this-property assignments collected into class members, `collectThisPropertyAssignments`). Missing: TS4023
-(jsDeclarationsTypeReassignmentFromDeclaration2, cjsObjectDefinePropertyPrivateModuleDeclarationEmit:
-`Object.defineProperty(exports, "api", { value: require("pkg") })` whose type uses a non-exported interface of an
-`export =` module, name `'"api"'`), TS5088 (commonJSImportNestedClassTypeReference: `exports.K = NS.K` of a class
-expression expando whose method returns `new NS.K()`), TS9013 for `this.x = foo()` in a JS constructor under
-isolatedDeclarations (isolatedDeclarationsJsThisPropertyAssignmentInference: tsgo's visitThisPropertyAssignments ->
-ensureType(binary expression), reported over the whole assignment; check_class() would collect the first `this.x =`
-per name in constructors, methods and static blocks of a JS class, skipping names the class declares). Plan-sized as a
-whole (JS declaration emit's walk); the TS9013 part alone is ~60 lines.
+Ported (2026-10-15): TS6424, isolatedDeclarations' walk (with a class's `this.x =` members as TS9013:
+check_js_this_properties()), and outside isolatedDeclarations a CommonJS file's `module.exports = x` of a local
+variable, `Object.defineProperty(exports, "n", { value: e })` and `exports.x = e` (not a function or class)
+serialized like variables (check_js_commonjs_exports(): TS4023, TS5088...). Not walked: JS functions and classes,
+expandos, JSDoc typedefs/namespaces, `module.exports = { ... }` literals, ES module exports of JS files, a base class's
+inference fallback; the full JS declaration emit is plan 64 stage 6. No suite test left.
 
 ## Older binder gaps (written against tsc 6, before the JS rework: recheck against tsgo before working on one)
 - `exports.x =` next to `module.exports = {...}`.

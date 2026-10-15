@@ -63,9 +63,10 @@ Component letters are the *failing* components (E errors, S symbols, T types).
    harness order) fixes none of bucket 2 (tried, not kept). Bucket 2 now: two emit-order tests are argued in
    `bugs/tsgo_divergences.md` (incorrectRecursiveMappedTypeConstraint, typeParameterWithInvalidConstraintType: tsgo's
    CLI matches tttt, only the harness's JS-emit-first order differs); circularBaseTypes, recursiveMappedTypes and
-   manyCompilerErrorsInTheTwoFiles differ from tsgo's CLI too (checker/parser bugs); four are JavaScript declaration emit
+   manyCompilerErrorsInTheTwoFiles differ from tsgo's CLI too (checker/parser bugs); four were JavaScript declaration emit
    (cjsObjectDefinePropertyPrivateModuleDeclarationEmit, jsDeclarationsTypeReassignmentFromDeclaration2,
-   isolatedDeclarationsJsThisPropertyAssignmentInference, commonJSImportNestedClassTypeReference: plan 64 stage 6);
+   isolatedDeclarationsJsThisPropertyAssignmentInference, commonJSImportNestedClassTypeReference: fixed 2026-10-15 by
+   walking a JS file's CommonJS exports and class this-properties, the rest of JS emit is still plan 64 stage 6);
    three are checker bugs for the second fan-out: declarationEmitOptionalParameterUndefined (`(bar = foo, _: string)`
    where the outer `foo` has an initializer: bar's signature type is `any | undefined`, not emit order: the CLI shows
    it too), declarationEmitBindingPatternsUnused (TS2842 for an unused renaming in a setter's pattern, `typeof alias`

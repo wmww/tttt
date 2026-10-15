@@ -137,6 +137,9 @@ typedef struct Emitting {
     Span name; // The declaration's name (the message's first argument for most kinds), empty if it has none
     Span at; // Where the diagnostic goes unless an entity name is to blame
     Span fallback; // Without a name: where the symbol tracker's own diagnostics go (tsc's errorFallbackNode), else `at`
+    // `name` is only the message's name, not a node of the declaration (tsgo's errorDeclarationNameWithFallback of a
+    // JavaScript `exports.x = e`, whose BinaryExpression has no Name()): the tracker's diagnostics go to `at`
+    bool name_not_node;
 } Emitting;
 
 typedef struct Walk {
@@ -584,6 +587,10 @@ static bool is_painted_pending(Walk* me, Symbol const* symbol) {
 // errorNameNode or errorFallbackNode, and errorDeclarationNameWithFallback
 static Span error_name_node(Walk* me, csview* name) {
     Emitting const* e = &my emitting;
+    if (span_valid(e->name) && e->name_not_node) {
+        *name = span_sv(e->name);
+        return span_valid(e->fallback) ? e->fallback : e->at;
+    }
     if (span_valid(e->name)) {
         *name = span_sv(e->name);
         return e->name;
@@ -4449,6 +4456,23 @@ static void check_js_commonjs_exports(Walk* me) {
                 continue;
             }
             check_variable(me, (InitializedBinding const*)binding, symbol->is_const);
+            continue;
+        }
+        // `exports.x = e` (not a function or class, which are declarations of their own kinds): a variable x of e's
+        // type, reported at the assignment
+        if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_EQUAL && expr->binary_op->left.tag == EXPR_PROPERTY &&
+            expr->binary_op->left.property->form == PROPERTY_EXPR_DOT && expr_is_exports_object(&expr->binary_op->left.property->expr)
+        ) {
+            Expr const* value = &expr->binary_op->right;
+            if (value->tag == EXPR_FUNCTION || value->tag == EXPR_CLASS_DECL || value->tag == EXPR_BINARY_OP) continue;
+            Span name = expr_static_property_name(&expr->binary_op->left);
+            if (!span_valid(name)) continue;
+            Span whole = span_make_in(expr_outer_span(expr), span_start_ptr(expr_outer_span(&expr->binary_op->left)), span_end_ptr(expr_outer_span(value)));
+            Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, name, whole);
+            my emitting.name_not_node = true;
+            Ty const* type = lazy_type_get((LazyType*)&value->lazy_type);
+            serialize_declaration(me, pseudo_of_expression(my checker, value, (PseudoPlace){0}), type ? ty_widened_literal(my checker, type) : nullptr, false, false);
+            emit_leave(me, saved);
             continue;
         }
         Span name;

@@ -62663,7 +62663,7 @@ const baselines = {
         types: true,
     },
     'commonJSImportNestedClassTypeReference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -844,9 +844,11 @@ src` finds the code-side markers; every significant one has an entry here.
   TS5011/5055/5056) from tsgo's expected output of emitting commands.
 - `TTTT_TYPESCRIPT_VERSION` (main.c, `--version`) is hand-written: "7.1.0-dev", what the pinned tsgo prints. Bump
   with the oracle.
-- `declaration_diagnostics_wanted()`: JavaScript files only get declaration diagnostics with isolatedDeclarations
-  (TS9010/TS9013...). tsgo reports TS4xxx for JS declaration emit too, but the walk doesn't know JSDoc namespaces/
-  typedefs (jsDeclarationsImportAliasExposedWithinNamespace got a spurious TS4078 with JS enabled).
+- `declaration_diagnostics_wanted()`: JavaScript files only get the full walk with isolatedDeclarations
+  (TS9010/TS9013...); otherwise only their CommonJS exports' declarations (`check_js_commonjs_exports()`, three
+  shapes serialized as variables, `Emitting.name_not_node` for `exports.x = e`). tsgo reports TS4xxx for all of JS
+  declaration emit, but the walk doesn't know JSDoc namespaces/typedefs (jsDeclarationsImportAliasExposedWithinNamespace
+  got a spurious TS4078 with JS enabled).
 - `resolve_with_signatures()`'s `super(...)` TS2346: JavaScript never reports it (superCallInJSWithWrongBaseTypeArgumentCount*
   say so), though tsgo's resolveCallExpression filters the base constructors by the clause's type argument count
   without a JS exemption. Not understood why tsgo's resolveCall reports nothing there.
