@@ -1659,9 +1659,20 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
     return any;
 }
 
+static bool expando_member_written(Walk* me, Symbol const* member, csview* name);
+
+static bool expando_any_written(Walk* me, Symbol const* symbol) {
+    for (u32 i = 0; symbol && symbol->exports && i < symbol->exports->count; i++) {
+        csview name;
+        if (expando_member_written(me, symbol->exports->entries[i].symbol, &name)) return true;
+    }
+    return false;
+}
+
+// (tsc's transformExpandoAssignment: a variable initialized with a function or arrow function, without a type, of which
+// an expando member is written)
 static bool is_expando_variable(Walk* me, Binding const* binding, Expr const* init) {
-    if (init->tag != EXPR_FUNCTION && init->tag != EXPR_CLASS_DECL) return false;
-    return check_expandos(me, binding->symbol, false);
+    return init->tag == EXPR_FUNCTION && check_expandos(me, binding->symbol, false) && expando_any_written(me, binding->symbol);
 }
 
 // The return type and parameters of a function expression declaration emit writes as a function declaration (an expando
@@ -3081,88 +3092,150 @@ static bool is_reserved_word(csview name) {
     return false;
 }
 
+// An expando member declaration emit writes (tsc's transformExpandoAssignment): one whose name is an identifier (a late
+// bound one's, `f[k] = v`, what k's type names), `name`
+static bool expando_member_written(Walk* me, Symbol const* member, csview* name) {
+    if (!member || !member->decl_count || member->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) return false;
+    *name = member->name;
+    Expr const* key = symbol_rare(member)->late_bound_key;
+    if (key) {
+        bool is_number = false;
+        Atom const* atom = ty_property_name_of_key(my checker, ty_expr_type(my checker, key), &is_number);
+        if (!atom || is_number) return false;
+        *name = atom_sv(atom);
+    }
+    return name->size && name->buf[0] != '#' && ty_is_identifier_name(*name);
+}
+
 // The expando members of a function (`f.x = v`, tsc's transformExpandoAssignment), as a namespace of the function's
-// name after it (createFullExpandoBlock): a variable of each assignment's type, or `export { v as x }` when the value
-// is a name (every member is exported then). `modifiers`: the function's, as written
+// name after it (createFullExpandoBlock), one statement per assignment in order: a variable of the assignment's type,
+// named as the property unless that name resolves here or is a keyword (a generated `_a` exported as the property then),
+// or `export { v as x }` when the value is a name. Once there is an export declaration, the variables declared before
+// the first renamed one and every later one are exported. `modifiers`: the function's, as written
+typedef struct ExpandoStatement {
+    cstr text; // Past the modifiers, with its line break
+    bool exported;
+    bool declaration; // An export declaration
+} ExpandoStatement;
+
 static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers) {
     if (!host || !host->exports) return;
-    cstr members = cstr_init();
+    ExpandoStatement* statements = nullptr;
+    u32 count = 0, cap = 0;
+    bool has_export = false;
+#define EXPANDO_PUSH(t, e, d) do { \
+        if (count == cap) { cap = cap ? cap * 2 : 8; statements = realloc(statements, cap * sizeof(ExpandoStatement)); } \
+        statements[count++] = (ExpandoStatement){ .text = (t), .exported = (e), .declaration = (d) }; \
+    } while (0)
     cstr* outer = my out;
-    my out = &members;
-    my indent++;
-    bool any_export = false;
-    u32 count = 0;
     for (u32 i = 0; i < host->exports->count; i++) {
         Symbol const* member = host->exports->entries[i].symbol;
-        if (!member || !member->decl_count || member->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) continue;
-        if (symbol_rare(member)->late_bound_key || !ty_is_identifier_name(member->name)) continue;
+        csview member_name;
+        if (!expando_member_written(me, member, &member_name)) continue;
         for (u32 j = 0; j < member->decl_count; j++) {
             if (member->decls[j].kind != SYMBOL_DECL_ASSIGNMENT) continue;
             Expr const* value = member->decls[j].node;
-            count++;
-            w_indent(me);
             if (value && value->tag == EXPR_IDENTIFIER) {
-                any_export = true;
-                w_lit(me, "export { ");
-                w(me, span_sv(expr_outer_span(value)));
-                if (!csview_equals_sv(span_sv(expr_outer_span(value)), member->name)) {
-                    w_lit(me, " as ");
-                    w(me, member->name);
+                if (!has_export) {
+                    for (u32 k = 0; k < count; k++) statements[k].exported = true;
                 }
-                w_lit(me, " };\n");
+                has_export = true;
+                cstr text = cstr_from("export { ");
+                cstr_append_sv(&text, span_sv(expr_outer_span(value)));
+                if (!csview_equals_sv(span_sv(expr_outer_span(value)), member_name)) {
+                    cstr_append_sv(&text, c_sv(" as "));
+                    cstr_append_sv(&text, member_name);
+                }
+                cstr_append_sv(&text, c_sv(" };\n"));
+                EXPANDO_PUSH(text, false, true);
                 continue;
             }
-            // (A keyword can't be a variable's name: a generated one, exported as the keyword)
-            bool keyword = is_reserved_word(member->name);
+            // (A name that resolves here or a keyword can't be the variable's: a generated one, exported as the property)
+            bool renamed = is_reserved_word(member_name) ||
+                (my scope && scope_resolve(my scope, member_name, SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE));
             char generated[16] = "";
-            if (keyword) {
+            if (renamed) {
                 u32 n = my generated_names++;
                 snprintf(generated, sizeof generated, n < 26 ? "_%c" : "_%c%u", 'a' + n % 26, n / 26);
             }
-            w_lit(me, "\x01var ");
-            w(me, keyword ? csview_from(generated) : member->name);
+            cstr text = cstr_init();
+            my out = &text;
+            my indent++;
+            w_lit(me, "var ");
+            w(me, renamed ? csview_from(generated) : member_name);
             w_lit(me, ": ");
             w_type(me, ty_widened_literal(my checker, ty_type_of_symbol(my checker, member)));
             w_lit(me, ";\n");
-            if (keyword) {
-                any_export = true;
-                w_indent(me);
-                w_lit(me, "export { ");
-                w(me, csview_from(generated));
-                w_lit(me, " as ");
-                w(me, member->name);
-                w_lit(me, " };\n");
+            my indent--;
+            my out = outer;
+            EXPANDO_PUSH(text, has_export, false);
+            if (renamed) {
+                cstr declaration = cstr_from("export { ");
+                cstr_append_sv(&declaration, csview_from(generated));
+                cstr_append_sv(&declaration, c_sv(" as "));
+                cstr_append_sv(&declaration, member_name);
+                cstr_append_sv(&declaration, c_sv(" };\n"));
+                // (Before it is added: the variable stays private)
+                if (!has_export) {
+                    for (u32 k = 0; k + 1 < count; k++) statements[k].exported = true;
+                }
+                has_export = true;
+                EXPANDO_PUSH(declaration, false, true);
             }
         }
     }
-    my indent--;
-    my out = outer;
+#undef EXPANDO_PUSH
     if (count) {
         w_indent(me);
+        // (In a namespace body whose exports are stripped, this one's is too: see Walk.export_offsets)
+        if (csview_starts_with(modifiers, "export ") && my export_offsets && my indent) {
+            if (my export_offset_count == my export_offset_cap) {
+                my export_offset_cap = my export_offset_cap ? my export_offset_cap * 2 : 8;
+                my export_offsets = realloc(my export_offsets, my export_offset_cap * sizeof(u32));
+            }
+            my export_offsets[my export_offset_count++] = (u32)cstr_size(my out);
+        }
         w(me, modifiers);
         w_lit(me, "namespace ");
         w(me, name);
         w_lit(me, " {\n");
-        // (`\x01` marks where a variable's `export` goes when there is an export declaration)
-        for (csview rest = cstr_sv(&members); rest.size;) {
-            isize_t mark = csview_find_sv(rest, c_sv("\x01"));
-            if (mark == c_NPOS) {
-                w(me, rest);
-                break;
-            }
-            w(me, csview_slice(rest, 0, mark));
-            if (any_export) w_lit(me, "export ");
-            rest = csview_slice(rest, mark + 1, rest.size);
+        my indent++;
+        for (u32 i = 0; i < count; i++) {
+            w_indent(me);
+            if (statements[i].exported) w_lit(me, "export ");
+            w(me, cstr_sv(&statements[i].text));
         }
+        my indent--;
         w_indent(me);
         w_lit(me, "}\n");
     }
-    cstr_drop(&members);
+    for (u32 i = 0; i < count; i++) cstr_drop(&statements[i].text);
+    free(statements);
 }
 
 static void emit_function_declaration(Walk* me, Statement const* statement, Container container) {
     FunctionImpl const* fn = statement->decl.function.impl;
     if (is_overload_implementation(fn)) return;
+    Symbol const* symbol = fn->symbol;
+    // (After the first declaration of the function: its symbol's value declaration)
+    bool first = symbol && symbol->decl_count && symbol->decls[0].node == fn;
+    // A default export with expandos is a declaration, the export, then the namespace (tsc's transformExpandoHost)
+    if (first && statement->decl.props.exported == DECL_EXPORTED_YES_DEFAULT && container_is_file(container) &&
+        span_valid(fn->name) && expando_any_written(me, symbol)
+    ) {
+        my has_module_indicator = my has_scope_marker = true;
+        w_indent(me);
+        w_lit(me, "declare function ");
+        w(me, span_sv(fn->name));
+        w_signature(me, fn, false);
+        w_lit(me, ";\n");
+        w_indent(me);
+        w_lit(me, "export default ");
+        w(me, span_sv(fn->name));
+        w_lit(me, ";\n");
+        emit_expando_namespace(me, symbol, span_sv(fn->name), c_sv("declare "));
+        return;
+    }
     w_indent(me);
     isize_t modifiers_start = (isize_t)cstr_size(my out);
     w_statement_modifiers(me, statement, container, false);
@@ -3171,9 +3244,6 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
     w(me, span_sv(fn->name));
     w_signature(me, fn, false);
     w_lit(me, ";\n");
-    // (After the first declaration of the function: its symbol's value declaration)
-    Symbol const* symbol = fn->symbol;
-    bool first = symbol && symbol->decl_count && symbol->decls[0].node == fn;
     if (first && statement->decl.props.exported != DECL_EXPORTED_YES_DEFAULT) {
         emit_expando_namespace(me, symbol, span_sv(fn->name), cstr_sv(&modifiers));
     }

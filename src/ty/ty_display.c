@@ -1572,6 +1572,42 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
     }
 }
 
+// `{ with: { a: "b", ... } }` (or `assert`), each attribute a name or string and a value: anything else is a parse error
+// tsgo's parser recovers from with empty attributes
+static bool import_type_options_valid(csview options) {
+    options = csview_trim_whitespace(options);
+    if (options.size < 2 || options.buf[0] != '{' || options.buf[options.size - 1] != '}') return false;
+    csview rest = csview_trim_whitespace(csview_slice(options, 1, options.size - 1));
+    isize_t keyword = csview_starts_with(rest, "with") ? 4 : csview_starts_with(rest, "assert") ? 6 : 0;
+    if (!keyword) return false;
+    rest = csview_trim_whitespace(csview_slice(rest, keyword, rest.size));
+    if (!rest.size || rest.buf[0] != ':') return false;
+    rest = csview_trim_whitespace(csview_slice(rest, 1, rest.size));
+    if (rest.size && rest.buf[rest.size - 1] == ',') rest = csview_trim_whitespace(csview_slice(rest, 0, rest.size - 1));
+    if (rest.size < 2 || rest.buf[0] != '{' || rest.buf[rest.size - 1] != '}') return false;
+    csview entries = csview_trim_whitespace(csview_slice(rest, 1, rest.size - 1));
+    // (Each entry `name: value` up to a comma outside of strings)
+    while (entries.size) {
+        isize_t i = 0;
+        char quote = 0;
+        bool colon = false;
+        for (; i < entries.size; i++) {
+            char c = entries.buf[i];
+            if (quote) {
+                if (c == '\\') i++;
+                else if (c == quote) quote = 0;
+                continue;
+            }
+            if (c == '"' || c == '\'') quote = c;
+            else if (c == ':') colon = true;
+            else if (c == ',') break;
+        }
+        if (!colon) return false;
+        entries = csview_trim_whitespace(csview_slice(entries, i < entries.size ? i + 1 : i, entries.size));
+    }
+    return true;
+}
+
 static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->keyword) {
@@ -1637,7 +1673,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
                     }
                     csview options = csview_trim_whitespace((csview){ from, c - from });
                     if (options.size && options.buf[options.size - 1] == ',') options = csview_trim_whitespace(csview_slice(options, 0, options.size - 1));
-                    if (options.size) {
+                    // (Options that aren't `{ with: ... }` are a parse error: tsgo's parser makes empty attributes)
+                    bool attributes = import_type_options_valid(options);
+                    if (options.size && !attributes) {
+                        out_lit(d, ", { with: {} }");
+                    } else if (options.size) {
                         // (The printer's object literals: `{ a: b }`, single line as written)
                         out_lit(d, ", ");
                         for (isize_t k = 0; k < options.size; k++) {
