@@ -20,3 +20,17 @@ ever exists (the human: out of scope, vision.md):
   only the harness's emit-first run differs.
 Not in this class after all (tsgo's CLI differs from tttt too: checker or parser bugs, plan 66's second fan-out):
 recursiveMappedTypes (TS2589/TS2502/TS2615 placement).
+circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement),
+manyCompilerErrorsInTheTwoFiles (two missing TS1134 parse errors).
+
+# Suite tests whose expected output is a tsgo instantiation-cache collision (plan 66 second fan-out, 2026-10-15)
+- genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1: tsgo's `outer.log(100)` is
+  `Effect<100, never, never>` (the test's own comment, from Strada, says `Effect<100, never, XXX>`, which tttt prints).
+  Evidence: delete the `export const a = inner.log(100);` line and tsgo prints `Effect<100, never, XXX>` for `b` too;
+  an instrumented tsgo (getObjectTypeInstantiation) shows the `log` function type is a SingleSignatureType (the
+  higher-order call result) whose instantiation for `outer` (this -> `XXX & { _type: XXX }`) hits the cache entry made
+  for `inner` (this -> XXX): getTypeInstantiationKey keys it by the outer type parameters' arguments plus `!`, not by
+  the mapper `m` it then combines in (`newMapper = combineTypeMappers(newMapper, m)`), so the second `this` reuses the
+  first's result. Reproducing it means a deliberately colliding cache key (and a SingleSignatureType notion tttt
+  doesn't have) whose result depends on which `this` asked first: the bug the test was written against, regressed in
+  tsgo. Not reproduced; re-check when the oracle is re-pinned (plan 58).

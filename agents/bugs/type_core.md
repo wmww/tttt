@@ -132,14 +132,8 @@ passing tests).
   distributive constraint) leaves an `any` branch out like tsc's getDefaultConstraintOfConditionalType but uses the
   raw true branch, not tsc's inferred one. `ReturnType<T[M]>` property access (seed-5 mut0710/mut3585) still misses
   TS2339.
-- genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (types; rechecked 2026-10-14):
-  `inner.log(100)` matches now; `outer.log` (outer: `ProxyMap<XXX>` = `{ [K in keyof XXX]: (XXX & { _type: XXX })[K] }`)
-  is `<N extends number>(n: N) => Effect<N, never, never>` in tsgo, `Effect<N, never, XXX>` in tttt: tttt reads
-  `log` of the intersection with the intersection as `this` (so `F<X, this>`'s `Y extends { _type: infer Z }` finds
-  XXX), tsgo with XXX itself (the property type of an intersection member keeps its class's own `this`, or F was
-  already resolved when the class's member type was cached: the test's name says cache reuse). Check
-  `class C { p!: F<1, this> }` read through `(C & { _type: C })["p"]` against tsgo first. Inference/`this`
-  instantiation; ~a session once the mechanism is pinned.
+- genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1: argued out of reach,
+  tsgo_divergences.md (a tsgo instantiation-cache collision).
 - (2026-10-07) knockout.mapping `$ExpectType` (knockout.mapping-tests.ts:109): tsc orders
   `KnockoutObservableArray<KnockoutObservableType<any>> | KnockoutObservableArray<any>`, tttt the other way round.
   Not investigated (type id order of two references to one target: which type argument list is made first).
