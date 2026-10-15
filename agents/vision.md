@@ -54,6 +54,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   tests, reversing its "not now"), and the emit-order tests that ride on plan 64's writer, because tsgo's harness
   emits before it collects diagnostics. The no-special-casing rule holds: a test that can't pass honestly gets a
   written argument in tsgo_divergences.md and a line in report.md, not a hack.
+  Status 2026-10-15 (both fan-outs done): tsgo's suite 13556 / 13568 configurations (99.9%); the 12 left are 5 argued
+  divergences (JS-emit order, a tsgo cache-key collision, one weaker order argument) and 7 filed mechanisms, several
+  plan-sized for one test each (plan 66 stage 4). Diminishing returns: the next suite work is plan 58's re-pin.
 - **Two process failures this window, both now rules (CLAUDE.md Workflow):** the disk filled (a 50 GB Go build cache
   from instrumented tsgo builds; now capped in `ensure-typescript.sh`), and the triage session ended with four
   finished commits stranded in a worktree (merged by this insights session, 0 lost). Sessions end with an empty

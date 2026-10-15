@@ -9,6 +9,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 66 stage 4, the second fan-out (2026-10-15, todo entry 9)
+Suite **13657 / 13669** (tsgo's 13556 / 13568, 12 left; from 13618 / 13660), 0 lost. `scripts/oracles.py`: corpora
+all 0/0 but vue 0/2 (webpack 0/1 -> 0/0, effect 3/0 -> 0/0, vue 0/3 -> 0/2), DT 8594 / 8595, `$ExpectType` 68639
+(from 68637), flagflip 18 / 6 / 3 (from 42 / 6 / 3), source sweep sample 814 / 822 (from 811), perfsweep median 0.19,
+worst types ratio 1.62, dtsdiff 940 / 1233 projects, 74466 / 76294 files, kdiff 1 / 3363 (inbox-zero, as before).
+Instructions (callgrind): tsc 4.716 (+0.4%), type-fest 19.333 (+0.4%), valibot 3.509 (+1.4%), react 1.505, nest
+1.182, webpack 10.049 (+0.4%), zod 5.087 (+0.3%), xstate 2.763 (+1.2%), drizzle 6.029 (+0.6%), vue 6.636 (+0.6%),
+effect 10.369 (+1.3%), vscode 89.903 (+0.6%), excalidraw 7.916 (+0.8%), tanstack-router 5.410 G (+0.4%). Half of
+valibot/effect/xstate's is the return mapper rule (b502608d, +0.75%: same call counts, arguments checked against
+tsgo's contexts), the rest ~0.1-0.25% per fix (plan 65's in-flight bookkeeping, tuple `this` methods...).
+
 ## Plan 64 stages 2-3 (2026-10-15, todo entry 7): declaration emit with comments
 Suite dts component: **1345 / 1408** (95.5%, from 1192). `scripts/dtsdiff.py`: **922 / 1233 projects, 74279 / 76294
 files** byte-identical (from 402 / 49020; comments were 23448 of the mismatching files, now ~180; JS sources are 693 of

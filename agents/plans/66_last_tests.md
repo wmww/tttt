@@ -44,7 +44,7 @@ Component letters are the *failing* components (E errors, S symbols, T types).
 5. **JS (15, bugs/js.md)** and **binder/modules (13, bugs/binder_modules.md)**: expandos (TS7022), CommonJS aliases,
    augmentations, late-bound assignment declarations, merged declarations. Seven of the binder ones are one
    mechanism, cross-file merges involving aliases decided after the aliases resolve: four done, the clone cases
-   plan 69 did the clone cases (done 2026-10-15; the effect TS2578 plan is 70).
+   plan 69 did the clone cases (done 2026-10-15, as was plan 70, the effect TS2578).
 6. **Parser/scanner (~5)**: jsxInvalidEsprimaTestSuite (recovery), scannerUnexpectedNullCharacter1 (a NUL byte ends the
    file in tttt: hacks.md), bigintPropertyName (TS1539 bigint keys), varianceAnnotationsWithCircularlyReferencesError,
    arbitraryModuleNamespaceIdentifiers_syntax, jsxParsingErrorImmediateSpreadInAttributeValue.

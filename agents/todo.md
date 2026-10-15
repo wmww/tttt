@@ -40,12 +40,16 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
 8. Done (2026-10-15, with entry 7's session): plan 66 stage 3. Emitting declarations before checking (tsgo's harness
    order) fixes none of bucket 2 (tried, not kept); the bucket is re-sorted in plan 66 stage 3 (two argued in
    bugs/tsgo_divergences.md, four JS declaration emit, six checker/parser bugs for entry 9).
-9. **Plan 66 stage 4: second fan-out** on what's left of the suite, every remaining test fixed, planned or argued in
-   `bugs/tsgo_divergences.md` (plan 66's rule). One agent on the real-code residue instead: the source sweep tail,
-   effect's 3 spurious, vue's 3 / webpack's 1 missing, and plan 65 (TS5115) if its zod side can be solved.
+9. Done (2026-10-15): plan 66 stage 4, the second fan-out (4 agents, ~45 picks, 0 lost). Suite 13618 / 13660 ->
+   13657 / 13669 (tsgo's own 13556 / 13568, +9 own tests); 12 configurations left, each argued (5) or filed with its mechanism (7): plan
+   66 stage 4 lists them. Real code: webpack 0/1 -> 0/0 and effect 3/0 -> 0/0 (plans 65 and 70 done and deleted), vue
+   0/3 -> 0/2, source sweep sample 811 -> 814 / 822, flagflip 42/6/3 -> 18/6/3, `$ExpectType` 68637 -> 68639, dtsdiff
+   922 -> 940 projects. Instructions +0.3-1.3% (B's return mapper +0.75% on valibot/effect/xstate is tsgo's own work:
+   measured, justified). **For insights**: numericExportNameDeclaration's divergence argument rests on resolution order
+   (plan 66's rule says that isn't enough): accept it or not.
 10. **Triage.**
 11. **Insights.**
 
 After the insights entry (for the next window): **plan 67 stage 1 first** (checker recycling: one session, the
 biggest memory win on the table, -40% of vscode's peak), then plan 67 stage 2; plan 64 stages 3-5 (comments,
-CLI/`-b`, declarationMap); plan 58 if not done; plan 65 if not done.
+CLI/`-b`, declarationMap); plan 58 if not done (plan 65 done 2026-10-15).
