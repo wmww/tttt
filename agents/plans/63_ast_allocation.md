@@ -77,7 +77,11 @@ tsc 109/151/225 -> 104/144/219, webpack 237/323/545 -> 224/307/529, vue 120/164/
 203/280/704 -> 192/265/688, excalidraw 153/207/379 -> 146/197/363, **vscode 1917/2517/4403 -> 1724/2277/4158**
 (targets were <= 1650 / 2150 / 4000). Output byte-identical (suite, threadcheck, checkerdiff, oracles).
 
-### Stage 1b: what is left (not done; in order of MB)
+### Stage 1b: what is left (in order of MB)
+**Closed 2026-10-15 (plan 67 stage 2)**: the cheap items done there (PortItem, PortStatement, Statement,
+ObjectExprItem: -67 MB); what is below is < 120 MB together and isn't scheduled (measurements.md "Plan 67 stage 2
+items 2-3"). PropertyExpr: to drop a malloc class (128 -> 112) it needs 16 bytes; its name span is derivable from the
+source text after the object, but ty/lower.c's synthesized accesses name keys from elsewhere.
 - **Expr 72 -> 64** (the only lever of the size the targets need, ~8M Exprs on vscode, but malloc classes eat part
   of it: PropertyExpr stays in the 128 class, CallExpr 112 -> 104 and BinaryOpExpr 168 -> 152 drop a class, lists
   shrink 11%; estimate -50 MB at parse). The union is 40 because of IdentifierExpr (target, symbol, flow, 8 bytes of

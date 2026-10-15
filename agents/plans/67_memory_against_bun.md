@@ -110,9 +110,19 @@ tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
    diet (96 -> 64 bytes: `flow` is walk-only, `binder`/`file` derivable) would be ~-17 MB more: not worth its churn.
    **The binder is not the lever**: every binder diet together (Symbol bit fields, decl_cap, scopes) is < 60 MB of
    vscode's 2.25 GB program. The AST is 1.74 GB of it.
-2. **Plan 63 stage 1b** items by MB per effort (its list; Expr 72 -> 64 is the big one and a session alone).
-3. Write down vscode's breakdown after it (measurements.md "Memory breakdown"), with bun's numbers next to it, so the
-   insights session can decide on the compact AST with data.
+2. **The cheap stage 1b items (done 2026-10-15, todo entry 4)**: PortItem 192 -> 120, PortStatement 288 -> 216,
+   Statement 136 -> 112, ObjectExprItem 160 -> 152. vscode heap after parse 1690 -> 1623 MB, after names 2255 ->
+   **2191**, K1 peak 2610 -> **2549**. What's left of plan 63 stage 1b is < 120 MB together (measurements.md): no
+   further diet sessions.
+3. **The breakdown (done, measurements.md "Plan 67 stage 2 items 2-3")**: vscode K1 2549 MB against bun-1's ~1.4 GB
+   is a program gap (2191 vs ~1300 MB: the AST's representation, 782 MB of zero words) plus a check gap (~360 vs
+   ~80 MB: the recycling budget).
+   **For insights, the compact AST decision** (the recommendation of this session): do plan 63 stage 2 (per-file parse
+   arenas) first in any case: it is a time lever (~11% of parse instructions, the huge-page re-exec gone, `-b`'s
+   drops), it takes malloc's ~110 MB of headers and size classes, and it is the prerequisite of variable-size nodes.
+   Then a compact AST proper (nodes sized to their variant in the file's arena, no inline unions of the largest
+   variant; 8-byte spans) is worth ~-500 MB on vscode (2191 -> ~1.7 GB program, ~1.2x bun's) at several sessions
+   of churn under ~2300 AST sites. Below ~1.2x bun the remaining lever is the check's 256 MB budget, not the AST.
 
 ### Validation
 Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react

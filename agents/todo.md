@@ -27,8 +27,9 @@ off the table** (vision.md): no session works on them unless real code shows the
 3. Done (plan 67 stage 2 item 1): scopes in their own arena, more walk-only scopes released: vscode after names
    2281 -> 2255 MB (the ~-100 MB estimate was arenasites counting popped scopes, fixed). The binder is < 25% of the
    program and every binder diet together < 60 MB: the AST (1.74 GB) is the lever (plan 67 stage 2).
-4. **Plan 67 stage 2**, second session: plan 63 stage 1b items by MB per effort; write vscode's breakdown next to
-   bun's so the next insights can decide on the compact AST.
+4. Done (plan 67 stage 2 items 2-3): PortItem, PortStatement, Statement, ObjectExprItem diets; vscode after names
+   2255 -> 2191 MB, K1 peak 2610 -> 2549. Struct work is exhausted (< 120 MB left); measurements.md has vscode against
+   bun-1 (program 2191 vs ~1300 MB, check ~360 vs ~80) and plan 67 stage 2 the compact AST recommendation.
 5. **Plan 64 stage 5**: declarationMap; end by deciding stage 6 (JS sources) with the count the plan asks for.
 6. **Real code**: the full source sweep's 19 projects, dtsdiff's checker-type buckets ("type text": fresh vs regular
    narrowed literals, mapped-type key order, `import()` specifiers), vue 0 / 2, DT's last one. Fan out if the buckets

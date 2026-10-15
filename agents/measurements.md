@@ -9,6 +9,34 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 67 stage 2 items 2-3, the struct diet's end and the program against bun (2026-10-15, todo entry 4)
+**Diet** (plan 63 stage 1b, the cheap items): PortItem 192 -> 120 (import-alias path behind a pointer,
+modifiers/clause a union, flags packed), PortStatement 288 -> 216, Statement 136 -> 112 (VariableStatement 72 -> 48:
+`await` derived from the span), ObjectExprItem 160 -> 152. vscode malloc heap after load+parse 1690 -> **1623 MB
+requested** (1802 -> 1733 chunks), 48% zero words (782 MB). Resident (K1 `--time`): after parse 1727 -> 1662, after
+names 2255 -> **2191**; peaks (`/usr/bin/time`): vscode K1 2610 -> **2549**, T4 2874 -> 2840; webpack 540 / 643,
+effect 543 / 740, type-fest 388 / 624 (K1 / T4: recycling's peaks wobble +-10 MB). Output identical: suite 0 lost,
+every oracle as in the entries below (recycle 4 / 3363), threadcheck identical. **Instructions** flat: tsc 4.721,
+type-fest 23.399, valibot 3.508, react 1.509, nest 1.188, webpack 10.047, zod 5.428, xstate 2.766, drizzle 6.890, vue
+6.637, effect 10.619, vscode 96.520, excalidraw 7.916, tanstack-router 5.415 G.
+
+**vscode's memory, tttt K1 against bun 1.4.3 at one thread** (bun's RSS sampled every 0.5 s: it climbs to ~1.29 GB
+when its load ends and stays at 1.32-1.38 GB for the whole check):
+| | tttt | bun |
+|---|---|---|
+| program (after parse / names) | 1662 / **2191 MB** | ~**1300** (parse+bind, load end) |
+| AST malloc heap after parse | 1623 MB requested, 48% zero words; source text 174, ResolvedModule table 33 | - |
+| binder (arena, names phase) | ~480 MB (Symbol 162, flow nodes ~110, SymbolDecl 60, tables 57, Scope ~51) | - |
+| check on top of the program | **~360 MB** (`--checker-memory 256`, 9 recycles) | ~80 MB |
+| peak | 2549 MB | ~1380-1440 MB |
+The gap is 1.8x: ~900 MB in the program (the AST representation: the zero words alone are 782 MB, malloc's headers
+and size classes ~110) and ~280 MB in the check (the recycling budget; 128 MB costs +2-4% wall, plan 67 stage 1).
+What struct work is left (plan 63 stage 1b, after this): Expr 72 -> 64 (~-30..50 MB: boxed Exprs stay in malloc's
+80-byte chunks), Binding element fields (-17, ~110 readers), PropertyExpr to the 112 chunk (-27, needs 16 bytes:
+its name span is derivable from the text but ty/lower.c synthesizes accesses), Symbol bit fields (-8),
+ResolvedModule hints (-10): **under 120 MB together, ~5%. The diet is done**; the remaining lever is the
+representation (plan 67 "Not doing": compact AST).
+
 ## Plan 67 stage 2 item 1, binder scopes (2026-10-15, todo entry 3)
 **vscode's program at K1**: resident after names 2281 -> **2255 MB** = malloc heap 1736 (the AST: memtrack, 38%
 zero words; top: c_safe_memcpy 251, property_dot_new 201, source text 174, parse_append_statement_sequence 147,
