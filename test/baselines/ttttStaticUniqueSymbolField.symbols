@@ -1,0 +1,29 @@
+//// [test/cases/ttttStaticUniqueSymbolField.ts] ////
+
+=== ttttStaticUniqueSymbolField.ts ===
+// A static readonly field initialized with Symbol() or Symbol.for() declares a unique symbol owned by the class:
+// declaration emit writes `unique symbol` for the field itself (tsc's AllowUniqueESSymbolType), not `typeof S.X`
+export class S {
+>S : Symbol(S, Decl(ttttStaticUniqueSymbolField.ts, 0, 0))
+
+    static readonly PATH_SYMBOL = Symbol.for('x');
+>PATH_SYMBOL : Symbol(S.PATH_SYMBOL, Decl(ttttStaticUniqueSymbolField.ts, 2, 16))
+>Symbol.for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+
+    static readonly P2 = Symbol();
+>P2 : Symbol(S.P2, Decl(ttttStaticUniqueSymbolField.ts, 3, 50))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    readonly p3 = Symbol();
+>p3 : Symbol(S.p3, Decl(ttttStaticUniqueSymbolField.ts, 4, 34))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    static readonly copy = S.P2;
+>copy : Symbol(S.copy, Decl(ttttStaticUniqueSymbolField.ts, 5, 27))
+>S.P2 : Symbol(S.P2, Decl(ttttStaticUniqueSymbolField.ts, 3, 50))
+>S : Symbol(S, Decl(ttttStaticUniqueSymbolField.ts, 0, 0))
+>P2 : Symbol(S.P2, Decl(ttttStaticUniqueSymbolField.ts, 3, 50))
+}
+

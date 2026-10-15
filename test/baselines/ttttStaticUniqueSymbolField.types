@@ -1,0 +1,33 @@
+//// [test/cases/ttttStaticUniqueSymbolField.ts] ////
+
+=== ttttStaticUniqueSymbolField.ts ===
+// A static readonly field initialized with Symbol() or Symbol.for() declares a unique symbol owned by the class:
+// declaration emit writes `unique symbol` for the field itself (tsc's AllowUniqueESSymbolType), not `typeof S.X`
+export class S {
+>S : S
+
+    static readonly PATH_SYMBOL = Symbol.for('x');
+>PATH_SYMBOL : unique symbol
+>Symbol.for('x') : unique symbol
+>Symbol.for : (key: string) => symbol
+>Symbol : SymbolConstructor
+>for : (key: string) => symbol
+>'x' : "x"
+
+    static readonly P2 = Symbol();
+>P2 : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+    readonly p3 = Symbol();
+>p3 : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+    static readonly copy = S.P2;
+>copy : symbol
+>S.P2 : unique symbol
+>S : typeof S
+>P2 : unique symbol
+}
+

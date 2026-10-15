@@ -3803,8 +3803,11 @@ static void emit_field(Walk* me, ClassItem const* item, char const* member_end) 
     }
     w_lit(me, ": ");
     Ty const* field_type = lazy_type_get((LazyType*)&item->field.lazy_type);
-    Symbol const* field_symbol = field_type && (field_type->flags & TYF_UNIQUE_ES_SYMBOL) ? field_type->literal.unique->owner : nullptr;
-    bool own_unique = field_symbol && span_eq(field_symbol->decl_count ? field_symbol->decls[0].name : span_null, item->field.name_span);
+    // (A static readonly member's unique symbol is the class's, known by the member's name)
+    UniqueSymbolDecl const* unique = field_type && (field_type->flags & TYF_UNIQUE_ES_SYMBOL) ? field_type->literal.unique : nullptr;
+    Symbol const* field_symbol = unique ? unique->owner : nullptr;
+    bool own_unique = unique && (span_valid(unique->member) ? span_eq(unique->member, item->field.name_span) :
+        field_symbol && span_eq(field_symbol->decl_count ? field_symbol->decls[0].name : span_null, item->field.name_span));
     if (item->field.has_explicit_type) {
         w_node(me, &item->field.explicit_type);
     } else if (own_unique) {

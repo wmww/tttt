@@ -620,6 +620,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttStaticUniqueSymbolField': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttSuperConstructorsForTypeArguments': {
         errors: true,
         symbols: true,
@@ -69871,7 +69877,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'uniqueSymbolsDeclarationsErrors': {
         errors: true,
