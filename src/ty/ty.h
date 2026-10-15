@@ -2480,6 +2480,11 @@ typedef struct TyDisplay {
     u32* approx;
     bool naming; // Inside a name being printed, which counts as a whole (see out_symbol_name())
     bool cut_off; // A message's type being printed, cut off after (see display_cut_off())
+    // Declaration maps (decl_map.h): reused nodes are marked where they start and end when `comments` says so (its file
+    // is the one being written), unless `no_map`. `param_declaration`: a type parameter printed is declared there (its
+    // name gets its declaration's range). (In padding: the struct is copied on every call)
+    bool no_map;
+    bool param_declaration;
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
     TyDisplayReverse const* reverse_stack;
@@ -2551,10 +2556,6 @@ typedef struct TyDisplay {
     // Declaration emit: the node being printed is one the declaration transformer visits (a written annotation), not one
     // the node builder reuses: those of its mapped types and tuples aren't SingleLine (tryReuseExistingTypeNode sets it)
     bool transformer_node;
-    // Declaration maps: the file being written, whose reused nodes are marked where they start and end (decl_map.h).
-    // `param_declaration`: a type parameter printed is declared there (its name gets its declaration's range)
-    struct SourceFile const* map;
-    bool param_declaration;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

@@ -599,6 +599,20 @@ src` finds the code-side markers; every significant one has an entry here.
   parser's hops aren't recorded. TyDisplay prints a written type literal's accessors and an object type's class
   accessors as `get`/`set` only in multiline (declaration emit) mode, `TyDisplay.transformer_node` approximates what
   tsc's declaration transformer visits (written annotations) against what its node builder reuses.
+- Declaration maps (`ty/decl_map.c`, plan 64 stage 5) are marks inside the writer's text: a 0x01 byte and 8 control
+  bytes. Output that contains a raw 0x01 itself (a comment copied verbatim) would be misread; every place that looks at
+  the output's last character or takes text back has to know about marks (`decl_map_last_char()`, `erase_text()`;
+  `w_members()`'s `{}` check and `w_literal_value()`'s `(typeof ` check only see unmarked text today). tsc maps nodes
+  by their ranges; tttt reconstructs ranges the AST doesn't keep by scanning the source: a TypeNode's end from its
+  parts (`decl_map_type_end()`; one flag for nested parentheses, so `((A))` maps one pair), a declaration's modifiers
+  (`source_modifiers()`: words before the declaration, decorators skipped by balancing parentheses), tokens (`?`,
+  `...`, `{` of a named import list, a heritage clause's keyword, `-` of a negative literal), trailing trivia
+  (`decl_map_back_trivia()`: block comments, and line comments by a `//` after whitespace on the line, not inside a
+  quote). Where tttt reuses a node that tsgo prints anew (trpc's `infer T extends object` in an inferred call's type
+  arguments, mixin constructor types) it maps what tsgo doesn't: 12 dtsdiff projects differ by maps alone. A node reused from
+  another source file of the program (TypeNode.pos is only recorded where declarations are emitted, so not from a
+  `.d.ts`) is marked with its own file's offsets read as this file's: tsgo's node builder drops such ranges
+  (setTextRange), tttt can't tell a TypeNode's file.
 - isolatedDeclarations reporting (`declaration_emit.c`, plan 55): tttt has no parents, so `locate()` finds a
   reported node by walking the declaration being serialized along the pseudo builder's descent (for
   findNearestDeclaration and createExpressionError's parent); a node the printer reports from another declaration of

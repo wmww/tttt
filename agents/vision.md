@@ -12,9 +12,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   outside the suite gets one). Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay
   on the pinned checkout, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`** (plan 53): tsc's output formats, sorting, exit codes and flags; `scripts/clidiff.py`
-  compares stdout byte for byte. JS emit is out of scope (the human, 2026-10-12); **`.d.ts` emit** is being built
-  (plan 64): the writer exists (suite dts component 1345 / 1408, dtsdiff 940 / 1233 projects, 74466 / 76294 files
-  byte-identical) but the CLI doesn't write files yet (stage 4), no declarationMap (stage 5), no JS sources (stage 6).
+  compares stdout byte for byte. JS emit is out of scope (the human, 2026-10-12); **`.d.ts` emit** (plan 64): the
+  CLI is a drop-in `tsc` where the config only emits declarations, `.d.ts.map` included (stages 1-5: suite dts 1372 /
+  1410, dtsdiff 932 / 1233 projects byte-identical with maps, 97.3% of maps; `clidiff.py --emit` 309 / 396); not yet
+  JavaScript sources (stage 6, chosen for the next window).
 - **Real code**: corpora 0 spurious / 0 missing everywhere but vue (0 / 2, the eager-base runaway's poisoned caches).
   **DT sweep** 8594 / 8595, **`$ExpectType`** 68639 / 68640, **flagflip** 18 / 6 / 3, **scenarios** 210 / 0 failed,
   **source sweep** 3344 / 3363 (sample 814 / 822), **kdiff** 1 / 3363 (inbox-zero, which tsgo shares).

@@ -30,7 +30,10 @@ off the table** (vision.md): no session works on them unless real code shows the
 4. Done (plan 67 stage 2 items 2-3): PortItem, PortStatement, Statement, ObjectExprItem diets; vscode after names
    2255 -> 2191 MB, K1 peak 2610 -> 2549. Struct work is exhausted (< 120 MB left); measurements.md has vscode against
    bun-1 (program 2191 vs ~1300 MB, check ~360 vs ~80) and plan 67 stage 2 the compact AST recommendation.
-5. **Plan 64 stage 5**: declarationMap; end by deciding stage 6 (JS sources) with the count the plan asks for.
+5. Done (plan 64 stage 5): declarationMap. dtsdiff maps 19884 / 20435 byte-identical (385 / 509 projects), dtsdiff
+   932 / 1233 projects with maps compared (942 without), clidiff `--emit` 309 / 396 (164); suite 13625 / 13675 (the
+   dts component compares `.d.ts.map` sections: +13). Stage 6 (JS sources, 82 projects / 27 blocked by it alone):
+   yes, after entry 6's type text.
 6. **Real code**: the full source sweep's 19 projects, dtsdiff's checker-type buckets ("type text": fresh vs regular
    narrowed literals, mapped-type key order, `import()` specifiers), vue 0 / 2, DT's last one. Fan out if the buckets
    are disjoint (vision.md "Fan-out merge discipline").
@@ -41,5 +44,5 @@ off the table** (vision.md): no session works on them unless real code shows the
 10. **Triage.**
 11. **Insights.**
 
-After the insights entry (for the next window): what plan 72 decides, plan 64 stage 6 if chosen, plan 58 + plan 66
-stage 5 if not done, the compact AST question (plan 67 "Not doing").
+After the insights entry (for the next window): what plan 72 decides, plan 64 stage 6 (chosen: JS sources), plan 58 +
+plan 66 stage 5 if not done, the compact AST question (plan 67 "Not doing").

@@ -4,6 +4,21 @@ Scoped 2026-10-14 (todo entry 9). **Recommendation: yes, TypeScript sources firs
 about one session each (stage 2 may take two); JavaScript declaration emit only if the data after stage 4 asks for
 it.**
 
+## Status (2026-10-15, todo entry 5 of the seventeenth window): stages 1-5 done, stage 6 chosen (next window)
+- **Stage 5 done** (`ty/decl_map.c`, documentation.md "Declaration maps"): `.d.ts.map` files, the trailer,
+  sourceRoot/mapRoot, the CLI writes them; marks in the writer's text, `TypeNode.pos` for reused type nodes. dtsdiff
+  compares the maps of the 509 projects whose configs set declarationMap (manifests regenerated, 96726 files):
+  **19884 / 20435 maps byte-identical (97.3%)**, 385 / 509 projects all maps identical; most of the rest (271 files) have a `.d.ts` that differs
+  already, 12 projects differ by maps alone (tttt reusing a node tsgo prints
+  anew, hacks.md). dtsdiff overall 932 / 1233 projects, 94352 / 96726 files (with maps; 942 / 1233 before maps were
+  compared). `clidiff.py --emit` 309 / 396 identical (164 before; 2 by maps alone). The suite's dts component compares
+  the `.js.map` baselines' `.d.ts.map` sections (13 tests newly pass), own test `ttttDeclarationMaps`.
+  `scripts/mapshow.py` decodes and compares maps, `dtsdiff.py --show P F.d.ts.map` shows a map's differing mappings.
+- **Stage 6: yes, after the real-code `.d.ts` text work.** JavaScript sources are what 82 dtsdiff projects miss (816
+  files: mostly `.js`/`.cjs`/`.mjs` config files and scripts under `allowJs`: crawlee, mermaid, query-codemods, astro,
+  mobx tests), the only mismatch of 27 of them; clidiff `missing files` 29. That's the second largest bucket after
+  "type text" (197 projects), which the todo's real-code entry takes first. The suite has 344 JS dts tests.
+
 ## Status (2026-10-15, todo entry 2 of the seventeenth window): stages 1-4 done
 - **Stage 4 done**: the CLI is `tsc` where the options only emit declarations (main.c's `implicit_no_emit`,
   `write_declarations()`; documentation.md "What the CLI emits"), `-b` too; `--listEmittedFiles`, noEmitOnError,

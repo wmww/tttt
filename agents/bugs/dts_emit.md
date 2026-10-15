@@ -30,5 +30,7 @@ size on real code, each with an example:
 - **Unknown-symbol naming (tsgo quirk, matched)**: tsgo names an unresolved type through any import alias that also
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps) and paints
   that import; tttt prints the same name but doesn't paint the import.
-- **Output paths and maps** (suite, 23 tests): `commonSourceDirectory*`, `declarationEmitWithComposite`,
-  `declarationMapsMultifile`...: stage 4 (output paths, relative `/// <reference path>`), stage 5 (declarationMap).
+- **Declaration maps** (stage 5 done): 551 of 20435 dtsdiff maps differ, 271 of them because their `.d.ts` does;
+  `scripts/dtsdiff.py -k 'map:'` lists the rest by first differing mapping. Mostly tttt reusing a node tsgo prints
+  anew (it then maps what tsgo doesn't: trpc's `infer T extends object` in inferred type arguments, mixin constructor
+  types, `PromiseLike<void>` in testClientResource), `-0` literal types, singletons.

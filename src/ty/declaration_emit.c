@@ -2860,7 +2860,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     return (TyDisplay){
         .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
         .multiline = true, .indent = my indent, .comments = &my comments,
-        .printed_params = my in_return ? &my return_params : nullptr, .map = my map ? my file : nullptr,
+        .printed_params = my in_return ? &my return_params : nullptr,
     };
 }
 

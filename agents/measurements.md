@@ -9,6 +9,22 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 64 stage 5, declaration maps (2026-10-15, todo entry 5)
+Suite **13625 / 13675** (dts **1372 / 1410**: the dts component compares the `.js.map` baselines' `.d.ts.map`
+sections, 13 tests gained, own test `ttttDeclarationMaps`), 0 lost. dtsdiff's manifests regenerated with the configs'
+declarationMap (96726 files, 20435 of them maps in 509 projects): **maps 19884 / 20435 byte-identical (97.3%)**, 385 /
+509 projects all maps identical, 12 projects differ by maps alone; dtsdiff **932 / 1233 projects, 94352 / 96726 files**
+(942 / 1233 and 74463 / 76294 before maps were compared). `clidiff.py --emit`: **309 / 396** identical (164 + 145
+maps-only before), declarationMap 2, file text 51, missing files 29 (JS), diagnostics 2, text 3. `dtsdiff.py --kdiff 16
+--sample 4` 3 / 292 (as before, no map among them). Every other oracle as in entry 4 (corpora 0 / 0 but vue 0 / 2, DT
+8594 / 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep sample 814 / 822, kdiff 1 / 3363, recycle 4 / 3363,
+perfsweep median 0.20, worst types ratio 1.62). **Maps' cost** (`--checkers 1 --threads 1 --checker-memory off`,
+`--no-write`, best of 3; check / emit / emit + maps): drizzle 800 / 813 / 846 ms, effect 1489 / 1607 / 1599, valibot
+459 / 470 / 482. **Instructions** (`--noEmit`; TypeNode.pos is only recorded with declarationMap): tsc 4.722,
+type-fest 23.398, valibot 3.509, react 1.510, nest 1.190, webpack 10.050, zod 5.428, xstate 2.768, drizzle 6.895, vue
+6.641, effect 10.625, vscode 96.537, excalidraw 7.921, tanstack-router 5.413 G (entry 4's +0.00..0.17%: storing the
+position unconditionally cost nest +0.3%, a bigger TyDisplay nothing).
+
 ## Plan 67 stage 2 items 2-3, the struct diet's end and the program against bun (2026-10-15, todo entry 4)
 **Diet** (plan 63 stage 1b, the cheap items): PortItem 192 -> 120 (import-alias path behind a pointer,
 modifiers/clause a union, flags packed), PortStatement 288 -> 216, Statement 136 -> 112 (VariableStatement 72 -> 48:

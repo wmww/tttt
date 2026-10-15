@@ -392,6 +392,25 @@ this file's (`SourceFile.declaration_output_path`, which `program_typecheck()` s
 declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (the CLI's writes, in a sandbox), the
 CLI's stdout, exit code and written tree with `scripts/clidiff.py --emit`.
 
+**Declaration maps** (`declarationMap`, plan 64 stage 5, `ty/decl_map.c`): tsc's printer maps the start (past trivia) and
+the end of every node it prints that has a source position, and of every comment it copies; what the transformer or
+node builder makes up has none (synthesized modifiers, inferred types, new member nodes), what it reuses keeps its range
+(names, written annotations, the source's own modifiers when ensureModifiers leaves their flags alone, a node-builder
+type parameter's name: its declaration's). The writer and `TyDisplay.map` (the file being written) put a *mark* into the
+output text where a node starts or ends: `DECL_MAP_MARK` (0x01) and the source offset in 8 control bytes, so marks
+travel with the text through the writer's splices, temporary buffers and erasures (`erase_text()` erases the marks
+among the characters it takes back; code that looks at the output's last character skips marks:
+`decl_map_last_char()`). `decl_map_take()` takes them out at the end (before CRLF and the BOM) and encodes them like
+tsgo's `sourcemap.Generator` (whose dedup of mappings at one generated position is part of the format), columns in
+UTF-16 units. Reused type nodes know their start from `TypeNode.pos` (the parser's, in the header's free bytes) and
+compute their end from their parts (`decl_map_type_end()`, scanning past `)`/`>` where needed); declarations use their
+spans, scanning the source for tokens the AST doesn't keep (modifiers: `source_modifiers()`, `{` of a named import
+list, `?`, `...`). `program_set_declaration_paths()` names the source in the map and the trailer's URL
+(`SourceFile.declaration_map_source`/`_url`: sourceRoot, mapRoot); the CLI writes `SourceFile.declaration_map` beside
+the `.d.ts`, before it. The suite's `dts` component compares the `.js.map` baselines' `.d.ts.map` sections,
+`scripts/dtsdiff.py` the maps of real projects (bucketed by their first differing mapping), `scripts/mapshow.py` decodes
+and compares two maps.
+
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).
 
