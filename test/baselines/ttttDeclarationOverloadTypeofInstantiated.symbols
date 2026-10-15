@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationOverloadTypeofInstantiated.ts] ////
+
+=== ttttDeclarationOverloadTypeofInstantiated.ts ===
+// A file's overloaded function is `typeof f` also as a class expression's member instantiates it (by its `this`)
+async function rimraf(path: string, mode: 1): Promise<void>;
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+>path : Symbol(path, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 22))
+>mode : Symbol(mode, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 35))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+async function rimraf(path: string, mode?: 2): Promise<void>;
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+>path : Symbol(path, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 22))
+>mode : Symbol(mode, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 35))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+async function rimraf(path: string, mode?: number): Promise<void> {}
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+>path : Symbol(path, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 3, 22))
+>mode : Symbol(mode, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 3, 35))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+function single(path: string): void {}
+>single : Symbol(single, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 3, 68))
+>path : Symbol(path, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 4, 16))
+
+export const Promises = new class {
+>Promises : Symbol(Promises, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 5, 12))
+
+  get one() { return single; }
+>one : Symbol((Anonymous class).one, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 5, 35))
+>single : Symbol(single, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 3, 68))
+
+  get rm() { return rimraf; }
+>rm : Symbol((Anonymous class).rm, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 6, 30))
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+
+};
+export const o = { get rm() { return rimraf; }, m() { return rimraf; }, p: rimraf };
+>o : Symbol(o, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 9, 12))
+>rm : Symbol(rm, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 9, 18))
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+>m : Symbol(m, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 9, 47))
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+>p : Symbol(p, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 9, 71))
+>rimraf : Symbol(rimraf, Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 0, 0), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 1, 60), Decl(ttttDeclarationOverloadTypeofInstantiated.ts, 2, 61))
+

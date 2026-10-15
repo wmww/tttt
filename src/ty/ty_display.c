@@ -5048,7 +5048,19 @@ static bool anonymous_elided(TyDisplay d, Ty const* ty);
 // overloaded function's (its symbol's type), a static method's `typeof C.m` where C is (tsgo's isStaticMethodSymbol:
 // `member` is then the method's name)
 static Symbol const* anonymous_type_query(TyDisplay d, Ty const* ty, csview* member) {
-    if (!d.tracker || ty->kind != TY_ANONYMOUS || ty->anonymous.target) return nullptr;
+    if (!d.tracker || ty->kind != TY_ANONYMOUS) return nullptr;
+    // (An instantiation of a file's or namespace's function is the function's type: it has no outer type parameters,
+    // tsc's getObjectTypeInstantiation returns the type itself, symbol and all. tttt instantiates an overloaded one's
+    // anyway, by the `this` of a class expression's members)
+    if (ty->anonymous.target && !ty->anonymous.applies_type_args) {
+        Ty const* root = ty;
+        while (root->anonymous.target && !root->anonymous.applies_type_args) root = root->anonymous.target;
+        Symbol const* function = root->anonymous.merged_value;
+        if (!root->anonymous.function && function && (function->flags & SYMBOL_FUNCTION) && is_non_local_function(function)) {
+            ty = root;
+        }
+    }
+    if (ty->anonymous.target) return nullptr;
     if (ty->anonymous.function) {
         FunctionImpl const* impl = ty->anonymous.function;
         Symbol const* named = impl->symbol && is_non_local_function(impl->symbol) ? impl->symbol :

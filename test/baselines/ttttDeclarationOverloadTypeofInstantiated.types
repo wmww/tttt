@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationOverloadTypeofInstantiated.ts] ////
+
+=== ttttDeclarationOverloadTypeofInstantiated.ts ===
+// A file's overloaded function is `typeof f` also as a class expression's member instantiates it (by its `this`)
+async function rimraf(path: string, mode: 1): Promise<void>;
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>path : string
+>mode : 1
+
+async function rimraf(path: string, mode?: 2): Promise<void>;
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>path : string
+>mode : 2 | undefined
+
+async function rimraf(path: string, mode?: number): Promise<void> {}
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>path : string
+>mode : number | undefined
+
+function single(path: string): void {}
+>single : (path: string) => void
+>path : string
+
+export const Promises = new class {
+>Promises : (Anonymous class)
+>new class {  get one() { return single; }  get rm() { return rimraf; }} : (Anonymous class)
+>class {  get one() { return single; }  get rm() { return rimraf; }} : typeof (Anonymous class)
+
+  get one() { return single; }
+>one : (path: string) => void
+>single : (path: string) => void
+
+  get rm() { return rimraf; }
+>rm : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+
+};
+export const o = { get rm() { return rimraf; }, m() { return rimraf; }, p: rimraf };
+>o : { readonly rm: { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; m(): { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; p: { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; }
+>{ get rm() { return rimraf; }, m() { return rimraf; }, p: rimraf } : { readonly rm: { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; m(): { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; p: { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }; }
+>rm : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>m : () => { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>p : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+>rimraf : { (path: string, mode: 1): Promise<void>; (path: string, mode?: 2): Promise<void>; }
+
