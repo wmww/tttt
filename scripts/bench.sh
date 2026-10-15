@@ -6,15 +6,19 @@
 #
 #   scripts/bench.sh [--runs N]
 #   scripts/bench.sh --checkers "4 8 12 16"   # also tttt at each of these checker counts (plan 62: core scaling)
+#   scripts/bench.sh --bun PATH               # also Bun's `bun check` (a Rust port of tsgo 7.0) at every core and at one
+#                                             # (`npm pack @oven/bun-linux-x64@1.4.3`, untarred: package/bin/bun)
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 
 RUNS=5
 CHECKERS=""
+BUN=""
 while test $# -gt 0; do
     case "$1" in
         --runs) RUNS="$2"; shift 2 ;;
         --checkers) CHECKERS="$2"; shift 2 ;;
+        --bun) BUN="$2"; shift 2 ;;
         *) echo "unknown argument $1" >&2; exit 1 ;;
     esac
 done
@@ -58,6 +62,10 @@ measure "tttt single-threaded" ./release/tttt -q --keep-going --singleThreaded -
 for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K --noEmit -p $REAL; done
 measure "tsgo" $TSGO $REAL_ARGS -p $REAL
 measure "tsgo single-threaded" $TSGO $REAL_ARGS --singleThreaded -p $REAL
+if test -n "$BUN"; then
+    measure "bun" "$BUN" check $REAL_ARGS -p $REAL
+    measure "bun single-threaded" "$BUN" check $REAL_ARGS --threads=1 -p $REAL
+fi
 echo "tttt phases (one run):"
 ./release/tttt -q --time --keep-going --noEmit -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
@@ -77,6 +85,10 @@ for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpac
     for K in $CHECKERS; do measure "tttt --checkers $K" ./release/tttt -q --keep-going --checkers $K --noEmit -p $DIR; done
     measure "tsgo" $TSGO --noEmit $TSGO_ARGS
     measure "tsgo single-threaded" $TSGO --noEmit --singleThreaded $TSGO_ARGS
+    if test -n "$BUN"; then
+        measure "bun" "$BUN" check --noEmit $TSGO_ARGS
+        measure "bun single-threaded" "$BUN" check --noEmit --threads=1 $TSGO_ARGS
+    fi
     echo "tttt phases (one run):"
     (./release/tttt -q --time --keep-going --noEmit -p $DIR 2>&1 > /dev/null || true) | grep -a '^time:' | sed 's/^/  /'
 done
