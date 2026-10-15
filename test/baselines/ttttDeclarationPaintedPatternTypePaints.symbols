@@ -1,0 +1,25 @@
+//// [test/cases/ttttDeclarationPaintedPatternTypePaints.ts] ////
+
+=== /node_modules/stream/index.d.ts ===
+declare namespace internal { class Readable { read(): void } }
+>internal : Symbol(internal, Decl(index.d.ts, 0, 0))
+>Readable : Symbol(Readable, Decl(index.d.ts, 0, 28))
+>read : Symbol(Readable.read, Decl(index.d.ts, 0, 45))
+
+export = internal;
+>internal : Symbol(internal, Decl(index.d.ts, 0, 0))
+
+=== /router.ts ===
+import Stream from "stream";
+>Stream : Symbol(Stream, Decl(router.ts, 0, 6))
+
+const { Readable } = Stream;
+>Readable : Symbol(Readable, Decl(router.ts, 1, 7))
+>Stream : Symbol(Stream, Decl(router.ts, 0, 6))
+
+export class Router { make(): InstanceType<typeof Readable> { return null!; } }
+>Router : Symbol(Router, Decl(router.ts, 1, 28))
+>make : Symbol(Router.make, Decl(router.ts, 2, 21))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>Readable : Symbol(Readable, Decl(router.ts, 1, 7))
+

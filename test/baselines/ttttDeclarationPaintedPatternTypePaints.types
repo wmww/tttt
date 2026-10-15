@@ -1,0 +1,25 @@
+//// [test/cases/ttttDeclarationPaintedPatternTypePaints.ts] ////
+
+=== /node_modules/stream/index.d.ts ===
+declare namespace internal { class Readable { read(): void } }
+>internal : typeof internal
+>Readable : Readable
+>read : () => void
+
+export = internal;
+>internal : typeof internal
+
+=== /router.ts ===
+import Stream from "stream";
+>Stream : typeof Stream
+
+const { Readable } = Stream;
+>Readable : typeof Stream.Readable
+>Stream : typeof Stream
+
+export class Router { make(): InstanceType<typeof Readable> { return null!; } }
+>Router : Router
+>make : () => InstanceType<typeof Readable>
+>Readable : typeof Stream.Readable
+>null! : never
+

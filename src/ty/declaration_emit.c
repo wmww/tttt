@@ -1915,6 +1915,12 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
                 report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_VARIABLE, .binding = decl });
                 my root = outer_root;
             }
+            // (emit_variable_statement() writes the pattern with that whole type: its names are tracked, hexo's
+            // `declare const { Readable }: typeof Stream`)
+            Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, binding->content_span, binding->content_span);
+            if (binding->has_explicit_type) check_written_type(me, binding_type(binding));
+            else if (type) print_type(me, ty_widened_literal(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))), false);
+            emit_leave(me, saved);
         }
         print_binding_elements(me, binding);
         return;
@@ -2662,6 +2668,18 @@ static Symbol const* statement_declared_symbol(Statement const* statement) {
     }
 }
 
+// A destructuring declaration some painted name of is walked whole (getBindingNameVisible): takes its painted names
+static bool take_painted_pattern(Walk* me, Binding const* pattern) {
+    if (pattern->tag == BINDING_IDENTIFIER) return !is_exported_local(me, pattern->symbol) && take_painted(me, pattern->symbol);
+    bool any = false;
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) any |= take_painted_pattern(me, i);
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) any |= take_painted_pattern(me, &i->target);
+    }
+    return any;
+}
+
 static void late_taken_push(Walk* me, Symbol const* symbol) {
     if (my late_taken_count == my late_taken_cap) {
         my late_taken_cap = my late_taken_cap ? my late_taken_cap * 2 : 8;
@@ -2681,10 +2699,10 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         if (visible) return;
         my late_pass = false;
         for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-            bool painted = i->binding.tag == BINDING_IDENTIFIER && !is_exported_local(me, i->binding.symbol) &&
-                take_painted(me, i->binding.symbol);
+            bool painted = i->binding.tag == BINDING_IDENTIFIER ? !is_exported_local(me, i->binding.symbol) &&
+                take_painted(me, i->binding.symbol) : take_painted_pattern(me, &i->binding);
             if (!painted) continue;
-            late_taken_push(me, i->binding.symbol);
+            if (i->binding.tag == BINDING_IDENTIFIER) late_taken_push(me, i->binding.symbol);
             check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
         }
         my late_pass = true;
