@@ -2473,6 +2473,9 @@ typedef struct TyDisplay {
     u32 indent;
     // Declaration emit: the comments of the file being written, copied around reused members (decl_comments.h)
     struct DeclComments const* comments;
+    // Declaration emit: the node being printed is one the declaration transformer visits (a written annotation), not one
+    // the node builder reuses: those of its mapped types and tuples aren't SingleLine (tryReuseExistingTypeNode sets it)
+    bool transformer_node;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

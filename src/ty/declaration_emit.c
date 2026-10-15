@@ -1550,12 +1550,26 @@ static void serialize_parameters(Walk* me, FunctionImpl const* fn) {
 }
 
 // The parameters of a declaration the transformer visits, each with diagnostics of its own
+// The entity names of a binding pattern's computed keys, which are written with it (visitDeclarationSubtree's
+// checkEntityNameVisibility)
+static void check_pattern_keys(Walk* me, Binding const* pattern) {
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) check_pattern_keys(me, i);
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) {
+            if (i->computed_key && pseudo_is_entity_name(i->computed_key)) check_entity_expression(me, i->computed_key);
+            check_pattern_keys(me, &i->target);
+        }
+    }
+}
+
 static void check_declaration_parameters(Walk* me, FunctionImpl const* fn, EmitSig sig) {
     Root outer_root = my root;
     my root = (Root){ .kind = ROOT_FUNCTION, .function = fn };
     for_each (i, vec_function_arg, &fn->args) {
         Span name = i->initializer.binding.content_span;
         Emitting saved = emit_enter(me, EMIT_PARAMETER, sig, name, name);
+        check_pattern_keys(me, &i->initializer.binding);
         serialize_parameter(me, fn, i, true);
         emit_leave(me, saved);
     }
@@ -2006,6 +2020,17 @@ static uint8_t late_index_kind(Expr const* key) {
     if (type->flags & TYF_NUMBER) return 2;
     if (type->flags & TYF_ES_SYMBOL) return 3;
     if (type->flags & TYF_STRING) return 1;
+    // (A union of them: of the kind all its members are, isTypeAssignableTo)
+    if (type->kind == TY_UNION && type->composite.types.len) {
+        u32 kinds[4] = {0};
+        for (u32 i = 0; i < type->composite.types.len; i++) {
+            u32 flags = type->composite.types.data[i]->flags;
+            kinds[flags & (TYF_NUMBER | TYF_NUMBER_LITERAL) ? 2 : flags & TYF_ES_SYMBOL_LIKE ? 3 : flags & TYF_STRING_LIKE ? 1 : 0]++;
+        }
+        for (uint8_t k = 1; k <= 3; k++) {
+            if (kinds[k] == type->composite.types.len) return k;
+        }
+    }
     return 0;
 }
 
@@ -2088,6 +2113,16 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
         my member_static = class_item_is_static((ClassItem*)i);
         Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key :
             i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
+        // A late bound name's entity (checkName): what it names is emitted
+        if (is_dynamic_name(key) && pseudo_is_entity_name(key) && !item_has_private_name(i)) {
+            Ty const* key_type = lazy_type_get((LazyType*)&key->lazy_type);
+            if (key_type && (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
+                Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
+                Emitting saved = emit_enter_nested(me, i->tag == CLASS_ITEM_METHOD ? EMIT_METHOD_NAME : EMIT_PROPERTY, SIG_METHOD, name, name);
+                check_entity_expression(me, key);
+                emit_leave(me, saved);
+            }
+        }
         if (is_dynamic_name(key)) {
             if (!is_global_symbol_reference(me, key)) {
                 Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
@@ -2585,9 +2620,15 @@ static bool binding_exports_local(Walk* me, Binding const* binding) {
 static void check_statement_now(Walk* me, Statement const* statement, Container container) {
     if (is_internal_declaration(statement->span)) return;
     switch (statement->tag) {
-        case STATEMENT_IMPORT_EXPORT:
+        case STATEMENT_IMPORT_EXPORT: {
+            // `export import x = A.B` paints A (checkEntityNameVisibility)
+            PortItem const* item = &statement->import_export->main;
+            if (item->tag == PORT_IMPORT_ALIAS && item->export_import && vec_symbol_cptr_size(&item->alias_path_symbols)) {
+                paint(me, *vec_symbol_cptr_at(&item->alias_path_symbols, 0));
+            }
             check_import(me, statement);
             return;
+        }
         case STATEMENT_DECL_VARIABLE: {
             if (!container.global && !container.ambient && statement->decl.props.exported == DECL_EXPORTED_NO) {
                 // (`export { x }` makes that one declaration visible)
@@ -2981,6 +3022,16 @@ static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_co
     w_serialized(me, &text);
 }
 
+static bool binding_declares_names(Binding const* pattern) {
+    if (pattern->tag == BINDING_IDENTIFIER) return true;
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) if (binding_declares_names(i)) return true;
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) if (binding_declares_names(&i->target)) return true;
+    }
+    return false;
+}
+
 // The names a binding pattern declares, each a declaration of its own type (walkBindingPattern)
 static void w_binding_elements(Walk* me, Binding const* pattern, Container container, bool visible, u32* written) {
     if (pattern->tag == BINDING_IDENTIFIER) {
@@ -3032,8 +3083,9 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             continue;
         }
         if (binding->tag != BINDING_IDENTIFIER) {
-            // (Without initializers in it, the pattern is written with its type)
+            // (Without initializers in it, the pattern is written with its type; an empty one isn't)
             if (!visible) continue;
+            if (!binding_declares_names(binding)) continue;
             if (written++) w_lit(me, ", ");
             cstr pattern = cstr_init();
             ty_append_binding_pattern(&pattern, binding);

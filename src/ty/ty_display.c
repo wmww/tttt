@@ -411,7 +411,9 @@ static bool is_nested_expando_function(Ty const* ty) {
 // isValueSymbolAccessible); not at the function's own declaration, whose type is what's being written
 static bool typeof_function_in_declaration(TyDisplay d, Symbol const* symbol) {
     if (!d.tracker || !symbol || !d.enclosing || !symbol_value_accessible_at(d.enclosing, symbol)) return false;
+    // (A function declaration's type isn't what its declaration writes: its signature is)
     for (u32 i = 0; span_valid(d.at) && i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION) continue;
         if (span_eq(symbol->decls[i].name, d.at) || span_contains_span(symbol->decls[i].full, d.at)) return false;
     }
     return true;
@@ -2094,9 +2096,17 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_CALLABLE:
             display_node_signature(me, d, node->callable->function, " => ");
             break;
-        case TYPE_INTERFACE:
-            display_node_interface(me, d, &node->interface);
+        case TYPE_INTERFACE: {
+            // (A mapped type the node builder reuses is SingleLine)
+            TyDisplay interface_d = d;
+            if (!d.transformer_node && vec_interface_member_size(&node->interface.members) == 1 &&
+                vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED
+            ) {
+                interface_d.multiline = false;
+            }
+            display_node_interface(me, interface_d, &node->interface);
             break;
+        }
         case TYPE_ARRAY: {
             if (node->array.readonly) out_lit(d, "readonly ");
             TyDisplay element_d = d;
@@ -2117,7 +2127,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // (Declaration emit: written on several lines, one element per line: the printer's MultiLineTupleTypeElements,
             // a reused tuple node not being SingleLine)
             bool lines = false;
-            if (d.multiline && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
+            if (d.multiline && d.transformer_node && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
                 char const* close = span_end_ptr(node->tuple.span);
                 while (close > node->tuple.span.buf && close[-1] != ']') close--;
                 lines = memchr(node->tuple.span.buf, '\n', (size_t)(close - node->tuple.span.buf)) != nullptr;
@@ -3658,6 +3668,7 @@ static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, S
 
 // pseudoTypeToNode. `ty`: what it is equivalent to, printed where the pseudo type says nothing (Inferred, NoResult)
 static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const* ty) {
+    d.transformer_node = false;
     bool strict = compiler_options()->strict_null_checks;
     switch (pseudo->kind) {
         case PSEUDO_DIRECT:
@@ -4639,6 +4650,7 @@ static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
+    d.transformer_node = false; // (The node builder's from here on)
     bool over = false; // (One per print: tsc's context.truncating)
     if (!d.over) d.over = &over;
     u32 approximate_length = 0; // (Where nothing truncates: see NO_TRUNCATION_MAXIMUM_LENGTH)
@@ -4940,6 +4952,15 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_symbol_name(me, d, named, SYMBOL_VALUE);
                     return;
                 }
+            }
+            // (and an overloaded function's, whose type is its symbol's)
+            if (d.tracker && !ty->anonymous.function && !ty->anonymous.target && !ty->anonymous.is_reverse &&
+                ty->anonymous.merged_value && (ty->anonymous.merged_value->flags & SYMBOL_FUNCTION) &&
+                is_non_local_function(ty->anonymous.merged_value) && typeof_function_in_declaration(d, ty->anonymous.merged_value)
+            ) {
+                out_lit(d, "typeof ");
+                out_symbol_name(me, d, ty->anonymous.merged_value, SYMBOL_VALUE);
+                return;
             }
             // (and a static method's, `typeof C.m`, where C is accessible: tsgo's isStaticMethodSymbol)
             if (d.tracker && d.enclosing && ty->anonymous.function && !ty->anonymous.target) {
@@ -5287,18 +5308,21 @@ cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node) {
 void ty_display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     bool over = false;
     if (!d.over) d.over = &over;
+    d.transformer_node = true;
     display_node(me, d, node);
 }
 
 void ty_display_node_signature(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
     bool over = false;
     if (!d.over) d.over = &over;
+    d.transformer_node = true;
     display_node_signature(me, d, function, separator);
 }
 
 void ty_display_type_params(Checker* me, TyDisplay d, Generic const* generic) {
     bool over = false;
     if (!d.over) d.over = &over;
+    d.transformer_node = true;
     display_node_type_params(me, d, generic);
 }
 
