@@ -1,3 +1,4 @@
+#include "symbol_chain.h"
 #include "scope.h"
 #include "unicode_case.h"
 #include "ast_walk.h"
@@ -2521,6 +2522,7 @@ Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {
 
 Symbol* module_export_equals(Symbol* module) {
     if (!module || !module->is_module) return module;
+    if (symbol_rare(module)->export_equals_clone) return symbol_rare(module)->export_equals_clone;
     Symbol* assigned = symbol_table_get(module->exports, c_sv("export="));
     if (!assigned) return module;
     Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
@@ -3959,6 +3961,20 @@ static void bind_type_exports(Binder* me, Symbol* module) {
     }
 }
 
+// The namespace import a module's `export = ns` names, when tsgo resolves it to a clone (see
+// SymbolRare.export_equals_clone), else null
+static Symbol* export_equals_clone_import(Symbol* module) {
+    Symbol* assigned = symbol_table_get_own(module->exports, c_sv("export="), symbol_name_hash(c_sv("export=")));
+    if (!assigned || !(assigned->flags & SYMBOL_ALIAS) || !assigned->alias || assigned->alias->item ||
+        assigned->alias->entity || assigned->alias->class_expr || !assigned->alias->scope || !span_valid(assigned->alias->name)
+    ) {
+        return nullptr;
+    }
+    // (The scope's own name, not resolved: scope_resolve() sees through aliases)
+    Symbol* named = symbol_table_get(scope_locals(assigned->alias->scope), span_sv(assigned->alias->name));
+    return named && named != assigned && export_equals_namespace_import_is_clone(named) ? named : nullptr;
+}
+
 // The module an augmentation adds to (the module symbol itself, not its `export =`)
 static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
     ModuleRef* ref = decl->module_ref;
@@ -4053,7 +4069,7 @@ static void merge_augmentations(Binder* me) {
                 if (pass == 0) continue;
                 Symbol* assigned = module_export_equals(module);
                 if (!assigned || (assigned->is_placeholder && !assigned->is_unresolved)) continue;
-                // (tsc's unknownSymbol isn't a namespace either)
+                            // (tsc's unknownSymbol isn't a namespace either)
                 if (!(assigned->flags & SYMBOL_NAMESPACE) || assigned->is_placeholder) {
                     // (tsc's mergeModuleAugmentation, once per augmentation symbol: at its first declaration)
                     if (!augmentation->decl_count || augmentation->decls[0].node == decl) {
@@ -4064,6 +4080,26 @@ static void merge_augmentations(Binder* me) {
                     continue;
                 }
                 if (assigned->binder != me) continue; // TODO: a namespace of the shared lib program
+                // (`export = ns` of an `import * as ns` that tsgo resolves to a clone: the augmentation merges into the
+                // clone, made now, SymbolRare.export_equals_clone)
+                Symbol* clone_import = export_equals_clone_import(module);
+                if (clone_import && !symbol_rare(module)->export_equals_clone) {
+                    Symbol* clone = binder_new_symbol(me, assigned->name, assigned->flags);
+                    clone->name_span = assigned->name_span;
+                    clone->parent = assigned->parent;
+                    symbol_ensure_exports(clone);
+                    if (assigned->exports) {
+                        for (u32 k = 0; k < assigned->exports->count; k++) {
+                            SymbolEntry const* entry = &assigned->exports->entries[k];
+                            symbol_table_insert(clone->exports, binder_arena(me), symbol_entry_name(entry), entry->hash, entry->symbol);
+                        }
+                    }
+                    symbol_rare_mut(clone)->clone_of_import = clone_import;
+                    symbol_rare_mut(clone)->clone_source = assigned;
+                    symbol_rare_mut(module)->export_equals_clone = clone;
+                    symbol_rare_mut(clone_import)->export_equals_clone = clone;
+                    assigned = clone;
+                }
                 // (tsc's mergeSymbol of the augmentation into it: one with values against a namespace merged with a
                 // variable conflicts, reported at the augmentation's name)
                 bool instantiated = false;
@@ -4119,6 +4155,12 @@ static void merge_augmentations(Binder* me) {
             assigned->binder == me
         ) {
             module = assigned;
+        }
+        // (The clone an augmentation of an `export =` namespace import merges into has the declarations its source has
+        // when the first one merges: SymbolRare.export_equals_clone)
+        Symbol* source = symbol_rare(module)->clone_source;
+        if (source && !module->decl_count) {
+            for (u32 k = 0; k < source->decl_count; k++) symbol_add_decl(module, source->decls[k]);
         }
         decl->symbol->exports = module->exports;
         decl->symbol = module;

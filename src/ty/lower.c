@@ -2268,6 +2268,11 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
 // `export =` assigns
 static Ty const* own_type_of_symbol(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol);
+    // The clone an augmented `export =` namespace import is (SymbolRare.export_equals_clone): that import's type
+    if (symbol && symbol_rare(symbol)->clone_of_import) {
+        Ty const* clone = namespace_import_type(me, symbol_rare(symbol)->clone_of_import);
+        if (clone) return clone;
+    }
     // (`export { undefined }` names tsc's undefinedSymbol, which tttt has no symbol for)
     if (symbol && symbol->is_placeholder && symbol->is_unresolved && csview_equals(symbol->name, "undefined")) {
         return ty_intrinsic(me, TY_UNDEFINED);

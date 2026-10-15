@@ -24,6 +24,9 @@ SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 me
 // `import * as ns`'s own symbol (make_gather_target()) when tsc resolves it to a clone of the module
 // (resolveESModuleSymbol under esModuleInterop): it names its own type, never the module's
 bool namespace_import_is_clone(Symbol const* symbol);
+// `import * as ns` of a module with `export =` that tsgo resolves to a clone (the assigned value has signatures or a
+// `default`)
+bool export_equals_namespace_import_is_clone(Symbol const* alias);
 // The chain of a container of members (a class, an interface, an enum...) that qualifies them: tsc's
 // getSymbolChain(container, Namespace, endOfChain = false) from getContainersOfSymbol of a member. Empty when the
 // member is named bare (the container is a module or an anonymous type)

@@ -292,6 +292,14 @@ typedef struct SymbolRare {
     // {T} ns.a.B`) may have declared the name already: then they're one symbol, whose value is the expando's alone (its
     // property has the expando's declarations, unqualified: namespace_export_prop())
     bool literal_member;
+    // A module whose `export =` names a namespace import that tsgo resolves to a clone (resolveESModuleSymbol's
+    // cloneTypeAsModuleType: the imported value has signatures or a `default`), augmented: the clone the augmentations
+    // merge into (module_export_equals() answers it), also set on that namespace import (which is the clone to tsgo:
+    // a name it makes doesn't mean what it was cloned from). On the clone: the namespace import, whose type it has,
+    // and the symbol it was cloned from (its declarations are copied when the first augmentation adds its own)
+    struct Symbol* export_equals_clone;
+    struct Symbol* clone_of_import;
+    struct Symbol* clone_source;
 } SymbolRare;
 
 // PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)

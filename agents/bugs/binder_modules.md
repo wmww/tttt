@@ -3,33 +3,11 @@
 Leftovers of the 2026-10-07 triage (binder/modules share), pruned 2026-10-09 against the tsgo 7.1 suite. Each entry: the test, tsc's mechanism, why tttt differs,
 and what a fix needs. JS/JSDoc-specific items are in bugs/js.md.
 
-## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
-Plan 50 (2026-10-08) did tsc 6's getCommonJsExportEquals in place at link time; tsgo 7.1 has no getCommonJsExportEquals
-at all (bindCommonJSTypeExports for every module: the module's types move onto the `export=` symbol), and since
-2026-10-09 tttt follows it (`bind_type_exports()`, merge_commonjs_export_equals() is gone). The entries below that
-blame getCommonJsExportEquals were written against tsc 6 and need rechecking against tsgo before any work. Stage 0 found
-tsc clones whenever the module's own file is checked, not only on import. The entries below are what is left
-(single-test ordering quirks of tsc): an augmentation into a cloneTypeAsModuleType clone, JS `module.exports = {...}`
-as an augmentable export=.
-tttt merges augmentations straight into what `export =` assigns (merge_augmentations()); tsc clones it and records
-the clone as the merged symbol, which everything that resolves names sees. That is equivalent except where tsc's
-clone is a *different* symbol than the one a later lookup finds:
-- moduleAugmentationDuringSyntheticDefaultCheck: `declare module "moment-timezone"` where moment-timezone's
-  `export = moment` names an esModuleInterop `import * as moment` (tsc's resolveESModuleSymbol ->
-  cloneTypeAsModuleType: a transient clone typed `{ default: ... }`). The augmentation merges into that clone (its
-  type `{ default: () => Moment; }`, moment's own symbol keeps 4 declarations); tttt merges into moment. Needs the
-  namespace-import clone (TyAnonymous.module_clone / synthetic_default) to be a binder symbol augmentations can
-  target.
-- jsExportMemberMergedWithModuleAugmentation: `module.exports = { Abcde }` (shorthand only) binds each property as an
-  alias export, no export= (tsc's bindModuleExportsAssignment); the augmentation merges into the file's module
-  symbol (a clone recorded as its merged symbol), printed `Symbol("./test", Decl(test.js, 0, 0), Decl(index.ts, 0,
-  31))` and `typeof module."./test"` where tttt says `module.exports`.
-- es6ExportEqualsInterop (`z2.a` named `a2`) involves no clone at all (stage 0 logged none): a symbol-chain naming
-  bug of its own.
-
-## Merges tsc decides after aliases resolve
-Done for cross-file merges into aliases (binder_link_alias_merges(), merge_into_umd_globals()); what is left is the
-clones tsgo makes on the way (plan 69): moduleAugmentationDuringSyntheticDefaultCheck.
+## Export= clones and merges through aliases
+Done (plan 69, deleted 2026-10-15): cross-file merges into aliases (binder_link_alias_merges(),
+merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detached), an augmentation of a module whose
+`export =` is a cloned namespace import (SymbolRare.export_equals_clone), combined value+interface imports
+(SymbolAlias.combined_type). The suite has no test of these left; new divergences go here.
 
 ## Symbol display of duplicates and merged members
 - nodeModulesJson (symbols, x4): `config3.version` through `import * as config3 from "./config.json"` in a .cts

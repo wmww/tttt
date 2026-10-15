@@ -23721,8 +23721,8 @@ const baselines = {
     },
     'moduleAugmentationDuringSyntheticDefaultCheck': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationEnumClassMergeOfReexportIsError': {
         errors: true,

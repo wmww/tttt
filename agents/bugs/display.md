@@ -79,12 +79,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   underline has gaps (reused nodes), tttt's doesn't.
 
 ## Symbols baseline
-- **Augmentation of an `export =` module merges into the export= target** in tsc (mergeModuleAugmentation resolves
-  the module through resolveExternalModuleSymbol first): `declare module "foo" { namespace M {} var M; export = M }`
-  then `module "foo" {}` elsewhere adds a declaration to M, not to "foo". tttt merges into the module symbol
-  (binder_link). Most tests that showed it pass now (augmentExportEquals*, module_augmentUninstantiatedModule):
-  re-check whether the merge itself changed. Still failing symbols: importEqualsError45874,
-  moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck.
 - `infer X extends C<...>`: references inside an `infer` type parameter's constraint are missing
   (partial_check_overload.ts).
 - Mapped properties over an intersection: tsc lists the declarations from every intersection member that has the

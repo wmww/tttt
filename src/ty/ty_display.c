@@ -1423,6 +1423,8 @@ static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symb
     // (An import tsc combines is a type of its own: SymbolAlias.combined_type)
     Symbol const* combined = ty_alias_combined_type(me, found);
     if (combined) return combined == symbol;
+    // (So is a namespace import an augmentation made a clone of: SymbolRare.export_equals_clone)
+    if ((found->flags & SYMBOL_ALIAS) && symbol_rare(found)->export_equals_clone) return symbol_rare(found)->export_equals_clone == symbol;
     // (Another alias of the same thing: `m4.d` written under `import m4 = require("./m")` in one file is reused in
     // another that imports the module as m4 too; or the thing itself, where an imported name is printed in the file
     // that declares it)

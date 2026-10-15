@@ -164,7 +164,7 @@ bool namespace_import_is_clone(Symbol const* symbol) {
 // when what it assigns has signatures or a `default`): ns is a symbol of its own then, which names neither the module nor
 // what it assigns (its type prints by ty_display.c's display_module_clone())
 static bool has_port_tag(Symbol const* symbol, u32 tag);
-static bool export_equals_namespace_import_is_clone(Symbol const* alias) {
+bool export_equals_namespace_import_is_clone(Symbol const* alias) {
     if (!has_port_tag(alias, PORT_IMPORT_GATHER) || alias->alias->item->is_require || !alias->alias->item->module_ref) return false;
     Symbol* module = binder_module_of_ref(alias->binder, alias->alias->item->module_ref);
     Symbol const* assigned = module ? module_export_equals(module) : nullptr;
