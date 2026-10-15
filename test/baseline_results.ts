@@ -15,6 +15,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttArrowPropertyTypeParamScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,

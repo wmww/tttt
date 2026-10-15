@@ -1,0 +1,119 @@
+//// [test/cases/ttttArrowPropertyTypeParamScope.ts] ////
+
+=== ttttArrowPropertyTypeParamScope.ts ===
+// An arrow function property printed from its expression (the pseudo type) is a scope of its own: the type parameter
+// names it gives are free again for its siblings (no b<A_1>)
+export const y1 = { a: <A,>(a: A) => {}, b<A>(x: A) {} };
+>y1 : { a: <A>(a: A) => void; b<A>(x: A): void; }
+>{ a: <A,>(a: A) => {}, b<A>(x: A) {} } : { a: <A>(a: A) => void; b<A>(x: A): void; }
+>a : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+>b : <A>(x: A) => void
+>x : A
+
+export const y2 = { b<A>(x: A) {}, a: <A,>(a: A) => {} };
+>y2 : { b<A>(x: A): void; a: <A>(a: A) => void; }
+>{ b<A>(x: A) {}, a: <A,>(a: A) => {} } : { b<A>(x: A): void; a: <A>(a: A) => void; }
+>b : <A>(x: A) => void
+>x : A
+>a : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+
+export const y3 = { b<A>(x: A) {}, c<A>(x: A) {} };
+>y3 : { b<A>(x: A): void; c<A>(x: A): void; }
+>{ b<A>(x: A) {}, c<A>(x: A) {} } : { b<A>(x: A): void; c<A>(x: A): void; }
+>b : <A>(x: A) => void
+>x : A
+>c : <A>(x: A) => void
+>x : A
+
+export const y4 = { a: <A,>(a: A) => {}, c: <A,>(a: A) => {} };
+>y4 : { a: <A>(a: A) => void; c: <A>(a: A) => void; }
+>{ a: <A,>(a: A) => {}, c: <A,>(a: A) => {} } : { a: <A>(a: A) => void; c: <A>(a: A) => void; }
+>a : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+>c : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+
+export const y5 = { a: <A,>(a: A) => {}, b<const A>(x: A) {} };
+>y5 : { a: <A>(a: A) => void; b<const A>(x: A): void; }
+>{ a: <A,>(a: A) => {}, b<const A>(x: A) {} } : { a: <A>(a: A) => void; b<const A>(x: A): void; }
+>a : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+>b : <const A>(x: A) => void
+>x : A
+
+export const y6 = { a: { q: <A,>(a: A) => {} }, b: { r<A>(x: A) {} } };
+>y6 : { a: { q: <A>(a: A) => void; }; b: { r<A>(x: A): void; }; }
+>{ a: { q: <A,>(a: A) => {} }, b: { r<A>(x: A) {} } } : { a: { q: <A>(a: A) => void; }; b: { r<A>(x: A): void; }; }
+>a : { q: <A>(a: A) => void; }
+>{ q: <A,>(a: A) => {} } : { q: <A>(a: A) => void; }
+>q : <A>(a: A) => void
+><A,>(a: A) => {} : <A>(a: A) => void
+>a : A
+>b : { r<A>(x: A): void; }
+>{ r<A>(x: A) {} } : { r<A>(x: A): void; }
+>r : <A>(x: A) => void
+>x : A
+
+declare function wrap<T>(f: () => T): { value: T };
+>wrap : <T>(f: () => T) => { value: T; }
+>f : () => T
+>value : T
+
+export const x = wrap(function () {
+>x : { value: { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }; }
+>wrap(function () {  const out = {    ast: { equals: <A, I>(a: A, b: I) => {} },    make: { succeed<const A, const B>(input: A, b: B) {} },  };  return out;}) : { value: { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }; }
+>wrap : <T>(f: () => T) => { value: T; }
+>function () {  const out = {    ast: { equals: <A, I>(a: A, b: I) => {} },    make: { succeed<const A, const B>(input: A, b: B) {} },  };  return out;} : () => { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+
+  const out = {
+>out : { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+>{    ast: { equals: <A, I>(a: A, b: I) => {} },    make: { succeed<const A, const B>(input: A, b: B) {} },  } : { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+
+    ast: { equals: <A, I>(a: A, b: I) => {} },
+>ast : { equals: <A, I>(a: A, b: I) => void; }
+>{ equals: <A, I>(a: A, b: I) => {} } : { equals: <A, I>(a: A, b: I) => void; }
+>equals : <A, I>(a: A, b: I) => void
+><A, I>(a: A, b: I) => {} : <A, I>(a: A, b: I) => void
+>a : A
+>b : I
+
+    make: { succeed<const A, const B>(input: A, b: B) {} },
+>make : { succeed<const A, const B>(input: A, b: B): void; }
+>{ succeed<const A, const B>(input: A, b: B) {} } : { succeed<const A, const B>(input: A, b: B): void; }
+>succeed : <const A, const B>(input: A, b: B) => void
+>input : A
+>b : B
+
+  };
+  return out;
+>out : { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+
+});
+export const z = {
+>z : { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+>{    ast: { equals: <A, I>(a: A, b: I) => {} },    make: { succeed<const A, const B>(input: A, b: B) {} },} : { ast: { equals: <A, I>(a: A, b: I) => void; }; make: { succeed<const A, const B>(input: A, b: B): void; }; }
+
+    ast: { equals: <A, I>(a: A, b: I) => {} },
+>ast : { equals: <A, I>(a: A, b: I) => void; }
+>{ equals: <A, I>(a: A, b: I) => {} } : { equals: <A, I>(a: A, b: I) => void; }
+>equals : <A, I>(a: A, b: I) => void
+><A, I>(a: A, b: I) => {} : <A, I>(a: A, b: I) => void
+>a : A
+>b : I
+
+    make: { succeed<const A, const B>(input: A, b: B) {} },
+>make : { succeed<const A, const B>(input: A, b: B): void; }
+>{ succeed<const A, const B>(input: A, b: B) {} } : { succeed<const A, const B>(input: A, b: B): void; }
+>succeed : <const A, const B>(input: A, b: B) => void
+>input : A
+>b : B
+
+};
+

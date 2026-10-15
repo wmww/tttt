@@ -4470,10 +4470,12 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
                 .function = pseudo->function, .outer = d.printed_params };
             if (sig) sig_d.printed_params = &printed;
+            u32 saved = param_names_enter(sig_d); // (Its type parameters are its own: a sibling may reuse their names)
             display_node_type_params(me, sig_d, &pseudo->function->generic);
             display_pseudo_params(me, sig_d, pseudo->params, pseudo->count, sig);
             out_lit(sig_d, " => ");
             display_pseudo_return(me, sig_d, pseudo->ret, sig, pseudo->function);
+            param_names_leave(sig_d, saved);
             return;
         }
         case PSEUDO_TUPLE: {

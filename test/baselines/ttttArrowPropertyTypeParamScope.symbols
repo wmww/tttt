@@ -1,0 +1,138 @@
+//// [test/cases/ttttArrowPropertyTypeParamScope.ts] ////
+
+=== ttttArrowPropertyTypeParamScope.ts ===
+// An arrow function property printed from its expression (the pseudo type) is a scope of its own: the type parameter
+// names it gives are free again for its siblings (no b<A_1>)
+export const y1 = { a: <A,>(a: A) => {}, b<A>(x: A) {} };
+>y1 : Symbol(y1, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 12))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 19))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 24))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 28))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 24))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 40))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 43))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 46))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 2, 43))
+
+export const y2 = { b<A>(x: A) {}, a: <A,>(a: A) => {} };
+>y2 : Symbol(y2, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 12))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 19))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 22))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 25))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 22))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 34))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 39))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 43))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 3, 39))
+
+export const y3 = { b<A>(x: A) {}, c<A>(x: A) {} };
+>y3 : Symbol(y3, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 12))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 19))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 22))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 25))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 22))
+>c : Symbol(c, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 34))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 37))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 40))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 4, 37))
+
+export const y4 = { a: <A,>(a: A) => {}, c: <A,>(a: A) => {} };
+>y4 : Symbol(y4, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 12))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 19))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 24))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 28))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 24))
+>c : Symbol(c, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 40))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 45))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 49))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 5, 45))
+
+export const y5 = { a: <A,>(a: A) => {}, b<const A>(x: A) {} };
+>y5 : Symbol(y5, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 12))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 19))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 24))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 28))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 24))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 40))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 43))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 52))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 6, 43))
+
+export const y6 = { a: { q: <A,>(a: A) => {} }, b: { r<A>(x: A) {} } };
+>y6 : Symbol(y6, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 12))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 19))
+>q : Symbol(q, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 24))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 29))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 33))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 29))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 47))
+>r : Symbol(r, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 52))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 55))
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 58))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 55))
+
+declare function wrap<T>(f: () => T): { value: T };
+>wrap : Symbol(wrap, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 71))
+>T : Symbol(T, Decl(ttttArrowPropertyTypeParamScope.ts, 8, 22))
+>f : Symbol(f, Decl(ttttArrowPropertyTypeParamScope.ts, 8, 25))
+>T : Symbol(T, Decl(ttttArrowPropertyTypeParamScope.ts, 8, 22))
+>value : Symbol(value, Decl(ttttArrowPropertyTypeParamScope.ts, 8, 39))
+>T : Symbol(T, Decl(ttttArrowPropertyTypeParamScope.ts, 8, 22))
+
+export const x = wrap(function () {
+>x : Symbol(x, Decl(ttttArrowPropertyTypeParamScope.ts, 9, 12))
+>wrap : Symbol(wrap, Decl(ttttArrowPropertyTypeParamScope.ts, 7, 71))
+
+  const out = {
+>out : Symbol(out, Decl(ttttArrowPropertyTypeParamScope.ts, 10, 7))
+
+    ast: { equals: <A, I>(a: A, b: I) => {} },
+>ast : Symbol(ast, Decl(ttttArrowPropertyTypeParamScope.ts, 10, 15))
+>equals : Symbol(equals, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 10))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 20))
+>I : Symbol(I, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 22))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 26))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 20))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 31))
+>I : Symbol(I, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 22))
+
+    make: { succeed<const A, const B>(input: A, b: B) {} },
+>make : Symbol(make, Decl(ttttArrowPropertyTypeParamScope.ts, 11, 46))
+>succeed : Symbol(succeed, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 11))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 20))
+>B : Symbol(B, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 28))
+>input : Symbol(input, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 38))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 20))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 47))
+>B : Symbol(B, Decl(ttttArrowPropertyTypeParamScope.ts, 12, 28))
+
+  };
+  return out;
+>out : Symbol(out, Decl(ttttArrowPropertyTypeParamScope.ts, 10, 7))
+
+});
+export const z = {
+>z : Symbol(z, Decl(ttttArrowPropertyTypeParamScope.ts, 16, 12))
+
+    ast: { equals: <A, I>(a: A, b: I) => {} },
+>ast : Symbol(ast, Decl(ttttArrowPropertyTypeParamScope.ts, 16, 18))
+>equals : Symbol(equals, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 10))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 20))
+>I : Symbol(I, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 22))
+>a : Symbol(a, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 26))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 20))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 31))
+>I : Symbol(I, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 22))
+
+    make: { succeed<const A, const B>(input: A, b: B) {} },
+>make : Symbol(make, Decl(ttttArrowPropertyTypeParamScope.ts, 17, 46))
+>succeed : Symbol(succeed, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 11))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 20))
+>B : Symbol(B, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 28))
+>input : Symbol(input, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 38))
+>A : Symbol(A, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 20))
+>b : Symbol(b, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 47))
+>B : Symbol(B, Decl(ttttArrowPropertyTypeParamScope.ts, 18, 28))
+
+};
+
