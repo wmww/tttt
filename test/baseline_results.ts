@@ -30553,7 +30553,7 @@ const baselines = {
     'sliceResultCast': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sliceTupleTypeOutOfBounds': {
         errors: true,
