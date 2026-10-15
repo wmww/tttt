@@ -163,9 +163,10 @@ def run_tsgo(name, timeout=900, mem_gb=16):
 def save_texts(name, texts):
     d, path = tsgo_store(name)
     os.makedirs(d, exist_ok=True)
-    with gzip.open(path + '.tmp', 'wt') as f:
+    tmp = f'{path}.{os.getpid()}.tmp'  # (agents in worktrees share the store)
+    with gzip.open(tmp, 'wt') as f:
         json.dump(texts, f)
-    os.replace(path + '.tmp', path)
+    os.replace(tmp, path)
 
 
 def tsgo_texts(name, record):
