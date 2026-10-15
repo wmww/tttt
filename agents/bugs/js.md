@@ -13,15 +13,6 @@ what remains is below, each with what was found.
   emits declarations before it collects diagnostics and that emit caches errorType on the node. Plan 64's bucket.
 
 ## Types
-- argumentsReferenceInObjectLiteral_Js(alwaysstrict=true) (TYP): with strict off `() => { return { x: [] } }` prints
-  `() => { x: undefined[] }` in tsgo (TS too, and in a TS2322 message, so not node reuse), but `{ x: [], y: null }`
-  prints widened (`{ x: any[]; y: any }`) and `const v = f()` is `{ x: any[] }`. tttt prints any[]. Instrumented tsgo
-  (2026-10-14, getReturnTypeFromBody): the body's type before getWidenedType is `{ x: undefined[] }` with
-  ObjectFlags 0x232090 and after it `{ x: any[] }`, and getReturnTypeOfSignature stores that (`{ x: any[] }`, nothing
-  set before it), twice per function (two signatures?). So the printer's return type isn't that signature's: find
-  which signature/type the message's `() => { x: undefined[] }` prints (serializeReturnTypeForSignature reads
-  ctx.enclosingSymbolTypes first; a second signature made from the unwidened body type?). The earlier note that
-  option order mattered was wrong: filetest fails the same way. ~half a session with the instrumented tsgo.
 - Binder: an `export =`/`export default` in a function expression, arrow or method body (not a declaration) isn't a
   member of its value in tttt (declare_function_export() only knows a function declaration's symbol); tsgo's
   bindExportAssignment declares it in any container symbol's exports.

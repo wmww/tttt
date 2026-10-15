@@ -299,6 +299,7 @@ static Pseudo const* type_from_object_literal(Build* me, Expr const* expr, Pseud
         }
     }
     Pseudo* pseudo = make(me, PSEUDO_OBJECT);
+    pseudo->expr = expr;
     pseudo->in_const = place.in_const;
     pseudo->members = members;
     pseudo->count = count;

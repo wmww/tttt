@@ -133,7 +133,7 @@ struct Pseudo {
     u32 count; // types, params, members, errors
     union {
         TypeNode const* node; // PSEUDO_DIRECT
-        Expr const* expr; // PSEUDO_INFERRED (unless signature_return), literals
+        Expr const* expr; // PSEUDO_INFERRED (unless signature_return), literals, PSEUDO_OBJECT (the object literal)
         Expr const* at; // PSEUDO_MAYBE_CONST
         FunctionImpl const* function; // PSEUDO_SIGNATURE, PSEUDO_INFERRED with signature_return, PSEUDO_NO_RESULT
         InitializedBinding const* binding; // PSEUDO_NO_RESULT of a variable

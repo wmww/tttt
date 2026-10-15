@@ -28,6 +28,3 @@ From the triage session (2026-10-14, late-bound member merging):
 - (2026-10-15, todo entries 7-8) /tmp holds ~990 entries (770 MB) of scratch from the 2026-10-07..12 sessions (cg-*,
   cgv.*, b-x9, bsmoke*...): nobody's current work; a triage session can delete what isn't a script's cache
   (`/tmp/mutate` was deleted this session by mistake: mutate.py regenerates it, ~minutes).
-- (2026-10-15) Declaration emit found a checker bug the CLI shows too: `function c(foo: number | null = 2) { return
-  (bar = foo, _: string) => bar; }` types `bar` as `any | undefined` in the arrow's signature (tsgo: `number | null |
-  undefined`); the outer parameter's initializer is what matters (declarationEmitOptionalParameterUndefined).

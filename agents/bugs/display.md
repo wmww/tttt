@@ -193,12 +193,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   literal's symbol there (checkObjectLiteralDestructuringPropertyAssignment); ty_object_rest_type() passes none (a
   binding's rest has its binding's symbol since 2026-10-14). Not probed.
 - Union order left (2026-10-14 fan-out agent A looked again; neither is display, both are checker identity):
-  - sliceResultCast: `x.slice` of `[number, string] | [number, string, string]` is a union of two identical-looking
-    signatures in tsgo: each tuple reference resolves its Array base's members instantiated with itself as `this`
-    (resolveObjectTypeMembers instantiates every member unless the type arguments equal the parameters), so `slice`
-    is a distinct function type per tuple. tttt's retarget_this_props() retargets only members that mention `this`
-    (a deliberate perf shortcut), so both tuples share Array<number | string>'s `slice` and the union collapses.
-    Fix = per-tuple `this` instances of every member, cheap enough (instrcount valibot/zod/effect): ~a session.
   - comparisonReverseMappedTypes: `[identity(nested), unbox(nested)]` orders `{ value: string; }` (unbox's reverse
     mapped type) before `{ value: { value: string; }; }` in tsgo, which made both reverse mapped types
     (createReverseMappedType; ordered by source, then mapped type declaration); tttt's infer.c "A plain homomorphic

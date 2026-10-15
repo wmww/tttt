@@ -1423,7 +1423,7 @@ const baselines = {
     'argumentsReferenceInObjectLiteral_Js(alwaysstrict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsSpreadRestIterables(target=esnext)': {
         errors: true,
@@ -9641,8 +9641,8 @@ const baselines = {
     'declarationEmitOptionalParameterUndefined': {
         errors: true,
         symbols: true,
-        types: false,
-        dts: false,
+        types: true,
+        dts: true,
     },
     'declarationEmitOverloadedPrivateInference': {
         errors: true,

@@ -3948,7 +3948,12 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 bool parens = member->kind == PSEUDO_DIRECT && !member->predicate && !member->node->parenthesized &&
                     (member->node->tag == TYPE_CALLABLE || member->node->tag == TYPE_TERNARY || member->node->tag == TYPE_INTERSECTION);
                 if (parens) out(reused_if(d, false), c_sv("("));
-                display_pseudo(me, member_d, member, nullptr);
+                // (An Inferred member is the initializer of the declaration whose pseudo type got `undefined` added
+                // (pseudo_add_undefined()): tsgo prints its parent declaration's type, serializeTypeForDeclaration, the
+                // whole union's type, whose `undefined` the union's own then doesn't repeat)
+                Ty const* fallback = member->kind == PSEUDO_INFERRED && !member->signature_return ? ty : nullptr;
+                display_pseudo(me, member_d, member, fallback);
+                if (fallback && ty_without_undefined(me, fallback) != fallback) has_undefined = true;
                 if (parens) out(reused_if(d, false), c_sv(")"));
             }
             if (!printed) out(d, elided ? c_sv("any") : c_sv("never"));
@@ -4055,12 +4060,24 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         param_names_leave(member_d, saved);
                         break;
                     }
-                    case PSEUDO_MEMBER_PROPERTY:
+                    case PSEUDO_MEMBER_PROPERTY: {
                         if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         out_lit(member_d, ": ");
-                        display_pseudo_in(me, member_d, member->type, type,
+                        // (An Inferred one prints its property assignment's own type, tsgo's serializeTypeForDeclaration
+                        // of it: the literal's property, its literals widened but not its implicit anys, `x: []` is
+                        // `x: undefined[]` without strictNullChecks where the widened type has `any[]`)
+                        Ty const* own = type;
+                        if (type && member->type->kind == PSEUDO_INFERRED && !member->type->signature_return &&
+                            member->item->tag == OBJECT_ITEM_PROPERTY && pseudo->expr
+                        ) {
+                            Ty const* literal = ty_expr_type(me, pseudo->expr);
+                            Prop const* literal_prop = literal->flags & TYF_OBJECT ? pseudo_member_prop(ty_members(me, literal), member->item) : nullptr;
+                            if (literal_prop) own = ty_widened_literal(me, prop_type(me, literal_prop));
+                        }
+                        display_pseudo_in(me, member_d, member->type, own,
                             member->item->tag == OBJECT_ITEM_PROPERTY ? member->item : nullptr, nullptr, false);
                         break;
+                    }
                     case PSEUDO_MEMBER_SETTER: {
                         out_lit(member_d, "set ");
                         if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
