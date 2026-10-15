@@ -650,34 +650,113 @@ typedef struct ExtendedContainers {
 #define EXTENDED_CONTAINER_SLOTS 256
 static thread_local ExtendedContainers* extended_containers;
 
-// The modules of the program that export the symbol (not where it's named from): remembered per symbol on each thread
-typedef struct ProgramContainers {
-    Symbol const* symbol;
+// The modules of the program that export a symbol (tsgo's getExternalModuleContainers and its index): built once per
+// program on each thread, every module's exports by what they resolve to (alias_in_container()'s same_reference), in
+// program order. A second copy of a package is no file of tsgo's program (its filesByPath maps it to the first)
+typedef struct ContainerKey {
+    Symbol const* key; // identity(resolve_symbol(export))
+    u32 module; // Index in ContainerIndex.modules
+    u32 next; // The next entry of the key (in program order), UINT32_MAX for none
+} ContainerKey;
+
+typedef struct ContainerIndex {
     u32 program;
-    u32 count;
-    Symbol const* items[CONTAINERS_MAX];
-} ProgramContainers;
-#define PROGRAM_CONTAINER_SLOTS 1024
-static thread_local ProgramContainers* program_containers;
+    Symbol const** modules; // Program order
+    u32 module_count;
+    ContainerKey* keys; // Program order
+    u32 key_count;
+    u32* heads; // Open addressing by key: the first entry of each key, UINT32_MAX for an empty slot
+    u32 head_mask;
+} ContainerIndex;
+static thread_local ContainerIndex container_index;
+
+static u32 container_slot(ContainerIndex const* index, Symbol const* key) {
+    u32 slot = (u32)(((uintptr_t)key >> 4) * 0x9E3779B1u) & index->head_mask;
+    while (index->heads[slot] != UINT32_MAX && index->keys[index->heads[slot]].key != key) slot = (slot + 1) & index->head_mask;
+    return slot;
+}
+
+static void container_index_build(ChainCtx* me, Program const* program) {
+    ContainerIndex* index = &container_index;
+    free(index->modules);
+    free(index->keys);
+    free(index->heads);
+    *index = (ContainerIndex){ .program = program_serial(program) };
+    u32 files = program_source_count(program);
+    index->modules = malloc(sizeof(Symbol const*) * (files + 1));
+    u32 key_cap = 0;
+    for (u32 i = 0; i < files; i++) {
+        SourceFile const* other = program_source_at((Program*)program, i);
+        if (!other->is_module || !other->scope || !other->scope->container || other->package_redirect) continue;
+        Symbol const* container = other->scope->container;
+        u32 at = index->module_count++;
+        index->modules[at] = container;
+        // (What alias_in_container() looks through: the `export =`, else the module's or what it assigns' exports)
+        Symbol const* members = symbol_members(container);
+        if (!members) continue;
+        Symbol const* export_equals = members->exports ? symbol_table_get(members->exports, c_sv("export=")) : nullptr;
+        u32 count = 0;
+        SymbolEntry* entries = nullptr;
+        if (export_equals) {
+            Symbol const* assigned = module_export_equals((Symbol*)members);
+            if (assigned && assigned != members && !(assigned->flags & SYMBOL_ALIAS)) members = symbol_members(assigned);
+        }
+        entries = members ? symbol_collect_exports(members, &count) : nullptr;
+        if (index->key_count + count + 1 > key_cap) {
+            key_cap = (index->key_count + count + 1) * 2;
+            index->keys = realloc(index->keys, key_cap * sizeof(ContainerKey));
+        }
+        if (export_equals) index->keys[index->key_count++] = (ContainerKey){ .key = identity(me, resolve_symbol(export_equals)), .module = at };
+        for (u32 j = 0; j < count; j++) {
+            index->keys[index->key_count++] = (ContainerKey){ .key = identity(me, resolve_symbol(entries[j].symbol)), .module = at };
+        }
+        free(entries);
+    }
+    u32 size = 16;
+    while (size < index->key_count * 2) size *= 2;
+    index->head_mask = size - 1;
+    index->heads = malloc(size * sizeof(u32));
+    memset(index->heads, 0xFF, size * sizeof(u32));
+    // (Backwards, each entry before the ones already chained: every key's chain is in program order)
+    for (u32 i = index->key_count; i-- > 0;) {
+        u32 slot = container_slot(index, index->keys[i].key);
+        index->keys[i].next = index->heads[slot];
+        index->heads[slot] = i;
+    }
+}
 
 static u32 program_modules_exporting(ChainCtx* me, Symbol const* symbol, Symbol const** out, u32 cap) {
     Program const* program = current_checker->program;
-    if (!program_containers) program_containers = calloc(PROGRAM_CONTAINER_SLOTS, sizeof(ProgramContainers));
-    ProgramContainers* slot = &program_containers[((uintptr_t)symbol >> 4) % PROGRAM_CONTAINER_SLOTS];
-    u32 serial = program_serial(program);
-    if (slot->symbol != symbol || slot->program != serial) {
-        *slot = (ProgramContainers){ .symbol = symbol, .program = serial };
-        u32 files = program_source_count(program);
-        for (u32 i = 0; i < files && slot->count < CONTAINERS_MAX; i++) {
-            SourceFile const* other = program_source_at((Program*)program, i);
-            // (A second copy of a package is no file of tsgo's program: its filesByPath maps it to the first)
-            if (!other->is_module || !other->scope || !other->scope->container || other->package_redirect) continue;
-            Symbol const* module = other->scope->container;
-            if (alias_in_container(me, module, symbol)) slot->items[slot->count++] = module;
+    if (!container_index.modules || container_index.program != program_serial(program)) container_index_build(me, program);
+    ContainerIndex const* index = &container_index;
+    Symbol const* key = identity(me, resolve_symbol(symbol));
+    u32 entry = index->heads[container_slot(index, key)];
+    // (Its parent module contains the symbol even when it isn't among its exports: alias_in_container()'s fast path)
+    Symbol const* parent = symbol->parent ? merged(me, symbol->parent) : nullptr;
+    u32 parent_at = UINT32_MAX;
+    for (u32 i = 0; parent && i < index->module_count; i++) {
+        if (index->modules[i] == parent) {
+            parent_at = i;
+            break;
         }
     }
-    u32 count = slot->count < cap ? slot->count : cap;
-    memcpy(out, slot->items, count * sizeof(*out));
+    u32 count = 0;
+    u32 last = UINT32_MAX;
+    for (; count < cap; entry = index->keys[entry].next) {
+        bool more = entry != UINT32_MAX;
+        u32 module = more ? index->keys[entry].module : UINT32_MAX;
+        if (parent_at != UINT32_MAX && parent_at < module && parent_at != last) {
+            out[count++] = index->modules[parent_at];
+            last = parent_at;
+            parent_at = UINT32_MAX;
+            if (count == cap) break;
+        }
+        if (!more) break;
+        if (module == last) continue;
+        if (module == parent_at) parent_at = UINT32_MAX;
+        out[count++] = index->modules[module];
+        last = module;
+    }
     return count;
 }
 
@@ -1192,8 +1271,10 @@ void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* co
 void symbol_chain_release_thread(void) {
     free(extended_containers);
     extended_containers = nullptr;
-    free(program_containers);
-    program_containers = nullptr;
+    free(container_index.modules);
+    free(container_index.keys);
+    free(container_index.heads);
+    container_index = (ContainerIndex){0};
     free(access_memo);
     access_memo = nullptr;
 }
