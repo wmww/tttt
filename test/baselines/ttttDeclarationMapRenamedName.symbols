@@ -1,0 +1,12 @@
+//// [test/cases/ttttDeclarationMapRenamedName.ts] ////
+
+=== ttttDeclarationMapRenamedName.ts ===
+// A computed literal name renamed by its text keeps the computed name's range in the map
+export class L { m() { return { ['_rolumns']: [] as never[], ['a b']: 1 }; } }
+>L : Symbol(L, Decl(ttttDeclarationMapRenamedName.ts, 0, 0))
+>m : Symbol(L.m, Decl(ttttDeclarationMapRenamedName.ts, 1, 16))
+>['_rolumns'] : Symbol(['_rolumns'], Decl(ttttDeclarationMapRenamedName.ts, 1, 31))
+>'_rolumns' : Symbol(['_rolumns'], Decl(ttttDeclarationMapRenamedName.ts, 1, 31))
+>['a b'] : Symbol(['a b'], Decl(ttttDeclarationMapRenamedName.ts, 1, 60))
+>'a b' : Symbol(['a b'], Decl(ttttDeclarationMapRenamedName.ts, 1, 60))
+

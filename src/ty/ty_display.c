@@ -4390,6 +4390,7 @@ static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* pro
         if (key && key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) {
             csview text = atom_sv(prop->name);
             bool method_new = item->tag == OBJECT_ITEM_METHOD && csview_equals(text, "new");
+            map_span(d, item->name_span, false); // (The renamed node has the computed name's range)
             if (!method_new && (is_identifier_name(text) && text.buf[0] != '#')) {
                 out(d, text);
             } else if (!method_new && is_numeric_name(text)) {
@@ -4404,6 +4405,7 @@ static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* pro
             } else {
                 display_quoted_string(d, text, false, true);
             }
+            map_span(d, item->name_span, true);
             return;
         }
         out(d, span_sv(item->name_span));
