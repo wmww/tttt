@@ -438,6 +438,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttMethodLiteralDefaultFreeParams': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMissingInitializerImplicitAny': {
         errors: true,
         symbols: true,
