@@ -59,7 +59,16 @@ Component letters are the *failing* components (E errors, S symbols, T types).
    the usual oracles at every merge: vision.md "Fan-out sessions"). Each agent ends by writing, per test it didn't
    fix, one line in its bugs file: the mechanism and the estimated size. Expected: ~40-50 of the ~85 non-feature tests.
 2. **Done** (content mappers, 15 / 15, in one session).
-3. **Plan 64** as scheduled; after its stage 2, re-bucket bucket 2 and add the harness's emit-before-diagnostics.
+3. **Done 2026-10-15 (re-bucketed, nothing to add to the harness)**: emitting declarations before checking (tsgo's
+   harness order) fixes none of bucket 2 (tried, not kept). Bucket 2 now: the five emit-order tests are argued in
+   `bugs/tsgo_divergences.md` (they need the JS emitter's resolver queries); four are JavaScript declaration emit
+   (cjsObjectDefinePropertyPrivateModuleDeclarationEmit, jsDeclarationsTypeReassignmentFromDeclaration2,
+   isolatedDeclarationsJsThisPropertyAssignmentInference, commonJSImportNestedClassTypeReference: plan 64 stage 6);
+   three are checker bugs for the second fan-out: declarationEmitOptionalParameterUndefined (`(bar = foo, _: string)`
+   where the outer `foo` has an initializer: bar's signature type is `any | undefined`, not emit order: the CLI shows
+   it too), declarationEmitBindingPatternsUnused (TS2842 for an unused renaming in a setter's pattern, `typeof alias`
+   of a pattern name), reverseMappedDeclarationSerialization (TS5088/TS7056 where tttt reports TS5114: reverse mapped
+   types' depth limit).
 4. **Second fan-out** on what's left; every remaining test gets either a fix, a plan, or a `tsgo_divergences.md`
    argument (see the rule above).
 5. After plan 58 (re-pin to 7.1.0 stable, ~2% of the suite moves) the target moves: one fan-out for the new failures.
