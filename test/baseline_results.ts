@@ -424,6 +424,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionOptionalPropsUndefined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionPropertyNotMethod': {
         errors: true,
         symbols: true,
