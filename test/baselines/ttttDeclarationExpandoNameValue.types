@@ -1,0 +1,49 @@
+//// [test/cases/ttttDeclarationExpandoNameValue.ts] ////
+
+=== ttttDeclarationExpandoNameValue.ts ===
+// An expando member whose value is a name is `export { v as x }` in the namespace: the local it names is kept
+const _skip = Symbol();
+>_skip : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+const DEFAULT_TIMEOUT = 60 * 1000;
+>DEFAULT_TIMEOUT : number
+>60 * 1000 : number
+>60 : 60
+>1000 : 1000
+
+type KeysMap = { a: number };
+>KeysMap : KeysMap
+>a : number
+
+const keys: KeysMap = { a: 1 };
+>keys : KeysMap
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+export function f() {}
+>f : { (): void; skip: symbol; DEFAULT_TIMEOUT: number; keys: KeysMap; }
+
+f.skip = _skip;
+>f.skip = _skip : unique symbol
+>f.skip : symbol
+>f : { (): void; skip: symbol; DEFAULT_TIMEOUT: number; keys: KeysMap; }
+>skip : symbol
+>_skip : unique symbol
+
+f.DEFAULT_TIMEOUT = DEFAULT_TIMEOUT;
+>f.DEFAULT_TIMEOUT = DEFAULT_TIMEOUT : number
+>f.DEFAULT_TIMEOUT : number
+>f : { (): void; skip: symbol; DEFAULT_TIMEOUT: number; keys: KeysMap; }
+>DEFAULT_TIMEOUT : number
+>DEFAULT_TIMEOUT : number
+
+f.keys = keys;
+>f.keys = keys : KeysMap
+>f.keys : KeysMap
+>f : { (): void; skip: symbol; DEFAULT_TIMEOUT: number; keys: KeysMap; }
+>keys : KeysMap
+>keys : KeysMap
+

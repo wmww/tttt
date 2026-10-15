@@ -1725,6 +1725,8 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
         Span full = value && span_valid(expr_outer_span(value)) && span_source(expr_outer_span(value)) == span_source(at) ?
             span_between(at, expr_outer_span(value)) : at;
         Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, name, full);
+        // (A name as the value is written `export { v as x }`: the local it names is kept)
+        if (value && value->tag == EXPR_IDENTIFIER) check_entity_expression(me, value);
         bool outer = fallback_begin(me);
         my fell_back = true;
         fallback_end(me, outer, ty_type_of_symbol(my checker, member));
