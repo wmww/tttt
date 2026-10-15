@@ -141,6 +141,8 @@ static bool parse_tag(csview original, csview* key, csview* value) {
         *key = csview_trim_whitespace(csview_from_n(key_start, p - key_start));
         p++;
         *value = csview_trim_whitespace(csview_from_n(p, end - p));
+        // (tsgo's extractCompilerSettings drops one trailing `;`: `// @declaration: true;`)
+        if (value->size && value->buf[value->size - 1] == ';') value->size--;
         return true;
     } else {
         return false;
