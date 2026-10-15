@@ -3504,14 +3504,22 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     if (apparent == mapped->modifiers_type && apparent->kind == TY_ANONYMOUS && ty_members(me, apparent)->mapped) {
         return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &apparent, .len = 1 });
     }
+    // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts; of a deferred
+    // conditional type's, `Extract<{ a: A }, { t: T }>`'s `{ t: T } & { a: A }` or `A | B`, the properties every
+    // member of the union has, whatever their genericity: tsc's getPropertiesOfType of the apparent modifiers type)
+    if (apparent != mapped->modifiers_type && apparent->kind == TY_INTERSECTION &&
+        (mapped->modifiers_type->flags & TYF_DEFERRED || !(apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
+        return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
+    }
+    if (apparent != mapped->modifiers_type && apparent->kind == TY_UNION) {
+        return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &mapped->modifiers_type, .len = 1 });
+    }
     // (A generic class or interface reference whose bases resolve has its properties whatever its type arguments,
     // `T extends Ctx<P>` has Ctx's, and none if it has none: `Partial<T>` with `T extends RData<H>` has no `open`)
     if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
         !only_this_arg_generic(me, apparent) && !(generic_object_reference(me, apparent) && !ty_has_unresolved_base(me, apparent)))) {
         return members;
     }
-    // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
-    if (apparent->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
     if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;
     Members const* source = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
     if (source && source->mapped) return members;
@@ -3582,6 +3590,25 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
 // The same over a generic intersection (`flatten<A<T> & B<T>>`): a property per property some part is known to have (a
 // generic mapped part has those of the lower bound of its keys), optional if it is in every part that has it (tsc's
 // resolveMappedTypeMembers over getPropertiesOfType of the intersection). No index signatures
+// Adds the declarations of `name` in every member of a union or intersection (apparent types, nested ones too) that
+// `prop` doesn't have yet: the symbols baseline's union property declarations
+static void add_member_decl_spans(Checker* me, Prop* prop, Ty const* ty, Atom const* name, u32 depth) {
+    if (depth > 8) return;
+    ty = ty_apparent_type(me, ty);
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) add_member_decl_spans(me, prop, ty->composite.types.data[i], name, depth + 1);
+        return;
+    }
+    Prop const* other = (ty->flags & TYF_OBJECT) ? ty_get_prop(me, ty, name) : nullptr;
+    while (other && other->target && !other->decl->decl_span_count) other = other->target;
+    if (!other) return;
+    for (u32 k = 0; k < other->decl->decl_span_count; k++) {
+        bool seen = false;
+        for (u32 q = 0; q < prop->decl->decl_span_count && !seen; q++) seen = span_eq(prop->decl->decl_spans[q], other->decl->decl_spans[k]);
+        if (!seen) prop_add_decl_spans(me, prop, &other->decl->decl_spans[k], 1);
+    }
+}
+
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts) {
     MappedInfo const* mapped = members->mapped;
     Prop* template = nullptr;
@@ -3644,6 +3671,8 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 prop->decl->decl_spans = declared->decl->decl_spans;
                 prop->decl->decl_span_count = declared->decl->decl_span_count;
                 prop->decl->name_is_value = declared->decl->name_is_value;
+                // (A union's property is declared by every member's: tsc's createUnionOrIntersectionProperty)
+                if (whole) add_member_decl_spans(me, prop, whole, from->name, 0);
             }
             builder_push(&builder, props, prop);
         }

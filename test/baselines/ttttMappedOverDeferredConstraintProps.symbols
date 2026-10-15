@@ -1,0 +1,143 @@
+//// [test/cases/ttttMappedOverDeferredConstraintProps.ts] ////
+
+=== ttttMappedOverDeferredConstraintProps.ts ===
+// A homomorphic mapped type over a deferred conditional type has the properties of the conditional's constraint
+// (tsc's resolveMappedTypeMembers over getPropertiesOfType of the apparent modifiers type): a union's common ones,
+// an intersection's, whatever their genericity. `Readonly<CD<T>>["id"]` was an error type
+declare const kData: unique symbol;
+>kData : Symbol(kData, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 13))
+
+type R<O extends keyof D | '', D> = { [K in keyof D]: K extends O ? unknown : D[K] };
+>R : Symbol(R, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 35))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 7))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 30))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 30))
+>K : Symbol(K, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 39))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 30))
+>K : Symbol(K, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 39))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 7))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 30))
+>K : Symbol(K, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 39))
+
+declare abstract class S<D extends {}, O extends keyof D | '' = ''> {
+>S : Symbol(S, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 85))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 25))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 38))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 25))
+
+	protected [kData]: Readonly<R<O, D>>;
+>[kData] : Symbol(S[kData], Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 69))
+>kData : Symbol(kData, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 35))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 38))
+>D : Symbol(D, Decl(ttttMappedOverDeferredConstraintProps.ts, 5, 25))
+}
+type A = { type: 1; id: string } | { type: 2; id: string };
+>A : Symbol(A, Decl(ttttMappedOverDeferredConstraintProps.ts, 7, 1))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 10))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 36))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45))
+
+type CD<T extends 1 | 2 | 'u'> = T extends 1 | 2 ? Extract<A, { type: T }> : { id: string };
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 8))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 8))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttMappedOverDeferredConstraintProps.ts, 7, 1))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 63))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 8))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+
+export class C<T extends 1 | 2 | "u" = "u", O extends keyof CD<T> | "" = ""> extends S<CD<T>, O> {
+>C : Symbol(C, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 92))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 15))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 43))
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 15))
+>S : Symbol(S, Decl(ttttMappedOverDeferredConstraintProps.ts, 4, 85))
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 15))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 43))
+
+    get id() { return this[kData].id; }
+>id : Symbol(C.id, Decl(ttttMappedOverDeferredConstraintProps.ts, 10, 98))
+>this[kData].id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+>this : Symbol(C, Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 92))
+>kData : Symbol(kData, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 13))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+}
+type CE<T> = T extends 1 ? A : { id: string };
+>CE : Symbol(CE, Decl(ttttMappedOverDeferredConstraintProps.ts, 12, 1))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 8))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 8))
+>A : Symbol(A, Decl(ttttMappedOverDeferredConstraintProps.ts, 7, 1))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 32))
+
+export function f<T extends 1 | 2 | "u", O extends keyof CD<T> | "">(a: Readonly<R<O, CD<T>>>, b: R<O, CD<T>>, c: Readonly<CE<T>>,
+>f : Symbol(f, Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 46))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 40))
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>a : Symbol(a, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 69))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 35))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 40))
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>b : Symbol(b, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 94))
+>R : Symbol(R, Decl(ttttMappedOverDeferredConstraintProps.ts, 3, 35))
+>O : Symbol(O, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 40))
+>CD : Symbol(CD, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 59))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>c : Symbol(c, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 110))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>CE : Symbol(CE, Decl(ttttMappedOverDeferredConstraintProps.ts, 12, 1))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+
+    d: { [K in keyof CE<T>]: CE<T>[K] }, g: Readonly<Extract<{ type: 1; id: string }, { type: T }>>, h: Readonly<Extract<A, { type: T }>>) {
+>d : Symbol(d, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 130))
+>K : Symbol(K, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 10))
+>CE : Symbol(CE, Decl(ttttMappedOverDeferredConstraintProps.ts, 12, 1))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>CE : Symbol(CE, Decl(ttttMappedOverDeferredConstraintProps.ts, 12, 1))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>K : Symbol(K, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 10))
+>g : Symbol(g, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 40))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 62))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 71))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 87))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+>h : Symbol(h, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 100))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttMappedOverDeferredConstraintProps.ts, 7, 1))
+>type : Symbol(type, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 125))
+>T : Symbol(T, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 18))
+
+    return [a.id, b.id, c.id, d.id, g.id, h.id] as const;
+>a.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+>a : Symbol(a, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 69))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+>b.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+>b : Symbol(b, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 94))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 9, 78))
+>c.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 32))
+>c : Symbol(c, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 110))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 32))
+>d.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 32))
+>d : Symbol(d, Decl(ttttMappedOverDeferredConstraintProps.ts, 14, 130))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45), Decl(ttttMappedOverDeferredConstraintProps.ts, 13, 32))
+>g.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 71))
+>g : Symbol(g, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 40))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 71))
+>h.id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45))
+>h : Symbol(h, Decl(ttttMappedOverDeferredConstraintProps.ts, 15, 100))
+>id : Symbol(id, Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 19), Decl(ttttMappedOverDeferredConstraintProps.ts, 8, 45))
+>const : Symbol(const)
+}
+

@@ -379,6 +379,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedOverDeferredConstraintProps': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMissingInitializerImplicitAny': {
         errors: true,
         symbols: true,
