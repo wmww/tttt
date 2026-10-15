@@ -71,8 +71,8 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
   reports TS2722 there. Not reduced further. lynx-store.ts:65 -TS2345 x2 not looked at.
 - sequelize model-definition.ts:730 +TS2578: tsc's TS2367 (`key === 'column'` with `keyof IndexOptions`) that the
   `@ts-expect-error` hides is missing in tttt only in the real project (a copy whose `@sequelize/utils` doesn't resolve
-  reports it, so does a probe with IndexOptions alone). Now (2026-10-15) it is data-types.ts:2353 instead (`enumOrArray =
-  first` under `@ts-expect-error`), not looked at.
+  reports it, so does a probe with IndexOptions alone). (data-types.ts:2353 fixed 2026-10-15: object to generic mapped
+  type relation.)
 - folo renderer +TS2883 x7: declaration diagnostics tsc doesn't report, hidden until the TS2345s there were fixed
   (tttt's CLI drops them while other errors exist).
 

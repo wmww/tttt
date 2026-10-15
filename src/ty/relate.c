@@ -5981,6 +5981,15 @@ static Ternary structured_related_members(
         ) {
             return related;
         }
+        // (Nor an object type whose properties don't depend on its type variables against a mapped type over a type
+        // parameter (`Record<M, M>`): `P<M>`'s `{ values: M }` isn't related to it, its keys can't cover M's (sequelize's
+        // EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype reduction)
+        if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
+            !ty_is_array(me, source) && !ty_is_tuple(source) && target_mapped->constraint->kind == TY_TYPE_PARAM &&
+            !ty_is_generic_index(ty_keyof(me, source))
+        ) {
+            return related;
+        }
         // (The member fallback below says nothing when it fails either: tsc's False for a generic mapped target has no
         // chain. The generic source's constraints before it do report, tsgo's structuredTypeRelatedToWorker)
         quiet_members = true;

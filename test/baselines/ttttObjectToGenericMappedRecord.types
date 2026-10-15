@@ -1,0 +1,57 @@
+//// [test/cases/ttttObjectToGenericMappedRecord.ts] ////
+
+=== ttttObjectToGenericMappedRecord.ts ===
+// An object type whose properties don't depend on its type variables isn't related to a mapped type over a type
+// parameter: `{ values: M }` against `Record<M, M>` (tttt's member fallback passed it). Flow unions reduce by subtype,
+// so sequelize's `EnumOptions<Member>` was lost from `first` after an `if` (its @ts-expect-error then unused)
+type EnumValues<M extends string> = readonly M[] | Record<M, M>;
+>EnumValues : EnumValues<M>
+
+interface EnumOptions<M extends string> { values: EnumValues<M> }
+>values : EnumValues<M>
+
+interface P<M> { values: M }
+>values : M
+
+export function f<M extends string>(p: P<M>, eo: EnumOptions<M>) {
+>f : <M extends string>(p: P<M>, eo: EnumOptions<M>) => void
+>p : P<M>
+>eo : EnumOptions<M>
+
+    const r1: Record<M, M> = p;
+>r1 : Record<M, M>
+>p : P<M>
+
+    const r2: Record<M, M> = eo;
+>r2 : Record<M, M>
+>eo : EnumOptions<M>
+}
+export function g<Member extends string>(first: EnumValues<Member> | EnumOptions<Member>) {
+>g : <Member extends string>(first: EnumValues<Member> | EnumOptions<Member>) => void
+>first : EnumOptions<Member> | EnumValues<Member>
+
+    if (!Array.isArray(first) && 'values' in first) {
+>!Array.isArray(first) && 'values' in first : boolean
+>!Array.isArray(first) : boolean
+>Array.isArray(first) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>first : EnumOptions<Member> | EnumValues<Member>
+>'values' in first : boolean
+>'values' : "values"
+>first : EnumOptions<Member> | EnumValues<Member>
+
+        if (typeof first.values !== 'string') { }
+>typeof first.values !== 'string' : boolean
+>typeof first.values : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>first.values : (() => ArrayIterator<Member>) | EnumValues<Member>
+>first : EnumOptions<Member> | readonly Member[]
+>values : (() => ArrayIterator<Member>) | EnumValues<Member>
+>'string' : "string"
+    }
+    const n: number = first;
+>n : number
+>first : any[] | EnumOptions<Member> | readonly Member[] | Record<Member, Member>
+}
+

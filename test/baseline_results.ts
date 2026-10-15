@@ -684,6 +684,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectToGenericMappedRecord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOverloadedStaticMethodTypeof': {
         errors: true,
         symbols: true,

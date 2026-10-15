@@ -1,0 +1,77 @@
+//// [test/cases/ttttObjectToGenericMappedRecord.ts] ////
+
+=== ttttObjectToGenericMappedRecord.ts ===
+// An object type whose properties don't depend on its type variables isn't related to a mapped type over a type
+// parameter: `{ values: M }` against `Record<M, M>` (tttt's member fallback passed it). Flow unions reduce by subtype,
+// so sequelize's `EnumOptions<Member>` was lost from `first` after an `if` (its @ts-expect-error then unused)
+type EnumValues<M extends string> = readonly M[] | Record<M, M>;
+>EnumValues : Symbol(EnumValues, Decl(ttttObjectToGenericMappedRecord.ts, 0, 0))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 3, 16))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 3, 16))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 3, 16))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 3, 16))
+
+interface EnumOptions<M extends string> { values: EnumValues<M> }
+>EnumOptions : Symbol(EnumOptions, Decl(ttttObjectToGenericMappedRecord.ts, 3, 64))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 4, 22))
+>values : Symbol(EnumOptions.values, Decl(ttttObjectToGenericMappedRecord.ts, 4, 41))
+>EnumValues : Symbol(EnumValues, Decl(ttttObjectToGenericMappedRecord.ts, 0, 0))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 4, 22))
+
+interface P<M> { values: M }
+>P : Symbol(P, Decl(ttttObjectToGenericMappedRecord.ts, 4, 65))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 5, 12))
+>values : Symbol(P.values, Decl(ttttObjectToGenericMappedRecord.ts, 5, 16))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 5, 12))
+
+export function f<M extends string>(p: P<M>, eo: EnumOptions<M>) {
+>f : Symbol(f, Decl(ttttObjectToGenericMappedRecord.ts, 5, 28))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>p : Symbol(p, Decl(ttttObjectToGenericMappedRecord.ts, 6, 36))
+>P : Symbol(P, Decl(ttttObjectToGenericMappedRecord.ts, 4, 65))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>eo : Symbol(eo, Decl(ttttObjectToGenericMappedRecord.ts, 6, 44))
+>EnumOptions : Symbol(EnumOptions, Decl(ttttObjectToGenericMappedRecord.ts, 3, 64))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+
+    const r1: Record<M, M> = p;
+>r1 : Symbol(r1, Decl(ttttObjectToGenericMappedRecord.ts, 7, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>p : Symbol(p, Decl(ttttObjectToGenericMappedRecord.ts, 6, 36))
+
+    const r2: Record<M, M> = eo;
+>r2 : Symbol(r2, Decl(ttttObjectToGenericMappedRecord.ts, 8, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>M : Symbol(M, Decl(ttttObjectToGenericMappedRecord.ts, 6, 18))
+>eo : Symbol(eo, Decl(ttttObjectToGenericMappedRecord.ts, 6, 44))
+}
+export function g<Member extends string>(first: EnumValues<Member> | EnumOptions<Member>) {
+>g : Symbol(g, Decl(ttttObjectToGenericMappedRecord.ts, 9, 1))
+>Member : Symbol(Member, Decl(ttttObjectToGenericMappedRecord.ts, 10, 18))
+>first : Symbol(first, Decl(ttttObjectToGenericMappedRecord.ts, 10, 41))
+>EnumValues : Symbol(EnumValues, Decl(ttttObjectToGenericMappedRecord.ts, 0, 0))
+>Member : Symbol(Member, Decl(ttttObjectToGenericMappedRecord.ts, 10, 18))
+>EnumOptions : Symbol(EnumOptions, Decl(ttttObjectToGenericMappedRecord.ts, 3, 64))
+>Member : Symbol(Member, Decl(ttttObjectToGenericMappedRecord.ts, 10, 18))
+
+    if (!Array.isArray(first) && 'values' in first) {
+>Array.isArray : Symbol(ArrayConstructor.isArray, Decl(lib.es5.d.ts, --, --))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>isArray : Symbol(ArrayConstructor.isArray, Decl(lib.es5.d.ts, --, --))
+>first : Symbol(first, Decl(ttttObjectToGenericMappedRecord.ts, 10, 41))
+>first : Symbol(first, Decl(ttttObjectToGenericMappedRecord.ts, 10, 41))
+
+        if (typeof first.values !== 'string') { }
+>first.values : Symbol(values, Decl(ttttObjectToGenericMappedRecord.ts, 4, 41), Decl(lib.es2015.iterable.d.ts, --, --))
+>first : Symbol(first, Decl(ttttObjectToGenericMappedRecord.ts, 10, 41))
+>values : Symbol(values, Decl(ttttObjectToGenericMappedRecord.ts, 4, 41), Decl(lib.es2015.iterable.d.ts, --, --))
+    }
+    const n: number = first;
+>n : Symbol(n, Decl(ttttObjectToGenericMappedRecord.ts, 14, 9))
+>first : Symbol(first, Decl(ttttObjectToGenericMappedRecord.ts, 10, 41))
+}
+

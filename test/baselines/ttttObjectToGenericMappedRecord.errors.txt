@@ -1,0 +1,31 @@
+ttttObjectToGenericMappedRecord.ts(8,11): error TS2322: Type 'P<M>' is not assignable to type 'Record<M, M>'.
+ttttObjectToGenericMappedRecord.ts(9,11): error TS2322: Type 'EnumOptions<M>' is not assignable to type 'Record<M, M>'.
+ttttObjectToGenericMappedRecord.ts(15,11): error TS2322: Type 'any[] | EnumOptions<Member> | readonly Member[] | Record<Member, Member>' is not assignable to type 'number'.
+  Type 'any[]' is not assignable to type 'number'.
+
+
+==== ttttObjectToGenericMappedRecord.ts (3 errors) ====
+    // An object type whose properties don't depend on its type variables isn't related to a mapped type over a type
+    // parameter: `{ values: M }` against `Record<M, M>` (tttt's member fallback passed it). Flow unions reduce by subtype,
+    // so sequelize's `EnumOptions<Member>` was lost from `first` after an `if` (its @ts-expect-error then unused)
+    type EnumValues<M extends string> = readonly M[] | Record<M, M>;
+    interface EnumOptions<M extends string> { values: EnumValues<M> }
+    interface P<M> { values: M }
+    export function f<M extends string>(p: P<M>, eo: EnumOptions<M>) {
+        const r1: Record<M, M> = p;
+              ~~
+!!! error TS2322: Type 'P<M>' is not assignable to type 'Record<M, M>'.
+        const r2: Record<M, M> = eo;
+              ~~
+!!! error TS2322: Type 'EnumOptions<M>' is not assignable to type 'Record<M, M>'.
+    }
+    export function g<Member extends string>(first: EnumValues<Member> | EnumOptions<Member>) {
+        if (!Array.isArray(first) && 'values' in first) {
+            if (typeof first.values !== 'string') { }
+        }
+        const n: number = first;
+              ~
+!!! error TS2322: Type 'any[] | EnumOptions<Member> | readonly Member[] | Record<Member, Member>' is not assignable to type 'number'.
+!!! error TS2322:   Type 'any[]' is not assignable to type 'number'.
+    }
+    
