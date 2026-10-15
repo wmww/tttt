@@ -43,7 +43,12 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     bool symbol_constructor = my symbol && !my symbol->parent && !my symbol->is_local &&
         csview_equals(my symbol->name, "SymbolConstructor");
     for_each (i, vec_interface_member, &my type.interface.members) {
-        if (symbol_constructor && i->type.tag == TYPE_SYMBOL) i->type = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
+        // (Only a readonly one, tsc's getESSymbolLikeTypeForNode: isValidESSymbolDeclaration)
+        if (symbol_constructor && i->type.tag == TYPE_SYMBOL && i->readonly) {
+            i->type.tag = TYPE_UNIQUE_SYMBOL;
+            i->type.unique_symbol = (UniqueSymbolDecl){0};
+            i->type.written_symbol = true;
+        }
         if (i->type.tag == TYPE_UNIQUE_SYMBOL) i->type.unique_symbol.owner = my symbol;
     }
     for_each (i, vec_spanned_type, &my extends) {

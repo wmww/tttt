@@ -1,0 +1,44 @@
+//// [test/cases/ttttSymbolConstructorSymbolProperty.ts] ////
+
+=== ttttSymbolConstructorSymbolProperty.ts ===
+// A readonly `symbol` property merged into the global SymbolConstructor is a unique symbol (tsc's compatibility special
+// case for pre-3.0 libraries), but declaration emit writes the annotation as written, and a mutable one stays `symbol`
+export const x = 1;
+>x : 1
+>1 : 1
+
+declare global {
+>global : any
+
+    interface SymbolConstructor {
+        readonly observable: symbol;
+>observable : unique symbol
+
+        mutable: symbol;
+>mutable : symbol
+
+        method(): symbol;
+>method : () => symbol
+    }
+}
+export const o = Symbol.observable;
+>o : symbol
+>Symbol.observable : unique symbol
+>Symbol : SymbolConstructor
+>observable : unique symbol
+
+export const m = Symbol.mutable;
+>m : symbol
+>Symbol.mutable : symbol
+>Symbol : SymbolConstructor
+>mutable : symbol
+
+export const obj = { [Symbol.observable]: 1 };
+>obj : { [Symbol.observable]: number; }
+>{ [Symbol.observable]: 1 } : { [Symbol.observable]: number; }
+>[Symbol.observable] : number
+>Symbol.observable : unique symbol
+>Symbol : SymbolConstructor
+>observable : unique symbol
+>1 : 1
+

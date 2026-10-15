@@ -2726,6 +2726,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, "`");
         }   break;
         case TYPE_UNIQUE_SYMBOL: {
+            if (node->written_symbol) {
+                out_lit(d, "symbol");
+                break;
+            }
             // (A type operator around the `symbol` keyword)
             char const* symbol = nullptr;
             char const* start = decl_map_type_inner_start(node, D_MAP(d));

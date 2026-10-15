@@ -138,6 +138,9 @@ typedef struct TypeNode {
     bool readonly_invalid : 1;
     // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     bool from_jsdoc : 1;
+    // TYPE_UNIQUE_SYMBOL written `symbol`: a readonly property of the global SymbolConstructor (tsc's
+    // widenTypeForVariableLikeDeclaration special case), reprinted as written
+    bool written_symbol : 1;
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed)
     // Where it starts in its file's text plus one (0: not parsed there, or not recorded: only with declaration emit), its
     // first token's (`readonly`, a parenthesized one's `(`): declaration maps map the nodes declaration emit reuses

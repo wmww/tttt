@@ -1,0 +1,43 @@
+//// [test/cases/ttttSymbolConstructorSymbolProperty.ts] ////
+
+=== ttttSymbolConstructorSymbolProperty.ts ===
+// A readonly `symbol` property merged into the global SymbolConstructor is a unique symbol (tsc's compatibility special
+// case for pre-3.0 libraries), but declaration emit writes the annotation as written, and a mutable one stays `symbol`
+export const x = 1;
+>x : Symbol(x, Decl(ttttSymbolConstructorSymbolProperty.ts, 2, 12))
+
+declare global {
+>global : Symbol(global, Decl(ttttSymbolConstructorSymbolProperty.ts, 2, 19))
+
+    interface SymbolConstructor {
+>SymbolConstructor : Symbol(SymbolConstructor, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.asynciterable.d.ts, --, --), Decl(ttttSymbolConstructorSymbolProperty.ts, 3, 16))
+
+        readonly observable: symbol;
+>observable : Symbol(SymbolConstructor.observable, Decl(ttttSymbolConstructorSymbolProperty.ts, 4, 33))
+
+        mutable: symbol;
+>mutable : Symbol(SymbolConstructor.mutable, Decl(ttttSymbolConstructorSymbolProperty.ts, 5, 36))
+
+        method(): symbol;
+>method : Symbol(SymbolConstructor.method, Decl(ttttSymbolConstructorSymbolProperty.ts, 6, 24))
+    }
+}
+export const o = Symbol.observable;
+>o : Symbol(o, Decl(ttttSymbolConstructorSymbolProperty.ts, 10, 12))
+>Symbol.observable : Symbol(SymbolConstructor.observable, Decl(ttttSymbolConstructorSymbolProperty.ts, 4, 33))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>observable : Symbol(SymbolConstructor.observable, Decl(ttttSymbolConstructorSymbolProperty.ts, 4, 33))
+
+export const m = Symbol.mutable;
+>m : Symbol(m, Decl(ttttSymbolConstructorSymbolProperty.ts, 11, 12))
+>Symbol.mutable : Symbol(SymbolConstructor.mutable, Decl(ttttSymbolConstructorSymbolProperty.ts, 5, 36))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>mutable : Symbol(SymbolConstructor.mutable, Decl(ttttSymbolConstructorSymbolProperty.ts, 5, 36))
+
+export const obj = { [Symbol.observable]: 1 };
+>obj : Symbol(obj, Decl(ttttSymbolConstructorSymbolProperty.ts, 12, 12))
+>[Symbol.observable] : Symbol([Symbol.observable], Decl(ttttSymbolConstructorSymbolProperty.ts, 12, 20))
+>Symbol.observable : Symbol(SymbolConstructor.observable, Decl(ttttSymbolConstructorSymbolProperty.ts, 4, 33))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>observable : Symbol(SymbolConstructor.observable, Decl(ttttSymbolConstructorSymbolProperty.ts, 4, 33))
+

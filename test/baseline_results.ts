@@ -543,6 +543,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSymbolConstructorSymbolProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
         symbols: true,
@@ -32305,7 +32311,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'symbolToNodeBoundaryNoStackOverflow': {
         errors: true,
@@ -42613,7 +42619,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'symbolProperty7': {
         errors: true,
