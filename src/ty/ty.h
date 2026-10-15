@@ -1085,6 +1085,16 @@ struct Checker {
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
+    // The failures a top-level relation check cached on its way to failing (relate.c check_related()): the reporting
+    // check of the same pair that usually follows forgets them, like tsc's single reporting pass never had them
+    struct {
+        u64* keys;
+        u32 len, cap;
+        bool on;
+        u32 relation;
+        struct Ty const* source;
+        struct Ty const* target;
+    } failed_log;
     // The function whose return type is being inferred from its return statements (function.c), and whether a return
     // of a bare call to it was left out (tsc's checkAndAggregateReturnExpressionTypes, hasReturnOfTypeNever)
     FunctionImpl const* return_inference_of;

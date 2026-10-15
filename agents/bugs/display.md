@@ -143,12 +143,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   parameter type is T, not the tuple, so when the annotation can't be reused (it mentions c2's fresh T) the type
   prints bare. Wherever the rest param's `[...T]` is normalized to T (call.c's rest_variadic?), the display needs the
   tuple.
-- complexRecursiveCollections (TS2430 elaboration, rechecked 2026-10-14): tttt elaborates through
-  `map(...).filter(...).filter` (its overloads with `this`-typed predicates fail one level deeper) where tsgo's first
-  failing member is `map(...).size` (`number | undefined` to `number`): in tsgo the `filter` comparison succeeds or is
-  cut by isDeeplyNestedType as Maybe. Recursion-identity depth (which pairs count as the same recursive type), not
-  member order. Needs a relation trace against tsgo (scripts/variancetrace.py's instrumented relater logs every
-  comparison); unknown size.
 - Elaboration chain shapes (recursiveConditionalTypes; conditionalTypes1/2 fixed by normalizing the target and the
   apparent intersection source, 2026-10-14):
   tsc's chains interleave lines from a failed constraint attempt with the later ones (`T` to `NonNullable<T>`: the

@@ -429,6 +429,13 @@ src` finds the code-side markers; every significant one has an entry here.
   block or function body), which also counts a type alias in a top-level block.
 
 ## Relations (`ty/relate.c`)
+- Two passes where tsc has one: tttt relates a pair without explaining, then again to explain, where tsc's
+  checkTypeRelatedTo explains during its only run. The failures the first run cached on its way would make the
+  reporting run's non-reporting sub-questions (an overload tried after the first) fail early where tsc's run finds the
+  pair still on its maybe stack, so `check_related()` logs them (Checker.failed_log) and the reporting run of the same
+  pair forgets them first (complexRecursiveCollections). A caller whose first run isn't immediately followed by the
+  reporting run of the same pair keeps them; tsc's own isTypeAssignableTo-then-checkTypeAssignableTo callers have them
+  too, so that's mostly right.
 - `canonical_signature()` (tsc's getCanonicalSignature) returns the signature itself when none of its type parameters
   is an unconstrained clone, where tsc instantiates it anyway (erasing its type parameters). tttt's inference treats a
   generic contextual signature's type parameters differently from a non-generic one's: with the erasing instantiation,

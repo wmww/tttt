@@ -5783,7 +5783,7 @@ const baselines = {
         types: true,
     },
     'complexRecursiveCollections': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
