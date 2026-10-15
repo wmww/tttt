@@ -3243,28 +3243,6 @@ static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
     }
 }
 
-// An object or array literal that is a destructuring assignment target: its elements are assigned to
-static bool is_destructuring_target(Expr const* me) {
-    switch (my tag) {
-        case EXPR_IDENTIFIER: return my identifier.assignment_target;
-        case EXPR_PROPERTY: return my property->assignment_target;
-        case EXPR_BINARY_OP: return my binary_op->op == BINARY_OP_EQUAL && is_destructuring_target(&my binary_op->left);
-        case EXPR_SPREAD: return is_destructuring_target(my spread);
-        case EXPR_ARRAY:
-            for_each (i, vec_expr, &my array) {
-                if (is_destructuring_target(i)) return true;
-            }
-            return false;
-        case EXPR_OBJECT:
-            for_each (i, vec_object_expr_item, &my object) {
-                if (object_item_rare(i)->shorthand_default || is_destructuring_target(&i->value)) return true;
-            }
-            return false;
-        default:
-            return false;
-    }
-}
-
 bool expr_is_non_bindable_dynamic_name(Expr const* key) {
     if (!expr_is_perenthisized(key)) {
         Expr const* literal = key;
