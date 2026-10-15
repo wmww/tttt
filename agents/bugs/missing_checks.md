@@ -173,11 +173,8 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
-  checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes.
-  - circularConstraintYieldsAppropriateError: `class Foo extends NextType<Foo>` with `NextType<C extends { someProp:
-    any }, T = C['someProp']> extends BaseType<T>`: tsc reports TS2415 and TS2339 'bar' (the base resolves circularly
-    to an error: the cycle is entered from the default's instantiation, reading Foo's `someProp` while Foo's bases
-    are in flight); tttt reports TS2310 and keeps `bar`.
+  checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes
+  (circularConstraintYieldsAppropriateError, its suite test, passes since 2026-10-14).
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
   n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
 - recursiveMappedTypes against tsgo's CLI (the suite baseline is JS-emit order: tsgo_divergences.md): (1) no TS2502
@@ -226,7 +223,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   level, where tsgo relates each conditional's constraints to the whole union (RecursionFlags.Source) and only pushes
   the member inside unionOrIntersectionRelatedTo's attempts (popped after). Find which tttt path pushes the target
   member again inside an attempt (relate.c's conditional-source handling vs `some_related`).
-  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`).
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
   }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target
   `Array<IWorkspaceFileEditDto | IWorkspaceTextEditDto | IWorkspaceCellEditDto>`, `Dto<T>` a conditional over a

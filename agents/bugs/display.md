@@ -186,15 +186,9 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
-- Relation paths that differ from tsgo's (not elaboration rules):
-  complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound (tsgo's chain relates `string`, not T's constraint
-  `"email" | "text"`, to `ChannelOfType<T, EmailChannel>["type"] & ...`, twice: some constraint/apparent-type step
-  tttt doesn't take; a relation trace would show it), reactReduxLikeDeferredInferenceAllowsAssignment and
-  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels).
-  reactReduxLikeDeferredInferenceAllowsAssignment and
-  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels),
-  mergedDeclarations7 (a namespace import of `export =` gives `PassportStatic` not assignable to `Passport` through
-  `use(): this`).
+- Relation paths that differ from tsgo's (not elaboration rules): reactReduxLikeDeferredInferenceAllowsAssignment and
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels;
+  missing_checks.md has the two fixes tried).
 - The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax,
   declarationEmitNonAsciiStringLiteralType's `readonly [\`a\`, 'b']`) is plan 55.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by

@@ -30,10 +30,8 @@ ever exists (the human: out of scope, vision.md):
   types baseline says `any` (probes n5-n9: dropping the defineProperty line gives `2` with declarations, dropping
   `@declaration` gives `any`), so the printed type depends only on which entry point resolved the symbol first.
   Nothing a user sees differs: tsgo's CLI reports no diagnostics either way, like tttt, and the types aren't printed.
-Not in this class after all (tsgo's CLI differs from tttt too: checker or parser bugs, plan 66's second fan-out):
-recursiveMappedTypes (TS2589/TS2502/TS2615 placement).
-circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement),
-manyCompilerErrorsInTheTwoFiles (two missing TS1134 parse errors).
+Not in this class after all (tsgo's CLI differs from tttt too): circularBaseTypes and manyCompilerErrorsInTheTwoFiles
+(fixed 2026-10-15); recursiveMappedTypes is partly (below), its CLI-visible part is in missing_checks.md.
 
 # Suite tests whose expected output is a tsgo instantiation-cache collision (plan 66 second fan-out, 2026-10-15)
 - genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1: tsgo's `outer.log(100)` is

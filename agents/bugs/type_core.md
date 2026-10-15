@@ -150,7 +150,6 @@ passing tests).
   /tmp/b-tsgo overlay recipe: patch invokeOnce to print source/target/expandingFlags). (2) the getter `{ get value()
   { return this; } }` inside the unboxed literal: tsgo's `this` there is `{ readonly value: any } | RecBox<...>`
   (the contextual `this` of a getter in a literal whose contextual type is the inferred union), tttt `{}`. Medium each.
-- circularBaseTypes, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
 - recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (ttttRecursiveUnionInferenceDepth), and the
   getter's lazy typing since (ttttLiteralGetterDuringResolution: an object literal getter a call's resolution types
   has `this` any in an argument literal, the literal's own type in a literal nested in one; computed uncached so the
@@ -270,17 +269,8 @@ passing tests).
   type (display_node_interface has no owner type); a setter's body still isn't kept (only a pattern parameter's
   FunctionImpl is, InterfaceAccessor.setter_function).
 - TS5114/TS5115/TS2589 limits: tsgo's eager-base runaway is modelled since 2026-10-15 (members.c probe_eager_bases(),
-  documentation.md "Eager base runaways"). recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
-  recursiveIndexedAccessSimplification has its TS4109 since aa320754, but lacks the TS2322 at `return ['marker',
-- TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
-  instantiation depth limit in tttt (plan 65's eager-base runaway: tsgo's resolveStructuredTypeMembers has no in-flight
-  guard; an instrumented tsgo's stack at the limit, 2026-10-14: keyofGeneric... loops resolveTypeReferenceMembers ->
-  instantiate Model<ModelAttributes<T>> -> Exclude<keyof PersonModel, ...> -> getIndexType -> PersonModel's members ->
-  its base again, entered from checkClassLikeDeclaration's typeWithThis-to-base relation (isWeakType); mutually...
-  loops through `X[X['a']]` (an indexed access on the non-generic X, resolved eagerly) -> X's members -> base L<X> ->
-  T<X[X['a']]>). mutuallyRecursiveInference also needs the harness's emit order (plan 64): the CLI reports TS5114 at
-  `class X` (9,7) from the type-argument constraint check, the suite baseline at `this.a` (12,9), which the JS emit's
-  resolver checks first. recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
+  documentation.md "Eager base runaways"; keyofGenericExtendingClassDoubleLayer passes, mutuallyRecursiveInference
+  matches tsgo's CLI and is argued in tsgo_divergences.md). recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
   recursiveIndexedAccessSimplification (agent B 2026-10-15: the cause is the union member, probe `type Recur<T> = (T
   extends unknown[] ? {} : { [K in keyof T]?: Recur<T[K]> }) | [...Recur<T>[number][]]; function f<T>(r: Recur<T>) {
   const n: number = r; }`: tsgo prints `Recur<T>[number][] | ...`, tttt `any[] | ...`. tsgo resolves a tuple with a

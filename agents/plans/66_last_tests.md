@@ -72,8 +72,21 @@ Component letters are the *failing* components (E errors, S symbols, T types).
    it too), declarationEmitBindingPatternsUnused (TS2842 for an unused renaming in a setter's pattern, `typeof alias`
    of a pattern name), reverseMappedDeclarationSerialization (TS5088/TS7056 where tttt reports TS5114: reverse mapped
    types' depth limit).
-4. **Second fan-out** on what's left; every remaining test gets either a fix, a plan, or a `tsgo_divergences.md`
-   argument (see the rule above).
+4. **Done 2026-10-15 (second fan-out, todo entry 9)**: suite 13618 / 13660 -> see todo.md entry 9; 12 configurations
+   left, each fixed, filed or argued:
+   - Argued in `bugs/tsgo_divergences.md` (5): incorrectRecursiveMappedTypeConstraint, typeParameterWithInvalidConstraintType,
+     mutuallyRecursiveInference (the harness's JS emit finds the error first; tsgo's CLI matches tttt),
+     genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (a tsgo instantiation-cache key
+     collision), numericExportNameDeclaration (types baseline only; **weakest argument**: it rests on which entry point
+     resolves a symbol first, i.e. order, with no user-visible difference. Insights should decide whether to accept it).
+   - Filed, mechanism known (7): recursiveConditionalTypes (object-literal getter properties typed lazily, ~1 session,
+     type_core.md), jsFunctionWithPrototypeNoErrorTruncationNoCrash (three literal checks + syntactic printing of
+     parameterless functions + the node builder's per-declaration serialized-type cache, display.md: plan-sized for one
+     test), recursiveIndexedAccessSimplification (`Recur<T>[number][]` vs any[], type_core.md: instrument tsgo's
+     getTypeArguments next), reactReduxLikeDeferredInferenceAllowsAssignment and
+     circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (missing_checks.md: two fixes
+     tried and dropped), recursiveMappedTypes (part argued, the CLI-visible part in missing_checks.md),
+     crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1 (type_core.md).
 5. After plan 58 (re-pin to 7.1.0 stable, ~2% of the suite moves) the target moves: one fan-out for the new failures.
 
 ## Validation
