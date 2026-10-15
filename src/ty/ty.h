@@ -2489,6 +2489,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 // (nothing without any), a pseudo type (pseudo.h) where it says the declaration's type `ty`, a binding pattern
 void ty_display_node(Checker* me, TyDisplay d, struct TypeNode const* node);
 void ty_display_type_params(Checker* me, TyDisplay d, struct Generic const* generic);
+// A written signature: `<T>(x: T) => U` with `separator` " => ", `(x: T): U` with ": "
+void ty_display_node_signature(Checker* me, TyDisplay d, struct FunctionImpl const* function, char const* separator);
 struct Pseudo;
 void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
 void ty_append_binding_pattern(cstr* out, struct Binding const* binding);

@@ -2071,11 +2071,28 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, "[]");
             break;
         }
-        case TYPE_TUPLE:
+        case TYPE_TUPLE: {
             if (node->tuple.readonly) out_lit(d, "readonly ");
             out_lit(d, "[");
+            // (Declaration emit: written on several lines, one element per line: the printer's MultiLineTupleTypeElements,
+            // a reused tuple node not being SingleLine)
+            bool lines = false;
+            if (d.multiline && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
+                char const* close = span_end_ptr(node->tuple.span);
+                while (close > node->tuple.span.buf && close[-1] != ']') close--;
+                lines = memchr(node->tuple.span.buf, '\n', (size_t)(close - node->tuple.span.buf)) != nullptr;
+            }
+            TyDisplay element_d = d;
+            if (lines) element_d.indent++;
             for_each (i, vec_tuple_element, &node->tuple.elements) {
-                if (i_index) out_lit(d, ", ");
+                if (lines) {
+                    out(d, i_index ? c_sv(",\n") : c_sv("\n"));
+                    out_indent(element_d);
+                } else if (i_index) {
+                    out_lit(d, ", ");
+                }
+                TyDisplay outer = d;
+                d = element_d;
                 if (i->rest) out_lit(d, "...");
                 if (span_valid(i->maybe_name)) {
                     out(d, span_sv(i->maybe_name));
@@ -2086,9 +2103,15 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                     display_node(me, d, &i->type);
                     if (i->optional) out_lit(d, "?");
                 }
+                d = outer;
+            }
+            if (lines) {
+                out_lit(d, "\n");
+                out_indent(d);
             }
             out_lit(d, "]");
             break;
+        }
         case TYPE_INDEXED: {
             // (A parenthesized object doesn't fail the whole: its own part prints its type, in the parentheses)
             if (!node->indexed->interface.parenthesized && simple_node_fails(me, d, &node->indexed->interface)) {
@@ -2255,7 +2278,9 @@ static bool can_add_undefined(TypeNode const* node, u32 depth) {
 // union node, whose ` | ` aren't. One that can't take it syntactically (it names a type, can_add_undefined()) is the
 // checker's whole clone in a new union (serializeExistingTypeNode), which a union or intersection is parenthesized in
 static void display_node_plus_undefined(Checker* me, TyDisplay d, TypeNode const* node) {
-    if ((node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION) && !node->parenthesized && !can_add_undefined(node, 0)) {
+    // (A function or conditional type as a union's member is parenthesized: parenthesizeCheckTypeOfConditionalType)
+    if ((((node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION) && !can_add_undefined(node, 0)) ||
+         node->tag == TYPE_CALLABLE || node->tag == TYPE_TERNARY) && !node->parenthesized) {
         out(reused_if(d, false), c_sv("("));
         display_node(me, d, node);
         out(reused_if(d, false), c_sv(")"));
@@ -3649,7 +3674,13 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 if (printed++) out(reused_if(d, false), c_sv(" | "));
                 TyDisplay member_d = d;
                 member_d.constituent_node = true;
+                // (A function, conditional or intersection type node is parenthesized: the printer's union constituents
+                // are of TypeOperator precedence)
+                bool parens = member->kind == PSEUDO_DIRECT && !member->predicate && !member->node->parenthesized &&
+                    (member->node->tag == TYPE_CALLABLE || member->node->tag == TYPE_TERNARY || member->node->tag == TYPE_INTERSECTION);
+                if (parens) out(reused_if(d, false), c_sv("("));
                 display_pseudo(me, member_d, member, nullptr);
+                if (parens) out(reused_if(d, false), c_sv(")"));
             }
             if (!printed) out(d, elided ? c_sv("any") : c_sv("never"));
             return;
@@ -3726,10 +3757,12 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         if (prop && csview_equals(atom_sv(prop->name), "new")) out_lit(name_d, "\"new\"");
                         else if (prop) display_member_name(me, name_d, prop);
                         if (is_const) out_lit(member_d, ": ");
+                        u32 saved = param_names_enter(member_d); // (Its type parameters are its own)
                         display_node_type_params(me, member_d, &member->function->generic);
                         display_pseudo_params(me, member_d, member->params, member->param_count, sig);
                         out(member_d, is_const ? c_sv(" => ") : c_sv(": "));
                         display_pseudo_return(me, member_d, member->type, sig, member->function);
+                        param_names_leave(member_d, saved);
                         break;
                     }
                     case PSEUDO_MEMBER_PROPERTY:
@@ -4868,6 +4901,26 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     return;
                 }
             }
+            // (and a static method's, `typeof C.m`, where C is accessible: tsgo's isStaticMethodSymbol)
+            if (d.tracker && d.enclosing && ty->anonymous.function && !ty->anonymous.target) {
+                FunctionImpl const* method = ty->anonymous.function;
+                Symbol const* owner = function_impl_rare(method)->static_method_of;
+                csview name = span_valid(function_impl_member_name(method)) ? span_sv(function_impl_member_name(method)) : c_sv("");
+                if (name.size >= 2 && name.buf[0] == '[' && name.buf[name.size - 1] == ']') {
+                    name = csview_trim_whitespace(csview_slice(name, 1, name.size - 1));
+                    if (!name.size || (name.buf[0] != '"' && name.buf[0] != '\'')) name = c_sv("");
+                }
+                if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
+                if (owner && name.size && name.buf[0] != '#' && is_identifier_name(name) &&
+                    symbol_value_accessible_at(d.enclosing, owner)
+                ) {
+                    out_lit(d, "typeof ");
+                    out_symbol_name(me, d, owner, SYMBOL_VALUE);
+                    out_lit(d, ".");
+                    out(d, name);
+                    return;
+                }
+            }
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
             // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see
@@ -5195,6 +5248,12 @@ void ty_display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     bool over = false;
     if (!d.over) d.over = &over;
     display_node(me, d, node);
+}
+
+void ty_display_node_signature(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
+    bool over = false;
+    if (!d.over) d.over = &over;
+    display_node_signature(me, d, function, separator);
 }
 
 void ty_display_type_params(Checker* me, TyDisplay d, Generic const* generic) {

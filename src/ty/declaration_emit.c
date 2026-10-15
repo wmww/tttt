@@ -1976,9 +1976,102 @@ static bool is_internal_declaration(Span start) {
     }
 }
 
+
+// A member whose computed name is of type string, number or symbol (not a literal or unique symbol): a component of
+// the index signature such names make (tsc's getIndexInfosOfIndexSymbol), which declaration emit writes as the members
+// themselves where every name is a visible entity name (createLateBoundIndexSignatures)
+typedef struct LateIndexMember {
+    Expr const* name;
+    ClassItem const* item; // A class member's, else an interface's merged into the class
+    InterfaceMember const* member;
+    uint8_t kind; // 1 string, 2 number, 3 symbol (the order the infos come in)
+    bool is_static, readonly, optional;
+} LateIndexMember;
+
+static uint8_t late_index_kind(Expr const* key) {
+    if (!key || !is_dynamic_name(key)) return 0;
+    Ty const* type = lazy_type_get((LazyType*)&key->lazy_type);
+    if (!type || (type->flags & (TYF_ANY | TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return 0;
+    if (type->flags & TYF_NUMBER) return 2;
+    if (type->flags & TYF_ES_SYMBOL) return 3;
+    if (type->flags & TYF_STRING) return 1;
+    return 0;
+}
+
+// The class's late bound index members (null when none), `count` of them
+static LateIndexMember* late_index_members(ClassDecl const* cls, u32* count) {
+    LateIndexMember* members = nullptr;
+    u32 n = 0, cap = 0;
+#define LATE_PUSH(...) do { \
+        if (n == cap) { cap = cap ? cap * 2 : 4; members = realloc(members, cap * sizeof(LateIndexMember)); } \
+        members[n++] = (LateIndexMember){ __VA_ARGS__ }; \
+    } while (0)
+    for_each (i, vec_class_item, &cls->items) {
+        if (is_internal_declaration(i->span)) continue;
+        Expr const* key = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_NONE ? i->method.computed_key :
+            i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
+        uint8_t kind = late_index_kind(key);
+        if (!kind) continue;
+        bool field = i->tag == CLASS_ITEM_FIELD;
+        LATE_PUSH(.name = key, .item = i, .kind = kind, .is_static = class_item_is_static((ClassItem*)i),
+            .readonly = field && i->field.is_readonly, .optional = field ? i->field.is_optional : i->method.is_optional);
+    }
+    Symbol const* symbol = cls->symbol;
+    for (u32 d = 0; symbol && d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* decl = symbol->decls[d].node;
+        if (decl->type.tag != TYPE_INTERFACE) continue;
+        for_each (j, vec_interface_member, &decl->type.interface.members) {
+            uint8_t kind = j->key.tag == INTERFACE_KEY_EXPR ? late_index_kind(j->key.expr) : 0;
+            if (!kind) continue;
+            LATE_PUSH(.name = j->key.expr, .member = j, .kind = kind, .readonly = j->readonly, .optional = j->optional);
+        }
+    }
+#undef LATE_PUSH
+    *count = n;
+    return members;
+}
+
+// Whether the members of one index signature can all be written by name (their entity names visible from here)
+static bool late_index_names_visible(Walk* me, LateIndexMember const* members, u32 count, bool is_static, uint8_t kind) {
+    for (u32 i = 0; i < count; i++) {
+        if (members[i].is_static != is_static || members[i].kind != kind) continue;
+        Expr const* name = members[i].name;
+        if (!pseudo_is_entity_name(name)) return false;
+        Expr const* leftmost = entity_leftmost(name);
+        Symbol const* symbol = leftmost->tag == EXPR_IDENTIFIER ? leftmost->identifier.symbol : nullptr;
+        if (!symbol) return false;
+        SymbolAccess access = symbol_accessibility_at(my scope, symbol, SYMBOL_VALUE);
+        if (access.kind != SYMBOL_ACCESSIBLE && !symbol_has_visible_declarations(symbol)) return false;
+    }
+    return true;
+}
+
+// The first walk: what the names written refer to is painted
+static void check_late_indexes(Walk* me, ClassDecl const* cls) {
+    u32 count = 0;
+    LateIndexMember* members = late_index_members(cls, &count);
+    for (u32 side = 0; side < 2; side++) {
+        for (uint8_t kind = 1; kind <= 3; kind++) {
+            bool any = false;
+            for (u32 i = 0; i < count; i++) any |= members[i].is_static == (side == 0) && members[i].kind == kind;
+            if (!any || !late_index_names_visible(me, members, count, side == 0, kind)) continue;
+            for (u32 i = 0; i < count; i++) {
+                if (members[i].is_static != (side == 0) || members[i].kind != kind) continue;
+                Expr const* leftmost = entity_leftmost(members[i].name);
+                Symbol const* symbol = leftmost->identifier.symbol;
+                SymbolAccess access = symbol_accessibility_at(my scope, symbol, SYMBOL_VALUE);
+                paint(me, access.kind == SYMBOL_ACCESSIBLE ? access.head : symbol);
+            }
+        }
+    }
+    free(members);
+}
+
 static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
+    check_late_indexes(me, cls);
     for_each (i, vec_class_item, &cls->items) {
         if (is_internal_declaration(i->span)) continue;
         my member_static = class_item_is_static((ClassItem*)i);
@@ -3187,7 +3280,60 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
     w_lit(me, ";\n");
 }
 
-static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container) {
+
+// The members of the index signatures computed names make, written as properties (createLateBoundIndexSignatures):
+// static ones first, string, number, then symbol names; each `[name]?: T`, readonly when all of the signature's are
+static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
+    u32 count = 0;
+    LateIndexMember* members = late_index_members(cls, &count);
+    for (u32 side = 0; side < 2; side++) {
+        for (uint8_t kind = 1; kind <= 3; kind++) {
+            bool any = false, readonly = true;
+            for (u32 i = 0; i < count; i++) {
+                if (members[i].is_static != (side == 0) || members[i].kind != kind) continue;
+                any = true;
+                readonly &= members[i].readonly;
+            }
+            if (!any || !late_index_names_visible(me, members, count, side == 0, kind)) continue;
+            for (u32 i = 0; i < count; i++) {
+                LateIndexMember const* m = &members[i];
+                if (m->is_static != (side == 0) || m->kind != kind) continue;
+                w_indent(me);
+                if (side == 0) w_lit(me, "static ");
+                if (readonly) w_lit(me, "readonly ");
+                w_lit(me, "[");
+                w(me, span_sv(expr_outer_span(m->name)));
+                w_lit(me, "]");
+                if (m->optional) w_lit(me, "?");
+                w_lit(me, ": ");
+                if (m->item && m->item->tag == CLASS_ITEM_METHOD) {
+                    w_type(me, ty_function_type(my checker, &m->item->method.func));
+                } else if (m->item) {
+                    Ty const* type = lazy_type_get((LazyType*)&m->item->field.lazy_type);
+                    if (type && m->optional && my strict_null_checks) {
+                        type = ty_union(my checker, (Ty const*[]){ type, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+                    }
+                    w_type(me, type ? type : ty_intrinsic(my checker, TY_ANY));
+                } else if (m->member->type.tag == TYPE_CALLABLE && m->member->is_method) {
+                    SINKS_OFF;
+                    TyParamNames names = {0};
+                    TyDisplay d = emit_display(me, my out);
+                    d.param_names = &names;
+                    ty_display_node_signature(my checker, d, m->member->type.callable->function, " => ");
+                    ty_param_names_drop(&names);
+                    SINKS_ON;
+                } else {
+                    w_node(me, &m->member->type);
+                }
+                w_lit(me, ";\n");
+            }
+        }
+    }
+    free(members);
+}
+
+// `statement` null: a class expression written as a declaration named `name` (an export default's)
+static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name) {
     // A base that isn't a name is a variable of its type, `C_base` (transformClassDeclaration)
     Expr const* base = &cls->extends;
     Expr const* base_name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
@@ -3206,10 +3352,14 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         w_lit(me, ";\n");
     }
     w_indent(me);
-    w_statement_modifiers(me, statement, container, false);
+    if (statement) w_statement_modifiers(me, statement, container, false);
+    else if (container_is_file(container)) w_lit(me, "declare ");
     if (cls->is_abstract) w_lit(me, "abstract ");
     w_lit(me, "class");
-    if (span_valid(cls->name)) {
+    if (name.size) {
+        w_lit(me, " ");
+        w(me, name);
+    } else if (span_valid(cls->name)) {
         w_lit(me, " ");
         w(me, span_sv(cls->name));
     }
@@ -3241,6 +3391,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         w_indent(me);
         w_lit(me, "#private;\n");
     }
+    emit_late_indexes(me, cls);
     // The parameter properties, as properties
     for_each (i, vec_class_item, &cls->items) {
         if (i->tag != CLASS_ITEM_CONSTRUCTOR || !i->constructor.func.has_body) continue;
@@ -3707,16 +3858,63 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     w_lit(me, ";\n");
 }
 
+// The name an export default's declaration gets: the function or class expression's own, else `_default` (tsc's
+// getNameOfExportedAssignedExpression), `_1`... where that is taken in the scope
+static cstr export_default_name(Walk* me, Span own) {
+    csview base = span_valid(own) && !span_equals(own, "default") ? span_sv(own) : c_sv("_default");
+    cstr name = cstr_from_sv(base);
+    for (u32 n = 1; my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE); n++) {
+        cstr_take(&name, cstr_d(base, "_", n));
+    }
+    return name;
+}
+
+// `export default <expression>` (tsc's transformExportAssignment): a name as written, a function or class expression as a
+// declaration after the export (the statement's comments on it), anything else as `declare const _default: T;` before
+// it (the comments on that)
 static void emit_export_default(Walk* me, Statement const* statement, Container container) {
     Expr const* expr = &statement->expr;
     bool is_file = container_is_file(container);
     if (is_file) my has_module_indicator = true;
     my has_scope_marker = true;
+    char const* comments_from = statement->span.buf;
+    char const* comments_end = span_end_ptr(statement->span);
+    csview keyword = statement->export_equals ? c_sv("export = ") : c_sv("export default ");
     if (expr->tag == EXPR_IDENTIFIER) {
+        w_leading(me, comments_from);
         w_indent(me);
-        w(me, statement->export_equals ? c_sv("export = ") : c_sv("export default "));
+        w(me, keyword);
         w(me, span_sv(expr_outer_span(expr)));
+        w_lit(me, ";");
+        decl_comments_trailing(&my comments, my out, comments_end);
+        w_lit(me, "\n");
+        return;
+    }
+    if ((expr->tag == EXPR_FUNCTION && !expr->function->is_constructor) || expr->tag == EXPR_CLASS_DECL) {
+        Span own = expr->tag == EXPR_FUNCTION ? expr->function->name : expr->class_decl->name;
+        cstr name = export_default_name(me, own);
+        w_indent(me);
+        w(me, keyword);
+        w(me, cstr_sv(&name));
         w_lit(me, ";\n");
+        w_leading(me, comments_from);
+        if (expr->tag == EXPR_FUNCTION) {
+            w_indent(me);
+            if (is_file) w_lit(me, "declare ");
+            w_lit(me, "function ");
+            w(me, cstr_sv(&name));
+            w_signature(me, expr->function, false);
+            w_lit(me, ";");
+            decl_comments_trailing(&my comments, my out, comments_end);
+            w_lit(me, "\n");
+        } else {
+            emit_class(me, expr->class_decl, nullptr, container, cstr_sv(&name));
+            isize_t size = cstr_size(my out);
+            cstr_erase(my out, size - 1, 1);
+            decl_comments_trailing(&my comments, my out, comments_end);
+            w_lit(me, "\n");
+        }
+        cstr_drop(&name);
         return;
     }
     // `declare const _default: T; export default _default;` (a literal's: `= "x"`)
@@ -3734,11 +3932,8 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     my root = outer_root;
     emit_leave(me, saved);
     my type_out = outer;
-    // (A name nothing in the file declares: tsc's unique name, `_default_1` when `_default` is taken)
-    cstr name = cstr_from("_default");
-    for (u32 n = 1; my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE); n++) {
-        cstr_take(&name, cstr_d("_default_", n));
-    }
+    cstr name = export_default_name(me, span_null);
+    w_leading(me, comments_from);
     w_indent(me);
     if (is_file) w_lit(me, "declare ");
     w_lit(me, "const ");
@@ -3751,18 +3946,25 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         w_lit(me, ": ");
         w_serialized(me, &text);
     }
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    decl_comments_trailing(&my comments, my out, comments_end);
+    w_lit(me, "\n");
     w_indent(me);
-    w(me, statement->export_equals ? c_sv("export = ") : c_sv("export default "));
+    w(me, keyword);
     w(me, cstr_sv(&name));
     w_lit(me, ";\n");
     cstr_drop(&name);
 }
 
 static void emit_statement_inner(Walk* me, Statement const* statement, Container container);
+static void emit_export_default(Walk* me, Statement const* statement, Container container);
 
 static void emit_statement(Walk* me, Statement const* statement, Container container) {
     if (is_internal_declaration(statement->span)) return;
+    if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
+        emit_export_default(me, statement, container); // (Its comments go to the declaration it makes)
+        return;
+    }
     isize_t start = w_leading(me, statement->span.buf);
     isize_t written_from = cstr_size(my out);
     emit_statement_inner(me, statement, container);
@@ -3780,7 +3982,7 @@ static void emit_statement_inner(Walk* me, Statement const* statement, Container
             return;
         case STATEMENT_DECL_CLASS:
             if (emit_visible(me, statement, container, statement->decl.class->symbol)) {
-                emit_class(me, statement->decl.class, statement, container);
+                emit_class(me, statement->decl.class, statement, container, c_sv(""));
             }
             return;
         case STATEMENT_DECL_INTERFACE:
