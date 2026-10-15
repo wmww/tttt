@@ -3302,6 +3302,7 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     TyDisplayParams outer_params = my return_params;
     bool outer_in_return = my in_return;
     if (own) {
+        signature_resolve(my checker, own);
         my return_params = (TyDisplayParams){ .params = own->params, .count = own->param_count, .function = fn };
         my in_return = true;
     }
