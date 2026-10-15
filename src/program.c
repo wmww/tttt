@@ -138,6 +138,9 @@ typedef struct Program {
     hmap_source_file_ptr emit_blocked;
     bool global_diagnostics_reported; // program_report_global_diagnostics()
     ErrorCtx* declaration_errs; // One per checker while typechecking: the declaration diagnostics of its files
+    // While typechecking: a checker reported a diagnostic that is sure to be reported, so the gated declaration
+    // diagnostics won't be (declaration_walk_moot())
+    atomic_bool declaration_diagnostics_moot;
     u32 threads; // program_set_threads(), 0: 1
     LoadPool* pool; // While loading with threads: parses files ahead of the loader
     i64 (*file_size)(void* ctx, csview path); // program_set_file_size()
@@ -3549,6 +3552,23 @@ static void print_file_time(char const* what, struct timespec start, SourceFile 
     fprintf(stderr, "file time: %10.1f ms %s %s\n", ms, what, cstr_str(&source->canonical_path));
 }
 
+// Whether a diagnostic a checker reported is sure to be reported: nothing program_typecheck() filters afterwards can
+// drop it (no comment directive or content mapper in its file, a checked file, not once per program)
+static bool error_surely_reported(Error const* error) {
+    SourceFile const* source = span_valid(error->span) ? span_source(error->span) : nullptr;
+    return source && !error->suggestion && !error->unchecked_js && !error->jsdoc && !error->once_key &&
+        !source->unchecked && !source->from_reference && !source->package_redirect &&
+        !source->comment_directive_count && !source->content_mapped;
+}
+
+// Whether the declaration walk is for nothing: its diagnostics are gated (noEmit, noEmitOnError) and some checker
+// reported a diagnostic that will be reported. Which checker saw one first depends on the threads, what is reported
+// doesn't: program_typecheck() drops the declaration diagnostics then anyway
+static bool declaration_walk_moot(Program* me) {
+    return !my emit_declarations && program_declaration_diagnostics_gated(me) &&
+        atomic_load_explicit(&my declaration_diagnostics_moot, memory_order_relaxed);
+}
+
 // After a segment's files (from..to of check_files) are checked, in the checker that checked them: unused_report() reads
 // the marks the checker made on members while checking, the declaration walk the types it inferred
 static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from, u32 to) {
@@ -3558,7 +3578,7 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from, 
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
-        if (my declaration_errs && !source->is_stdlib) {
+        if (my declaration_errs && !source->is_stdlib && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
@@ -3599,6 +3619,8 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (share_of(me, at) == c) last = at;
     }
     u32 segment_start = 0;
+    isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
+    bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
     for (u32 at = 0; at < total; at++) {
         if (share_of(me, at) != c) continue;
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
@@ -3619,6 +3641,11 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->defer_checks = false;
         checker->checking_file = nullptr;
         if (debug_env.file_times) print_file_time("check", file_start, source);
+        for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
+            if (!error_surely_reported(&checker->errs->errors.data[scanned])) continue;
+            atomic_store_explicit(&my declaration_diagnostics_moot, true, memory_order_relaxed);
+            moot_watch = false;
+        }
         if (my checker_budget == UINT64_MAX || at == last) continue;
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
@@ -3637,7 +3664,9 @@ static void check_share(Program* me, u32 c, u32 count) {
         SourceFile* source = *i;
         if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || source->is_js) continue;
         if (index++ % count != c) continue;
-        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+        if (my declaration_errs && !declaration_walk_moot(me)) {
+            declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+        }
     }
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
@@ -3739,6 +3768,7 @@ void program_typecheck(Program* me) {
     bool declaration_diagnostics =
         my emit_declarations || !(program_declaration_diagnostics_gated(me) && my declaration_diagnostics_earlier);
     my declaration_errs = declaration_diagnostics ? c_new_n(ErrorCtx, count) : nullptr;
+    atomic_store(&my declaration_diagnostics_moot, false);
     if (my emit_declarations) program_set_declaration_paths(me);
     for (u32 c = 0; c < count; c++) {
         if (my declaration_errs) my declaration_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };

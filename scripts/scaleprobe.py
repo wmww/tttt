@@ -6,6 +6,7 @@ a quadratic path (agents/bugs/perf_leads.md "Scaling probes" lists what was foun
   scripts/scaleprobe.py                       # every kind at 8000 and 32000
   scripts/scaleprobe.py -k obj -k classmem -n 16000 -n 64000
   scripts/scaleprobe.py --list
+  scripts/scaleprobe.py --emit                # with declaration emit (+ declarationMap) instead of --noEmit
 """
 import argparse, os, resource, subprocess, sys, tempfile, time
 
@@ -55,6 +56,8 @@ KINDS = {
     'aliases': ('ts', lambda n: ['export type A0 = { v: 0 };', *[f'export type A{i} = A{i - 1} | {{ v: {i} }};' for i in range(1, n)]]),
     'jsx': ('tsx', lambda n: ['declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }',
                               'export const e = <div>', *[f'  <div>{{{i}}}</div>' for i in range(n)], '</div>;']),
+    'comments': ('ts', lambda n: ['export interface I {', *[f'  /** Member {i}. */\n  m{i}: number;' for i in range(n)], '}']),
+    'inferfn': ('ts', lambda n: ['export function f(x: number) { return {', *[f'  k{i}: x + {i},' for i in range(n)], '}; }']),
     'jsdoc': ('js', lambda n: [f'/** @param {{number}} x @returns {{number}} */ function f{i}(x) {{ return x + {i}; }}' for i in range(n)]),
     'cjs': ('js', lambda n: [f'module.exports.c{i} = {i};' for i in range(n)]),
 }
@@ -93,6 +96,7 @@ def main():
     parser.add_argument('--timeout', type=float, default=60)
     parser.add_argument('--no-tsgo', action='store_true')
     parser.add_argument('--list', action='store_true')
+    parser.add_argument('--emit', action='store_true', help='emit declarations and maps (the JS kinds: tsgo only)')
     args = parser.parse_args()
     if args.list:
         print(' '.join(KINDS))
@@ -107,9 +111,12 @@ def main():
                 with open(os.path.join(tmp, f'a.{ext}'), 'w') as f:
                     f.write('\n'.join(gen(n)) + '\n')
                 with open(os.path.join(tmp, 'tsconfig.json'), 'w') as f:
-                    f.write('{"compilerOptions":{"strict":true,"lib":["es2020"],"noEmit":true,"allowJs":true,'
+                    emit = ('"declaration":true,"emitDeclarationOnly":true,"declarationMap":true,"outDir":"out"' if args.emit
+                            else '"noEmit":true')
+                    f.write(f'{{"compilerOptions":{{"strict":true,"lib":["es2020"],{emit},"allowJs":true,'
                             f'"checkJs":true,"jsx":"preserve"}},"files":["a.{ext}"]}}')
-                t, m = run([os.path.join(ROOT, 'release/tttt'), '-p', '.', '--noEmit', '--checkers', '1'], tmp, args.timeout)
+                t, m = run([os.path.join(ROOT, 'release/tttt'), '-p', '.', '--checkers', '1', *([] if args.emit else ['--noEmit'])],
+                           tmp, args.timeout)
                 line = f'{kind:12} {n:7} | tttt ' + (f'{t:7.2f} s {m:6} MB' if t is not None else '  timeout')
                 if not args.no_tsgo:
                     t, m = run([TSGO, '-p', '.', '--singleThreaded'], tmp, args.timeout)
