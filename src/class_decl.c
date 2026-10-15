@@ -661,23 +661,6 @@ static void link_overload_implementations(ClassDecl* me) {
     }
 }
 
-u32 class_item_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
-    u32 len = 0;
-    if (!my symbol_first) return 0;
-    bool alone = my symbol_first == me;
-    for (ClassItem const* j = items->data; alone && j < items->data + items->size; j++) {
-        if (j != me && j->symbol_first == me) alone = false;
-    }
-    if (alone) {
-        if (cap) out[len++] = me;
-        return len;
-    }
-    for (ClassItem const* j = items->data; j < items->data + items->size; j++) {
-        if (j->symbol_first == my symbol_first && len < cap) out[len++] = j;
-    }
-    return len;
-}
-
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     // tsc's setNodeLinksForPrivateIdentifierScope and checkWeakMapSetCollision: private members are emitted through
     // WeakMap and WeakSet up to ES2021, which a runtime declaration of those names around the class would shadow

@@ -1463,6 +1463,10 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 uint16_t ty_merged_owner_index(Checker* me, Ty const* declared); // See LowerCtx.merged_owner
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
+// The member of a class's type that a field or method of its declaration declares (Prop.decl's spans: all of its
+// symbol's declarations), null for one of its own
+struct ClassItem;
+Prop const* ty_class_item_prop(Checker* me, Symbol const* class_symbol, struct ClassItem const* item);
 // The members' properties an intersection's synthetic property (of a class whose base is an intersection: a mixin)
 // is made of, through instantiations. 0 if it isn't one
 u32 ty_synthetic_prop_parts(Checker* me, Prop const* prop, Prop const* const** out);

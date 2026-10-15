@@ -29,7 +29,7 @@ typedef struct ClassItem {
     bool interface_member_static; // CLASS_ITEM_INTERFACE_MEMBER: `static [k: string]: T`
     // A method, accessor or field with a written name: the first declaration of the member symbol tsc's binder puts it
     // in, itself if it stands alone because it conflicts with what came first (`x: T; get x()`) or is that first one
-    // (see class_item_symbol_items()). Set when looking up names, null for other items
+    // (see bind_member_symbols()). Set when looking up names, null for other items
     struct ClassItem* symbol_first;
     Span span;
     VecExpr decorators; // Checked as calls by class_decl_typecheck() (ty_check_decorator())
@@ -120,7 +120,6 @@ Ty const* class_item_get_type(ClassItem* me);
 
 // The declarations of the member symbol `me` is part of, in order (see ClassItem.symbol_first). Its own count 1 if it
 // stands alone
-u32 class_item_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap);
 
 // An anonymous class expression that the emitter names at runtime (tsc's isNamedEvaluationSource), set by the parser
 typedef enum ClassNamedEvaluation {

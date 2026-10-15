@@ -1705,129 +1705,19 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     }
 }
 
-// The members of a class merge when the first of a name (and staticness) is a method: then its overloads are one
-// symbol (a property or accessor first conflicts with the methods, which then stand alone)
-static bool overloads_merge(ClassItem const* me, VecClassItem const* items, u32* count) {
-    *count = 0;
-    bool first_seen = false, merge = false;
-    for_each (other, vec_class_item, items) {
-        bool is_method = other->tag == CLASS_ITEM_METHOD;
-        if (!is_method && other->tag != CLASS_ITEM_FIELD) continue;
-        if (is_method ? other->method.computed_key != nullptr : other->field.computed_key != nullptr) continue;
-        if (class_item_is_static((ClassItem*)other) != my method.is_static) continue;
-        if (!cstr_eq(is_method ? &other->method.name_string : &other->field.name_string, &my method.name_string)) continue;
-        if (!first_seen) {
-            first_seen = true;
-            merge = is_method && !other->method.accessor;
-        }
-        if (is_method && !other->method.accessor) (*count)++;
+// The declarations of the member a class field or method declares, named as its first declaration writes it: the
+// checker's member (see ty_class_item_prop()), or just its own when it is a symbol of its own
+static void member_declarations(ClassItem const* me, BaselineTestCase* ctx, VecSpan* declarations, Span* written_name) {
+    Prop const* prop = ty_class_item_prop(current_checker, ctx->class_symbol, me);
+    if (!prop) {
+        vec_span_push(declarations, me->span);
+        return;
     }
-    return merge;
-}
-
-// A class member's binder name and flags (1 property, 2 method, 4 get, 8 set) for the computed-name grouping below:
-// `late` for a computed name that isn't a literal (tsc's late bound names). Null without one
-static Atom const* class_member_name(ClassItem const* item, bool* late, u32* flags) {
-    Checker* checker = current_checker;
-    Expr const* key;
-    cstr const* name_string;
-    if (item->tag == CLASS_ITEM_FIELD) {
-        key = item->field.computed_key;
-        name_string = &item->field.name_string;
-        *flags = item->field.is_auto_accessor ? 4 | 8 : 1;
-    } else if (item->tag == CLASS_ITEM_METHOD) {
-        key = item->method.computed_key;
-        name_string = &item->method.name_string;
-        *flags = item->method.accessor == CLASS_ACCESSOR_GET ? 4 : item->method.accessor == CLASS_ACCESSOR_SET ? 8 : 2;
-    } else {
-        return nullptr;
-    }
-    *late = false;
-    if (!key) {
-        if (span_valid(class_item_private_name(item))) return nullptr;
-        return checker_atom(checker, cstr_sv(name_string));
-    }
-    if (expr_is_perenthisized(key)) return nullptr;
-    bool literal = (key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) ||
-        (key->tag == EXPR_TEMPLATE && !key->template_->tag && vec_expr_is_empty(&key->template_->substitutions));
-    if (!literal && !expr_is_entity_name(key)) return nullptr;
-    *late = !literal;
-    bool is_number = false;
-    return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
-}
-
-// The members whose declarations one with a computed name shares a symbol with. A literal name is the binder's (like
-// a written name: joins the first member of the name unless that one has a meaning it excludes); any other is late
-// bound (tsgo's lateBindMember), which does the same among the late bound members of the name: a conflicting one is
-// a symbol of its own, and an accessor conflicting with what isn't its other half makes the first symbol both
-static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
-    bool late;
-    u32 flags;
-    Atom const* name = class_member_name(me, &late, &flags);
-    if (!name) return 0;
-    bool is_static = class_item_is_static((ClassItem*)me);
-    u32 len = 0;
-    // (In order: each member's symbol is the first of its name or itself)
-    ClassItem const* firsts[64];
-    u32 count = 0;
-    ClassItem const* first = nullptr;
-    u32 existing = 0;
-    ClassItem const* mine = nullptr;
-    for (ClassItem const* j = items->data; j < items->data + items->size && count < c_arraylen(firsts); j++) {
-        bool other_late;
-        u32 other_flags;
-        if (class_item_is_static((ClassItem*)j) != is_static) continue;
-        if (class_member_name(j, &other_late, &other_flags) != name || other_late != late) continue;
-        // (PropertyExcludes, MethodExcludes, Get/SetAccessorExcludes, AccessorExcludes)
-        u32 excludes = other_flags == 1 ? 2u : other_flags == 2 ? 1u | 4u | 8u : other_flags == 4 ? 2u | 4u :
-            other_flags == 8 ? 2u | 8u : 2u | 4u | 8u;
-        ClassItem const* symbol = j;
-        if (!first) {
-            first = j;
-            existing = other_flags;
-        } else if (!(existing & excludes)) {
-            symbol = first;
-            existing |= other_flags;
-        } else if ((existing & 12u) && (existing & 12u) != (other_flags & 12u)) {
-            existing |= 12u;
-        }
-        firsts[count] = symbol;
-        out[count < cap ? count : cap - 1] = j;
-        if (j == me) mine = symbol;
-        count++;
-    }
-    for (u32 k = 0; k < count && k < cap; k++) {
-        if (firsts[k] == mine) out[len++] = out[k];
-    }
-    return len;
-}
-
-// A member with a computed name merged with others: a late-bound one (an entity name key) into the early member of its
-// name or another late-bound one, a literal one with late-bound ones: the declarations of the checker's member, which
-// has them in tsc's order (the early ones first, see resolve_declared_members()), named as its first declaration
-// writes it. False when it has no more than `declarations`
-static bool late_member_declarations(ClassItem const* me, BaselineTestCase* ctx, VecSpan* declarations, Span* written_name) {
-    Expr const* key = me->tag == CLASS_ITEM_METHOD ? me->method.computed_key : me->field.computed_key;
-    bool early = key && computed_key_early_name(key, nullptr);
-    if (!key || (!early && !expr_is_entity_name(key)) || !ctx->class_symbol) return false;
-    Checker* checker = current_checker;
-    bool is_number = false;
-    Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
-    Ty const* owner = class_item_is_static((ClassItem*)me) ? ty_static_type_of(checker, ctx->class_symbol) :
-        ty_declared_type_of(checker, ctx->class_symbol);
-    Prop const* prop = name ? ty_get_prop(checker, owner, name) : nullptr;
-    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
-    if (!prop || prop->decl->decl_span_count < 2 || (early && prop->decl->decl_span_count <= (u32)vec_span_size(declarations))) return false;
-    bool mine = false;
-    for (u32 i = 0; i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], me->span);
-    if (!mine) return false;
-    vec_span_clear(declarations);
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(declarations, prop->decl->decl_spans[i]);
-    if (span_valid(prop->decl->name_span)) *written_name = prop->decl->name_span;
-    return true;
+    if (prop->decl->decl_span_count > 1 && span_valid(prop->decl->name_span)) *written_name = prop->decl->name_span;
 }
 
-void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
+void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
     }
@@ -1838,57 +1728,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
 
         case CLASS_ITEM_METHOD: {
             u32 saved_generic = baseline_test_case_enter_generic(ctx, &my method.func.generic);
-            VecSpan declarations = {0};
+            VecSpan declarations = vec_span_init();
             Span written_name = my method.name_span;
-            ClassItem const* symbol_items[64];
-            u32 symbol_count = my method.computed_key ?
-                computed_member_symbol_items(me, items, symbol_items, c_arraylen(symbol_items)) :
-                class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
-            if (symbol_count > 1 || (symbol_count && !my method.computed_key)) {
-                // The declarations of its symbol (tsc's binder: see class_item_symbol_items())
-                for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
-                ClassItem const* first = symbol_items[0];
-                written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
-            } else if (my method.accessor && my method.accessor_first && !my method.computed_key) {
-                // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
-                // from the first
-                ClassItem* first = my method.accessor_first;
-                written_name = first->method.name_span;
-                vec_span_push(&declarations, first->span);
-                for_each (other, vec_class_item, items) {
-                    if (other != first && other->tag == CLASS_ITEM_METHOD && other->method.accessor_first == first) {
-                        vec_span_push(&declarations, other->span);
-                    }
-                }
-            } else if (!my method.computed_key && overloads_merge(me, items, &(u32){0})) {
-                // Overloads are declarations of one symbol
-                for_each (other, vec_class_item, items) {
-                    if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && !other->method.computed_key &&
-                        other->method.is_static == my method.is_static && cstr_eq(&other->method.name_string, &my method.name_string)
-                    ) {
-                        if (vec_span_is_empty(&declarations)) written_name = other->method.name_span;
-                        vec_span_push(&declarations, other->span);
-                    }
-                }
-            } else {
-                vec_span_push(&declarations, my span);
-            }
-            // A method or accessor of a class merged with an interface: the member's declarations are both's (the
-            // checker's member has them, see builder_add_interface_member)
-            if (!my method.computed_key && ctx->class_symbol && !span_valid(class_item_private_name(me))) {
-                Checker* checker = current_checker;
-                Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
-                    ty_declared_type_of(checker, ctx->class_symbol);
-                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my method.name_string)));
-                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
-                bool mine = false;
-                for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], my span);
-                if (mine && prop->decl->decl_span_count > (u32)vec_span_size(&declarations)) {
-                    vec_span_clear(&declarations);
-                    for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
-                }
-            }
-            late_member_declarations(me, ctx, &declarations, &written_name);
+            member_declarations(me, ctx, &declarations, &written_name);
             // (named as its first declaration writes it)
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
@@ -1928,29 +1770,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         }   break;
 
         case CLASS_ITEM_FIELD: {
-            ClassItem const* symbol_items[64];
-            u32 symbol_count = my field.computed_key ?
-                computed_member_symbol_items(me, items, symbol_items, c_arraylen(symbol_items)) :
-                class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
-            VecSpan declarations = my field.computed_key || span_valid(class_item_private_name(me)) ? vec_span_init() :
-                class_prop_declarations(ctx->class_symbol, my field.is_static, cstr_sv(&my field.name_string), my span, 2);
-            // (Not those of the class's members of the name that are symbols of their own: they conflicted, TS2300)
-            for (u32 k = 0; !my field.computed_key && k < (u32)vec_span_size(&declarations);) {
-                bool other = false;
-                for_each (j, vec_class_item, items) {
-                    other |= j->symbol_first && j->symbol_first != my symbol_first && span_eq(j->span, declarations.data[k]);
-                }
-                if (other) vec_span_erase_n(&declarations, k, 1);
-                else k++;
-            }
-            if (vec_span_size(&declarations) == 1) vec_span_clear(&declarations);
-            if (vec_span_is_empty(&declarations)) {
-                for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
-                if (!symbol_count) vec_span_push(&declarations, my span);
-            }
-            ClassItem const* first = symbol_count ? symbol_items[0] : me;
-            Span written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
-            late_member_declarations(me, ctx, &declarations, &written_name);
+            VecSpan declarations = vec_span_init();
+            Span written_name = my field.name_span;
+            member_declarations(me, ctx, &declarations, &written_name);
             // (add_member_symbol() takes the declarations)
             bool declared_first_elsewhere = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span);
             add_member_symbol(ctx, (BaselineSym){
@@ -1972,14 +1794,8 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 name = ty_property_name_of_key(current_checker, ty_expr_type(current_checker, my field.computed_key), &is_number);
             }
             bool prototype = my field.is_static && name && csview_equals(atom_sv(name), "prototype");
-            if ((first != me || prototype) && ctx->class_symbol && name) {
-                Checker* checker = current_checker;
-                Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
-                    ty_declared_type_of(checker, ctx->class_symbol);
-                Prop const* prop = ty_get_prop(checker, owner, name);
-                if (prop) type = prop_type(checker, prop);
-            } else if (declared_first_elsewhere && ctx->class_symbol && name) {
-                // (Joined into a symbol an interface merged with the class declared first: that symbol's type)
+            // (Joined into a symbol something else declared first, an interface merged with the class's too)
+            if ((declared_first_elsewhere || prototype) && ctx->class_symbol && name) {
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
@@ -2203,7 +2019,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         // (The class's type parameters aren't in scope in a static member)
         bool is_static = class_item_is_static(i);
         if (is_static) baseline_test_case_leave_generic(ctx, saved_generic);
-        class_item_compile_test_info(i, &my items, is_expr ? class_decl_display_name(me) : my name, ctx);
+        class_item_compile_test_info(i, is_expr ? class_decl_display_name(me) : my name, ctx);
         if (is_static) baseline_test_case_enter_type_params(ctx, class_params);
     }
     ctx->class_symbol = outer_class;

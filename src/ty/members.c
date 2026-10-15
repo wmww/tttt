@@ -1357,29 +1357,55 @@ static u32 meanings_excluded(u32 meanings) {
     return 2 | (meanings & 4 ? 4 : 0) | (meanings & 8 ? 8 : 0);
 }
 
+// The name of the member a class field or method declares (`key`: a computed name's type), null when it names none:
+// only a literal or unique symbol key names a member (tsc's late bound names), a bigint name is the binder's __missing
+static Atom const* class_item_prop_name(Checker* me, ClassItem const* item, cstr const* name_string, Symbol const* parent, Ty const** key) {
+    Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
+    if (computed_key) {
+        if (!computed_key_may_name(computed_key)) return nullptr;
+        bool is_number = false;
+        *key = ty_expr_type(me, computed_key);
+        return ty_property_name_of_key(me, *key, &is_number);
+    }
+    if (span_valid(class_item_private_name(item)) && parent) return ty_private_name(me, parent, cstr_sv(name_string));
+    if (item->tag == CLASS_ITEM_FIELD ? span_is_bigint_name(item->field.name_span, item->field.name_is_value) :
+        span_is_bigint_name(item->method.name_span, item->method.name_is_value)
+    ) {
+        return nullptr;
+    }
+    return checker_atom(me, cstr_sv(name_string));
+}
+
+// The member of `class_symbol`'s type that a field or method of its declaration is a declaration of (the declarations
+// the binder joins, the late-bound ones merged into them, accessor halves, overloads, an interface's members merged
+// with the class: Prop.decl's spans, in tsc's order), null when it is none's (a declaration that conflicts with the
+// symbol of its name stands alone, TS2300; a computed name that names nothing)
+Prop const* ty_class_item_prop(Checker* me, Symbol const* class_symbol, ClassItem const* item) {
+    if (!class_symbol || (item->tag != CLASS_ITEM_FIELD && item->tag != CLASS_ITEM_METHOD)) return nullptr;
+    Ty const* key = nullptr;
+    Atom const* name = class_item_prop_name(me, item, item->tag == CLASS_ITEM_FIELD ? &item->field.name_string : &item->method.name_string,
+        class_symbol, &key);
+    if (!name) return nullptr;
+    Ty const* owner = class_item_is_static((ClassItem*)item) ? ty_static_type_of(me, class_symbol) : ty_declared_type_of(me, class_symbol);
+    if (!owner || !(owner->flags & TYF_OBJECT)) return nullptr;
+    Prop const* prop = ty_get_prop(me, owner, name);
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
+    if (!prop) return nullptr;
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) {
+        if (span_eq(prop->decl->decl_spans[i], item->span)) return prop;
+    }
+    return nullptr;
+}
+
 static Prop* builder_add_class_prop_joined(
     Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item,
     Prop** joined
 ) {
     Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
-    Atom const* name;
+    if (computed_key && builder->skip_computed && class_item_is_late(item)) return nullptr;
     Ty const* key = nullptr;
-    if (computed_key) {
-        // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
-        if (!computed_key_may_name(computed_key) || (builder->skip_computed && class_item_is_late(item))) return nullptr;
-        bool is_number = false;
-        key = ty_expr_type(me, computed_key);
-        name = ty_property_name_of_key(me, key, &is_number);
-        if (!name) return nullptr;
-    } else if (span_valid(class_item_private_name(item)) && parent) {
-        name = ty_private_name(me, parent, cstr_sv(name_string));
-    } else if (item->tag == CLASS_ITEM_FIELD ? span_is_bigint_name(item->field.name_span, item->field.name_is_value) :
-        span_is_bigint_name(item->method.name_span, item->method.name_is_value)
-    ) {
-        return nullptr;
-    } else {
-        name = checker_atom(me, cstr_sv(name_string));
-    }
+    Atom const* name = class_item_prop_name(me, item, name_string, parent, &key);
+    if (!name) return nullptr;
     Prop* existing = builder_find_prop(builder, name);
     if (existing) {
         // A member after another of its name joins its symbol unless it conflicts (bind_member_symbols(): a field
