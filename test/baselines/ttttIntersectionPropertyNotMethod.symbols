@@ -1,0 +1,42 @@
+//// [test/cases/ttttIntersectionPropertyNotMethod.ts] ////
+
+=== ttttIntersectionPropertyNotMethod.ts ===
+// A property several parts of an intersection have is a Property (tsc's createUnionOrIntersectionProperty), not a
+// method, also as a spread copies it: printed with its intersected type
+declare class D { render(...props: unknown[]): unknown; update(): void; }
+>D : Symbol(D, Decl(ttttIntersectionPropertyNotMethod.ts, 0, 0))
+>render : Symbol(D.render, Decl(ttttIntersectionPropertyNotMethod.ts, 2, 17))
+>props : Symbol(props, Decl(ttttIntersectionPropertyNotMethod.ts, 2, 25))
+>update : Symbol(D.update, Decl(ttttIntersectionPropertyNotMethod.ts, 2, 55))
+
+export const f = (c: new () => D & { render(): unknown }) => class extends c {};
+>f : Symbol(f, Decl(ttttIntersectionPropertyNotMethod.ts, 3, 12))
+>c : Symbol(c, Decl(ttttIntersectionPropertyNotMethod.ts, 3, 18))
+>D : Symbol(D, Decl(ttttIntersectionPropertyNotMethod.ts, 0, 0))
+>render : Symbol(render, Decl(ttttIntersectionPropertyNotMethod.ts, 3, 36))
+>c : Symbol(c, Decl(ttttIntersectionPropertyNotMethod.ts, 3, 18))
+
+export declare const x: D & { render(): unknown };
+>x : Symbol(x, Decl(ttttIntersectionPropertyNotMethod.ts, 4, 20))
+>D : Symbol(D, Decl(ttttIntersectionPropertyNotMethod.ts, 0, 0))
+>render : Symbol(render, Decl(ttttIntersectionPropertyNotMethod.ts, 4, 29))
+
+export const y = { ...x };
+>y : Symbol(y, Decl(ttttIntersectionPropertyNotMethod.ts, 5, 12))
+>x : Symbol(x, Decl(ttttIntersectionPropertyNotMethod.ts, 4, 20))
+
+type I = { m(): void } & { m(x: number): void; n(): void };
+>I : Symbol(I, Decl(ttttIntersectionPropertyNotMethod.ts, 5, 26))
+>m : Symbol(m, Decl(ttttIntersectionPropertyNotMethod.ts, 6, 10))
+>m : Symbol(m, Decl(ttttIntersectionPropertyNotMethod.ts, 6, 26))
+>x : Symbol(x, Decl(ttttIntersectionPropertyNotMethod.ts, 6, 29))
+>n : Symbol(n, Decl(ttttIntersectionPropertyNotMethod.ts, 6, 46))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttIntersectionPropertyNotMethod.ts, 7, 13))
+>I : Symbol(I, Decl(ttttIntersectionPropertyNotMethod.ts, 5, 26))
+
+export const z = { ...i };
+>z : Symbol(z, Decl(ttttIntersectionPropertyNotMethod.ts, 8, 12))
+>i : Symbol(i, Decl(ttttIntersectionPropertyNotMethod.ts, 7, 13))
+

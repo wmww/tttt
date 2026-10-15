@@ -879,7 +879,7 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
                 if (k == i) own = added;
             }
             if (!own) continue; // (Not every member of this part's union has it)
-            if (found_len > 1) {
+            if (found_len > 1 && ty_props_distinct(me, found_props, found_len)) {
                 FoundProp found = ty_find_prop(me, base, prop->name);
                 if (!found.found) continue;
                 Prop* merged = arena_new(&my arena, Prop);
@@ -905,6 +905,18 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
         }
     }
     free(found_props);
+}
+
+bool ty_props_distinct(Checker* me, Prop const* const* props, u32 len) {
+    Prop const* root = props[0];
+    while (root->target) root = root->target;
+    for (u32 i = 1; i < len; i++) {
+        if (props[i] == props[0]) continue;
+        Prop const* other = props[i];
+        while (other->target) other = other->target;
+        if (other != root || prop_type(me, props[i]) != prop_type(me, props[0])) return true;
+    }
+    return false;
 }
 
 static void builder_add_intersection_members(Checker* me, MembersBuilder* builder, Ty const* base, bool props_only) {

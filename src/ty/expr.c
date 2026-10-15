@@ -3271,7 +3271,9 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                 ObjectLiteralProp* existing = literal_builder_find(&all, part.props[j].name);
                 if (!existing) {
                     literal_builder_add(&all, part.props[j]);
-                } else if (!(part.props[j].flags & PROP_OPTIONAL)) {
+                    continue;
+                }
+                if (!(part.props[j].flags & PROP_OPTIONAL)) {
                     existing->flags &= ~(u32)PROP_OPTIONAL;
                     existing->parent = nullptr;
                 }
@@ -3282,6 +3284,18 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         }
         for (u32 j = 0; j < all.count; j++) {
             all.props[j].parent = nullptr; // (A property of the intersection: a symbol of its own)
+            // (Several members' (a class method among them too): tsc's createUnionOrIntersectionProperty makes a Property)
+            if ((all.props[j].flags & PROP_METHOD) && object->composite.types.len <= 64) {
+                Prop const* having[64];
+                u32 count = 0;
+                for (u32 i = 0; i < object->composite.types.len; i++) {
+                    Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
+                    if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+                    FoundProp found = ty_find_prop(me, member, all.props[j].name);
+                    if (found.found && found.prop) having[count++] = found.prop;
+                }
+                if (count > 1 && ty_props_distinct(me, having, count)) all.props[j].flags &= ~(u32)PROP_METHOD;
+            }
             Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
             // (Under exactOptionalPropertyTypes the optional property keeps its declared type: the read's missing goes)
             bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
@@ -3317,6 +3331,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         u32 flags = prop->flags & (u32)~(PROP_READONLY | (setonly ? PROP_SETTER : 0));
         Ty const* declared_type = type;
         if (readonly) flags = (flags & (u32)~PROP_METHOD) | PROP_READONLY; // (tsc's getSpreadSymbol makes a property)
+        // (Several parts' of an intersection: tsc's createUnionOrIntersectionProperty made a Property, which the spread keeps)
+        bool synthetic = false;
+        for (Prop const* i = prop; i && !synthetic; i = i->target) synthetic = i->synthetic;
+        if (synthetic) flags &= (u32)~PROP_METHOD;
         if (partial || setonly || readonly != !!(prop->flags & PROP_READONLY)) flags |= PROP_NO_VALUE_DECLARATION;
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;

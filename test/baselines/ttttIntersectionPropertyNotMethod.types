@@ -1,0 +1,43 @@
+//// [test/cases/ttttIntersectionPropertyNotMethod.ts] ////
+
+=== ttttIntersectionPropertyNotMethod.ts ===
+// A property several parts of an intersection have is a Property (tsc's createUnionOrIntersectionProperty), not a
+// method, also as a spread copies it: printed with its intersected type
+declare class D { render(...props: unknown[]): unknown; update(): void; }
+>D : D
+>render : (...props: unknown[]) => unknown
+>props : unknown[]
+>update : () => void
+
+export const f = (c: new () => D & { render(): unknown }) => class extends c {};
+>f : (c: new () => D & { render(): unknown; }) => typeof (Anonymous class)
+>(c: new () => D & { render(): unknown }) => class extends c {} : (c: new () => D & { render(): unknown; }) => typeof (Anonymous class)
+>c : new () => D & { render(): unknown; }
+>render : () => unknown
+>class extends c {} : typeof (Anonymous class)
+>c : D & { render(): unknown; }
+
+export declare const x: D & { render(): unknown };
+>x : D & { render(): unknown; }
+>render : () => unknown
+
+export const y = { ...x };
+>y : { render: ((...props: unknown[]) => unknown) & (() => unknown); }
+>{ ...x } : { render: ((...props: unknown[]) => unknown) & (() => unknown); }
+>x : D & { render(): unknown; }
+
+type I = { m(): void } & { m(x: number): void; n(): void };
+>I : I
+>m : () => void
+>m : (x: number) => void
+>x : number
+>n : () => void
+
+declare const i: I;
+>i : I
+
+export const z = { ...i };
+>z : { m: (() => void) & ((x: number) => void); n(): void; }
+>{ ...i } : { m: (() => void) & ((x: number) => void); n(): void; }
+>i : I
+

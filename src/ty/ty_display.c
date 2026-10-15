@@ -4768,8 +4768,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         Symbol const* member_symbol = declared->decl->symbol ? declared->decl->symbol : prop_decl_rare(declared->decl)->spread_variable;
         bool function_symbol = member_symbol && (member_symbol->flags & SYMBOL_FUNCTION) && member_symbol->parent &&
             !(prop->flags & PROP_READONLY) && (type->flags & TYF_OBJECT);
-        // (Not a readonly one, `as const`: tsc's addPropertyToElementList prints it as a property)
-        Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY)) || function_symbol ?
+        // (Not a readonly one, `as const`: tsc's addPropertyToElementList prints it as a property; nor one several parts
+        // of an intersection have, whose symbol createUnionOrIntersectionProperty makes a Property)
+        bool synthetic = false;
+        for (Prop const* i = prop; i && !synthetic; i = i->target) synthetic = i->synthetic;
+        Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY) && !synthetic) || function_symbol ?
             ty_members(me, type) : nullptr;
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature

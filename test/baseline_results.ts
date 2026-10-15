@@ -334,6 +334,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionPropertyNotMethod': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDefaultTypeArgumentAny': {
         errors: true,
         symbols: true,

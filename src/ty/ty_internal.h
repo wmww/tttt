@@ -380,6 +380,9 @@ bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_global_regexp_type(Checker* me);
 Ty const* ty_global_object_type(Checker* me); // Null without a lib
 bool ty_is_numeric_name(Atom const* name); // relate.c, tsc's isNumericLiteralName: the name is what its number prints as
+// Whether these properties of the parts of an intersection or union are more than one: not all the same, nor
+// instantiations of the same one with the same type (tsc's createUnionOrIntersectionProperty's singleProp)
+bool ty_props_distinct(Checker* me, Prop const* const* props, u32 len);
 typedef struct FoundProp {
     Ty const* type;
     u32 flags;
