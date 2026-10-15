@@ -100,6 +100,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEagerBaseRunawayConditional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttEagerBaseRunawayRecursiveBase': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttElaborateAfterSpreadElement': {
         errors: true,
         symbols: true,
@@ -22275,7 +22285,7 @@ const baselines = {
         types: true,
     },
     'keyofGenericExtendingClassDoubleLayer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
