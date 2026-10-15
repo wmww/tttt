@@ -252,17 +252,16 @@ type (getWidenedType / getRegularTypeOfObjectLiteral make new types, cached per 
 the other expanded one more level before visitedTypes stops it. tttt has one type for both, so it stops a level
 earlier:
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (types): `Color.prototype = { negate: function () { return this } }`:
-  tsgo's `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`. Read off the
-  baseline (2026-10-15, agent C): only the parameterless methods (negate, greyscale; not the context-sensitive ones
-  with an untyped `ratio`, nor toJSON whose `this.rgb()` is any) expand, and inside the expansion every method returns
-  any. So it isn't fresh-vs-widened alone: in JS, `this` in an object literal method is getWidenedType(
-  checkExpressionCached(literal)) (getContextualThisParameterType), and for the non-context-sensitive methods something
-  resolves their return type *while the literal is still being checked*, so checkExpressionCached re-checks the whole
-  literal (no in-flight guard) into a second literal type whose methods' returns are all circular any; the
-  context-sensitive ones resolve later and get the finished literal's widened type, which the printer has visited.
-  Next step: an instrumented tsgo (log getReturnTypeOfSignature's callers for `negate`) to find what forces the return
-  type during checkObjectLiteral (noImplicitAny's TS7011 check? the expando assignment's widening?), then make tttt's
-  JS `this` for those methods a second evaluation of the literal. ~1 session.
+  tsgo's `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`. Only the
+  parameterless methods (negate, greyscale) expand; the context-sensitive ones (untyped `ratio`) don't, toJSON is any.
+  Instrumented tsgo (2026-10-15, agent C; getContextualThisParameterType/getReturnTypeOfSignature/getTypeOfSymbol
+  logged): per checker, the `prototype` symbol's type P (id 98) is resolved first, from an object literal type checked
+  before the one checkExpressionCached keeps (F, id 100; so the literal is checked twice, P isn't widened from F);
+  every method's `this` and return type is getWidenedType(F) = W (id 101, getContextualThisParameterType without a
+  contextual type), resolved in checkDeferredNodes. Printing P: negate's W isn't P, so it expands once (inside W every
+  method returns W: any). Why the context-sensitive methods of P don't print W is still open: their function types in
+  P's literal must be other ones than F's (checked in another check mode by the first literal check, returning P?).
+  Next: log which check of the literal makes P (checkMode, caller) and the return types of P's own methods. ~1 session.
 - A JavaScript `{}` container's initializer (`var o = {}; o.self = o`): tsgo prints `>{} : { self: { self: any; }; }`,
   tttt `{ self: any; }` (the variable's lines agree). In ttttLocalExpandoCyclicPrint's probe, left out of the test.
 Size: a fresh/regular distinction for object literal types at display (or a real fresh type identity, which
