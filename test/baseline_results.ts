@@ -5763,8 +5763,8 @@ const baselines = {
     'comparisonReverseMappedTypes': {
         errors: true,
         symbols: true,
-        types: false,
-        dts: false,
+        types: true,
+        dts: true,
     },
     'comparisonSameNamedAliases': {
         errors: true,

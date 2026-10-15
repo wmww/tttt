@@ -1181,11 +1181,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     if (target_members->mapped) {
         MappedInfo const* mapped = target_members->mapped;
         Ty const* template = mapped->modifiers_type ? ty_mapped_template(me, mapped) : nullptr;
-        // (A `keyof X` constraint that stays deferred, like `Partial<T & {}>`'s `keyof (T & {})`, infers only to an X
-        // being inferred: tsc's inferToMappedType, see infer_to_mapped())
         Ty const* constraint = mapped->constraint;
-        InferParam const* keyof_param = constraint->kind == TY_KEYOF ? inference_param(inf, constraint->keyof.operand) : nullptr;
-        bool keyof_blocked = constraint->kind == TY_KEYOF && (!keyof_param || keyof_param->fixed);
         // (Not for a conditional constraint, Omit's `Exclude<keyof T, X>`: tsc's inferToMappedType infers nothing from
         // it, and the mapped type has no properties to infer from either. A union with literal keys, like
         // `"a" | Exclude<keyof T, X>`, does have properties, which this stands in for)
@@ -1199,7 +1195,12 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         Members const* source_members = (source->flags & TYF_OBJECT) ? ty_members(me, source) : nullptr;
         bool signatures = source_members && (source_members->call_count || source_members->construct_count) &&
             !ty_is_array(me, source) && !ty_is_tuple(source);
-        if (template && keys_inferable && !keyof_blocked && !limited && template->kind == TY_INDEXED && !signatures &&
+        // (Not for a `keyof X` constraint: infer_to_mapped() infers to an X being inferred only, like tsc's
+        // inferToMappedType (`Partial<T & {}>`'s deferred `keyof (T & {})` infers nothing), and makes a reverse mapped
+        // type of the source even for the `T[K]` template, as tsc's inferTypeForHomomorphicMappedType does: a type of its
+        // own (cached by source, mapped type and constraint) that unions order as reverse mapped types, `[identity(x),
+        // unbox(x)]` in comparisonReverseMappedTypes)
+        if (template && keys_inferable && constraint->kind != TY_KEYOF && !limited && template->kind == TY_INDEXED && !signatures &&
             (mapped->modifiers_type->kind != TY_INTERSECTION || constraint->kind != TY_TYPE_PARAM) &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
             ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))

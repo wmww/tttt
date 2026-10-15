@@ -181,12 +181,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - Index symbols of a destructuring assignment's rest (`({ ...r } = strMap); r.z`): tsgo's getRestType gets the object
   literal's symbol there (checkObjectLiteralDestructuringPropertyAssignment); ty_object_rest_type() passes none (a
   binding's rest has its binding's symbol since 2026-10-14). Not probed.
-- Union order left (2026-10-14 fan-out agent A looked again; neither is display, both are checker identity):
-  - comparisonReverseMappedTypes: `[identity(nested), unbox(nested)]` orders `{ value: string; }` (unbox's reverse
-    mapped type) before `{ value: { value: string; }; }` in tsgo, which made both reverse mapped types
-    (createReverseMappedType; ordered by source, then mapped type declaration); tttt's infer.c "A plain homomorphic
-    `T[K]` template" shortcut infers identity's source itself (an older type). Making the identity template's
-    inference a real reverse mapped type touches every Partial/Readonly inference (identity, perf): plan-sized.
+- Union order left (checker identity, not display):
   - `$ExpectType` knockout.mapping (two KnockoutObservableArray instantiations).
 - **tsc's 160-char approximateLength truncation** (`@noErrorTruncation: false`, 4 tests incl. unionElementErrorTruncation):
   `... | ... | ...`, `... 4 more ...`; tsgo's approximateLength of a type literal member is shorter than its text and

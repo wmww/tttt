@@ -15,8 +15,7 @@ it.**
   stage 4), declarationMap (8, stage 5), then singles: late bound names through an alias of a property of a variable's
   type (`[Op.or]`), an export= namespace's member naming the unknown symbol, index signatures with several parameters
   (`giant`), error-recovery shapes (`export import "m"`, `export * from X`, `[element: string?]`), a painted
-  non-exported binding pattern written whole (`declare const { foo }: ...`, 3 tests), type literal union order
-  (`comparisonReverseMappedTypes`), union member comments (TypeNode has no span), a mixin's private class members
+  non-exported binding pattern written whole (`declare const { foo }: ...`, 3 tests), union member comments (TypeNode has no span), a mixin's private class members
   (`declarationEmitLocalClassDeclarationMixin`), `this is X` from a reverse mapped type, and a few checker types.
   `scripts/dtsstats.py` lists them.
 - **Left on real code** (dtsdiff buckets): "missing file" 693 (JavaScript sources: stage 6), "type text" ~630 (mostly
