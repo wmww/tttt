@@ -99,6 +99,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationCommentsOnce': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationComputedParameterName': {
         errors: true,
         symbols: true,
@@ -147,6 +153,24 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExpandoHostComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationExpandoNameValue': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationExportedPattern': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationExportsConditionByTargetFormat': {
         errors: true,
         symbols: true,
@@ -166,6 +190,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationMaps': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationOverloadTypeofInstantiated': {
         errors: true,
         symbols: true,
         types: true,
