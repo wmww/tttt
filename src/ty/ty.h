@@ -802,6 +802,15 @@ typedef struct MembersRare {
     // uses them adds each base's (instantiated) members (tsc's resolveObjectTypeMembers)
     Ty const* const* bases;
     u32 base_count;
+    // Only in the raw members of a generic class or interface: the bases (with the `this` type as this-argument) whose
+    // instantiation resolves something about its type arguments (a conditional type, an indexed access, a `keyof`),
+    // which tsc instantiates whenever a reference's members are resolved (see probe_eager_bases())
+    Ty const* const* eager_bases;
+    u32 eager_base_count;
+    // Only in the raw members of a class or interface: a base's type arguments mention the type itself (zod's
+    // `interface ZodJSONSchema extends _ZodJSONSchema`, `type _ZodJSONSchema = ZodUnion<[..., ZodArray<ZodJSONSchema>]>`):
+    // what an eager base's instantiation can get back to (see mentions_members_in_flight())
+    bool recursive_bases;
 } MembersRare;
 
 static inline MembersRare const* members_rare(Members const* me) {
@@ -1064,6 +1073,13 @@ struct Checker {
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     u32 base_constructors_in_flight; // RESOLVING_BASE_CONSTRUCTOR entries on the stack (relate.c's tuple index relation)
+    // The classes, interfaces and references whose members are being resolved, innermost last, with the resolving stack's
+    // length and the instantiation depth when each started (see probe_eager_bases())
+    struct MembersInFlight* members_in_flight;
+    u32 members_in_flight_len, members_in_flight_cap;
+    u32 eager_probe_depth; // probe_eager_bases() calls in flight
+    u32 eager_probe_floor; // members_in_flight_len when the outermost of them started
+    bool eager_probe_reported; // The outermost of them reported its runaway
     // The classes and interfaces whose bases are being lowered, innermost first, with their own members so far (see
     // resolve_declared_members())
     struct BasesFrame* bases_frames;
@@ -1603,6 +1619,8 @@ void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message); // tsc
 // TS2589 at the current node, counted in instantiation_limit_hits: the instantiation limits ran out (the caller gives
 // the error type) or a relation got too deep
 void ty_instantiation_limit_reached(Checker* me);
+// The same with the stack tsc would have when it runs out (see probe_eager_bases())
+void ty_instantiation_limit_reached_on(Checker* me, Ty const* const* stack, u32 depth);
 
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
@@ -2015,7 +2033,16 @@ typedef enum ResolvingKind {
     RESOLVING_BASES, // The bases of a declared class or interface type
     RESOLVING_BASE_CONSTRAINT, // A type whose base constraint is computed (relate.c base_constraint())
     RESOLVING_BASE_CONSTRUCTOR, // A ClassDecl whose `extends` expression is evaluated (members.c class_base())
+    // A mapped type's constraint being instantiated (a MappedInfo): tsc resolves it under its key parameter's
+    // pushTypeResolution(ResolvedBaseConstraint) (getConstraintTypeFromMappedType). Nothing looks for it, it is only a
+    // guard for members_reentered_unguarded()
+    RESOLVING_MAPPED_CONSTRAINT,
 } ResolvingKind;
+typedef struct MembersInFlight {
+    Ty const* ty;
+    u32 resolving_len;
+    u32 instantiation_depth;
+} MembersInFlight;
 typedef struct Resolving {
     void const* key;
     u32 kind;

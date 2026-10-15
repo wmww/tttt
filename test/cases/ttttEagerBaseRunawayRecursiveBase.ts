@@ -1,0 +1,15 @@
+// @strict: true
+// zod 4's ZodJSONSchema shape (webpack, crawlee): an interface whose base's type arguments mention itself, used as a
+// type argument of a reference whose base's instantiation resolves a conditional over it, which reaches that
+// reference's members again (TS5115)
+interface TypeInternals<O = unknown> { output: O; optional?: true }
+interface SomeType { _zod: TypeInternals }
+type output<T> = T extends { _zod: { output: any } } ? T["_zod"]["output"] : unknown;
+type IsOptional<T> = T extends { _zod: { optional: true } } ? true : false;
+type InferRecordOutput<V extends SomeType> = IsOptional<V> extends true ? Record<string, output<V> | undefined> : Record<string, output<V>>;
+interface RecordInternals<V extends SomeType = SomeType> extends TypeInternals<InferRecordOutput<V>> { valueType: V }
+interface ZodRecord<V extends SomeType = SomeType> { _zod: RecordInternals<V> }
+interface ZodUnion<T extends readonly SomeType[]> { _zod: TypeInternals<output<T[number]>> }
+interface ZodString { _zod: TypeInternals<string> }
+type _JSON = ZodUnion<[ZodString, ZodRecord<JSONSchema>]>;
+export interface JSONSchema extends _JSON { }

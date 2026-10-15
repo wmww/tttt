@@ -520,6 +520,7 @@ void checker_drop(Checker* me) {
     ty_active_mappers_drop(me);
     free(my flow_loops);
     free(my resolving);
+    free(my members_in_flight);
     free(my flow_shared);
     for (u32 i = 0; i < my call_errors_len; i++) error_ctx_drop(my call_errors[i]);
     free(my call_errors);

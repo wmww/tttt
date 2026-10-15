@@ -2741,6 +2741,86 @@ static void early_declared_members(Checker* me, Ty const* ty) {
     }
 }
 
+// Whether instantiating a written base resolves something about the type arguments, as tsc's instantiateType does
+// right away: a conditional type (getConditionalTypeInstantiation), an indexed access, a `keyof`, through unions,
+// intersections, references' and aliases' type arguments (deferred references are instantiated lazily)
+static bool base_resolves_eagerly(Ty const* ty, u32 depth) {
+    if (depth > 8 || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    switch (ty->kind) {
+        case TY_CONDITIONAL:
+        case TY_INDEXED:
+        case TY_KEYOF:
+            return true;
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (base_resolves_eagerly(ty->composite.types.data[i], depth + 1)) return true;
+            }
+            break;
+        case TY_REFERENCE:
+            if (ty->reference.deferred) return false;
+            for (u32 i = 0; i < ty->reference.args.len; i++) {
+                if (base_resolves_eagerly(ty->reference.args.data[i], depth + 1)) return true;
+            }
+            return false;
+        case TY_ANONYMOUS:
+            // An instantiation (`Omit<T, K>`'s Pick): the outer type parameters it mentions are instantiated with it
+            // (tsc's getObjectTypeInstantiation)
+            if (ty->anonymous.target && ty->anonymous.mapper) {
+                for (u32 i = 0; i < ty->anonymous.mapper->len; i++) {
+                    if (base_resolves_eagerly(ty->anonymous.mapper->targets[i], depth + 1)) return true;
+                }
+            }
+            break;
+        default: break;
+    }
+    for (u32 i = 0; i < ty->alias_args.len; i++) {
+        if (base_resolves_eagerly(ty->alias_args.data[i], depth + 1)) return true;
+    }
+    return false;
+}
+
+// Whether `ty` is or is made of `declared` (through references' arguments, unions, intersections, aliases' arguments)
+static bool mentions_declared(Checker* me, Ty const* ty, Ty const* declared, u32 depth) {
+    if (depth > 8) return false;
+    switch (ty->kind) {
+        // (Not as a direct argument, `interface BaseIssue<T> extends Config<BaseIssue<T>>` (valibot): such types are
+        // common, and probing them all cost valibot 0.6%. HACK: zod's ZodJSONSchema is nested deeper)
+        case TY_DECLARED: return ty == declared && depth >= 2;
+        case TY_REFERENCE:
+            if (ty->reference.target == declared && depth >= 2) return true;
+            if (!ty->reference.deferred || ty->reference.deferred->state == LAZY_STATE_DONE) {
+                TyList args = ty_reference_args(me, ty);
+                for (u32 i = 0; i < args.len; i++) {
+                    if (mentions_declared(me, args.data[i], declared, depth + 1)) return true;
+                }
+            }
+            break;
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (mentions_declared(me, ty->composite.types.data[i], declared, depth + 1)) return true;
+            }
+            break;
+        default: break;
+    }
+    for (u32 i = 0; i < ty->alias_args.len; i++) {
+        if (mentions_declared(me, ty->alias_args.data[i], declared, depth + 1)) return true;
+    }
+    return false;
+}
+
+static void set_eager_bases(Checker* me, Members* members, TyBuf* eager) {
+    if (eager->len) {
+        Ty const** copy = arena_new_n(&my arena, Ty const*, eager->len);
+        memcpy(copy, eager->data, sizeof(Ty const*) * eager->len);
+        MembersRare* rare = members_rare_mut(me, members);
+        rare->eager_bases = copy;
+        rare->eager_base_count = eager->len;
+    }
+    ty_buf_drop(eager);
+}
+
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     Ty const* this_param = ty->declared.this_param;
@@ -2875,6 +2955,16 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 bases.len = kept;
                 written_bases.len = kept;
             }
+            bool recursive_bases = false;
+            for (u32 i = 0; i < written_bases.len && !recursive_bases; i++) {
+                recursive_bases = mentions_declared(me, written_bases.data[i], ty, 0);
+            }
+            TyBuf eager = {0};
+            if (ty->declared.type_params.len) {
+                for (u32 i = 0; i < written_bases.len; i++) {
+                    if (base_resolves_eagerly(written_bases.data[i], 0)) ty_buf_push(&eager, bases.data[i]);
+                }
+            }
             if (dynamic) {
                 // Members that depend on the type arguments: whoever instantiates these adds the bases' (see
                 // Members.bases)
@@ -2884,6 +2974,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 MembersRare* rare = members_rare_mut(me, ret);
                 rare->bases = copy;
                 rare->base_count = bases.len;
+                set_eager_bases(me, ret, &eager);
+                if (recursive_bases) members_rare_mut(me, ret)->recursive_bases = true;
                 ty_buf_drop(&bases);
                 ty_buf_drop(&written_bases);
                 return ret;
@@ -2906,6 +2998,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             ty_buf_drop(&bases);
             ty_buf_drop(&written_bases);
             Members const* ret = builder_finish(me, &builder);
+            set_eager_bases(me, (Members*)ret, &eager);
+            if (recursive_bases) members_rare_mut(me, (Members*)ret)->recursive_bases = true;
             if (thisless.len) {
                 Signature const** list = arena_new_n(&my arena, Signature const*, thisless.len + 1);
                 memcpy(list, thisless.data, sizeof(Signature const*) * thisless.len);
@@ -3020,9 +3114,11 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
     Ty const* variable = source->modifiers_type && source->constraint->kind == TY_KEYOF ?
         ty_actual_type_variable(me, source->constraint->keyof.operand) : nullptr;
     bool pushed = variable && variable->kind == TY_TYPE_PARAM && ty_instantiate(me, variable, mapper) != variable;
-    if (pushed) ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, mapped);
+    // (Otherwise a marker: tsc's later first resolution of that base constraint is a guard against the eager-base
+    // runaway, see RESOLVING_MAPPED_CONSTRAINT)
+    ty_resolving_push(me, pushed ? RESOLVING_BASE_CONSTRAINT : RESOLVING_MAPPED_CONSTRAINT, pushed ? (void const*)mapped : (void const*)source);
     mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
-    if (pushed && ty_resolving_pop(me)) mapped_key_circular(me, source, mapped);
+    if (ty_resolving_pop(me) && pushed) mapped_key_circular(me, source, mapped);
     // The template and the `as` clause see the mapped type's own key parameter, not a mapping of it that the mapper
     // carries from an enclosing instance of the same mapped type: in `type X<T> = { [K in keyof T]: F<T[K]> }` where
     // F's body mentions X again, the inner X's mapper is composed from the outer one's, K included (tsc's
@@ -3115,12 +3211,150 @@ static void members_reentered(Checker* me, Ty const* ty) {
     if (ty->kind == TY_DECLARED) ty_resolving_cycle_across_calls(me, RESOLVING_BASES, ty);
 }
 
+static void members_in_flight_push(Checker* me, Ty const* ty) {
+    if (my members_in_flight_len == my members_in_flight_cap) {
+        my members_in_flight_cap = my members_in_flight_cap ? my members_in_flight_cap * 2 : 64;
+        my members_in_flight = realloc(my members_in_flight, sizeof(MembersInFlight) * my members_in_flight_cap);
+        panic_if(!my members_in_flight, "out of memory");
+    }
+    my members_in_flight[my members_in_flight_len++] = (MembersInFlight){
+        .ty = ty, .resolving_len = my resolving_len, .instantiation_depth = my instantiation_depth,
+    };
+}
+
+// tsc's resolveStructuredTypeMembers has no in-flight state: members asked for again while they are being resolved are
+// resolved again from the start. Where that happens while a reference's bases are instantiated (probe_eager_bases()),
+// the second round instantiates them again with a new mapper (no cache hit) and gets back here, until the instantiation
+// stack is 100 deep: TS5114/TS5115 at the current node. Unless the way here passes something tsc does guard
+// (pushTypeResolution: a declaration's type, an alias, a base constraint...), which the second round finds in flight:
+// tttt's resolving stack, unchanged since the members started. HACK: an approximation, tsc pushes some entries tttt
+// doesn't (a mapped type's constraint from isGenericMappedType)
+static void members_reentered_unguarded(Checker* me, Ty const* ty) {
+    if (my eager_probe_reported) return;
+    for (u32 i = my eager_probe_floor; i-- > 0;) {
+        MembersInFlight const* entry = &my members_in_flight[i];
+        if (entry->ty != ty) continue;
+        if (entry->resolving_len != my resolving_len) return;
+        my eager_probe_reported = true;
+        // The stack tsc has when it stops: the instantiations since the members started, repeated
+        u32 depth = my instantiation_depth < c_arraylen(my instantiation_stack) ? my instantiation_depth : (u32)c_arraylen(my instantiation_stack);
+        u32 from = entry->instantiation_depth < depth ? entry->instantiation_depth : depth;
+        if (from == depth) return; // (No instantiation on the way: no runaway either)
+        Ty const* stack[100];
+        u32 len = 0;
+        for (u32 k = 0; k < from; k++) stack[len++] = my instantiation_stack[k];
+        while (len < c_arraylen(stack)) {
+            for (u32 k = from; k < depth && len < c_arraylen(stack); k++) stack[len++] = my instantiation_stack[k];
+        }
+        ty_instantiation_limit_reached_on(me, stack, len);
+        return;
+    }
+}
+
+// tsc's resolveObjectTypeMembers instantiates a reference's bases with its type arguments whenever its members are
+// resolved (getPropertiesOfType of each instantiated base, recursively), where tttt instantiates the raw members, which
+// already have the bases'. Only the bases whose instantiation resolves something (MembersRare.eager_bases) can make a
+// difference: instantiated here for that, the results dropped. Not while another reference's are (only along the
+// chain of bases): tttt resolves members tsc doesn't (mapped types' keys eagerly), which would chain probes tsc never makes
+static void probe_reference(Checker* me, Ty const* ty, u32 depth);
+static void probe_eager_bases(Checker* me, Members const* raw, TyMapper const* mapper, u32 depth) {
+    MembersRare const* rare = members_rare(raw);
+    if (!rare->eager_base_count || depth > 8 || (depth == 0 && my eager_probe_depth)) return;
+    if (!my eager_probe_depth) {
+        my eager_probe_floor = my members_in_flight_len;
+        my eager_probe_reported = false;
+    }
+    my eager_probe_depth++;
+    for (u32 i = 0; i < rare->eager_base_count; i++) {
+        Ty const* base = ty_instantiate(me, rare->eager_bases[i], mapper);
+        if (base->kind != TY_REFERENCE || base->reference.deferred) continue;
+        Ty const* target = base->reference.target;
+        if (target->kind != TY_DECLARED || !target->declared.raw || target->declared.raw->members_state != LAZY_STATE_DONE) continue;
+        probe_reference(me, base, depth + 1);
+    }
+    my eager_probe_depth--;
+}
+
+// Whether a type argument is, or is made of, a class, interface or reference whose members are in flight: what an
+// eager base's instantiation can get back to (anything else it reaches is the same for every reference)
+static bool mentions_members_in_flight(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return false;
+    switch (ty->kind) {
+        case TY_DECLARED:
+        case TY_REFERENCE: {
+            for (u32 i = my members_in_flight_len; i-- > 0;) {
+                if (my members_in_flight[i].ty == ty) return true;
+            }
+            Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+            if (declared->kind == TY_DECLARED && declared->declared.raw && declared->declared.raw->members_state == LAZY_STATE_DONE &&
+                members_rare(declared->declared.raw->members)->recursive_bases
+            ) {
+                return true;
+            }
+            // (A deferred reference's arguments once they are resolved)
+            if (ty->kind == TY_REFERENCE && (!ty->reference.deferred || ty->reference.deferred->state == LAZY_STATE_DONE)) {
+                TyList args = ty_reference_args(me, ty);
+                for (u32 i = 0; i < args.len; i++) {
+                    if (mentions_members_in_flight(me, args.data[i], depth + 1)) return true;
+                }
+            }
+            break;
+        }
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (mentions_members_in_flight(me, ty->composite.types.data[i], depth + 1)) return true;
+            }
+            break;
+        case TY_INDEXED:
+            return mentions_members_in_flight(me, ty->indexed.object, depth + 1) || mentions_members_in_flight(me, ty->indexed.index, depth + 1);
+        case TY_KEYOF:
+            return mentions_members_in_flight(me, ty->keyof.operand, depth + 1);
+        default: break;
+    }
+    for (u32 i = 0; i < ty->alias_args.len; i++) {
+        if (mentions_members_in_flight(me, ty->alias_args.data[i], depth + 1)) return true;
+    }
+    return false;
+}
+
+// probe_eager_bases() for a reference whose members are known (and still in flight: the second round gets them)
+static void probe_reference(Checker* me, Ty const* ty, u32 depth) {
+    Ty const* target = ty->reference.target;
+    if (target->kind != TY_DECLARED || !target->declared.raw || target->declared.raw->members_state != LAZY_STATE_DONE) return;
+    Members const* raw = target->declared.raw->members;
+    if (!members_rare(raw)->eager_base_count) return;
+    // (Where nothing it can reach is in flight, it can't run away: not worth instantiating. Only the outermost reference
+    // is looked at, the bases along the chain are instantiated from it)
+    if (depth == 0) {
+        TyList args = ty_reference_args(me, ty);
+        bool mentions = false;
+        for (u32 i = 0; i < args.len && !mentions; i++) mentions = mentions_members_in_flight(me, args.data[i], 0);
+        if (!mentions) return;
+    }
+    TyList params = target->declared.type_params;
+    TyList args = ty_reference_args(me, ty);
+    u32 n = params.len + (target->declared.this_param ? 1 : 0);
+    Ty const** sources = arena_new_n(&my arena, Ty const*, n);
+    Ty const** targets = arena_new_n(&my arena, Ty const*, n);
+    for (u32 k = 0; k < params.len; k++) {
+        sources[k] = params.data[k];
+        targets[k] = args.data[k];
+    }
+    if (target->declared.this_param) {
+        sources[params.len] = target->declared.this_param;
+        targets[params.len] = ty->reference.this_arg ? ty->reference.this_arg : ty;
+    }
+    probe_eager_bases(me, raw, ty_mapper_new(me, (TyList){ .data = sources, .len = n }, (TyList){ .data = targets, .len = n }), depth);
+}
+
 // The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw
 static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     TyObjectState* state = declared->declared.raw;
     switch (state->members_state) {
         case LAZY_STATE_DONE: return state->members;
         case LAZY_STATE_IN_FLIGHT: // `interface A extends A`
+            if (my eager_probe_depth) members_reentered_unguarded(me, declared);
             if (!state->members) early_declared_members(me, declared);
             if (state->members) return state->members; // (The early members, see early_declared_members())
             members_reentered(me, declared);
@@ -3128,7 +3362,9 @@ static Members const* declared_raw_members(Checker* me, Ty const* declared) {
         case LAZY_STATE_NOT_STARTED: break;
     }
     state->members_state = LAZY_STATE_IN_FLIGHT;
+    members_in_flight_push(me, declared);
     state->members = resolve_declared_members(me, declared);
+    my members_in_flight_len--;
     state->members_state = LAZY_STATE_DONE;
     return state->members;
 }
@@ -4085,8 +4321,14 @@ Ty const* ty_reverse_mapped_object(Checker* me, ReverseMapped const* reverse) {
 static Members const* resolve_members(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
     TyObjectState* state = object_state(ty);
-    if (state && state->unexpanded) return expand_mapped(me, ty, state->unexpanded);
-    return expand_mapped(me, ty, resolve_members_inner(me, ty));
+    Members const* members = state && state->unexpanded ? state->unexpanded : resolve_members_inner(me, ty);
+    if (!members->mapped) return members;
+    // (A mapped type's keys: tsc mostly finds them first through its key parameter's constraint, under that one's
+    // pushTypeResolution, see RESOLVING_MAPPED_CONSTRAINT)
+    ty_resolving_push(me, RESOLVING_MAPPED_CONSTRAINT, members->mapped);
+    members = expand_mapped(me, ty, members);
+    ty_resolving_pop(me);
+    return members;
 }
 
 // A mapped type's declaration (key, constraint, modifiers type) without its members, which a
@@ -4330,6 +4572,7 @@ Members const* ty_members(Checker* me, Ty const* ty) {
             return state->members;
 
         case LAZY_STATE_IN_FLIGHT:
+            if (my eager_probe_depth) members_reentered_unguarded(me, ty);
             // An interface's properties while its index signatures are lowered (see resolve_declared_members())
             if (ty->kind == TY_DECLARED) early_declared_members(me, ty);
             if (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED && ty->reference.target->declared.raw &&
@@ -4359,7 +4602,15 @@ Members const* ty_members(Checker* me, Ty const* ty) {
                 if (state->members_state != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
             }
             state->members_state = LAZY_STATE_IN_FLIGHT;
-            state->members = resolve_members(me, ty);
+            if (ty->kind == TY_DECLARED || ty->kind == TY_REFERENCE) {
+                members_in_flight_push(me, ty);
+                state->members = resolve_members(me, ty);
+                // (After the members: asked for again meanwhile, they are what a second round of tsc's would give)
+                if (ty->kind == TY_REFERENCE && !my eager_probe_depth) probe_reference(me, ty, 0);
+                my members_in_flight_len--;
+            } else {
+                state->members = resolve_members(me, ty);
+            }
             state->members_state = LAZY_STATE_DONE;
             return state->members;
     }

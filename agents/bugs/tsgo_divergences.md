@@ -18,6 +18,10 @@ ever exists (the human: out of scope, vision.md):
 - incorrectRecursiveMappedTypeConstraint, typeParameterWithInvalidConstraintType (no `@declaration`): TS2313's related
   TS2751 location. Evidence: tsgo's CLI (`built/tsc --noEmit`, check order) prints exactly tttt's diagnostics for both;
   only the harness's emit-first run differs.
+- mutuallyRecursiveInference: the eager-base runaway's TS5114 (2026-10-15). tsgo's CLI reports it at `class X` (9,7, the
+  class check's typeWithThis-to-base relation), with or without emit, and so does tttt; the suite baseline has it at
+  `this.a` (12,9), which the harness's JS emit resolves first (a property access's constant value). Same for tttt's own
+  ttttEagerBaseRunaway* tests, which needed `@noEmit` to agree with the CLI.
 Not in this class after all (tsgo's CLI differs from tttt too: checker or parser bugs, plan 66's second fan-out):
 recursiveMappedTypes (TS2589/TS2502/TS2615 placement).
 circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement),

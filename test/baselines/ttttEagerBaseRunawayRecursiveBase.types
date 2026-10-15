@@ -1,0 +1,48 @@
+//// [test/cases/ttttEagerBaseRunawayRecursiveBase.ts] ////
+
+=== ttttEagerBaseRunawayRecursiveBase.ts ===
+// zod 4's ZodJSONSchema shape (webpack, crawlee): an interface whose base's type arguments mention itself, used as a
+// type argument of a reference whose base's instantiation resolves a conditional over it, which reaches that
+// reference's members again (TS5115)
+interface TypeInternals<O = unknown> { output: O; optional?: true }
+>output : O
+>optional : true | undefined
+>true : true
+
+interface SomeType { _zod: TypeInternals }
+>_zod : TypeInternals<unknown>
+
+type output<T> = T extends { _zod: { output: any } } ? T["_zod"]["output"] : unknown;
+>output : output<T>
+>_zod : { output: any; }
+>output : any
+
+type IsOptional<T> = T extends { _zod: { optional: true } } ? true : false;
+>IsOptional : IsOptional<T>
+>_zod : { optional: true; }
+>optional : true
+>true : true
+>true : true
+>false : false
+
+type InferRecordOutput<V extends SomeType> = IsOptional<V> extends true ? Record<string, output<V> | undefined> : Record<string, output<V>>;
+>InferRecordOutput : InferRecordOutput<V>
+>true : true
+
+interface RecordInternals<V extends SomeType = SomeType> extends TypeInternals<InferRecordOutput<V>> { valueType: V }
+>valueType : V
+
+interface ZodRecord<V extends SomeType = SomeType> { _zod: RecordInternals<V> }
+>_zod : RecordInternals<V>
+
+interface ZodUnion<T extends readonly SomeType[]> { _zod: TypeInternals<output<T[number]>> }
+>_zod : TypeInternals<output<T[number]>>
+
+interface ZodString { _zod: TypeInternals<string> }
+>_zod : TypeInternals<string>
+
+type _JSON = ZodUnion<[ZodString, ZodRecord<JSONSchema>]>;
+>_JSON : _JSON
+
+export interface JSONSchema extends _JSON { }
+

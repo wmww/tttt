@@ -518,6 +518,16 @@ src` finds the code-side markers; every significant one has an entry here.
   for RESOLVING_BASES; the other kinds keep the barrier.
 
 ## Type core (`src/ty/`)
+- The eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways") is fidelity to a tsgo
+  runaway, with approximations: (1) probes only run when the reference's arguments structurally mention a type whose
+  members are in flight or whose bases mention itself at depth >= 2 (`mentions_declared()`: valibot's
+  `BaseIssue<T> extends Config<BaseIssue<T>>` at depth 1 is left out, probing those cost valibot 0.6%); (2) the guard
+  is "the resolving stack is unchanged since the re-entered members started", with `RESOLVING_MAPPED_CONSTRAINT`
+  pushed around a mapped type's constraint instantiation and key expansion for tsc's key-parameter base constraint
+  (zod's recursive-types.test.ts is where tsgo stops at that guard and tttt otherwise reported 3 spurious TS5115);
+  (3) tsgo's poisoned caches after the runaway (error types) aren't modelled (vue's two TS7006, missing_checks.md).
+- Class and interface statements' errors at the current node go at their name (`CurrentNode.error_span`, tsc's
+  getErrorRangeForNode); other declarations (functions, enums, type aliases, namespaces) still at the whole statement.
 - A type parameter source against a union target takes its hoisted constraint (`constraint & T`, tsc's
   getEffectiveConstraintOfIntersection in structuredTypeRelatedTo) only when that relation is a definite True
   (`structured_related_impl()`, TY_TYPE_PARAM): tttt relates a generic intersection to a union by its members, so

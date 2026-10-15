@@ -282,25 +282,19 @@ passing tests).
   prints the getter's (probe: `type T = { set x({ name: alias }: N & { o: typeof alias }); get x(): N & { o: string } }`). Shape: InterfaceMember gets a FunctionImpl per
   accessor like a method signature; builder_add_interface merges get/set into the prop (write type from the setter's
   parameter) as now; the TS2300 partition logic moves to one helper both the duplicate check and the walker use.
-- TS5114/TS5115/TS2589 limits: mutuallyRecursiveInference, keyofGenericExtendingClassDoubleLayer never hit the
-  instantiation depth limit in tttt (plan 65's eager-base runaway: tsgo's resolveStructuredTypeMembers has no in-flight
-  guard; an instrumented tsgo's stack at the limit, 2026-10-14: keyofGeneric... loops resolveTypeReferenceMembers ->
-  instantiate Model<ModelAttributes<T>> -> Exclude<keyof PersonModel, ...> -> getIndexType -> PersonModel's members ->
-  its base again, entered from checkClassLikeDeclaration's typeWithThis-to-base relation (isWeakType); mutually...
-  loops through `X[X['a']]` (an indexed access on the non-generic X, resolved eagerly) -> X's members -> base L<X> ->
-  T<X[X['a']]>). mutuallyRecursiveInference also needs the harness's emit order (plan 64): the CLI reports TS5114 at
-  `class X` (9,7) from the type-argument constraint check, the suite baseline at `this.a` (12,9), which the JS emit's
-  resolver checks first. recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
+- TS5114/TS5115/TS2589 limits: tsgo's eager-base runaway is modelled since 2026-10-15 (members.c probe_eager_bases(),
+  documentation.md "Eager base runaways"). recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
   recursiveIndexedAccessSimplification has its TS4109 since aa320754, but lacks the TS2322 at `return ['marker',
   ...l]` and the two TS2589 (8,12)/(12,37): the instantiations of `Recur<T>` in join/a run into the limit in tsgo
   (each a fresh deferred reference with its own args), tttt's relation at the return is never even made (no
   TTTT_DEBUG_RELATE line: probably a cut-short instantiation remembered from the alias check, not reported again,
   check_assignable()'s instantiation_limit_hits rule). xstate under sloppy/nosnc (flagflip) gets one spurious
   TS5115 at graph/utils.ts:91 next to tsgo's at State.ts:395 (another StateId instantiation tsgo finds cached; tsgo's
-  sites move with its checker count: -p with 4 checkers reports State.ts, setup.ts, stateUtils.ts); webpack misses
-  zod's TS5115 at node_modules/zod/v4/classic/schemas.d.cts:806 (`interface ZodJSONSchemaInternals extends
-  _ZodJSONSchema["_zod"]`, reproducible with that file alone: tsgo 162k instantiations, tttt no runaway; the same
-  family as sourcesweep_checker.md's -TS5115 and vue's postcss-selector-parser one).
+  sites move with its checker count: -p with 4 checkers reports State.ts, setup.ts, stateUtils.ts); the eager-base
+  runaway's guard is an approximation (RESOLVING_MAPPED_CONSTRAINT stands for tsgo's mapped type key constraint
+  pushTypeResolution): a spurious or missing TS5115 on real code is first checked against it (log the
+  instantiation and members-in-flight stacks in members_reentered_unguarded(); an instrumented tsgo printing
+  runtime.Callers' frames at a failed pushTypeResolution shows tsgo's guard).
 - distributiveConditionalBaseConstraint: spurious TS2344, `Wrapped<FromSchema<Context, Props[P]>>` vs Type through
   `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never` (TypeScript#63568).
 - Variances still measured differently from tsgo on xstate (25 of 160 type parameters, 2026-10-12; compare with

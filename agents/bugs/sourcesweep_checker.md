@@ -14,9 +14,6 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 ## Source sweep fan-out 2026-10-12 leftovers (agent A)
 Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
 was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match; second round: react-router, shiki, lit, typedoc match too).
-- **-TS5115 (13 projects: zod 4's `schemas.d.cts:804`, postcss-selector-parser through vitepress)**: tsgo's eager
-  base instantiation in resolveObjectTypeMembers re-entering a reference's members; mechanism, prototype and why it
-  isn't committed in plan 65 (agents/plans/65_eager_base_runaway.md).
 - **redux-toolkit query/core/module.ts:656, react/module.ts:216 (+TS2322)**: `Api<BaseQuery, EndpointDefinitions,
   ReducerPath, TagTypes, keyof ApiModules<...>>` to `Api<any, EndpointDefinitions, any, any, unique symbol>`. tttt's
   chain ends in `util.getRunningQueryThunk()`: the target's result is `InfiniteQueryActionCreatorResult<never> |

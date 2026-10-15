@@ -38,8 +38,8 @@ Component letters are the *failing* components (E errors, S symbols, T types).
    `scripts/displaydiff.py --fine` ranks them. Includes the `*NoCrash`/recursive-conditional printing depth tests.
 4. **Missing checks and circularity (17, bugs/missing_checks.md)** and **type core (9, bugs/type_core.md)**: circular
    constraints and TS2589 depth limits (circularConstraintYieldsAppropriateError, recursiveIndexedAccessSimplification,
-   circularInlineMappedGenericTupleTypeNoCrash), TS5114/TS5115 (mutuallyRecursiveInference,
-   keyofGenericExtendingClassDoubleLayer: plan 65 is the same mechanism), inference leftovers
+   circularInlineMappedGenericTupleTypeNoCrash), TS5114/TS5115 (keyofGenericExtendingClassDoubleLayer fixed
+   2026-10-15 by the eager-base runaway model; mutuallyRecursiveInference argued in bugs/tsgo_divergences.md), inference leftovers
    (inferFromGenericFunctionReturnTypes3, contextualTypingGenericFunction2, genericCallWithGenericSignatureArguments3).
 5. **JS (15, bugs/js.md)** and **binder/modules (13, bugs/binder_modules.md)**: expandos (TS7022), CommonJS aliases,
    augmentations, late-bound assignment declarations, merged declarations. Seven of the binder ones are one

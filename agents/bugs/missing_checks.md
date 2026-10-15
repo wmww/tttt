@@ -314,9 +314,15 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   union's getSSRProps parameters): a reduced probe (DirectiveBinding/ObjectDirective/DirectiveHook, a union of three
   ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
   ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
-- webpack node_modules/zod TS5115: see type_core.md (instantiation limits).
-  (2026-10-14, agent D: vue's three (pluginScoped.ts:107 TS5115 and the two TS7006 that follow from it) and webpack's
-  one are all plan 65's eager-base runaway; nothing new found, plan 65's prototype status stands.)
+- vue pluginScoped.ts:190 and :235 TS7006 (`n.nodes[0].each(ss => ...)`, n a postcss-selector-parser Pseudo): what
+  tsgo's eager-base runaway (TS5115 at :107, which tttt reports since 2026-10-15) leaves behind. tsgo resolves Pseudo's
+  base `Container<string, Selector>`'s type arguments in its deepest round, at the depth limit, so `Selector` is the
+  error type there for good and Pseudo's `nodes` is `any[]`. tttt only detects the runaway (members_reentered_unguarded()),
+  its types are what the first round sees. Order-dependent in tsgo too: with the .d.ts checked first (no skipLibCheck,
+  `--singleThreaded`) tsgo reports the TS5115 at the .d.ts's `interface Root extends Container<undefined, Selector>`
+  instead and no TS7006. Repro: /tmp-style project with postcss-selector-parser.d.ts and `selector.each(n => { if
+  (n.type === 'pseudo') n.nodes[0].each(ss => ss) })`. Emulating the poisoning means modelling which of tsgo's caches
+  its deepest round fills: not planned.
 - Flag-specific ones left (flagflip, 2026-10-14 agent D):
   - vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562, an auto-typed `let v` assigned from itself
     in a loop (`while (u-- > 0) { result[u] = v; v = p[v] }`): tsgo's *final* type of v there is any (a probe's `const z:
@@ -331,8 +337,8 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
     type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in
     tttt too; not reduced.
-  - xstate/sloppy spurious TS5115 (type_core.md), webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS5115/-TS7006
-    in vue's pluginScoped.ts and webpack's zod: plan 65.
+  - xstate/sloppy spurious TS5115 (type_core.md), webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
+    pluginScoped.ts (above).
   - vscode/eopt stateToProgressAdapter.ts:453 TS2412->TS2322: `invocation.toolSpecificData = ...` where the property
     is an accessor pair whose getter returns `this._toolSpecificData` (an optional property): tsgo's getter type keeps
     the missing type of the read, so isExactOptionalPropertyMismatch is true (TS2412); tttt only says TS2412 for a

@@ -1,0 +1,91 @@
+//// [test/cases/ttttEagerBaseRunawayRecursiveBase.ts] ////
+
+=== ttttEagerBaseRunawayRecursiveBase.ts ===
+// zod 4's ZodJSONSchema shape (webpack, crawlee): an interface whose base's type arguments mention itself, used as a
+// type argument of a reference whose base's instantiation resolves a conditional over it, which reaches that
+// reference's members again (TS5115)
+interface TypeInternals<O = unknown> { output: O; optional?: true }
+>TypeInternals : Symbol(TypeInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 0, 0))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 24))
+>output : Symbol(TypeInternals.output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 38))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 24))
+>optional : Symbol(TypeInternals.optional, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 49))
+
+interface SomeType { _zod: TypeInternals }
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>_zod : Symbol(SomeType._zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 4, 20))
+>TypeInternals : Symbol(TypeInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 0, 0))
+
+type output<T> = T extends { _zod: { output: any } } ? T["_zod"]["output"] : unknown;
+>output : Symbol(output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 4, 42))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 12))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 12))
+>_zod : Symbol(_zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 28))
+>output : Symbol(output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 36))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 12))
+
+type IsOptional<T> = T extends { _zod: { optional: true } } ? true : false;
+>IsOptional : Symbol(IsOptional, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 85))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 16))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 16))
+>_zod : Symbol(_zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 32))
+>optional : Symbol(optional, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 40))
+
+type InferRecordOutput<V extends SomeType> = IsOptional<V> extends true ? Record<string, output<V> | undefined> : Record<string, output<V>>;
+>InferRecordOutput : Symbol(InferRecordOutput, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 75))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 23))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>IsOptional : Symbol(IsOptional, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 5, 85))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 23))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>output : Symbol(output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 4, 42))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 23))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>output : Symbol(output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 4, 42))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 23))
+
+interface RecordInternals<V extends SomeType = SomeType> extends TypeInternals<InferRecordOutput<V>> { valueType: V }
+>RecordInternals : Symbol(RecordInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 140))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 26))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>TypeInternals : Symbol(TypeInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 0, 0))
+>InferRecordOutput : Symbol(InferRecordOutput, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 6, 75))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 26))
+>valueType : Symbol(RecordInternals.valueType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 102))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 26))
+
+interface ZodRecord<V extends SomeType = SomeType> { _zod: RecordInternals<V> }
+>ZodRecord : Symbol(ZodRecord, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 117))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 9, 20))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>_zod : Symbol(ZodRecord._zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 9, 52))
+>RecordInternals : Symbol(RecordInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 7, 140))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 9, 20))
+
+interface ZodUnion<T extends readonly SomeType[]> { _zod: TypeInternals<output<T[number]>> }
+>ZodUnion : Symbol(ZodUnion, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 9, 79))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 10, 19))
+>SomeType : Symbol(SomeType, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 3, 67))
+>_zod : Symbol(ZodUnion._zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 10, 51))
+>TypeInternals : Symbol(TypeInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 0, 0))
+>output : Symbol(output, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 4, 42))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 10, 19))
+
+interface ZodString { _zod: TypeInternals<string> }
+>ZodString : Symbol(ZodString, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 10, 92))
+>_zod : Symbol(ZodString._zod, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 11, 21))
+>TypeInternals : Symbol(TypeInternals, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 0, 0))
+
+type _JSON = ZodUnion<[ZodString, ZodRecord<JSONSchema>]>;
+>_JSON : Symbol(_JSON, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 11, 51))
+>ZodUnion : Symbol(ZodUnion, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 9, 79))
+>ZodString : Symbol(ZodString, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 10, 92))
+>ZodRecord : Symbol(ZodRecord, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 8, 117))
+>JSONSchema : Symbol(JSONSchema, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 12, 58))
+
+export interface JSONSchema extends _JSON { }
+>JSONSchema : Symbol(JSONSchema, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 12, 58))
+>_JSON : Symbol(_JSON, Decl(ttttEagerBaseRunawayRecursiveBase.ts, 11, 51))
+

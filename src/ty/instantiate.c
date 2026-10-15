@@ -41,15 +41,19 @@ static Symbol const* instantiated_symbol(Ty const* ty) {
 }
 
 void ty_instantiation_limit_reached(Checker* me) {
+    u32 depth = my instantiation_depth < c_arraylen(my instantiation_stack) ? my instantiation_depth : (u32)c_arraylen(my instantiation_stack);
+    ty_instantiation_limit_reached_on(me, my instantiation_stack, depth);
+}
+
+void ty_instantiation_limit_reached_on(Checker* me, Ty const* const* stack, u32 depth) {
     my instantiation_limit_hits++;
     // tsc's getCircularTypeNames: the types three times on the stack
-    u32 depth = my instantiation_depth < c_arraylen(my instantiation_stack) ? my instantiation_depth : (u32)c_arraylen(my instantiation_stack);
     // (Counted in one pass, like tsc's typeCounts map: the depth is at most 100, the table has room for all of them)
     Symbol const* names[8];
     u32 name_count = 0;
     struct { Ty const* ty; u32 count; } counts[256] = {0};
     for (u32 i = 0; i < depth && name_count < c_arraylen(names); i++) {
-        Ty const* ty = my instantiation_stack[i];
+        Ty const* ty = stack[i];
         u32 h = (u32)(((uintptr_t)ty >> 4) * 0x9E3779B1u) & (c_arraylen(counts) - 1);
         while (counts[h].ty && counts[h].ty != ty) h = (h + 1) & (c_arraylen(counts) - 1);
         counts[h].ty = ty;
