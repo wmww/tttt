@@ -2061,38 +2061,26 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         ) {
             continue;
         }
-        // Declaration emit: accessors as written, in their order (the transformer visits the declarations)
+        // Declaration emit: accessors as written (the transformer visits the declarations)
         InterfaceAccessor const* accessor = i->accessor;
-        if (d.multiline && accessor && (i->key.tag == INTERFACE_KEY_NAME || i->key.tag == INTERFACE_KEY_EXPR) &&
-            (span_valid(accessor->getter_name) || span_valid(accessor->setter_name))
-        ) {
-            Span declarations[2] = {
-                i->declaration, vec_span_size(&accessor->declarations) > 1 ? *vec_span_at(&accessor->declarations, 1) : span_null
-            };
-            bool getter_first = span_valid(accessor->getter_name) &&
-                (!span_valid(accessor->setter_name) || accessor->getter_name.buf < accessor->setter_name.buf);
-            for (u32 n = 0; n < 2; n++) {
-                bool getter = (n == 0) == getter_first;
-                if (!span_valid(getter ? accessor->getter_name : accessor->setter_name)) continue;
-                Span declaration = declarations[n];
-                member_begin_node(d, declaration);
-                out(d, getter ? c_sv("get ") : c_sv("set "));
-                if (i->key.tag == INTERFACE_KEY_EXPR) display_node_computed_name(me, d, i->key.expr);
-                else out(d, span_sv(i->key.span));
-                TypeNode const* type = !getter && i->has_write_type ? &accessor->write_type : &i->type;
-                if (getter) {
-                    out_lit(d, "(): ");
-                } else {
-                    out_lit(d, "(");
-                    out(d, span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) :
-                        span_valid(accessor->setter_pattern) ? span_sv(accessor->setter_pattern) : c_sv("value"));
-                    out_lit(d, ": ");
-                }
-                if (type->parsed) display_node(me, d, type);
-                else out(reused_if(d, false), c_sv("any"));
-                if (!getter) out_lit(d, ")");
-                member_end_node(d, declaration, ";,");
+        if (d.multiline && i->accessor_kind && (i->key.tag == INTERFACE_KEY_NAME || i->key.tag == INTERFACE_KEY_EXPR)) {
+            bool getter = i->accessor_kind == 1;
+            member_begin_node(d, i->declaration);
+            out(d, getter ? c_sv("get ") : c_sv("set "));
+            if (i->key.tag == INTERFACE_KEY_EXPR) display_node_computed_name(me, d, i->key.expr);
+            else out(d, span_sv(i->key.span));
+            if (getter) {
+                out_lit(d, "(): ");
+            } else {
+                out_lit(d, "(");
+                out(d, accessor && span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) :
+                    accessor && span_valid(accessor->setter_pattern) ? span_sv(accessor->setter_pattern) : c_sv("value"));
+                out_lit(d, ": ");
             }
+            if (i->type.parsed) display_node(me, d, &i->type);
+            else out(reused_if(d, false), c_sv("any"));
+            if (!getter) out_lit(d, ")");
+            member_end_node(d, i->declaration, ";,");
             continue;
         }
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)

@@ -5629,96 +5629,54 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     if (item.method.accessor) {
-                        // `get x(): T` / `set x(v: T)` in a type is a property. The getter's type wins
+                        // `get x(): T` / `set x(v: T)` in a type: a member of its own, typed by the getter's return or
+                        // the setter's parameter type (a getter and a setter of one symbol are one property, members.c)
                         bool is_getter = item.method.accessor == CLASS_ACCESSOR_GET;
-                        InterfaceMember* existing = nullptr;
-                        for_each (other, vec_interface_member, &members) {
-                            if (other->key.tag == INTERFACE_KEY_NAME &&
-                                cstr_eq(&other->key.name_string, &item.method.name_string)
-                            ) {
-                                existing = other;
-                            }
-                        }
                         TypeNode type = type_any;
-                        bool typed_setter = false;
+                        bool annotated = false;
                         Span setter_param = span_null, setter_pattern = span_null;
                         // A setter's pattern parameter keeps its annotation, which the member borrows (see
-                        // InterfaceAccessor.setter_function): the first such setter of the name
+                        // InterfaceAccessor.setter_function)
                         bool keep_setter = false;
                         if (is_getter) {
+                            annotated = item.method.func.ret_explicit || item.method.func.has_body;
                             type = type_move(&item.method.func.ret);
                         } else if (vec_function_arg_size(&item.method.func.args)) {
                             FunctionArg* arg = &item.method.func.args.data[0];
-                            typed_setter = arg->initializer.binding.has_explicit_type;
+                            annotated = arg->initializer.binding.has_explicit_type;
                             if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
                             else setter_pattern = arg->initializer.binding.content_span;
-                            keep_setter = (arg->initializer.binding.tag == BINDING_OBJECT || arg->initializer.binding.tag == BINDING_ARRAY) &&
-                                !(existing && existing->accessor && existing->accessor->setter_function);
+                            keep_setter = arg->initializer.binding.tag == BINDING_OBJECT || arg->initializer.binding.tag == BINDING_ARRAY;
                             if (keep_setter) {
-                                if (typed_setter) type = *binding_type(&arg->initializer.binding);
+                                if (annotated) type = *binding_type(&arg->initializer.binding);
                             } else {
                                 type = binding_take_type(&arg->initializer.binding);
                             }
                         }
-                        bool borrowed = keep_setter && typed_setter;
-                        InterfaceMember* target = existing;
-                        if (existing) {
-                            InterfaceAccessor* pair = interface_member_accessor(existing);
-                            if (!vec_span_size(&pair->declarations)) vec_span_push(&pair->declarations, existing->declaration);
-                            vec_span_push(&pair->declarations, item.span);
-                            interface_member_accessor(existing)->second_name = item.method.name_span;
-                            if (!is_getter) existing->accessor->setter_param = setter_param;
-                            if (!is_getter && span_valid(setter_pattern)) existing->accessor->setter_pattern = setter_pattern;
-                            // The setter's parameter type is what writes are checked against (tsc's getWriteTypeOfSymbol)
-                            if (is_getter) {
-                                if (existing->setter_first && !existing->has_write_type) {
-                                    existing->accessor->write_type = existing->type;
-                                    existing->has_write_type = true;
-                                    existing->accessor->write_type_borrowed = existing->accessor->type_borrowed;
-                                } else if (!existing->accessor->type_borrowed) {
-                                    type_drop(&existing->type);
-                                }
-                                existing->accessor->type_borrowed = false;
-                                existing->type = type;
-                                existing->setter_first = false;
-                            } else if (typed_setter && !existing->has_write_type) {
-                                existing->accessor->write_type = type;
-                                existing->accessor->write_type_borrowed = borrowed;
-                                existing->has_write_type = true;
-                                existing->readonly = false;
-                            } else {
-                                if (!borrowed) type_drop(&type);
-                                existing->readonly = false;
-                            }
-                        } else {
-                            InterfaceMember member = interface_member_make(
-                                item.span,
-                                nullptr,
-                                is_getter,
-                                false,
-                                cstr_move(&item.method.name_string),
-                                item.method.name_span,
-                                item.method.name_is_value,
-                                type
-                            );
-                            member.setter_first = typed_setter;
-                            if (borrowed) interface_member_accessor(&member)->type_borrowed = true;
-                            if (span_valid(setter_param)) interface_member_accessor(&member)->setter_param = setter_param;
-                            if (span_valid(setter_pattern)) interface_member_accessor(&member)->setter_pattern = setter_pattern;
-                            list_push(vec_interface_member, &members, member);
-                            target = vec_interface_member_back_mut(&members);
-                        }
-                        InterfaceAccessor* sides = interface_member_accessor(target);
+                        InterfaceMember member = interface_member_make(
+                            item.span,
+                            nullptr,
+                            false,
+                            false,
+                            cstr_move(&item.method.name_string),
+                            item.method.name_span,
+                            item.method.name_is_value,
+                            type
+                        );
+                        member.accessor_kind = is_getter ? 1 : 2;
+                        InterfaceAccessor* sides = interface_member_accessor(&member);
+                        sides->annotated = annotated;
+                        sides->type_borrowed = keep_setter && annotated;
+                        sides->setter_param = setter_param;
+                        sides->setter_pattern = setter_pattern;
                         if (keep_setter) {
                             FunctionImpl* setter = c_new(FunctionImpl, item.method.func);
                             function_impl_set_member_name(setter, item.method.name_span);
                             setter->accessor = (uint8_t)item.method.accessor;
                             sides->setter_function = c_new(Expr, expr_function(setter->full_span, setter));
                             item.method.func = (FunctionImpl){0};
-                            item.method.func.ret_explicit = setter->ret_explicit;
-                            item.method.func.has_body = setter->has_body;
                         }
-                        if (is_getter && item.method.func.has_body && !sides->getter_body) {
+                        if (is_getter && item.method.func.has_body) {
                             // (Kept, TS1183: tsc binds and checks the body, and infers the getter's type from it)
                             FunctionImpl* body = c_new(FunctionImpl, item.method.func);
                             bool explicit_ret = body->ret_explicit;
@@ -5726,19 +5684,8 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             sides->getter_body = c_new(Expr, expr_function(body->full_span, body));
                             sides->getter_body_infers = !explicit_ret;
                             item.method.func = (FunctionImpl){0};
-                            item.method.func.ret_explicit = explicit_ret;
-                            item.method.func.has_body = true;
                         }
-                        if (is_getter) {
-                            if (!span_valid(sides->getter_name)) sides->getter_name = item.method.name_span;
-                            sides->annotated |= item.method.func.ret_explicit || item.method.func.has_body;
-                        } else {
-                            if (!span_valid(sides->setter_name)) sides->setter_name = item.method.name_span;
-                            sides->annotated |= typed_setter;
-                            if (!typed_setter && span_valid(setter_param) && !span_valid(sides->untyped_setter_param)) {
-                                sides->untyped_setter_param = setter_param;
-                            }
-                        }
+                        list_push(vec_interface_member, &members, member);
                         break;
                     }
                     // (What a method signature is reported at, like a class method: its name)
@@ -5822,6 +5769,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
 
     expect_char(&p, '}');
     shrink_list(vec_interface_member, &members);
+    interface_members_bind(&members);
 
     // tsc's checkGrammarMappedType / checkGrammarProperty: a type literal is a mapped type only if it starts like one,
     // and then may have no other members; anywhere else `[K in T]` is a property named by an `in` expression
@@ -8458,7 +8406,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 type_drop(&member->type);
                 member->type = type;
                 member->is_method = false;
-                member->computed_accessor = is_getter ? 1 : 2;
+                member->accessor_kind = is_getter ? 1 : 2;
             }
             if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped->readonly) {
                 member->key.mapped->readonly = 1;

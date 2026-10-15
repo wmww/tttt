@@ -11717,8 +11717,8 @@ const baselines = {
     },
     'duplicateIdentifierChecks': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicateIdentifierComputedName': {
         errors: true,

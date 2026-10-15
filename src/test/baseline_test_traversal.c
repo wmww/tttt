@@ -764,9 +764,54 @@ static void index_initializers_compile_test_info(InterfaceIndexKey const* key, c
 }
 
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx);
+// `get x(): T` / `set x(v: T)` in a type: a member of its own, its symbol the other accessor's too unless it conflicts
+// (InterfaceMember.conflicting, see interface_members_bind()); the symbol's type is the property's
+static void accessor_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
+    Checker* checker = current_checker;
+    Prop const* prop = ctx->member_owner && !my conflicting ?
+        ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string))) : nullptr;
+    Prop const* root = prop;
+    while (root && root->target && !root->decl->decl_span_count) root = root->target;
+    bool mine = false;
+    for (u32 i = 0; root && i < root->decl->decl_span_count; i++) mine |= span_eq(root->decl->decl_spans[i], my declaration);
+    VecSpan declarations = vec_span_init();
+    csview written = span_sv(my key.span);
+    if (mine) {
+        for (u32 i = 0; i < root->decl->decl_span_count; i++) vec_span_push(&declarations, root->decl->decl_spans[i]);
+        if (span_valid(root->decl->name_span)) written = span_sv(root->decl->name_span);
+    } else if (span_valid(my declaration)) {
+        vec_span_push(&declarations, my declaration);
+    }
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = declarations,
+        .span = my key.span,
+        .text = member_text(ctx, ctx->member_container, scope, written, false),
+    });
+    // (Its own type when it is a symbol of its own: a getter with a body and no annotation, TS1183, what it returns)
+    Ty const* own = my accessor_kind == 1 && my accessor && my accessor->getter_body && my accessor->getter_body_infers ?
+        ty_object_literal_accessor_type(checker, my accessor->getter_body->function, true) : ty_of_node(&my type);
+    Ty const* type = mine ? optional_member_type(prop_type(checker, root), root->flags & PROP_OPTIONAL) : own;
+    baseline_test_case_add_type(ctx, my key.span, type);
+    InterfaceAccessor const* accessor = my accessor;
+    if (my accessor_kind == 2 && accessor && span_valid(accessor->setter_param)) {
+        // (Its parameter: its annotation's type, else the getter's, tsc's getTypeOfParameter of a setter)
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = accessor->setter_param });
+        baseline_test_case_add_type(ctx, accessor->setter_param, accessor->annotated ? ty_of_node(&my type) : type);
+    }
+    if (!accessor || !accessor->type_borrowed) type_compile_test_info(&my type, ctx);
+    // (A setter's pattern parameter: its names, then its annotation, see InterfaceAccessor.setter_function)
+    if (accessor && accessor->setter_function) function_impl_compile_test_info(accessor->setter_function->function, ctx);
+    // (A getter's body, TS1183: what's in it, not the function)
+    if (accessor && accessor->getter_body) function_impl_compile_test_info(accessor->getter_body->function, ctx);
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: {
+            if (my accessor_kind) {
+                accessor_member_compile_test_info(me, scope, ctx);
+                return;
+            }
             // Overloaded method signatures are one member, declared by all of them (of every declaration of an
             // interface), whose type has all the signatures
             Prop const* merged = nullptr;
@@ -783,7 +828,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             // A property declared again (TS2717) is one symbol, of the first declaration's type (tsc's getTypeOfSymbol)
             Prop const* redeclared = nullptr;
-            if (!my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
+            if (!my key.name_is_member_function && ctx->member_owner) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
                 if (prop && !(prop->flags & PROP_METHOD) && prop->decl->decl_span_count > 1 && prop->decl->node &&
@@ -814,9 +859,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 for (u32 i = 0; prop && !(prop->flags & PROP_METHOD) && i < prop->decl->decl_span_count; i++) {
                     mine |= span_eq(prop->decl->decl_spans[i], my declaration);
                 }
-                u32 own;
-                interface_member_declarations(me, &own);
-                if (mine && prop->decl->decl_span_count > own) shared = prop;
+                if (mine && prop->decl->decl_span_count > 1) shared = prop;
             }
             VecSpan declarations = vec_span_init();
             // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
@@ -829,7 +872,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = span_sv(shown->decl->name_span);
             } else {
-                declarations = interface_member_declaration_vec(me);
+                if (span_valid(my declaration)) vec_span_push(&declarations, my declaration);
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
@@ -842,10 +885,6 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // (Optional if any declaration is: the symbol's flags)
             Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
                 optional_member_type(ty_of_node(&my type), my optional);
-            // (A getter with a body and no annotation, TS1183: what it returns, tsc's getTypeOfAccessors)
-            if (!merged && my accessor && my accessor->getter_body && my accessor->getter_body_infers) {
-                type = optional_member_type(ty_object_literal_accessor_type(current_checker, my accessor->getter_body->function, true), my optional);
-            }
             // (Optional as its first declaration is: tsc's addOptionality of the symbol's valueDeclaration)
             if (redeclared) type = optional_member_type(prop_type(current_checker, redeclared), redeclared->flags & PROP_OPTIONAL);
             // A property declared after an accessor of its name is that accessor's symbol (after a method it conflicts:
@@ -863,49 +902,6 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);
             if (method) baseline_test_case_leave_generic(ctx, saved);
-            // `get x(): T; set x(v: U)`: the second accessor names the same member, the setter declares its parameter.
-            // In source order: the first accessor's types come before the second's name
-            Span second_name = interface_member_second_name(me), setter_param = interface_member_setter_param(me);
-            bool pair = span_valid(second_name);
-            // (A setter's pattern parameter: its names, then its annotation, see InterfaceAccessor.setter_function)
-            FunctionImpl* setter_function = my accessor && my accessor->setter_function ? my accessor->setter_function->function : nullptr;
-            Span setter_at = span_valid(setter_param) ? setter_param : setter_function ? my accessor->setter_pattern : span_null;
-            bool setter_first = pair && span_valid(setter_at) && setter_at.buf < second_name.buf;
-            // (A getter's body, TS1183: what's in it, after the getter's type)
-            FunctionImpl* getter_body = my accessor && my accessor->getter_body ? my accessor->getter_body->function : nullptr;
-            if (pair && !setter_first) type_compile_test_info(&my type, ctx);
-            if (pair && !setter_first && getter_body) function_impl_compile_test_info(getter_body, ctx);
-            if (span_valid(setter_param) && setter_first) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
-                baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
-                if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
-            }
-            if (setter_function && setter_first) function_impl_compile_test_info(setter_function, ctx);
-            if (pair) {
-                VecSpan second_decls = vec_span_init();
-                if (shared) {
-                    for (u32 i = 0; i < shared->decl->decl_span_count; i++) vec_span_push(&second_decls, shared->decl->decl_spans[i]);
-                } else {
-                    second_decls = interface_member_declaration_vec(me);
-                }
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = second_decls,
-                    .span = second_name,
-                    .text = member_text(ctx, ctx->member_container, scope, span_sv(second_name), false),
-                });
-                baseline_test_case_add_type(ctx, second_name, type);
-            }
-            if (span_valid(setter_param) && !setter_first) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
-                baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
-                if (pair && my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
-            }
-            if (setter_function && pair && !setter_first) function_impl_compile_test_info(setter_function, ctx);
-            if (pair) {
-                if (setter_first) type_compile_test_info(&my type, ctx);
-                if (setter_first && getter_body) function_impl_compile_test_info(getter_body, ctx);
-                return;
-            }
         }   break;
 
         case INTERFACE_KEY_INDEX:
@@ -950,7 +946,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
                     // (Overloads or a duplicate property: one symbol, its first declaration's type)
                     overloads = prop;
-                    if (my computed_accessor) accessor_pair = prop;
+                    if (my accessor_kind) accessor_pair = prop;
                 }
             }
             if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, span_valid(my declaration) ? my declaration : my key.span);
@@ -967,7 +963,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             computed_member_name_compile_test_info(my key.expr, ctx);
             // (A lone setter `set [k](v: T)` declares its parameter)
             Span setter_param = interface_member_setter_param(me);
-            if (span_valid(setter_param) && my computed_accessor == 2) {
+            if (span_valid(setter_param) && my accessor_kind == 2) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
                 baseline_test_case_add_type(ctx, setter_param, ty_of_node(&my type));
             }
@@ -982,7 +978,6 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         case INTERFACE_KEY_CALLABLE: break;
     }
     if (!my accessor || !my accessor->type_borrowed) type_compile_test_info(&my type, ctx);
-    if (my has_write_type && !my accessor->write_type_borrowed) type_compile_test_info(&my accessor->write_type, ctx);
     // (A setter's pattern parameter: its names, then its annotation, see InterfaceAccessor.setter_function)
     if (my accessor && my accessor->setter_function) function_impl_compile_test_info(my accessor->setter_function->function, ctx);
     if (my accessor && my accessor->initializer) expr_compile_test_info(my accessor->initializer, ctx);

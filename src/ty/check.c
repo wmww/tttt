@@ -3634,25 +3634,6 @@ static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs)
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs);
 static Ty const* with_optionality(Checker* me, Ty const* type, bool optional);
 
-// The kind of declaration an interface member's declaration span is: `get x`, `set x`, else a property
-// The name of a member's k-th declaration (an accessor pair's, `get x(); set x(v)`, and those after)
-static Span interface_declaration_name(InterfaceMember const* member, Span const* decls, u32 k) {
-    if (k == 0 || !member->accessor) return member->key.span;
-    csview text = span_sv(decls[k]);
-    isize skip = 0;
-    if (text.size > 4 && (csview_starts_with(text, "get") || csview_starts_with(text, "set")) && isspace((unsigned char)text.buf[3])) skip = 3;
-    isize at = csview_find_sv(csview_slice(text, skip, text.size), span_sv(member->key.span));
-    if (at == c_NPOS) return span_valid(member->accessor->second_name) ? member->accessor->second_name : member->key.span;
-    return span_make_in(decls[k], text.buf + skip + at, text.buf + skip + at + member->key.span.size);
-}
-
-static u32 interface_declaration_kind(Span decl) {
-    csview text = span_sv(decl);
-    bool keyword = text.size > 4 && (text.buf[3] == ' ' || text.buf[3] == '\t' || text.buf[3] == '\n');
-    return keyword && csview_starts_with(text, "get") ? MEMBER_GET : keyword && csview_starts_with(text, "set") ? MEMBER_SET :
-        MEMBER_PROPERTY;
-}
-
 // A class merged with interfaces: tsc binds the instance members of all of them into one members table, in declaration
 // order, so a class getter and an interface property of one name conflict (TS2300 on both, reported once)
 static void check_class_interface_members(Checker* me, Symbol const* symbol, MemberTables* tables, ErrorCtx* errs) {
@@ -3686,18 +3667,12 @@ static void check_class_interface_members(Checker* me, Symbol const* symbol, Mem
             for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
                 if (i->key.tag != INTERFACE_KEY_NAME) continue;
                 Atom const* name = checker_atom(me, cstr_sv(&i->key.name_string));
-                if (i->is_method || i->key.name_is_member_function) {
+                if ((i->is_method || i->key.name_is_member_function) && !i->accessor_kind) {
                     declare_member(tables, name, 0, MEMBER_METHOD, i->key.span, errs);
                     continue;
                 }
-                // (An accessor pair is one member with a declaration per accessor, written `get x`/`set x`)
-                u32 count;
-                Span const* decls = interface_member_declarations(i, &count);
-                for (u32 k = 0; k < count; k++) {
-                    u32 kind = interface_declaration_kind(decls[k]);
-                    Span at = interface_declaration_name(i, decls, k);
-                    declare_member(tables, name, 0, kind, at, errs);
-                }
+                u32 kind = i->accessor_kind == 1 ? MEMBER_GET : i->accessor_kind == 2 ? MEMBER_SET : MEMBER_PROPERTY;
+                declare_member(tables, name, 0, kind, i->key.span, errs);
             }
         }
     }
@@ -3878,7 +3853,7 @@ static void collect_class_property_decls(Checker* me, ClassDecl const* class_dec
 static void collect_interface_property_decls(Checker* me, VecInterfaceMember const* members, bool late, VecPropertyDeclEntry* out) {
     for_each (i, vec_interface_member, members) {
         if (late) {
-            if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr || !expr_is_entity_name(i->key.expr) || i->computed_accessor) continue;
+            if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr || !expr_is_entity_name(i->key.expr) || i->accessor_kind) continue;
             Atom const* name = ty_literal_name(me, ty_expr_type(me, i->key.expr));
             if (!name) continue;
             bool method = i->is_method && i->type.tag == TYPE_CALLABLE;
@@ -3889,14 +3864,14 @@ static void collect_interface_property_decls(Checker* me, VecInterfaceMember con
             continue;
         }
         if (i->key.tag != INTERFACE_KEY_NAME) continue;
-        if (i->is_method || i->key.name_is_member_function) {
+        if ((i->is_method || i->key.name_is_member_function) && !i->accessor_kind) {
             vec_property_decl_entry_push(out, (PropertyDeclEntry){
                 .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional, .method = true,
             });
             continue;
         }
         // (Accessors aren't variable-like: tsc's checkVariableLikeDeclaration compares property declarations only)
-        if (i->accessor || interface_declaration_kind(i->declaration) != MEMBER_PROPERTY) continue;
+        if (i->accessor) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
             .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional,
             .modifiers = i->readonly ? PROPERTY_MOD_READONLY : 0,
@@ -4133,16 +4108,10 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
             bool late_bound = key && key->tag != EXPR_LITERAL && !(key->tag == EXPR_UNARY_OP && key->unary_op->expr.tag == EXPR_LITERAL);
             bool unique_symbol = late_bound && (ty_regular(me, ty_expr_type(me, key))->flags & TYF_UNIQUE_ES_SYMBOL);
             bool is_method = i->is_method || (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function);
-            // (An accessor pair is one member with a declaration per accessor, written `get x`/`set x`)
-            // (An accessor after a method of its name joins the method's member: its declarations after the first)
-            u32 count = 1;
-            Span const* decls = nullptr;
-            if (i->key.tag == INTERFACE_KEY_NAME && (!is_method || i->accessor)) decls = interface_member_declarations(i, &count);
-            if (!decls) count = 1;
-            for (u32 k = 0; k < count; k++) {
-                u32 kind = is_method && k == 0 ? MEMBER_METHOD : i->computed_accessor == 1 ? MEMBER_GET : i->computed_accessor == 2 ? MEMBER_SET :
-                    decls ? interface_declaration_kind(decls[k]) : MEMBER_PROPERTY;
-                Span at = decls ? interface_declaration_name(i, decls, k) : i->key.span;
+            {
+                u32 kind = i->accessor_kind == 1 ? MEMBER_GET : i->accessor_kind == 2 ? MEMBER_SET : is_method ? MEMBER_METHOD :
+                    MEMBER_PROPERTY;
+                Span at = i->key.span;
                 i32 entry = late_bound ? declare_late_member(tables, name, 0, kind, at, unique_symbol, errs) :
                     declare_member(tables, name, 0, kind, at, errs);
                 uint8_t check_kind = kind == MEMBER_METHOD ? 0 : kind == MEMBER_PROPERTY ? 1 : 2;
@@ -4164,7 +4133,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
     }
     for_each (r, vec_dup_record, &records) {
         InterfaceMember const* i = r->member;
-        if (r->entry < 0 || r->check_kind != 1 || i->computed_accessor) continue;
+        if (r->entry < 0 || r->check_kind != 1 || i->accessor_kind) continue;
         InterfaceMember const* first = first_records[r->entry]->member;
         if (first == i || !span_valid(first->key.span)) continue;
         Ty const* first_type = member_declared_type(me, first);

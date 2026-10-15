@@ -573,20 +573,54 @@ static void builder_add_interface_member(
                     if (!name) break;
                 }
                 bool is_method = (i->is_method || (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function)) &&
-                    i->type.tag == TYPE_CALLABLE && !i->computed_accessor;
+                    i->type.tag == TYPE_CALLABLE && !i->accessor_kind;
                 if (is_method && builder->decl_group) set_decl_group(me, i->type.callable->function, builder->decl_group);
+                // (A declaration its symbol excludes is a symbol of its own, not a member: tsc's declareSymbol, TS2300)
+                if (i->conflicting) break;
+                u32 kind = i->accessor_kind == 1 ? 4u : i->accessor_kind == 2 ? 8u : is_method ? 2u : 1u;
                 Prop* existing = builder_find_prop(builder, name);
-                if (existing && i->computed_accessor && i->key.tag == INTERFACE_KEY_EXPR) {
-                    // The other accessor of `get [k]()` / `set [k](v)`: the getter's type is read, the setter's written
-                    // (tsc's getWriteTypeOfSymbol)
-                    if (i->computed_accessor == 2) {
-                        if (i->type.tag != TYPE_ANY || i->type.parsed) prop_decl_rare_mut(me, existing->decl)->write_node = &i->type;
+                u32 kinds = existing ? existing->decl->member_kinds : 0;
+                if (existing && i->accessor_kind && (kinds & 2u)) break; // (After a method: it conflicts, TS2300)
+                if (existing && i->accessor_kind && (kinds ? !(kinds & 1u) : i->key.tag == INTERFACE_KEY_EXPR)) {
+                    // The other accessor of the symbol: the getter's type is read, the setter's written (tsc's
+                    // getTypeOfAccessors, getWriteTypeOfSymbol). One of a kind already there conflicts (TS2300)
+                    if (kinds & kind) break;
+                    // (Read: the getter's annotation, else the setter's, else the getter's body; tsc's
+                    // getTypeOfAccessors. Written: the setter's annotation, else what is read)
+                    bool typed = i->type.tag != TYPE_ANY || i->type.parsed;
+                    if (i->accessor_kind == 2) {
+                        TypeNode const* getter_type = existing->decl->node;
+                        bool getter_typed = getter_type && (getter_type->tag != TYPE_ANY || getter_type->parsed);
+                        if (typed && !getter_typed) {
+                            existing->decl->node = &i->type;
+                            if (prop_decl_rare(existing->decl)->getter_body) prop_decl_rare_mut(me, existing->decl)->getter_body = nullptr;
+                        } else if (typed) {
+                            prop_decl_rare_mut(me, existing->decl)->write_node = &i->type;
+                        }
+                        if (i->accessor) prop_decl_rare_mut(me, existing->decl)->setter_param = i->accessor->setter_param;
                     } else {
-                        prop_decl_rare_mut(me, existing->decl)->write_node = existing->decl->node;
-                        existing->decl->node = &i->type;
+                        TypeNode const* setter_type = existing->decl->node;
+                        bool setter_typed = setter_type && (setter_type->tag != TYPE_ANY || setter_type->parsed);
+                        if (typed) {
+                            if (setter_typed) prop_decl_rare_mut(me, existing->decl)->write_node = setter_type;
+                            existing->decl->node = &i->type;
+                        } else if (!setter_typed) {
+                            existing->decl->node = &i->type;
+                            if (i->accessor && i->accessor->getter_body && i->accessor->getter_body_infers) {
+                                prop_decl_rare_mut(me, existing->decl)->getter_body = i->accessor->getter_body->function;
+                            }
+                        }
                     }
                     existing->flags &= ~(u32)PROP_READONLY;
-                    { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
+                    existing->decl->member_kinds |= (uint8_t)kind;
+                    { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
+                    break;
+                }
+                if (existing && i->accessor_kind) {
+                    // An accessor after a property of its name joins its symbol: a declaration more (tsgo 7.1, TypeScript
+                    // issue 3613)
+                    existing->decl->member_kinds |= (uint8_t)kind;
+                    { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
                     break;
                 }
                 if (existing) {
@@ -608,27 +642,24 @@ static void builder_add_interface_member(
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         // (Optional if any overload is: tsc's binder adds SymbolFlags.Optional per declaration)
                         if (i->optional) existing->flags |= PROP_OPTIONAL;
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
-                    } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
-                        !i->computed_accessor
-                    ) {
+                        { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
+                    } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->accessor_kind) {
                         // A property declared again (TS2717): one symbol, the first declaration's type. String named only
                         // if every declaration is (tsc asks each one)
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
+                        { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
                         if (i->key.tag == INTERFACE_KEY_NAME && !existing->decl->name_form && span_valid(existing->decl->name_span)) {
                             existing->decl->name_form = ty_prop_name_form_merge(
                                 ty_prop_name_form(span_sv(existing->decl->name_span), nullptr, nullptr, false),
                                 ty_prop_name_form(span_sv(i->key.span), nullptr, nullptr, false));
                         }
-                    } else if (!is_method && !i->has_write_type && !i->computed_accessor && !(existing->flags & PROP_METHOD)) {
+                    } else if (!is_method && !i->accessor_kind && !(existing->flags & PROP_METHOD)) {
                         // A property after a class accessor of its name (a merged class) joins its symbol, which stays
                         // what it was: only a declaration more. (After a method it conflicts: a symbol of its own, TS2300)
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
-                    } else if (!is_method && !i->computed_accessor && !(existing->flags & PROP_METHOD)) {
-                        // An accessor pair after a property of its name (another declaration of the interface) merges
-                        // into its symbol: a declaration more (tsgo 7.1, TypeScript issue 3613)
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
+                        { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
+                    } else {
+                        break;
                     }
+                    existing->decl->member_kinds |= (uint8_t)kind;
                     break;
                 }
                 Prop* prop = prop_new_declared(me);
@@ -638,16 +669,14 @@ static void builder_add_interface_member(
                 if (i->accessor && i->accessor->getter_body && i->accessor->getter_body_infers) {
                     prop_decl_rare_mut(me, prop->decl)->getter_body = i->accessor->getter_body->function;
                 }
-                if (i->has_write_type) {
-                    prop_decl_rare_mut(me, prop->decl)->write_node = &i->accessor->write_type;
-                    prop_decl_rare_mut(me, prop->decl)->setter_param = i->accessor->setter_param;
-                }
+                if (i->accessor_kind == 2 && i->accessor) prop_decl_rare_mut(me, prop->decl)->setter_param = i->accessor->setter_param;
+                prop->decl->member_kinds = (uint8_t)kind;
                 prop->decl->ctx = ctx;
                 prop->decl->ctx.method = is_method;
                 prop->thisless = i->type.tag == TYPE_CALLABLE ?
                     function_is_thisless(i->type.callable->function) : type_node_is_thisless(&i->type);
                 if (i->optional) prop->flags |= PROP_OPTIONAL;
-                if (i->readonly || (i->computed_accessor == 1 && i->key.tag == INTERFACE_KEY_EXPR)) prop->flags |= PROP_READONLY;
+                if (i->readonly || i->accessor_kind == 1) prop->flags |= PROP_READONLY; // (A getter without a setter)
                 if (is_method) prop->flags |= PROP_METHOD;
                 prop->decl->name_span = i->key.span;
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
@@ -655,7 +684,7 @@ static void builder_add_interface_member(
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 // (A computed enum member name is that member, tsc's late bound nameType: keyof gives it, it prints `[E.A]`)
                 if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, key);
-                { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, prop, d, n); }
+                { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, prop, &i->declaration, n); }
                 builder_push(builder, props, prop);
             }   break;
 
@@ -1805,6 +1834,31 @@ static void builder_add_class_items(
                 break;
         }
         next_item:;
+    }
+    // A symbol's declarations are in binding order: an accessor pair's spans went in at its first accessor, a property
+    // between the two (`get x(); x: number; set x(v)`, one symbol) after them. Put back those within the class (not
+    // others: late-bound declarations come after the early ones, see resolve_declared_members())
+    for (u32 j = 0; j < builder->props_count; j++) {
+        Prop* prop = builder->props[j];
+        u32 count = prop->decl->decl_span_count;
+        if (count < 3 || !(prop->flags & PROP_ACCESSOR) || prop->decl == prop_decl_none()) continue;
+        Span const* spans = prop->decl->decl_spans;
+        bool inside = true, sorted = true;
+        for (u32 k = 0; k < count && inside; k++) {
+            inside = span_source(spans[k]) == span_source(class_decl->full_span) && span_contains_span(class_decl->full_span, spans[k]);
+            if (k) sorted &= spans[k - 1].buf <= spans[k].buf;
+        }
+        if (!inside || sorted) continue;
+        Span* copy = arena_new_n(&my arena, Span, count);
+        for (u32 k = 0; k < count; k++) {
+            u32 at = k;
+            while (at && copy[at - 1].buf > spans[k].buf) {
+                copy[at] = copy[at - 1];
+                at--;
+            }
+            copy[at] = spans[k];
+        }
+        prop->decl->decl_spans = copy;
     }
     builder_add_computed_index_infos(me, builder, class_decl, static_side);
 }

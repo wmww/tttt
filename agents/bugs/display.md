@@ -116,12 +116,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   declarations in file order (clone_parent_symbol copies the lib's first). Declaration order also decides an
   interface's member and overload order, so a fix should keep declarations partitioned (script ones, then
   augmentation ones) wherever a global symbol gets one.
-- duplicateIdentifierChecks (symbols, types): an interface's duplicate accessors (`get x; get x`) are symbols of their
-  own in tsgo 7.1 (GetAccessorExcludes), a property and an accessor pair one symbol; tttt's interface accessors are
-  paired into one InterfaceMember by the parser and merged by builder_add_interface_member(), so the binder's
-  table-symbol rule (see bind_member_symbols() for classes, literal_bind() for object literals) has nothing to run
-  on. Needs the interface's members bound like the class's (per member, in order) before pairing.
-- duplicateIdentifierChecks: type_core.md "Accessor members of interfaces and type literals".
 - typeAliasesDoNotMerge (types): `export type A = {}; type A = {}`: tsgo prints the second alias as
   `import("./typeAliasesDoNotMerge").A`, i.e. the conflicting symbol has the file's module as parent (fast path of
   getAliasForSymbolInContainer), not a symbol in scope. Where tsgo's binder puts it (exports with the file as parent?)
@@ -162,12 +156,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   shared node). A setter whose parameter is a pattern now keeps its FunctionImpl with the annotation shared
   (InterfaceAccessor.setter_function, borrowed type: 2026-10-15), the model to extend to every setter. No suite test
   left.
-- accessorBodyInTypeContext (types): `type A = { get foo() { return 0 } }` (TS1183) is `foo: number` in tsc, its body
-  walked (`>0 : 0`); tttt's parser turns a type literal's accessor into an InterfaceMember and drops the FunctionImpl
-  (body, parameter scope), so the getter is any and nothing in it is bound or walked. Same root as
-  duplicateIdentifierChecks (type_core.md "Accessor members of interfaces and type literals"). Needs InterfaceMember to keep the accessor's
-  FunctionImpl (boxed in InterfaceAccessor), the binder to walk it, and the getter's type inferred from the body when
-  unannotated. Parser + binder + checker; a session.
 - vscode/eopt elaboration choice (TS2412 at `viewModel` in tsc vs TS2375 at a nested `styles: { a: st.a }` literal in
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
@@ -234,7 +222,7 @@ Looked at, root cause where found, not fixed (one test each unless named):
 - typeofImportDefer: `typeof import.defer("./a").Foo` recovers to an import type with a missing string literal;
   tsgo's symbols are `Symbol(unknown)` for the missing literal and `Symbol(unknown.defer)` for the qualifier (an
   unresolved but non-null module), tttt prints nothing. An unresolved `import("./nope")` prints nothing in both.
-- jsonRawJSON2, duplicateIdentifierChecks, the cross-file alias merges: see "Symbols
+- jsonRawJSON2, the cross-file alias merges: see "Symbols
   baseline" above.
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).

@@ -44,12 +44,10 @@ void interface_member_drop(InterfaceMember* me) {
     }
     if (!my accessor || !my accessor->type_borrowed) type_drop(&my type);
     if (my accessor) {
-        if (my has_write_type && !my accessor->write_type_borrowed) type_drop(&my accessor->write_type);
         if (my accessor->setter_function) {
             expr_drop(my accessor->setter_function);
             free(my accessor->setter_function);
         }
-        vec_span_drop(&my accessor->declarations);
         if (my accessor->initializer) {
             expr_drop(my accessor->initializer);
             free(my accessor->initializer);
@@ -62,8 +60,48 @@ void interface_member_drop(InterfaceMember* me) {
     }
 }
 
+void interface_members_bind(VecInterfaceMember* members) {
+    // Each name with an accessor (the others merge as the members builder has them, see builder_add_interface_member()):
+    // its symbol is its first declaration, and the kinds that joined it; 1 property, 2 method, 4 get, 8 set
+    isize count = vec_interface_member_size(members);
+    for (isize j = 0; j < count; j++) {
+        InterfaceMember* member = &members->data[j];
+        if (!member->accessor_kind || member->key.tag != INTERFACE_KEY_NAME || interface_member_is_private_name(member)) continue;
+        bool first = true;
+        for (isize k = 0; k < j && first; k++) {
+            InterfaceMember const* other = &members->data[k];
+            first = !other->accessor_kind || other->key.tag != INTERFACE_KEY_NAME ||
+                !cstr_eq(&other->key.name_string, &member->key.name_string);
+        }
+        if (!first) continue;
+        u32 flags = 0;
+        isize getter = -1, setter = -1;
+        for (isize k = 0; k < count; k++) {
+            InterfaceMember* other = &members->data[k];
+            if (other->key.tag != INTERFACE_KEY_NAME || !cstr_eq(&other->key.name_string, &member->key.name_string)) continue;
+            u32 kind = other->accessor_kind == 1 ? 4 : other->accessor_kind == 2 ? 8 :
+                (other->is_method || other->key.name_is_member_function) && other->type.tag == TYPE_CALLABLE ? 2 : 1;
+            // (PropertyExcludes, MethodExcludes, GetAccessorExcludes, SetAccessorExcludes)
+            u32 excludes = kind == 1 ? 2u : kind == 2 ? 1u | 4u | 8u : kind == 4 ? 2u | 4u : 2u | 8u;
+            if (flags & excludes) {
+                other->conflicting = true;
+                // (An accessor conflicting with another kind makes the symbol a full accessor: later ones conflict too)
+                if ((flags & 12u) && (flags & 12u) != (kind & 12u)) flags |= 12u;
+                continue;
+            }
+            flags |= kind;
+            if (kind == 4 && getter < 0) getter = k;
+            if (kind == 8 && setter < 0) setter = k;
+        }
+        if (getter >= 0 && setter >= 0) {
+            members->data[getter].accessor->partner = (int32_t)(setter - getter);
+            members->data[setter].accessor->partner = (int32_t)(getter - setter);
+        }
+    }
+}
+
 bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
-    if (my key.tag != INTERFACE_KEY_EXPR || my is_method || my computed_accessor) return false; // (A property only)
+    if (my key.tag != INTERFACE_KEY_EXPR || my is_method || my accessor_kind) return false; // (A property only)
     Expr const* key = my key.expr;
     return key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
 }
@@ -123,7 +161,6 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     } else if (!my accessor || !my accessor->type_borrowed) {
         type_lookup_names(&my type, names, errs);
     }
-    if (my has_write_type && !my accessor->write_type_borrowed) type_lookup_names(&my accessor->write_type, names, errs);
     // (A setter's pattern parameter: its annotation is resolved in the setter's parameter scope, see setter_function)
     if (my accessor && my accessor->setter_function) expr_lookup_names(my accessor->setter_function, names, errs);
     // (Resolved silently: the grammar error said it all)
@@ -159,22 +196,20 @@ static void interface_member_check_implicit_any(InterfaceMember const* me, Error
     // An accessor pair neither of whose sides says the type (tsc's getTypeOfAccessors): at the setter if there is one,
     // else at the getter; a setter without a getter has an implicitly any parameter too
     InterfaceAccessor const* sides = my accessor;
-    if (sides && (span_valid(sides->getter_name) || span_valid(sides->setter_name)) && !sides->annotated &&
-        compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js
-    ) {
-        if (span_valid(sides->setter_name)) {
-            error_ctx_error_d(errs, sides->setter_name, 7032, "Property '", sides->setter_name,
+    bool checked = sides && my accessor_kind && my key.tag == INTERFACE_KEY_NAME && compiler_options()->no_implicit_any &&
+        span_source(my key.span) && !span_source(my key.span)->is_js;
+    InterfaceMember const* partner = checked && sides->partner ? me + sides->partner : nullptr;
+    if (checked && !sides->annotated && !(partner && partner->accessor->annotated)) {
+        if (my accessor_kind == 2) {
+            error_ctx_error_d(errs, my key.span, 7032, "Property '", my key.span,
                 "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
-        } else {
-            error_ctx_error_d(errs, sides->getter_name, 7033, "Property '", sides->getter_name,
+        } else if (!partner) {
+            error_ctx_error_d(errs, my key.span, 7033, "Property '", my key.span,
                 "' implicitly has type 'any', because its get accessor lacks a return type annotation.");
         }
     }
-    if (sides && span_valid(sides->untyped_setter_param) && !span_valid(sides->getter_name) &&
-        compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js
-    ) {
-        error_ctx_error_d(errs, sides->untyped_setter_param, 7006, "Parameter '", sides->untyped_setter_param,
-            "' implicitly has an 'any' type.");
+    if (checked && my accessor_kind == 2 && !sides->annotated && span_valid(sides->setter_param) && !partner) {
+        error_ctx_error_d(errs, sides->setter_param, 7006, "Parameter '", sides->setter_param, "' implicitly has an 'any' type.");
     }
     if (interface_member_is_method_signature(me)) {
         function_impl_check_implicit_any_return(my type.callable->function, my key.span, interface_member_error_span(me), errs);
@@ -247,8 +282,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
         case INTERFACE_KEY_EXPR:
             if (interface_member_is_misplaced_mapped(me)) break;
             // (An accessor's `[k in T]` is no mapped type's member but a name, and no TS1169: tsc's checkAccessorDeclaration)
-            ty_check_computed_name(current_checker, my key.expr, my key.span, !my computed_accessor, errs);
-            if (!my computed_accessor && expr_is_non_bindable_dynamic_name(my key.expr)) {
+            ty_check_computed_name(current_checker, my key.expr, my key.span, !my accessor_kind, errs);
+            if (!my accessor_kind && expr_is_non_bindable_dynamic_name(my key.expr)) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&
@@ -300,5 +335,4 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
             break;
     }
     type_typecheck(&my type, errs);
-    if (my has_write_type) type_typecheck(&my accessor->write_type, errs);
 }

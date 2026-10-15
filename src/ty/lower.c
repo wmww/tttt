@@ -997,7 +997,6 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                 }
                 collect_free_params(me, &i->type, out);
                 // (`get x(): A; set x(v: B)`: the setter's parameter type too)
-                if (i->has_write_type) collect_free_params(me, &i->accessor->write_type, out);
             }
             break;
 

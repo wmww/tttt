@@ -544,6 +544,10 @@ ClassNamesakes class_namesakes(ClassDecl const* decl, ClassItem const* item, boo
 // everything but methods, an accessor everything but the other accessor and properties), then it stands alone and isn't
 // a member
 static void bind_member_symbols(ClassDecl* me) {
+    // The symbols an accessor conflicted with while they had the other kind (or none) of accessor: full accessors from
+    // then on, which every later accessor conflicts with (tsc's declareSymbol). Rare: a list
+    ClassItem const** full = nullptr;
+    u32 full_count = 0, full_cap = 0;
     for_each (i, vec_class_item, &my items) {
         cstr const* name;
         bool is_static;
@@ -570,12 +574,24 @@ static void bind_member_symbols(ClassDecl* me) {
             if (j->symbol_first == first) existing |= other_flags;
         }
         if (!first) continue;
+        for (u32 k = 0; k < full_count; k++) if (full[k] == first) existing |= BIND_GET | BIND_SET;
         // (An auto-accessor is both accessors: tsc's AccessorExcludes, everything but a property)
         u32 excludes = flags == BIND_PROPERTY ? (u32)~(BIND_PROPERTY | BIND_GET | BIND_SET) : flags == BIND_METHOD ? (u32)~BIND_METHOD :
             flags == (BIND_GET | BIND_SET) ? (u32)~BIND_PROPERTY :
             flags == BIND_GET ? (u32)~(BIND_SET | BIND_PROPERTY) : (u32)~(BIND_GET | BIND_PROPERTY);
-        if (!(existing & excludes)) i->symbol_first = first;
+        if (!(existing & excludes)) {
+            i->symbol_first = first;
+        } else if ((existing & (BIND_GET | BIND_SET)) && (existing & (BIND_GET | BIND_SET)) != (flags & (BIND_GET | BIND_SET))) {
+            // (An accessor conflicting with another kind makes the symbol a full accessor: later accessors conflict too)
+            if (full_count == full_cap) {
+                full_cap = full_cap ? full_cap * 2 : 4;
+                full = realloc(full, sizeof(ClassItem const*) * full_cap);
+                panic_if(!full, "out of memory");
+            }
+            full[full_count++] = first;
+        }
     }
+    free(full);
 }
 
 // The first member of a computed name's late-bound symbol that `target` is part of (tsc's lateBindMember, which

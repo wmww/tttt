@@ -601,6 +601,9 @@ typedef struct PropDecl {
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
+    // A type member's: the kinds of declaration its symbol has so far (1 property, 2 method, 4 get, 8 set; 0 unknown),
+    // what a later member of its name joins or conflicts with (builder_add_interface_member())
+    uint8_t member_kinds;
     // Types baseline only: an annotation that still says the property's type, reused (see ty_display.c): of a property
     // it was spread or mapped from, an object literal property's JSDoc `@type`
     TypeNode const* asserted;

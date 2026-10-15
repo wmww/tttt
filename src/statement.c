@@ -631,7 +631,7 @@ static Symbol const* same_block_counterpart(Symbol const* symbol, SymbolDecl con
 static bool module_attributes_check_grammar(Interface const* attributes, ErrorCtx* errs) {
     for_each (i, vec_interface_member, &attributes->members) {
         Span decl = i->declaration;
-        if (i->is_method || i->accessor || i->computed_accessor || (i->key.tag != INTERFACE_KEY_NAME && i->key.tag != INTERFACE_KEY_EXPR)) {
+        if (i->is_method || i->accessor || i->accessor_kind || (i->key.tag != INTERFACE_KEY_NAME && i->key.tag != INTERFACE_KEY_EXPR)) {
             error_ctx_grammar_error_d(errs, decl, 1552, "An import attributes type may only contain property signatures.");
             return true;
         }

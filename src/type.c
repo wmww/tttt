@@ -387,7 +387,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             if (!mapped) scope_rare_mut(literal_scope)->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
             if (vec_interface_member_size(&my interface.members) == 1) {
                 InterfaceMember const* only = my interface.members.data;
-                if (only->key.tag == INTERFACE_KEY_EXPR && !only->is_method && !only->computed_accessor) {
+                if (only->key.tag == INTERFACE_KEY_EXPR && !only->is_method && !only->accessor_kind) {
                     scope_rare_mut(literal_scope)->lone_computed_key = only->key.expr;
                 }
             }

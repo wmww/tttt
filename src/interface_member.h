@@ -39,22 +39,13 @@ typedef struct InterfaceMappedKey {
 
 // What only a `get`/`set` pair in a type literal or an interface has
 typedef struct InterfaceAccessor {
-    // All the declarations when there is more than one (InterfaceMember.declaration is the first)
-    VecSpan declarations;
-    // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor), when
-    // InterfaceMember.has_write_type
-    TypeNode write_type;
-    // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
-    Span second_name;
+    // A setter's parameter name (for the types and symbols baselines), or its binding pattern as written (declaration
+    // emit reprints it)
     Span setter_param;
-    Span setter_pattern; // A setter's parameter that is a binding pattern, as written (declaration emit reprints it)
-    // For noImplicitAny (tsc's getTypeOfAccessors): the getter's and setter's names (null if none), the setter's
-    // parameter name when it has no type annotation, and whether either accessor says the type (a getter's return
-    // annotation or body, a setter's parameter annotation)
-    Span getter_name;
-    Span setter_name;
-    Span untyped_setter_param;
-    bool annotated;
+    Span setter_pattern;
+    // The other accessor of its symbol (tsc's getAllAccessorDeclarations), as an index delta in the member list: a
+    // getter's setter, a setter's getter (0 none). See interface_members_bind()
+    int32_t partner;
     // Not an accessor's: `a: T = v` (TS1246/TS1247), an initializer tsc's parser keeps and its types baseline shows.
     // Owned, null if none (the rare parts of a member live here)
     struct Expr* initializer;
@@ -65,16 +56,16 @@ typedef struct InterfaceAccessor {
     // A setter whose parameter is a binding pattern: the setter as a function expression (EXPR_FUNCTION, owned, null if
     // none), whose parameter scope declares the pattern's names (tsc binds the accessor like any signature: `set
     // x({ name: alias }: Named & { o: typeof alias })` resolves `alias`, TS2842 for an unused renaming). The
-    // parameter's annotation stays the function's: the member's `type` or `write_type` is that same node, borrowed
-    // (not resolved nor dropped through the member)
+    // parameter's annotation stays the function's: the member's `type` is that same node, borrowed (not resolved nor
+    // dropped through the member)
     struct Expr* setter_function;
     bool type_borrowed; // InterfaceMember.type is setter_function's parameter annotation
-    bool write_type_borrowed; // write_type is
+    bool annotated; // A getter's return annotation or body, a setter's parameter annotation (noImplicitAny)
 } InterfaceAccessor;
 
 // PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these
 typedef struct InterfaceMember {
-    // The (first) declaration, null for none: interface_member_declarations() has them all
+    // The declaration, null for none
     Span declaration;
     // The original declared interface this member came from, used by the tests. Can be null.
     Symbol const* origin_interface;
@@ -96,18 +87,21 @@ typedef struct InterfaceMember {
         bool name_is_value : 1; // INTERFACE_KEY_NAME
         bool name_is_member_function : 1; // INTERFACE_KEY_NAME
     } key;
+    // An accessor's: a getter's return type, a setter's parameter type
     TypeNode type;
-    // Owned, null unless the member is an accessor pair or a setter (interface_member_accessor())
+    // Owned, null unless the member is an accessor or has one of the rare parts (interface_member_accessor())
     InterfaceAccessor* accessor;
     bool readonly : 1; // NOT used for mapped types
     bool optional : 1; // NOT used for mapped types
     bool is_method : 1;
     bool implicit_any : 1; // A property signature without a type annotation
-    bool has_write_type : 1; // accessor->write_type is set
-    bool setter_first : 1; // Parser only: `type` is a typed setter's parameter type until a getter shows up
-    // `get [k](): T` / `set [k](v: T)` (a computed key): `type` is the getter's return or the setter's parameter type,
-    // a getter and a setter of the same key make one property (members.c). 0 none, 1 get, 2 set
-    unsigned char computed_accessor : 2;
+    // A declaration its symbol's earlier ones exclude (tsc's declareSymbol: TS2300, a symbol of its own that isn't in
+    // the members table), see interface_members_bind()
+    bool conflicting : 1;
+    // `get x(): T` / `set x(v: T)` (a name or a computed key): each accessor is a member of its own, `type` the getter's
+    // return or the setter's parameter type; a getter and a setter of one symbol make one property (members.c). 0 none,
+    // 1 get, 2 set
+    unsigned char accessor_kind : 2;
 } InterfaceMember;
 
 // The accessor side of a member, made on demand (parser)
@@ -116,26 +110,6 @@ static inline InterfaceAccessor* interface_member_accessor(InterfaceMember* me) 
         my accessor = c_new(InterfaceAccessor, {0});
     }
     return my accessor;
-}
-// The member's declarations (the second and later ones of a `get`/`set` pair)
-static inline Span const* interface_member_declarations(InterfaceMember const* me, u32* count) {
-    if (my accessor && vec_span_size(&my accessor->declarations)) {
-        *count = (u32)vec_span_size(&my accessor->declarations);
-        return my accessor->declarations.data;
-    }
-    *count = span_valid(my declaration);
-    return &my declaration;
-}
-// A copy of interface_member_declarations()
-static inline VecSpan interface_member_declaration_vec(InterfaceMember const* me) {
-    u32 count;
-    Span const* spans = interface_member_declarations(me, &count);
-    VecSpan ret = vec_span_init();
-    for (u32 i = 0; i < count; i++) vec_span_push(&ret, spans[i]);
-    return ret;
-}
-static inline Span interface_member_second_name(InterfaceMember const* me) {
-    return my accessor ? my accessor->second_name : span_null;
 }
 static inline Span interface_member_setter_param(InterfaceMember const* me) {
     return my accessor ? my accessor->setter_param : span_null;
@@ -185,3 +159,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
 #define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>
+
+// tsc's binder over a type's members (declareSymbol with each kind's excludes): marks the declarations that conflict
+// with their name's symbol (InterfaceMember.conflicting) and links each accessor to the other one of its symbol
+// (InterfaceAccessor.partner). Once the list is complete (parser)
+void interface_members_bind(VecInterfaceMember* members);
