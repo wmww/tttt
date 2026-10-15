@@ -507,8 +507,9 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     Symbol const* member = info->member_symbol;
     // (An expando of a `{}` container is a member of the object literal in tsgo, whose symbol getSymbolChain skips:
     // bare, even where the container is reached through another name, `module.exports = o`)
-    if (info->member_count == 1 && member && !member->parent && member->decl_count &&
-        member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
+    // (also one merged with a dotted typedef's namespace, SymbolRare.literal_member)
+    if (info->member_count == 1 && member && member->decl_count &&
+        ((!member->parent && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) || symbol_rare(member)->literal_member)
     ) {
         cstr_append_sv(&ret, name);
         return ret;

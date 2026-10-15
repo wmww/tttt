@@ -2089,6 +2089,24 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     // `N.p` in the symbols baseline
     if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
     VecSpan spans = symbol_declaration_spans(symbol);
+    // (A `{}` container's expando merged with a dotted typedef's namespace: the expando's own, SymbolRare.literal_member)
+    if (symbol_rare(symbol)->literal_member && member == symbol) {
+        prop->parent = nullptr;
+        SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (symbol->decl_count ? symbol->decl_count : 1));
+        panic_if(!decls, "out of memory");
+        u32 len = 0;
+        for (u32 i = 0; i < symbol->decl_count; i++) {
+            if (symbol->decls[i].kind != SYMBOL_DECL_NAMESPACE) decls[len++] = symbol->decls[i];
+        }
+        if (len != symbol->decl_count) {
+            Symbol own = *symbol;
+            own.decls = decls;
+            own.decl_count = len;
+            vec_span_drop(&spans);
+            spans = symbol_declaration_spans(&own);
+        }
+        free(decls);
+    }
     prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
     vec_span_drop(&spans);
     return prop;

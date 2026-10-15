@@ -5649,7 +5649,11 @@ static void add_expando_member(
     // (A class's exports have its `prototype` in tsgo)
     if (span_equals(name, "prototype") && (host->flags & SYMBOL_CLASS)) return;
     Symbol const* existing = symbol_table_get(host->exports, span_sv(name));
+    // (A `{}` container's expandos are the object literal's members in tsgo, a table of their own: the namespace of a
+    // dotted `@typedef {T} ns.a.B` is in the variable's, which doesn't stop `ns.a = {}`)
+    bool literal = init && init->tag == EXPR_OBJECT;
     for (u32 i = 0; existing && i < existing->decl_count; i++) {
+        if (literal && is_delayed_jsdoc_decl(&existing->decls[i])) continue;
         if (existing->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && span_source(existing->decls[i].full) == my file) return;
     }
     // (A class's static members are its exports in tsgo, here they're its items: a class declaration's, or those of the
@@ -5662,6 +5666,7 @@ static void add_expando_member(
     if (init && init->tag == EXPR_CLASS_DECL && class_declares_static(init->class_decl, name)) return;
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, span_sv(name), name, SYMBOL_PROPERTY, 0, false, &merged);
+    if (literal) symbol_rare_mut(member)->literal_member = true;
     if (!merged) {
         member->name = span_sv(name);
         member->name_span = written_member_name(left, name);

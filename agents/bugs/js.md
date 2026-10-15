@@ -26,19 +26,6 @@ what remains is below, each with what was found.
 ## JSDoc diagnostics
 - An earlier comment's `@extends` still counts for TS8023 in tttt (checkJSDocAugmentsTagMatchesExtends reads every
   comment). No test.
-- jsEnumCrossFileExport (2026-10-15, agent C: one mechanism left, ~1 session): `var Host = {}` with a dotted
-  `@typedef {string} Host.UserMetrics.Bargh` in the same file. tsgo's reparser makes the typedef `namespace Host {
-  export namespace UserMetrics { export type Bargh = string } }`, merged into Host's exports, while the expandos of a
-  `{}` container go into the *object literal's* symbol (getInitializerSymbol returns `initializer.Symbol()`), a table
-  of its own: `Host.UserMetrics = {}` is still an expando (Decl at the assignment), and the JSDoc type
-  `Host.UserMetrics.Action` finds the typedef namespace, no Action, then the value: TS2749. tttt keeps both in
-  Host's exports, so add_expando_member() sees the typedef namespace `UserMetrics` and declares no expando (TS2339
-  on every `Host.UserMetrics`, TS2694 instead of TS2749). Fix: a `{}` container's expandos in a table of their own
-  (the literal's, e.g. SymbolRare of the host or a binder symbol per container literal): add_expando_member(),
-  expando_host()'s nested lookup, ty_namespace_type()/make_namespace() of the container, expr.c's
-  expando_container type, and the value-meaning entity resolution of JSDoc names (`Host.UserMetrics.Action` as a value
-  for TS2749) read it; namespace-meaning lookups keep reading Host's exports. Everything else in the test (TS1003 of
-  the nameless `@typedef`, the symbols' Decl positions) already matches.
 
 ## Declaration diagnostics in JS
 Only TS6424 and isolatedDeclarations are ported for JS (`js_declaration_diagnostics_check()`,

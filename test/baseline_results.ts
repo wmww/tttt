@@ -20921,9 +20921,9 @@ const baselines = {
         types: true,
     },
     'jsEnumCrossFileExport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsEnumFunctionLocalNoCrash': {
         errors: true,

@@ -232,6 +232,12 @@ src` finds the code-side markers; every significant one has an entry here.
   under `BaselineTestCase.in_with`) and `yield x` outside a generator (`UnaryOpExpr.outside_generator`). Real fix: the
   resolve walk stops reporting checker errors.
 
+- `SymbolRare.literal_member` (`add_expando_member()`, `namespace_export_prop()`, the walker's `prop_text()`): tsgo
+  declares a `{}` container's expandos in the object literal's symbol, a table of its own; tttt shares the host's
+  exports, so an expando whose name a dotted JSDoc typedef's namespace already declared (`@typedef {T} Host.a.B` next
+  to `Host.a = {}`) merges into that namespace symbol. The value side is then the expando's alone (its property
+  drops the namespace declarations and the qualification), but a type-side reference shows both declarations.
+
 - `SymbolRare.merge_detached` (`merge_into_exports()`, `ty_type_of_symbol()`): an alias a cross-file merge went
   through (`export { Knex }` in a namespace, augmented) keeps tsgo's view of it, whose aliasTarget is the target as it
   was before the merge: only its flags are remembered, so a target without a value makes the alias errorType, but one

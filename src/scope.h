@@ -287,6 +287,11 @@ typedef struct SymbolRare {
     // flags before the merge
     u32 detached_target_flags;
     bool merge_detached;
+    // An expando of a `{}` container (`ns.a = v` of `var ns = {}`): a member of the object literal's symbol in tsgo,
+    // which has no name. Here it shares the host's exports, where the namespace of a dotted JSDoc typedef (`@typedef
+    // {T} ns.a.B`) may have declared the name already: then they're one symbol, whose value is the expando's alone (its
+    // property has the expando's declarations, unqualified: namespace_export_prop())
+    bool literal_member;
 } SymbolRare;
 
 // PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)
