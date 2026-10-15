@@ -115,8 +115,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   apply binder rules at lookup; `ty_check_class_duplicate_members` / `object_bind_members` replay the binder at check
   time; computed keys pair by source text (`computed_symbol_first()` for classes, not object literals) where tsc
   late-binds only literal/unique-symbol names (`["a"]` pairs with `a`: computedPropertyNames2); `ty_member_name()`
-  evaluates every computed key. "Which declarations make one member symbol" has four copies (class_decl.c,
-  MembersBuilder, ty/check.c's MemberTables, the symbols baseline's `computed_member_symbol_items`): plan 71 item 2.
+  evaluates every computed key. Which declarations make one member symbol: see "three copies" under Expressions (plan 73).
 - Merged interface/class type parameters share one symbol per name (`scope_new_generic_merged`, serial walk) except
   against the shared lib; `type_parameter_is_unused` compensates.
 - TS2301/TS2844: fields are walked before the constructor's scope exists, so `constructor_locals()` (class_decl.c)
@@ -225,10 +224,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
-- **"Which declarations make one member symbol" has several copies** (triage 2026-10-14): class_decl.c's
-  bind_member_symbols/computed_symbol_first, the checker's MembersBuilder, check.c's MemberTables, the symbols
-  baseline's computed_member_symbol_items. The symbols baseline should ask the checker's Prop decl spans everywhere, as
-  late_member_declarations() and ty_object_literal_member_symbol() do.
+- **"Which declarations make one member symbol" has three copies** (plan 73): class_decl.c's bind_member_symbols
+  (the binder, syntactic, legitimately separate) with computed_symbol_first (groups late-bound members by key source
+  text, tsc by resolved name: `get [a]` / `set [b]` with `b: typeof a` don't pair), the checker's MembersBuilder join
+  rules (builder_add_class_prop_joined: interface joins, only_late's excludes test), and check.c's MemberTables (the
+  most faithful declareSymbol, TS2300 reporting). The symbols baseline asks the checker (ty_class_item_prop()).
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a mentioned type parameter is unmapped or mapped
   to something generic (tsc: any reference with a node). Needed by conditional.c's "infer constraint stays generic"
   (react-relay); drizzle -24% types.
@@ -531,7 +531,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   in it, a spread-only literal from nowhere; context sensitivity is guessed from member types. Correct: the literal's
   type knows its node (or the resolve walk stores a scope on the Expr). Shown by: errtextdiff.py header buckets.
 
-### Symbols baseline reconstruction (harness: tttt has no tsc-shaped member symbols, see plan 71 item 2)
+### Symbols baseline reconstruction (harness: tttt has no tsc-shaped member symbols, see plan 73)
 - `collect_prop_symbol()`: a non-object union member lacks the property only for binding patterns, because a property
   access's object is sometimes narrowed less than tsc's (applying it everywhere loses 70 symbols components). Correct:
   narrow like tsc, then drop the gate.
@@ -543,8 +543,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Member-table merges rebuilt in the harness only (the checker doesn't merge): `class_prop_declarations()` (field +
   parameter property/interface member), `register_type_parameter_member_merges()` (`BaselineTestCase.merged_declarations`,
   registered when the class is walked: an earlier use misses it), `baseline_symbol_declaration_spans()` (namespace local
-  + its exported declarations; a function's type parameter + a parameter/local, `Scope.type_params_function`),
-  `computed_member_symbol_items()`. A union property's symbol dedupes members by (first declaration, mapper), treating
+  + its exported declarations; a function's type parameter + a parameter/local, `Scope.type_params_function`). A union property's symbol dedupes members by (first declaration, mapper), treating
   an instantiation whose type equals the declared one as uninstantiated (tsc's lazy instantiateSymbol may differ).
 - `unknown_symbol_text()`: tsc's unknownSymbol is named by the first alias of an unresolved import in the innermost table.
 - `namespace_decl_compile_test_info`: an ambient module's name is `symbol_text()` unless that comes back quoted (a text
