@@ -105,6 +105,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationDependencyLinkUnbuilt': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationElidedComputedMember': {
         errors: true,
         symbols: true,
@@ -123,7 +129,19 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExportsConditionByTargetFormat': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLiteralText': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationManyContainers': {
         errors: true,
         symbols: true,
         types: true,
