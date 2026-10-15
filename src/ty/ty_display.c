@@ -1568,6 +1568,9 @@ static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
 
 // A part of an annotation that can't be reused prints its type
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty);
+static u32 written_prop_count(TyDisplay d, Members const* members);
+static bool class_literal_function_like(Checker* me, TyDisplay d, Ty const* ty);
+static bool displays_as_intersection(Checker* me, TyDisplay d, Ty const* ty);
 static bool anonymous_prints_type_query(TyDisplay d, Ty const* ty);
 static bool mapped_as_conditional(Checker* me, TyDisplay d, Ty const* ty);
 static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens);
@@ -1579,7 +1582,8 @@ static bool needs_parens_as_constituent(Checker* me, TyDisplay d, Ty const* ty) 
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION) && !shows_alias(d, ty)) ty = ty_reduced(me, ty);
     if (shows_alias(d, ty) || (ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
     bool conditional = (ty->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
-    return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || is_function_like(me, d, ty);
+    return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || is_function_like(me, d, ty) ||
+        class_literal_function_like(me, d, ty);
 }
 
 // Declaration maps: the node display_node() is printing printed its type instead (no mappings of its own)
@@ -4660,16 +4664,17 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     u32 abstract_count = 0;
     for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
     if (abstract_count) {
+        // (One alone is the function type: `abstract new () => C`, parenthesized where the context needs it)
+        bool rest = members->call_count + members->construct_count - abstract_count + members->index_count + written_prop_count(d, members);
+        bool alone = abstract_count == 1 && !rest;
         for (u32 i = 0, printed = 0; i < members->construct_count; i++) {
             if (!(members->construct[i]->flags & SIGNATURE_ABSTRACT)) continue;
             if (printed++) out_lit(d, " & ");
-            out_lit(d, "(");
+            if (!alone) out_lit(d, "(");
             display_signature(me, d, members->construct[i], " => ", true);
-            out_lit(d, ")");
+            if (!alone) out_lit(d, ")");
         }
-        if (members->call_count + members->construct_count - abstract_count + members->index_count + members->prop_count == 0) {
-            return;
-        }
+        if (!rest) return;
         out_lit(d, " & ");
     }
     TyDisplay brace_outer = d;
@@ -5087,7 +5092,7 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     }
     if (display_over(d) || anonymous_elided(d, ty)) return false; // (The placeholder is a keyword)
     Members const* members = ty_members(me, ty);
-    return !members->prop_count && !members->index_count && !members->mapped &&
+    return !written_prop_count(d, members) && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
 }
 
@@ -5099,15 +5104,27 @@ static bool is_mixin_static_side(Checker* me, Ty const* ty) {
         !ty->declared.merged_value && ty_class_base_type_variable(me, ty->declared.symbol);
 }
 
+// The properties a type literal of these members writes: declaration emit leaves out a class's `prototype` (tsc's
+// WriteClassExpressionAsTypeLiteral)
+static u32 written_prop_count(TyDisplay d, Members const* members) {
+    u32 count = members->prop_count;
+    if (!d.tracker) return count;
+    for (u32 i = 0; i < members->prop_count; i++) count -= (members->props[i]->flags & PROP_PROTOTYPE) != 0;
+    return count;
+}
+
 // A type literal that prints as an intersection: its abstract construct signatures are split off (display_structure())
 static bool displays_as_intersection(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty)) return false;
-    if (ty->kind != TY_ANONYMOUS && !is_mixin_static_side(me, ty)) return false;
+    Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    bool class_literal = declared->kind == TY_DECLARED && declared->declared.kind == TY_DECLARED_CLASS_STATIC &&
+        class_as_literal(d, declared);
+    if (ty->kind != TY_ANONYMOUS && !is_mixin_static_side(me, ty) && !class_literal) return false;
     Members const* members = ty_members(me, ty);
     if (members->mapped) return false;
     u32 abstract_count = 0;
     for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
-    return abstract_count && (abstract_count > 1 || members->prop_count || members->index_count || members->call_count ||
+    return abstract_count && (abstract_count > 1 || written_prop_count(d, members) || members->index_count || members->call_count ||
         members->construct_count > abstract_count);
 }
 
@@ -5291,6 +5308,18 @@ static bool expando_cyclic_placeholder(TyDisplay d, Ty const* ty) {
     return false;
 }
 
+static bool class_literal_function_like(Checker* me, TyDisplay d, Ty const* ty) {
+    Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    if (declared->kind != TY_DECLARED || declared->declared.kind != TY_DECLARED_CLASS_STATIC || !class_as_literal(d, declared) ||
+        is_mixin_static_side(me, declared)
+    ) {
+        return false;
+    }
+    Members const* members = ty_members(me, ty);
+    return !written_prop_count(d, members) && !members->index_count && members->call_count + members->construct_count == 1 &&
+        members->construct_count && (members->construct[0]->flags & SIGNATURE_ABSTRACT);
+}
+
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     if (shows_alias(d, ty)) return false;
     // (What prints: a union or intersection reduced, see ty_display())
@@ -5303,10 +5332,15 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
         return !members->prop_count && !members->index_count && members->call_count + members->construct_count == 1;
     }
     if ((ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
-    // `(typeof C)[]`: a type query is parenthesized too
-    bool type_query = ty->kind == TY_DECLARED &&
-        (ty->declared.kind == TY_DECLARED_CLASS_STATIC || ty->declared.kind == TY_DECLARED_ENUM_OBJECT ||
-            ty->declared.kind == TY_DECLARED_NAMESPACE) && ty->declared.name && ty->declared.name->len;
+    // (A class's static side declaration emit writes as a type literal: one abstract construct signature alone is a
+    // function type)
+    if (class_literal_function_like(me, d, ty)) return true;
+    // `(typeof C)[]`: a type query is parenthesized too (the static side of a local class in a generic function too)
+    Ty const* declared = ty->kind == TY_REFERENCE && ty->reference.target->declared.kind == TY_DECLARED_CLASS_STATIC ?
+        ty->reference.target : ty;
+    bool type_query = declared->kind == TY_DECLARED &&
+        (declared->declared.kind == TY_DECLARED_CLASS_STATIC || declared->declared.kind == TY_DECLARED_ENUM_OBJECT ||
+            declared->declared.kind == TY_DECLARED_NAMESPACE) && declared->declared.name && declared->declared.name->len;
     // `(readonly T[])[]`, `(readonly [K, V])[]`: a type operator
     bool readonly = ty->kind == TY_REFERENCE && (ty->reference.target == my readonly_array_target ||
         (ty_is_tuple(ty) && ty->reference.target->declared.tuple->readonly));
@@ -5395,8 +5429,9 @@ static void display_union_member(Checker* me, TyDisplay d, Ty const* t) {
     // local alias: tsc's printer parenthesizes a union constituent of a union)
     bool union_member = t->kind == TY_UNION && !(t->flags & TYF_BOOLEAN) && !ty_is_enum_union(t) &&
         !(t->composite.origin && t->composite.origin->kind == TY_KEYOF);
-    bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
-        union_member));
+    bool parens = is_function_like(me, d, t) || class_literal_function_like(me, d, t) ||
+        (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION || union_member ||
+            displays_as_intersection(me, d, t)));
     display_parenthesized_if(me, d, t, parens);
 }
 
@@ -5971,7 +6006,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
                 display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
                     ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL || is_function_like(me, d, t) ||
-                    displays_as_intersection(me, d, t) || mapped_as_conditional(me, d, t)));
+                    class_literal_function_like(me, d, t) || displays_as_intersection(me, d, t) || mapped_as_conditional(me, d, t)));
             }
             free(collisions);
         }   break;

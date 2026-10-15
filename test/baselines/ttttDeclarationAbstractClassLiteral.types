@@ -1,0 +1,97 @@
+//// [test/cases/ttttDeclarationAbstractClassLiteral.ts] ////
+
+=== ttttDeclarationAbstractClassLiteral.ts ===
+// A local abstract class written as a type literal: its abstract construct signature alone is a function type (the
+// class's prototype isn't written), parenthesized where the context needs it
+export function F<T>(x: T) {
+>F : <T>(x: T) => typeof P
+>x : T
+
+  abstract class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return P;
+>P : typeof P
+}
+export function G<T>(x: T) {
+>G : <T>(x: T) => typeof P
+>x : T
+
+  class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return P;
+>P : typeof P
+}
+export function H<T>(x: T) {
+>H : <T>(x: T) => (typeof P)[]
+>x : T
+
+  abstract class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return [P];
+>[P] : (typeof P)[]
+>P : typeof P
+}
+export function J<T>(x: T) {
+>J : <T>(x: T) => typeof P
+>x : T
+
+  abstract class P { data!: T[]; static s = 1; }
+>P : P
+>data : T[]
+>s : number
+>1 : 1
+
+  return P;
+>P : typeof P
+}
+export function K<T>(x: T) {
+>K : <T>(x: T) => typeof P | undefined
+>x : T
+
+  class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return x ? P : undefined;
+>x ? P : undefined : typeof P | undefined
+>x : T
+>P : typeof P
+>undefined : undefined
+}
+export function L<T>(x: T) {
+>L : <T>(x: T) => typeof P | undefined
+>x : T
+
+  abstract class P { data!: T[]; }
+>P : P
+>data : T[]
+
+  return x ? P : undefined;
+>x ? P : undefined : typeof P | undefined
+>x : T
+>P : typeof P
+>undefined : undefined
+}
+export function M<T>(x: T) {
+>M : <T>(x: T) => typeof P | undefined
+>x : T
+
+  abstract class P { data!: T[]; static s = 1; }
+>P : P
+>data : T[]
+>s : number
+>1 : 1
+
+  return x ? P : undefined;
+>x ? P : undefined : typeof P | undefined
+>x : T
+>P : typeof P
+>undefined : undefined
+}
+

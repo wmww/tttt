@@ -1,0 +1,112 @@
+//// [test/cases/ttttDeclarationAbstractClassLiteral.ts] ////
+
+=== ttttDeclarationAbstractClassLiteral.ts ===
+// A local abstract class written as a type literal: its abstract construct signature alone is a function type (the
+// class's prototype isn't written), parenthesized where the context needs it
+export function F<T>(x: T) {
+>F : Symbol(F, Decl(ttttDeclarationAbstractClassLiteral.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 18))
+
+  abstract class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 3, 20))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 18))
+
+  return P;
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 2, 28))
+}
+export function G<T>(x: T) {
+>G : Symbol(G, Decl(ttttDeclarationAbstractClassLiteral.ts, 5, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 18))
+
+  class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 7, 11))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 18))
+
+  return P;
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 6, 28))
+}
+export function H<T>(x: T) {
+>H : Symbol(H, Decl(ttttDeclarationAbstractClassLiteral.ts, 9, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 18))
+
+  abstract class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 11, 20))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 18))
+
+  return [P];
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 10, 28))
+}
+export function J<T>(x: T) {
+>J : Symbol(J, Decl(ttttDeclarationAbstractClassLiteral.ts, 13, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 18))
+
+  abstract class P { data!: T[]; static s = 1; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 15, 20))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 18))
+>s : Symbol(P.s, Decl(ttttDeclarationAbstractClassLiteral.ts, 15, 32))
+
+  return P;
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 14, 28))
+}
+export function K<T>(x: T) {
+>K : Symbol(K, Decl(ttttDeclarationAbstractClassLiteral.ts, 17, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 18))
+
+  class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 19, 11))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 18))
+
+  return x ? P : undefined;
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 21))
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 18, 28))
+>undefined : Symbol(undefined)
+}
+export function L<T>(x: T) {
+>L : Symbol(L, Decl(ttttDeclarationAbstractClassLiteral.ts, 21, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 18))
+
+  abstract class P { data!: T[]; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 23, 20))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 18))
+
+  return x ? P : undefined;
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 21))
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 22, 28))
+>undefined : Symbol(undefined)
+}
+export function M<T>(x: T) {
+>M : Symbol(M, Decl(ttttDeclarationAbstractClassLiteral.ts, 25, 1))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 18))
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 21))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 18))
+
+  abstract class P { data!: T[]; static s = 1; }
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 28))
+>data : Symbol(P.data, Decl(ttttDeclarationAbstractClassLiteral.ts, 27, 20))
+>T : Symbol(T, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 18))
+>s : Symbol(P.s, Decl(ttttDeclarationAbstractClassLiteral.ts, 27, 32))
+
+  return x ? P : undefined;
+>x : Symbol(x, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 21))
+>P : Symbol(P, Decl(ttttDeclarationAbstractClassLiteral.ts, 26, 28))
+>undefined : Symbol(undefined)
+}
+
