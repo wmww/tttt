@@ -343,7 +343,7 @@ isDeeplyNestedType counts a recursion identity only at increasing type ids, so w
 dependence; tttt matches it only where the types involved are the same ones (same identities, so the same maybe-stack
 hits and stack contents). mermaid's spurious create-types-from-json-schema.mts(129,23) TS2345 at K=1 (fixed
 2026-10-14) was this shape: `JSONSchemaType<MermaidConfig>` through an import must be a union by that alias, not
-`UncheckedJSONSchemaType<MermaidConfig, false>` (hacks.md "Through an import"), else the inner
+`UncheckedJSONSchemaType<MermaidConfig, false>` (hacks.md `through_import`), else the inner
 `UncheckedJSONSchemaType<MermaidConfig, false>` hit the maybe stack at once, the comparison took another path, and
 since `.build/jsonSchema.ts` had created `UncheckedJSONSchemaType<any, false>`'s members early the cut-off tsgo gets
 never came. To debug one: `TTTT_DEBUG_RELATE_NESTED=1` marks results "(deeply nested)" and prints "on the maybe
@@ -357,4 +357,4 @@ stack" hits; compare with tsgo's recursiveTypeRelatedTo instrumented the same wa
   it (tsgo's CLI stops at TS2318). The crash itself is fixed (ttttNoLibTupleSpread).
 - type-fest checked without lib (`--keep-going`) overflows the 64 MB stack in conditional tail recursion
   (test-d/union-max.ts: `InternalUnionMax`, each of its ~1000 tail steps lowers type arguments inside the recursion):
-  hacks.md's "Real fix: a loop" for `ty_instantiate_tail`.
+  hacks.md `raise_stack_limit` for `ty_instantiate_tail`.

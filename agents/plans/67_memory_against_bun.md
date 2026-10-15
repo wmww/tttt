@@ -47,7 +47,7 @@ Bun's whole vscode run (program included) is 1.44 GB.
 - **A shared frozen lib/global type layer** (plan 62 stage 4's idea): **no**. With recycling the per-checker memory is
   bounded anyway, the K duplication is +19% of the arena at T4, and a fresh checker's warm-up is milliseconds. It
   would only buy time back on drizzle-like projects, against type ids, interning and LazyMemo being per checker
-  (hacks.md "LazyMemo holds type ids"). Revisit only if stage 1's budget can't be tuned without a time cost.
+  (documentation.md "LazyType"). Revisit only if stage 1's budget can't be tuned without a time cost.
 - **Plan 63 stage 1b** (Expr 72 -> 64, Binding element fields, Symbol bit fields, ResolvedModule hints): ~-90 MB on
   vscode, small sessions each. Stage 2 (folded into this plan).
 - **Binder scopes**: 1.28M scopes for 138 MB of source (one per ~108 bytes); tsgo has locals only on containers and

@@ -29,8 +29,7 @@
 - The stdlib checks clean: a cheap regression check for lib-related changes (`scripts/bench.sh`'s `lib_closure` lists the
   84 files to pass as roots; `--no-lib esnext.full.d.ts` alone ignores `/// <reference lib>`).
 - Dead-ish code: `display.c`'s syntax printer is only needed for `--print-ast` and written type names
-  (`brief_d()` has no callers but is a print-debugging helper: keep). The old type world's double pointers are in
-  hacks.md "Old type world leftovers".
+  (`brief_d()` has no callers but is a print-debugging helper: keep).
 - The git stash list holds a foreign entry ("WIP on (no branch): 2d0b590", relate.c, still there 2026-10-05);
   worktree agents share the stash, don't use it.
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
