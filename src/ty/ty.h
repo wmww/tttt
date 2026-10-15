@@ -2574,6 +2574,8 @@ void ty_display_node_signature(Checker* me, TyDisplay d, struct FunctionImpl con
 struct Pseudo;
 void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
 void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
+// The same with declaration maps' marks for `map`, the file being written (decl_map.h)
+void ty_append_binding_pattern_mapped(cstr* out, struct Binding const* binding, struct SourceFile const* map);
 bool ty_is_identifier_name(csview name); // An identifier as written (`#x` too)
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);

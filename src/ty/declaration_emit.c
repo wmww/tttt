@@ -2885,6 +2885,74 @@ static void m_span(Walk* me, Span span, bool end) {
     if (span_valid(span)) m(me, end ? span_end_ptr(span) : span.buf);
 }
 
+// A name as written, mapped
+static void w_name(Walk* me, Span name) {
+    m_span(me, name, false);
+    w(me, span_sv(name));
+    m_span(me, name, true);
+}
+
+// An entity name expression as written, its names mapped (a property access from its left's start)
+static void w_entity_expr(Walk* me, Expr const* expr) {
+    if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
+        m_span(me, expr->inner_span, false);
+        w_entity_expr(me, &expr->property->expr);
+        w_lit(me, ".");
+        w_name(me, property_name(expr->property));
+        m_span(me, expr->inner_span, true);
+    } else if (expr->tag == EXPR_IDENTIFIER) {
+        w_name(me, expr->inner_span);
+    } else {
+        w_name(me, expr_outer_span(expr));
+    }
+}
+
+// A member's name as written: a computed one is mapped from its `[` to its `]` with what is inside
+static void w_member_name(Walk* me, Span name, Expr const* computed_key) {
+    if (!my map || !computed_key || !span_valid(name) || name.buf[0] != '[' ||
+        !(computed_key->tag == EXPR_IDENTIFIER || (computed_key->tag == EXPR_PROPERTY && computed_key->property->form == PROPERTY_EXPR_DOT) ||
+          (computed_key->tag == EXPR_LITERAL))
+    ) {
+        w_name(me, name);
+        return;
+    }
+    m_span(me, name, false);
+    w_lit(me, "[");
+    w_entity_expr(me, computed_key);
+    w_lit(me, "]");
+    m_span(me, name, true);
+}
+
+// Where a statement ends (tsc's node end): its last token, its `;` included where it has one
+static char const* statement_end_in(Walk* me, Statement const* statement) {
+    if (!my map || !span_valid(statement->span)) return nullptr;
+    bool braces = statement->tag == STATEMENT_DECL_CLASS || statement->tag == STATEMENT_DECL_INTERFACE ||
+        statement->tag == STATEMENT_DECL_ENUM || statement->tag == STATEMENT_DECL_NAMESPACE ||
+        (statement->tag == STATEMENT_DECL_FUNCTION && statement->decl.function.impl->has_body);
+    return decl_comments_end(&my comments, span_end_ptr(statement->span), braces ? nullptr : ";");
+}
+#define statement_end(statement) statement_end_in(me, statement)
+
+// Declaration maps: where the token `c` is after `from`, past trivia (null if it isn't)
+static char const* m_token_after(Walk* me, char const* from, char c) {
+    if (!my map || !from) return nullptr;
+    char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
+    char const* at = decl_map_skip_trivia(from, end);
+    return at < end && *at == c ? at : nullptr;
+}
+
+// Declaration maps: where the keyword `word` is right before `at` (whitespace between), null if it isn't
+static char const* m_keyword_before(Walk* me, char const* at, char const* word) {
+    if (!my map || !at) return nullptr;
+    char const* text = cstr_str(&my file->contents);
+    if (at < text || at > text + cstr_size(&my file->contents)) return nullptr;
+    char const* c = at;
+    while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+    size_t n = strlen(word);
+    if (c - text < (isize_t)n || memcmp(c - n, word, n)) return nullptr;
+    return c - n;
+}
+
 // (Nothing after a leading comment that ended on the line the declaration starts: `/** a */ a: T;`)
 static void w_indent(Walk* me) {
     if (!w_at_line_start(me)) return;
@@ -3105,19 +3173,38 @@ static void w_statement_modifiers(Walk* me, Statement const* statement, Containe
 }
 
 // A parameter (ensureParameter): its name without initializers, `?` where it is optional, its type
+static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool private_member);
+
 static void w_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool private_member) {
+    m_span(me, arg->span, false);
+    w_parameter_inner(me, fn, arg, private_member);
+    m_span(me, arg->span, true);
+}
+
+static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool private_member) {
     Binding const* binding = &arg->initializer.binding;
-    if (arg->rest) w_lit(me, "...");
+    if (arg->rest) {
+        Span rest = function_arg_rest_span(arg);
+        if (span_valid(rest)) m(me, span_end_ptr(rest) - 3);
+        w_lit(me, "...");
+        if (span_valid(rest)) m(me, span_end_ptr(rest));
+    }
     if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
         cstr pattern = cstr_init();
-        ty_append_binding_pattern(&pattern, binding);
+        ty_append_binding_pattern_mapped(&pattern, binding, my map ? my file : nullptr);
         w(me, cstr_sv(&pattern));
         cstr_drop(&pattern);
     } else {
-        w(me, span_sv(binding->content_span));
+        w_name(me, binding->content_span);
     }
     bool is_this = binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this");
-    if (!is_this && is_optional_parameter(fn, arg)) w_lit(me, "?");
+    if (!is_this && is_optional_parameter(fn, arg)) {
+        // (The `?` written, or one added for an initializer: new)
+        Span question = arg->explicit_optional ? function_arg_question_span(arg) : span_null;
+        m_span(me, question, false);
+        w_lit(me, "?");
+        m_span(me, question, true);
+    }
     if (private_member) return;
     w_lit(me, ": ");
     if (binding->has_explicit_type && (is_this || !requires_adding_undefined(me, fn, arg, true))) {
@@ -3159,12 +3246,20 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     w_lit(me, ": ");
     if (fn->predicate) {
         TypePredicateNode const* predicate = fn->predicate;
-        if (predicate->asserts) w_lit(me, "asserts ");
-        w(me, span_sv(predicate->name));
+        m_span(me, predicate->span, false);
+        if (predicate->asserts) {
+            // (The `asserts` modifier is a token node)
+            m_span(me, predicate->span, false);
+            w_lit(me, "asserts");
+            if (span_valid(predicate->span)) m(me, predicate->span.buf + 7);
+            w_lit(me, " ");
+        }
+        w_name(me, predicate->name);
         if (predicate->has_type) {
             w_lit(me, " is ");
             w_node(me, &predicate->type);
         }
+        m_span(me, predicate->span, true);
         return;
     }
     if (fn->ret_explicit) {
@@ -3303,6 +3398,7 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             isize_t modifiers_start = (isize_t)cstr_size(my out);
             w_statement_modifiers(me, statement, container, false);
             cstr modifiers = cstr_from_sv(csview_slice(cstr_sv(my out), (isize_t)modifiers_start, cstr_size(my out)));
+            decl_map_strip(&modifiers);
             w_lit(me, "function ");
             w(me, span_sv(only->binding.content_span));
             w_signature(me, fn, false);
@@ -3349,23 +3445,30 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
         decl_comments_intervening(&my comments, my out, my indent, binding->content_span.buf);
         w_leading(me, binding->content_span.buf);
         if (cstr_size(my out)) w_indent(me); // (The list is written apart: empty, it is in the middle of a line)
-        w(me, span_sv(binding->content_span));
+        m_span(me, binding->content_span, false);
+        w_name(me, binding->content_span);
         w_variable_type(me, i, is_const);
         // (The declaration ends after its initializer, else its type)
         Expr const* init = initialized_binding_value(i);
         Span end = init->tag != EXPR_IMPLICIT_ANY ? expr_outer_span(init) :
             binding->has_explicit_type ? binding_explicit_type_span(binding) : binding->content_span;
+        m_span(me, end, true);
         if (span_valid(end)) decl_comments_trailing(&my comments, my out, span_end_ptr(end));
     }
     my out = outer;
     if (written) {
         w_indent(me);
+        m_span(me, statement->span, false);
         w_statement_modifiers(me, statement, container, false);
+        // (The declaration list, from its keyword)
+        m_span(me, variable->span, false);
         bool const_like = variable->keyword == VAR_INIT_USING || variable->keyword == VAR_INIT_AWAIT_USING;
         w(me, const_like ? c_sv("const") : csview_from(variable_statement_keyword_str(variable)));
         w_lit(me, " ");
         w(me, cstr_sv(&declarations));
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
     }
     cstr_drop(&declarations);
 }
@@ -3584,15 +3687,19 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
         return;
     }
     w_indent(me);
+    m_span(me, statement->span, false);
     isize_t modifiers_start = (isize_t)cstr_size(my out);
     w_statement_modifiers(me, statement, container, false);
     cstr modifiers = cstr_from_sv(csview_slice(cstr_sv(my out), (isize_t)modifiers_start, cstr_size(my out)));
+    decl_map_strip(&modifiers);
     w_lit(me, "function ");
-    w(me, span_sv(fn->name));
+    w_name(me, fn->name);
     u32 scope_saved = enter_type_params(me, &fn->generic);
     w_signature(me, fn, false);
     leave_type_params(me, scope_saved);
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
     if (first && statement->decl.props.exported != DECL_EXPORTED_YES_DEFAULT) {
         emit_expando_namespace(me, symbol, span_sv(fn->name), cstr_sv(&modifiers));
     }
@@ -3616,21 +3723,31 @@ static csview item_name(ClassItem const* item) {
     return span_sv(item->tag == CLASS_ITEM_METHOD ? item->method.name_span : item->field.name_span);
 }
 
-static void emit_field(Walk* me, ClassItem const* item) {
+static void emit_field(Walk* me, ClassItem const* item, char const* member_end) {
     w_indent(me);
+    m_span(me, item->span, false);
     w_member_modifiers(me, item->span.buf, item->access, item->field.is_abstract, item->field.is_static, item->field.is_readonly,
         item->field.is_auto_accessor);
-    w(me, item_name(item));
-    if (item->field.is_optional) w_lit(me, "?");
+    w_member_name(me, item->field.name_span, item->field.computed_key);
+    if (item->field.is_optional) {
+        char const* question = m_token_after(me, span_end_ptr(item->field.name_span), '?');
+        m(me, question);
+        w_lit(me, "?");
+        if (question) m(me, question + 1);
+    }
     if (item->access == ACCESS_MODIFIER_PRIVATE) {
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, member_end);
+        w_lit(me, "\n");
         return;
     }
     Expr const* init = &item->field.value;
     if (item->field.is_readonly && init->tag != EXPR_IMPLICIT_ANY && is_literal_const_field(item) && !item->field.has_explicit_type) {
         w_lit(me, " = ");
         w_type(me, lazy_type_get((LazyType*)&item->field.lazy_type));
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, member_end);
+        w_lit(me, "\n");
         return;
     }
     w_lit(me, ": ");
@@ -3649,7 +3766,9 @@ static void emit_field(Walk* me, ClassItem const* item) {
         my type_out = outer;
         w_serialized(me, &text);
     }
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    m(me, member_end);
+    w_lit(me, "\n");
 }
 
 static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, FunctionArg const* arg) {
@@ -3679,8 +3798,13 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
     }
     w_indent(me);
     w_member_modifiers(me, arg->span.buf, arg->access, false, false, arg->is_readonly_property, false);
-    w(me, span_sv(binding->content_span));
-    if (arg->explicit_optional) w_lit(me, "?");
+    w_name(me, binding->content_span);
+    if (arg->explicit_optional) {
+        Span question = function_arg_question_span(arg);
+        m_span(me, question, false);
+        w_lit(me, "?");
+        m_span(me, question, true);
+    }
     if (arg->access == ACCESS_MODIFIER_PRIVATE) {
         w_lit(me, ";\n");
         return;
@@ -3757,6 +3881,8 @@ static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
     free(members);
 }
 
+static void w_heritage(Walk* me, VecSpannedType const* types, char const* keyword);
+
 // `statement` null: a class expression written as a declaration named `name` (an export default's)
 static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name) {
     // A base that isn't a name is a variable of its type, `C_base` (transformClassDeclaration)
@@ -3790,6 +3916,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     }
     w_indent(me);
     if (statement) {
+        m_span(me, statement->span, false);
         w_statement_modifiers_and(me, statement, container, false, cls->is_abstract ? "abstract" : nullptr);
     } else {
         if (container_is_file(container)) w_lit(me, "declare ");
@@ -3801,12 +3928,17 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         w(me, name);
     } else if (span_valid(cls->name)) {
         w_lit(me, " ");
-        w(me, span_sv(cls->name));
+        w_name(me, cls->name);
     }
     w_type_params(me, &cls->generic);
     if (base->tag != EXPR_IMPLICIT_ANY) {
+        // (The clause from its keyword, the expression with its type arguments)
+        m_span(me, cls->extends_clause, false);
         w_lit(me, " extends ");
-        w(me, base_variable ? cstr_sv(&base_variable_name) : span_sv(expr_outer_span(base_name)));
+        Span base_span = expr_outer_span(base_name);
+        if (!base_variable) m_span(me, base_span, false);
+        if (base_variable) w(me, cstr_sv(&base_variable_name));
+        else w_name(me, base_span);
         if (base->tag == EXPR_GENERIC_PARAMS) {
             w_lit(me, "<");
             for_each (i, vec_spanned_type, &base->generic_params->params) {
@@ -3815,11 +3947,10 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             }
             w_lit(me, ">");
         }
+        if (!base_variable) m_span(me, cls->extends_clause, true);
+        m_span(me, cls->extends_clause, true);
     }
-    for_each (i, vec_spanned_type, &cls->implements) {
-        w(me, i_index ? c_sv(", ") : c_sv(" implements "));
-        w_node(me, &i->type);
-    }
+    w_heritage(me, &cls->implements, "implements");
     w_lit(me, " {\n");
     Scope const* outer_scope = my scope;
     u32 class_scope_saved = enter_type_params(me, &cls->generic);
@@ -3861,15 +3992,20 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         }
         isize_t member_start = w_leading(me, i->span.buf);
         isize_t member_written_from = cstr_size(my out);
+        // (Where the member ends, its `;` included: mapped after it)
+        char const* member_end = decl_comments_end(&my comments, span_end_ptr(i->span), ";");
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
                 if (is_class_overload_implementation(cls, ctor)) break;
                 w_indent(me);
+                m_span(me, i->span, false);
                 w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
                 w_lit(me, "constructor");
                 w_parameters(me, ctor, i->access == ACCESS_MODIFIER_PRIVATE);
-                w_lit(me, ";\n");
+                w_lit(me, ";");
+                m(me, member_end);
+                w_lit(me, "\n");
                 break;
             }
             case CLASS_ITEM_METHOD: {
@@ -3881,20 +4017,29 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     // (A private method is a property without a type: omitPrivateMethodType, once per name)
                     if (private_member && i->symbol_first && i->symbol_first != i) break;
                     w_indent(me);
+                    m_span(me, i->span, false);
                     w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
-                    w(me, item_name(i));
-                    if (i->method.is_optional) w_lit(me, "?");
+                    w_member_name(me, i->method.name_span, i->method.computed_key);
+                    if (i->method.is_optional) {
+                        char const* question = m_token_after(me, span_end_ptr(i->method.name_span), '?');
+                        m(me, question);
+                        w_lit(me, "?");
+                        if (question) m(me, question + 1);
+                    }
                     u32 method_scope_saved = enter_type_params(me, &fn->generic);
                     if (!private_member) w_signature(me, fn, false);
                     leave_type_params(me, method_scope_saved);
-                    w_lit(me, ";\n");
+                    w_lit(me, ";");
+                    m(me, member_end);
+                    w_lit(me, "\n");
                     break;
                 }
                 bool getter = i->method.accessor == CLASS_ACCESSOR_GET;
                 w_indent(me);
+                m_span(me, i->span, false);
                 w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
                 w(me, getter ? c_sv("get ") : c_sv("set "));
-                w(me, item_name(i));
+                w_member_name(me, i->method.name_span, i->method.computed_key);
                 if (getter) {
                     w_lit(me, "()");
                     if (!private_member) {
@@ -3922,27 +4067,33 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     }
                     w_lit(me, ")");
                 }
-                w_lit(me, ";\n");
+                w_lit(me, ";");
+                m(me, member_end);
+                w_lit(me, "\n");
                 break;
             }
             case CLASS_ITEM_FIELD:
                 if (item_has_private_name(i)) break;
-                emit_field(me, i);
+                emit_field(me, i, member_end);
                 break;
             case CLASS_ITEM_INTERFACE_MEMBER: {
                 // An index signature, as written
                 InterfaceMember const* member = &i->interface_memeber;
                 if (member->key.tag != INTERFACE_KEY_INDEX) break;
                 w_indent(me);
-                if (i->interface_member_static) w_lit(me, "static ");
-                if (member->readonly) w_lit(me, "readonly ");
+                m_span(me, i->span, false);
+                w_member_modifiers(me, i->span.buf, ACCESS_MODIFIER_PUBLIC, false, i->interface_member_static, member->readonly, false);
                 w_lit(me, "[");
-                w(me, span_sv(member->key.index->name));
+                m_span(me, member->key.index->name, false);
+                w_name(me, member->key.index->name);
                 w_lit(me, ": ");
                 w_node(me, &member->key.index->type);
+                m(me, decl_map_type_end(&member->key.index->type, my file));
                 w_lit(me, "]: ");
                 w_node(me, &member->type);
-                w_lit(me, ";\n");
+                w_lit(me, ";");
+                m(me, member_end);
+                w_lit(me, "\n");
                 break;
             }
             default: break;
@@ -3954,7 +4105,9 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     my scope = outer_scope;
     leave_type_params(me, class_scope_saved);
     w_indent(me);
-    w_lit(me, "}\n");
+    w_lit(me, "}");
+    if (statement) m(me, statement_end(statement));
+    w_lit(me, "\n");
     cstr_drop(&base_variable_name);
 }
 
@@ -3964,7 +4117,10 @@ static void w_members(Walk* me, TypeNode const* type) {
     bool empty = type->tag != TYPE_INTERFACE || !vec_interface_member_size(&type->interface.members);
     if (!empty) {
         isize_t start = cstr_size(my out);
-        w_node(me, type);
+        // (An interface's body isn't a node: not mapped itself)
+        TypeNode body = *type;
+        body.pos = 0;
+        w_node(me, &body);
         // (Every member left out)
         if (cstr_size(my out) - start != 2 || cstr_str(my out)[start] != '{') return;
         cstr_erase(my out, start, 2);
@@ -3974,37 +4130,57 @@ static void w_members(Walk* me, TypeNode const* type) {
     w_lit(me, "}");
 }
 
-static void emit_interface(Walk* me, InterfaceDecl const* decl, Statement const* statement, Container container) {
-    w_indent(me);
-    w_statement_modifiers(me, statement, container, true);
-    w_lit(me, "interface ");
-    w(me, span_sv(decl->name));
-    w_type_params(me, &decl->generic);
-    for_each (i, vec_spanned_type, &decl->extends) {
-        w(me, i_index ? c_sv(", ") : c_sv(" extends "));
+// A heritage clause's types after its keyword (`extends A, B`): the clause is mapped from the keyword (its leading space
+// in it) to its last type's end
+static void w_heritage(Walk* me, VecSpannedType const* types, char const* keyword) {
+    if (!vec_spanned_type_size(types)) return;
+    Span first = vec_spanned_type_at(types, 0)->span;
+    m(me, span_valid(first) ? m_keyword_before(me, first.buf, keyword) : nullptr);
+    w_lit(me, " ");
+    w(me, csview_from(keyword));
+    w_lit(me, " ");
+    for_each (i, vec_spanned_type, types) {
+        if (i_index) w_lit(me, ", ");
         w_node(me, &i->type);
     }
+    Span last = vec_spanned_type_back(types)->span;
+    m_span(me, last, true);
+}
+
+static void emit_interface(Walk* me, InterfaceDecl const* decl, Statement const* statement, Container container) {
+    w_indent(me);
+    m_span(me, statement->span, false);
+    w_statement_modifiers(me, statement, container, true);
+    w_lit(me, "interface ");
+    w_name(me, decl->name);
+    w_type_params(me, &decl->generic);
+    w_heritage(me, &decl->extends, "extends");
     w_lit(me, " ");
     w_members(me, &decl->type);
+    m(me, statement_end(statement));
     w_lit(me, "\n");
 }
 
 static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* statement, Container container) {
     w_indent(me);
+    m_span(me, statement->span, false);
     w_statement_modifiers(me, statement, container, true);
     w_lit(me, "type ");
-    w(me, span_sv(decl->name));
+    w_name(me, decl->name);
     w_type_params(me, &decl->generic);
     w_lit(me, " = ");
     w_node(me, &decl->type);
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
 }
 
 static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement, Container container) {
     w_indent(me);
+    m_span(me, statement->span, false);
     w_statement_modifiers_and(me, statement, container, false, decl->is_const ? "const" : nullptr);
     w_lit(me, "enum ");
-    w(me, span_sv(decl->name));
+    w_name(me, decl->name);
     w_lit(me, " {\n");
     my indent++;
     u32 written = 0;
@@ -4017,7 +4193,8 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
         }
         w_leading(me, i->full_name.buf);
         w_indent(me);
-        w(me, span_sv(i->full_name));
+        m_span(me, i->full_name, false);
+        w_name(me, i->full_name);
         // (Its value where it has one: getEnumMemberValue)
         Ty const* type = i->symbol ? ty_type_of_symbol(my checker, i->symbol) : nullptr;
         bool literal = type && type->kind == TY_LITERAL && type->literal.enum_decl;
@@ -4038,32 +4215,43 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
             w_lit(me, " = ");
             w_type(me, value);
         }
+        // (The member ends after its initializer)
+        m_span(me, i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value), true);
         decl_comments_trailing(&my comments, my out, span_end_ptr(i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value)));
     }
     if (written) w_line(me);
     my indent--;
     w_indent(me);
-    w_lit(me, "}\n");
+    w_lit(me, "}");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
 }
 
 static void emit_statements(Walk* me, VecStatement const* statements, Container container);
 
 static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const* statement, Container container) {
     w_indent(me);
+    m_span(me, statement->span, false);
     bool augmentation = decl->is_augmentation || decl->is_global;
     if (augmentation) {
-        if (container_is_file(container)) w_lit(me, "declare ");
+        Modifiers mods = {0};
+        if (container_is_file(container)) mods_add(&mods, "declare");
+        w_modifiers(me, statement->span.buf, mods);
     } else {
         w_statement_modifiers(me, statement, container, false);
     }
     if (decl->is_global) {
+        m_span(me, decl->name, false);
         w_lit(me, "global");
+        m_span(me, decl->name, true);
     } else {
         w(me, decl->is_ambient_module ? c_sv("module ") : c_sv("namespace "));
-        w(me, span_sv(decl->name));
+        w_name(me, decl->name);
     }
     if (decl->is_shorthand) {
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         return;
     }
     // (`namespace A.B {}` is a namespace B exported from A: written as it was)
@@ -4075,10 +4263,16 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
         char const* after = span_end_ptr(body->name);
         if (inner->name.buf != after + 1 || *after != '.') break;
         w_lit(me, ".");
-        w(me, span_sv(inner->name));
+        // (The inner declaration starts at its name)
+        m_span(me, inner->name, false);
+        w_name(me, inner->name);
         body = inner;
     }
-    w_lit(me, " {\n");
+    // (The module block, from its `{`)
+    w_lit(me, " ");
+    isize_t brace_at = cstr_size(my out);
+    m(me, m_token_after(me, span_end_ptr(body->name), '{'));
+    w_lit(me, "{\n");
     bool ambient = container.ambient || statement->decl.props.declared || decl->is_ambient_module || decl->is_global;
     Scope const* outer_scope = my scope;
     if (body->inner_scope) my scope = body->inner_scope;
@@ -4109,19 +4303,24 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
     char const* block_from = span_end_ptr(body->name);
     bool one_line = !memchr(block_from, '\n', (size_t)(span_end_ptr(decl->full_span) - block_from));
     if (cstr_size(my out) == body_start && one_line) {
-        cstr_erase(my out, body_start - 3, 3);
-        w_lit(me, " { }\n");
+        cstr_resize(my out, brace_at, '\0');
+        m(me, m_token_after(me, span_end_ptr(body->name), '{'));
+        w_lit(me, "{ }");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         return;
     }
     w_indent(me);
-    w_lit(me, "}\n");
+    w_lit(me, "}");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
 }
 
 // ` from "m" with { ... }`: the specifier and attributes as written
 // (The printer's ImportAttributes list, PreserveLines: the first attribute on the brace's line, the others and the
 // closing brace on a line of their own where they were, an attribute as `name: value`)
 static void w_specifier(Walk* me, PortStatement const* port) {
-    w(me, span_sv(port->target_path_span));
+    w_name(me, port->target_path_span);
     ImportAttributes const* attributes = port->attributes;
     if (!attributes) return;
     w_lit(me, " ");
@@ -4162,11 +4361,34 @@ static void w_specifier(Walk* me, PortStatement const* port) {
 
 // `{ a, type b as c }`: an import or export declaration's specifiers (`kept` the ones written, null for all), with their
 // comments, an export's trailing comma as written (the printer's NamedImportsOrExportsElements)
+// Declaration maps: where a named import or export list's braces are, from its items (the `{` before the first, the `}`
+// after the last and a comma)
+static char const* m_list_open(Walk* me, PortStatement const* port) {
+    if (!my map || !vec_port_item_size(&port->items)) return nullptr;
+    Span first = vec_port_item_at(&port->items, 0)->full_span;
+    char const* text = cstr_str(&my file->contents);
+    if (!span_valid(first) || first.buf < text || first.buf > text + cstr_size(&my file->contents)) return nullptr;
+    char const* c = first.buf;
+    while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+    return c > text && c[-1] == '{' ? c - 1 : nullptr;
+}
+
+static char const* m_list_end(Walk* me, PortStatement const* port) {
+    if (!my map || !vec_port_item_size(&port->items)) return nullptr;
+    Span last = vec_port_item_back(&port->items)->full_span;
+    if (!span_valid(last)) return nullptr;
+    char const* end = span_end_ptr(last);
+    char const* comma = m_token_after(me, end, ',');
+    char const* close = m_token_after(me, comma ? comma + 1 : end, '}');
+    return close ? close + 1 : nullptr;
+}
+
 static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, bool trailing_comma) {
     u32 written = 0;
     PortItem const* last = nullptr;
     for_each (i, vec_port_item, &port->items) {
         if (kept && !kept[i_index]) continue;
+        if (!written) m(me, m_list_open(me, port));
         w(me, written++ ? c_sv(", ") : c_sv("{ "));
         char const* start = span_valid(i->full_span) ? i->full_span.buf : nullptr;
         if (start) {
@@ -4174,12 +4396,14 @@ static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, 
             w_leading(me, start);
             w_indent(me);
         }
+        m(me, start);
         if (i->type_modifier) w_lit(me, "type ");
-        w(me, span_sv(i->source_name));
+        w_name(me, i->source_name);
         if (!span_eq(i->source_name, i->decl_name) && span_valid(i->decl_name)) {
             w_lit(me, " as ");
-            w(me, span_sv(i->decl_name));
+            w_name(me, i->decl_name);
         }
+        m_span(me, i->full_span, true);
         if (start) decl_comments_trailing(&my comments, my out, span_end_ptr(i->full_span));
         last = i;
     }
@@ -4192,6 +4416,7 @@ static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, 
         if (after != span_end_ptr(last->full_span) && after[-1] == ',') w_lit(me, ",");
     }
     w_lit(me, " }");
+    m(me, m_list_end(me, port));
 }
 
 // An import or export declaration (transformImportDeclaration: an import keeps the names emitted declarations use)
@@ -4221,13 +4446,17 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         }
         my has_scope_marker = true;
         if (is_file) my has_module_indicator = true;
+        m_span(me, statement->span, false);
         w_lit(me, "export ");
         if (port->main.type_only) w_lit(me, "type ");
         if (port->main.tag == PORT_REEXPORT_SPLAT) {
             w_lit(me, "*");
         } else if (port->main.tag == PORT_REEXPORT_GATHER) {
+            // (`* as ns`: a node from its `*`)
+            char const* star = m_keyword_before(me, m_keyword_before(me, port->main.decl_name.buf, "as"), "*");
+            m(me, star);
             w_lit(me, "* as ");
-            w(me, span_sv(port->main.decl_name));
+            w_name(me, port->main.decl_name);
         } else {
             w_port_items(me, port, nullptr, true);
         }
@@ -4235,15 +4464,20 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             w_lit(me, " from ");
             w_specifier(me, port);
         }
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         return;
     }
     // Imports
     if (port->side_effect_only) {
         w_indent(me);
+        m_span(me, statement->span, false);
         w_lit(me, "import ");
         w_specifier(me, port);
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         if (is_file) my has_module_indicator = true;
         return;
     }
@@ -4251,23 +4485,34 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         PortItem const* item = &port->main;
         if (!item->export_import && !KEPT(item->symbol)) return;
         w_indent(me);
+        m_span(me, statement->span, false);
         if (item->export_import) w_lit(me, "export ");
         w_lit(me, "import ");
         if (item->type_only) w_lit(me, "type ");
-        w(me, span_sv(item->decl_name));
+        w_name(me, item->decl_name);
         w_lit(me, " = ");
         if (port->is_import_require) {
+            // (The external module reference, from its `require`)
+            m(me, m_keyword_before(me, m_keyword_before(me, port->target_path_span.buf, "("), "require"));
             w_lit(me, "require(");
             w_specifier(me, port);
             w_lit(me, ")");
+            char const* close = span_valid(port->target_path_span) ? m_token_after(me, span_end_ptr(port->target_path_span), ')') : nullptr;
+            if (close) m(me, close + 1);
             if (is_file) my has_module_indicator = true;
         } else {
-            for_each (i, vec_span, &port_item_alias(item)->path) {
+            VecSpan const* path = &port_item_alias(item)->path;
+            // (A qualified name: each from the first name's start)
+            for (isize_t k = vec_span_size(path); k-- > 1;) m_span(me, *vec_span_at(path, 0), false);
+            for_each (i, vec_span, path) {
                 if (i_index) w_lit(me, ".");
-                w(me, span_sv(*i));
+                w_name(me, *i);
+                if (i_index) m_span(me, *i, true);
             }
         }
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         return;
     }
     bool default_kept = port->main.tag == PORT_IMPORT_DEFAULT && KEPT(port->main.symbol);
@@ -4282,25 +4527,36 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             import_required_by_augmentation(me, port->module_ref->file)
         ) {
             w_indent(me);
+            m_span(me, statement->span, false);
             w_lit(me, "import ");
             w_specifier(me, port);
-            w_lit(me, ";\n");
+            w_lit(me, ";");
+            m(me, statement_end(statement));
+            w_lit(me, "\n");
             if (is_file) my has_module_indicator = true;
         }
         return;
     }
     if (is_file) my has_module_indicator = true;
     w_indent(me);
+    m_span(me, statement->span, false);
     w_lit(me, "import ");
+    // (The import clause, from its first token)
+    if (span_valid(port->keyword_span)) {
+        char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
+        if (my map) m(me, decl_map_skip_trivia(span_end_ptr(port->keyword_span), end));
+    }
     if (port->main.type_only) w_lit(me, "type ");
     if (port->source_phase) w_lit(me, "source ");
     if (default_kept) {
-        w(me, span_sv(port->main.decl_name));
+        w_name(me, port->main.decl_name);
         if (gather_kept || named) w_lit(me, ", ");
     }
     if (gather_kept) {
+        char const* star = m_keyword_before(me, m_keyword_before(me, gather->decl_name.buf, "as"), "*");
+        m(me, star);
         w_lit(me, "* as ");
-        w(me, span_sv(gather->decl_name));
+        w_name(me, gather->decl_name);
     } else if (named) {
         bool* kept = malloc(sizeof(bool) * (size_t)vec_port_item_size(&port->items));
         for_each (i, vec_port_item, &port->items) kept[i_index] = KEPT(i->symbol);
@@ -4309,7 +4565,9 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     }
     w_lit(me, " from ");
     w_specifier(me, port);
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
 }
 
 // The name an export default's declaration gets: the function or class expression's own, else `_default` (tsc's
@@ -4338,12 +4596,15 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     char const* comments_from = statement->span.buf;
     char const* comments_end = span_end_ptr(statement->span);
     csview keyword = statement->export_equals ? c_sv("export = ") : c_sv("export default ");
+    // (The export assignment keeps the statement's range, tsc's AssignSourceMapRange)
     if (expr->tag == EXPR_IDENTIFIER) {
         w_leading(me, comments_from);
         w_indent(me);
+        m_span(me, statement->span, false);
         w(me, keyword);
-        w(me, span_sv(expr_outer_span(expr)));
+        w_name(me, expr->inner_span);
         w_lit(me, ";");
+        m(me, statement_end(statement));
         decl_comments_trailing(&my comments, my out, comments_end);
         w_lit(me, "\n");
         return;
@@ -4352,9 +4613,12 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         Span own = expr->tag == EXPR_FUNCTION ? expr->function->name : expr->class_decl->name;
         cstr name = export_default_name(me, own);
         w_indent(me);
+        m_span(me, statement->span, false);
         w(me, keyword);
         w(me, cstr_sv(&name));
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         w_leading(me, comments_from);
         if (expr->tag == EXPR_FUNCTION) {
             w_indent(me);
@@ -4408,9 +4672,12 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     decl_comments_trailing(&my comments, my out, comments_end);
     w_lit(me, "\n");
     w_indent(me);
+    m_span(me, statement->span, false);
     w(me, keyword);
     w(me, cstr_sv(&name));
-    w_lit(me, ";\n");
+    w_lit(me, ";");
+    m(me, statement_end(statement));
+    w_lit(me, "\n");
     cstr_drop(&name);
 }
 

@@ -248,6 +248,36 @@ def classify(expected, actual):
     return bucket, i + 1, x, y
 
 
+def classify_map(rel, expected, actual):
+    """The bucket of a mismatching `.d.ts.map` (plan 64 stage 5): its `.d.ts` differing first, else the first mapping
+    tsgo has and tttt doesn't (or the reverse), by the generated text there"""
+    import mapshow
+    dts = rel[:-4]
+    if expected.get(dts) != actual.get(dts):
+        return 'map: its .d.ts differs', 0, '', ''
+    try:
+        a, b = json.loads(expected[rel]), json.loads(actual[rel])
+    except ValueError:
+        return 'map: not JSON', 0, '', ''
+    for key in ('file', 'sourceRoot', 'sources', 'names'):
+        if a.get(key) != b.get(key):
+            return f'map: {key}', 0, str(a.get(key)), str(b.get(key))
+    ma, mb = mapshow.decode(a['mappings']), mapshow.decode(b['mappings'])
+    gen = expected[dts].split('\n')
+    sa, sb = set(ma), set(mb)
+    missing = sorted(sa - sb)
+    extra = sorted(sb - sa)
+    first = min(missing[:1] + extra[:1]) if missing or extra else None
+    if first is None:
+        return 'map: mapping order', 0, '', ''
+    line = gen[first[0]] if first[0] < len(gen) else ''
+    token = re.match(r'\W?\w*|.', mapshow.utf16_slice(line, first[1]) or '<eol>')[0] or '<eol>'
+    kind = 'missing' if missing and first == missing[0] else 'extra'
+    # (By what the line is, roughly: its first word)
+    head = (re.match(r'\s*(export |declare |default )*(\w+|\S)', line) or [None, None, ''])[2] if line.strip() else ''
+    return f'map: {kind} at {token.strip() or repr(token)!s} ({head})', first[0] + 1, line, f'{first}'
+
+
 def compare(name, record, tttt_texts, tsgo_texts_fn):
     """Per file of the project: (relative path, bucket or None, line, tsgo's line, tttt's line)"""
     files = record['files']
@@ -261,7 +291,10 @@ def compare(name, record, tttt_texts, tsgo_texts_fn):
         else:
             if expected is None:
                 expected = tsgo_texts_fn()
-            rows.append((rel, *classify(expected.get(rel, ''), tttt_texts[rel])))
+            if rel.endswith('.map'):
+                rows.append((rel, *classify_map(rel, expected, tttt_texts)))
+            else:
+                rows.append((rel, *classify(expected.get(rel, ''), tttt_texts[rel])))
     # (A file tsgo reported a declaration diagnostic in has no output: by its name without the extensions)
     blocked = {os.path.basename(re.sub(r'\.[cm]?tsx?$', '', f)) for f in record.get('blocked', [])}
     for rel in sorted(set(tttt_texts) - set(files)):
@@ -305,6 +338,28 @@ def regenerate(args):
           f'{sum(len(r["files"]) for r in kept)} files; skipped: {dict(skipped)}; written to {MANIFEST}')
 
 
+def show_map(name, rel, exp, got, dts):
+    """The mappings only one side has, with the generated text and the source text at them"""
+    import mapshow
+    a, b = json.loads(exp), json.loads(got)
+    gen = dts.split('\n')
+    # (The source: the map names it relative to the output directory, which mirrors the project's layout)
+    src = []
+    source = a['sources'][0] if a['sources'] else ''
+    target = os.path.normpath(os.path.join(project_dir(name), os.path.dirname(rel), source.replace('../', '', source.count('../') - (12 - rel.count('/')) if source.count('../') > 12 - rel.count('/') else 0)))
+    for candidate in (target, os.path.join(project_dir(name), re.sub(r'^(\.\./)+', '', source))):
+        if os.path.exists(candidate):
+            src = open(candidate, encoding='utf-8-sig', errors='replace').read().split('\n')
+            break
+    ma, mb = set(mapshow.decode(a['mappings'])), set(mapshow.decode(b['mappings']))
+    print(f'== {rel}: {len(ma & mb)} common, {len(ma - mb)} only tsgo (-), {len(mb - ma)} only tttt (+)')
+    for t, mark in sorted([(t, '-') for t in ma - mb] + [(t, '+') for t in mb - ma])[:40]:
+        gl, gc, _, sl, sc = t
+        g = mapshow.utf16_slice(gen[gl], gc, gc + 24) if gl < len(gen) else '?'
+        sv = mapshow.utf16_slice(src[sl], sc, sc + 24) if sl is not None and sl < len(src) else ''
+        print(f'{mark} {gl + 1}:{gc + 1} {g!r:<30} -> {sl + 1 if sl is not None else 0}:{(sc or 0) + 1} {sv!r}')
+
+
 def show(args, records):
     name = args.show[0]
     if name not in records:
@@ -321,6 +376,9 @@ def show(args, records):
         got = texts.get(rel)
         exp = expected.get(rel)
         if got == exp:
+            continue
+        if rel.endswith('.map') and got and exp and texts.get(rel[:-4]) == expected.get(rel[:-4]):
+            show_map(name, rel, exp, got, expected[rel[:-4]])
             continue
         diff = difflib.unified_diff((exp or '').splitlines(True), (got or '').splitlines(True),
                                     f'tsgo/{rel}' if exp is not None else '/dev/null',

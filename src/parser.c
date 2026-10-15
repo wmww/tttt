@@ -3554,6 +3554,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     p.shared->disallow_conditional = disallow_conditional; // (parse_type() restores it after an early return)
 
     ret->parsed = true;
+    // (What the right side makes takes it as its left side, which starts here: past a `readonly`)
+    ret->pos = type_pos(&p, left_start);
     // (Some branches above only write part of `ret`, over what a failed attempt may have left)
     ret->parenthesized = parenthesized;
     ret->placeholder = placeholder;

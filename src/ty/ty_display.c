@@ -156,16 +156,21 @@ static void member_begin_node(TyDisplay d, Span declaration) {
     member_begin(d);
 }
 
-static void member_end_node(TyDisplay d, Span declaration, char const* separators) {
+static void member_end_node_mapped(TyDisplay d, Span declaration, char const* separators, bool mapped) {
     if (!d.multiline || !d.comments || !span_valid(declaration)) {
         member_end(d);
         return;
     }
     out_lit(d, ";");
     char const* end = decl_comments_end(d.comments, span_end_ptr(declaration), separators);
-    map_at(d, end);
+    if (mapped) map_at(d, end);
     decl_comments_trailing(d.comments, d.target, end);
     out_lit(d, "\n");
+}
+
+// (A member made anew: its comments are the declaration's, it has no position of its own)
+static void member_end_node(TyDisplay d, Span declaration, char const* separators) {
+    member_end_node_mapped(d, declaration, separators, false);
 }
 
 // (With the TyDisplay brace_open() was given)
@@ -1873,14 +1878,16 @@ static Expr const* entity_leftmost(Expr const* expr) {
 
 static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
     if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
+        // (A qualified name: from its left's start to its right's end)
+        map_span(d, expr->inner_span, false);
         display_entity_expr(me, d, &expr->property->expr);
         out_lit(d, ".");
-        out(d, span_sv(property_name(expr->property)));
+        out_mapped(d, property_name(expr->property));
     } else if (expr->tag == EXPR_GENERIC_PARAMS) {
         display_entity_expr(me, d, &expr->generic_params->expr);
         display_node_args(me, d, &expr->generic_params->params);
     } else {
-        out(d, span_sv(expr->inner_span));
+        out_mapped(d, expr->inner_span);
     }
 }
 
@@ -2068,7 +2075,10 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
     TypePredicateNode const* predicate = function->predicate;
     if (predicate) {
         map_span(d, predicate->span, false);
-        if (predicate->asserts) out_lit(d, "asserts ");
+        if (predicate->asserts) {
+            out_token_mapped(d, d.map ? predicate->span.buf : nullptr, c_sv("asserts"));
+            out_lit(d, " ");
+        }
         out_mapped(d, predicate->name);
         if (predicate->has_type) {
             out_lit(d, " is ");
@@ -2118,9 +2128,24 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
             return;
         }
     }
+    // (Declaration maps: from the `[` to the `]`, an entity name's parts)
+    Span key = expr_outer_span(expr);
+    char const* open = nullptr;
+    if (d.map && span_valid(key)) {
+        char const* text = cstr_str(&d.map->contents);
+        char const* c = key.buf;
+        while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+        if (c > text && c[-1] == '[') open = c - 1;
+    }
+    map_at(d, open);
     out_lit(d, "[");
-    out(d, span_sv(expr_outer_span(expr)));
+    if (d.map && (expr->tag == EXPR_IDENTIFIER || (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT))) {
+        display_entity_expr(me, d, expr);
+    } else {
+        out_mapped(d, key);
+    }
     out_lit(d, "]");
+    if (open) map_at(d, token_after(d, span_end_ptr(key), ']') ? token_after(d, span_end_ptr(key), ']') + 1 : nullptr);
 }
 
 // A computed name that isn't a literal or unique symbol isn't a member (tsc's shouldRemoveDeclaration), except an
@@ -2172,7 +2197,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             if (i->type.parsed) display_node(me, d, &i->type);
             else out(reused_if(d, false), c_sv("any"));
             if (!getter) out_lit(d, ")");
-            member_end_node(d, i->declaration, ";,");
+            member_end_node_mapped(d, i->declaration, ";,", true);
             continue;
         }
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
@@ -2214,12 +2239,22 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     display_node(me, d, &i->key.mapped->as_type);
                 }
                 out_lit(d, "]");
-                if (i->key.mapped->optional == 1 && !plus_optional) {
+                if (i->key.mapped->optional) {
+                    // (The token is the `?`, or the `+`/`-` before it)
                     TypeNode const* last = i->key.mapped->has_as_type ? &i->key.mapped->as_type : &i->key.mapped->in_type;
                     char const* close = token_after(d, decl_map_type_end(last, d.map), ']');
-                    out_token_mapped(d, close ? token_after(d, close + 1, '?') : nullptr, c_sv("?"));
-                } else if (i->key.mapped->optional) {
-                    out(d, i->key.mapped->optional > 0 ? (plus_optional ? c_sv("+?") : c_sv("?")) : c_sv("-?"));
+                    char const* token = nullptr;
+                    if (close) {
+                        char const* end = cstr_str(&d.map->contents) + cstr_size(&d.map->contents);
+                        token = decl_map_skip_trivia(close + 1, end);
+                        if (token >= end || (*token != '?' && *token != '+' && *token != '-')) token = nullptr;
+                    }
+                    if (i->key.mapped->optional < 0 || plus_optional) {
+                        out_token_mapped(d, token, i->key.mapped->optional < 0 ? c_sv("-") : c_sv("+"));
+                        out_lit(d, "?");
+                    } else {
+                        out_token_mapped(d, token, c_sv("?"));
+                    }
                 }
                 out_lit(d, ": ");
                 if (i->type.parsed) display_node(me, d, &i->type);
@@ -2263,7 +2298,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 break;
         }
-        member_end_node(d, comment_span, ";,");
+        member_end_node_mapped(d, comment_span, ";,", true);
     }
     brace_close(outer);
 }
@@ -2319,6 +2354,15 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     d.approx = nullptr;
     display_node_impl(me, d, node);
     *approx += (u32)(cstr_size(d.target) - start) + 1;
+}
+
+// Declaration maps: a `readonly T[]` is a type operator around the array, which starts past the `readonly`
+static char const* readonly_operand_start(TypeNode const* node, SourceFile const* file) {
+    char const* start = decl_map_type_inner_start(node, file);
+    if (!start) return nullptr;
+    char const* end = cstr_str(&file->contents) + cstr_size(&file->contents);
+    if (end - start < 8 || memcmp(start, "readonly", 8)) return nullptr;
+    return decl_map_skip_trivia(start + 8, end);
 }
 
 static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
@@ -2377,7 +2421,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             break;
         }
         case TYPE_ARRAY: {
-            if (node->array.readonly) out_lit(d, "readonly ");
+            if (node->array.readonly) {
+                out_lit(d, "readonly ");
+                map_at(d, readonly_operand_start(node, d.map));
+            }
             TyDisplay element_d = d;
             element_d.array_element_node = true;
             // (A synthesized array of a union, JSDoc's `{...T|U}`: tsgo's printer parenthesizes the element)
@@ -2391,7 +2438,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             break;
         }
         case TYPE_TUPLE: {
-            if (node->tuple.readonly) out_lit(d, "readonly ");
+            if (node->tuple.readonly) {
+                out_lit(d, "readonly ");
+                map_at(d, readonly_operand_start(node, d.map));
+            }
             out_lit(d, "[");
             // (Declaration emit: written on several lines, one element per line: the printer's MultiLineTupleTypeElements,
             // a reused tuple node not being SingleLine)
@@ -2522,7 +2572,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // (Declaration emit writes it as written)
             if (d.transformer_node && d.multiline) {
                 TypePredicateNode const* predicate = node->predicate;
-                if (predicate->asserts) out_lit(d, "asserts ");
+                if (predicate->asserts) {
+                    out_token_mapped(d, d.map ? predicate->span.buf : nullptr, c_sv("asserts"));
+                    out_lit(d, " ");
+                }
                 out_mapped(d, predicate->name);
                 if (predicate->has_type) {
                     out_lit(d, " is ");
@@ -3270,19 +3323,48 @@ static bool pattern_has_trailing_comma(Binding const* binding) {
 }
 
 // A destructured parameter's name the way tsc prints it in a signature: the pattern without its defaults
-static void append_binding_pattern(cstr* out, Binding const* binding) {
+// Declaration maps: `at` (a position in `map`, the file being written) as a mark in `out`
+static void mark_in(cstr* out, SourceFile const* map, char const* at) {
+    if (!map || !at) return;
+    char const* text = cstr_str(&map->contents);
+    if (at < text || at > text + cstr_size(&map->contents)) return;
+    decl_map_mark(out, (u32)(at - text));
+}
+
+static void mark_span_in(cstr* out, SourceFile const* map, Span span, bool end) {
+    if (map && span_valid(span)) mark_in(out, map, end ? span_end_ptr(span) : span.buf);
+}
+
+// A binding pattern as written (its default values left out). With `map`, each of its nodes is mapped: the patterns,
+// their elements (from a `...` or property name to the name or default value), the names
+static void append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
     if (binding->rest) cstr_append_sv(out, c_sv("..."));
     if (binding->tag == BINDING_ARRAY) {
+        mark_span_in(out, map, binding->content_span, false);
         cstr_append_sv(out, c_sv("["));
         for (isize_t i = 0; i < binding->array.size; i++) {
             if (i) cstr_append_sv(out, c_sv(", "));
-            append_binding_pattern(out, &binding->array.data[i]);
+            Binding const* element = &binding->array.data[i];
+            // (The element: from its name, or `...`, to its default value)
+            char const* start = span_valid(element->content_span) ? element->content_span.buf : nullptr;
+            if (map && start && element->rest) {
+                char const* c = start;
+                char const* text = cstr_str(&map->contents);
+                while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+                if (c - text >= 3 && !memcmp(c - 3, "...", 3)) start = c - 3;
+            }
+            mark_in(out, map, start);
+            append_binding_pattern_mapped(out, element, map);
+            mark_span_in(out, map, element->default_value ? expr_outer_span(element->default_value) : element->content_span, true);
         }
         if (binding->array.size && pattern_has_trailing_comma(binding)) cstr_append_sv(out, c_sv(","));
         cstr_append_sv(out, c_sv("]"));
+        mark_span_in(out, map, binding->content_span, true);
     } else if (binding->tag == BINDING_OBJECT) {
+        mark_span_in(out, map, binding->content_span, false);
         if (!binding->object.size) {
             cstr_append_sv(out, c_sv("{}"));
+            mark_span_in(out, map, binding->content_span, true);
             return;
         }
         cstr_append_sv(out, c_sv("{ "));
@@ -3291,18 +3373,28 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
             if (i) cstr_append_sv(out, c_sv(", "));
             bool shorthand = item->target.rest || (item->target.tag == BINDING_IDENTIFIER &&
                 item->target.content_span.buf == item->source_span.buf);
+            Binding const* target = &item->target;
+            mark_span_in(out, map, shorthand ? target->content_span : item->source_span, false);
             if (!shorthand) {
+                mark_span_in(out, map, item->source_span, false);
                 cstr_append_sv(out, span_sv(item->source_span));
+                mark_span_in(out, map, item->source_span, true);
                 cstr_append_sv(out, c_sv(": "));
             }
-            append_binding_pattern(out, &item->target);
+            append_binding_pattern_mapped(out, target, map);
+            mark_span_in(out, map, target->default_value ? expr_outer_span(target->default_value) : target->content_span, true);
         }
         if (pattern_has_trailing_comma(binding)) cstr_append_sv(out, c_sv(","));
         cstr_append_sv(out, c_sv(" }"));
+        mark_span_in(out, map, binding->content_span, true);
     } else {
+        mark_span_in(out, map, binding->content_span, false);
         cstr_append_sv(out, span_sv(binding->content_span));
+        mark_span_in(out, map, binding->content_span, true);
     }
 }
+
+static void append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern_mapped(out, binding, nullptr); }
 
 static MappedInfo const* mapped_root(MappedInfo const* mapped);
 static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapped, Ty const* wrapper, bool keyof_wrapper);
@@ -3930,7 +4022,15 @@ static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* pro
         out(d, span_sv(item->name_span));
         return;
     }
+    isize_t at = cstr_size(d.target);
     display_member_name(me, d, prop);
+    // (Declaration maps: a name printed as written is the node, tsgo's reuseName)
+    if (d.map && item && span_valid(item->name_span) &&
+        csview_equals_sv(csview_slice(cstr_sv(d.target), at, cstr_size(d.target)), span_sv(item->name_span))
+    ) {
+        cstr_resize(d.target, at, '\0');
+        out_mapped(d, item->name_span);
+    }
 }
 
 // Declaration emit: the entity names of a reused binding pattern's computed keys are tracked (painting the imports
@@ -4003,12 +4103,18 @@ static void display_pseudo_return(Checker* me, TyDisplay d, Pseudo const* ret, S
     if (ret->kind == PSEUDO_DIRECT && ret->predicate) {
         TypePredicateNode const* node = ret->function->predicate;
         TyDisplay reused = reused_if(d, true);
-        if (node->asserts) out_lit(reused, "asserts ");
-        out(reused, node->is_this ? c_sv("this") : span_sv(node->name));
+        map_span(d, node->span, false);
+        if (node->asserts) {
+            out_token_mapped(reused, d.map ? node->span.buf : nullptr, c_sv("asserts"));
+            out_lit(reused, " ");
+        }
+        if (node->is_this) out_lit(reused, "this");
+        else out_mapped(reused, node->name);
         if (node->has_type) {
             out_lit(reused, " is ");
             display_node(me, d, &node->type);
         }
+        map_span(d, node->span, true);
         return;
     }
     // (An arrow function's expression body has the function as its parent)
@@ -4027,12 +4133,18 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 TypePredicateNode const* node = pseudo->function ? pseudo->function->predicate : nullptr;
                 if (d.multiline && node) {
                     TyDisplay reused = reused_if(d, true);
-                    if (node->asserts) out_lit(reused, "asserts ");
-                    out(reused, node->is_this ? c_sv("this") : span_sv(node->name));
+                    map_span(d, node->span, false);
+                    if (node->asserts) {
+                        out_token_mapped(reused, d.map ? node->span.buf : nullptr, c_sv("asserts"));
+                        out_lit(reused, " ");
+                    }
+                    if (node->is_this) out_lit(reused, "this");
+                    else out_mapped(reused, node->name);
                     if (node->has_type) {
                         out_lit(reused, " is ");
                         display_node(me, d, &node->type);
                     }
+                    map_span(d, node->span, true);
                     return;
                 }
                 ty_display(me, d, ty_intrinsic(me, TY_BOOLEAN));
@@ -5811,5 +5923,8 @@ void ty_display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const*
 }
 
 void ty_append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern(out, binding); }
+void ty_append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
+    append_binding_pattern_mapped(out, binding, map);
+}
 
 bool ty_is_identifier_name(csview name) { return is_identifier_name(name); }
