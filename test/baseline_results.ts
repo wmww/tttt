@@ -460,6 +460,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionOptionalPropsExactOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionOptionalPropsUndefined': {
         errors: true,
         symbols: true,

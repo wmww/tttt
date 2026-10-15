@@ -1591,6 +1591,9 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             // (Only those all optional where some part's type has undefined already: otherwise intersecting the declared
             // types and adding undefined on reading is the same, and cheaper)
             bool normalize = optional_parts && compiler_options()->strict_null_checks;
+            // (Not under exactOptionalPropertyTypes, where an optional part's read type has the missing type, which an
+            // explicit undefined of another part would make undefined: arktype's `{ path?: undefined }` parts)
+            if (normalize && optional_result && compiler_options()->exact_optional_property_types) normalize = false;
             if (normalize && optional_result) {
                 bool has_undefined = false;
                 for (u32 i = 0; i < len && !has_undefined; i++) has_undefined = union_has_undefined(parts[i]);

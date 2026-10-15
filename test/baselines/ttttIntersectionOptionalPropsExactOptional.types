@@ -1,0 +1,33 @@
+//// [test/cases/ttttIntersectionOptionalPropsExactOptional.ts] ////
+
+=== ttttIntersectionOptionalPropsExactOptional.ts ===
+// Under exactOptionalPropertyTypes an intersection of optional properties, one of them explicitly undefined, reads as
+// missing (arktype's NodeErrorContextInput with `{ path?: undefined }` against `{ path?: never }`): an optional
+// never takes it
+declare function f(x: { path?: never; a?: string }): void;
+>f : (x: { path?: never; a?: string; }) => void
+>x : { path?: never; a?: string; }
+>path : undefined
+>a : string | undefined
+
+declare const c: { path?: readonly string[] } & { path?: undefined } & { a?: string };
+>c : { path?: readonly string[]; } & { path?: undefined; } & { a?: string; }
+>path : readonly string[] | undefined
+>path : undefined
+>a : string | undefined
+
+f(c);
+>f(c) : void
+>f : (x: { path?: never; a?: string; }) => void
+>c : { path?: readonly string[]; } & { path?: undefined; } & { a?: string; }
+
+declare const d: { path?: readonly string[] } & { path?: string };
+>d : { path?: readonly string[]; } & { path?: string; }
+>path : readonly string[] | undefined
+>path : string | undefined
+
+f(d);
+>f(d) : void
+>f : (x: { path?: never; a?: string; }) => void
+>d : { path?: readonly string[]; } & { path?: string; }
+

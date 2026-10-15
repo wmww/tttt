@@ -1,0 +1,19 @@
+ttttIntersectionOptionalPropsExactOptional.ts(8,3): error TS2379: Argument of type '{ path?: readonly string[]; } & { path?: string; }' is not assignable to parameter of type '{ path?: never; a?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'path' are incompatible.
+    Type 'readonly string[] & string' is not assignable to type 'never'.
+
+
+==== ttttIntersectionOptionalPropsExactOptional.ts (1 errors) ====
+    // Under exactOptionalPropertyTypes an intersection of optional properties, one of them explicitly undefined, reads as
+    // missing (arktype's NodeErrorContextInput with `{ path?: undefined }` against `{ path?: never }`): an optional
+    // never takes it
+    declare function f(x: { path?: never; a?: string }): void;
+    declare const c: { path?: readonly string[] } & { path?: undefined } & { a?: string };
+    f(c);
+    declare const d: { path?: readonly string[] } & { path?: string };
+    f(d);
+      ~
+!!! error TS2379: Argument of type '{ path?: readonly string[]; } & { path?: string; }' is not assignable to parameter of type '{ path?: never; a?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2379:   Types of property 'path' are incompatible.
+!!! error TS2379:     Type 'readonly string[] & string' is not assignable to type 'never'.
+    
