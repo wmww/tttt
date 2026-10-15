@@ -1,0 +1,44 @@
+//// [test/cases/ttttDeclarationPatternComments.ts] ////
+
+=== ttttDeclarationPatternComments.ts ===
+// The comments around a parameter's binding pattern's elements (intervening ones and JSDoc leading ones)
+export function normalizePages({
+>normalizePages : Symbol(normalizePages, Decl(ttttDeclarationPatternComments.ts, 0, 0))
+
+  list,
+>list : Symbol(list, Decl(ttttDeclarationPatternComments.ts, 1, 32))
+
+  route,
+>route : Symbol(route, Decl(ttttDeclarationPatternComments.ts, 2, 7))
+
+  /** @default '' */
+  docsRoot = '',
+>docsRoot : Symbol(docsRoot, Decl(ttttDeclarationPatternComments.ts, 3, 8))
+
+  /** @default X */
+  pageThemeContext = 1
+>pageThemeContext : Symbol(pageThemeContext, Decl(ttttDeclarationPatternComments.ts, 5, 16))
+
+}: {
+  list: string[]; route: string; docsRoot?: string; pageThemeContext?: number
+>list : Symbol(list, Decl(ttttDeclarationPatternComments.ts, 8, 4))
+>route : Symbol(route, Decl(ttttDeclarationPatternComments.ts, 9, 17))
+>docsRoot : Symbol(docsRoot, Decl(ttttDeclarationPatternComments.ts, 9, 32))
+>pageThemeContext : Symbol(pageThemeContext, Decl(ttttDeclarationPatternComments.ts, 9, 51))
+
+}): void {}
+export class C {
+>C : Symbol(C, Decl(ttttDeclarationPatternComments.ts, 10, 11))
+
+  m({ a, /* plain */ b, /** doc */ c }: { a: 1; b: 2; c: 3 }, [/** first */ x, y]: [1, 2]) {}
+>m : Symbol(C.m, Decl(ttttDeclarationPatternComments.ts, 11, 16))
+>a : Symbol(a, Decl(ttttDeclarationPatternComments.ts, 12, 5))
+>b : Symbol(b, Decl(ttttDeclarationPatternComments.ts, 12, 8))
+>c : Symbol(c, Decl(ttttDeclarationPatternComments.ts, 12, 23))
+>a : Symbol(a, Decl(ttttDeclarationPatternComments.ts, 12, 41))
+>b : Symbol(b, Decl(ttttDeclarationPatternComments.ts, 12, 47))
+>c : Symbol(c, Decl(ttttDeclarationPatternComments.ts, 12, 53))
+>x : Symbol(x, Decl(ttttDeclarationPatternComments.ts, 12, 63))
+>y : Symbol(y, Decl(ttttDeclarationPatternComments.ts, 12, 78))
+}
+

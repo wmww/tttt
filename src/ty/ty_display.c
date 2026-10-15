@@ -2141,7 +2141,11 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         }
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
-            append_binding_pattern_mapped(&pattern, binding, D_MAP(arg_d));
+            if (d.transformer_node && d.multiline && d.comments) {
+                ty_append_binding_pattern_commented(&pattern, binding, D_MAP(arg_d), d.comments, d.indent);
+            } else {
+                append_binding_pattern_mapped(&pattern, binding, D_MAP(arg_d));
+            }
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
         } else {
@@ -3692,6 +3696,20 @@ static void mark_span_in(cstr* out, SourceFile const* map, Span span, bool end) 
 
 // A binding pattern as written (its default values left out). With `map`, each of its nodes is mapped: the patterns,
 // their elements (from a `...` or property name to the name or default value), the names
+// Declaration emit: the comments around a parameter's binding pattern's elements (emitListItems' intervening ones and
+// each element's leading ones), null elsewhere
+static _Thread_local DeclComments const* pattern_comments;
+static _Thread_local u32 pattern_indent;
+
+static void pattern_element_comments(cstr* out, char const* start) {
+    if (!pattern_comments || !start) return;
+    decl_comments_intervening(pattern_comments, out, pattern_indent, start);
+    decl_comments_leading(pattern_comments, out, pattern_indent, start);
+    if (decl_map_last_char(cstr_sv(out)) == '\n') {
+        for (u32 i = 0; i < pattern_indent; i++) cstr_append_sv(out, c_sv("    "));
+    }
+}
+
 static void append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
     if (binding->rest) cstr_append_sv(out, c_sv("..."));
     if (binding->tag == BINDING_ARRAY) {
@@ -3708,6 +3726,7 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
                 while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
                 if (c - text >= 3 && !memcmp(c - 3, "...", 3)) start = c - 3;
             }
+            pattern_element_comments(out, start);
             mark_in(out, map, start);
             append_binding_pattern_mapped(out, element, map);
             mark_span_in(out, map, element->default_value ? expr_outer_span(element->default_value) : element->content_span, true);
@@ -3736,6 +3755,7 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
                 char const* c = decl_map_back_trivia(start, text);
                 if (c - text >= 3 && !memcmp(c - 3, "...", 3)) start = c - 3;
             }
+            pattern_element_comments(out, start);
             mark_in(out, map, start);
             if (!shorthand) {
                 mark_span_in(out, map, item->source_span, false);
@@ -6406,6 +6426,18 @@ void ty_display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const*
 void ty_append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern(out, binding); }
 void ty_append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
     append_binding_pattern_mapped(out, binding, map);
+}
+
+void ty_append_binding_pattern_commented(cstr* out, Binding const* binding, SourceFile const* map, DeclComments const* comments,
+    u32 indent
+) {
+    DeclComments const* outer = pattern_comments;
+    u32 outer_indent = pattern_indent;
+    pattern_comments = comments;
+    pattern_indent = indent;
+    append_binding_pattern_mapped(out, binding, map);
+    pattern_comments = outer;
+    pattern_indent = outer_indent;
 }
 
 bool ty_is_identifier_name(csview name) { return is_identifier_name(name); }

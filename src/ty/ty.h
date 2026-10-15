@@ -2595,6 +2595,10 @@ void ty_display_synthesized_string(TyDisplay d, csview sv);
 void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
 // The same with declaration maps' marks for `map`, the file being written (decl_map.h)
 void ty_append_binding_pattern_mapped(cstr* out, struct Binding const* binding, struct SourceFile const* map);
+// The same with the comments around its elements (a parameter's pattern the declaration transformer visits)
+struct DeclComments;
+void ty_append_binding_pattern_commented(cstr* out, struct Binding const* binding, struct SourceFile const* map,
+    struct DeclComments const* comments, u32 indent);
 bool ty_is_identifier_name(csview name); // An identifier as written (`#x` too)
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);

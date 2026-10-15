@@ -3268,7 +3268,7 @@ static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg cons
     }
     if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
         cstr pattern = cstr_init();
-        ty_append_binding_pattern_mapped(&pattern, binding, my map ? my file : nullptr);
+        ty_append_binding_pattern_commented(&pattern, binding, my map ? my file : nullptr, &my comments, my indent);
         w(me, cstr_sv(&pattern));
         cstr_drop(&pattern);
     } else {

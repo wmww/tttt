@@ -1,0 +1,46 @@
+//// [test/cases/ttttDeclarationPatternComments.ts] ////
+
+=== ttttDeclarationPatternComments.ts ===
+// The comments around a parameter's binding pattern's elements (intervening ones and JSDoc leading ones)
+export function normalizePages({
+>normalizePages : ({ list, route, docsRoot, pageThemeContext }: { list: string[]; route: string; docsRoot?: string; pageThemeContext?: number; }) => void
+
+  list,
+>list : string[]
+
+  route,
+>route : string
+
+  /** @default '' */
+  docsRoot = '',
+>docsRoot : string
+>'' : ""
+
+  /** @default X */
+  pageThemeContext = 1
+>pageThemeContext : number
+>1 : 1
+
+}: {
+  list: string[]; route: string; docsRoot?: string; pageThemeContext?: number
+>list : string[]
+>route : string
+>docsRoot : string | undefined
+>pageThemeContext : number | undefined
+
+}): void {}
+export class C {
+>C : C
+
+  m({ a, /* plain */ b, /** doc */ c }: { a: 1; b: 2; c: 3 }, [/** first */ x, y]: [1, 2]) {}
+>m : ({ a, b, c }: { a: 1; b: 2; c: 3; }, [x, y]: [1, 2]) => void
+>a : 1
+>b : 2
+>c : 3
+>a : 1
+>b : 2
+>c : 3
+>x : 1
+>y : 2
+}
+
