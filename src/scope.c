@@ -127,6 +127,8 @@ Binder* binder_new(ErrorCtx* errs) {
 }
 
 thread_local ResolveShard* resolve_shard;
+// Symbols and declarations this thread made, for scope_pending_mark()
+static thread_local u64 binder_made;
 
 // A new last element of a malloc'd list
 static void* list_push(void** data, u32* count, u32* cap, size_t size) {
@@ -144,12 +146,16 @@ static ResolveShard* binder_shard(Binder const* me) {
 
 Arena* binder_thread_arena(Binder* me, u32 t) {
     if (t > my thread_arena_count) {
-        my thread_arenas = realloc(my thread_arenas, sizeof(Arena) * t);
+        my thread_arenas = realloc(my thread_arenas, sizeof(Arena) * 2 * t);
         panic_if(!my thread_arenas, "out of memory");
-        for (u32 i = my thread_arena_count; i < t; i++) my thread_arenas[i] = (Arena){0};
+        for (u32 i = 2 * my thread_arena_count; i < 2 * t; i++) my thread_arenas[i] = (Arena){0};
         my thread_arena_count = t;
     }
-    return &my thread_arenas[t - 1];
+    return &my thread_arenas[2 * (t - 1)];
+}
+
+Arena* binder_thread_scope_arena(Binder* me, u32 t) {
+    return binder_thread_arena(me, t) + 1;
 }
 
 ErrorCtx* binder_discarded_errs(Binder* me) {
@@ -174,9 +180,10 @@ void binder_destroy(Binder* me) {
     }
     free(my overlays.keys);
     free(my overlays.values);
-    for (u32 i = 0; i < my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
+    for (u32 i = 0; i < 2 * my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
     free(my thread_arenas);
     arena_drop(&my arena);
+    arena_drop(&my scope_arena);
     free(me);
 }
 
@@ -226,6 +233,7 @@ Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol) {
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
     if (my frozen) log_error("Symbol '", name, "' made while typechecking: the checkers share the binder");
     Symbol* ret = arena_new(binder_arena(me), Symbol);
+    binder_made++;
     ret->name = name;
     ret->flags = flags;
     ret->binder = me;
@@ -360,6 +368,7 @@ static bool is_delayed_jsdoc_decl(SymbolDecl const* decl) {
 }
 
 static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
+    binder_made++;
     if (my decl_count == my decl_cap) {
         u32 cap = my decl_cap ? my decl_cap * 2 : 1; // Most symbols have one declaration
         SymbolDecl* decls = arena_new_n(binder_arena(my binder), SymbolDecl, cap);
@@ -492,7 +501,7 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
 ScopeRare const scope_rare_none;
 
 ScopeRare* scope_rare_new(Scope* me) {
-    return my rare = arena_new(binder_arena(my binder), ScopeRare);
+    return my rare = arena_new(binder_scope_arena(my binder), ScopeRare);
 }
 
 struct FunctionImpl const* scope_containing_function(Scope const* me) {
@@ -515,7 +524,7 @@ static_assert(sizeof(Scope) == 96, "Scope grew");
 static_assert(sizeof(SymbolDecl) == 64, "SymbolDecl grew");
 
 Scope* scope_new(Scope* parent, ScopeKind kind) {
-    Scope* ret = arena_new(binder_arena(parent->binder), Scope);
+    Scope* ret = arena_new(binder_scope_arena(parent->binder), Scope);
     ret->parent = parent;
     ret->kind = kind;
     ret->binder = parent->binder;
@@ -532,19 +541,19 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
 ScopePendingMark scope_pending_mark(Binder const* binder) {
     ResolveShard const* shard = resolve_shard;
     if (shard && shard->binder == binder) {
-        return (ScopePendingMark){ shard->pending_not_found_count, shard->pending_export_merge_count, shard->deferred_count };
+        return (ScopePendingMark){ shard->pending_not_found_count, shard->pending_export_merge_count, shard->deferred_count, binder_made };
     }
-    return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count, 0 };
+    return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count, 0, binder_made };
 }
 
 bool scope_release(Scope* me, ScopePendingMark pending_mark) {
     ScopePendingMark now = scope_pending_mark(my binder);
     if (now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges ||
-        now.deferred != pending_mark.deferred
+        now.deferred != pending_mark.deferred || now.made != pending_mark.made || my locals
     ) {
         return false;
     }
-    Arena* arena = binder_arena(my binder);
+    Arena* arena = binder_scope_arena(my binder);
     bool popped_rare = false;
     if (my rare) {
         // (Its rare part right after it, as when it was given one before anything else was allocated)
@@ -554,6 +563,14 @@ bool scope_release(Scope* me, ScopePendingMark pending_mark) {
     }
     bool popped = arena_pop_last(arena, me, sizeof(Scope));
     if (!popped && popped_rare) panic("a scope's rare part was the latest allocation, not the scope");
+#ifdef TTTT_POISON_SCOPES
+    if (popped) {
+        size_t size = sizeof(Scope) + (popped_rare ? sizeof(ScopeRare) : 0);
+        void* filler = arena_alloc(arena, size);
+        check(filler == (void*)me);
+        memset(filler, 0xA5, size);
+    }
+#endif
     return popped;
 }
 

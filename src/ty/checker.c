@@ -34,6 +34,12 @@ static void arena_site_count(u32 table, void* site, size_t size) {
     arena_site_bytes[table][h] += size;
 }
 
+// The latest allocations, so that arena_pop_last() takes a popped one off its site's bytes (scope_release() pops most
+// of the scopes the resolve walk makes)
+#define ARENA_RECENT 64
+static struct { void* ptr; void* site; } arena_recent[ARENA_RECENT];
+static u32 arena_recent_next;
+
 // Interned key bytes and entries by the key's first word (its KEY_* kind)
 static u64 key_kind_bytes[256], key_kind_count[256];
 
@@ -49,6 +55,7 @@ void arena_sites_print(void) {
         }
     }
 }
+static void* arena_alloc_inner(Arena* me, size_t size);
 #endif
 
 void* arena_alloc(Arena* me, size_t size) {
@@ -57,6 +64,14 @@ void* arena_alloc(Arena* me, size_t size) {
     arena_site_count(0, __builtin_return_address(0), size);
 #endif
     my total += size;
+#ifdef TTTT_ARENA_SITES
+    void* ret = arena_alloc_inner(me, size);
+    arena_recent[arena_recent_next++ % ARENA_RECENT] = (typeof(arena_recent[0])){ ret, __builtin_return_address(0) };
+    return ret;
+}
+
+static void* arena_alloc_inner(Arena* me, size_t size) {
+#endif
     if (!my head || my head->used + size > my head->cap) {
         size_t cap = size > ARENA_CHUNK_SIZE ? size : ARENA_CHUNK_SIZE;
         // Straight from mmap: the kernel's pages are zero already (calloc() would memset them), and the ones the
@@ -90,6 +105,15 @@ bool arena_pop_last(Arena* me, void* ptr, size_t size) {
     size = (size + 7) & ~(size_t)7;
     if (!my head || my head->used < size || (char*)ptr != my head->data + my head->used - size) return false;
     memset(ptr, 0, size);
+#ifdef TTTT_ARENA_SITES
+    for (u32 i = 0; i < ARENA_RECENT; i++) {
+        if (arena_recent[i].ptr == ptr) {
+            arena_site_count(0, arena_recent[i].site, -size);
+            arena_recent[i].ptr = nullptr;
+            break;
+        }
+    }
+#endif
     my head->used -= size;
     my total -= size;
     return true;

@@ -598,6 +598,9 @@ typedef struct SymbolMap {
 
 typedef struct Binder {
     Arena arena;
+    // Scopes and their ScopeRare, apart from the rest: scope_release() pops walk-only scopes off it, which the flow nodes
+    // and symbols made meanwhile don't get in the way of
+    Arena scope_arena;
     ErrorCtx* errs;
     SymbolTable globals;
     Scope* global_scope;
@@ -661,7 +664,8 @@ typedef struct Binder {
     // Some SymbolDecl.flow_container is set (a dot assignment declaration): only then can a read be one in the container
     // that declares it (TS2565, is_read_in_declaring_container())
     bool has_assignment_flow_containers;
-    // The arenas of resolve threads other than the main one (plan 45), owned
+    // The arenas of resolve threads other than the main one (plan 45), owned: two per thread, binder_thread_arena()'s
+    // and its scope arena
     Arena* thread_arenas; // malloc'd
     u32 thread_arena_count;
 } Binder;
@@ -673,6 +677,7 @@ typedef struct Binder {
 typedef struct ResolveShard {
     Binder* binder;
     Arena* arena; // The thread's
+    Arena* scope_arena; // The thread's (Binder.scope_arena)
     ErrorCtx errs; // The file's reports, parent: the program's (frozen meanwhile)
     ErrorCtx discarded; // binder_discarded_errs()
     Symbol** symbols; // malloc'd, what binder_new_symbol() made
@@ -695,6 +700,9 @@ extern thread_local ResolveShard* resolve_shard;
 static inline Arena* binder_arena(Binder* me) {
     return resolve_shard && resolve_shard->binder == me ? resolve_shard->arena : &my arena;
 }
+static inline Arena* binder_scope_arena(Binder* me) {
+    return resolve_shard && resolve_shard->binder == me ? resolve_shard->scope_arena : &my scope_arena;
+}
 // Where name resolution reports: the walked file's own context on a resolve thread
 static inline ErrorCtx* binder_errs(Binder* me) {
     return resolve_shard && resolve_shard->binder == me ? &resolve_shard->errs : my errs;
@@ -707,6 +715,7 @@ void binder_mark_serial_resolves(Binder* me);
 bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file);
 // An arena for resolve thread `t` (> 0; 0 is the main thread's, Binder.arena), kept until the binder dies
 Arena* binder_thread_arena(Binder* me, u32 t);
+Arena* binder_thread_scope_arena(Binder* me, u32 t);
 // The shard's deferred events replayed (on the calling thread, no shard set), then its symbols, pending reports and
 // errors merged into the binder and the program's errors; frees the shard's lists. Call in program order
 void resolve_shard_merge(ResolveShard* me);
@@ -782,10 +791,12 @@ cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
 // A walk-only scope (a parameter list's, a block's) whose walk is over: freed if nothing can point at it, which is when
-// it is still the binder arena's latest allocation (no child scope, symbol, declaration or flow node came after it;
-// its ScopeRare may come right after it) and no pending report took it. Whatever stores a Scope pointer outside the
-// binder arena (malloc'd lists, the AST) must keep the scope from being released: see the pending reports. `pending_mark` is scope_pending_mark() from when it was made
-typedef struct ScopePendingMark { u32 not_found, export_merges, deferred; } ScopePendingMark;
+// it is still the scope arena's latest allocation (no child scope outlived its walk; its ScopeRare may come right after
+// it), it declares nothing, no symbol or declaration was made while it was walked (SymbolDecl.block,
+// SymbolAlias.scope) and no pending report took it. Whatever else stores a Scope pointer (malloc'd lists, the AST)
+// must keep the scope from being released like the pending reports do, or clear its pointer when it was released.
+// `pending_mark` is scope_pending_mark() from when it was made
+typedef struct ScopePendingMark { u32 not_found, export_merges, deferred; u64 made; } ScopePendingMark;
 ScopePendingMark scope_pending_mark(Binder const* binder);
 bool scope_release(Scope* me, ScopePendingMark pending_mark); // Whether it was released
 // The innermost for-in loop whose body `names` is in and whose variable is `variable` (null if none)

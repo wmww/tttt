@@ -1834,17 +1834,23 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             variable_statement_resolve_names(&my decl.variable, names, errs);
             break;
 
-        case STATEMENT_DECL_FUNCTION:
-            function_impl_lookup_names(my decl.function.impl, true, scope_new_self(names, my decl.function.impl->symbol, my decl.props.declared), errs);
-            break;
+        case STATEMENT_DECL_FUNCTION: {
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
+            Scope* self_scope = scope_new_self(names, my decl.function.impl->symbol, my decl.props.declared);
+            function_impl_lookup_names(my decl.function.impl, true, self_scope, errs);
+            if (self_scope != names) scope_release(self_scope, pending_mark);
+        }   break;
 
         case STATEMENT_DECL_ENUM:
             enum_decl_lookup_names(my decl.enum_, names, errs);
             break;
 
-        case STATEMENT_DECL_CLASS:
-            class_decl_lookup_names(my decl.class, scope_new_self(names, my decl.class->symbol, my decl.props.declared), errs);
-            break;
+        case STATEMENT_DECL_CLASS: {
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
+            Scope* self_scope = scope_new_self(names, my decl.class->symbol, my decl.props.declared);
+            class_decl_lookup_names(my decl.class, self_scope, errs);
+            if (self_scope != names) scope_release(self_scope, pending_mark);
+        }   break;
 
         case STATEMENT_DECL_TYPE: {
             if (my decl.type->jsdoc_check_only) {
@@ -1852,6 +1858,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 break;
             }
             // (A class member's typedef sees the class's type parameters)
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
             Scope* self_scope = scope_new_self(names, my decl.type->symbol, my decl.props.declared);
             // (A JSDoc `@typedef`'s `@template`s too: tsgo's reparsed TypeAliasDeclaration)
             unused_register(self_scope, UNUSED_TYPE_ALIAS, my decl.type);
@@ -1868,11 +1875,16 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             } else {
                 type_lookup_names(body, generic_scope, errs);
             }
+            // (Kept under a generic scope: that one declares the type parameters)
+            if (self_scope != names) scope_release(self_scope, pending_mark);
         }   break;
 
-        case STATEMENT_DECL_INTERFACE:
-            interface_decl_lookup_names(my decl.interface, scope_new_self(names, my decl.interface->symbol, my decl.props.declared), errs);
-            break;
+        case STATEMENT_DECL_INTERFACE: {
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
+            Scope* self_scope = scope_new_self(names, my decl.interface->symbol, my decl.props.declared);
+            interface_decl_lookup_names(my decl.interface, self_scope, errs);
+            if (self_scope != names) scope_release(self_scope, pending_mark);
+        }   break;
 
         case STATEMENT_DECL_NAMESPACE:
             namespace_decl_resolve_names(my decl.namespace, names, errs);

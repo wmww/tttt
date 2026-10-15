@@ -272,6 +272,8 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
     // checkDecorators doesn't check it. Their names are still resolved for the baselines)
     ErrorCtx* decorator_errs = vec_expr_size(&my decorators) && !class_item_decoratable(class_decl, me) ?
         binder_discarded_errs(names->binder) : errs;
+    Scope* outer_names = names;
+    ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     if (my tag == CLASS_ITEM_FIELD) {
         names = scope_new(names, SCOPE_BLOCK);
         names->in_field = true;
@@ -280,9 +282,11 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
     bool member_name = names->flow->member_name;
     names->flow->member_name = true;
     for_each (i, vec_expr, &my decorators) {
+        ScopePendingMark decorator_mark = scope_pending_mark(names->binder);
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope->member_decorator = true;
         lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, nullptr, decorator_errs);
+        scope_release(scope, decorator_mark);
     }
     names->flow->member_name = member_name;
     switch (my tag) {
@@ -360,6 +364,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
             my static_block_return_flow = block_lookup_names_inline_container(&my static_block, block_scope, errs);
             break;
     }
+    if (names != outer_names) scope_release(names, pending_mark);
 }
 
 Span class_decl_display_name(ClassDecl const* me) {
@@ -414,6 +419,7 @@ static Span const* constructor_locals(ClassDecl const* me, Arena* arena, u32* co
 bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item);
 
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
+    ScopePendingMark this_mark = scope_pending_mark(names->binder);
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     scope_rare_mut(this_scope)->this_ref = (ThisRef){
         .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
@@ -425,6 +431,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     Span const* locals = static_members ? nullptr : constructor_locals(me, binder_arena(names->binder), &local_count);
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
             Scope* scope = this_scope;
             if (local_count && i->tag == CLASS_ITEM_FIELD) {
                 scope = scope_new(this_scope, SCOPE_BLOCK);
@@ -448,8 +455,10 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
             }
             class_item_lookup_names(me, i, scope, errs);
+            if (scope != this_scope) scope_release(scope, pending_mark);
         }
     }
+    scope_release(this_scope, this_mark);
 }
 
 // A class member's written name, staticness and binder flags, false if it has none (computed names are late bound)
@@ -682,6 +691,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         }
     }
     if (vec_expr_size(&my decorators)) {
+        ScopePendingMark pending_mark = scope_pending_mark(names->binder);
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope_rare_mut(scope)->decorator_of = me;
         // (A class expression can't have legacy decorators: TS1206, and tsc's checkDecorators never looks at them)
@@ -689,14 +699,17 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         for_each (i, vec_expr, &my decorators) {
             expr_lookup_names(i, scope, invalid ? nullptr : errs);
         }
+        scope_release(scope, pending_mark);
     }
 
     my outer_class = scope_enclosing_class(names);
     unused_register(names, UNUSED_CLASS, me);
     my outer_generics = names->generics;
+    ScopePendingMark strict_mark = scope_pending_mark(names->binder);
+    Scope* strict_scope = nullptr;
     if (!names->class_strict || !names->strict) {
         // (The type parameters, heritage clauses and body are strict code of the class)
-        names = scope_new(names, SCOPE_BLOCK);
+        names = strict_scope = scope_new(names, SCOPE_BLOCK);
         names->strict = names->class_strict = true;
     }
     names = scope_new_generic_merged(names, &my generic, my symbol, me, class_decl_display_name(me), errs);
@@ -815,6 +828,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);
+    // (Kept under a generic scope: that one declares the type parameters)
+    if (strict_scope) scope_release(strict_scope, strict_mark);
 }
 
 // TS1166/TS1168: the key of a property or of a method overload has to be something the class can be typed by

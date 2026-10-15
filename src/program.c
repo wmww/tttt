@@ -3030,10 +3030,11 @@ typedef struct ResolveLane {
 static void resolve_lane_run(ResolveLane* me, u32 thread) {
     Binder* binder = my program->binder;
     Arena* arena = thread ? binder_thread_arena(binder, thread) : &binder->arena;
+    Arena* scope_arena = thread ? binder_thread_scope_arena(binder, thread) : &binder->scope_arena;
     for (u32 i; (i = atomic_fetch_add(&my next, 1)) < my count;) {
         ResolveShard* shard = &my shards[my shard_of[i]];
         *shard = (ResolveShard){
-            .binder = binder, .arena = arena,
+            .binder = binder, .arena = arena, .scope_arena = scope_arena,
             .errs = { .phase = my program->errs->phase, .parent = my program->errs },
             .discarded = error_ctx_scratch(my program->errs),
         };
