@@ -1178,55 +1178,10 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         }
         return;
     }
-    if (target_members->mapped) {
-        MappedInfo const* mapped = target_members->mapped;
-        Ty const* template = mapped->modifiers_type ? ty_mapped_template(me, mapped) : nullptr;
-        Ty const* constraint = mapped->constraint;
-        // (Not for a conditional constraint, Omit's `Exclude<keyof T, X>`: tsc's inferToMappedType infers nothing from
-        // it, and the mapped type has no properties to infer from either. A union with literal keys, like
-        // `"a" | Exclude<keyof T, X>`, does have properties, which this stands in for)
-        bool keys_inferable = constraint->kind != TY_CONDITIONAL;
-        // (Not for a limited constraint, `keyof T & X`: the reverse mapped type has only X's keys)
-        bool limited = constraint->kind == TY_INTERSECTION ||
-            (constraint->kind == TY_UNION && constraint->composite.origin && constraint->composite.origin->kind == TY_INTERSECTION);
-        // (Not for a source with call or construct signatures, which its reverse mapped type, an object of its
-        // properties, lacks: tsc's createReverseMappedType. vitest's `Mock<T>` has `{ [P in keyof T]: T[P] }`, and a
-        // callable contextual type mustn't give T a contextual signature through it)
-        Members const* source_members = (source->flags & TYF_OBJECT) ? ty_members(me, source) : nullptr;
-        bool signatures = source_members && (source_members->call_count || source_members->construct_count) &&
-            !ty_is_array(me, source) && !ty_is_tuple(source);
-        // (Not for a `keyof X` constraint: infer_to_mapped() infers to an X being inferred only, like tsc's
-        // inferToMappedType (`Partial<T & {}>`'s deferred `keyof (T & {})` infers nothing), and makes a reverse mapped
-        // type of the source even for the `T[K]` template, as tsc's inferTypeForHomomorphicMappedType does: a type of its
-        // own (cached by source, mapped type and constraint) that unions order as reverse mapped types, `[identity(x),
-        // unbox(x)]` in comparisonReverseMappedTypes)
-        if (template && keys_inferable && constraint->kind != TY_KEYOF && !limited && template->kind == TY_INDEXED && !signatures &&
-            (mapped->modifiers_type->kind != TY_INTERSECTION || constraint->kind != TY_TYPE_PARAM) &&
-            template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
-            ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
-        ) {
-            // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
-            // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType). Not when T is
-            // inferred and a `readonly` or `?` of the mapped type would be taken off the source's properties
-            // (For a T being inferred: tsc's createReverseMappedType has nothing for a source that isn't reverse
-            // mappable. `Readonly<Record<K, T>>` goes on to Record's K and T whatever the source)
-            if (!inference_param(inf, mapped->modifiers_type) || reverse_mappable(me, source)) {
-                infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
-            }
-            // Pick's `{ [P in K]: T[P] }`: the keys go to K first (tsc's inferToMappedType with a type parameter
-            // constraint, whose own `keyof T` constraint is what the line above stands for). HACK: not from a return
-            // type, whose inference would then make the return mapper's K `never` in twiceNestedKeyofIndexInference
-            // (hacks.md)
-            // (Each member of a union constraint, `Pick<T, K | "a">`: tsc's inferToMappedType goes through the members)
-            TyList keys = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
-            for (u32 i = 0; i < keys.len && !(inf->priority & INFER_PRIORITY_RETURN_TYPE); i++) {
-                if (keys.data[i]->kind == TY_TYPE_PARAM && inference_param(inf, keys.data[i])) {
-                    infer_with_priority(me, inf, ty_keyof(me, source), keys.data[i], INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
-                }
-            }
-        } else if (!mapped->name_type) {
-            infer_to_mapped(me, inf, source, mapped, mapped->constraint);
-        }
+    // (tsc's inferFromObjectTypes: a mapped target infers through its constraint, else from its properties like any)
+    if (target_members->mapped && !target_members->mapped->name_type &&
+        infer_to_mapped(me, inf, source, target_members->mapped, target_members->mapped->constraint)
+    ) {
         return;
     }
     if (!(ty_is_tuple(source) && ty_is_tuple(target)) && types_definitely_unrelated(me, source, target)) return;
