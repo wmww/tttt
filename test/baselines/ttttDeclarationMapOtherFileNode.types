@@ -1,0 +1,29 @@
+//// [test/cases/ttttDeclarationMapOtherFileNode.ts] ////
+
+=== a.ts ===
+export declare function g(): {
+>g : () => { message: string; kind: "a" | "b"; }
+
+    /** a long comment to move the positions past what b.ts has */
+    message: string;
+>message : string
+
+    kind: "a" | "b";
+>kind : "a" | "b"
+
+};
+=== b.ts ===
+// padding so that the positions of a.ts's nodes are inside this file too
+// padding so that the positions of a.ts's nodes are inside this file too
+// padding so that the positions of a.ts's nodes are inside this file too
+// padding so that the positions of a.ts's nodes are inside this file too
+// padding so that the positions of a.ts's nodes are inside this file too
+// padding so that the positions of a.ts's nodes are inside this file too
+import { g } from "./a";
+>g : () => { message: string; kind: "a" | "b"; }
+
+export const r = g();
+>r : { message: string; kind: "a" | "b"; }
+>g() : { message: string; kind: "a" | "b"; }
+>g : () => { message: string; kind: "a" | "b"; }
+

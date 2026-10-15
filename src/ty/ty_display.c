@@ -2497,7 +2497,69 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     if (end != container_end) decl_comments_trailing(d.comments, d.target, end);
 }
 
+// The file a reused node was written in, as far as one of its spans says (null if none does)
+static SourceFile const* node_source_file(TypeNode const* node, u32 depth) {
+    if (depth > 8) return nullptr;
+    Span span = span_null;
+    switch (node->tag) {
+        case TYPE_VALUE: span = node->value_span; break;
+        case TYPE_IDENTIFIER: span = node->identifier->name; break;
+        case TYPE_INFERRED: span = node->inferred->name; break;
+        case TYPE_CALLABLE: span = node->callable && node->callable->function ? node->callable->function->full_span : span_null; break;
+        case TYPE_INTERFACE:
+            for_each (i, vec_interface_member, &node->interface.members) {
+                if (span_valid(i->declaration)) return span_source(i->declaration);
+                if (span_valid(i->key.span)) return span_source(i->key.span);
+            }
+            break;
+        case TYPE_ARRAY:
+            if (span_valid(node->array.span)) return span_source(node->array.span);
+            return node_source_file(node->array.element, depth + 1);
+        case TYPE_TUPLE: span = node->tuple.span; break;
+        case TYPE_INDEXED: span = node->indexed->span; break;
+        case TYPE_KEYOF: return node_source_file(&node->keyof->interface, depth + 1);
+        case TYPE_TERNARY: return node_source_file(&node->ternary->maybe_sub, depth + 1);
+        case TYPE_TEMPLATE: span = node->template_->span; break;
+        case TYPE_TYPEOF: if (node->typeof_->expr) span = expr_outer_span(node->typeof_->expr); break;
+        case TYPE_JSDOC: span = node->jsdoc->span; break;
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (!i->placeholder) return node_source_file(i, depth + 1);
+            }
+            break;
+        default: break;
+    }
+    return span_valid(span) ? span_source(span) : nullptr;
+}
+
+// Declaration maps: whether a reused node is one of the file being written (the node builder reuses annotations of
+// other files too, whose positions mean nothing here). A keyword is checked by its text there
+static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file) {
+    SourceFile const* source = node_source_file(node, 0);
+    if (source) return source == file;
+    char const* keyword = nullptr;
+    switch (node->tag) {
+        case TYPE_ANY: keyword = "any"; break;
+        case TYPE_UNKNOWN: keyword = "unknown"; break;
+        case TYPE_NEVER: keyword = "never"; break;
+        case TYPE_VOID: keyword = "void"; break;
+        case TYPE_BOOLEAN: keyword = "boolean"; break;
+        case TYPE_NUMBER: keyword = "number"; break;
+        case TYPE_STRING: keyword = "string"; break;
+        case TYPE_SYMBOL: keyword = "symbol"; break;
+        case TYPE_BIGINT: keyword = "bigint"; break;
+        default: return true;
+    }
+    char const* start = decl_map_type_inner_start(node, file);
+    if (!start) return true;
+    char const* end = cstr_str(&file->contents) + cstr_size(&file->contents);
+    if (node->readonly_invalid && end - start >= 8 && !memcmp(start, "readonly", 8)) start = decl_map_skip_trivia(start + 8, end);
+    size_t n = strlen(keyword);
+    return end - start >= (isize_t)n && !memcmp(start, keyword, n);
+}
+
 static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node) {
+    if (D_MAP(d) && !node_in_mapped_file(node, D_MAP(d))) d.no_map = true;
     if (D_MAP(d)) {
         // (A node printed as its type isn't mapped, nor is one that has no position here)
         isize_t marked_at = cstr_size(d.target);

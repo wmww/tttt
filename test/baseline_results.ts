@@ -207,6 +207,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapOtherFileNode': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMaps': {
         errors: true,
         symbols: true,
