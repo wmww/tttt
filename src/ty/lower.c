@@ -2203,6 +2203,9 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
         }
         return circular;
     }
+    // (Evaluated again from below a call's barrier and found circular there: that inner result is the one remembered,
+    // tsc's getTypeOfVariableOrParameterOrProperty keeps the first resolvedType set)
+    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
     return type;
 }
 

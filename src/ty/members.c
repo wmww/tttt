@@ -4391,6 +4391,14 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
                 prop_reentry_depth--;
                 return again;
             }
+            // A symbol's property in flight only below a call's barrier is its symbol's type again (tsc's property is
+            // the symbol, whose getTypeOfSymbol pushes it again past resolutionStart): what that reaches finds the cycle
+            if (!prop->target && prop->decl->symbol && prop_reentry_depth < 4 && !ty_resolving_find(me, RESOLVING_PROP, prop)) {
+                prop_reentry_depth++;
+                Ty const* again = ty_type_of_symbol(me, prop->decl->symbol);
+                prop_reentry_depth--;
+                return again;
+            }
             prop->circular = true;
             // (An instantiated property isn't resolved on its own: tsc's getTypeOfInstantiatedSymbol asks its target)
             for (Prop const* p = prop; ; p = p->target) {

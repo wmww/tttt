@@ -14039,14 +14039,14 @@ const baselines = {
         types: true,
     },
     'expandoNoInferredIndex': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoObjectIndexSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoPropertyEmptyArrayWidening': {
         errors: true,

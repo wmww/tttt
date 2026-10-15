@@ -8,25 +8,6 @@ what remains is below, each with what was found.
   `var C = {}; C.g = 2` in c.js: C is `{ f: number }`, c.js's literal `{ g: number }`, TS2403 and TS2339 for `C.g`);
   tttt's one global symbol collects both expandos. Conflicting declarations already work (ScopeRare.script_duplicates,
   ttttScriptConflictExpandoHost); merged ones would need the expando host to be the file's own initializer's symbol.
-- `obj.y = Object.values(obj)` of a JS `{}` container (expandoNoInferredIndex, expandoObjectIndexSignatures): tsgo
-  reports TS7022 for the cycle through the container's type inside the call's inference (y any); tttt's
-  guarded_assignment_symbol_type() is entered for y, but resolving `Object.values(obj)` never asks for y's type again
-  (past the call's resolving barrier, Checker.resolving_start? overload 2 `values(o: {}): any[]` chosen? check
-  whether infer.c's index-signature inference from the expando namespace type reads the props: tsgo's
-  getImplicitIndexTypeOfType reads every property's type, y's included). (2026-10-14: inference from the container
-  works, `Object.values(obj)` without the cycle is `string[]`; TTTT_DEBUG_CYCLE prints nothing. tsgo's path: y's
-  second evaluation, inside getResolvedSignature's reset resolutionStart, checks the call again
-  (checkExpressionCached has no in-flight guard; the cached resolvingSignature keeps resolutionStart) and that
-  inference meets y pushed twice. tttt's second evaluation likely gets the in-flight call expression's lazy type
-  without re-resolving: the fix is in lazy_type_get()'s reentrancy, broad.) (2026-10-14, agent C: traced it. The
-  check of `obj.buzz = ...` asks buzz's namespace Prop (prop_type: IN_FLIGHT), guarded_assignment_symbol_type pushes
-  buzz, the call infers T from the container's implied index signature, reads every Prop, buzz's included: prop_type
-  finds it IN_FLIGHT and returns circular at once, and ty_resolving_cycle(RESOLVING_PROP) below the call's barrier
-  marks nothing above it: no TS7022, buzz `any[]`. Re-evaluating the Prop once from below the barrier, like
-  lazy_type_evaluate_inner() does for declarations, wasn't enough (still no cycle reported: the second evaluation of
-  the call's lazy type doesn't reach buzz's DECLARATION entry again). Needs tsgo's exact re-entry: which of
-  getResolvedSignature's cached resolvingSignature / checkExpressionCached re-checks the call. ~1 session with an
-  instrumented tsgo, scripts/variancetrace.py's build() shows how.)
 - A module augmentation's module in the types baseline (`declare module "./test"` of a JS module): tsgo prints
   `typeof import("./test")` from the augmenting file, tttt `typeof import(".")`
   (jsExportMemberMergedWithModuleAugmentation2); naming it from outside the augmentation lost two TS tests.
