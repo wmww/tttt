@@ -15,8 +15,18 @@ instrumented tsgo (overlay a patched checker.go: wrap mergeSymbol to log target/
 scripts/variancetrace.py's build() does for relater.go; ~3 min to build the probe test binary with `go test -overlay
 ... -c ./internal/testrunner` and run it with TTTT_TESTDATA, see scripts/tsgoprobe.sh).
 - moduleAugmentationDuringSyntheticDefaultCheck (symbols, types): the augmentation merges into the esModuleInterop
-  clone of a namespace import (bugs/binder_modules.md "Export= clones").
+  clone of a namespace import (bugs/binder_modules.md "Export= clones"). Read off tsgo's baseline (2026-10-15, agent
+  C): augmentations merge in tsgo's file order with idx.ts *before* node_modules/moment-timezone/index.d.ts (the main
+  `moment` symbol lists idx.ts's `declare module "moment"` (idx.ts 0,34) before moment-timezone's (index.d.ts 1,16));
+  merging idx.ts's `declare module "moment-timezone"` resolves that module's `export =` (an `import * as moment`) to
+  resolveESModuleSymbol's clone (signatures + esModuleInterop: cloneTypeAsModuleType, typed `{ default: () =>
+  moment.Moment }`), made right then (it has the declarations moment had at that point: no index.d.ts 1,16) and the
+  augmentation merges into it (idx.ts 5,1). So `moment` in moment-timezone and the `"moment-timezone"` name print the
+  clone (its declarations, `{ default: ... }`), `"moment"` prints `() => Moment`. Needs: tttt's augmentation merge
+  order checked against tsgo's file order for node_modules files reached through imports (merge_augmentations()), and
+  the namespace-import clone as a binder symbol an augmentation can merge into (today TyAnonymous.module_clone /
+  synthetic_default is checker-side only); both only for this shape.
 
 ## Validation
 Each fixed with a cut-down tttt test, 0 lost, the corpora, sweep, `$ExpectType` and full sourcesweep match set
-unchanged. Delete this plan when the three pass or are written up as tsgo artifacts.
+unchanged. Delete this plan when it passes or are written up as tsgo artifacts.
