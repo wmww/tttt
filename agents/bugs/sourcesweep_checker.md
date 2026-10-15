@@ -316,3 +316,26 @@ matches tsc. The default budget (256 MB) doesn't recycle any of them, so the swe
   `TTTT_DEBUG_CYCLE=1`: does tsgo report it on that file alone?
 - **lucide**: the elaboration line `Type 'RenderedElement' is not assignable to type 'ReactNode'` is missing with a
   fresh checker per file (a relation cached or a type made earlier changes the elaboration).
+
+## Fan-out 2026-10-15 (agent D, checker diagnostics on real code)
+Fixed: DT's last mismatch (ember/v2: imports resolved by tsc's global-type initialization before the ambient modules
+exist), mikro-orm x2 (method free parameters with literal defaults), react-select x3 (optional intersection properties'
+read types). Left:
+- **vue corpus 0 / 2** (`compiler-sfc/src/style/pluginScoped.ts:190,235` -TS7006 on `n.nodes[0].each(ss => ...)`):
+  postcss-selector-parser's `Selector = _Selector<Selector>` / `interface _Selector<S> extends Container<string,
+  Diff<Node, S>>` / `interface Pseudo extends Container<string, Selector>`. tsc's resolveStructuredTypeMembers has no
+  in-flight state: resolving `_Selector<Selector>`'s bases evaluates `Diff<Node, Selector>`, which relates Pseudo to
+  Selector, which resolves `_Selector<Selector>`'s members again, until the instantiation stack is 100 deep: TS5115
+  (both report it, at line 107) and the instantiation that hit the limit is the error type for good, here making
+  `Pseudo.nodes` `any[]` (so `ss` is implicitly any). tttt's members_reentered_unguarded() reports the TS5115 but
+  doesn't reproduce which instantiation ends up as the error type. Standalone: the d.ts alone gives tsc's TS5115 at
+  `interface Root extends Container<undefined, Selector>` (its name, line 338), tttt nothing (`r1.ts` shape: `Diff`,
+  `NodeTypes { selector; root; pseudo; tag }`, `Node = NodeTypes[keyof NodeTypes]`, Base/Container/_Selector/Root/
+  Pseudo/Tag, 20 lines, `export {}`). Matching it means making the second round's error type land where tsc's does:
+  plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
+- **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: still the zod v4 `[x: string]: any` index signature of
+  the agent D 2026-10-12 entry; not reduced (zod v4's strictObject/shape types, big).
+- arktype (fn.test.ts:286 +TS2769, this.test.ts:190 +TS2322, type.test.ts:138 +TS2740 / :140 +TS2769), better-auth,
+  es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit, tanstack-table: unchanged, not looked at again (see
+  the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
+- The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.
