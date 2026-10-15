@@ -10,13 +10,25 @@ size on real code, each with an example:
   `import("@apollo/client").HttpLink`) where tttt names the declaring file (`import("./columns/common.ts")`). Module
   specifier generation for symbols reached through `export *`/re-exports (tsgo's getSymbolChain prefers the chain
   through the package's or directory's index). corpus:drizzle `src/pg-core/utils.d.ts`, apollo-client.
-- **Member order** (~170 files): tsgo's getNamedMembers sorts members by compareSymbols (declaration file order in the
-  program, then position) in some types where tttt keeps own-then-inherited or declaration order: mixin class
-  expressions' instance types (babel-parser `plugins/*.d.ts`), zod-style flattened mapped types
-  (`{ [k in keyof T]: T[k] }` over `required & optional` keys: corpus:react `src/config/env.d.ts`), unions of object
-  literals normalized with `?: undefined` members (excalidraw `actions/*`, angular-cli javascript-optimizer-worker).
-  Probably a checker-wide property order question: check what tttt's display iterates against tsgo's
-  getPropertiesOfType order before patching the printer.
+- **Member order** (31 files left of ~170; the zod-style mapped/intersection and spread cases are fixed): tsgo sorts
+  every resolved object type's properties by compareSymbols (getNamedMembers), tttt sorts at Members build
+  (builder_sort_stable). What's left:
+  - `?: undefined` members of normalized object literal unions (postiz-app `*.provider.d.ts`, slate
+    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`): tsgo's getUndefinedProperty caches one
+    symbol per name per checker, declared where the first property it was made for is, so the order depends on which
+    file that checker checked first (tsgo runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its
+    checking order/distribution differs. Plan-sized: needs tsgo's file-to-checker assignment and check order.
+  - mermaid radar `styles.d.ts` (a JS class instance type: constructor `this.x` assignments vs methods), trpc
+    next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
+- **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15): corpus:effect `test/Effect/query-repro.test.d.ts`
+  (`Equals<Omit<A, ...>, {}> extends true ? void : {...}` resolved to its false branch by tttt, deferred by tsgo);
+  excalidraw `MainMenu.d.ts` (`Trigger: typeof import(...).default` where tsgo expands it), `App.d.ts` (`callback?:
+  () => void` reused where tsgo prints `(() => void) | undefined`), `tests/helpers/api.d.ts` (tsgo keeps `declare
+  const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
+  through another unresolved import alias, the unknown-symbol quirk below) and better-auth's similar wrong-looking
+  names (`GenericEndpointContext[]`, `AuthContext`).
+- **Worktree artifacts**: dtsdiff run in a worktree with symlinked corpora differs in `.d.ts.map` `sources` and in
+  TS2883 "cannot be named without a reference to '/home/ai/tttt/...'" (excalidraw-app/collab): not bugs.
 
 - **Painting gaps** ("import", ~200 files): an import used only by a name the node builder prints from a type
   (not a reused node) isn't painted in some paths: excalidraw `actionProperties.d.ts` (ExcalidrawFreeDrawElement),
