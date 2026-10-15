@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationExpandoHostComments.ts] ////
+
+=== ttttDeclarationExpandoHostComments.ts ===
+// A function expression with expandos is a function declaration made anew: without the statement's comments; also
+// when an export list exports it
+/**
+ * doc of W
+ */
+export const W = ({ a }: { a: number }) => a; /** trailing */
+>W : { ({ a }: { a: number; }): number; displayName: string; }
+>({ a }: { a: number }) => a : { ({ a }: { a: number; }): number; displayName: string; }
+>a : number
+>a : number
+>a : number
+
+W.displayName = "W";
+>W.displayName = "W" : "W"
+>W.displayName : string
+>W : { ({ a }: { a: number; }): number; displayName: string; }
+>displayName : string
+>"W" : "W"
+
+/** doc of F */
+export function F() {}
+>F : { (): void; displayName: string; }
+
+F.displayName = "F";
+>F.displayName = "F" : "F"
+>F.displayName : string
+>F : { (): void; displayName: string; }
+>displayName : string
+>"F" : "F"
+
+/** doc of G */
+const G = function () {};
+>G : { (): void; x: number; }
+>function () {} : { (): void; x: number; }
+
+G.x = 1;
+>G.x = 1 : 1
+>G.x : number
+>G : { (): void; x: number; }
+>x : number
+>1 : 1
+
+export { G };
+>G : { (): void; x: number; }
+

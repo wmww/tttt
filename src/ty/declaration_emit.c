@@ -211,6 +211,7 @@ typedef struct Walk {
     TyDisplayParams return_params;
     bool in_return;
     isize_t statement_start; // Where the statement being written starts in `out`, its leading comments first
+    bool statement_synthesized; // The statement is written as declarations made anew, without its comments
     bool map; // declarationMap: the writer marks where source nodes start and end (decl_map.h)
 } Walk;
 
@@ -3433,9 +3434,14 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
         InitializedBinding const* only = vec_initialized_binding_at(&variable->initializers, 0);
         Expr const* init = initialized_binding_value(only);
         if (only->binding.tag == BINDING_IDENTIFIER && !only->binding.has_explicit_type && init->tag == EXPR_FUNCTION &&
-            (visible || was_painted(me, only->binding.symbol)) && is_expando_variable(me, &only->binding, init)
+            (visible || was_painted(me, only->binding.symbol) ||
+                (container.module_top_level && is_exported_local(me, only->binding.symbol))) &&
+            is_expando_variable(me, &only->binding, init)
         ) {
             FunctionImpl const* fn = init->function;
+            // (A function declaration it makes anew: the statement's comments aren't copied)
+            cstr_erase(my out, my statement_start, cstr_size(my out) - my statement_start);
+            my statement_synthesized = true;
             w_indent(me);
             isize_t modifiers_start = (isize_t)cstr_size(my out);
             w_statement_modifiers(me, statement, container, false);
@@ -4774,12 +4780,17 @@ static void emit_statement(Walk* me, Statement const* statement, Container conta
         return;
     }
     isize_t outer_start = my statement_start;
+    bool outer_synthesized = my statement_synthesized;
     my statement_start = cstr_size(my out);
+    my statement_synthesized = false;
     isize_t start = w_leading(me, statement->span.buf);
     isize_t written_from = cstr_size(my out);
     emit_statement_inner(me, statement, container);
     my statement_start = outer_start;
-    w_unless_written(me, start, written_from, span_end_ptr(statement->span));
+    bool synthesized = my statement_synthesized;
+    my statement_synthesized = outer_synthesized;
+    // (A declaration made anew has no comments of the statement's: the leading ones were taken back)
+    if (!synthesized) w_unless_written(me, start, written_from, span_end_ptr(statement->span));
 }
 
 static void emit_statement_inner(Walk* me, Statement const* statement, Container container) {
