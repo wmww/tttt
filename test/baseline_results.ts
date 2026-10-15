@@ -105,6 +105,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExistingImportOfLinkedPackage': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLiteralText': {
         errors: true,
         symbols: true,
@@ -120,7 +126,7 @@ const baselines = {
     'ttttDeclarationPackageCopyNotContainer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
         dts: true,
     },
     'ttttDeclarationPatternPaintedByExport': {
