@@ -21,6 +21,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAsyncGenericPromiseReturn': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,
@@ -437,6 +443,12 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttMappedIntersectionMemberOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
     },
     'ttttMappedOverDeferredConstraintProps': {
         errors: true,

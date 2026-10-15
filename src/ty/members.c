@@ -3751,6 +3751,11 @@ static bool modifiers_index_readonly(Checker* me, Ty const* modifiers, Ty const*
     return info && info->readonly;
 }
 
+static bool prop_has_declaration(Prop const* prop) {
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    return prop && prop->decl->decl_span_count;
+}
+
 static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* name, u32* flags) {
     *flags = 0;
     if (modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
@@ -3772,7 +3777,9 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
             if (is_union) return nullptr;
             continue;
         }
-        if (!first) first = prop;
+        // (The first one declared somewhere: tsc's union or intersection property has every member's declarations,
+        // which the first declared one's lead, and getNamedMembers orders a mapped type's properties by them)
+        if (!first || (!prop_has_declaration(first) && prop_has_declaration(prop))) first = prop;
         if (is_union) optional |= member_flags & PROP_OPTIONAL; else optional &= member_flags;
         if (is_union) readonly |= member_flags & PROP_READONLY; else readonly &= member_flags;
     }

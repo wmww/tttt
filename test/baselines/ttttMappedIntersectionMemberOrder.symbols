@@ -1,0 +1,71 @@
+//// [test/cases/ttttMappedIntersectionMemberOrder.ts] ////
+
+=== ttttMappedIntersectionMemberOrder.ts ===
+// A mapped type over an intersection lists its properties in the order of their first declarations (tsgo's
+// getNamedMembers sorts by compareSymbols): an intersection property is declared by every member's, so the first
+// member's declaration-less mapped property (`[K in requiredKeys<T>]`) doesn't make it sort by name (zod's flatten)
+type requiredKeys<T> = { [k in keyof T]: undefined extends T[k] ? never : k }[keyof T];
+>requiredKeys : Symbol(requiredKeys, Decl(ttttMappedIntersectionMemberOrder.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 18))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 26))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 18))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 18))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 26))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 26))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 18))
+
+type optionalKeys<T> = { [k in keyof T]: undefined extends T[k] ? k : never }[keyof T];
+>optionalKeys : Symbol(optionalKeys, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 18))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 26))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 18))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 18))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 26))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 26))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 18))
+
+type addQuestionMarks<T> = { [K in requiredKeys<T>]: T[K] } & { [K in optionalKeys<T>]?: T[K] } & { [k in keyof T]?: unknown };
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+>K : Symbol(K, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 30))
+>requiredKeys : Symbol(requiredKeys, Decl(ttttMappedIntersectionMemberOrder.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+>K : Symbol(K, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 30))
+>K : Symbol(K, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 65))
+>optionalKeys : Symbol(optionalKeys, Decl(ttttMappedIntersectionMemberOrder.ts, 3, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+>K : Symbol(K, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 65))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 101))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 22))
+
+type flatten<T> = { [k in keyof T]: T[k] };
+>flatten : Symbol(flatten, Decl(ttttMappedIntersectionMemberOrder.ts, 5, 127))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 13))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 21))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 13))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 13))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 21))
+
+declare function obj<T>(t: T): { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k] };
+>obj : Symbol(obj, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 43))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 21))
+>t : Symbol(t, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 24))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 21))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 34))
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 21))
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 21))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 7, 34))
+
+export const x = obj({ title: "a", body: "b", zeta: undefined as string | undefined, alpha: 1 });
+>x : Symbol(x, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 12))
+>obj : Symbol(obj, Decl(ttttMappedIntersectionMemberOrder.ts, 6, 43))
+>title : Symbol(title, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 22))
+>body : Symbol(body, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 34))
+>zeta : Symbol(zeta, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 45))
+>undefined : Symbol(undefined)
+>alpha : Symbol(alpha, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 84))
+
