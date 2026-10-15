@@ -14559,8 +14559,9 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     u32 module_refs_before = source->module_ref_count;
     ParserShared shared = {
         .source = source,
-        // (Only declaration maps read TypeNode.pos)
-        .text = !source->is_declaration && !source->is_stdlib && compiler_options()->declaration_map ? source_file_start(source) : nullptr,
+        // (Only declaration emit reads TypeNode.pos: its maps and the comments around reprinted nodes)
+        .text = !source->is_declaration && !source->is_stdlib && (compiler_options()->declaration || compiler_options()->composite) ?
+            source_file_start(source) : nullptr,
         .fail_cache_start = source_file_start(source),
         .errors = vec_error_init(),
         .in_ambient = source->is_declaration,

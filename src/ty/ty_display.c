@@ -2054,8 +2054,7 @@ static void param_comments_begin_at(TyDisplay d, Span span) {
     if (!d.comments || !span_valid(span)) return;
     decl_comments_intervening(d.comments, d.target, d.indent, span.buf);
     decl_comments_leading(d.comments, d.target, d.indent, span.buf);
-    isize_t size = cstr_size(d.target);
-    if (size && cstr_str(d.target)[size - 1] == '\n') out_indent(d);
+    if (decl_map_last_char(cstr_sv(d.target)) == '\n') out_indent(d);
 }
 
 static void param_comments_begin(TyDisplay d, FunctionArg const* arg) { param_comments_begin_at(d, arg->span); }
@@ -2098,8 +2097,12 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         }
         // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
         out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
-        if (binding->has_explicit_type) display_node(me, d, binding_type(binding));
-        else if (d.multiline && binding->tag != BINDING_IDENTIFIER) display_binding_pattern_type(d, binding);
+        if (binding->has_explicit_type) {
+            // (The parameter ends with it: param_comments_end() writes its trailing comments)
+            TyDisplay type_d = d;
+            if (d.comments && d.multiline) type_d.comments_container_end = decl_map_type_end(binding_type(binding), d.comments->file);
+            display_node(me, type_d, binding_type(binding));
+        } else if (d.multiline && binding->tag != BINDING_IDENTIFIER) display_binding_pattern_type(d, binding);
         else out(reused_if(d, false), i->rest && d.multiline ? c_sv("any[]") : c_sv("any")); // tsc gives it a synthesized `any` (`any[]` a rest one, declaration emit)
         map_span(arg_d, i->span, true);
         if (!function->jsdoc_type) param_comments_end(d, i);
@@ -2205,6 +2208,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     d = brace_open(d);
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, d, i)) continue;
+        // (Declaration emit: a type ending the member, which has no `;`, leaves its trailing comments to it)
+        if (d.comments && d.multiline && span_valid(i->declaration)) {
+            d.comments_container_start = i->declaration.buf;
+            d.comments_container_end = decl_comments_end(d.comments, span_end_ptr(i->declaration), ";,");
+        }
         // Declaration emit: stripInternal leaves out a member with `@internal` in a leading comment
         if (d.comments && compiler_options()->strip_internal && span_valid(i->declaration) &&
             decl_comments_leading_contains(d.comments, i->declaration.buf, "@internal")
@@ -2350,12 +2358,21 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     brace_close(outer);
 }
 
+// Declaration emit: the comments before a reused list element starting at `start`, on the line of the delimiter before
+// it (or of the list's start), unfiltered (the printer's emitListItems' intervening ones)
+static void out_intervening_comments(TyDisplay d, char const* start) {
+    if (!d.transformer_node || !d.multiline || !d.comments || !start) return;
+    decl_comments_intervening(d.comments, d.target, d.indent, start);
+    if (decl_map_last_char(cstr_sv(d.target)) == '\n') out_indent(d);
+}
+
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
     bool first = true;
     for_each (i, vec_type, list) {
         if (i->placeholder) continue;
         if (!first) out(d, csview_from(separator));
         first = false;
+        if (!i->synthesized && i->pos) out_intervening_comments(d, decl_map_type_start(i, d.comments ? d.comments->file : nullptr));
         // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
         // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the
         // factory's parenthesizeConstituentTypeOfUnionType/IntersectionType wraps them)
@@ -2433,7 +2450,30 @@ static bool display_template_source(Checker* me, TyDisplay d, TemplateType const
 static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node);
 // A reused annotation counts as its text with the whitespace before it, whatever printing it counted (tsc's
 // tryReuseExistingNodeHelper: the node's range, inside a recovery boundary)
+static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node);
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    // Declaration emit: a node the declaration transformer visits is an original node, with the comments around it
+    // (the printer's emitCommentsBeforeNode and emitCommentsAfterNode)
+    if (!d.transformer_node || !d.multiline || !d.comments || d.comments->off || node->synthesized) {
+        display_node_mapped(me, d, node);
+        return;
+    }
+    SourceFile const* file = d.comments->file;
+    char const* start = decl_map_type_start(node, file);
+    char const* end = start ? decl_map_type_end(node, file) : nullptr;
+    if (!end) {
+        display_node_mapped(me, d, node);
+        return;
+    }
+    if (start != d.comments_container_start) decl_comments_leading(d.comments, d.target, d.indent, start);
+    char const* container_end = d.comments_container_end;
+    d.comments_container_start = start;
+    d.comments_container_end = end;
+    display_node_mapped(me, d, node);
+    if (end != container_end) decl_comments_trailing(d.comments, d.target, end);
+}
+
+static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node) {
     if (D_MAP(d)) {
         // (A node printed as its type isn't mapped, nor is one that has no position here)
         isize_t marked_at = cstr_size(d.target);
@@ -2565,8 +2605,9 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                     out(d, i_index ? c_sv(",\n") : c_sv("\n"));
                     if (d.comments && span_valid(i->span)) decl_comments_leading(d.comments, d.target, element_d.indent, i->span.buf);
                     member_begin(element_d);
-                } else if (i_index) {
-                    out_lit(d, ", ");
+                } else {
+                    if (i_index) out_lit(d, ", ");
+                    if (span_valid(i->span)) out_intervening_comments(d, i->span.buf);
                 }
                 TyDisplay outer = d;
                 d = element_d;

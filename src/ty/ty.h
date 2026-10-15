@@ -2559,6 +2559,11 @@ typedef struct TyDisplay {
     // Declaration emit: the node being printed is one the declaration transformer visits (a written annotation), not one
     // the node builder reuses: those of its mapped types and tuples aren't SingleLine (tryReuseExistingTypeNode sets it)
     bool transformer_node;
+    // Declaration emit: where the node being reprinted (whose comments are written around it) starts and ends: a part
+    // of it starting or ending there leaves them to it (the printer's containerPos and containerEnd). A caller that
+    // writes a declaration's trailing comments itself sets the end to its annotation's
+    char const* comments_container_start;
+    char const* comments_container_end;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

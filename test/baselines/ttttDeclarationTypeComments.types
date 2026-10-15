@@ -1,0 +1,70 @@
+//// [test/cases/ttttDeclarationTypeComments.ts] ////
+
+=== ttttDeclarationTypeComments.ts ===
+// The comments inside a reused annotation: each node's JSDoc-style leading and trailing ones (once: a node ending where
+// its parameter, variable or member does leaves them to it), and the unfiltered ones after a list delimiter
+export interface O {
+    cascade?: boolean /** @default true */;
+>cascade : boolean | undefined
+
+    kind: string | undefined /** How */;
+>kind : string | undefined
+
+    a: number /* plain */;
+>a : number
+
+    b: number; /** after */
+>b : number
+
+    c: { d: A /** last */ }
+>c : { d: A; }
+>d : 1
+}
+export type L = 0 /** Facebook */ | 1 /** Google */ | 2;
+>L : L
+
+export type S = A | /* B | */ C | D;
+>S : S
+
+export type W = /* daily */ "x" | /* general */ "y";
+>W : W
+
+type A = 1; type B = 2; type C = 3; type D = 4;
+>A : 1
+>B : 2
+>C : 3
+>D : 4
+
+export declare function f(x: A /** px */, y?: B /* py */): C /** ret */;
+>f : (x: A, y?: B) => C
+>x : 1
+>y : 2 | undefined
+
+export declare let v: A /** v */;
+>v : 1
+
+export declare let t: [A, B, /* named */ C];
+>t : [1, 2, 3]
+
+export type F = (x: A /** fx */) => B;
+>F : F
+>x : 1
+
+export interface P {
+    replacer?: // eslint-disable-next-line
+>replacer : number[] | ((x: any) => any) | undefined
+
+    ((x: any) => any) | number[];
+>x : any
+
+    id: A["toString"] | /** for pending */ null;
+>id : ((radix?: number) => string) | null
+}
+export type R = readonly (A | /* pending */ {
+>R : R
+
+    x: 1;
+>x : 1
+
+})[];
+

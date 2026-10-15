@@ -139,9 +139,9 @@ typedef struct TypeNode {
     // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     bool from_jsdoc : 1;
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed)
-    // Where it starts in its file's text plus one (0: not parsed there, or not recorded: only with declarationMap), its
+    // Where it starts in its file's text plus one (0: not parsed there, or not recorded: only with declaration emit), its
     // first token's (`readonly`, a parenthesized one's `(`): declaration maps map the nodes declaration emit reuses
-    // (decl_map_type_start(), decl_map.h)
+    // (decl_map_type_start(), decl_map.h), and their comments are copied
     u32 pos;
     TypeFlow const* flow; // Null outside true branches
     union {

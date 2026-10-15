@@ -2993,17 +2993,23 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
 #define SINKS_OFF cstr* sinks_type = my type_out; cstr* sinks_pseudo = my pseudo_out; my type_out = my pseudo_out = nullptr
 #define SINKS_ON my type_out = sinks_type; my pseudo_out = sinks_pseudo
 
-static void w_node(Walk* me, TypeNode const* node) {
+static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration) {
     SINKS_OFF;
     TyParamNames names = walk_param_names(me);
     // (JavaScript's annotations go through the node builder, tsgo's TryJSTypeNodeToTypeNode)
     names.as_written = !my file->is_js;
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
+    // (The declaration ends with it: its trailing comments are the declaration's, which the caller writes)
+    if (ends_declaration) d.comments_container_end = decl_map_type_end(node, my file);
     ty_display_node(my checker, d, node);
     ty_param_names_drop(&names);
     SINKS_ON;
 }
+
+static void w_node(Walk* me, TypeNode const* node) { w_node_in(me, node, false); }
+// A parameter's or variable's annotation
+static void w_node_last(Walk* me, TypeNode const* node) { w_node_in(me, node, true); }
 
 static void w_type(Walk* me, Ty const* type) {
     SINKS_OFF;
@@ -3211,7 +3217,7 @@ static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg cons
     if (private_member) return;
     w_lit(me, ": ");
     if (binding->has_explicit_type && (is_this || !requires_adding_undefined(me, fn, arg, true))) {
-        w_node(me, binding_type(binding));
+        w_node_last(me, binding_type(binding));
         return;
     }
     cstr text = cstr_init();
@@ -3351,7 +3357,7 @@ static void w_variable_type(Walk* me, InitializedBinding const* decl, bool is_co
     }
     w_lit(me, ": ");
     if (binding->has_explicit_type) {
-        w_node(me, binding_type(binding));
+        w_node_last(me, binding_type(binding));
         return;
     }
     if (binding->symbol && w_own_unique_symbol(me, ty_type_of_symbol(my checker, binding->symbol), binding->symbol)) return;
@@ -3439,7 +3445,7 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             w_lit(me, ": ");
             Expr const* init = initialized_binding_value(i);
             if (binding->has_explicit_type) {
-                w_node(me, binding_type(binding));
+                w_node_last(me, binding_type(binding));
             } else {
                 Ty const* type = init->tag != EXPR_IMPLICIT_ANY ? lazy_type_get((LazyType*)&init->lazy_type) : nullptr;
                 w_type(me, type ? ty_widened_literal(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))) :
@@ -3827,7 +3833,7 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
     }
     w_lit(me, ": ");
     if (binding->has_explicit_type && !requires_adding_undefined(me, ctor, arg, false)) {
-        w_node(me, binding_type(binding));
+        w_node_last(me, binding_type(binding));
     } else {
         cstr text = cstr_init();
         cstr* outer = my type_out;

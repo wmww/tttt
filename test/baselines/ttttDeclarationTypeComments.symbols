@@ -1,0 +1,89 @@
+//// [test/cases/ttttDeclarationTypeComments.ts] ////
+
+=== ttttDeclarationTypeComments.ts ===
+// The comments inside a reused annotation: each node's JSDoc-style leading and trailing ones (once: a node ending where
+// its parameter, variable or member does leaves them to it), and the unfiltered ones after a list delimiter
+export interface O {
+>O : Symbol(O, Decl(ttttDeclarationTypeComments.ts, 0, 0))
+
+    cascade?: boolean /** @default true */;
+>cascade : Symbol(O.cascade, Decl(ttttDeclarationTypeComments.ts, 2, 20))
+
+    kind: string | undefined /** How */;
+>kind : Symbol(O.kind, Decl(ttttDeclarationTypeComments.ts, 3, 43))
+
+    a: number /* plain */;
+>a : Symbol(O.a, Decl(ttttDeclarationTypeComments.ts, 4, 40))
+
+    b: number; /** after */
+>b : Symbol(O.b, Decl(ttttDeclarationTypeComments.ts, 5, 26))
+
+    c: { d: A /** last */ }
+>c : Symbol(O.c, Decl(ttttDeclarationTypeComments.ts, 6, 14))
+>d : Symbol(d, Decl(ttttDeclarationTypeComments.ts, 7, 8))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+}
+export type L = 0 /** Facebook */ | 1 /** Google */ | 2;
+>L : Symbol(L, Decl(ttttDeclarationTypeComments.ts, 8, 1))
+
+export type S = A | /* B | */ C | D;
+>S : Symbol(S, Decl(ttttDeclarationTypeComments.ts, 9, 56))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+>C : Symbol(C, Decl(ttttDeclarationTypeComments.ts, 12, 23))
+>D : Symbol(D, Decl(ttttDeclarationTypeComments.ts, 12, 35))
+
+export type W = /* daily */ "x" | /* general */ "y";
+>W : Symbol(W, Decl(ttttDeclarationTypeComments.ts, 10, 36))
+
+type A = 1; type B = 2; type C = 3; type D = 4;
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+>B : Symbol(B, Decl(ttttDeclarationTypeComments.ts, 12, 11))
+>C : Symbol(C, Decl(ttttDeclarationTypeComments.ts, 12, 23))
+>D : Symbol(D, Decl(ttttDeclarationTypeComments.ts, 12, 35))
+
+export declare function f(x: A /** px */, y?: B /* py */): C /** ret */;
+>f : Symbol(f, Decl(ttttDeclarationTypeComments.ts, 12, 47))
+>x : Symbol(x, Decl(ttttDeclarationTypeComments.ts, 13, 26))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+>y : Symbol(y, Decl(ttttDeclarationTypeComments.ts, 13, 41))
+>B : Symbol(B, Decl(ttttDeclarationTypeComments.ts, 12, 11))
+>C : Symbol(C, Decl(ttttDeclarationTypeComments.ts, 12, 23))
+
+export declare let v: A /** v */;
+>v : Symbol(v, Decl(ttttDeclarationTypeComments.ts, 14, 18))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+
+export declare let t: [A, B, /* named */ C];
+>t : Symbol(t, Decl(ttttDeclarationTypeComments.ts, 15, 18))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+>B : Symbol(B, Decl(ttttDeclarationTypeComments.ts, 12, 11))
+>C : Symbol(C, Decl(ttttDeclarationTypeComments.ts, 12, 23))
+
+export type F = (x: A /** fx */) => B;
+>F : Symbol(F, Decl(ttttDeclarationTypeComments.ts, 15, 44))
+>x : Symbol(x, Decl(ttttDeclarationTypeComments.ts, 16, 17))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+>B : Symbol(B, Decl(ttttDeclarationTypeComments.ts, 12, 11))
+
+export interface P {
+>P : Symbol(P, Decl(ttttDeclarationTypeComments.ts, 16, 38))
+
+    replacer?: // eslint-disable-next-line
+>replacer : Symbol(P.replacer, Decl(ttttDeclarationTypeComments.ts, 17, 20))
+
+    ((x: any) => any) | number[];
+>x : Symbol(x, Decl(ttttDeclarationTypeComments.ts, 19, 6))
+
+    id: A["toString"] | /** for pending */ null;
+>id : Symbol(P.id, Decl(ttttDeclarationTypeComments.ts, 19, 33))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+}
+export type R = readonly (A | /* pending */ {
+>R : Symbol(R, Decl(ttttDeclarationTypeComments.ts, 21, 1))
+>A : Symbol(A, Decl(ttttDeclarationTypeComments.ts, 11, 52))
+
+    x: 1;
+>x : Symbol(x, Decl(ttttDeclarationTypeComments.ts, 22, 45))
+
+})[];
+
