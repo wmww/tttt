@@ -406,6 +406,17 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando;
 }
 
+// A global whose name a parameter of the signatures being printed shadows: named through globalThis (tsc's
+// lookupSymbolChain from the signature's fake scope)
+static bool shadowed_global(Checker* me, TyDisplay d, Symbol const* symbol) {
+    if (!symbol || !d.printed_params) return false;
+    bool shadowed = false;
+    for (TyDisplayParams const* i = d.printed_params; i && !shadowed; i = i->outer) {
+        for (u32 j = 0; j < i->count && !shadowed; j++) shadowed = i->params[j].name && csview_equals_sv(atom_sv(i->params[j].name), symbol->name);
+    }
+    return shadowed && program_get_global(my program, symbol->name, SYMBOL_VALUE) == symbol;
+}
+
 // Declaration emit (TyDisplay.tracker) prints a function's own type by its name, `typeof f`, where that name is
 // accessible as a value (tsc's declarationEmitNodeBuilderFlags have UseTypeOfFunction, and UseStructuralFallback asks
 // isValueSymbolAccessible); not at the function's own declaration, whose type is what's being written
@@ -5163,6 +5174,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     function_impl_rare(impl)->top_level_variable;
                 if (typeof_function_in_declaration(d, named)) {
                     out_lit(d, "typeof ");
+                    if (shadowed_global(me, d, named)) out_lit(d, "globalThis.");
                     out_symbol_name(me, d, named, SYMBOL_VALUE);
                     return;
                 }

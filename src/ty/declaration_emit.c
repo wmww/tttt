@@ -202,6 +202,10 @@ typedef struct Walk {
     // parameter the node builder prints may shadow (tsc's typeParameterShadowsOtherTypeParameterInScope)
     Ty const** scope_params;
     u32 scope_param_count, scope_param_cap;
+    // The writer, writing a function's return type: its parameters are in scope there (tsc's enclosing declaration is the
+    // function), shadowing what they name
+    TyDisplayParams return_params;
+    bool in_return;
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -2048,7 +2052,7 @@ static uint8_t late_index_kind(Expr const* key) {
     if (!type || (type->flags & (TYF_ANY | TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return 0;
     if (type->flags & TYF_NUMBER) return 2;
     if (type->flags & TYF_ES_SYMBOL) return 3;
-    if (type->flags & TYF_STRING) return 1;
+    if (type->flags & (TYF_STRING | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return 1;
     // (A union of them: of the kind all its members are, isTypeAssignableTo)
     if (type->kind == TY_UNION && type->composite.types.len) {
         u32 kinds[4] = {0};
@@ -2796,6 +2800,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     return (TyDisplay){
         .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
         .multiline = true, .indent = my indent, .comments = &my comments,
+        .printed_params = my in_return ? &my return_params : nullptr,
     };
 }
 
@@ -3001,7 +3006,16 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     Emitting saved = emit_enter(me, EMIT_RETURN, SIG_FUNCTION, fn->name, fn->name);
     Pseudo const* pseudo = getter_pair ? pseudo_of_accessors(my checker, fn, my class_pair.setter, false) :
         pseudo_of_return(my checker, fn);
+    Signature const* own = getter_pair ? nullptr : ty_function_signature(my checker, fn);
+    TyDisplayParams outer_params = my return_params;
+    bool outer_in_return = my in_return;
+    if (own) {
+        my return_params = (TyDisplayParams){ .params = own->params, .count = own->param_count, .function = fn };
+        my in_return = true;
+    }
     serialize_return(me, fn, pseudo);
+    my return_params = outer_params;
+    my in_return = outer_in_return;
     emit_leave(me, saved);
     my type_out = outer;
     w_serialized(me, &text);
@@ -3495,7 +3509,11 @@ static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
                 if (m->optional) w_lit(me, "?");
                 w_lit(me, ": ");
                 if (m->item && m->item->tag == CLASS_ITEM_METHOD) {
-                    w_type(me, ty_function_type(my checker, &m->item->method.func));
+                    Ty const* type = ty_function_type(my checker, &m->item->method.func);
+                    if (m->optional && my strict_null_checks) {
+                        type = ty_union(my checker, (Ty const*[]){ type, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+                    }
+                    w_type(me, type);
                 } else if (m->item) {
                     Ty const* type = lazy_type_get((LazyType*)&m->item->field.lazy_type);
                     if (type && m->optional && my strict_null_checks) {
