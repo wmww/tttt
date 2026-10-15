@@ -3141,7 +3141,7 @@ const baselines = {
     'builtinIterator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cacheResolutions': {
         errors: true,
@@ -64026,7 +64026,7 @@ const baselines = {
     'awaitUsingDeclarationsWithIteratorObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usingDeclarations.1(target=es2015)': {
         errors: true,
@@ -64533,7 +64533,7 @@ const baselines = {
     'usingDeclarationsWithIteratorObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usingDeclarationsWithLegacyClassDecorators.1(module=commonjs,target=es2015)': {
         errors: true,

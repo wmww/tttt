@@ -2786,16 +2786,23 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
 
 // Whether an instantiated signature's mapper maps a type parameter of a merged declaration (an interface declared twice):
 // tsc's isTypeParameterPossiblyReferenced says yes for those whatever the node, so every anonymous type of the signature
-// is a new instantiation, which no annotation says
+// is a new instantiation, which no annotation says. `this` too, whose declarations are its class's or interface's: a
+// method of a non-thisless interface declared twice (IteratorConstructor) has fresh type parameters, so `Iterator.from`'s
+// `value: Iterator<T> | Iterable<T>` prints its type, not the annotation
 static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature const* root) {
     Binder const* binder = program_get_binder(my program);
     for (Signature const* i = sig; i && i != root; i = i->target) {
         for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
             Ty const* source = i->mapper->sources[j];
-            if (source->kind == TY_TYPE_PARAM && !source->param.state->is_this && source->param.symbol &&
-                binder_redirect(binder, source->param.symbol)->decl_count > 1) {
-                return true;
+            if (source->kind != TY_TYPE_PARAM) continue;
+            // (`this` is declared by its class or interface: IteratorConstructor's two interfaces)
+            Symbol const* symbol = source->param.symbol;
+            if (source->param.state->is_this) {
+                Ty const* owner = source->param.state->constraint;
+                if (owner && owner->kind == TY_REFERENCE) owner = owner->reference.target;
+                symbol = owner && owner->kind == TY_DECLARED ? owner->declared.symbol : nullptr;
             }
+            if (symbol && binder_redirect(binder, symbol)->decl_count > 1) return true;
         }
     }
     return false;
@@ -2842,7 +2849,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
     // reference's members are instantiated with `this` as the reference), with fresh type parameters)
-    if (instantiated && root->type_params.len && (!this_only || sibling_mapped || mentions_mapped(me, sig, root))) {
+    if (instantiated && root->type_params.len && (!this_only || sibling_mapped || merged_mapped || mentions_mapped(me, sig, root))) {
         if (d.fresh_params.len) {
             Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);

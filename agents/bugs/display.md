@@ -187,9 +187,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - isolatedDeclarationsAddUndefined: `x = 10 as T` parameter initializers print the assertion syntactically (plan 35
   saw the types side; the errors component fails now).
 ## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
-- `Iterator.from` prints its union sorted in tsgo (builtinIterator, awaitUsingDeclarationsWithIteratorObject,
-  usingDeclarationsWithIteratorObject): not the fresh-type-parameter mechanism this entry used to claim, which tsgo
-  probes refute; see plan 68 (an instrumented tsgo is the next step).
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
 - Index symbols of a destructuring assignment's rest (`({ ...r } = strMap); r.z`): tsgo's getRestType gets the object
