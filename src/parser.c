@@ -1732,7 +1732,7 @@ static bool tok_is_start_of_expression(Parser* p, Tok t) {
     static const char* const ops[] = { "+", "-", "~", "!", "++", "--", "<", "@", nullptr };
     static const char* const words[] = { "delete", "typeof", "void", "await", "yield", nullptr };
     if (tok_is_start_of_left_hand_side_expression(p, t)) return true;
-    if (*t.start == '#') return true;
+    if (*t.start == '#' && t.start[1] != '!') return true; // (`#!` is tsc's Unknown token)
     return tok_is_one_of(t, ops) || tok_is_one_of(t, words) || tok_is_binary_operator(t) || tok_is_identifier(t);
 }
 

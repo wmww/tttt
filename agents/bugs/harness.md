@@ -1,6 +1,6 @@
 # Harness, CLI and tools
 (pruned 2026-10-09 against the tsgo 7.1 suite: tsgo's harness has no TS-1 pre/post-emit count line.)
-- `@pretty: true` is done except manyCompilerErrorsInTheTwoFiles (errors).
+- `@pretty: true` is done.
 - Emit before diagnostics: tsgo's harnessutil.CompileFiles emits (postProgram.Emit) before collecting the semantic
   diagnostics it baselines, and the emit resolver checks expressions (a property access's constant value, `x.foo`)
   first. What's resolved first then shows: TS2313's "Circularity originates in type at this location" (TS2751, tsgo's

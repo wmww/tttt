@@ -238,7 +238,6 @@ Still wrong: jsExportMemberMergedWithModuleAugmentation2 (duplicates across an i
 our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting cross-file symbols apart).
 
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
-- manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
   list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
   probed (they see no token, the list skips it).
@@ -259,9 +258,6 @@ our TS2671), checkerInitializationCrash's symbols (tsc keeps the two conflicting
   (`{ a: [], a: 1 }`) gives the last one's, as tttt does (`any`, from the unresolved `v`). Reduce with a module
   (`export {}`, target esnext) and `x > { const out = [], for await (const v of a) {} }`; suspect the reparse's
   syntax cursor reusing the first pass's nodes, or the second `const` not being a PropertyAssignment in tsgo.
-- manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a non-initial `#!` (pos++), so
-  the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
-  parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
 - typeofImportDefer (symbols/types): the missing identifier of `.defer` should print as `Symbol(unknown)` / `> : any`.
 - Older parser-session leftovers (ex plan 27, 2026-09-29) are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".

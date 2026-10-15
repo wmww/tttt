@@ -19,5 +19,4 @@ ever exists (the human: out of scope, vision.md):
   TS2751 location. Evidence: tsgo's CLI (`built/tsc --noEmit`, check order) prints exactly tttt's diagnostics for both;
   only the harness's emit-first run differs.
 Not in this class after all (tsgo's CLI differs from tttt too: checker or parser bugs, plan 66's second fan-out):
-circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement),
-manyCompilerErrorsInTheTwoFiles (two missing TS1134 parse errors).
+circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement).

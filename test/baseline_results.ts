@@ -22810,7 +22810,7 @@ const baselines = {
         types: true,
     },
     'manyCompilerErrorsInTheTwoFiles': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
