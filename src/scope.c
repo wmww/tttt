@@ -3900,9 +3900,8 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
         source->parent = owner;
         return;
     }
-    Symbol* alias = nullptr;
     if (symbol_is_pure_alias(existing)) {
-        alias = existing;
+        Symbol* alias = existing;
         existing = symbol_resolve_alias(existing);
         if (!existing || existing->is_placeholder) return;
         // (tsc's mergeSymbol resolves the target to compare, and reports a conflict at the alias's declarations)
@@ -3920,7 +3919,6 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
     }
     bool conflict = (existing->flags & excluded_flags(source->flags)) != 0;
     bool through_alias = existing != symbol_table_get_own(owner->exports, name, hash) && !from_star;
-    u32 flags_before = existing->flags;
     merge_symbol(binder, existing, source, errs);
     // (Merged through an alias, the name is then what it resolved to: tsc's mergeSymbol answers the clone of the
     // alias's target, which mergeSymbolTable puts in the table. An augmentation's block looks its own names up there,
@@ -3928,10 +3926,6 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
     if (through_alias && existing->binder == binder && !conflict) {
         i32 own = symbol_table_own_index(owner->exports, name, hash);
         if (own >= 0) owner->exports->entries[own].symbol = existing;
-        if (alias && alias->binder == binder) {
-            symbol_rare_mut(alias)->merge_detached = true;
-            symbol_rare_mut(alias)->detached_target_flags = flags_before;
-        }
     }
     // (What `export *` brought is then the module's own export too, which the augmentation's blocks see: tsc's
     // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module. After a

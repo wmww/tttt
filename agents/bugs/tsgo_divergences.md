@@ -65,3 +65,11 @@ argued here instead. Nothing a user sees differs in any of them.
   their re-creation. tttt's structural intern hands the unchanged member back (its id stays older than the widened
   one's). Reproducing it took a flag that made a structurally identical copy of each member (`OBJECT_WIDENED_COPY`,
   removed 2026-10-15): an extra type per member for an order only the types baseline shows.
+- declarationEmitAugmentationUsesCorrectSourceFile (symbols and types only; its errors and `.d.ts` match): the export
+  specifier of `declare namespace knex { export { Knex } }`, whose target namespace `Knex` another file augments, is
+  `Symbol(knex.Knex)` and `any` to tsgo, `Symbol(Knex)` and `typeof Knex` to tttt. tsgo's mergeSymbol resolves the
+  alias before merging (resolveSymbol caches the unmerged namespace, with no value meaning, as its aliasTarget), then
+  merges into a clone of the target that replaces the alias in knex's exports: the alias is left in no table (named
+  through its parent) and its type is errorType. Only the specifier's own symbol shows it: `knex.Knex` as a name or
+  value reaches the merged clone in both. Reproduced by `SymbolRare.merge_detached` (b3ad2000, removed 2026-10-15),
+  which marked such aliases in the binder and special-cased them in getTypeOfAlias and the symbol chain.
