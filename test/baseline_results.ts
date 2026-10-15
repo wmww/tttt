@@ -189,6 +189,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationImportTypeQuotes': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationInferredPredicatePaintsImport': {
         errors: true,
         symbols: true,

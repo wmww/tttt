@@ -1828,7 +1828,16 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
                 }
             }
             cstr name = program_module_display_name(my program, module, here, SPECIFIER_MODE_NONE, d.usage_ref);
-            out(d, cstr_sv(&name));
+            // (The same specifier as written: the node itself is reused, its quotes kept: tsgo's rewriteModuleSpecifier)
+            csview named = cstr_sv(&name);
+            bool single = span_valid(ref->span) && ref->span.size && ref->span.buf[0] == '\'';
+            if (single && named.size == cstr_size(&ref->path) + 2 && named.buf[0] == '"' &&
+                !memcmp(named.buf + 1, cstr_str(&ref->path), (size_t)cstr_size(&ref->path))
+            ) {
+                display_quoted_string(d, cstr_sv(&ref->path), true, false);
+            } else {
+                out(d, named);
+            }
             cstr_drop(&name);
         } else if (ref) {
             // (The argument's literal, its quotes kept: tsgo's node copy)

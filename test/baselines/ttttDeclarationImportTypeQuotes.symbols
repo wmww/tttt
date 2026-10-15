@@ -1,0 +1,25 @@
+//// [test/cases/ttttDeclarationImportTypeQuotes.ts] ////
+
+=== c.ts ===
+export interface X { a: 1 }
+>X : Symbol(X, Decl(c.ts, 0, 0))
+>a : Symbol(X.a, Decl(c.ts, 0, 20))
+
+=== a.d.ts ===
+export declare function mk(): [{ $props: import('./c').X; n: number }];
+>mk : Symbol(mk, Decl(a.d.ts, 0, 0))
+>$props : Symbol($props, Decl(a.d.ts, 0, 32))
+>X : Symbol(X, Decl(c.ts, 0, 0))
+>n : Symbol(n, Decl(a.d.ts, 0, 57))
+
+=== b.ts ===
+import { mk } from "./a";
+>mk : Symbol(mk, Decl(b.ts, 0, 8))
+
+const [p] = mk();
+>p : Symbol(p, Decl(b.ts, 1, 7))
+>mk : Symbol(mk, Decl(b.ts, 0, 8))
+
+export { p };
+>p : Symbol(p, Decl(b.ts, 2, 8))
+
