@@ -3573,6 +3573,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             ret->tuple.readonly = true;
             readonly_span = span_null;
         }
+        // (The `readonly` operator's node starts at it: what the right side makes next takes that as its left side)
+        ret->pos = type_pos(&p, a.start);
     }
     while (parse_type_right_side(&p, min_precedence, left_start, ret)) {}
     ret->parsed = true; // (Also what the right side made)

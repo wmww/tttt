@@ -174,6 +174,40 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
     }
     free(used);
     free(sections);
+    // The declaration maps (plan 64 stage 5), from the `.js.map` baseline: each `.d.ts.map` section's JSON
+    cstr map_path = cstr_from_sv(js_path);
+    cstr_append(&map_path, ".map");
+    cstr maps = cstr_null;
+    if (fs_is_reg_file(fs, cstr_sv(&map_path))) {
+        try (fs_read_file(fs, cstr_sv(&map_path), &maps)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+        }
+    }
+    for (csview rest = cstr_sv(&maps); rest.size;) {
+        isize_t eol = csview_find_sv(rest, c_sv("\n"));
+        csview line = eol == c_NPOS ? rest : csview_slice(rest, 0, eol + 1);
+        rest = csview_slice(rest, line.size, rest.size);
+        if (!csview_starts_with(line, "//// [") || !csview_ends_with(line, ".map]\r\n")) continue;
+        csview name = csview_slice(line, 6, line.size - 3);
+        if (!csview_ends_with(name, ".d.ts.map") && !csview_ends_with(name, ".d.mts.map") && !csview_ends_with(name, ".d.cts.map")) continue;
+        isize_t json_end = csview_find_sv(rest, c_sv("\n"));
+        csview json = json_end == c_NPOS ? rest : csview_slice(rest, 0, json_end);
+        if (json.size && json.buf[json.size - 1] == '\r') json.size--;
+        cstr_append_d(&expected_text, DEFAULT_DISPLAY, "//// [", name, "]\r\n", json, "\r\n");
+        for (u32 i = 0; i < source_count; i++) {
+            SourceFile const* source = program_source_at(program, i);
+            if (!source->declaration_map) continue;
+            cstr map_name = declaration_output_name(test_case, source);
+            cstr_append(&map_name, ".map");
+            bool same = csview_equals_sv(cstr_sv(&map_name), name);
+            cstr_drop(&map_name);
+            if (!same) continue;
+            cstr_append_d(&ours, DEFAULT_DISPLAY, "//// [", name, "]\r\n", *source->declaration_map, "\r\n");
+            break;
+        }
+    }
+    c_drop(cstr, &map_path, &maps);
     csview ours_sv = cstr_sv(&ours), expected_sv = cstr_sv(&expected_text);
     my dts_passed = csview_equals_sv(ours_sv, expected_sv);
     if (!my dts_passed && baseline_show_dts) {

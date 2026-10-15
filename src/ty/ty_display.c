@@ -83,8 +83,9 @@ static void map_at(TyDisplay d, char const* at) {
     decl_map_mark(d.target, (u32)(at - text));
 }
 
+// (A span's end may take in the whitespace after it: a node ends at its last token)
 static void map_span(TyDisplay d, Span span, bool end) {
-    if (d.map && span_valid(span)) map_at(d, end ? span_end_ptr(span) : span.buf);
+    if (d.map && span_valid(span)) map_at(d, end ? decl_map_back_trivia(span_end_ptr(span), span.buf) : span.buf);
 }
 
 // A name as written, its start and end mapped
@@ -1312,6 +1313,7 @@ static bool is_identifier_name(csview sv);
 static void display_string_literal(TyDisplay d, csview sv);
 static void display_template_text(TyDisplay d, csview sv);
 static void append_binding_pattern(cstr* out, Binding const* binding);
+static void append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map);
 
 // What a type parameter is called where it's printed, see TyParamNames
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n);
@@ -1372,7 +1374,15 @@ static void out_type_param_name(Checker* me, TyDisplay d, Ty const* param, bool 
     Atom const* name = type_param_name(me, d, param);
     // (A missing name, `<in in>`'s recovery, is tsc's `__missing`: declarationNameToString's "(Missing)")
     csview text = atom_sv(name).size ? atom_sv(name) : c_sv("(Missing)");
+    // (Declaration maps: a name the node builder makes has its declaration's range when that is in the file being
+    // written, tsgo's typeParameterToName)
+    Symbol const* symbol = param->param.symbol;
+    Span declared = !in_node && d.map && d.param_declaration && symbol && symbol->decl_count && !param->param.state->is_this ?
+        symbol->decls[0].name : span_null;
+    if (span_valid(declared) && span_source(declared) != d.map) declared = span_null;
+    map_span(d, declared, false);
     out(name == param->param.name || in_node ? d : reused_if(d, false), text);
+    map_span(d, declared, true);
 }
 
 // tsc's enterNewScope() for a signature: names given inside it don't count outside
@@ -1778,7 +1788,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         } else if (ref) {
             // (The argument's literal, its quotes kept: tsgo's node copy)
             bool single = span_valid(ref->span) && ref->span.size && ref->span.buf[0] == '\'';
+            // (A literal type around the string literal: both mapped)
+            map_span(d, ref->span, false);
+            map_span(d, ref->span, false);
             display_quoted_string(d, cstr_sv(&ref->path), single, false);
+            map_span(d, ref->span, true);
             // Declaration emit: the options as written (`import("m", { with: { ... } })`)
             if (d.multiline && span_valid(ref->span) && span_source(ref->span)) {
                 SourceFile const* file = span_source(ref->span);
@@ -1814,13 +1828,14 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             display_node(me, d, identifier_type_import_argument(identifier));
         }
         out_lit(d, ")");
+        // (The qualifier: an entity name, each name mapped)
         for_each (i, vec_span, identifier_type_namespaces(identifier)) {
             out_lit(d, ".");
-            out(d, span_sv(*i));
+            out_mapped(d, *i);
         }
         if (span_valid(identifier->name)) {
             out_lit(d, ".");
-            out(d, span_sv(identifier->name));
+            out_mapped(d, identifier->name);
         }
         display_node_args(me, d, &identifier->generic_params);
         return;
@@ -1855,12 +1870,9 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out_lit(d, ".");
     }
     if (!qualified && d.param_names && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER)) {
-        isize_t name_at = cstr_size(d.target);
+        map_span(d, identifier->name, false);
         out_type_param_name(me, d, ty_type_param(me, symbol), true);
-        if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(identifier->name))) {
-            cstr_resize(d.target, name_at, '\0');
-            out_mapped(d, identifier->name);
-        }
+        map_span(d, identifier->name, true);
     } else {
         out_mapped(d, identifier->name);
     }
@@ -1942,17 +1954,30 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         TyDisplay param_d = d;
         if (span_valid(i->jsdoc_tag)) param_d.map = nullptr;
         map_span(param_d, i->full_span, false);
-        if (i->is_const) out_lit(d, "const ");
-        if (i->is_in) out_lit(d, "in ");
-        if (i->is_out) out_lit(d, "out ");
-        isize_t name_at = cstr_size(d.target);
+        // (Its modifiers are token nodes, in the order written)
+        char const* word = param_d.map && span_valid(i->full_span) ? i->full_span.buf : nullptr;
+        char const* text_end = word ? cstr_str(&param_d.map->contents) + cstr_size(&param_d.map->contents) : nullptr;
+        for (u32 k = 0; k < 3; k++) {
+            bool on = k == 0 ? i->is_const : k == 1 ? i->is_in : i->is_out;
+            if (!on) continue;
+            csview keyword = k == 0 ? c_sv("const") : k == 1 ? c_sv("in") : c_sv("out");
+            char const* at = nullptr;
+            // (Among the words before the name)
+            for (char const* c = word; c && c < i->name.buf && c < text_end; c = decl_map_skip_trivia(c, text_end)) {
+                char const* e = c;
+                while (e < text_end && (isalnum((unsigned char)*e) || *e == '_' || *e == '$')) e++;
+                if (e == c) break;
+                if (e - c == keyword.size && !memcmp(c, keyword.buf, (size_t)keyword.size)) at = c;
+                c = e;
+            }
+            out_token_mapped(param_d, at, keyword);
+            out_lit(d, " ");
+        }
+        // (A renamed one, `T_1`, keeps the name's range)
+        map_span(param_d, i->name, false);
         if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref), true);
         else out(d, span_sv(i->name));
-        // (A name printed as written is the node's: a renamed one, `T_1`, is new)
-        if (param_d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(i->name))) {
-            cstr_resize(d.target, name_at, '\0');
-            out_mapped(param_d, i->name);
-        }
+        map_span(param_d, i->name, true);
         if (i->extends_explicit) {
             out_lit(d, " extends ");
             display_node(me, param_d, &i->extends);
@@ -1961,7 +1986,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
             out_lit(d, " = ");
             display_node(me, param_d, i->fallback);
         }
-        map_span(param_d, i->full_span, true);
+        if (param_d.map && span_valid(i->full_span)) map_at(param_d, decl_map_back_trivia(span_end_ptr(i->full_span), i->full_span.buf));
         if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->full_span));
     }
     out_lit(d, ">");
@@ -2035,7 +2060,11 @@ static void param_comments_end(TyDisplay d, FunctionArg const* arg) {
 }
 
 static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
-    if (function->is_abstract_constructor) out_lit(d, "abstract ");
+    if (function->is_abstract_constructor) {
+        // (A modifier: a token node)
+        out_token_mapped(d, d.map && span_valid(function->full_span) ? function->full_span.buf : nullptr, c_sv("abstract"));
+        out_lit(d, " ");
+    }
     if (function->is_constructor || function->is_abstract_constructor) out_lit(d, "new ");
     display_node_type_params(me, d, &function->generic);
     out_lit(d, "(");
@@ -2052,7 +2081,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         }
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
-            append_binding_pattern(&pattern, binding);
+            append_binding_pattern_mapped(&pattern, binding, arg_d.map);
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
         } else {
@@ -2217,20 +2246,33 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     while (*close == ' ' || *close == '\t' || *close == '\n' || *close == '\r') close++;
                     plus_optional = close < span_end_ptr(i->key.span) && close[0] == '+';
                 }
-                if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? (plus_readonly ? c_sv("+readonly ") : c_sv("readonly ")) : c_sv("-readonly "));
+                if (i->key.mapped->readonly) {
+                    // (The token: `readonly`, or the `+`/`-` before it)
+                    char const* token = d.map && span_valid(i->key.span) ? i->key.span.buf : nullptr;
+                    if (token && *token == '[') {
+                        char const* text = cstr_str(&d.map->contents);
+                        char const* c = decl_map_back_trivia(token, text);
+                        token = c - text >= 8 && !memcmp(c - 8, "readonly", 8) ? c - 8 : nullptr;
+                        if (token && token > text && (token[-1] == '+' || token[-1] == '-')) token--;
+                    }
+                    if (i->key.mapped->readonly < 0 || plus_readonly) {
+                        out_token_mapped(d, token, i->key.mapped->readonly < 0 ? c_sv("-") : c_sv("+"));
+                        out_lit(d, "readonly ");
+                    } else {
+                        out_token_mapped(d, token, c_sv("readonly"));
+                        out_lit(d, " ");
+                    }
+                }
                 out_lit(d, "[");
-                isize_t name_at = cstr_size(d.target);
+                // (The type parameter node from its name, to its constraint's end)
+                map_span(d, i->key.mapped->type_name, false);
+                map_span(d, i->key.mapped->type_name, false);
                 if (d.param_names && i->key.mapped->owned_symbol) {
                     out_type_param_name(me, d, ty_type_param(me, i->key.mapped->owned_symbol), true);
                 } else {
                     out(d, span_sv(i->key.mapped->type_name));
                 }
-                // (The type parameter node: its name as written, to its constraint's end)
-                if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(i->key.mapped->type_name))) {
-                    cstr_resize(d.target, name_at, '\0');
-                    map_span(d, i->key.mapped->type_name, false);
-                    out_mapped(d, i->key.mapped->type_name);
-                }
+                map_span(d, i->key.mapped->type_name, true);
                 out_lit(d, " in ");
                 display_node(me, d, &i->key.mapped->in_type);
                 map_at(d, decl_map_type_end(&i->key.mapped->in_type, d.map));
@@ -2523,18 +2565,15 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         }   break;
         case TYPE_INFERRED: {
             out_lit(d, "infer ");
-            isize_t name_at = cstr_size(d.target);
+            // (The type parameter node and its name)
+            map_span(d, node->inferred->name, false);
+            map_span(d, node->inferred->name, false);
             if (d.param_names && node->inferred->owned_symbol) {
                 out_type_param_name(me, d, ty_type_param(me, node->inferred->owned_symbol), true);
             } else {
                 out(d, span_sv(node->inferred->name));
             }
-            // (The type parameter node, its name as written)
-            if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(node->inferred->name))) {
-                cstr_resize(d.target, name_at, '\0');
-                map_span(d, node->inferred->name, false);
-                out_mapped(d, node->inferred->name);
-            }
+            map_span(d, node->inferred->name, true);
             if (node->inferred->extends.parsed) {
                 out_lit(d, " extends ");
                 display_node(me, d, &node->inferred->extends);
@@ -2564,9 +2603,20 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             }
             out_lit(d, "`");
         }   break;
-        case TYPE_UNIQUE_SYMBOL:
-            out_lit(d, "unique symbol");
-            break;
+        case TYPE_UNIQUE_SYMBOL: {
+            // (A type operator around the `symbol` keyword)
+            char const* symbol = nullptr;
+            char const* start = decl_map_type_inner_start(node, d.map);
+            if (start) {
+                char const* end = cstr_str(&d.map->contents) + cstr_size(&d.map->contents);
+                char const* c = start;
+                while (c < end && (isalnum((unsigned char)*c) || *c == '_')) c++;
+                symbol = decl_map_skip_trivia(c, end);
+                if (end - symbol < 6 || memcmp(symbol, "symbol", 6)) symbol = nullptr;
+            }
+            out_lit(d, "unique ");
+            out_token_mapped(d, symbol, c_sv("symbol"));
+        }   break;
         case TYPE_JSDOC: display_node(me, d, &node->jsdoc->type); break;
         case TYPE_PREDICATE:
             // (Declaration emit writes it as written)
@@ -2610,7 +2660,16 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             }
             // (A number the declaration transformer visits prints as written: `1e999`)
             if (d.transformer_node && d.multiline && node->value.tag == VALUE_NUMBER && span_valid(node->value_span)) {
-                out(d, span_sv(node->value_span));
+                csview written = span_sv(node->value_span);
+                // (`-1`: a prefix operator around its operand)
+                if (written.size && written.buf[0] == '-') {
+                    char const* operand = decl_map_skip_trivia(written.buf + 1, written.buf + written.size);
+                    out_lit(d, "-");
+                    map_at(d, operand);
+                    out(d, (csview){ operand, written.buf + written.size - operand });
+                    break;
+                }
+                out(d, written);
                 break;
             }
             // Other literals print normalized (`0x10` is 16)
@@ -2619,6 +2678,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                 !literal->literal.string && node->value.tag == VALUE_NUMBER && node->value.number < 0
             ) {
                 out_lit(d, "-");
+                // (A prefix operator around its operand)
+                if (d.map && span_valid(node->value_span) && node->value_span.buf[0] == '-') {
+                    map_at(d, decl_map_skip_trivia(node->value_span.buf + 1, span_end_ptr(node->value_span)));
+                }
                 ty_display(me, d, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = -node->value.number }));
             } else {
                 ty_display(me, d, literal);
@@ -2790,6 +2853,7 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         // (The name isn't counted: tsc's typeParameterToName)
         TyDisplay name_d = reused_if(d, d.reused || item);
         name_d.approx = nullptr;
+        name_d.param_declaration = true;
         ty_display(me, name_d, params.data[i]);
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {
@@ -3374,7 +3438,14 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
             bool shorthand = item->target.rest || (item->target.tag == BINDING_IDENTIFIER &&
                 item->target.content_span.buf == item->source_span.buf);
             Binding const* target = &item->target;
-            mark_span_in(out, map, shorthand ? target->content_span : item->source_span, false);
+            char const* start = shorthand ? (span_valid(target->content_span) ? target->content_span.buf : nullptr) :
+                (span_valid(item->source_span) ? item->source_span.buf : nullptr);
+            if (map && start && target->rest) {
+                char const* text = cstr_str(&map->contents);
+                char const* c = decl_map_back_trivia(start, text);
+                if (c - text >= 3 && !memcmp(c - 3, "...", 3)) start = c - 3;
+            }
+            mark_in(out, map, start);
             if (!shorthand) {
                 mark_span_in(out, map, item->source_span, false);
                 cstr_append_sv(out, span_sv(item->source_span));
@@ -4238,7 +4309,9 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             approx_add(d, reused_node_length(pseudo->expr->inner_span));
             csview text = span_sv(pseudo->expr->inner_span);
             if (!text.size || text.buf[0] != '`') {
+                map_span(d, pseudo->expr->inner_span, false);
                 out(reused_if(d, true), text);
+                map_span(d, pseudo->expr->inner_span, true);
                 return;
             }
             TyDisplay reused = reused_if(d, true);
@@ -4256,7 +4329,23 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             approx_add(d, reused_node_length(pseudo->expr->inner_span));
             TyDisplay literal_d = d;
             literal_d.approx = nullptr;
-            ty_display(me, literal_d, ty_regular(me, ty_expr_type(me, pseudo->expr)));
+            // (The expression reused: `-1` a prefix operator around its operand)
+            Span expr_span = pseudo->expr->inner_span;
+            Ty const* literal = ty_regular(me, ty_expr_type(me, pseudo->expr));
+            if (d.map && span_valid(expr_span) && expr_span.size && expr_span.buf[0] == '-' && literal->kind == TY_LITERAL &&
+                literal->literal.value.tag == VALUE_NUMBER && literal->literal.value.number < 0 && !(literal->flags & TYF_BIGINT_LITERAL)
+            ) {
+                // (A prefix operator around its operand)
+                map_span(d, expr_span, false);
+                out_lit(literal_d, "-");
+                map_at(d, decl_map_skip_trivia(expr_span.buf + 1, span_end_ptr(expr_span)));
+                ty_display(me, literal_d, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = -literal->literal.value.number }));
+                map_span(d, expr_span, true);
+                return;
+            }
+            map_span(d, expr_span, false);
+            ty_display(me, literal_d, literal);
+            map_span(d, expr_span, true);
             return;
         }
         case PSEUDO_SIGNATURE: {
@@ -5391,7 +5480,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // GenerateNamesForShadowedTypeParams (the types baseline) the name it gives, typeParameterToName)
             isize_t name_start = cstr_size(d.target);
             // (Declared here, the name gets its declaration's range: tsc's typeParameterToName, reused)
-            out_type_param_name(me, declared_here ? reused_if(d, true) : d, ty, false);
+            TyDisplay name_d = declared_here ? reused_if(d, true) : d;
+            name_d.param_declaration = declared_here || d.param_declaration;
+            out_type_param_name(me, name_d, ty, false);
             u32 name_length = (u32)(cstr_size(d.target) - name_start);
             approx_add(d, ty->param.state->is_this ? 4 : declared_here ? name_length + 6 : d.types_baseline ? name_length :
                 2 * (name_length + 1));

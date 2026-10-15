@@ -2865,7 +2865,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
 }
 
 static void w(Walk* me, csview text) { cstr_append_sv(my out, text); }
-static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers);
+static void emit_expando_namespace(Walk* me, Symbol const* host, Span name, bool mapped, csview modifiers);
 #define w_lit(me, s) w(me, c_sv(s))
 
 static bool w_at_line_start(Walk* me) {
@@ -2881,8 +2881,9 @@ static void m(Walk* me, char const* at) {
     decl_map_mark(my out, (u32)(at - text));
 }
 
+// (A span's end may take in the whitespace after it: a node ends at its last token)
 static void m_span(Walk* me, Span span, bool end) {
-    if (span_valid(span)) m(me, end ? span_end_ptr(span) : span.buf);
+    if (span_valid(span)) m(me, end ? decl_map_back_trivia(span_end_ptr(span), span.buf) : span.buf);
 }
 
 // A name as written, mapped
@@ -3403,7 +3404,7 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             w(me, span_sv(only->binding.content_span));
             w_signature(me, fn, false);
             w_lit(me, ";\n");
-            emit_expando_namespace(me, only->binding.symbol, span_sv(only->binding.content_span), cstr_sv(&modifiers));
+            emit_expando_namespace(me, only->binding.symbol, only->binding.content_span, false, cstr_sv(&modifiers));
             cstr_drop(&modifiers);
             return;
         }
@@ -3423,19 +3424,22 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             if (!visible) continue;
             if (!binding_declares_names(binding)) continue;
             if (written++) w_lit(me, ", ");
+            m_span(me, binding->content_span, false);
             cstr pattern = cstr_init();
-            ty_append_binding_pattern(&pattern, binding);
+            ty_append_binding_pattern_mapped(&pattern, binding, my map ? my file : nullptr);
             w(me, cstr_sv(&pattern));
             cstr_drop(&pattern);
             w_lit(me, ": ");
+            Expr const* init = initialized_binding_value(i);
             if (binding->has_explicit_type) {
                 w_node(me, binding_type(binding));
             } else {
-                Expr const* init = initialized_binding_value(i);
                 Ty const* type = init->tag != EXPR_IMPLICIT_ANY ? lazy_type_get((LazyType*)&init->lazy_type) : nullptr;
                 w_type(me, type ? ty_widened_literal(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))) :
                     ty_intrinsic(my checker, TY_ANY));
             }
+            m_span(me, init->tag != EXPR_IMPLICIT_ANY ? expr_outer_span(init) :
+                binding->has_explicit_type ? binding_explicit_type_span(binding) : binding->content_span, true);
             continue;
         }
         if (!visible && !was_painted(me, binding->symbol) && !(container.module_top_level && is_exported_local(me, binding->symbol))) {
@@ -3544,7 +3548,7 @@ typedef struct ExpandoStatement {
     bool declaration; // An export declaration
 } ExpandoStatement;
 
-static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers) {
+static void emit_expando_namespace(Walk* me, Symbol const* host, Span name, bool mapped, csview modifiers) {
     if (!host || !host->exports) return;
     ExpandoStatement* statements = nullptr;
     u32 count = 0, cap = 0;
@@ -3647,7 +3651,9 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, cs
         }
         w(me, modifiers);
         w_lit(me, "namespace ");
-        w(me, name);
+        // (A function declaration's name node; a variable's function is named anew)
+        if (mapped) w_name(me, name);
+        else w(me, span_sv(name));
         w_lit(me, " {\n");
         my indent++;
         for (u32 i = 0; i < count; i++) {
@@ -3675,15 +3681,18 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
     ) {
         my has_module_indicator = my has_scope_marker = true;
         w_indent(me);
+        m_span(me, statement->span, false);
         w_lit(me, "declare function ");
-        w(me, span_sv(fn->name));
+        w_name(me, fn->name);
         w_signature(me, fn, false);
-        w_lit(me, ";\n");
+        w_lit(me, ";");
+        m(me, statement_end(statement));
+        w_lit(me, "\n");
         w_indent(me);
         w_lit(me, "export default ");
         w(me, span_sv(fn->name));
         w_lit(me, ";\n");
-        emit_expando_namespace(me, symbol, span_sv(fn->name), c_sv("declare "));
+        emit_expando_namespace(me, symbol, fn->name, true, c_sv("declare "));
         return;
     }
     w_indent(me);
@@ -3701,7 +3710,7 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
     m(me, statement_end(statement));
     w_lit(me, "\n");
     if (first && statement->decl.props.exported != DECL_EXPORTED_YES_DEFAULT) {
-        emit_expando_namespace(me, symbol, span_sv(fn->name), cstr_sv(&modifiers));
+        emit_expando_namespace(me, symbol, fn->name, true, cstr_sv(&modifiers));
     }
     cstr_drop(&modifiers);
 }
@@ -3936,8 +3945,9 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         m_span(me, cls->extends_clause, false);
         w_lit(me, " extends ");
         Span base_span = expr_outer_span(base_name);
-        if (!base_variable) m_span(me, base_span, false);
+        m_span(me, base_span, false); // (The expression replaced by `C_base` keeps the range)
         if (base_variable) w(me, cstr_sv(&base_variable_name));
+        else if (base_name->tag == EXPR_IDENTIFIER || (base_name->tag == EXPR_PROPERTY && base_name->property->form == PROPERTY_EXPR_DOT)) w_entity_expr(me, base_name);
         else w_name(me, base_span);
         if (base->tag == EXPR_GENERIC_PARAMS) {
             w_lit(me, "<");
@@ -4017,7 +4027,8 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     // (A private method is a property without a type: omitPrivateMethodType, once per name)
                     if (private_member && i->symbol_first && i->symbol_first != i) break;
                     w_indent(me);
-                    m_span(me, i->span, false);
+                    // (A private method is a new property: its parts are mapped, it isn't, omitPrivateMethodType)
+                    if (!private_member) m_span(me, i->span, false);
                     w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
                     w_member_name(me, i->method.name_span, i->method.computed_key);
                     if (i->method.is_optional) {
@@ -4030,7 +4041,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     if (!private_member) w_signature(me, fn, false);
                     leave_type_params(me, method_scope_saved);
                     w_lit(me, ";");
-                    m(me, member_end);
+                    if (!private_member) m(me, member_end);
                     w_lit(me, "\n");
                     break;
                 }
@@ -4328,6 +4339,7 @@ static void w_specifier(Walk* me, PortStatement const* port) {
         w(me, span_sv(attributes->span));
         return;
     }
+    m_span(me, attributes->keyword, false);
     w(me, span_sv(attributes->keyword));
     w_lit(me, " { ");
     char const* previous_end = nullptr;
@@ -4344,9 +4356,11 @@ static void w_specifier(Walk* me, PortStatement const* port) {
                 w_lit(me, " ");
             }
         }
-        w(me, span_sv(i->name));
+        m_span(me, i->name, false);
+        w_name(me, i->name);
         w_lit(me, ": ");
-        w(me, span_sv(expr_outer_span(&i->value)));
+        w_name(me, expr_outer_span(&i->value));
+        m_span(me, expr_outer_span(&i->value), true);
         previous_end = span_end_ptr(expr_outer_span(&i->value));
     }
     char const* close = span_end_ptr(attributes->span) - 1;
@@ -4357,6 +4371,7 @@ static void w_specifier(Walk* me, PortStatement const* port) {
     } else {
         w_lit(me, " }");
     }
+    m_span(me, attributes->span, true);
 }
 
 // `{ a, type b as c }`: an import or export declaration's specifiers (`kept` the ones written, null for all), with their
@@ -4364,13 +4379,22 @@ static void w_specifier(Walk* me, PortStatement const* port) {
 // Declaration maps: where a named import or export list's braces are, from its items (the `{` before the first, the `}`
 // after the last and a comma)
 static char const* m_list_open(Walk* me, PortStatement const* port) {
-    if (!my map || !vec_port_item_size(&port->items)) return nullptr;
+    if (!my map || !vec_port_item_size(&port->items) || !span_valid(port->keyword_span)) return nullptr;
     Span first = vec_port_item_at(&port->items, 0)->full_span;
     char const* text = cstr_str(&my file->contents);
-    if (!span_valid(first) || first.buf < text || first.buf > text + cstr_size(&my file->contents)) return nullptr;
-    char const* c = first.buf;
-    while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
-    return c > text && c[-1] == '{' ? c - 1 : nullptr;
+    char const* end = text + cstr_size(&my file->contents);
+    if (!span_valid(first) || first.buf < text || first.buf > end) return nullptr;
+    // (Forward from the keyword over trivia, `type`, a default import and its comma)
+    for (char const* c = decl_map_skip_trivia(span_end_ptr(port->keyword_span), end); c < first.buf; c = decl_map_skip_trivia(c, end)) {
+        if (*c == '{') return c;
+        if (*c == ',') {
+            c++;
+            continue;
+        }
+        if (!is_word_char(*c)) return nullptr;
+        while (c < end && is_word_char(*c)) c++;
+    }
+    return nullptr;
 }
 
 static char const* m_list_end(Walk* me, PortStatement const* port) {
@@ -4432,7 +4456,16 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         if (!vec_port_item_size(&port->items) && port->main.tag == PORT_NOOP && !port->module_ref) {
             // `export {}`
             w_indent(me);
-            w_lit(me, "export {};\n");
+            m_span(me, statement->span, false);
+            w_lit(me, "export ");
+            char const* open = span_valid(port->keyword_span) ? m_token_after(me, span_end_ptr(port->keyword_span), '{') : nullptr;
+            char const* close = open ? m_token_after(me, open + 1, '}') : nullptr;
+            m(me, open);
+            w_lit(me, "{}");
+            if (close) m(me, close + 1);
+            w_lit(me, ";");
+            m(me, statement_end(statement));
+            w_lit(me, "\n");
             my has_scope_marker = true;
             if (is_file) my has_module_indicator = true;
             return;
@@ -4562,6 +4595,11 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         for_each (i, vec_port_item, &port->items) kept[i_index] = KEPT(i->symbol);
         w_port_items(me, port, kept, false);
         free(kept);
+    }
+    // (The clause keeps its range, whatever of it is left: it ends before `from`)
+    if (my map && span_valid(port->target_path_span)) {
+        char const* from = m_keyword_before(me, port->target_path_span.buf, "from");
+        if (from) m(me, decl_map_back_trivia(from, cstr_str(&my file->contents)));
     }
     w_lit(me, " from ");
     w_specifier(me, port);

@@ -8,6 +8,7 @@
 #include "../function_impl.h"
 #include "../expr.h"
 
+
 void decl_map_mark(cstr* out, u32 source_offset) {
     char mark[DECL_MAP_MARK_SIZE];
     mark[0] = DECL_MAP_MARK;
@@ -109,7 +110,6 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
     char* buf = cstr_data(text);
     isize_t size = cstr_size(text), to = 0;
     i64 line = 0, col = 0;
-    isize_t line_start = 0;
     // (Source positions come mostly in order: the line search starts from the last one)
     u32 source_line = 0;
     for (isize_t from = 0; from < size;) {
@@ -133,9 +133,10 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
         if (c == '\n') {
             line++;
             col = 0;
-            line_start = to;
         } else {
-            col += utf8_byte_utf16_units(&buf[to - 1], buf + line_start);
+            // (By lead bytes: the text is being moved over itself, a continuation byte's lead may be gone)
+            unsigned char b = (unsigned char)c;
+            col += (b & 0xC0) == 0x80 ? 0 : b >= 0xF0 ? 2 : 1;
         }
     }
     cstr_resize(text, to, '\0');
@@ -201,6 +202,36 @@ char const* decl_map_skip_trivia(char const* at, char const* end) {
     return at;
 }
 
+char const* decl_map_back_trivia(char const* at, char const* start) {
+    while (at > start) {
+        unsigned char c = (unsigned char)at[-1];
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f') {
+            at--;
+        } else if (c == '/' && at - 1 > start && at[-2] == '*') {
+            char const* open = at - 2;
+            while (open - 1 > start && !(open[-2] == '/' && open[-1] == '*')) open--;
+            if (open - 1 <= start) break;
+            at = open - 2;
+        } else {
+            // A line comment ending here: its `//` on this line, after whitespace or at the line's start (not in a
+            // string, approximately)
+            char const* line = at;
+            while (line > start && line[-1] != '\n' && line[-1] != '\r') line--;
+            char const* comment = nullptr;
+            for (char const* p = line; p + 1 < at; p++) {
+                if (*p == '"' || *p == '\'' || *p == '`') break;
+                if (p[0] == '/' && p[1] == '/' && (p == line || p[-1] == ' ' || p[-1] == '\t')) {
+                    comment = p;
+                    break;
+                }
+            }
+            if (!comment) break;
+            at = comment;
+        }
+    }
+    return at;
+}
+
 static bool in_file(SourceFile const* file, char const* at) {
     char const* text = cstr_str(&file->contents);
     return at && at >= text && at <= text + cstr_size(&file->contents);
@@ -210,8 +241,12 @@ static char const* file_end(SourceFile const* file) { return cstr_str(&file->con
 
 static bool word_char(char c) { return isalnum((unsigned char)c) || c == '_' || c == '$' || (unsigned char)c >= 0x80; }
 
+// (A span may take in the whitespace after it: a node ends at its last token)
 static char const* span_end_in(SourceFile const* file, Span span) {
-    return span_valid(span) && in_file(file, span.buf) ? span_end_ptr(span) : nullptr;
+    if (!span_valid(span) || !in_file(file, span.buf)) return nullptr;
+    char const* end = span_end_ptr(span);
+    while (end > span.buf && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
+    return end;
 }
 
 char const* decl_map_type_start(TypeNode const* node, SourceFile const* file) {
@@ -223,8 +258,8 @@ char const* decl_map_type_inner_start(TypeNode const* node, SourceFile const* fi
     char const* start = decl_map_type_start(node, file);
     if (!start || !node->parenthesized) return start;
     char const* end = file_end(file);
-    // (Each `(`: tttt keeps one flag for nested parentheses)
-    while (start < end && *start == '(') start = decl_map_skip_trivia(start + 1, end);
+    // (One `(`: tttt keeps one flag for nested parentheses, and what is inside may start with one, `(() => T)`)
+    if (start < end && *start == '(') start = decl_map_skip_trivia(start + 1, end);
     return start;
 }
 
@@ -243,8 +278,33 @@ char const* decl_map_type_inner_end(TypeNode const* node, SourceFile const* file
         case TYPE_VALUE: return span_end_in(file, node->value_span);
         case TYPE_IDENTIFIER: {
             IdentifierType const* identifier = node->identifier;
-            Span span = identifier_type_span(identifier);
-            return span_end_in(file, span);
+            if (!identifier_type_import_ref(identifier) && !identifier_type_import_argument(identifier)) {
+                return span_end_in(file, identifier_type_span(identifier));
+            }
+            // `import("m").A.B<T>`: past its qualifier and type arguments (`import("m")`: its `)`)
+            char const* end = span_end_in(file, identifier->name);
+            ModuleRef const* ref = identifier_type_import_ref(identifier);
+            if (!end && ref && span_valid(ref->span) && in_file(file, ref->span.buf)) {
+                char const* stop = file_end(file);
+                char const* c = span_end_ptr(ref->span);
+                int depth = 0;
+                for (; c < stop && !(depth == 0 && *c == ')'); c++) {
+                    if (*c == '{' || *c == '(' || *c == '[') depth++;
+                    else if (*c == '}' || *c == ')' || *c == ']') depth--;
+                }
+                end = c < stop ? c + 1 : nullptr;
+            }
+            u32 args = (u32)vec_spanned_type_size(&identifier->generic_params);
+            if (args) {
+                char const* last = span_end_in(file, vec_spanned_type_at(&identifier->generic_params, args - 1)->span);
+                char const* stop = file_end(file);
+                if (last) {
+                    end = decl_map_skip_trivia(last, stop);
+                    if (end < stop && *end == ',') end = decl_map_skip_trivia(end + 1, stop);
+                    if (end < stop && *end == '>') end++;
+                }
+            }
+            return end;
         }
         case TYPE_CALLABLE: return span_end_in(file, node->callable->function->full_span);
         case TYPE_INTERFACE: return span_end_in(file, node->interface.span);
@@ -280,14 +340,7 @@ char const* decl_map_type_inner_end(TypeNode const* node, SourceFile const* file
 char const* decl_map_type_end(TypeNode const* node, SourceFile const* file) {
     char const* end = decl_map_type_inner_end(node, file);
     if (!end || !node->parenthesized) return end;
-    char const* start = decl_map_type_start(node, file);
-    char const* inner = decl_map_type_inner_start(node, file);
     char const* stop = file_end(file);
-    // (As many `)` as there were `(`)
-    for (char const* c = start; c < inner; c++) {
-        if (*c != '(') continue;
-        end = decl_map_skip_trivia(end, stop);
-        if (end < stop && *end == ')') end++;
-    }
-    return end;
+    end = decl_map_skip_trivia(end, stop);
+    return end < stop && *end == ')' ? end + 1 : end;
 }

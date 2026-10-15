@@ -2551,8 +2551,10 @@ typedef struct TyDisplay {
     // Declaration emit: the node being printed is one the declaration transformer visits (a written annotation), not one
     // the node builder reuses: those of its mapped types and tuples aren't SingleLine (tryReuseExistingTypeNode sets it)
     bool transformer_node;
-    // Declaration maps: the file being written, whose reused nodes are marked where they start and end (decl_map.h)
+    // Declaration maps: the file being written, whose reused nodes are marked where they start and end (decl_map.h).
+    // `param_declaration`: a type parameter printed is declared there (its name gets its declaration's range)
     struct SourceFile const* map;
+    bool param_declaration;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

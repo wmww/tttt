@@ -32,6 +32,8 @@ void decl_map_strip(cstr* text);
 struct TypeNode;
 // Past the whitespace and comments at `at` (tsc's skipTrivia)
 char const* decl_map_skip_trivia(char const* at, char const* end);
+// Back over the whitespace and block comments before `at` (not before `start`)
+char const* decl_map_back_trivia(char const* at, char const* start);
 // Where a parsed type node starts and ends in `file` (TypeNode.pos, the ends from its parts), null if it wasn't parsed
 // there. A parenthesized node's are its parentheses', decl_map_type_inner() what is in them
 char const* decl_map_type_start(struct TypeNode const* node, SourceFile const* file);
