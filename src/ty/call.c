@@ -526,6 +526,9 @@ typedef struct OuterInference {
     Signature const* sig;
     Inference* inf;
     TyMapper const* return_mapper; // What its own contextual type said, see infer_type_arguments()
+    // tsc's createOuterReturnMapper, made once: the first nested call that asks fixes what the later ones see (tsgo
+    // caches it in context.outerReturnMapper, inferences made since don't show)
+    TyMapper const* outer_return_mapper;
     bool fixing; // Contextual signatures assigned now fix the type parameters their parameters mention
     // The context-sensitive literal members checked since the last fixing, and their contextual types (tsc's
     // intraExpressionInferenceSites), pairs
@@ -623,6 +626,22 @@ static TyMapper const* outer_inference_mapper(Checker* me, OuterInference* outer
     outer->cached_no_default = inference_mapper_no_default(me, outer->sig, outer->inf);
     outer->cached_no_default_count = count;
     return outer->cached_no_default;
+}
+
+// tsc's createOuterReturnMapper: what a call nested in an argument of this one instantiates its contextual type with
+// before inferring its own return mapper: this call's return mapper, then what it had inferred when first asked
+// (defaults, else unknown, for the rest: cloneInferenceContext(context, InferenceFlags.None).mapper)
+static TyMapper const* outer_return_mapper(Checker* me, OuterInference* outer) {
+    if (outer->outer_return_mapper) return outer->outer_return_mapper;
+    TyMapper const* inferred = inference_mapper(me, outer->sig, outer->inf, false);
+    if (!outer->return_mapper) return outer->outer_return_mapper = inferred;
+    TyList params = outer->sig->type_params;
+    Ty const** targets = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    for (u32 i = 0; i < params.len; i++) {
+        Ty const* returned = ty_instantiate(me, params.data[i], outer->return_mapper);
+        targets[i] = returned != params.data[i] ? returned : ty_instantiate(me, params.data[i], inferred);
+    }
+    return outer->outer_return_mapper = ty_mapper_new(me, params, (TyList){ .data = targets, .len = params.len });
 }
 
 // What the contextual return type alone says about the type parameters (tsc's InferenceContext.returnMapper, from
@@ -1314,32 +1333,22 @@ static TyMapper const* infer_type_arguments(
                 }
             }
             infer_types(me, &inf, source, return_type, INFER_PRIORITY_RETURN_TYPE);
-            // The mapper that instantiates contextual types of the arguments. tsc's InferenceContext.returnMapper comes
-            // from an inference of its own, from the contextual type as the outer call's contextual type (not its
-            // inferences) says: in `new Map(xs.map(x => [x, 1]))` the outer K and V aren't known, but `[K, V]` still
-            // makes the callback return a tuple. HACK: that inference only fills in what the outer inferences left
-            // unknown; using it for everything costs valibot 9% (the arguments' contextual types turn generic)
-            Ty const* return_source = outer && outer->return_mapper ?
-                ty_instantiate(me, uninferred_contextual, outer->return_mapper) : uninferred_contextual;
-            bool gaps = false;
-            for (u32 i = 0; i < inf.len && !gaps; i++) gaps = !inf.params[i].co_len && !inf.params[i].contra_len;
-            // (A generic contextual signature stays generic in it: tsc's returnMapper infers from the contextual type
-            // itself, only the main inference from the signature instantiated with its own type parameters, so a
-            // generic function argument isn't instantiated in its context: vue's `capitalize: <T extends string>(str:
-            // T) => Capitalize<T> = cacheStringFunction(<T extends string>(str: T) => ...)`)
-            if (source != contextual) {
-                Inference return_inf;
-                inference_init(&return_inf, sig->type_params);
-                infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
-                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
-                inference_drop(&return_inf);
-            } else if (return_source == source || !gaps) {
+            // The mapper that instantiates contextual types of the arguments (tsc's InferenceContext.returnMapper): an
+            // inference of its own, from the contextual type instantiated with the outer call's createOuterReturnMapper
+            // (its return mapper, then everything it has inferred so far, defaults for the rest), so that in
+            // `new Map(xs.map(x => [x, 1]))` `[K, V]` still makes the callback return a tuple, and in
+            // `layerEffect(Foo, effectGen(() => ({ fn: ... })))` AEff is what Foo said S is
+            // (The same source as the main inference just had, which nothing else has gone into yet: that one, a top-level
+            // call's in particular)
+            Ty const* return_source = !outer ? uninferred_contextual :
+                ty_instantiate(me, uninferred_contextual, outer_return_mapper(me, outer));
+            if (source == contextual && return_source == contextual) {
                 return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
             } else {
                 Inference return_inf;
                 inference_init(&return_inf, sig->type_params);
                 infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
-                return_mapper = return_inference_mapper(me, sig, &inf, &return_inf);
+                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
                 inference_drop(&return_inf);
             }
         }

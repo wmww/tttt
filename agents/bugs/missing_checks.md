@@ -213,7 +213,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   tsgo's deeper lines also index through the true branch's substitution (`TI[keyof TI & Extract<string, keyof TD>]`,
   tttt `TI[Extract<string, keyof TD>]`), which keeps its chain shorter. Probe: Shared/Matching with `<TI, TD>` assigned
   (/tmp-style: `function f<TI, TD>(m: Matching<TI, TD>) { const s: Shared<TI, TD> = m; }`). Medium-large.
-  Also: inferFromGenericFunctionReturnTypes3.
   Agent B 2026-10-15, with an instrumented tsgo (relater.go REL trace, see display.md's complicatedIndexed... fix):
   (1) the substitution: tsgo's newConditionalType stores `instantiateType(root.checkType, mapper)` (substitutions kept)
   while resolving with getActualTypeVariable; tttt's conditional_from_root() stores the stripped check type. Storing the
@@ -227,8 +226,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   level, where tsgo relates each conditional's constraints to the whole union (RecursionFlags.Source) and only pushes
   the member inside unionOrIntersectionRelatedTo's attempts (popped after). Find which tttt path pushes the target
   member again inside an attempt (relate.c's conditional-source handling vs `some_related`).
-  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`),
-  inferFromGenericFunctionReturnTypes3.
+  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`).
 - vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
   }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target
   `Array<IWorkspaceFileEditDto | IWorkspaceTextEditDto | IWorkspaceCellEditDto>`, `Dto<T>` a conditional over a

@@ -331,14 +331,12 @@ src` finds the code-side markers; every significant one has an entry here.
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
-- Return mapper (`infer_type_arguments`, call.c HACKs): the contextual inference through the outer return mapper fills
-  only type parameters without candidates (tsc's always-separate returnContext loses
-  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference, gains
-  inferFromGenericFunctionReturnTypes3; valibot +9%). `literal_arg_context()` pre-instantiates with the return mapper
-  (higher-order needs it). A pattern's return mapper drops inferred `any` (tsc's nonInferrableAnyType), rest patterns
-  give none; `ty_pattern_unclone` copies the pattern type per call. Nested literals instantiate context only in
-  `check_for_mutable_location()`. Plan 51 keeps these until someone explains the four tests under tsc's exact
-  returnMapper (a plan 37 lead).
+- Return mapper (`infer_type_arguments`): tsgo's returnMapper (its own inference from the contextual type instantiated
+  with the outer call's createOuterReturnMapper, made once per outer inference: `outer_return_mapper()`), except that a
+  call whose return source is the main inference's source reuses the main inference. `literal_arg_context()`
+  pre-instantiates with the return mapper (higher-order needs it). A pattern's return mapper drops inferred `any`
+  (tsc's nonInferrableAnyType), rest patterns give none; `ty_pattern_unclone` copies the pattern type per call. Nested
+  literals instantiate context only in `check_for_mutable_location()`.
 - Reverse mapped types of arrays/tuples are eager like tsc's, but cut at depth 4 (`Checker.reverse_mapped_depth`, HACK:
   tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42 stage 1).
   Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's instantiateReverseMappedType.

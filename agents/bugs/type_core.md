@@ -320,18 +320,6 @@ passing tests).
   Find which instance (spread/intersection property types) and why tttt makes a new one; ~a session.
 - reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
   TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
-- inferFromGenericFunctionReturnTypes3 (agent B 2026-10-14): `baz(makeFoo(Enum.A), makeFoo(Enum.A))` with
-  `baz<U>(x: Func<U>, y: Func<U>)`: the second makeFoo's return mapper comes from the main inference (U already Enum, so
-  T -> Enum, the argument's literal regularized, T = Enum.A), where tsgo's returnMapper comes from a separate inference
-  from the contextual type instantiated with the *outer return mapper* only (T -> U, the literal stays fresh and widens:
-  Func<Enum>). That's call.c's infer_type_arguments HACK (hacks.md "Return mapper"): the faithful version (FAITHFUL
-  experiment: return_inference_mapper of a separate return_inf always) fixes this test and loses
-  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference. In ...Inference1 tttt then gives
-  `effectFn(function (a) {...})` no contextual type: `function () { return { fn: effectFn(...) } }`'s return context
-  is AEff, instantiated by the return mapper (AEff -> S, layerEffect's type parameter), whose apparent type has no `fn`.
-  tsgo types `a` as string there; how is still unexplained (its contextual signature for the outer function is
-  `() => AEff` and instantiateContextualType only uses the non-fixing mapper with ContextFlags.Signature). Next step:
-  instrument tsgo's getContextualTypeForObjectLiteralElement / instantiateContextualType on that test.
 - Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
   inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
   literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348

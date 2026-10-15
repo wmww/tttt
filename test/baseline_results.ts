@@ -18715,9 +18715,9 @@ const baselines = {
         types: true,
     },
     'inferFromGenericFunctionReturnTypes3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
         dts: true,
     },
     'inferFromNestedSameShapeTuple': {
