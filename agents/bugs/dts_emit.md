@@ -34,6 +34,18 @@ size on real code, each with an example:
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
   through another unresolved import alias, the unknown-symbol quirk below) and better-auth's similar wrong-looking
   names (`GenericEndpointContext[]`, `AuthContext`).
+- **Type literals inside a generic function's block body are instantiated (tsc's isTypeParameterPossiblyReferenced
+  Block rule)**: walking up from a type node to a type parameter's declaration, tsc assumes the parameter possibly
+  referenced as soon as it passes a Block, so `create = <T>(fn: () => T) => { return (h: { g?: () => any }) => 1 }`
+  instantiated (`create(() => 1)`) makes new type literal and function types, whose annotations no longer say the
+  same: tsgo prints `g?: (() => any) | undefined` where tttt reuses `g?: () => any` (an expression body keeps the
+  identity in both). better-auth test-utils `suites/*.d.ts`, likely excalidraw `App.d.ts` `callback?:` too. tttt
+  lowers type nodes with only the type parameters they mention (anonymous_set_free_params, lower.c): needs a "possibly
+  referenced through a block" bit there; touches identity of many types, so run every oracle and perfsweep.
+- **keyof the wildcard**: tsc's getIndexType returns the wildcard for the wildcard, which defers `Equals<Omit<A, K>,
+  {}>` (effect query-repro: tttt resolves it to false). The one-line fix in ty_keyof() makes ramdaToolsNoInfinite2
+  report a spurious TS5114: the permissive instantiation of ts-toolbelt's `__ListOf` then recurses 40 iterations, and
+  tttt's instantiation depth per level is higher than tsgo's. Needs tsgo's depth accounting first.
 - **Worktree artifacts**: dtsdiff run in a worktree with symlinked corpora differs in `.d.ts.map` `sources` and in
   TS2883 "cannot be named without a reference to '/home/ai/tttt/...'" (excalidraw-app/collab): not bugs.
 
