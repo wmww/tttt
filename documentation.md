@@ -77,7 +77,7 @@ The `Program` struct owns the source code buffers and ASTs of all loaded files, 
 Each `Program` owns one (`program_options()`, change it before loading files). Code that parses, resolves names or checks reads the current program's through the thread-local `compiler_options()`, which `program.c` sets around each phase (and its load pool and checker threads for themselves). Most options are parsed but not acted on yet. The resolution options (`baseUrl`, `paths` with the directory they are relative to, `rootDirs`, `typeRoots`, `types`, `moduleSuffixes`, `customConditions`, `config_dir`) are strings and `StrList`s as written; `module_resolution.c` makes them absolute.
 
 ### Test configurations
-A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone.
+A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone. The **dts** component (plan 64) is the declaration files of a test's `.js` baseline (the sections after the input files and the JavaScript outputs, before a `DtsFileErrors` section), compared per file by output name with tttt's `SourceFile.declaration_output`; tests with JavaScript inputs are counted apart (JavaScript declaration emit isn't done), and the component isn't part of the headline pass count yet (`dts: true/false` in `baseline_results.ts` only for tests that have it).
 
 ### Symbols, tables, scopes (the binder, `scope.h`/`scope.c`)
 The model is tsc's, because the symbols baseline, the merging rules and the diagnostics encode it:
@@ -328,7 +328,7 @@ type order's last ties, so creation order is still (a little) part of the output
 
 **Thread safety** is checked, not proven: `scripts/threadcheck.sh` (corpus output at `--threads 1` vs 4, byte for byte), `scripts/checkerdiff.py` (`--checkers K` vs 1), `baseline_tests --checkers 4 --threads 1/4 --dump DIR` (identical), and a TSan build, `meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, run with `TTTT_NO_REEXEC=1` on the corpora at `--threads 4` and on `TTTT_PARALLEL_RESOLVE=1 baseline_tests --threads 4` (`ulimit -s 4000000`): it was clean on every corpus when checking, loading and the resolve walk went parallel. The frozen guards (`log_error` on a report into the program's ErrorCtx, a new binder symbol or a first alias resolution while checking) catch the common mistakes on the suite.
 
-After its files are checked, each checker runs `declaration_emit.check()` (`ty/declaration_diagnostics.c`) on
+After its files are checked, each checker runs `declaration_diagnostics_check()` (`ty/declaration_emit.c`) on
 them with `declaration`/`composite`: the diagnostics tsc's declaration transformer reports, without emitting anything
 (plan 40). It walks what a `.d.ts` would contain (the visible statements, then the late painted ones: non-exported
 declarations an emitted one names) and ports the syntactic type builder's decisions; with isolatedDeclarations each
@@ -355,6 +355,21 @@ TS2742. The same specifiers order the containers a symbol can be named through (
 program's `SymlinkCache` learns links from every resolution that followed one (`ResolvedModule.original_path`) and
 from resolving the dependencies of the importing file's package.json (per package scope, so the answer doesn't depend
 on which checker asked first).
+
+**Declaration emit** (plan 64): with `program_set_emit_declarations()`, a file whose first walk reported nothing gets a
+second walk that writes its `.d.ts` into `SourceFile.declaration_output` (tsc writes no declaration file whose
+transform reported something). It runs on the checker that checked the file, with the first walk's painted set (so a
+painted declaration is written where it is, tsc's transformAndReplaceLatePaintedStatements), and its diagnostics go to
+a scratch ErrorCtx. The writer (`emit_*()`) prints from the AST like tsc's printer lays a declaration file out (4
+spaces, one declaration or member per line; `newLine` crlf in the harness, which is tsgo's harness default); the types
+it writes are what the `serialize_*()` functions decide, written into `Walk.type_out`: the pseudo type where it says
+the declaration's type (`ty_display_pseudo()`), else the checker's type. Written annotations go through
+`ty_display_node()`. `TyDisplay.multiline` prints object types and type literals one member per line (mapped types the
+node builder makes stay single line, written ones don't). A namespace body drops its members' `export`s unless a
+painted declaration needs an `export {};` (offsets in `Walk.export_offsets`), a module whose output has no import or
+export gets `export {};`. The suite compares it as the `dts` component (`baseline_tests --dts`, the `.js` baselines'
+declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (`tttt --dts-dump DIR`). The
+CLI doesn't emit yet (plan 64 stage 4).
 
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).

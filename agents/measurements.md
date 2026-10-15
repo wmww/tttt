@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Plan 64 stage 1 + most of stage 2 (2026-10-14, todo entry 6): the declaration writer
+Suite dts component (not in the headline count): **1192 / 1408** TS tests (344 with JS inputs apart), from 0.
+`scripts/dtsdiff.py`: **402 / 1233 projects, 49020 / 76294 files** byte-identical to tsgo (comments are 23448 of the
+mismatching files). Everything else identical to the session start: suite 13618 / 13663, 0 lost; corpora (webpack 0/1,
+vue 0/3, effect 3/0), DT 8594 / 8595, `$ExpectType` 68637, flagflip 42 / 6 / 3, source sweep sample 811 / 822,
+perfsweep median 0.18 (load), worst types ratio 1.62. Instructions (noEmit, flat): tsc 4.699, type-fest 19.265,
+valibot 3.456, react 1.506, nest 1.185, webpack 10.000, zod 5.075, xstate 2.726, drizzle 6.001, vue 6.596, effect
+10.210, vscode 89.360, excalidraw 7.858, tanstack-router 5.392 G. Emit's own cost isn't measured yet (stage 4).
+
 ## tttt vs bun on this machine, checker recycling (2026-10-14, plan 67 planning, 70ffccdc)
 Bun 1.4.3 runs here (`npm pack @oven/bun-linux-x64@1.4.3`). Peak MB / wall s, `/usr/bin/time`; B = the prototype's
 recycle budget (`agents/plans/67_recycling_prototype.diff`, not in the tree). The full table (B=32..256, T4) is in

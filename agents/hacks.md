@@ -524,6 +524,19 @@ src` finds the code-side markers; every significant one has an entry here.
   comments. `pseudo_member_prop()` finds a member's property by declaration span, not by name. `pseudo_type()` of an
   Inferred expression whose type is a fresh object literal is null (never equivalent): tsgo re-checks the expression and
   gets a new type, tttt interns literal types by shape, so this is decided by the flag rather than by identity.
+- Declaration emit's writer (`declaration_emit.c`, plan 64, the `emit_*()` functions): a second walk with its own
+  per-node-kind functions next to the diagnostics walk's `check_*()` ones, sharing visibility, painting and
+  `serialize_*()`: what the two decide about members (privates, overloads, dynamic names) can drift apart. Known gaps:
+  class accessor properties in printed object types are `readonly x` (tsgo writes `get x()`/`set x()` for a class's
+  accessors, nodebuilderimpl's addPropertyToElementList), interface/type literal accessor pairs are reprinted as a
+  property (`InterfaceMember` merges the pair), an index signature's extra parameters are dropped, expando members
+  only for identifier names (a local name that conflicts isn't renamed; generated `_a` names are a per-file counter,
+  not tsgo's unique-name generator), `_default` picks `_default_N` by `scope_resolve()`. CRLF output is a pass over
+  the finished text. Import type options (`import("m", { with: ... })`) are copied from the source with brace spacing
+  normalized (`display_node_identifier()`, only in multiline mode); tsgo rebuilds them from the parsed attributes
+  (invalid ones differ). Preserved `/// <reference path>` directives keep their relative path with the extension
+  changed (tsgo makes it relative to the output directory). The harness matches tttt's files to the baseline's by output
+  name (not tsgo's emit order) and doesn't do `@fullEmitPaths`.
 - isolatedDeclarations reporting (`declaration_emit.c`, plan 55): tttt has no parents, so `locate()` finds a
   reported node by walking the declaration being serialized along the pseudo builder's descent (for
   findNearestDeclaration and createExpressionError's parent); a node the printer reports from another declaration of

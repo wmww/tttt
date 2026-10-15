@@ -29,10 +29,13 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
    even with a fresh checker per file) takes vscode 4.26 -> 2.51 GB at K1, 4.90 -> 3.03 GB at the defaults, ~+3%
    wall. Plan 62 stage 4 answered (duplication +19%, no shared lib layer); plan 63 folded in (1b = plan 67 stage 2);
    the compact AST costed (~-450 MB, deferred to insights).
-6. **Plan 64 stage 1 + start of stage 2**: the suite `dts` component, `scripts/dtsdiff.py`, then the writer.
-7. **Plan 64 stage 2**: the writer on declaration_diagnostics.c's walk, TS sources, no comments.
-8. **Plan 64 stage 2 finished + plan 66 stage 3**: the harness emits declarations before collecting diagnostics like
-   tsgo's `harnessutil.CompileFiles`; re-bucket plan 66 bucket 2.
+6. Done (2026-10-14): plan 64 stage 1 (dts component: 1408 TS tests, `scripts/dtsstats.py`; `scripts/dtsdiff.py`:
+   1233 projects / 76294 files, agent) and most of stage 2: the writer (`ty/declaration_emit.c`), dts 1192 / 1408,
+   dtsdiff 400 / 1233 projects, 48974 / 76294 files. Plan 64 "Status" lists what's left.
+7. **Plan 64 stage 2 finished + stage 3 (comments)**: the non-comment buckets of plan 64 "Status" first (target >= 85%
+   of the TS dts tests), then comments (23448 dtsdiff files, ~67 suite tests).
+8. **Plan 66 stage 3**: the harness emits declarations before collecting diagnostics like tsgo's
+   `harnessutil.CompileFiles`; re-bucket plan 66 bucket 2. Then plan 64 stage 3's long tail if it overran.
 9. **Plan 66 stage 4: second fan-out** on what's left of the suite, every remaining test fixed, planned or argued in
    `bugs/tsgo_divergences.md` (plan 66's rule). One agent on the real-code residue instead: the source sweep tail,
    effect's 3 spurious, vue's 3 / webpack's 1 missing, and plan 65 (TS5115) if its zod side can be solved.

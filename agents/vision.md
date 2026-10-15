@@ -34,7 +34,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   (a real JSON-RPC host; the suite runs tsgo's Go test mappers as a process), tsc's laziness and
   deferred checks, 7.1's language (source phase imports, ambient-module attributes, es2026). ~129k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones (cloneTypeAsModuleType), permissive instantiation,
-  member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64, planned, not started).
+  member identity (members aren't Symbols; decided acceptable), `.d.ts` emit (plan 64: the writer exists, TS sources, no comments yet: suite dts 1192 / 1408, dtsdiff 48974 / 76294 files; the CLI doesn't emit yet).
 
 ## Course correction (insights of 2026-10-14, end of the fifteenth window)
 - **The window did what it planned, and planned the rest.** Plan 61 finished the last core-rule approximation
