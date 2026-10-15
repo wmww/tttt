@@ -408,7 +408,7 @@ static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors, bool
         default: break;
     }
     // Any other character stands for itself (`\'`, `\"`, `\\`, `\a`); a multi-byte one is copied whole
-    int size = cutf8_chr_size(p->pos - 1);
+    int size = utf8_rune_size(p->pos - 1);
     cstr_append_n(str, p->pos - 1, size > 0 ? size : 1);
     p->pos += (size > 1 ? size - 1 : 0);
     return true;
@@ -1090,14 +1090,9 @@ static int unicode_whitespace_size(const char* c) {
     return 0;
 }
 
-// The length of the UTF-8 character at c (1 for a stray continuation byte)
+// The length of the UTF-8 character at c (1 for a byte that isn't well-formed UTF-8: tsgo's RuneError)
 static int utf8_char_size(const char* c) {
-    unsigned char b = (unsigned char)c[0];
-    int size = b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
-    for (int i = 1; i < size; i++) {
-        if (((unsigned char)c[i] & 0xC0) != 0x80) return i;
-    }
-    return size;
+    return utf8_rune_size(c);
 }
 
 static int identifier_escape_size(const char* c);
@@ -1149,9 +1144,9 @@ static int invalid_char_size(Parser const* p, const char* c) {
 static void hop_jsdoc_optional(Parser* parent, TypeNode* type);
 static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines);
 
-// U+FFFD, which is also what bytes that aren't UTF-8 become when the file is loaded (text_decode())
+// utf8.RuneError to tsgo's scanner: U+FFFD, or a byte that isn't well-formed UTF-8 (text_decode() keeps them)
 static bool is_replacement_char(const char* c) {
-    return (unsigned char)c[0] == 0xEF && (unsigned char)c[1] == 0xBF && (unsigned char)c[2] == 0xBD;
+    return utf8_is_rune_error(c);
 }
 
 // tsc's isConflictMarkerTrivia: seven `<`, `=`, `>` or `|` at the start of a line, then a space (`=======` needs

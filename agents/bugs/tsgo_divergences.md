@@ -22,6 +22,14 @@ ever exists (the human: out of scope, vision.md):
   class check's typeWithThis-to-base relation), with or without emit, and so does tttt; the suite baseline has it at
   `this.a` (12,9), which the harness's JS emit resolves first (a property access's constant value). Same for tttt's own
   ttttEagerBaseRunaway* tests, which needed `@noEmit` to agree with the CLI.
+- numericExportNameDeclaration (types only, 2026-10-15): `module.exports[1]` is `error` in the suite's types baseline,
+  `any` in tttt. Not emit order but the same kind of artifact: the declaration transformer (which tsgo runs for
+  declaration diagnostics too: `@noEmit` with `@declaration` gives `error` as well) resolves export "1"'s type first,
+  through `Object.defineProperty(exports, 1, {})` (an empty descriptor: errorType, emitted as `declare const _exported:
+  any`), and the types writer later reads that cached type for the element access. Without `@declaration` tsgo's
+  types baseline says `any` (probes n5-n9: dropping the defineProperty line gives `2` with declarations, dropping
+  `@declaration` gives `any`), so the printed type depends only on which entry point resolved the symbol first.
+  Nothing a user sees differs: tsgo's CLI reports no diagnostics either way, like tttt, and the types aren't printed.
 Not in this class after all (tsgo's CLI differs from tttt too: checker or parser bugs, plan 66's second fan-out):
 recursiveMappedTypes (TS2589/TS2502/TS2615 placement).
 circularBaseTypes (a missed TS2313 for `X<T>`'s `K`), recursiveMappedTypes (TS2589/TS2502/TS2615 placement),

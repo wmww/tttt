@@ -29,6 +29,16 @@ const char* file_start_excluding_bom(const char* contents);
 // A file that starts with a UTF-16 byte order mark (either endianness) is decoded to UTF-8 without it, like tsc's
 // sys.readFile. Anything else is left alone
 void text_decode_utf16_bom(cstr* contents);
-// A source file's text as tsc sees it: UTF-16 decoded (above), and bytes that aren't UTF-8 replaced with U+FFFD like
-// node's decoder does (the scanner takes that character for a binary file)
+// A source file's text as tsgo sees it: UTF-16 decoded (above). Bytes that aren't UTF-8 stay: tsgo's scanner decodes
+// each as utf8.RuneError one byte wide (utf8_rune_size()), which it takes for a binary file like a written U+FFFD
 void text_decode(cstr* contents);
+// The size of the UTF-8 character at c: a well-formed sequence's, else 1 (Go's utf8.DecodeRune: an invalid byte is a
+// RuneError of its own). Reads at most 4 bytes, stops at a NUL
+int utf8_rune_size(const char* c);
+// The same within `left` bytes, negative (-1) for a byte that isn't well-formed UTF-8
+int utf8_rune_size_n(const char* c, intptr_t left);
+// Whether c decodes to utf8.RuneError: a written U+FFFD, or a byte that starts no well-formed sequence
+bool utf8_is_rune_error(const char* c);
+// The UTF-16 units a continuation byte ends (see utf8_byte_utf16_units()): 0 inside a well-formed sequence (but 1 at a
+// 4-byte one's third byte), 1 for a stray one (a RuneError). Looks back no further than `start`
+unsigned utf8_continuation_utf16_units(char const* c, char const* start);

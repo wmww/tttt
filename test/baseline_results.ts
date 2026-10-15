@@ -29417,8 +29417,8 @@ const baselines = {
     },
     'regexInvalidUtf8WithUnicodeFlag': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'regexMatchAll-esnext': {
         errors: true,

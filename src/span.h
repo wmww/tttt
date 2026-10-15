@@ -114,11 +114,13 @@ unsigned span_line_index(Span me);
 unsigned span_col_index(Span me);
 // The UTF-16 code units (tsc's positions) the UTF-8 byte at c ends: 1 for a lead byte, and a 4-byte character's
 // second unit ends at its third byte (tsc 6 could start or end a span between the two surrogates; tsgo's positions are
-// UTF-8 ones, its regular expression checks never do). c[-2] is readable for a continuation byte after another
-static inline unsigned utf8_byte_utf16_units(char const* c) {
+// UTF-8 ones, its regular expression checks never do). A byte that isn't part of a well-formed sequence is one unit
+// (Go's RuneError). Looks back no further than `start` (a line's start)
+unsigned utf8_continuation_utf16_units(char const* c, char const* start);
+static inline unsigned utf8_byte_utf16_units(char const* c, char const* start) {
     unsigned char b = (unsigned char)*c;
     if ((b & 0xC0) != 0x80) return 1;
-    return ((unsigned char)c[-1] & 0xC0) == 0x80 && (unsigned char)c[-2] >= 0xF0;
+    return utf8_continuation_utf16_units(c, start);
 }
 const char* span_line_start(Span me);
 const char* span_line_end(Span me);

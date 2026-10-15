@@ -8,9 +8,6 @@ what remains is below, each with what was found.
   `var C = {}; C.g = 2` in c.js: C is `{ f: number }`, c.js's literal `{ g: number }`, TS2403 and TS2339 for `C.g`);
   tttt's one global symbol collects both expandos. Conflicting declarations already work (ScopeRare.script_duplicates,
   ttttScriptConflictExpandoHost); merged ones would need the expando host to be the file's own initializer's symbol.
-- numericExportNameDeclaration (TYP): JS `module.exports[1] = 2` is `error` to tsgo's types baseline (any in tttt):
-  only with `@declaration`/`@emitDeclarationOnly`, without them tsgo says any too (probe 2026-10-14): tsgo's harness
-  emits declarations before it collects diagnostics and that emit caches errorType on the node. Plan 64's bucket.
 
 ## Types
 - Binder: an `export =`/`export default` in a function expression, arrow or method body (not a declaration) isn't a

@@ -28,3 +28,5 @@ From the triage session (2026-10-14, late-bound member merging):
 - (2026-10-15, todo entries 7-8) /tmp holds ~990 entries (770 MB) of scratch from the 2026-10-07..12 sessions (cg-*,
   cgv.*, b-x9, bsmoke*...): nobody's current work; a triage session can delete what isn't a script's cache
   (`/tmp/mutate` was deleted this session by mistake: mutate.py regenerates it, ~minutes).
+- A RuneError right after an identifier (`v\x80;` or `v\uFFFD;`, the rest of the file binary trivia after TS1490): tsgo
+  also reports TS1434 "Unexpected keyword or identifier." at `v`, tttt doesn't (found 2026-10-15 probing invalid UTF-8).

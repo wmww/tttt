@@ -3,6 +3,7 @@
 // units, so the literal is converted to UTF-16 first and positions are indices into that, mapped back to the UTF-8
 // source for the spans. The functions are named after tsc's and keep their structure (and quirks) so they can be
 // compared line by line
+#include "string_helpers.h"
 #include "regex_check.h"
 #include "compiler_options.h"
 #include "unicode_identifiers.h"
@@ -1387,10 +1388,11 @@ __attribute__((noinline)) void regex_check_literal(Span literal, ErrorCtx* errs)
     i32 n = 0;
     for (isize i = 0; i < size;) {
         u32 b = bytes[i];
-        i32 len = b < 0x80 ? 1 : b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
+        i32 len = b < 0x80 ? 1 : utf8_rune_size((char const*)bytes + i);
         if (i + len > size) len = 1;
         u32 cp = len == 1 ? b : b & (0xFF >> (len + 1));
         for (i32 k = 1; k < len; k++) cp = (cp << 6) | (bytes[i + k] & 0x3F);
+        if (len == 1 && b >= 0x80) cp = 0xFFFD; // (a byte that isn't UTF-8: Go's RuneError)
         if (cp >= 0x10000) {
             cp -= 0x10000;
             offs[n] = (i32)i;

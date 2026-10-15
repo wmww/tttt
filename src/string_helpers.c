@@ -159,42 +159,37 @@ static int utf8_well_formed_size(const unsigned char* b, intptr_t left) {
     return size;
 }
 
-static void text_replace_invalid_utf8(cstr* contents) {
-    const unsigned char* b = (const unsigned char*)cstr_str(contents);
-    intptr_t size = cstr_size(contents);
-    intptr_t i = 0;
-    while (true) {
-        // (Mostly ASCII: eight bytes at a time)
-        while (i + 8 <= size) {
-            uint64_t word;
-            memcpy(&word, b + i, 8);
-            if (word & 0x8080808080808080ull) break;
-            i += 8;
-        }
-        int n;
-        if (i >= size || (n = utf8_well_formed_size(b + i, size - i)) <= 0) break;
-        i += n;
-    }
-    if (i == size) return;
-    cstr out = cstr_with_capacity(size + 16);
-    cstr_append_n(&out, (const char*)b, i);
-    while (i < size) {
-        int n = utf8_well_formed_size(b + i, size - i);
-        if (n > 0) {
-            cstr_append_n(&out, (const char*)b + i, n);
-            i += n;
-        } else {
-            cstr_append_lit(&out, "\xEF\xBF\xBD");
-            i += -n;
-        }
-    }
-    cstr_drop(contents);
-    *contents = out;
-}
-
 void text_decode(cstr* contents) {
     text_decode_utf16_bom(contents);
-    text_replace_invalid_utf8(contents);
+}
+
+int utf8_rune_size(const char* c) {
+    int n = utf8_rune_size_n(c, 4);
+    return n > 0 ? n : 1;
+}
+
+int utf8_rune_size_n(const char* c, intptr_t left) {
+    if (left <= 0 || (unsigned char)*c < 0x80) return 1;
+    int n = utf8_well_formed_size((const unsigned char*)c, left);
+    return n > 0 ? n : -1;
+}
+
+bool utf8_is_rune_error(const char* c) {
+    unsigned char b = (unsigned char)*c;
+    if (b < 0x80) return false;
+    if (b == 0xEF && (unsigned char)c[1] == 0xBF && (unsigned char)c[2] == 0xBD) return true;
+    return utf8_well_formed_size((const unsigned char*)c, 4) <= 0;
+}
+
+unsigned utf8_continuation_utf16_units(char const* c, char const* start) {
+    for (int k = 1; k <= 3 && c - k >= start; k++) {
+        unsigned char lead = (unsigned char)c[-k];
+        if ((lead & 0xC0) == 0x80) continue;
+        int n = utf8_well_formed_size((const unsigned char*)c - k, 4);
+        if (n <= k) return 1; // (Not part of the sequence: a byte of its own, RuneError)
+        return n == 4 && k == 2;
+    }
+    return 1;
 }
 
 void text_decode_utf16_bom(cstr* contents) {

@@ -184,9 +184,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   `() => string` in tsgo's types baseline though its inferred return type is `"a"` (tttt's function.c return inference
   gives ret "a", context `"a" | "b"`): the printed signature comes from somewhere that widens.
 - mut0422: display of a mapped type over `Tags<"_tag", Value>`: tsgo keeps the alias in the key constraint.
-- regexInvalidUtf8WithUnicodeFlag: `text_decode()` replaces invalid UTF-8 with U+FFFD when a file is loaded; tsgo keeps
-  the raw bytes, its scanner reads them as RuneError one byte wide. Only the echoed source lines differ; dropping the
-  replacement touches the scanner, TS1490 and every UTF-16 column computation.
 - Elaboration: a `function c(): () => number` returning a string-returning arrow, assigned elsewhere: the TS2322 chain
   repeats "Type 'string' is not assignable to type 'number'." twice under a signature return mismatch (kw4 probe).
 - Relation paths that differ from tsgo's (not elaboration rules):
@@ -255,8 +252,17 @@ type (getWidenedType / getRegularTypeOfObjectLiteral make new types, cached per 
 the other expanded one more level before visitedTypes stops it. tttt has one type for both, so it stops a level
 earlier:
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (types): `Color.prototype = { negate: function () { return this } }`:
-  `this` in each method is the literal's own (fresh) type, the prototype property's type the widened one, so tsgo's
-  `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`.
+  tsgo's `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`. Read off the
+  baseline (2026-10-15, agent C): only the parameterless methods (negate, greyscale; not the context-sensitive ones
+  with an untyped `ratio`, nor toJSON whose `this.rgb()` is any) expand, and inside the expansion every method returns
+  any. So it isn't fresh-vs-widened alone: in JS, `this` in an object literal method is getWidenedType(
+  checkExpressionCached(literal)) (getContextualThisParameterType), and for the non-context-sensitive methods something
+  resolves their return type *while the literal is still being checked*, so checkExpressionCached re-checks the whole
+  literal (no in-flight guard) into a second literal type whose methods' returns are all circular any; the
+  context-sensitive ones resolve later and get the finished literal's widened type, which the printer has visited.
+  Next step: an instrumented tsgo (log getReturnTypeOfSignature's callers for `negate`) to find what forces the return
+  type during checkObjectLiteral (noImplicitAny's TS7011 check? the expando assignment's widening?), then make tttt's
+  JS `this` for those methods a second evaluation of the literal. ~1 session.
 - A JavaScript `{}` container's initializer (`var o = {}; o.self = o`): tsgo prints `>{} : { self: { self: any; }; }`,
   tttt `{ self: any; }` (the variable's lines agree). In ttttLocalExpandoCyclicPrint's probe, left out of the test.
 Size: a fresh/regular distinction for object literal types at display (or a real fresh type identity, which

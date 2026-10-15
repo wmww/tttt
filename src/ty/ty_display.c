@@ -1,3 +1,4 @@
+#include "string_helpers.h"
 #include "ty/pseudo.h"
 #include "ty/ty_internal.h"
 #include "ty/decl_comments.h"
@@ -922,6 +923,20 @@ static void display_quoted_string(TyDisplay d, csview sv, bool single, bool asci
                     code = (unsigned char)sv.buf[i + 2] == 0xA8 ? 0x2028 : 0x2029;
                     i += 2;
                 }
+                // A byte that isn't UTF-8 (raw in a literal's value: text_decode() keeps them) is escaped as U+FFFD (tsgo's
+                // escapeStringWorker: RuneError one byte wide)
+                if (!code && c >= 0x80) {
+                    int size = utf8_rune_size_n(sv.buf + i, sv.size - i);
+                    if (size < 0) {
+                        out_lit(d, "\\uFFFD");
+                        break;
+                    }
+                    if (!ascii) {
+                        out(d, csview_from_n(&sv.buf[i], size));
+                        i += size - 1;
+                        break;
+                    }
+                }
                 if (!code && ascii && c >= 0x80) {
                     code = utf8_next(sv, &i);
                     i--; // (The loop's increment)
@@ -990,8 +1005,12 @@ static void display_template_text(TyDisplay d, csview sv) {
 // One UTF-8 sequence at `*i` (advanced past it); malformed bytes are themselves
 static u32 utf8_next(csview sv, isize_t* i) {
     unsigned char c = (unsigned char)sv.buf[*i];
-    u32 len = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+    u32 len = c < 0x80 ? 1 : (u32)utf8_rune_size(sv.buf + *i);
     if (*i + len > sv.size) len = 1;
+    if (len == 1 && c >= 0x80) {
+        *i += 1;
+        return 0xFFFD; // (Go's RuneError)
+    }
     u32 code = len == 1 ? c : c & (0xFF >> (len + 1));
     for (u32 k = 1; k < len; k++) code = code << 6 | ((unsigned char)sv.buf[*i + k] & 0x3F);
     *i += len;

@@ -1,3 +1,4 @@
+#include "string_helpers.h"
 #include "span.h"
 #include "math_helpers.h"
 #include "source_file.h"
@@ -39,7 +40,8 @@ unsigned span_line_index(Span me) {
 // In UTF-16 code units, like tsc's positions (utf8_byte_utf16_units)
 unsigned span_col_index(Span me) {
     unsigned col = 0;
-    for (const char* c = span_line_start(me); c < span_start_ptr(me); c++) col += utf8_byte_utf16_units(c);
+    const char* start = span_line_start(me);
+    for (const char* c = start; c < span_start_ptr(me); c++) col += utf8_byte_utf16_units(c, start);
     return col;
 }
 

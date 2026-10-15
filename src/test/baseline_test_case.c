@@ -1027,17 +1027,16 @@ static void process_errors(BaselineTestCase* me) {
             cstr_append_lit(&item.str, "    ");
             // (one per code point, like tsgo's harness; its `\S` replacement keeps whitespace as it is, which in Go's
             // RE2 is ASCII only: a tab stays, a no-break space is a space)
-            for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
+            // (A byte that isn't UTF-8 is a code point of its own, Go's RuneError)
+            for (const char* c = line_start; c < squiggle_start && c < line_end; c += utf8_rune_size(c)) {
                 if (*c == '\t' || *c == '\f' || *c == '\r' || *c == ' ') {
                     cstr_append_n(&item.str, c, 1);
                     continue;
                 }
-                if (((unsigned char)*c & 0xC0) != 0x80) cstr_append_lit(&item.str, " ");
+                cstr_append_lit(&item.str, " ");
             }
             const char* squiggle_end = end < line_end ? end : line_end;
-            for (const char* c = squiggle_start; c < squiggle_end; c++) {
-                if (((unsigned char)*c & 0xC0) != 0x80) cstr_append_lit(&item.str, "~");
-            }
+            for (const char* c = squiggle_start; c < squiggle_end; c += utf8_rune_size(c)) cstr_append_lit(&item.str, "~");
             bool finishes = is_last_line || next_line_start > end;
             if (finishes) format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);
 

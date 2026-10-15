@@ -149,7 +149,7 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
     unsigned last_line_in_file = source_file_line_index(source, text_end);
     unsigned first_char = span_col_index(span);
     unsigned last_char = 0;
-    for (char const* c = text + source->line_starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c);
+    for (char const* c = text + source->line_starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c, text + source->line_starts[last_line]);
     if (span_start_ptr(span) == span_end_ptr(span)) last_char++; // (the character after an empty span)
 
     bool more_than_five = last_line - first_line >= 4;
@@ -172,7 +172,7 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
         cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter), PRETTY_RESET " ", squiggle);
         // Columns in UTF-16 units: spaces up to the first character, then tildes (tsgo's writeCodeSnippet)
         unsigned line_units = 0;
-        for (char const* c = line_start; c < line_end; c++) line_units += utf8_byte_utf16_units(c);
+        for (char const* c = line_start; c < line_end; c++) line_units += utf8_byte_utf16_units(c, line_start);
         if (i == first_line) {
             unsigned to = i == last_line ? last_char : line_units;
             cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", first_char), repeated_d("~", to > first_char ? to - first_char : 0));
