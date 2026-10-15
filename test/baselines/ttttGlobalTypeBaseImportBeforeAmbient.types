@@ -1,0 +1,58 @@
+//// [test/cases/ttttGlobalTypeBaseImportBeforeAmbient.ts] ////
+
+=== /node_modules/@types/ext/index.d.ts ===
+declare module "ext" {
+>"ext" : typeof import("ext")
+
+    interface FunctionExt { property(): void }
+>property : () => void
+
+    interface ArrayExt<T> { firstObject: T }
+>firstObject : T
+
+    const value: number;
+>value : number
+}
+=== /a.ts ===
+import * as Ext from "ext";
+>Ext : any
+
+declare global {
+>global : any
+
+    interface Function extends Ext.FunctionExt {}
+>Ext : any
+}
+(function () {}).property();
+>(function () {}).property() : any
+>(function () {}).property : any
+>(function () {}) : () => void
+>function () {} : () => void
+>property : any
+
+Ext.value;
+>Ext.value : any
+>Ext : any
+>value : any
+
+=== /b.ts ===
+import * as Ext2 from "ext";
+>Ext2 : typeof Ext2
+
+declare global {
+>global : any
+
+    interface Array<T> extends Ext2.ArrayExt<T> {}
+>Ext2 : any
+}
+[1].firstObject;
+>[1].firstObject : number
+>[1] : number[]
+>1 : 1
+>firstObject : number
+
+Ext2.value;
+>Ext2.value : number
+>Ext2 : typeof Ext2
+>value : number
+

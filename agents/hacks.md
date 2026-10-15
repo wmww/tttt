@@ -258,6 +258,14 @@ src` finds the code-side markers; every significant one has an entry here.
   none. Only erroneous code (TS1555) sees the approximation. `import("m", options)` of a non-literal options asks the
   checker (`ty_dynamic_import_module()`), whose answer the resolve walk's TS2307 doesn't see. Candidates capped at 16.
 
+- **`program_mark_init_resolved_imports()`** (program.c): tsc's initializeTypeChecker resolves the base names of the
+  global types it keeps (isThislessInterface) before the scripts' ambient modules are merged, so an import those names
+  go through can't be an ambient module (`ModuleRef.resolved_before_ambient`). Followed only syntactically: a base
+  name starting with a local name, a qualified global or anything but a global interface ends the walk (tsc goes on
+  through resolved bases). `InterfaceDecl.contains_this` is now set by the parser for `this` types and expressions,
+  but not for `this is T` predicates (tsc's ThisType): counting those makes ReadonlyArray non-thisless and loses
+  dependentDestructuredVariablesFromNestedPatterns' tuple inference, an unrelated gap with a this-typed ReadonlyArray.
+
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - Array mutations: `flow_array_mutation()` makes nodes only where `may_evolve()` (permanent: tsc makes one for every
   narrowable reference and ignores it unless the variable is auto-typed); only an `x.push(...)` callee marks an

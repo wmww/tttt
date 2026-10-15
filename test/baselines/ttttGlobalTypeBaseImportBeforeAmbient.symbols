@@ -1,0 +1,58 @@
+//// [test/cases/ttttGlobalTypeBaseImportBeforeAmbient.ts] ////
+
+=== /node_modules/@types/ext/index.d.ts ===
+declare module "ext" {
+>"ext" : Symbol("ext", Decl(index.d.ts, 0, 0))
+
+    interface FunctionExt { property(): void }
+>FunctionExt : Symbol(FunctionExt, Decl(index.d.ts, 0, 22))
+>property : Symbol(FunctionExt.property, Decl(index.d.ts, 1, 27))
+
+    interface ArrayExt<T> { firstObject: T }
+>ArrayExt : Symbol(ArrayExt, Decl(index.d.ts, 1, 46))
+>T : Symbol(T, Decl(index.d.ts, 2, 23))
+>firstObject : Symbol(ArrayExt.firstObject, Decl(index.d.ts, 2, 27))
+>T : Symbol(T, Decl(index.d.ts, 2, 23))
+
+    const value: number;
+>value : Symbol(value, Decl(index.d.ts, 3, 9))
+}
+=== /a.ts ===
+import * as Ext from "ext";
+>Ext : Symbol(Ext, Decl(a.ts, 0, 6))
+
+declare global {
+>global : Symbol(global, Decl(a.ts, 0, 27))
+
+    interface Function extends Ext.FunctionExt {}
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(a.ts, 1, 16))
+>Ext : Symbol(Ext, Decl(a.ts, 0, 6))
+}
+(function () {}).property();
+Ext.value;
+>Ext : Symbol(Ext, Decl(a.ts, 0, 6))
+
+=== /b.ts ===
+import * as Ext2 from "ext";
+>Ext2 : Symbol(Ext2, Decl(b.ts, 0, 6))
+
+declare global {
+>global : Symbol(global, Decl(b.ts, 0, 28))
+
+    interface Array<T> extends Ext2.ArrayExt<T> {}
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 5 more)
+>T : Symbol(T, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 4 more)
+>Ext2.ArrayExt : Symbol(Ext2.ArrayExt, Decl(index.d.ts, 1, 46))
+>Ext2 : Symbol(Ext2, Decl(b.ts, 0, 6))
+>ArrayExt : Symbol(Ext2.ArrayExt, Decl(index.d.ts, 1, 46))
+>T : Symbol(T, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 4 more)
+}
+[1].firstObject;
+>[1].firstObject : Symbol(Ext2.ArrayExt.firstObject, Decl(index.d.ts, 2, 27))
+>firstObject : Symbol(Ext2.ArrayExt.firstObject, Decl(index.d.ts, 2, 27))
+
+Ext2.value;
+>Ext2.value : Symbol(Ext2.value, Decl(index.d.ts, 3, 9))
+>Ext2 : Symbol(Ext2, Decl(b.ts, 0, 6))
+>value : Symbol(Ext2.value, Decl(index.d.ts, 3, 9))
+

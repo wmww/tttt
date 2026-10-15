@@ -77,6 +77,9 @@ typedef struct ParserShared {
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
+    // `this` keywords (types, predicates, expressions) parsed so far, attempts that backtrack included: an interface
+    // declaration that saw one is tsc's NodeFlags.ContainsThis (InterfaceDecl.contains_this)
+    u32 this_count;
     // An `await` outside functions (an identifier, or an operator where it can only be one): a module file is parsed
     // again with the top level an await context, `top_level_await` (tsc's reparseTopLevelAwait)
     bool saw_top_level_await;
@@ -3443,6 +3446,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_bigint;
     } else if ((c == 't' || c == 'a') && parse_misplaced_type_predicate(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+        p.shared->this_count++;
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_THIS,
@@ -6068,6 +6072,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
         return parse_fail(&p);
     }
 
+    u32 this_count = p.shared->this_count;
     Span name;
     if (!parse_identifier(&p, &name)) {
         parse_error(&p, span_from_pos(&p), 1438, "Interface must be given a name.");
@@ -6097,6 +6102,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
         .extends = heritage.types,
         .unchecked_extends = heritage.unchecked_types,
         .type = type_interface(interface),
+        .contains_this = p.shared->this_count != this_count,
     };
     heritage_take_invalid(&heritage, &ret->invalid_extends, &ret->invalid_extends_checked);
     return parse_success(&p);
@@ -6281,6 +6287,8 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
         else parse_fail(&q);
     }
     TypePredicateNode predicate = { .name = name, .is_this = span_equals(name, "this"), .asserts = asserts, .param_index = -1 };
+    // (Not counted: tsc's `this is T` is a ThisType, so ReadonlyArray isn't thisless, but tttt's members of a non-thisless
+    // ReadonlyArray then lose dependentDestructuredVariablesFromNestedPatterns' tuple inference. hacks.md)
     if (hop_start_if_ends_on_word_break(&p, "is")) {
         hop_whitespace(&p);
         Anchor a = anchor(&p);
@@ -10286,6 +10294,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
         return;
     }
     if (span_equals(name, "this")) {
+        p->shared->this_count++;
         *ret = expr_identifier(name, (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_THIS });
     } else {
         *ret = expr_identifier(name, (IdentifierExpr){0});
@@ -10967,6 +10976,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+        p.shared->this_count++;
         *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_THIS });
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
         *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_SUPER });

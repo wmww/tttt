@@ -13,6 +13,7 @@
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "interface_decl.h"
+#include "several_types.h"
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
@@ -3193,6 +3194,59 @@ void program_verify_options(Program* me) {
     program_verify_project_files(me);
 }
 
+// tsc's initializeTypeChecker asks for the global types it keeps (getGlobalType: Array, Function...) before it merges
+// the scripts' ambient modules into the globals. getDeclaredTypeOfClassOrInterface's isThislessInterface resolves the
+// base names of each declaration, up to the first one that mentions `this` or whose base is missing or has a `this`
+// type. An import such a base name goes through is resolved right then, when no ambient module can be it, and stays
+// that way (`declare global { interface Function extends Ember.X {} }` with `import Ember from "ember"` and "ember" a
+// script's `declare module`: TS2306 on the import, Ember unknown). Followed only as far as it can be told without
+// resolving names: a base name that starts with a local name (marking it if it's an import) or isn't a global
+// interface ends it, which only misses imports tsc would reach
+static bool init_global_type_thisless(Program* me, Symbol const* symbol, u32 depth) {
+    if (depth > 8) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = decl->node;
+        if (interface_decl->contains_this) return false;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            if (extends->type.tag != TYPE_IDENTIFIER) return false;
+            IdentifierType const* identifier = extends->type.identifier;
+            if (identifier_type_import_ref(identifier)) return false;
+            bool qualified = identifier->rare && vec_span_size(&identifier->rare->namespaces);
+            csview name = span_sv(qualified ? *vec_span_at(&identifier->rare->namespaces, 0) : identifier->name);
+            for (Scope const* scope = decl->block; scope && scope->file; scope = scope->parent) {
+                Symbol const* local = symbol_table_get(scope->locals, name);
+                if (!local) continue;
+                PortItem const* item = local->flags & SYMBOL_ALIAS && local->alias ? local->alias->item : nullptr;
+                if (item && item->module_ref && (item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_GATHER || item->tag == PORT_IMPORT_SPECIFIC)) {
+                    item->module_ref->resolved_before_ambient = true;
+                }
+                return false;
+            }
+            if (qualified) return false;
+            Symbol const* base = symbol_table_get(&my binder->globals, name);
+            if (!base || !(base->flags & SYMBOL_INTERFACE) || (base->flags & SYMBOL_CLASS)) return false;
+            if (base == symbol || !init_global_type_thisless(me, base, depth + 1)) return false;
+        }
+    }
+    return true;
+}
+
+static void program_mark_init_resolved_imports(Program* me) {
+    if (!my binder->ambient_modules.count) return;
+    static char const* const names[] = {
+        "IArguments", "Array", "Object", "Function", "CallableFunction", "NewableFunction", "String", "Number", "Boolean",
+        "RegExp", "ReadonlyArray", "ThisType",
+    };
+    for (u32 i = 0; i < c_arraylen(names); i++) {
+        bool bind_call_apply = !strcmp(names[i], "CallableFunction") || !strcmp(names[i], "NewableFunction");
+        if (bind_call_apply && !my options.strict_bind_call_apply) continue;
+        Symbol const* symbol = symbol_table_get(&my binder->globals, csview_from(names[i]));
+        if (symbol && symbol->flags & SYMBOL_INTERFACE && !(symbol->flags & SYMBOL_CLASS)) init_global_type_thisless(me, symbol, 0);
+    }
+}
+
 void program_resolve_names(Program* me) {
     program_report_content_mapper_options(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
@@ -3273,6 +3327,7 @@ void program_resolve_names(Program* me) {
         }
     }
 
+    program_mark_init_resolved_imports(me);
     // Link: what every module name refers to (ambient modules are all declared now), `export *` tables and every alias. Nothing writes to a symbol after this
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;

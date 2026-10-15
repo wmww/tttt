@@ -40,6 +40,9 @@ typedef struct ModuleRef {
     bool nested_in_ambient_module;
     // Never resolved to a file, only an ambient module (or pattern) can be it: the implicit jsx-runtime import of a script
     bool ambient_only;
+    // Resolved by tsc's initializeTypeChecker before the scripts' ambient modules are merged into the globals: never an
+    // ambient module of its name (program_mark_init_resolved_imports())
+    bool resolved_before_ambient;
     ModuleRefSyntax syntax;
     // ImportResolutionOverride (import_attributes.h): `resolution-mode` of a type-only import or an import type
     uint8_t resolution_override;

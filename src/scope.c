@@ -2504,7 +2504,7 @@ Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAt
     // tryResolvePatternAmbientModule with a resolved symbol)
     bool attributed = attributes->count;
     Symbol* resolved = nullptr;
-    if (!relative) resolved = symbol_table_get(&my ambient_modules, path);
+    if (!relative && !ref->resolved_before_ambient) resolved = symbol_table_get(&my ambient_modules, path);
     if (resolved && !attributed) return resolved;
     if (!resolved && ref->file) {
         resolved = source_file_module_symbol(ref->file);

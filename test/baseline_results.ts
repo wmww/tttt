@@ -245,6 +245,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttGlobalTypeBaseImportBeforeAmbient': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportFromExportEqualsAnyAsType': {
         errors: true,
         symbols: true,

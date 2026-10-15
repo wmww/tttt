@@ -1,0 +1,29 @@
+/a.ts(1,22): error TS2306: File '/node_modules/@types/ext/index.d.ts' is not a module.
+/a.ts(5,18): error TS2339: Property 'property' does not exist on type '() => void'.
+
+
+==== /node_modules/@types/ext/index.d.ts (0 errors) ====
+    declare module "ext" {
+        interface FunctionExt { property(): void }
+        interface ArrayExt<T> { firstObject: T }
+        const value: number;
+    }
+==== /a.ts (2 errors) ====
+    import * as Ext from "ext";
+                         ~~~~~
+!!! error TS2306: File '/node_modules/@types/ext/index.d.ts' is not a module.
+    declare global {
+        interface Function extends Ext.FunctionExt {}
+    }
+    (function () {}).property();
+                     ~~~~~~~~
+!!! error TS2339: Property 'property' does not exist on type '() => void'.
+    Ext.value;
+==== /b.ts (0 errors) ====
+    import * as Ext2 from "ext";
+    declare global {
+        interface Array<T> extends Ext2.ArrayExt<T> {}
+    }
+    [1].firstObject;
+    Ext2.value;
+    

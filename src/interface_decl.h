@@ -21,7 +21,9 @@ typedef struct InterfaceDecl {
     u32 invalid_extends_checked;
     TypeNode type;
     Symbol* symbol;
-    bool contains_this; // A `this` type is written somewhere in it (tsc's NodeFlags.ContainsThis), set when resolving
+    // A `this` keyword is written somewhere in it (tsc's NodeFlags.ContainsThis): set by the parser (which counts any
+    // `this`, like tsc's binder), and by the resolve walk for a `this` type
+    bool contains_this;
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);
