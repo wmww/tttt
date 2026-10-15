@@ -1472,6 +1472,7 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
             break;
         default: break;
     }
+    if (!once) return true;
     for (u32 i = 0; i < index; i++) {
         if (symbol->decls[i].flags & once) return false;
     }

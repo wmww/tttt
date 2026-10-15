@@ -4215,15 +4215,20 @@ static bool pseudo_matches_predicate(Checker* me, TyDisplay d, Pseudo const* ret
     return !node->has_type;
 }
 
-// The property of an object type that an object literal's member declares
-static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item) {
+static bool prop_declared_at(Prop const* prop, ObjectExprItem const* item) {
+    while (prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    for (u32 j = 0; j < prop->decl->decl_span_count; j++) {
+        if (span_eq(prop->decl->decl_spans[j], item->span)) return true;
+    }
+    return false;
+}
+
+// The property of an object type that an object literal's member declares. `hint`: where it usually is (the members
+// are mostly in the literal's order: the scan alone is quadratic in a big literal)
+static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item, u32 hint) {
+    if (hint < members->prop_count && prop_declared_at(members->props[hint], item)) return members->props[hint];
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
-        Prop const* declared = prop;
-        while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
-        for (u32 j = 0; j < declared->decl->decl_span_count; j++) {
-            if (span_eq(declared->decl->decl_spans[j], item->span)) return prop;
-        }
+        if (prop_declared_at(members->props[i], item)) return members->props[i];
     }
     return nullptr;
 }
@@ -4312,7 +4317,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             if (declarations != pseudo->count) return false;
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
-                Prop const* prop = pseudo_member_prop(members, member->item);
+                Prop const* prop = pseudo_member_prop(members, member->item, i);
                 bool prop_optional = prop && (prop->flags & PROP_OPTIONAL) != 0;
                 if (!prop || member->optional != prop_optional) {
                     pseudo_report_item(rep, member->item);
@@ -4735,7 +4740,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             member_d.in_object_literal = true;
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
-                Prop const* prop = members ? pseudo_member_prop(members, member->item) : nullptr;
+                Prop const* prop = members ? pseudo_member_prop(members, member->item, i) : nullptr;
                 Ty const* type = prop ? ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0) : nullptr;
                 bool readonly = is_const || (member->kind == PSEUDO_MEMBER_PROPERTY && member->readonly);
                 member_begin_node(member_d, member->item->span);
@@ -4774,7 +4779,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                             member->item->tag == OBJECT_ITEM_PROPERTY && pseudo->expr
                         ) {
                             Ty const* literal = ty_expr_type(me, pseudo->expr);
-                            Prop const* literal_prop = literal->flags & TYF_OBJECT ? pseudo_member_prop(ty_members(me, literal), member->item) : nullptr;
+                            Prop const* literal_prop = literal->flags & TYF_OBJECT ? pseudo_member_prop(ty_members(me, literal), member->item, i) : nullptr;
                             if (literal_prop) own = ty_widened_literal(me, prop_type(me, literal_prop));
                         }
                         display_pseudo_in(me, member_d, member->type, own,

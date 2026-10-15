@@ -1948,12 +1948,12 @@ static bool is_overload_implementation(FunctionImpl const* fn) {
 // shouldEmitFunctionProperties: the implementation, or the last overload of an ambient function
 static bool emits_function_properties(FunctionImpl const* fn) {
     if (fn->has_body || !fn->symbol) return true;
-    FunctionImpl const* last = nullptr;
-    for (u32 i = 0; i < fn->symbol->decl_count; i++) {
+    // (From the end: once per overload, each of them a declaration)
+    for (u32 i = fn->symbol->decl_count; i-- > 0;) {
         SymbolDecl const* decl = &fn->symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) last = decl->node;
+        if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) return decl->node == fn;
     }
-    return !last || last == fn;
+    return true;
 }
 
 static void check_function_declaration(Walk* me, FunctionImpl const* fn, Statement const* statement) {
@@ -2048,9 +2048,11 @@ static bool interface_declares_method(ClassDecl const* cls, ClassItem const* ite
     return false;
 }
 
-static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl const* fn) {
+// (Its overloads are among its namesakes: link_overload_implementations() finds it among theirs)
+static bool is_class_overload_implementation(ClassDecl const* cls, ClassItem const* item, FunctionImpl const* fn) {
     if (!fn->has_body) return false;
-    for_each (i, vec_class_item, &cls->items) {
+    for (ClassNamesakes it = class_namesakes(cls, item, false); class_namesakes_next(&it);) {
+        ClassItem const* i = it.item;
         FunctionImpl const* other = i->tag == CLASS_ITEM_METHOD ? &i->method.func :
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
         if (other && other != fn && function_impl_rare(other)->overload_implementation == fn) return true;
@@ -2278,7 +2280,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
-                if (is_class_overload_implementation(cls, ctor)) break;
+                if (is_class_overload_implementation(cls, i, ctor)) break;
                 // The parameter properties are properties of the class (only their own optionality is added), and the
                 // constructor's parameters
                 if (ctor->has_body) {
@@ -2311,7 +2313,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
                 if (item_has_private_name(i)) break;
                 FunctionImpl const* fn = &i->method.func;
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
-                    if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn) ||
+                    if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, i, fn) ||
                         interface_declares_method(cls, i)
                     ) {
                         break;
@@ -3234,6 +3236,29 @@ static void erase_text(cstr* out, isize_t at, isize_t chars) {
     cstr_erase(out, at, end - at);
 }
 
+// erase_text() at each of `count` ascending offsets, in one pass (one by one a big namespace body is quadratic)
+static void erase_texts(cstr* out, u32 const* offsets, u32 count, isize_t chars) {
+    if (!count) return;
+    char* text = cstr_data(out);
+    isize_t size = cstr_size(out), to = offsets[0], from = offsets[0];
+    for (u32 i = 0; i < count; i++) {
+        check(offsets[i] >= from);
+        memmove(text + to, text + from, (size_t)(offsets[i] - from));
+        to += offsets[i] - from;
+        from = offsets[i];
+        for (isize_t left = chars; from < size && left;) {
+            if (text[from] == DECL_MAP_MARK && from + DECL_MAP_MARK_SIZE <= size) {
+                from += DECL_MAP_MARK_SIZE;
+                continue;
+            }
+            from++;
+            left--;
+        }
+    }
+    memmove(text + to, text + from, (size_t)(size - from));
+    cstr_resize(out, to + (size - from), '\0');
+}
+
 // A top-level declaration's modifiers (tsc's ensureModifiers): its `export` and `default`, and `declare` at a file's top
 // level unless it is a type or a default export (needsDeclare). In a namespace body, where each `export ` is written
 // is remembered (see Walk.export_offsets)
@@ -4135,7 +4160,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
-                if (is_class_overload_implementation(cls, ctor)) break;
+                if (is_class_overload_implementation(cls, i, ctor)) break;
                 w_indent(me);
                 m_span(me, i->span, false);
                 w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
@@ -4151,7 +4176,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 FunctionImpl const* fn = &i->method.func;
                 bool private_member = i->access == ACCESS_MODIFIER_PRIVATE;
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
-                    if (is_class_overload_implementation(cls, fn) || interface_declares_method(cls, i)) break;
+                    if (is_class_overload_implementation(cls, i, fn) || interface_declares_method(cls, i)) break;
                     // (A private method is a property without a type: omitPrivateMethodType, once per name)
                     if (private_member && i->symbol_first && i->symbol_first != i) break;
                     w_indent(me);
@@ -4427,11 +4452,10 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
             w_indent(me);
             w_lit(me, "export {};\n");
         } else {
-            // (Every statement is exported: the modifiers are left out, from the last one back)
-            for (u32 i = my export_offset_count; i-- > outer_offsets;) {
-                if (my export_offsets[i] < body_start) continue;
-                erase_text(my out, my export_offsets[i], 7);
-            }
+            // (Every statement is exported: the modifiers are left out)
+            u32 from = outer_offsets;
+            while (from < my export_offset_count && my export_offsets[from] < body_start) from++;
+            erase_texts(my out, my export_offsets + from, my export_offset_count - from, 7);
         }
     }
     my export_offset_count = outer_offsets;

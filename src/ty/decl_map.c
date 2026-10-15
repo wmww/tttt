@@ -110,8 +110,11 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
     char* buf = cstr_data(text);
     isize_t size = cstr_size(text), to = 0;
     i64 line = 0, col = 0;
-    // (Source positions come mostly in order: the line search starts from the last one)
+    // (Source positions come mostly in order: the line search goes on from the last one, and on the same line so does
+    // the column count, from col_offset: a long line's marks would rescan it from its start each)
     u32 source_line = 0;
+    u32 col_line = UINT32_MAX, col_offset = 0;
+    i64 col_units = 0;
     for (isize_t from = 0; from < size;) {
         char c = buf[from];
         if (c == DECL_MAP_MARK && from + DECL_MAP_MARK_SIZE <= size) {
@@ -119,13 +122,27 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
             for (int i = 0; i < 8; i++) offset = (offset << 4) | (u32)(buf[from + 1 + i] - 0x10);
             from += DECL_MAP_MARK_SIZE;
             if (offset > src_size) continue;
-            if (source_line >= source->line_count || source->line_starts[source_line] > offset) source_line = 0;
+            if (source_line >= source->line_count || source->line_starts[source_line] > offset) {
+                // (Back: the last line starting at or before offset)
+                u32 lo = 0, hi = source->line_count;
+                while (hi - lo > 1) {
+                    u32 mid = lo + (hi - lo) / 2;
+                    if (source->line_starts[mid] <= offset) lo = mid;
+                    else hi = mid;
+                }
+                source_line = lo;
+            }
             while (source_line + 1 < source->line_count && source->line_starts[source_line + 1] <= offset) source_line++;
             u32 line_start = source->line_starts[source_line];
             if (source_line == 0 && offset >= bom) line_start = bom;
-            i64 source_col = 0;
-            for (char const* p = src + line_start; p < src + offset; p++) source_col += utf8_byte_utf16_units(p, src + line_start);
-            add(&gen, line, col, source_line, source_col);
+            if (col_line != source_line || col_offset > offset || col_offset < line_start) {
+                col_line = source_line;
+                col_offset = line_start;
+                col_units = 0;
+            }
+            for (char const* p = src + col_offset; p < src + offset; p++) col_units += utf8_byte_utf16_units(p, src + line_start);
+            col_offset = offset;
+            add(&gen, line, col, source_line, col_units);
             continue;
         }
         buf[to++] = c;

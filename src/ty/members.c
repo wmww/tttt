@@ -2232,6 +2232,9 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
     // A property only one entry has is that entry's own (an inherited static stays the base's, whose private and
     // protected ones are only related to themselves); it's copied once another entry adds to it
     TyBuf shared = {0};
+    // (Of the declaration groups below: the entries' signatures come in the order of their declarations, the search
+    // starts next to the last one found; each declaration's node is its own)
+    u32 cursor = 0;
     for (u32 entry_index = 0; entry_index < entry_count; entry_index++) {
         Ty const* entry = entries[entry_index];
         if (!(entry->flags & TYF_OBJECT)) continue;
@@ -2274,8 +2277,16 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
             FunctionImpl const* function = members->call[j]->function;
             if (!function || ty_decl_group(me, function)) continue;
             void const* parent = entry;
-            for (u32 d = 0; d < decl->decl_count; d++) {
-                if (decl->decls[d].node == function && decl->decls[d].block) parent = decl->decls[d].block;
+            u32 count = decl->decl_count;
+            u32 found = UINT32_MAX;
+            if (cursor + 1 < count && decl->decls[cursor + 1].node == function) found = cursor + 1;
+            else if (cursor > 0 && cursor - 1 < count && decl->decls[cursor - 1].node == function) found = cursor - 1;
+            for (u32 d = 0; found == UINT32_MAX && d < count; d++) {
+                if (decl->decls[d].node == function) found = d;
+            }
+            if (found != UINT32_MAX) {
+                if (decl->decls[found].block) parent = decl->decls[found].block;
+                cursor = found;
             }
             set_decl_group(me, function, decl_group_of(me, decl, parent));
         }
