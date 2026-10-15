@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationExportedPattern.ts] ////
+
+=== ttttDeclarationExportedPattern.ts ===
+// A non-exported destructuring whose names an export list exports is written whole
+declare function d(): { get: () => number; set: (v: number) => void };
+>d : () => { get: () => number; set: (v: number) => void; }
+>get : () => number
+>set : (v: number) => void
+>v : number
+
+/** doc */
+const { get: g1, set: s1 } = d();
+>get : any
+>g1 : () => number
+>set : any
+>s1 : (v: number) => void
+>d() : { get: () => number; set: (v: number) => void; }
+>d : () => { get: () => number; set: (v: number) => void; }
+
+const [a1, b1] = [1, 2];
+>a1 : number
+>b1 : number
+>[1, 2] : [number, number]
+>1 : 1
+>2 : 2
+
+export { g1, s1, a1 };
+>g1 : () => number
+>s1 : (v: number) => void
+>a1 : number
+
+export const { get: g2 } = d();
+>get : any
+>g2 : () => number
+>d() : { get: () => number; set: (v: number) => void; }
+>d : () => { get: () => number; set: (v: number) => void; }
+
