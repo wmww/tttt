@@ -30022,10 +30022,10 @@ const baselines = {
         types: true,
     },
     'reverseMappedDeclarationSerialization': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
-        dts: false,
+        types: true,
+        dts: true,
     },
     'reverseMappedIntersectionInference1': {
         errors: true,

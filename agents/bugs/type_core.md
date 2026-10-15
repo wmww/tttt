@@ -313,8 +313,6 @@ passing tests).
   cached `{ w: number; h: number; }` object that tttt prints afresh: a type identity difference (tsgo's object is the
   same type as one printed earlier in the line, tttt's another instance), inside `Partial<A & B & ...>` arguments.
   Find which instance (spread/intersection property types) and why tttt makes a new one; ~a session.
-- reverseMappedDeclarationSerialization: reverse mapped inference through a recursive `Validator<T>`: tttt reports
-  TS2321/TS5114/TS2345 on `decode(growingInput)` where tsgo infers quietly. Plan-sized.
 - Inference: `$ExpectType` map-to-obj `MapToObj(new Map([["hello", "world"]]))`: tsgo infers `Map<string, string>`
   inside the call (the outer unfixed K is silentNever through the NoDefault mapper, so the tuple's "hello" has no
   literal context), tttt keeps `"hello"` (also `f<K extends string>(m: Map<K, string>)`); mut0348

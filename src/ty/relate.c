@@ -6356,8 +6356,9 @@ static bool has_symbol_for_recursion(Ty const* ty) {
         return false;
     }
     if (ty->kind == TY_REFERENCE) return ty->reference.target->declared.kind != TY_DECLARED_TUPLE_TARGET;
-    // (Not a type parameter, which tsc's has: a mapped type over one keeps the mapped type's identity)
-    return ty->kind == TY_DECLARED || ty->kind == TY_ANONYMOUS;
+    // (Not a type parameter, which tsc's has: a mapped type over one keeps the mapped type's identity. Nor a reverse
+    // mapped type, which has no symbol: tsc's createReverseMappedType)
+    return ty->kind == TY_DECLARED || (ty->kind == TY_ANONYMOUS && !ty->anonymous.is_reverse);
 }
 
 // (tsc's ObjectFlags.InstantiatedMapped)

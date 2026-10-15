@@ -4353,7 +4353,9 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
     for (u32 i = 0; i < source_members->index_count; i++) {
         IndexInfo info = source_members->index[i];
         if (!(info.key->flags & TYF_STRING)) continue;
-        info.value = ty_reverse_mapped_member_type(me, reverse, info.value);
+        // (With the reverse mapped type's own mapped type: tsc's replaceIndexedAccess is for properties only, so a
+        // recursive index signature makes a new mapped type, and a new reverse mapped type, at every level)
+        info.value = ty_reverse_mapped_prop_type(me, info.value, reverse->mapped, reverse->operand);
         info.param_name = nullptr;
         info.components = nullptr;
         info.component_count = 0;

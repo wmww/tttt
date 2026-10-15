@@ -3388,20 +3388,26 @@ static MappedInfo const* mapped_root(MappedInfo const* mapped) {
 }
 
 // tsc's shouldUsePlaceholderForProperty: a reverse mapped property prints as `any` (the elided information placeholder)
-// inside itself, inside one whose source property's type isn't an anonymous object type, and three deep in the same
-// mapped type
+// inside itself, inside one whose source property's type isn't an anonymous object type, and three deep with one of the
+// last four from the same mapped type
 static bool reverse_placeholder(TyDisplay d, Prop const* prop) {
-    if (!d.reverse_stack) return false;
+    // (For display, not declaration emit: tsc's NodeBuilderFlags.AllowAnonymousIdentifier, which IgnoreErrors has)
+    if (!d.reverse_stack || d.tracker) return false;
     for (TyDisplayReverse const* i = d.reverse_stack; i; i = i->outer) {
         if (i->prop == prop) return true;
     }
     if (prop_decl_rare(d.reverse_stack->prop->decl)->reverse_source->kind != TY_ANONYMOUS) return true;
+    // (3: with at least three on the stack, one of the last four from the same mapped type; tsc's
+    // MAX_REVERSE_MAPPED_NESTING_INSPECTION_DEPTH)
+    u32 len = 0;
+    for (TyDisplayReverse const* i = d.reverse_stack; i; i = i->outer) len++;
+    if (len < 3) return false;
     MappedInfo const* root = mapped_root(prop_decl_rare(prop->decl)->reverse_of->mapped);
     u32 depth = 0;
-    for (TyDisplayReverse const* i = d.reverse_stack; i && depth < 3; i = i->outer, depth++) {
-        if (mapped_root(prop_decl_rare(i->prop->decl)->reverse_of->mapped) != root) return false;
+    for (TyDisplayReverse const* i = d.reverse_stack; i && depth <= 3; i = i->outer, depth++) {
+        if (mapped_root(prop_decl_rare(i->prop->decl)->reverse_of->mapped) == root) return true;
     }
-    return depth == 3;
+    return false;
 }
 
 // Whether a type literal is the annotation of the declaration whose name is at `at`: only `?` and `:` between them
@@ -4239,8 +4245,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, ": ");
         ty_display(me, d, info->key);
         out_lit(d, "]: ");
-        // (A reverse mapped type's is the elided information placeholder: tsc's createTypeNodeFromObjectType)
-        if (ty_reverse_of(ty)) {
+        // (A reverse mapped type's is the elided information placeholder, except in declaration emit: tsc's
+        // createTypeNodesFromResolvedType with AllowAnonymousIdentifier)
+        if (ty_reverse_of(ty) && !d.tracker) {
             approx_add(d, 3);
             out_lit(d, "any");
         }
@@ -5011,6 +5018,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     // (Where nothing truncates, tsc has no limit but the length: deep enough for a recursive alias's arguments. Declaration
     // emit: unchanged, see hacks.md TS7056)
     if (d.depth > (truncating(d) ? MAX_DISPLAY_DEPTH * 4 : d.tracker ? 8 * 16 : 1024)) {
+        // (Declaration emit: tsc has no depth limit, a type nested this deep keeps growing until it is too long to
+        // serialize, TS7056: a recursive reverse mapped type's index signatures, new types at every level)
+        if (d.tracker && !d.tracker->truncated) {
+            d.tracker->truncated = true;
+            d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
+            return;
+        }
         approx_add(d, 3);
         out_lit(d, "...");
         return;
@@ -5314,9 +5328,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
-            // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see
-            // reverse_placeholder())
-            for (TyDisplayVisit const* i = ty_reverse_of(ty) ? nullptr : d.visiting; i; i = i->outer) {
+            // (Not a reverse mapped type for display, which has no symbol: its properties have placeholders of their own,
+            // see reverse_placeholder(); declaration emit has none, the cycle is a cycle there)
+            for (TyDisplayVisit const* i = ty_reverse_of(ty) && !d.tracker ? nullptr : d.visiting; i; i = i->outer) {
                 if (i->ty != ty) continue;
                 // (A function declared in a file or namespace prints as `typeof f` instead: tsc's
                 // shouldWriteTypeOfFunctionSymbol)

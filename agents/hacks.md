@@ -337,6 +337,9 @@ src` finds the code-side markers; every significant one has an entry here.
   pre-instantiates with the return mapper (higher-order needs it). A pattern's return mapper drops inferred `any`
   (tsc's nonInferrableAnyType), rest patterns give none; `ty_pattern_unclone` copies the pattern type per call. Nested
   literals instantiate context only in `check_for_mutable_location()`.
+- Declaration emit's display depth limit (`ty_display`, 8 * 16 levels) reports TS7056 like the length limit tsc has
+  instead: a recursive reverse mapped type's index signatures make a new type per level, which tsc prints until the
+  text is a million characters long. A finite type nested deeper than that would get a spurious TS7056.
 - Reverse mapped types of arrays/tuples are eager like tsc's, but cut at depth 4 (`Checker.reverse_mapped_depth`, HACK:
   tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42 stage 1).
   Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's instantiateReverseMappedType.

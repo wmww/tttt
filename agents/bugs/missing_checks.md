@@ -296,8 +296,8 @@ Still wrong: checkerInitializationCrash's symbols (tsc keeps the two conflicting
   typeToTypeNodeOrCircularityElision) and anonymous/conditional types elided eleven deep (anonymous_elided(),
   conditional_elided(): visitAndTransformType's symbolDepth) report to the declaration tracker. Not ported: the
   general visitedTypes cycle check of every object type (tttt checks anonymous types only), type references by
-  their node (a deferred reference's symbolDepth identity) and the reverse mapped depth of 100
-  (reverseMappedDeclarationSerialization, which first needs its spurious TS5114 gone).
+  their node (a deferred reference's symbolDepth identity). Reverse mapped types print without placeholders in
+  declaration emit (cycles TS5088, and the display depth limit stands for TS7056 there: hacks.md).
 - TS9039 "Type containing private name '{0}' can't be used with --isolatedDeclarations" (tsc's
   trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported.
 
