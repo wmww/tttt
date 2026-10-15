@@ -6,10 +6,17 @@ size on real code, each with an example:
 
 - **JavaScript sources** ("missing file", ~690 files): JS declaration emit is plan 64 stage 6 (not started). crawlee,
   mermaid, astro/benchmark, query/*: `.js`/`.mjs` sources with allowJs.
-- **Import specifier choice** ("type text"): tsgo names a re-exporting entry (`import("./index.ts").PgColumn`,
-  `import("@apollo/client").HttpLink`) where tttt names the declaring file (`import("./columns/common.ts")`). Module
-  specifier generation for symbols reached through `export *`/re-exports (tsgo's getSymbolChain prefers the chain
-  through the package's or directory's index). corpus:drizzle `src/pg-core/utils.d.ts`, apollo-client.
+- **Import specifier choice** (agent A 2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
+  in the enclosing location's mode, no container cap, no package copies as containers, existing imports only through
+  their realpath, program-wide dependency links by package directory, exports conditions by the target's format;
+  `TTTT_DEBUG_CONTAINERS=1` shows the candidates). Left (~5 projects): babel-traverse `typeof import("./visitors.ts")
+  .verify` where tttt prints `typeof visitors.verify` (a namespace import's member through `export var`); mcp-sdk/examples
+  `import("node_modules/hono/dist/types/hono")` vs tttt's `.../dist/types` (an index ending through a `paths`-like
+  bare specifier); babel's `eslint.config.d.ts` (`@eslint/config-helpers` vs `eslint/config`) and react-three-fiber
+  (`three` vs `three/src/Three.Core.js`), uninvestigated. corpus:react's `@testing-library/react` vs `/dom` is a worktree
+  artifact (the right one from the real path). tsgo's checker-wide memo of a successful import lookup
+  (KEY_EXTENDED_CONTAINERS, filled from inside an import declaration) makes names depend on what a checker printed
+  first, as in tsgo; tttt's checkers don't split files like tsgo's.
 - **Member order** (31 files left of ~170; the zod-style mapped/intersection and spread cases are fixed): tsgo sorts
   every resolved object type's properties by compareSymbols (getNamedMembers), tttt sorts at Members build
   (builder_sort_stable). What's left:
@@ -30,10 +37,13 @@ size on real code, each with an example:
 - **Worktree artifacts**: dtsdiff run in a worktree with symlinked corpora differs in `.d.ts.map` `sources` and in
   TS2883 "cannot be named without a reference to '/home/ai/tttt/...'" (excalidraw-app/collab): not bugs.
 
-- **Painting gaps** ("import", ~200 files): an import used only by a name the node builder prints from a type
-  (not a reused node) isn't painted in some paths: excalidraw `actionProperties.d.ts` (ExcalidrawFreeDrawElement),
-  effect `fiberRuntime.d.ts` (`import type * as Either`). Find which display path prints the name without
-  `d.tracker->track_symbol()`.
+- **Painting gaps** ("import", 40 projects / 64 files after agent A's four fixes: inferred predicates, late bound
+  members, readonly enum fields, enum-valued keys): corpus:vscode's 13 left (`SymbolKind`, `URI`, `RefCountedDisposable`,
+  `IReference` dropped: each a name printed from a type without `d.tracker->track_symbol()`), qwik `EffectProperty`,
+  gemini-cli `SettingScope`, xstate `AnyEventObject`, react-navigation `PartialState`/`EventMapBase`, yup
+  `MergeObjectTypes`, typedoc `IntrinsicElements`, effect `fiberRuntime.d.ts` (`import type * as Either`), excalidraw
+  `actionProperties.d.ts`. `scripts/dtsdiff.py --last -k import` lists them; reduce one to a probe and find the display
+  path that prints without tracking (the four fixed ones were all of that kind).
 - **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
