@@ -206,6 +206,7 @@ typedef struct Walk {
     // function), shadowing what they name
     TyDisplayParams return_params;
     bool in_return;
+    isize_t statement_start; // Where the statement being written starts in `out`, its leading comments first
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -3199,15 +3200,35 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     cstr_drop(&declarations);
 }
 
+// Whether the file's text has `word` as an identifier (approximately tsc's sourceFile.identifiers: a whole word)
+static bool file_has_word(SourceFile const* file, csview word) {
+    csview text = cstr_sv(&file->contents);
+    for (isize_t at = 0; at + word.size <= text.size;) {
+        isize_t found = csview_find_sv(csview_slice(text, at, text.size), word);
+        if (found == c_NPOS) return false;
+        found += at;
+        char before = found ? text.buf[found - 1] : ' ';
+        char after = found + word.size < text.size ? text.buf[found + word.size] : ' ';
+        bool word_char_before = isalnum((unsigned char)before) || before == '_' || before == '$';
+        bool word_char_after = isalnum((unsigned char)after) || after == '_' || after == '$';
+        if (!word_char_before && !word_char_after) return true;
+        at = found + 1;
+    }
+    return false;
+}
+
 // The printer's next generated name (tsc's makeTempVariableName): `_a` to `_z` but `_i` and `_n` (kept for loops), then
-// `_0`, `_1`...
+// `_0`, `_1`..., none the file has as an identifier (isUniqueName)
 static void generated_name(Walk* me, char* out, size_t size) {
-    u32 n;
-    do {
-        n = my generated_names++;
-    } while (n == 8 || n == 13);
-    if (n < 26) snprintf(out, size, "_%c", 'a' + n);
-    else snprintf(out, size, "_%u", n - 26);
+    while (true) {
+        u32 n;
+        do {
+            n = my generated_names++;
+        } while (n == 8 || n == 13);
+        if (n < 26) snprintf(out, size, "_%c", 'a' + n);
+        else snprintf(out, size, "_%u", n - 26);
+        if (!file_has_word(my file, csview_from(out))) return;
+    }
 }
 
 // A reserved word (tsc's isNonContextualKeyword: what can't name a variable)
@@ -3574,6 +3595,11 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     cstr base_variable_name = cstr_init();
     if (base_variable) {
         cstr_take(&base_variable_name, cstr_d(span_valid(cls->name) ? span_sv(cls->name) : c_sv("default"), "_base"));
+        // (Before the class's leading comments, which are the class's: the variable is a new statement)
+        isize_t at = statement ? my statement_start : (isize_t)cstr_size(my out);
+        cstr* outer = my out;
+        cstr line = cstr_init();
+        my out = &line;
         w_indent(me);
         if (container_is_file(container)) w_lit(me, "declare ");
         my needs_scope_fix = true;
@@ -3582,6 +3608,13 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         w_lit(me, ": ");
         w_type(me, lazy_type_get((LazyType*)&base_name->lazy_type));
         w_lit(me, ";\n");
+        my out = outer;
+        if (at > (isize_t)cstr_size(my out)) at = cstr_size(my out);
+        cstr_insert_sv(my out, at, cstr_sv(&line));
+        for (u32 i = 0; i < my export_offset_count; i++) {
+            if ((isize_t)my export_offsets[i] >= at) my export_offsets[i] += (u32)cstr_size(&line);
+        }
+        cstr_drop(&line);
     }
     w_indent(me);
     if (statement) w_statement_modifiers(me, statement, container, false);
@@ -4105,7 +4138,11 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
 static cstr export_default_name(Walk* me, Span own) {
     csview base = span_valid(own) && !span_equals(own, "default") ? span_sv(own) : c_sv("_default");
     cstr name = cstr_from_sv(base);
-    for (u32 n = 1; my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE); n++) {
+    // (The printer's unique names avoid every identifier of the file too: isUniqueName)
+    bool generated = !span_valid(own) || span_equals(own, "default");
+    for (u32 n = 1; (my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE)) ||
+        (generated && file_has_word(my file, cstr_sv(&name))); n++
+    ) {
         cstr_take(&name, cstr_d(base, "_", n));
     }
     return name;
@@ -4207,9 +4244,12 @@ static void emit_statement(Walk* me, Statement const* statement, Container conta
         emit_export_default(me, statement, container); // (Its comments go to the declaration it makes)
         return;
     }
+    isize_t outer_start = my statement_start;
+    my statement_start = cstr_size(my out);
     isize_t start = w_leading(me, statement->span.buf);
     isize_t written_from = cstr_size(my out);
     emit_statement_inner(me, statement, container);
+    my statement_start = outer_start;
     w_unless_written(me, start, written_from, span_end_ptr(statement->span));
 }
 
