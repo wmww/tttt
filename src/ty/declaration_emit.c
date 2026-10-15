@@ -3664,7 +3664,12 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         for_each (j, vec_function_arg, &i->constructor.func.args) {
             // (`@internal` in the comment before it: tsc's isInternalDeclaration of a parameter)
             if (compiler_options()->strip_internal && decl_comments_last_contains(&my comments, j->span.buf, "@internal")) continue;
-            if (is_parameter_property(j)) emit_parameter_property(me, &i->constructor.func, j);
+            if (!is_parameter_property(j)) continue;
+            // (With the parameter's comments: preserveJsDoc)
+            isize_t start = w_leading(me, j->span.buf);
+            isize_t written_from = cstr_size(my out);
+            emit_parameter_property(me, &i->constructor.func, j);
+            w_unless_written(me, start, written_from, span_end_ptr(j->span));
         }
     }
     bool outer_static = my member_static, outer_in_class = my member_in_class;

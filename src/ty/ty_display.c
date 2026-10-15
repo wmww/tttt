@@ -3929,11 +3929,24 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
         case PSEUDO_BOOLEAN: out_lit(d, "boolean"); return;
         case PSEUDO_FALSE: out_lit(d, "false"); return;
         case PSEUDO_TRUE: out_lit(d, "true"); return;
-        case PSEUDO_STRING_LITERAL:
-            // (The literal node cloned: its quotes as written)
+        case PSEUDO_STRING_LITERAL: {
+            // (The literal node cloned: its quotes as written; a template's tabs and carriage returns escaped, the
+            // printer's template text)
             approx_add(d, reused_node_length(pseudo->expr->inner_span));
-            out(reused_if(d, true), span_sv(pseudo->expr->inner_span));
+            csview text = span_sv(pseudo->expr->inner_span);
+            if (!text.size || text.buf[0] != '`') {
+                out(reused_if(d, true), text);
+                return;
+            }
+            TyDisplay reused = reused_if(d, true);
+            for (isize_t i = 0, from = 0; i <= text.size; i++) {
+                if (i < text.size && text.buf[i] != '\t' && text.buf[i] != '\r') continue;
+                out(reused, csview_slice(text, from, i));
+                if (i < text.size) out(reused, text.buf[i] == '\t' ? c_sv("\\t") : c_sv("\\r"));
+                from = i + 1;
+            }
             return;
+        }
         case PSEUDO_NUMERIC_LITERAL:
         case PSEUDO_BIGINT_LITERAL: {
             // (A cloned numeric literal prints its value: `0x1` is `1`)

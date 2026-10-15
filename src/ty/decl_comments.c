@@ -16,10 +16,15 @@ typedef struct Comments {
     u32 count;
 } Comments;
 
+// Where comments start: past a BOM and a shebang line (tsc's iterateCommentRanges skips that at 0)
 static char const* text_start(SourceFile const* file) {
     char const* text = cstr_str(&file->contents);
-    if (cstr_size(&file->contents) >= 3 && (unsigned char)text[0] == 0xEF && (unsigned char)text[1] == 0xBB && (unsigned char)text[2] == 0xBF) {
-        return text + 3;
+    char const* end = text + cstr_size(&file->contents);
+    if (end - text >= 3 && (unsigned char)text[0] == 0xEF && (unsigned char)text[1] == 0xBB && (unsigned char)text[2] == 0xBF) {
+        text += 3;
+    }
+    if (end - text >= 2 && text[0] == '#' && text[1] == '!') {
+        while (text < end && *text != '\n' && *text != '\r') text++;
     }
     return text;
 }
