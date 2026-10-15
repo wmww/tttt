@@ -277,6 +277,12 @@ typedef struct SymbolRare {
     // A JavaScript class's member `this[k] = v` declares with an entity name k (tsc's late bound assignment
     // declarations): its name is what k's type names, known to the checker only. In Symbol.members as `[k]`
     struct Expr const* late_bound_key;
+    // An alias (`export { A }` in a namespace) that a cross-file merge went through (merge_into_exports()): tsgo's
+    // mergeSymbol resolved it first, which keeps the unmerged target as the alias's target, and put a clone of the
+    // target in the table, where the alias no longer is (no name reaches it). `detached_target_flags`: the target's
+    // flags before the merge
+    u32 detached_target_flags;
+    bool merge_detached;
 } SymbolRare;
 
 // PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)

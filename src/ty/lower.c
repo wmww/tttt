@@ -2211,6 +2211,11 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
 
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
+        // An alias a cross-file merge went through still names the target as it was (see SymbolRare.merge_detached):
+        // no value then is errorType (tsgo's getTypeOfAlias)
+        if (symbol_rare(symbol)->merge_detached && !(symbol_rare(symbol)->detached_target_flags & SYMBOL_VALUE)) {
+            return ty_intrinsic(me, TY_ERROR);
+        }
         Ty const* namespace_import = namespace_import_type(me, symbol);
         if (namespace_import) return namespace_import;
         // (`/** @type {T} */ export default x` is still x's type: tsgo's getTypeOfAlias has no declared type)

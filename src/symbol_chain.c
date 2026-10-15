@@ -239,6 +239,8 @@ static bool is_accessible(
     bool ignore_qualification
 ) {
     if (!from_table) return false;
+    // (An alias a cross-file merge went through is in no table to tsgo: the clone of its target replaced it)
+    if (symbol_rare(from_table)->merge_detached) return false;
     Symbol const* named = resolved ? resolved : from_table;
     if (named != symbol && identity(me, named) != identity(me, symbol)) {
         // (tsgo's isAccessible resolves an alias that resolves to another alias on: an alias merged with a type, `type
@@ -381,7 +383,8 @@ static bool try_locals_with_exports(
     // A duplicate declaration (TS2300) has a symbol of its own that isn't in the exports, but the block's local of
     // that name has it as its exportSymbol (not an `export default` one: tsc looks it up as `default`, which no local is;
     // nor an exported alias, `export import A = b.c`, which tsc's declareModuleMember declares in the exports only)
-    if (!symbol->is_default_export && !(symbol->alias && symbol->alias->item && symbol->alias->item->export_import) && merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
+    // (Nor one a cross-file merge went through: in no table at all, SymbolRare.merge_detached)
+    if (!symbol->is_default_export && !symbol_rare(symbol)->merge_detached && !(symbol->alias && symbol->alias->item && symbol->alias->item->export_import) && merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
         merged(me, symbol_table_get(exports, symbol->name)) != merged(me, symbol) &&
         can_qualify(me, symbol, meaning)
     ) {

@@ -232,6 +232,11 @@ src` finds the code-side markers; every significant one has an entry here.
   under `BaselineTestCase.in_with`) and `yield x` outside a generator (`UnaryOpExpr.outside_generator`). Real fix: the
   resolve walk stops reporting checker errors.
 
+- `SymbolRare.merge_detached` (`merge_into_exports()`, `ty_type_of_symbol()`): an alias a cross-file merge went
+  through (`export { Knex }` in a namespace, augmented) keeps tsgo's view of it, whose aliasTarget is the target as it
+  was before the merge: only its flags are remembered, so a target without a value makes the alias errorType, but one
+  with a value gives the merged target's type (tsgo: the unmerged one's). The symbol chain skips the alias in tables.
+
 - `attribute_type_accepts()`/`attributes_subtype()`/`best_pattern_module()` (`scope.c`): which pattern ambient module
   (`declare module "*.css" with { type: "css" }`) an import with attributes is, decided by the binder on the syntax
   rather than by tsgo's isTypeAssignableTo/isTypeStrictSubtypeOf of attribute types: string literal annotations exact,

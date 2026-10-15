@@ -8436,8 +8436,8 @@ const baselines = {
     },
     'declarationEmitAugmentationUsesCorrectSourceFile': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
         dts: true,
     },
     'declarationEmitBigInt': {

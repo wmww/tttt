@@ -35,8 +35,7 @@ clone is a *different* symbol than the one a later lookup finds:
 
 ## Merges tsc decides after aliases resolve
 Done for cross-file merges into aliases (binder_link_alias_merges(), merge_into_umd_globals()); what is left is the
-clones tsgo makes on the way (plan 69): declarationEmitAugmentationUsesCorrectSourceFile,
-moduleAugmentationDuringSyntheticDefaultCheck.
+clones tsgo makes on the way (plan 69): moduleAugmentationDuringSyntheticDefaultCheck.
 
 ## Symbol display of duplicates and merged members
 - nodeModulesJson (symbols, x4): `config3.version` through `import * as config3 from "./config.json"` in a .cts

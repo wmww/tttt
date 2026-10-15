@@ -9,18 +9,11 @@ in a namespace block has no local twin for the symbol chain. Fixed: duplicateVar
 importEqualsError45874, checkerInitializationCrash, moduleAugmentationWithNonExistentNamedImport, and the types of
 globalArrayAugmentationWithAmbientModuleReexportMerge1 (tests ttttCrossFileAliasMerge, ttttUmdGlobalUnknownExportEquals).
 
-Left, both about the symbols tsgo *clones* rather than merges in place (cloneSymbol in mergeSymbol,
+Left, one about the symbols tsgo *clones* rather than merges in place (cloneSymbol in mergeSymbol,
 cloneTypeAsModuleType in resolveESModuleSymbol), which tttt doesn't make. About one session; start with an
 instrumented tsgo (overlay a patched checker.go: wrap mergeSymbol to log target/source/result, like
 scripts/variancetrace.py's build() does for relater.go; ~3 min to build the probe test binary with `go test -overlay
 ... -c ./internal/testrunner` and run it with TTTT_TESTDATA, see scripts/tsgoprobe.sh).
-- declarationEmitAugmentationUsesCorrectSourceFile (symbols, types): `declare module "knex" { namespace Knex { function
-  newFunc() } }` augmenting a module whose `export = knex` namespace re-exports a file-local `declare namespace Knex`
-  (`export { Knex }`). Logged: mergeSymbol(alias Knex, augmentation Knex) returns a clone (2 declarations), and the
-  module merge clones knex too, every checker. Yet tsgo's symbols baseline names the original declaration
-  `Symbol(knex.Knex, Decl(index.d.ts, 13, 10))` (one declaration, parent knex) and types it `any`: find which symbol
-  getSymbolAtLocation returns there (getMergedSymbol of the local is recorded to the inner clone by cloneSymbol;
-  something else must win) before modelling it. tttt merges into the namespace in place (merge_into_exports()).
 - moduleAugmentationDuringSyntheticDefaultCheck (symbols, types): the augmentation merges into the esModuleInterop
   clone of a namespace import (bugs/binder_modules.md "Export= clones").
 
