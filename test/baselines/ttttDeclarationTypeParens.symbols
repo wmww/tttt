@@ -1,0 +1,68 @@
+//// [test/cases/ttttDeclarationTypeParens.ts] ////
+
+=== ttttDeclarationTypeParens.ts ===
+// tsgo's printer parenthesizes by precedence: a conditional type in an `extends` clause (a function type's return type
+// keeps the clause's context), a type query in an array but not in a union or intersection
+export type exactEquals<l, r> =
+>exactEquals : Symbol(exactEquals, Decl(ttttDeclarationTypeParens.ts, 0, 0))
+>l : Symbol(l, Decl(ttttDeclarationTypeParens.ts, 2, 24))
+>r : Symbol(r, Decl(ttttDeclarationTypeParens.ts, 2, 26))
+
+	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
+>_ : Symbol(_, Decl(ttttDeclarationTypeParens.ts, 3, 3))
+>_ : Symbol(_, Decl(ttttDeclarationTypeParens.ts, 3, 3))
+>l : Symbol(l, Decl(ttttDeclarationTypeParens.ts, 2, 24))
+>_ : Symbol(_, Decl(ttttDeclarationTypeParens.ts, 3, 41))
+>_ : Symbol(_, Decl(ttttDeclarationTypeParens.ts, 3, 41))
+>r : Symbol(r, Decl(ttttDeclarationTypeParens.ts, 2, 26))
+
+	:	false
+export type K<T> = T extends Array<T extends 1 ? 2 : 3> ? 1 : 0;
+>K : Symbol(K, Decl(ttttDeclarationTypeParens.ts, 4, 8))
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 5, 14))
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 5, 14))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 5, 14))
+
+export type U<T> = T extends string | (() => T extends 1 ? 2 : 3) ? 1 : 0;
+>U : Symbol(U, Decl(ttttDeclarationTypeParens.ts, 5, 64))
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 6, 14))
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 6, 14))
+>T : Symbol(T, Decl(ttttDeclarationTypeParens.ts, 6, 14))
+
+function cleanup() {}
+>cleanup : Symbol(cleanup, Decl(ttttDeclarationTypeParens.ts, 6, 74))
+
+export const create = (root: number) => { if (root) return cleanup; return null; };
+>create : Symbol(create, Decl(ttttDeclarationTypeParens.ts, 8, 12))
+>root : Symbol(root, Decl(ttttDeclarationTypeParens.ts, 8, 23))
+>root : Symbol(root, Decl(ttttDeclarationTypeParens.ts, 8, 23))
+>cleanup : Symbol(cleanup, Decl(ttttDeclarationTypeParens.ts, 6, 74))
+
+function fv() { return 1; }
+>fv : Symbol(fv, Decl(ttttDeclarationTypeParens.ts, 8, 83))
+
+export const o = { f: Math.random() ? fv : undefined };
+>o : Symbol(o, Decl(ttttDeclarationTypeParens.ts, 10, 12))
+>f : Symbol(f, Decl(ttttDeclarationTypeParens.ts, 10, 18))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>fv : Symbol(fv, Decl(ttttDeclarationTypeParens.ts, 8, 83))
+>undefined : Symbol(undefined)
+
+declare function ToastComponent(): void;
+>ToastComponent : Symbol(ToastComponent, Decl(ttttDeclarationTypeParens.ts, 10, 55))
+
+export const Toast = Object.assign(ToastComponent, { p: 1 });
+>Toast : Symbol(Toast, Decl(ttttDeclarationTypeParens.ts, 12, 12))
+>Object.assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>assign : Symbol(ObjectConstructor.assign, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>ToastComponent : Symbol(ToastComponent, Decl(ttttDeclarationTypeParens.ts, 10, 55))
+>p : Symbol(p, Decl(ttttDeclarationTypeParens.ts, 12, 52))
+
+export const arr = [cleanup];
+>arr : Symbol(arr, Decl(ttttDeclarationTypeParens.ts, 13, 12))
+>cleanup : Symbol(cleanup, Decl(ttttDeclarationTypeParens.ts, 6, 74))
+

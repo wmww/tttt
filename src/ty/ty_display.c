@@ -1568,6 +1568,7 @@ static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
 
 // A part of an annotation that can't be reused prints its type
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty);
+static bool anonymous_prints_type_query(TyDisplay d, Ty const* ty);
 static bool mapped_as_conditional(Checker* me, TyDisplay d, Ty const* ty);
 static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens);
 static bool is_whole_enum(Checker* me, Ty const* ty);
@@ -2070,6 +2071,9 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         out_lit(d, " ");
     }
     if (function->is_constructor || function->is_abstract_constructor) out_lit(d, "new ");
+    // (Only its return type is in an outer `extends` clause's context)
+    bool in_extends = d.in_extends;
+    d.in_extends = false;
     display_node_type_params(me, d, &function->generic);
     out_lit(d, "(");
     for_each (i, vec_function_arg, &function->args) {
@@ -2123,7 +2127,13 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         }
         map_span(d, predicate->span, true);
     } else if (function->ret_explicit) {
-        display_node(me, d, &function->ret);
+        // (`() => (infer U extends V)` there: the printer's emitReturnType)
+        TypeNode const* ret = &function->ret;
+        bool parens = in_extends && !ret->parenthesized && ret->tag == TYPE_INFERRED && ret->inferred->extends.parsed;
+        if (parens) out(reused_if(d, false), c_sv("("));
+        d.in_extends = in_extends && !parens;
+        display_node(me, d, ret);
+        if (parens) out(reused_if(d, false), c_sv(")"));
     } else {
         out(reused_if(d, false), c_sv("any"));
     }
@@ -2528,6 +2538,15 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         return;
     }
     d.reused = !node->synthesized;
+    // (tsgo's emitTypeNode: in an `extends` clause, a conditional type has to be parenthesized; parentheses end the
+    // clause's context, and so do the parts emitted "outside extends")
+    bool extends_parens = d.in_extends && !node->parenthesized && node->tag == TYPE_TERNARY;
+    if (node->parenthesized || extends_parens) d.in_extends = false;
+    if (!(node->tag == TYPE_CALLABLE || node->tag == TYPE_ARRAY || node->tag == TYPE_INDEXED || node->tag == TYPE_KEYOF ||
+            node->tag == TYPE_TERNARY || node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION || node->tag == TYPE_JSDOC)) {
+        d.in_extends = false;
+    }
+    if (extends_parens) out(reused_if(d, false), c_sv("("));
     // (Only a fallback of this very node, see display_node_identifier() and display_node_typeof(), is an element)
     bool array_element = d.array_element_node && !node->parenthesized;
     bool constituent = d.constituent_node && !node->parenthesized;
@@ -2644,6 +2663,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // (Parenthesized as written: tsgo keeps a reused node's parentheses and adds none)
             display_node(me, d, &node->indexed->interface);
             out_lit(d, "[");
+            d.in_extends = false;
             display_node(me, d, &node->indexed->index);
             out_lit(d, "]");
             break;
@@ -2661,7 +2681,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             display_node(me, d, &node->ternary->maybe_sub);
             out_lit(d, " extends ");
             u32 saved = param_names_enter(d); // (Its `infer` type parameters are in scope in the true branch)
-            display_node(me, d, &node->ternary->maybe_super);
+            TyDisplay extends_d = d;
+            extends_d.in_extends = true;
+            display_node(me, extends_d, &node->ternary->maybe_super);
+            d.in_extends = false;
             out_lit(d, " ? ");
             display_node(me, d, &node->ternary->if_true);
             param_names_leave(d, saved);
@@ -2681,7 +2704,9 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             map_span(d, node->inferred->name, true);
             if (node->inferred->extends.parsed) {
                 out_lit(d, " extends ");
-                display_node(me, d, &node->inferred->extends);
+                TyDisplay extends_d = d;
+                extends_d.in_extends = true;
+                display_node(me, extends_d, &node->inferred->extends);
             }
             if (node->inferred->extends.parsed) map_at(d, decl_map_type_end(&node->inferred->extends, D_MAP(d)));
             else map_span(d, node->inferred->name, true);
@@ -2807,6 +2832,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         map_at(d, decl_map_type_inner_end(node, D_MAP(d)));
         out_lit(d, ")");
     }
+    if (extends_parens) out(reused_if(d, false), c_sv(")"));
 }
 
 // Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property
@@ -5010,8 +5036,51 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 static bool anonymous_elided(TyDisplay d, Ty const* ty);
+// Declaration emit: the symbol an anonymous type prints `typeof` of, null if it doesn't: a function's wherever it is
+// accessible (see typeof_function_in_declaration(); a function expression's by the variable it initializes), an
+// overloaded function's (its symbol's type), a static method's `typeof C.m` where C is (tsgo's isStaticMethodSymbol:
+// `member` is then the method's name)
+static Symbol const* anonymous_type_query(TyDisplay d, Ty const* ty, csview* member) {
+    if (!d.tracker || ty->kind != TY_ANONYMOUS || ty->anonymous.target) return nullptr;
+    if (ty->anonymous.function) {
+        FunctionImpl const* impl = ty->anonymous.function;
+        Symbol const* named = impl->symbol && is_non_local_function(impl->symbol) ? impl->symbol :
+            function_impl_rare(impl)->top_level_variable;
+        if (typeof_function_in_declaration(d, named)) return named;
+    }
+    if (!ty->anonymous.function && !ty->anonymous.is_reverse &&
+        ty->anonymous.merged_value && (ty->anonymous.merged_value->flags & SYMBOL_FUNCTION) &&
+        is_non_local_function(ty->anonymous.merged_value) && typeof_function_in_declaration(d, ty->anonymous.merged_value)
+    ) {
+        return ty->anonymous.merged_value;
+    }
+    if (d.enclosing && ty->anonymous.function) {
+        FunctionImpl const* method = ty->anonymous.function;
+        Symbol const* owner = function_impl_rare(method)->static_method_of;
+        csview name = span_valid(function_impl_member_name(method)) ? span_sv(function_impl_member_name(method)) : c_sv("");
+        if (name.size >= 2 && name.buf[0] == '[' && name.buf[name.size - 1] == ']') {
+            name = csview_trim_whitespace(csview_slice(name, 1, name.size - 1));
+            if (!name.size || (name.buf[0] != '"' && name.buf[0] != '\'')) name = c_sv("");
+        }
+        if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
+        if (owner && name.size && name.buf[0] != '#' && is_identifier_name(name) &&
+            symbol_value_accessible_at(d.enclosing, owner)
+        ) {
+            *member = name;
+            return owner;
+        }
+    }
+    return nullptr;
+}
+
+static bool anonymous_prints_type_query(TyDisplay d, Ty const* ty) {
+    csview member = {0};
+    return ty->kind == TY_ANONYMOUS && !ty->anonymous.module_clone && !shows_alias(d, ty) && anonymous_type_query(d, ty, &member);
+}
+
 static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS || shows_alias(d, ty)) return false;
+    if (anonymous_prints_type_query(d, ty)) return false; // (`typeof f`)
     // (Inside its own rendering it is `any` (or `typeof f`): no function type node to parenthesize)
     for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
         if (i->ty == ty) return false;
@@ -5246,7 +5315,7 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     // (A conditional type printed as the elided information placeholder is `any`)
     bool conditional = (ty->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || ty->kind == TY_KEYOF ||
-        type_query || readonly || unique_symbol || is_function_like(me, d, ty);
+        type_query || readonly || unique_symbol || is_function_like(me, d, ty) || anonymous_prints_type_query(d, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {
@@ -5738,45 +5807,19 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_ANONYMOUS: {
             if (ty->anonymous.module_clone && display_module_clone(me, d, ty)) break;
-            // (In declaration emit a function's type is `typeof f` wherever f is accessible, see
-            // typeof_function_in_declaration(); a function expression's by the variable it initializes)
-            if (d.tracker && ty->anonymous.function && !ty->anonymous.target) {
-                FunctionImpl const* impl = ty->anonymous.function;
-                Symbol const* named = impl->symbol && is_non_local_function(impl->symbol) ? impl->symbol :
-                    function_impl_rare(impl)->top_level_variable;
-                if (typeof_function_in_declaration(d, named)) {
+            {
+                csview member = {0};
+                Symbol const* named = anonymous_type_query(d, ty, &member);
+                if (named) {
                     out_lit(d, "typeof ");
+                    if (member.size) {
+                        out_symbol_name(me, d, named, SYMBOL_VALUE);
+                        out_lit(d, ".");
+                        out(d, member);
+                        return;
+                    }
                     if (shadowed_global(me, d, named)) out_lit(d, "globalThis.");
                     out_symbol_name(me, d, named, SYMBOL_VALUE);
-                    return;
-                }
-            }
-            // (and an overloaded function's, whose type is its symbol's)
-            if (d.tracker && !ty->anonymous.function && !ty->anonymous.target && !ty->anonymous.is_reverse &&
-                ty->anonymous.merged_value && (ty->anonymous.merged_value->flags & SYMBOL_FUNCTION) &&
-                is_non_local_function(ty->anonymous.merged_value) && typeof_function_in_declaration(d, ty->anonymous.merged_value)
-            ) {
-                out_lit(d, "typeof ");
-                out_symbol_name(me, d, ty->anonymous.merged_value, SYMBOL_VALUE);
-                return;
-            }
-            // (and a static method's, `typeof C.m`, where C is accessible: tsgo's isStaticMethodSymbol)
-            if (d.tracker && d.enclosing && ty->anonymous.function && !ty->anonymous.target) {
-                FunctionImpl const* method = ty->anonymous.function;
-                Symbol const* owner = function_impl_rare(method)->static_method_of;
-                csview name = span_valid(function_impl_member_name(method)) ? span_sv(function_impl_member_name(method)) : c_sv("");
-                if (name.size >= 2 && name.buf[0] == '[' && name.buf[name.size - 1] == ']') {
-                    name = csview_trim_whitespace(csview_slice(name, 1, name.size - 1));
-                    if (!name.size || (name.buf[0] != '"' && name.buf[0] != '\'')) name = c_sv("");
-                }
-                if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
-                if (owner && name.size && name.buf[0] != '#' && is_identifier_name(name) &&
-                    symbol_value_accessible_at(d.enclosing, owner)
-                ) {
-                    out_lit(d, "typeof ");
-                    out_symbol_name(me, d, owner, SYMBOL_VALUE);
-                    out_lit(d, ".");
-                    out(d, name);
                     return;
                 }
             }

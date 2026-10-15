@@ -111,6 +111,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationTypeParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,

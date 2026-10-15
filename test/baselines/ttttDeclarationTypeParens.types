@@ -1,0 +1,65 @@
+//// [test/cases/ttttDeclarationTypeParens.ts] ////
+
+=== ttttDeclarationTypeParens.ts ===
+// tsgo's printer parenthesizes by precedence: a conditional type in an `extends` clause (a function type's return type
+// keeps the clause's context), a type query in an array but not in a union or intersection
+export type exactEquals<l, r> =
+>exactEquals : exactEquals<l, r>
+
+	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
+>true : true
+
+	:	false
+>false : false
+
+export type K<T> = T extends Array<T extends 1 ? 2 : 3> ? 1 : 0;
+>K : K<T>
+
+export type U<T> = T extends string | (() => T extends 1 ? 2 : 3) ? 1 : 0;
+>U : U<T>
+
+function cleanup() {}
+>cleanup : () => void
+
+export const create = (root: number) => { if (root) return cleanup; return null; };
+>create : (root: number) => (() => void) | null
+>(root: number) => { if (root) return cleanup; return null; } : (root: number) => (() => void) | null
+>root : number
+>root : number
+>cleanup : () => void
+
+function fv() { return 1; }
+>fv : () => number
+>1 : 1
+
+export const o = { f: Math.random() ? fv : undefined };
+>o : { f: (() => number) | undefined; }
+>{ f: Math.random() ? fv : undefined } : { f: (() => number) | undefined; }
+>f : (() => number) | undefined
+>Math.random() ? fv : undefined : (() => number) | undefined
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>fv : () => number
+>undefined : undefined
+
+declare function ToastComponent(): void;
+>ToastComponent : () => void
+
+export const Toast = Object.assign(ToastComponent, { p: 1 });
+>Toast : (() => void) & { p: number; }
+>Object.assign(ToastComponent, { p: 1 }) : (() => void) & { p: number; }
+>Object.assign : { <T extends {}, U>(target: T, source: U): T & U; <T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V; <T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W; (target: object, ...sources: any[]): any; }
+>Object : ObjectConstructor
+>assign : { <T extends {}, U>(target: T, source: U): T & U; <T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V; <T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W; (target: object, ...sources: any[]): any; }
+>ToastComponent : () => void
+>{ p: 1 } : { p: number; }
+>p : number
+>1 : 1
+
+export const arr = [cleanup];
+>arr : (() => void)[]
+>[cleanup] : (() => void)[]
+>cleanup : () => void
+

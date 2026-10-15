@@ -2530,6 +2530,10 @@ typedef struct TyDisplay {
     // The same for a member of a union or intersection annotation (parenthesizeConstituentTypeOfUnionType: unions,
     // intersections, function and conditional types)
     bool constituent_node;
+    // Inside the `extends` type of a conditional type node (tsgo's printer's inExtends): a conditional type node there
+    // is parenthesized, `() => (A extends B ? 1 : 2)` (only the parts that keep the context have it: unions, arrays,
+    // type operators, function return types...)
+    bool in_extends;
     DeclTracker* tracker; // Declaration emit: null everywhere else
     // Printing the checker's type where the syntax already reported (tsgo's suppressReportInferenceFallback): what is
     // printed inside doesn't report to the tracker again
