@@ -240,6 +240,12 @@ typedef struct SourceFile {
     // file when declarations are emitted (a declaration file's is itself): the CLI writes there, `/// <reference path>`s
     // are rewritten relative to it. Empty otherwise
     cstr declaration_output_path;
+    // declarationMap (plan 64 stage 5): the `.d.ts.map` written next to it (declaration_output_path + `.map`, null if
+    // none: owned), the source's path as the map names it, the trailer's URL of the map (both set with
+    // declaration_output_path)
+    cstr* declaration_map;
+    cstr declaration_map_source;
+    cstr declaration_map_url;
     // A default lib's name in tsgo's CLI (bundled:///libs/lib.es5.d.ts, lib.d.ts for default.d.ts): tsgo reads its libs
     // from the executable, so its messages name them by that URL, not relative to the working directory
     cstr bundled_path;

@@ -2551,6 +2551,58 @@ static bool program_rewrite_crosses_projects(Program* me, SourceFile const* targ
     return ret;
 }
 
+// tsc's stringutil.EncodeURI: what encodeURI escapes
+static cstr encode_uri(csview text) {
+    cstr out = cstr_init();
+    for (isize i = 0; i < text.size; i++) {
+        unsigned char c = (unsigned char)text.buf[i];
+        if (isalnum(c) || strchr(";,/?:@&=+$-_.!~*'()#", c)) {
+            cstr_append_n(&out, (char const*)&c, 1);
+        } else {
+            char escaped[4];
+            snprintf(escaped, sizeof escaped, "%%%02X", c);
+            cstr_append(&out, escaped);
+        }
+    }
+    return out;
+}
+
+// A file's declarationMap paths (SourceFile.declaration_map_source, declaration_map_url): tsc's emitter
+// getSourceMapDirectory (the source is named relative to the sourceRoot's common source directory, the mapRoot's
+// directory for it, else the `.d.ts`'s) and getSourceMappingURL
+static void set_declaration_map_paths(Program* me, SourceFile* source) {
+    CompilerOptions const* o = &my options;
+    csview cwd = program_cwd(me);
+    csview dts = cstr_sv(&source->declaration_output_path);
+    csview dts_dir = dirname_of(dts);
+    cstr absolute = absolute_path_of(cwd, cstr_sv(&source->canonical_path));
+    bool roots = cstr_size(&o->source_root) || cstr_size(&o->map_root);
+    cstr common_dir = roots ? program_common_source_dir(me) : cstr_null;
+    // (getMapRootDirectory: the mapRoot, relative to the common source directory, with the file's directory under it)
+    cstr map_dir = cstr_null;
+    if (cstr_size(&o->map_root)) {
+        cstr root = absolute_path_of(cstr_str(&o->map_root)[0] == '/' ? cwd : cstr_sv(&common_dir), cstr_sv(&o->map_root));
+        cstr relative = relative_path_of(cstr_sv(&common_dir), cstr_sv(&absolute));
+        cstr in_root = cstr_starts_with(&relative, "..") ? cstr_clone(absolute) : absolute_path_of(cstr_sv(&root), cstr_sv(&relative));
+        map_dir = cstr_from_sv(dirname_of(cstr_sv(&in_root)));
+        c_drop(cstr, &root, &relative, &in_root);
+    }
+    csview sources_dir = cstr_size(&o->source_root) ? cstr_sv(&common_dir) : cstr_size(&o->map_root) ? cstr_sv(&map_dir) : dts_dir;
+    cstr_take(&source->declaration_map_source, relative_path_of(sources_dir, cstr_sv(&absolute)));
+    cstr map_name = cstr_from_sv(basename_of(dts));
+    cstr_append(&map_name, ".map");
+    if (cstr_size(&o->map_root)) {
+        cstr map_path = absolute_path_of(cstr_sv(&map_dir), cstr_sv(&map_name));
+        bool relative_root = cstr_str(&o->map_root)[0] != '/';
+        cstr url = relative_root ? relative_path_of(dts_dir, cstr_sv(&map_path)) : cstr_clone(map_path);
+        cstr_take(&source->declaration_map_url, encode_uri(cstr_sv(&url)));
+        c_drop(cstr, &map_path, &url);
+    } else {
+        cstr_take(&source->declaration_map_url, encode_uri(cstr_sv(&map_name)));
+    }
+    c_drop(cstr, &absolute, &common_dir, &map_dir, &map_name);
+}
+
 // Each file's declaration output path (SourceFile.declaration_output_path, absolute): tsc's GetOutputPathsFor with the
 // declaration path forced, so a file that isn't emitted has one too (a `/// <reference path>` to it is rewritten to it)
 // and a declaration file is its own
@@ -2571,6 +2623,7 @@ static void program_set_declaration_paths(Program* me) {
         cstr output = emit_output_path(me, path, dir, cstr_sv(&common_dir), emit_declaration_extension(path));
         cstr_take(&source->declaration_output_path, absolute_path_of(cwd, cstr_sv(&output)));
         cstr_drop(&output);
+        if (o->declaration_map) set_declaration_map_paths(me, source);
     }
     cstr_drop(&common_dir);
 }

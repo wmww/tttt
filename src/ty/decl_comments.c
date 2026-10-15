@@ -1,5 +1,6 @@
 #include "decl_comments.h"
 #include "../source_file.h"
+#include "decl_map.h"
 
 typedef struct CommentRange {
     char const* start;
@@ -134,8 +135,13 @@ static bool same_line(char const* a, char const* b) {
 }
 
 static bool at_line_start(cstr const* out) {
-    isize_t size = cstr_size(out);
+    isize_t size = decl_map_text_end(cstr_sv(out));
     return !size || cstr_str(out)[size - 1] == '\n';
+}
+
+// (Declaration maps: a comment is mapped from its start to its end, tsc's emitComment)
+static void mark(DeclComments const* me, cstr* out, char const* at) {
+    if (me->map) decl_map_mark(out, (u32)(at - cstr_str(&me->file->contents)));
 }
 
 static void write_line(cstr* out) {
@@ -165,8 +171,16 @@ static bool is_trimmed_space(char const* c, char const* end, u32* n) {
 }
 
 // tsc's writeCommentRangeWorker: a block comment's lines re-indented relative to where its first line starts
-static void write_comment(SourceFile const* file, cstr* out, u32 indent, CommentRange const* range) {
+static void write_comment_text(SourceFile const* file, cstr* out, u32 indent, CommentRange const* range);
+
+static void write_comment(DeclComments const* me, cstr* out, u32 indent, CommentRange const* range) {
     if (at_line_start(out)) write_spaces(out, (isize_t)indent * 4);
+    mark(me, out, range->start);
+    write_comment_text(me->file, out, indent, range);
+    mark(me, out, range->end);
+}
+
+static void write_comment_text(SourceFile const* file, cstr* out, u32 indent, CommentRange const* range) {
     if (range->line) {
         cstr_append_sv(out, (csview){ range->start, range->end - range->start });
         return;
@@ -207,7 +221,7 @@ static void write_comment(SourceFile const* file, cstr* out, u32 indent, Comment
 }
 
 // tsc's emitComments with a separator after each comment (leading comments) or before the first (trailing ones)
-static void write_comments(SourceFile const* file, cstr* out, u32 indent, Comments const* comments, bool before) {
+static void write_comments(DeclComments const* me, cstr* out, u32 indent, Comments const* comments, bool before) {
     if (!comments->count) return;
     if (before) cstr_append_sv(out, c_sv(" "));
     bool intervening = false;
@@ -217,7 +231,7 @@ static void write_comments(SourceFile const* file, cstr* out, u32 indent, Commen
             cstr_append_sv(out, c_sv(" "));
             intervening = false;
         }
-        write_comment(file, out, indent, range);
+        write_comment(me, out, indent, range);
         if (range->line || range->trailing_newline) write_line(out);
         else intervening = true;
     }
@@ -333,7 +347,7 @@ void decl_comments_detached(DeclComments* me, cstr* out) {
     if (lines < 2) return;
     comments.count = detached;
     filter_kept(&comments);
-    write_comments(file, out, 0, &comments, false);
+    write_comments(me, out, 0, &comments, false);
     me->detached_end = last_end;
 }
 
@@ -347,7 +361,7 @@ void decl_comments_leading(DeclComments const* me, cstr* out, u32 indent, char c
     filter_kept(&comments);
     if (!comments.count) return;
     if (!same_line(pos, comments.ranges[0].start)) write_line(out);
-    write_comments(me->file, out, indent, &comments, false);
+    write_comments(me, out, indent, &comments, false);
 }
 
 void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end) {
@@ -358,7 +372,7 @@ void decl_comments_file_end(DeclComments const* me, cstr* out, char const* end) 
     filter_kept(&comments);
     if (!comments.count) return;
     if (!same_line(pos, comments.ranges[0].start)) write_line(out);
-    write_comments(me->file, out, 0, &comments, false);
+    write_comments(me, out, 0, &comments, false);
     write_line(out);
 }
 
@@ -368,7 +382,7 @@ void decl_comments_trailing(DeclComments const* me, cstr* out, char const* end) 
     Comments comments;
     comment_ranges(me->file, end, true, &comments);
     filter_kept(&comments);
-    write_comments(me->file, out, 0, &comments, true);
+    write_comments(me, out, 0, &comments, true);
 }
 
 void decl_comments_intervening(DeclComments const* me, cstr* out, u32 indent, char const* token) {
@@ -377,7 +391,7 @@ void decl_comments_intervening(DeclComments const* me, cstr* out, u32 indent, ch
     comment_ranges(me->file, full_start(me->file, token), true, &comments);
     for (u32 i = 0; i < comments.count; i++) {
         CommentRange const* range = &comments.ranges[i];
-        write_comment(me->file, out, indent, range);
+        write_comment(me, out, indent, range);
         if (range->trailing_newline) write_line(out);
         else cstr_append_sv(out, c_sv(" "));
     }
@@ -392,11 +406,11 @@ void decl_comments_after_delimiter(DeclComments const* me, cstr* out, u32 indent
         if (prefix_space) {
             if (!is_kept(range)) continue;
             if (!at_line_start(out)) cstr_append_sv(out, c_sv(" "));
-            write_comment(me->file, out, indent, range);
+            write_comment(me, out, indent, range);
             if (range->trailing_newline) write_line(out);
             continue;
         }
-        write_comment(me->file, out, indent, range);
+        write_comment(me, out, indent, range);
         if (range->line) write_line(out);
     }
 }

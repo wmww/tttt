@@ -20,6 +20,7 @@ typedef struct DeclComments {
     // The file's detached comments (a copyright header, see decl_comments_detached()) end here: the first statement's
     // leading comments start after them
     char const* detached_end;
+    bool map; // Declaration maps: each comment written is mapped (decl_map.h)
 } DeclComments;
 
 // The comments at the top of the file that a blank line separates from its first statement (tsc's emitDetachedComments)

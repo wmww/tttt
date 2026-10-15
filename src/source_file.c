@@ -145,6 +145,9 @@ void source_file_drop(SourceFile* me) {
     if (my declaration_output) cstr_drop(my declaration_output);
     free(my declaration_output);
     cstr_drop(&my declaration_output_path);
+    if (my declaration_map) cstr_drop(my declaration_map);
+    free(my declaration_map);
+    c_drop(cstr, &my declaration_map_source, &my declaration_map_url);
     cstr_drop(&my bundled_path);
     cstr_drop(&my package_json);
     for (u32 i = 0; i < my module_ref_count; i++) {

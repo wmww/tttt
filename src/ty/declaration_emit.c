@@ -1,5 +1,6 @@
 #include "ty/declaration_emit.h"
 #include "ty/decl_comments.h"
+#include "ty/decl_map.h"
 #include "ty/ty_internal.h"
 #include "statement.h"
 #include "class_decl.h"
@@ -210,6 +211,7 @@ typedef struct Walk {
     TyDisplayParams return_params;
     bool in_return;
     isize_t statement_start; // Where the statement being written starts in `out`, its leading comments first
+    bool map; // declarationMap: the writer marks where source nodes start and end (decl_map.h)
 } Walk;
 
 typedef struct SpecifierMemo {
@@ -2858,7 +2860,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     return (TyDisplay){
         .target = target, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
         .multiline = true, .indent = my indent, .comments = &my comments,
-        .printed_params = my in_return ? &my return_params : nullptr,
+        .printed_params = my in_return ? &my return_params : nullptr, .map = my map ? my file : nullptr,
     };
 }
 
@@ -2866,7 +2868,22 @@ static void w(Walk* me, csview text) { cstr_append_sv(my out, text); }
 static void emit_expando_namespace(Walk* me, Symbol const* host, csview name, csview modifiers);
 #define w_lit(me, s) w(me, c_sv(s))
 
-static bool w_at_line_start(Walk* me) { return !cstr_size(my out) || cstr_str(my out)[cstr_size(my out) - 1] == '\n'; }
+static bool w_at_line_start(Walk* me) {
+    char last = decl_map_last_char(cstr_sv(my out));
+    return !last || last == '\n';
+}
+
+// Declaration maps: `out` is where the source node at `at` starts or ends (tsc's emitSourceMapsBeforeNode/AfterNode)
+static void m(Walk* me, char const* at) {
+    if (!my map || !at) return;
+    char const* text = cstr_str(&my file->contents);
+    if (at < text || at > text + cstr_size(&my file->contents)) return;
+    decl_map_mark(my out, (u32)(at - text));
+}
+
+static void m_span(Walk* me, Span span, bool end) {
+    if (span_valid(span)) m(me, end ? span_end_ptr(span) : span.buf);
+}
 
 // (Nothing after a leading comment that ended on the line the declaration starts: `/** a */ a: T;`)
 static void w_indent(Walk* me) {
@@ -2895,7 +2912,7 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
         return false;
     }
     if (!end) return true;
-    isize_t size = cstr_size(my out);
+    isize_t size = decl_map_text_end(cstr_sv(my out));
     bool line_break = size && cstr_str(my out)[size - 1] == '\n';
     if (line_break) cstr_erase(my out, size - 1, 1);
     decl_comments_trailing(&my comments, my out, end);
@@ -2950,32 +2967,141 @@ static bool emit_visible(Walk* me, Statement const* statement, Container contain
 // Whether the statement list is a file's (else a namespace body's)
 static bool container_is_file(Container container) { return container.global || container.module_top_level; }
 
+// Modifiers to write, in tsc's order (createModifiersFromModifierFlags)
+typedef struct Modifiers {
+    char const* words[8];
+    u32 count;
+} Modifiers;
+
+static void mods_add(Modifiers* mods, char const* word) {
+    if (mods->count < c_arraylen(mods->words)) mods->words[mods->count++] = word;
+}
+
+static bool is_word_char(char c) { return isalnum((unsigned char)c) || c == '_' || c == '$' || (unsigned char)c >= 0x80; }
+
+// The modifiers written before a declaration that starts at `from` in the source (decorators skipped): each one's
+// position and length. A word is one where another word, a name or a bracket follows it (`readonly: T` is a name)
+static u32 source_modifiers(Walk* me, char const* from, char const** at, u32* size, u32 cap) {
+    static char const* const words[] = { "export", "default", "declare", "abstract", "static", "readonly", "private",
+        "protected", "public", "async", "override", "accessor", "const" };
+    char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
+    if (!from || from < cstr_str(&my file->contents) || from > end) return 0;
+    u32 count = 0;
+    for (char const* c = decl_map_skip_trivia(from, end); c < end && count < cap; c = decl_map_skip_trivia(c, end)) {
+        if (*c == '@') {
+            // `@a.b(...)`
+            c++;
+            while (c < end && (is_word_char(*c) || *c == '.')) c++;
+            c = decl_map_skip_trivia(c, end);
+            if (c < end && *c == '(') {
+                u32 depth = 0;
+                for (; c < end; c++) {
+                    if (*c == '(') depth++;
+                    else if (*c == ')' && !--depth) {
+                        c++;
+                        break;
+                    }
+                }
+            }
+            continue;
+        }
+        char const* word_end = c;
+        while (word_end < end && is_word_char(*word_end)) word_end++;
+        u32 n = (u32)(word_end - c);
+        bool modifier = false;
+        for (u32 i = 0; i < c_arraylen(words) && !modifier; i++) modifier = strlen(words[i]) == n && !memcmp(words[i], c, n);
+        if (!modifier) break;
+        char const* next = decl_map_skip_trivia(word_end, end);
+        if (next >= end || !(is_word_char(*next) || *next == '[' || *next == '#' || *next == '*' || *next == '"' || *next == '\'')) break;
+        // (`const` is one in `const enum` only)
+        if (n == 5 && !memcmp(c, "const", 5) && !(end - next > 4 && !memcmp(next, "enum", 4) && !is_word_char(next[4]))) break;
+        at[count] = c;
+        size[count++] = n;
+        c = word_end;
+    }
+    return count;
+}
+
+// Writes the modifiers (each followed by a space). Where the declaration's modifiers in the source are the same set
+// (tsc's ensureModifiers reuses their nodes when the flags didn't change) they're written as there, in their order, each
+// mapped; else they're new. Returns where `export` was written in `out`, -1 if it wasn't
+static isize_t w_modifiers(Walk* me, char const* from, Modifiers mods) {
+    char const* at[8];
+    u32 size[8];
+    u32 count = source_modifiers(me, from, at, size, 8);
+    bool same = count == mods.count;
+    for (u32 i = 0; i < mods.count && same; i++) {
+        bool found = false;
+        for (u32 j = 0; j < count && !found; j++) found = strlen(mods.words[i]) == size[j] && !memcmp(mods.words[i], at[j], size[j]);
+        same = found;
+    }
+    isize_t export_at = -1;
+    if (same) {
+        for (u32 i = 0; i < count; i++) {
+            if (size[i] == 6 && !memcmp(at[i], "export", 6)) export_at = cstr_size(my out);
+            m(me, at[i]);
+            w(me, (csview){ at[i], size[i] });
+            m(me, at[i] + size[i]);
+            w_lit(me, " ");
+        }
+        return export_at;
+    }
+    for (u32 i = 0; i < mods.count; i++) {
+        if (!strcmp(mods.words[i], "export")) export_at = cstr_size(my out);
+        w(me, csview_from(mods.words[i]));
+        w_lit(me, " ");
+    }
+    return export_at;
+}
+
+// Erases `chars` characters of `out` from `at`, and the marks among them (decl_map.h)
+static void erase_text(cstr* out, isize_t at, isize_t chars) {
+    char const* text = cstr_str(out);
+    isize_t size = cstr_size(out), end = at;
+    while (end < size && chars) {
+        if (text[end] == DECL_MAP_MARK && end + DECL_MAP_MARK_SIZE <= size) {
+            end += DECL_MAP_MARK_SIZE;
+            continue;
+        }
+        end++;
+        chars--;
+    }
+    cstr_erase(out, at, end - at);
+}
+
 // A top-level declaration's modifiers (tsc's ensureModifiers): its `export` and `default`, and `declare` at a file's top
 // level unless it is a type or a default export (needsDeclare). In a namespace body, where each `export ` is written
 // is remembered (see Walk.export_offsets)
-static void w_statement_modifiers(Walk* me, Statement const* statement, Container container, bool always_type) {
+static void w_statement_modifiers_and(Walk* me, Statement const* statement, Container container, bool always_type, char const* more) {
     DeclExported exported = statement_declares_name(statement->tag) || statement->tag == STATEMENT_DECL_VARIABLE ?
         statement->decl.props.exported : DECL_EXPORTED_NO;
     bool is_file = container_is_file(container);
+    Modifiers mods = {0};
     if (exported != DECL_EXPORTED_NO) {
-        if (!is_file) {
-            if (my export_offset_count == my export_offset_cap) {
-                my export_offset_cap = my export_offset_cap ? my export_offset_cap * 2 : 8;
-                my export_offsets = realloc(my export_offsets, my export_offset_cap * sizeof(u32));
-            }
-            my export_offsets[my export_offset_count++] = (u32)cstr_size(my out);
-        }
-        w_lit(me, "export ");
+        mods_add(&mods, "export");
         if (is_file) my has_module_indicator = true;
     } else {
         my needs_scope_fix = true;
     }
     if (exported == DECL_EXPORTED_YES_DEFAULT) {
-        w_lit(me, "default ");
-        return;
+        mods_add(&mods, "default");
+    } else if (is_file && (!always_type || span_valid(statement->decl.props.declare_keyword))) {
+        // (A type's `declare` is kept where it is written)
+        mods_add(&mods, "declare");
     }
-    // (A type's `declare` is kept where it is written)
-    if (is_file && (!always_type || span_valid(statement->decl.props.declare_keyword))) w_lit(me, "declare ");
+    if (more) mods_add(&mods, more);
+    isize_t export_at = w_modifiers(me, statement->span.buf, mods);
+    if (export_at >= 0 && !is_file) {
+        if (my export_offset_count == my export_offset_cap) {
+            my export_offset_cap = my export_offset_cap ? my export_offset_cap * 2 : 8;
+            my export_offsets = realloc(my export_offsets, my export_offset_cap * sizeof(u32));
+        }
+        my export_offsets[my export_offset_count++] = (u32)export_at;
+    }
+}
+
+static void w_statement_modifiers(Walk* me, Statement const* statement, Container container, bool always_type) {
+    w_statement_modifiers_and(me, statement, container, always_type, nullptr);
 }
 
 // A parameter (ensureParameter): its name without initializers, `?` where it is optional, its type
@@ -3475,13 +3601,15 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
 
 // A class member's modifiers in tsc's order (createModifiersFromModifierFlags; `public`, `async` and `override` aren't
 // written, nor `declare`)
-static void w_member_modifiers(Walk* me, AccessModifier access, bool is_abstract, bool is_static, bool readonly, bool accessor) {
-    if (access == ACCESS_MODIFIER_PRIVATE) w_lit(me, "private ");
-    if (access == ACCESS_MODIFIER_PROTECTED) w_lit(me, "protected ");
-    if (is_abstract) w_lit(me, "abstract ");
-    if (is_static) w_lit(me, "static ");
-    if (readonly) w_lit(me, "readonly ");
-    if (accessor) w_lit(me, "accessor ");
+static void w_member_modifiers(Walk* me, char const* from, AccessModifier access, bool is_abstract, bool is_static, bool readonly, bool accessor) {
+    Modifiers mods = {0};
+    if (access == ACCESS_MODIFIER_PRIVATE) mods_add(&mods, "private");
+    if (access == ACCESS_MODIFIER_PROTECTED) mods_add(&mods, "protected");
+    if (is_abstract) mods_add(&mods, "abstract");
+    if (is_static) mods_add(&mods, "static");
+    if (readonly) mods_add(&mods, "readonly");
+    if (accessor) mods_add(&mods, "accessor");
+    w_modifiers(me, from, mods);
 }
 
 static csview item_name(ClassItem const* item) {
@@ -3490,7 +3618,7 @@ static csview item_name(ClassItem const* item) {
 
 static void emit_field(Walk* me, ClassItem const* item) {
     w_indent(me);
-    w_member_modifiers(me, item->access, item->field.is_abstract, item->field.is_static, item->field.is_readonly,
+    w_member_modifiers(me, item->span.buf, item->access, item->field.is_abstract, item->field.is_static, item->field.is_readonly,
         item->field.is_auto_accessor);
     w(me, item_name(item));
     if (item->field.is_optional) w_lit(me, "?");
@@ -3550,7 +3678,7 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
         return;
     }
     w_indent(me);
-    w_member_modifiers(me, arg->access, false, false, arg->is_readonly_property, false);
+    w_member_modifiers(me, arg->span.buf, arg->access, false, false, arg->is_readonly_property, false);
     w(me, span_sv(binding->content_span));
     if (arg->explicit_optional) w_lit(me, "?");
     if (arg->access == ACCESS_MODIFIER_PRIVATE) {
@@ -3661,9 +3789,12 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         cstr_drop(&line);
     }
     w_indent(me);
-    if (statement) w_statement_modifiers(me, statement, container, false);
-    else if (container_is_file(container)) w_lit(me, "declare ");
-    if (cls->is_abstract) w_lit(me, "abstract ");
+    if (statement) {
+        w_statement_modifiers_and(me, statement, container, false, cls->is_abstract ? "abstract" : nullptr);
+    } else {
+        if (container_is_file(container)) w_lit(me, "declare ");
+        if (cls->is_abstract) w_lit(me, "abstract ");
+    }
     w_lit(me, "class");
     if (name.size) {
         w_lit(me, " ");
@@ -3735,7 +3866,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 FunctionImpl const* ctor = &i->constructor.func;
                 if (is_class_overload_implementation(cls, ctor)) break;
                 w_indent(me);
-                w_member_modifiers(me, i->access, false, false, false, false);
+                w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
                 w_lit(me, "constructor");
                 w_parameters(me, ctor, i->access == ACCESS_MODIFIER_PRIVATE);
                 w_lit(me, ";\n");
@@ -3750,7 +3881,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                     // (A private method is a property without a type: omitPrivateMethodType, once per name)
                     if (private_member && i->symbol_first && i->symbol_first != i) break;
                     w_indent(me);
-                    w_member_modifiers(me, i->access, i->method.is_abstract, i->method.is_static, false, false);
+                    w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
                     w(me, item_name(i));
                     if (i->method.is_optional) w_lit(me, "?");
                     u32 method_scope_saved = enter_type_params(me, &fn->generic);
@@ -3761,7 +3892,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 }
                 bool getter = i->method.accessor == CLASS_ACCESSOR_GET;
                 w_indent(me);
-                w_member_modifiers(me, i->access, i->method.is_abstract, i->method.is_static, false, false);
+                w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
                 w(me, getter ? c_sv("get ") : c_sv("set "));
                 w(me, item_name(i));
                 if (getter) {
@@ -3871,8 +4002,7 @@ static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* sta
 
 static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement, Container container) {
     w_indent(me);
-    w_statement_modifiers(me, statement, container, false);
-    if (decl->is_const) w_lit(me, "const ");
+    w_statement_modifiers_and(me, statement, container, false, decl->is_const ? "const" : nullptr);
     w_lit(me, "enum ");
     w(me, span_sv(decl->name));
     w_lit(me, " {\n");
@@ -3967,7 +4097,7 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
             // (Every statement is exported: the modifiers are left out, from the last one back)
             for (u32 i = my export_offset_count; i-- > outer_offsets;) {
                 if (my export_offsets[i] < body_start) continue;
-                cstr_erase(my out, my export_offsets[i], 7);
+                erase_text(my out, my export_offsets[i], 7);
             }
         }
     }
@@ -4393,7 +4523,7 @@ static void emit_directives(Walk* me) {
 
 // The second walk: the file's `.d.ts`
 static void emit_file(Walk* me, Container top) {
-    my comments = (DeclComments){ .file = my file, .off = compiler_options()->remove_comments };
+    my comments = (DeclComments){ .file = my file, .off = compiler_options()->remove_comments, .map = my map };
     // (The shebang is kept: the printer's emitShebangIfNeeded)
     csview text = cstr_sv(&my file->contents);
     if (csview_starts_with(text, "\xEF\xBB\xBF")) text = csview_slice(text, 3, text.size);
@@ -4559,7 +4689,26 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         cstr* output = c_new(cstr, cstr_init());
         walk.errs = &scratch;
         walk.out = output;
+        walk.map = compiler_options()->declaration_map && cstr_size(&file->declaration_output_path);
         emit_file(&walk, top);
+        SourceFile* writable = (SourceFile*)file;
+        if (writable->declaration_map) {
+            cstr_drop(writable->declaration_map);
+            free(writable->declaration_map);
+            writable->declaration_map = nullptr;
+        }
+        if (walk.map) {
+            cstr mappings = decl_map_take(output, file);
+            cstr source_root = cstr_clone(compiler_options()->source_root);
+            if (cstr_size(&source_root) && !cstr_ends_with(&source_root, "/")) cstr_append(&source_root, "/");
+            writable->declaration_map = c_new(cstr, decl_map_json(basename_of(cstr_sv(&file->declaration_output_path)),
+                cstr_sv(&source_root), cstr_sv(&file->declaration_map_source), cstr_sv(&mappings)));
+            // (The trailer, on a line of its own: tsc's printSourceFile)
+            if (decl_map_last_char(cstr_sv(output)) && decl_map_last_char(cstr_sv(output)) != '\n') cstr_append(output, "\n");
+            cstr_append(output, "//# sourceMappingURL=");
+            cstr_append_sv(output, cstr_sv(&file->declaration_map_url));
+            c_drop(cstr, &mappings, &source_root);
+        }
         if (compiler_options()->emit_bom) cstr_insert(output, 0, "\xEF\xBB\xBF");
         walk.out = nullptr;
         if (compiler_options()->new_line == 1) {
@@ -4578,7 +4727,6 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         }
         walk.errs = errs;
         error_ctx_drop(&scratch);
-        SourceFile* writable = (SourceFile*)file;
         if (writable->declaration_output) {
             cstr_drop(writable->declaration_output);
             free(writable->declaration_output);

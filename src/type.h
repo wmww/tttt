@@ -93,7 +93,7 @@ typedef struct TypeFlow {
 } TypeFlow;
 
 typedef struct TypeNode {
-    enum {
+    enum : uint8_t {
         TYPE_ANY = 0,
         TYPE_UNKNOWN,
         TYPE_NEVER,
@@ -139,6 +139,9 @@ typedef struct TypeNode {
     // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     bool from_jsdoc : 1;
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed)
+    // Where it starts in its file's text plus one (0: not parsed there), its first token's (`readonly`, a parenthesized
+    // one's `(`): declaration maps map the nodes declaration emit reuses (type_node_start(), decl_map.h)
+    u32 pos;
     TypeFlow const* flow; // Null outside true branches
     union {
         struct {

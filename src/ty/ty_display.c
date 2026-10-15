@@ -2,6 +2,7 @@
 #include "ty/pseudo.h"
 #include "ty/ty_internal.h"
 #include "ty/decl_comments.h"
+#include "ty/decl_map.h"
 #include "scope.h"
 #include "program.h"
 #include "function_impl.h"
@@ -74,6 +75,44 @@ static void out(TyDisplay d, csview sv) {
 }
 #define out_lit(d, s) out(d, c_sv(s))
 
+// Declaration maps: the output is where `at` (a position in the file being written) starts or ends a node
+static void map_at(TyDisplay d, char const* at) {
+    if (!d.map || !at || (d.tracker && d.tracker->truncated)) return;
+    char const* text = cstr_str(&d.map->contents);
+    if (at < text || at > text + cstr_size(&d.map->contents)) return;
+    decl_map_mark(d.target, (u32)(at - text));
+}
+
+static void map_span(TyDisplay d, Span span, bool end) {
+    if (d.map && span_valid(span)) map_at(d, end ? span_end_ptr(span) : span.buf);
+}
+
+// A name as written, its start and end mapped
+static void out_mapped(TyDisplay d, Span span) {
+    map_span(d, span, false);
+    out(d, span_sv(span));
+    map_span(d, span, true);
+}
+
+// A token as written (`?`, `...`): `text` printed, mapped from where it is to its end
+static void out_token_mapped(TyDisplay d, char const* at, csview text) {
+    map_at(d, at);
+    out(d, text);
+    if (d.map && at) map_at(d, at + text.size);
+}
+
+// Declaration maps: where a token that follows `from` is (past trivia), if it is `c`
+static char const* token_after(TyDisplay d, char const* from, char c) {
+    if (!d.map || !from) return nullptr;
+    char const* end = cstr_str(&d.map->contents) + cstr_size(&d.map->contents);
+    char const* at = decl_map_skip_trivia(from, end);
+    return at < end && *at == c ? at : nullptr;
+}
+
+// A parameter's start (past its decorators and modifiers: tsc's node starts at them, but declaration emit makes a new
+// one without them where there were any... the transformer's updateParameterDeclaration keeps the range)
+static char const* arg_start(FunctionArg const* arg) { return span_valid(arg->span) ? arg->span.buf : nullptr; }
+
 // An object type's braces and members: `{ a: T; }` on one line, or declaration emit's one member per line (see
 // TyDisplay.multiline). brace_open() returns what the members are printed with
 static TyDisplay brace_open(TyDisplay d) {
@@ -123,7 +162,9 @@ static void member_end_node(TyDisplay d, Span declaration, char const* separator
         return;
     }
     out_lit(d, ";");
-    decl_comments_trailing(d.comments, d.target, decl_comments_end(d.comments, span_end_ptr(declaration), separators));
+    char const* end = decl_comments_end(d.comments, span_end_ptr(declaration), separators);
+    map_at(d, end);
+    decl_comments_trailing(d.comments, d.target, end);
     out_lit(d, "\n");
 }
 
@@ -1520,7 +1561,11 @@ static bool needs_parens_as_constituent(Checker* me, TyDisplay d, Ty const* ty) 
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || is_function_like(me, d, ty);
 }
 
+// Declaration maps: the node display_node() is printing printed its type instead (no mappings of its own)
+static _Thread_local TypeNode const* node_fell_back;
+
 static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node) {
+    node_fell_back = node;
     bool element = d.array_element_node;
     bool constituent = d.constituent_node;
     d.array_element_node = false;
@@ -1801,13 +1846,18 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         if (found) d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
     }
     for_each (i, vec_span, identifier_type_namespaces(identifier)) {
-        out(d, span_sv(*i));
+        out_mapped(d, *i);
         out_lit(d, ".");
     }
     if (!qualified && d.param_names && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER)) {
+        isize_t name_at = cstr_size(d.target);
         out_type_param_name(me, d, ty_type_param(me, symbol), true);
+        if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(identifier->name))) {
+            cstr_resize(d.target, name_at, '\0');
+            out_mapped(d, identifier->name);
+        }
     } else {
-        out(d, span_sv(identifier->name));
+        out_mapped(d, identifier->name);
     }
     display_node_args(me, d, &identifier->generic_params);
 }
@@ -1882,19 +1932,29 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
     for_each (i, vec_generic_item, &generic->items) {
         if (i_index) out_lit(d, ", ");
         if (!span_valid(i->jsdoc_tag)) param_comments_begin_at(d, span_valid(i->full_span) ? i->full_span : i->name);
+        TyDisplay param_d = d;
+        if (span_valid(i->jsdoc_tag)) param_d.map = nullptr;
+        map_span(param_d, i->full_span, false);
         if (i->is_const) out_lit(d, "const ");
         if (i->is_in) out_lit(d, "in ");
         if (i->is_out) out_lit(d, "out ");
+        isize_t name_at = cstr_size(d.target);
         if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref), true);
         else out(d, span_sv(i->name));
+        // (A name printed as written is the node's: a renamed one, `T_1`, is new)
+        if (param_d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(i->name))) {
+            cstr_resize(d.target, name_at, '\0');
+            out_mapped(param_d, i->name);
+        }
         if (i->extends_explicit) {
             out_lit(d, " extends ");
-            display_node(me, d, &i->extends);
+            display_node(me, param_d, &i->extends);
         }
         if (i->fallback_explicit) {
             out_lit(d, " = ");
-            display_node(me, d, i->fallback);
+            display_node(me, param_d, i->fallback);
         }
+        map_span(param_d, i->full_span, true);
         if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->full_span));
     }
     out_lit(d, ">");
@@ -1976,33 +2036,45 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         if (i_index) out_lit(d, ", ");
         if (!function->jsdoc_type) param_comments_begin(d, i);
         Binding const* binding = &i->initializer.binding;
-        if (i->rest) out_lit(d, "...");
+        TyDisplay arg_d = d;
+        if (function->jsdoc_type) arg_d.map = nullptr;
+        map_at(arg_d, arg_start(i));
+        if (i->rest) {
+            Span rest = function_arg_rest_span(i);
+            out_token_mapped(arg_d, span_valid(rest) ? span_end_ptr(rest) - 3 : nullptr, c_sv("..."));
+        }
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
             append_binding_pattern(&pattern, binding);
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
         } else {
-            out(d, span_sv(binding->content_span));
+            out_mapped(arg_d, binding->content_span);
         }
-        if (i->explicit_optional) out_lit(d, "?");
+        if (i->explicit_optional) {
+            Span question = function_arg_question_span(i);
+            out_token_mapped(arg_d, span_valid(question) ? question.buf : nullptr, c_sv("?"));
+        }
         // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
         out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
         if (binding->has_explicit_type) display_node(me, d, binding_type(binding));
         else if (d.multiline && binding->tag != BINDING_IDENTIFIER) display_binding_pattern_type(d, binding);
         else out(reused_if(d, false), i->rest && d.multiline ? c_sv("any[]") : c_sv("any")); // tsc gives it a synthesized `any` (`any[]` a rest one, declaration emit)
+        map_span(arg_d, i->span, true);
         if (!function->jsdoc_type) param_comments_end(d, i);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
     TypePredicateNode const* predicate = function->predicate;
     if (predicate) {
+        map_span(d, predicate->span, false);
         if (predicate->asserts) out_lit(d, "asserts ");
-        out(d, span_sv(predicate->name));
+        out_mapped(d, predicate->name);
         if (predicate->has_type) {
             out_lit(d, " is ");
             display_node(me, d, &predicate->type);
         }
+        map_span(d, predicate->span, true);
     } else if (function->ret_explicit) {
         display_node(me, d, &function->ret);
     } else {
@@ -2085,9 +2157,10 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         if (d.multiline && i->accessor_kind && (i->key.tag == INTERFACE_KEY_NAME || i->key.tag == INTERFACE_KEY_EXPR)) {
             bool getter = i->accessor_kind == 1;
             member_begin_node(d, i->declaration);
+            map_span(d, i->declaration, false);
             out(d, getter ? c_sv("get ") : c_sv("set "));
             if (i->key.tag == INTERFACE_KEY_EXPR) display_node_computed_name(me, d, i->key.expr);
-            else out(d, span_sv(i->key.span));
+            else out_mapped(d, i->key.span);
             if (getter) {
                 out_lit(d, "(): ");
             } else {
@@ -2105,6 +2178,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
         Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
         member_begin_node(d, comment_span);
+        map_span(d, comment_span, false);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
@@ -2120,31 +2194,48 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? (plus_readonly ? c_sv("+readonly ") : c_sv("readonly ")) : c_sv("-readonly "));
                 out_lit(d, "[");
+                isize_t name_at = cstr_size(d.target);
                 if (d.param_names && i->key.mapped->owned_symbol) {
                     out_type_param_name(me, d, ty_type_param(me, i->key.mapped->owned_symbol), true);
                 } else {
                     out(d, span_sv(i->key.mapped->type_name));
                 }
+                // (The type parameter node: its name as written, to its constraint's end)
+                if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(i->key.mapped->type_name))) {
+                    cstr_resize(d.target, name_at, '\0');
+                    map_span(d, i->key.mapped->type_name, false);
+                    out_mapped(d, i->key.mapped->type_name);
+                }
                 out_lit(d, " in ");
                 display_node(me, d, &i->key.mapped->in_type);
+                map_at(d, decl_map_type_end(&i->key.mapped->in_type, d.map));
                 if (i->key.mapped->has_as_type) {
                     out_lit(d, " as ");
                     display_node(me, d, &i->key.mapped->as_type);
                 }
                 out_lit(d, "]");
-                if (i->key.mapped->optional) out(d, i->key.mapped->optional > 0 ? (plus_optional ? c_sv("+?") : c_sv("?")) : c_sv("-?"));
+                if (i->key.mapped->optional == 1 && !plus_optional) {
+                    TypeNode const* last = i->key.mapped->has_as_type ? &i->key.mapped->as_type : &i->key.mapped->in_type;
+                    char const* close = token_after(d, decl_map_type_end(last, d.map), ']');
+                    out_token_mapped(d, close ? token_after(d, close + 1, '?') : nullptr, c_sv("?"));
+                } else if (i->key.mapped->optional) {
+                    out(d, i->key.mapped->optional > 0 ? (plus_optional ? c_sv("+?") : c_sv("?")) : c_sv("-?"));
+                }
                 out_lit(d, ": ");
                 if (i->type.parsed) display_node(me, d, &i->type);
                 else out(reused_if(d, false), c_sv("any"));
                 param_names_leave(d, saved);
             }   break;
             case INTERFACE_KEY_INDEX:
-                if (i->readonly) out_lit(d, "readonly ");
+                if (i->readonly) out_token_mapped(d, d.map ? i->declaration.buf : nullptr, c_sv("readonly"));
+                if (i->readonly) out_lit(d, " ");
                 out_lit(d, "[");
                 param_comments_begin_at(d, i->key.index->name);
-                out(d, span_sv(i->key.index->name));
+                out_mapped(d, i->key.index->name);
                 out_lit(d, ": ");
                 display_node(me, d, &i->key.index->type);
+                // (The parameter ends with its type)
+                map_at(d, decl_map_type_end(&i->key.index->type, d.map));
                 out_lit(d, "]: ");
                 display_node(me, d, &i->type);
                 break;
@@ -2153,13 +2244,16 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 break;
             case INTERFACE_KEY_EXPR:
             case INTERFACE_KEY_NAME:
-                if (i->readonly) out_lit(d, "readonly ");
+                if (i->readonly) {
+                    out_token_mapped(d, d.map && span_valid(i->declaration) ? i->declaration.buf : nullptr, c_sv("readonly"));
+                    out_lit(d, " ");
+                }
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
                     display_node_computed_name(me, d, i->key.expr);
                 } else {
-                    out(d, span_sv(i->key.span));
+                    out_mapped(d, i->key.span);
                 }
-                if (i->optional) out_lit(d, "?");
+                if (i->optional) out_token_mapped(d, token_after(d, span_end_ptr(i->key.span), '?'), c_sv("?"));
                 if ((i->key.tag == INTERFACE_KEY_NAME ? i->key.name_is_member_function : i->is_method) && i->type.tag == TYPE_CALLABLE) {
                     display_node_signature(me, d, i->type.callable->function, ": ");
                 } else {
@@ -2199,6 +2293,23 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node);
 // A reused annotation counts as its text with the whitespace before it, whatever printing it counted (tsc's
 // tryReuseExistingNodeHelper: the node's range, inside a recovery boundary)
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    if (d.map) {
+        // (A node printed as its type isn't mapped, nor is one that has no position here)
+        isize_t marked_at = cstr_size(d.target);
+        char const* start = decl_map_type_start(node, d.map);
+        map_at(d, start);
+        bool marked = cstr_size(d.target) != marked_at;
+        TypeNode const* outer = node_fell_back;
+        node_fell_back = nullptr;
+        display_node_impl(me, d, node);
+        if (node_fell_back == node) {
+            if (marked) cstr_erase(d.target, marked_at, DECL_MAP_MARK_SIZE);
+        } else if (start) {
+            map_at(d, decl_map_type_end(node, d.map));
+        }
+        node_fell_back = outer;
+        return;
+    }
     if (!d.approx) {
         display_node_impl(me, d, node);
         return;
@@ -2232,7 +2343,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
     bool constituent = d.constituent_node && !node->parenthesized;
     d.array_element_node = false;
     d.constituent_node = false;
-    if (node->parenthesized) out_lit(d, "(");
+    if (node->parenthesized) {
+        out_lit(d, "(");
+        map_at(d, decl_map_type_inner_start(node, d.map));
+    }
     switch (node->tag) {
         case TYPE_IDENTIFIER: {
             TyDisplay element_d = d;
@@ -2300,16 +2414,21 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                 }
                 TyDisplay outer = d;
                 d = element_d;
-                if (i->rest) out_lit(d, "...");
+                // (A named member, a rest type `...T` and an optional type `T?` are nodes: from the element's start to its
+                // end)
+                bool element_node = span_valid(i->maybe_name) || i->rest || i->optional;
+                if (element_node) map_span(d, i->span, false);
+                if (i->rest) out_token_mapped(d, span_valid(i->span) && d.map ? i->span.buf : nullptr, c_sv("..."));
                 if (span_valid(i->maybe_name)) {
-                    out(d, span_sv(i->maybe_name));
-                    if (i->optional) out_lit(d, "?");
+                    out_mapped(d, i->maybe_name);
+                    if (i->optional) out_token_mapped(d, token_after(d, span_end_ptr(i->maybe_name), '?'), c_sv("?"));
                     out_lit(d, ": ");
                     display_node(me, d, &i->type);
                 } else {
                     display_node(me, d, &i->type);
                     if (i->optional) out_lit(d, "?");
                 }
+                if (element_node) map_span(d, i->span, true);
                 d = outer;
             }
             if (lines) {
@@ -2352,18 +2471,27 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, " : ");
             display_node(me, d, &node->ternary->if_false);
         }   break;
-        case TYPE_INFERRED:
+        case TYPE_INFERRED: {
             out_lit(d, "infer ");
+            isize_t name_at = cstr_size(d.target);
             if (d.param_names && node->inferred->owned_symbol) {
                 out_type_param_name(me, d, ty_type_param(me, node->inferred->owned_symbol), true);
             } else {
                 out(d, span_sv(node->inferred->name));
             }
+            // (The type parameter node, its name as written)
+            if (d.map && csview_equals_sv(csview_slice(cstr_sv(d.target), name_at, cstr_size(d.target)), span_sv(node->inferred->name))) {
+                cstr_resize(d.target, name_at, '\0');
+                map_span(d, node->inferred->name, false);
+                out_mapped(d, node->inferred->name);
+            }
             if (node->inferred->extends.parsed) {
                 out_lit(d, " extends ");
                 display_node(me, d, &node->inferred->extends);
             }
-            break;
+            if (node->inferred->extends.parsed) map_at(d, decl_map_type_end(&node->inferred->extends, d.map));
+            else map_span(d, node->inferred->name, true);
+        }   break;
         case TYPE_UNION:
             display_node_list(me, d, &node->composite, " | ");
             break;
@@ -2376,7 +2504,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             for (isize_t i = 0; i < vec_cstr_size(&template->texts); i++) {
                 if (i) {
                     out_lit(d, "${");
-                    display_node(me, d, vec_type_at(&template->types, i - 1));
+                    TypeNode const* type = vec_type_at(&template->types, i - 1);
+                    display_node(me, d, type);
+                    // (The literal after it starts at its `}`)
+                    map_at(d, token_after(d, decl_map_type_end(type, d.map), '}'));
                     out_lit(d, "}");
                 }
                 display_template_text(d, cstr_sv(vec_cstr_at(&template->texts, i)));
@@ -2392,7 +2523,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             if (d.transformer_node && d.multiline) {
                 TypePredicateNode const* predicate = node->predicate;
                 if (predicate->asserts) out_lit(d, "asserts ");
-                out(d, span_sv(predicate->name));
+                out_mapped(d, predicate->name);
                 if (predicate->has_type) {
                     out_lit(d, " is ");
                     display_node(me, d, &predicate->type);
@@ -2441,7 +2572,10 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             }
         }   break;
     }
-    if (node->parenthesized) out_lit(d, ")");
+    if (node->parenthesized) {
+        map_at(d, decl_map_type_inner_end(node, d.map));
+        out_lit(d, ")");
+    }
 }
 
 // Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property

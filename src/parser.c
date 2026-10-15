@@ -2878,7 +2878,22 @@ static void check_unparenthesized_function_type(Parser* p, const char* operand_p
     }
 }
 
+// (TypeNode.pos: where `at` is in the file, plus one)
+static u32 type_pos(Parser const* p, char const* at) {
+    char const* text = cstr_str(&p->shared->source->contents);
+    return at >= text && at <= text + cstr_size(&p->shared->source->contents) ? (u32)(at - text) + 1 : 0;
+}
+
+static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret);
+
+// What the right side makes (an array, indexed access, union...) starts where its left side does
 static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
+    if (!parse_type_right_side_inner(parent, min_precedence, left_start, left_and_ret)) return false;
+    left_and_ret->pos = type_pos(parent, left_start);
+    return true;
+}
+
+static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode type;
 
@@ -3559,6 +3574,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     }
     while (parse_type_right_side(&p, min_precedence, left_start, ret)) {}
     ret->parsed = true; // (Also what the right side made)
+    ret->pos = type_pos(&p, a.start);
 
     if (span_valid(readonly_span)) {
         ret->readonly_invalid = true;

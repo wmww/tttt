@@ -507,6 +507,21 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
         csview path = cstr_sv(&source->declaration_output_path);
         if (!source->declaration_output || !path.size || program_emit_blocked(program, path) || opts->no_write) continue;
         FailableResult made = fs_mkdir(fs, dirname_of(path));
+        // (tsc writes the declaration map first: printSourceFile)
+        if (source->declaration_map && !made.error) {
+            cstr map_path = cstr_from_sv(path);
+            cstr_append(&map_path, ".map");
+            bool map_failed = false;
+            try (fs_write_file(fs, cstr_sv(&map_path), cstr_sv(source->declaration_map))) if_err (e) {
+                ignore e;
+                int code = errno;
+                current_error_destroy();
+                error_ctx_global_error_d(errs, 5033, "Could not write file '", path, "': ", code ? strerror(code) : "error", ".");
+                failed = map_failed = true;
+            }
+            if (!map_failed && opts->list_emitted_files) cstr_append_d(&out->emitted, DEFAULT_DISPLAY, "TSFILE: ", map_path, "\n");
+            cstr_drop(&map_path);
+        }
         FailableResult written = made.error ? made : fs_write_file(fs, path, cstr_sv(source->declaration_output));
         if (made.error) failable_result_drop(&written);
         try (written) if_err (e) {

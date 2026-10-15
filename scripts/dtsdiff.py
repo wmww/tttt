@@ -4,8 +4,10 @@ byte. Projects: the pinned `-p` corpora (scripts/realworld.py's, rechecked with 
 project (thirdparty/sources) whose config (extends resolved: tsgo --showConfig) sets `declaration` or `composite`, as
 long as tsgo emits at least one file there. Both sides run with the same overrides:
 
-  --noEmit false --declaration --emitDeclarationOnly --declarationMap false --noEmitOnError false
+  --noEmit false --declaration --emitDeclarationOnly --noEmitOnError false
   --outDir T --declarationDir T --tsBuildInfoFile /tmp/...
+
+(declarationMap as the config says: the `.d.ts.map` files are compared too, plan 64 stage 5)
 
 and both run in a bubblewrap sandbox where only /tmp is writable: a file outside rootDir (which defaults to the
 config's directory in TS 6+) has its output written beside its source, whatever outDir says (tsc's
@@ -110,7 +112,7 @@ def discover(filter=None, jobs=16):
 
 def overrides(out_root, buildinfo):
     out = os.path.join(out_root, *['o'] * 12)  # (Deep: ../ out of rootDir stays inside out_root)
-    return out, ['--noEmit', 'false', '--declaration', '--emitDeclarationOnly', '--declarationMap', 'false',
+    return out, ['--noEmit', 'false', '--declaration', '--emitDeclarationOnly',
                  '--noEmitOnError', 'false', '--outDir', out, '--declarationDir', out, '--tsBuildInfoFile', buildinfo]
 
 
