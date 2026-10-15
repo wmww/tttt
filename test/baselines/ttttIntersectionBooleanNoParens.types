@@ -1,0 +1,34 @@
+//// [test/cases/ttttIntersectionBooleanNoParens.ts] ////
+
+=== ttttIntersectionBooleanNoParens.ts ===
+// `boolean` and a whole enum in an intersection print as names: no parentheses
+enum E { A, B }
+>E : E
+>A : E.A
+>B : E.B
+
+declare function f<T>(x: T): T & { tag: 1 };
+>f : <T>(x: T) => T & { tag: 1; }
+>x : T
+>tag : 1
+
+export const a = f(Math.random() > 0.5);
+>a : boolean & { tag: 1; }
+>f(Math.random() > 0.5) : boolean & { tag: 1; }
+>f : <T>(x: T) => T & { tag: 1; }
+>Math.random() > 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+
+export const b = f(E.A as E);
+>b : E & { tag: 1; }
+>f(E.A as E) : E & { tag: 1; }
+>f : <T>(x: T) => T & { tag: 1; }
+>E.A as E : E
+>E.A : E.A
+>E : typeof E
+>A : E.A
+

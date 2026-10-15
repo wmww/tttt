@@ -6188,6 +6188,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 approx_add(d, 2);
                 // (A union that prints as the `keyof X` it was made from is a type operator, which needs none)
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
+                // (`boolean` and a whole enum print as a name: no parentheses)
+                if (t->kind == TY_UNION && ((t->flags & TYF_BOOLEAN) || ty_is_enum_union(t))) keyof_origin = true;
                 display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
                     ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL || is_function_like(me, d, t) ||
                     class_literal_function_like(me, d, t) || displays_as_intersection(me, d, t) || mapped_as_conditional(me, d, t)));

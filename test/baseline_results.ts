@@ -497,6 +497,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionBooleanNoParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttIntersectionOfManyMembersProperty': {
         errors: true,
         symbols: true,

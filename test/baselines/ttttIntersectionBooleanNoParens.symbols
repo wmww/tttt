@@ -1,0 +1,32 @@
+//// [test/cases/ttttIntersectionBooleanNoParens.ts] ////
+
+=== ttttIntersectionBooleanNoParens.ts ===
+// `boolean` and a whole enum in an intersection print as names: no parentheses
+enum E { A, B }
+>E : Symbol(E, Decl(ttttIntersectionBooleanNoParens.ts, 0, 0))
+>A : Symbol(E.A, Decl(ttttIntersectionBooleanNoParens.ts, 1, 8))
+>B : Symbol(E.B, Decl(ttttIntersectionBooleanNoParens.ts, 1, 11))
+
+declare function f<T>(x: T): T & { tag: 1 };
+>f : Symbol(f, Decl(ttttIntersectionBooleanNoParens.ts, 1, 15))
+>T : Symbol(T, Decl(ttttIntersectionBooleanNoParens.ts, 2, 19))
+>x : Symbol(x, Decl(ttttIntersectionBooleanNoParens.ts, 2, 22))
+>T : Symbol(T, Decl(ttttIntersectionBooleanNoParens.ts, 2, 19))
+>T : Symbol(T, Decl(ttttIntersectionBooleanNoParens.ts, 2, 19))
+>tag : Symbol(tag, Decl(ttttIntersectionBooleanNoParens.ts, 2, 34))
+
+export const a = f(Math.random() > 0.5);
+>a : Symbol(a, Decl(ttttIntersectionBooleanNoParens.ts, 3, 12))
+>f : Symbol(f, Decl(ttttIntersectionBooleanNoParens.ts, 1, 15))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+export const b = f(E.A as E);
+>b : Symbol(b, Decl(ttttIntersectionBooleanNoParens.ts, 4, 12))
+>f : Symbol(f, Decl(ttttIntersectionBooleanNoParens.ts, 1, 15))
+>E.A : Symbol(E.A, Decl(ttttIntersectionBooleanNoParens.ts, 1, 8))
+>E : Symbol(E, Decl(ttttIntersectionBooleanNoParens.ts, 0, 0))
+>A : Symbol(E.A, Decl(ttttIntersectionBooleanNoParens.ts, 1, 8))
+>E : Symbol(E, Decl(ttttIntersectionBooleanNoParens.ts, 0, 0))
+
