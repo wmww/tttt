@@ -267,6 +267,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPatternComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationPatternPaintedByExport': {
         errors: true,
         symbols: true,
