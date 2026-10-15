@@ -24,3 +24,10 @@ From the triage session (2026-10-14, late-bound member merging):
   `scripts/bench.sh --checkers "4 8 12 16"` there and paste the output into measurements.md (next to the bun table):
   the per-K wall times and RSS decide whether the default should be capped below the core count (this 4-vCPU box can't
   measure past 4; the 2026-10-11 bun session saw 12 checkers 30-50% faster than 4 at +13..40% RSS).
+
+- (2026-10-15, todo entries 7-8) /tmp holds ~990 entries (770 MB) of scratch from the 2026-10-07..12 sessions (cg-*,
+  cgv.*, b-x9, bsmoke*...): nobody's current work; a triage session can delete what isn't a script's cache
+  (`/tmp/mutate` was deleted this session by mistake: mutate.py regenerates it, ~minutes).
+- (2026-10-15) Declaration emit found a checker bug the CLI shows too: `function c(foo: number | null = 2) { return
+  (bar = foo, _: string) => bar; }` types `bar` as `any | undefined` in the arrow's signature (tsgo: `number | null |
+  undefined`); the outer parameter's initializer is what matters (declarationEmitOptionalParameterUndefined).
