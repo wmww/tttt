@@ -2415,6 +2415,14 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
             continue;
         }
         bool callable = i->type.tag == TYPE_CALLABLE && i->type.callable && i->type.callable->function;
+        // (A computed name that isn't late bound, of a type that isn't a literal or unique symbol: the transformer
+        // elides the member before it checks anything, visitDeclarationSubtree)
+        if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr && !compiler_options()->isolated_declarations &&
+            is_dynamic_name(i->key.expr) &&
+            (ty_expr_type(my checker, i->key.expr)->kind != TY_LITERAL || !pseudo_is_entity_name(i->key.expr))
+        ) {
+            continue;
+        }
         if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr) {
             Expr const* key = i->key.expr;
             if (is_dynamic_name(key) && !is_global_symbol_reference(me, key) && !pseudo_is_entity_name(key)) {

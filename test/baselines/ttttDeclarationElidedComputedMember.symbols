@@ -1,0 +1,32 @@
+//// [test/cases/ttttDeclarationElidedComputedMember.ts] ////
+
+=== ttttDeclarationElidedComputedMember.ts ===
+// A type literal member whose computed name isn't late bound is elided before anything in it is checked: the
+// local it names isn't kept for it
+/**
+ * @internal
+ */
+const lazyMarker = 'lazyMarker' as 'lazyMarker' & {
+>lazyMarker : Symbol(lazyMarker, Decl(ttttDeclarationElidedComputedMember.ts, 5, 5))
+
+  __brand: 'lazyMarker';
+>__brand : Symbol(__brand, Decl(ttttDeclarationElidedComputedMember.ts, 5, 51))
+
+};
+export type Lazy<TAny> = (() => Promise<TAny>) & { [lazyMarker]: true };
+>Lazy : Symbol(Lazy, Decl(ttttDeclarationElidedComputedMember.ts, 7, 2))
+>TAny : Symbol(TAny, Decl(ttttDeclarationElidedComputedMember.ts, 8, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>TAny : Symbol(TAny, Decl(ttttDeclarationElidedComputedMember.ts, 8, 17))
+>[lazyMarker] : Symbol([lazyMarker], Decl(ttttDeclarationElidedComputedMember.ts, 8, 50))
+>lazyMarker : Symbol(lazyMarker, Decl(ttttDeclarationElidedComputedMember.ts, 5, 5))
+
+const sym: unique symbol = Symbol();
+>sym : Symbol(sym, Decl(ttttDeclarationElidedComputedMember.ts, 9, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+export type K = { [sym]: 1 };
+>K : Symbol(K, Decl(ttttDeclarationElidedComputedMember.ts, 9, 36))
+>[sym] : Symbol([sym], Decl(ttttDeclarationElidedComputedMember.ts, 10, 17))
+>sym : Symbol(sym, Decl(ttttDeclarationElidedComputedMember.ts, 9, 5))
+
