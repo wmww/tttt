@@ -926,6 +926,8 @@ static void display_string_literal(TyDisplay d, csview sv) {
 
 static u32 utf8_next(csview sv, isize_t* i);
 
+void ty_display_synthesized_string(TyDisplay d, csview sv) { display_quoted_string(d, sv, false, true); }
+
 // `ascii`: everything else as `\uXXXX` escapes, like tsc's printer does a string literal node it made (a property name
 // from getPropertyNameNodeForSymbol), unlike a literal type's (EmitFlags.NoAsciiEscaping)
 static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii) {
@@ -2368,6 +2370,65 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
     }
 }
 
+// A template literal type's part from `at` (past its backtick or `}`): to its `${` or closing backtick included, null
+// if the source isn't like that
+static char const* template_part_end(char const* at, char const* end, bool last) {
+    while (at < end && *at != '`' && !(at[0] == '$' && at + 1 < end && at[1] == '{')) at += *at == '\\' ? 2 : 1;
+    if (at >= end || (*at == '`') != last) return nullptr;
+    return at + (last ? 1 : 2);
+}
+
+// The `}` after a template literal type's type `i`, null if the source isn't like that
+static char const* template_part_close(TemplateType const* template, isize_t i, char const* end) {
+    Span type = *vec_span_at(&template->type_spans, i);
+    if (!span_valid(type)) return nullptr;
+    char const* close = decl_map_skip_trivia(span_end_ptr(type), end);
+    return close < end && *close == '}' ? close : nullptr;
+}
+
+// A template literal's part as written: the declaration transformer's original node prints its source text, a node the
+// node builder reuses (a clone) its raw text, where a CRLF is a line feed
+static void out_template_raw(TyDisplay d, csview sv) {
+    if (d.transformer_node && d.multiline) {
+        out(d, sv);
+        return;
+    }
+    for (isize_t i = 0; i < sv.size;) {
+        isize_t run = i;
+        while (i < sv.size && sv.buf[i] != '\r') i++;
+        out(d, (csview){ sv.buf + run, i - run });
+        if (i == sv.size) break;
+        i++;
+        if (i == sv.size || sv.buf[i] != '\n') out_lit(d, "\n");
+    }
+}
+
+// A template literal type as written (out_template_raw()), false if the source isn't where its spans say
+static bool display_template_source(Checker* me, TyDisplay d, TemplateType const* template) {
+    isize_t types = vec_type_size(&template->types);
+    if (!span_valid(template->span) || template->span.buf[0] != '`' || vec_span_size(&template->type_spans) != types) {
+        return false;
+    }
+    char const* end = span_end_ptr(template->span);
+    char const* at = template->span.buf + 1;
+    for (isize_t i = 0; i <= types; i++) {
+        if (!(at = template_part_end(at, end, i == types))) return false;
+        if (i < types && !(at = template_part_close(template, i, end))) return false;
+        at++;
+    }
+    at = template->span.buf;
+    for (isize_t i = 0; i <= types; i++) {
+        char const* part_end = template_part_end(at + 1, end, i == types);
+        out_template_raw(d, (csview){ at, part_end - at });
+        if (i == types) break;
+        TypeNode const* type = vec_type_at(&template->types, i);
+        display_node(me, d, type);
+        at = template_part_close(template, i, end);
+        map_at(d, at);
+    }
+    return true;
+}
+
 // Prints an annotation as written, as reused
 static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node);
 // A reused annotation counts as its text with the whitespace before it, whatever printing it counted (tsc's
@@ -2592,6 +2653,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             break;
         case TYPE_TEMPLATE: {
             TemplateType const* template = node->template_;
+            if (!node->synthesized && display_template_source(me, d, template)) break;
             out_lit(d, "`");
             for (isize_t i = 0; i < vec_cstr_size(&template->texts); i++) {
                 if (i) {
@@ -2653,7 +2715,16 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // its TokenFlagsSingleQuote, with NoAsciiEscaping, and the printer can't reach the original text of a
             // clone): `'a"b'` stays `'a"b'`, `'\x41'` prints `'A'`
             if (node->value.tag == VALUE_STRING) {
+                // (One the declaration transformer visits is the original node: the printer writes its source text)
+                if (d.transformer_node && d.multiline && !node->synthesized && span_valid(node->value_span)) {
+                    out(d, span_sv(node->value_span));
+                    break;
+                }
                 if (node->value_span.size && node->value_span.buf[0] == '`') {
+                    if (!node->synthesized) {
+                        out_template_raw(d, span_sv(node->value_span));
+                        break;
+                    }
                     display_template_string(d, cstr_sv(&node->value.string));
                     break;
                 }

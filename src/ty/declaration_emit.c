@@ -3324,6 +3324,11 @@ static bool w_own_unique_symbol(Walk* me, Ty const* type, Symbol const* symbol) 
 // A literal type as the initializer that says it (tsc's createLiteralConstValue): an expression, so an enum member that
 // isn't an identifier is `E["a b"]`, not the type's `(typeof E)["a b"]`
 static void w_literal_value(Walk* me, Ty const* type) {
+    // (A string is a string literal node it makes, which the printer escapes to ASCII)
+    if (type->kind == TY_LITERAL && type->literal.string && !(type->flags & TYF_ENUM_LITERAL)) {
+        ty_display_synthesized_string(emit_display(me, my out), atom_sv(type->literal.string));
+        return;
+    }
     isize_t start = cstr_size(my out);
     w_type(me, type);
     csview written = csview_slice(cstr_sv(my out), start, cstr_size(my out));

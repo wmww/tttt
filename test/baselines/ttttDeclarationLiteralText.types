@@ -1,0 +1,40 @@
+//// [test/cases/ttttDeclarationLiteralText.ts] ////
+
+=== ttttDeclarationLiteralText.ts ===
+// A const's literal initializer is a string literal the emitter makes: ASCII-escaped. A literal the declaration
+// transformer visits prints as written, a template literal type's parts too (its raw text where the node builder
+// reuses it)
+export const zeroWidth = "\u{200B}";
+>zeroWidth : "​"
+>"\u{200B}" : "​"
+
+export const noBreak = '\xa0';
+>noBreak : " "
+>'\xa0' : " "
+
+export const accented = "é";
+>accented : "é"
+>"é" : "é"
+
+type Digits = "१" | 'é' | "\x41";
+>Digits : Digits
+
+export type Message<c extends string> = `\\${c} like regex('\n') é A ${Digits}`;
+>Message : `\\${c} like regex('
+') é A A` | `\\${c} like regex('
+') é A é` | `\\${c} like regex('
+') é A १`
+
+export type Plain = `a\tb`;
+>Plain : "a\tb"
+
+export function f(x: "१", y: `x${number}\n`): void {}
+>f : (x: "१", y: `x${number}\n`) => void
+>x : "१"
+>y : `x${number}
+`
+
+export let v: Digits = "१";
+>v : Digits
+>"१" : "१"
+

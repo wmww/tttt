@@ -1,0 +1,36 @@
+//// [test/cases/ttttDeclarationLiteralText.ts] ////
+
+=== ttttDeclarationLiteralText.ts ===
+// A const's literal initializer is a string literal the emitter makes: ASCII-escaped. A literal the declaration
+// transformer visits prints as written, a template literal type's parts too (its raw text where the node builder
+// reuses it)
+export const zeroWidth = "\u{200B}";
+>zeroWidth : Symbol(zeroWidth, Decl(ttttDeclarationLiteralText.ts, 3, 12))
+
+export const noBreak = '\xa0';
+>noBreak : Symbol(noBreak, Decl(ttttDeclarationLiteralText.ts, 4, 12))
+
+export const accented = "é";
+>accented : Symbol(accented, Decl(ttttDeclarationLiteralText.ts, 5, 12))
+
+type Digits = "१" | 'é' | "\x41";
+>Digits : Symbol(Digits, Decl(ttttDeclarationLiteralText.ts, 5, 28))
+
+export type Message<c extends string> = `\\${c} like regex('\n') é A ${Digits}`;
+>Message : Symbol(Message, Decl(ttttDeclarationLiteralText.ts, 6, 33))
+>c : Symbol(c, Decl(ttttDeclarationLiteralText.ts, 7, 20))
+>c : Symbol(c, Decl(ttttDeclarationLiteralText.ts, 7, 20))
+>Digits : Symbol(Digits, Decl(ttttDeclarationLiteralText.ts, 5, 28))
+
+export type Plain = `a\tb`;
+>Plain : Symbol(Plain, Decl(ttttDeclarationLiteralText.ts, 7, 80))
+
+export function f(x: "१", y: `x${number}\n`): void {}
+>f : Symbol(f, Decl(ttttDeclarationLiteralText.ts, 8, 27))
+>x : Symbol(x, Decl(ttttDeclarationLiteralText.ts, 9, 18))
+>y : Symbol(y, Decl(ttttDeclarationLiteralText.ts, 9, 25))
+
+export let v: Digits = "१";
+>v : Symbol(v, Decl(ttttDeclarationLiteralText.ts, 10, 10))
+>Digits : Symbol(Digits, Decl(ttttDeclarationLiteralText.ts, 5, 28))
+

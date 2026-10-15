@@ -2576,6 +2576,8 @@ void ty_display_type_params(Checker* me, TyDisplay d, struct Generic const* gene
 void ty_display_node_signature(Checker* me, TyDisplay d, struct FunctionImpl const* function, char const* separator);
 struct Pseudo;
 void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
+// A string literal node the emitter makes (tsc's factory.createStringLiteral() printed): ASCII-escaped, `"\u00E9"`
+void ty_display_synthesized_string(TyDisplay d, csview sv);
 void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
 // The same with declaration maps' marks for `map`, the file being written (decl_map.h)
 void ty_append_binding_pattern_mapped(cstr* out, struct Binding const* binding, struct SourceFile const* map);
