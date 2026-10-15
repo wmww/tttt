@@ -38,8 +38,8 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
    headline count until stage 4 (23 of its 63 failures are output paths and declaration maps). What's left:
    bugs/dts_emit.md, plan 64 "Status".
 8. Done (2026-10-15, with entry 7's session): plan 66 stage 3. Emitting declarations before checking (tsgo's harness
-   order) fixes none of bucket 2 (tried, not kept); the bucket is re-sorted in plan 66 stage 3 (five argued in
-   bugs/tsgo_divergences.md, four JS declaration emit, three checker bugs for entry 9).
+   order) fixes none of bucket 2 (tried, not kept); the bucket is re-sorted in plan 66 stage 3 (two argued in
+   bugs/tsgo_divergences.md, four JS declaration emit, six checker/parser bugs for entry 9).
 9. **Plan 66 stage 4: second fan-out** on what's left of the suite, every remaining test fixed, planned or argued in
    `bugs/tsgo_divergences.md` (plan 66's rule). One agent on the real-code residue instead: the source sweep tail,
    effect's 3 spurious, vue's 3 / webpack's 1 missing, and plan 65 (TS5115) if its zod side can be solved.

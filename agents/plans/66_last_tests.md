@@ -60,8 +60,10 @@ Component letters are the *failing* components (E errors, S symbols, T types).
    fix, one line in its bugs file: the mechanism and the estimated size. Expected: ~40-50 of the ~85 non-feature tests.
 2. **Done** (content mappers, 15 / 15, in one session).
 3. **Done 2026-10-15 (re-bucketed, nothing to add to the harness)**: emitting declarations before checking (tsgo's
-   harness order) fixes none of bucket 2 (tried, not kept). Bucket 2 now: the five emit-order tests are argued in
-   `bugs/tsgo_divergences.md` (they need the JS emitter's resolver queries); four are JavaScript declaration emit
+   harness order) fixes none of bucket 2 (tried, not kept). Bucket 2 now: two emit-order tests are argued in
+   `bugs/tsgo_divergences.md` (incorrectRecursiveMappedTypeConstraint, typeParameterWithInvalidConstraintType: tsgo's
+   CLI matches tttt, only the harness's JS-emit-first order differs); circularBaseTypes, recursiveMappedTypes and
+   manyCompilerErrorsInTheTwoFiles differ from tsgo's CLI too (checker/parser bugs); four are JavaScript declaration emit
    (cjsObjectDefinePropertyPrivateModuleDeclarationEmit, jsDeclarationsTypeReassignmentFromDeclaration2,
    isolatedDeclarationsJsThisPropertyAssignmentInference, commonJSImportNestedClassTypeReference: plan 64 stage 6);
    three are checker bugs for the second fan-out: declarationEmitOptionalParameterUndefined (`(bar = foo, _: string)`
