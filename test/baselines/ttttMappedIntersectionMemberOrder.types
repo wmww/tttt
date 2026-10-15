@@ -35,3 +35,28 @@ export const x = obj({ title: "a", body: "b", zeta: undefined as string | undefi
 >alpha : number
 >1 : 1
 
+// Spread, such a property is still declared where its mapped type's is: before `id`
+declare function obj2<T>(t: T): { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k] };
+>obj2 : <T>(t: T) => { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k]; }
+>t : T
+
+const input = obj2({ title: "a" });
+>input : { title: string; }
+>obj2({ title: "a" }) : { title: string; }
+>obj2 : <T>(t: T) => { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k]; }
+>{ title: "a" } : { title: string; }
+>title : string
+>"a" : "a"
+
+export const post = { id: 1, ...input };
+>post : { title: string; id: number; }
+>{ id: 1, ...input } : { title: string; id: number; }
+>id : number
+>1 : 1
+>input : { title: string; }
+
+post.title;
+>post.title : string
+>post : { title: string; id: number; }
+>title : string
+

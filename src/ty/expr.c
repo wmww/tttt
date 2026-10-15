@@ -3364,9 +3364,16 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         }
         // (Declared where the property it maps is, which orders it: tsc's mapped symbol's declarations)
         Prop const* declared_at = origin;
+        if (!declared_at->decl->decl_span_count) {
+            // (The first one along the way that has declarations: a mapped property has its own, which its template,
+            // the origin, hasn't)
+            Prop const* own = prop;
+            while (own->target && !own->decl->decl_span_count) own = own->target;
+            if (own->decl->decl_span_count) declared_at = own;
+        }
         if (!declared_at->decl->decl_span_count && prop_decl_rare(prop->decl)->mapped_from) {
             declared_at = prop_decl_rare(prop->decl)->mapped_from;
-            while (declared_at->target) declared_at = declared_at->target;
+            while (declared_at->target && !declared_at->decl->decl_span_count) declared_at = declared_at->target;
         }
         TypeNode const* annotation_required = nullptr;
         if (annotation && type != declared_type) {

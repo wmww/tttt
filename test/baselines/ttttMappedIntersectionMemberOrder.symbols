@@ -69,3 +69,31 @@ export const x = obj({ title: "a", body: "b", zeta: undefined as string | undefi
 >undefined : Symbol(undefined)
 >alpha : Symbol(alpha, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 84))
 
+// Spread, such a property is still declared where its mapped type's is: before `id`
+declare function obj2<T>(t: T): { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k] };
+>obj2 : Symbol(obj2, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 97))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 22))
+>t : Symbol(t, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 25))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 22))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 35))
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 22))
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(ttttMappedIntersectionMemberOrder.ts, 4, 87))
+>T : Symbol(T, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 22))
+>k : Symbol(k, Decl(ttttMappedIntersectionMemberOrder.ts, 10, 35))
+
+const input = obj2({ title: "a" });
+>input : Symbol(input, Decl(ttttMappedIntersectionMemberOrder.ts, 11, 5))
+>obj2 : Symbol(obj2, Decl(ttttMappedIntersectionMemberOrder.ts, 8, 97))
+>title : Symbol(title, Decl(ttttMappedIntersectionMemberOrder.ts, 11, 20))
+
+export const post = { id: 1, ...input };
+>post : Symbol(post, Decl(ttttMappedIntersectionMemberOrder.ts, 12, 12))
+>id : Symbol(id, Decl(ttttMappedIntersectionMemberOrder.ts, 12, 21))
+>input : Symbol(input, Decl(ttttMappedIntersectionMemberOrder.ts, 11, 5))
+
+post.title;
+>post.title : Symbol(title, Decl(ttttMappedIntersectionMemberOrder.ts, 11, 20))
+>post : Symbol(post, Decl(ttttMappedIntersectionMemberOrder.ts, 12, 12))
+>title : Symbol(title, Decl(ttttMappedIntersectionMemberOrder.ts, 11, 20))
+

@@ -9,3 +9,8 @@ type addQuestionMarks<T> = { [K in requiredKeys<T>]: T[K] } & { [K in optionalKe
 type flatten<T> = { [k in keyof T]: T[k] };
 declare function obj<T>(t: T): { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k] };
 export const x = obj({ title: "a", body: "b", zeta: undefined as string | undefined, alpha: 1 });
+// Spread, such a property is still declared where its mapped type's is: before `id`
+declare function obj2<T>(t: T): { [k in keyof addQuestionMarks<T>]: addQuestionMarks<T>[k] };
+const input = obj2({ title: "a" });
+export const post = { id: 1, ...input };
+post.title;
