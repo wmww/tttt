@@ -9,6 +9,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
 
+## Triage (2026-10-15, todo entry 10)
+Suite **13660 / 13672** (+3 own tests: an unused redeclaration, the binary marker as a token), 0 lost. Every other
+oracle identical to entry 9 below (corpora all 0/0 but vue 0/2, DT 8594 / 8595, `$ExpectType` 68639, flagflip 18 / 6
+/ 3, source sweep sample 814 / 822, perfsweep median 0.21, worst types ratio 1.62, dtsdiff 940 / 74466). Instructions
+flat (+0.0..+0.4%): tsc 4.727, type-fest 19.337, valibot 3.513, react 1.512, nest 1.188, webpack 10.068, zod 5.094,
+xstate 2.769, drizzle 6.037, vue 6.647, effect 10.387, vscode 90.037, excalidraw 7.929, tanstack-router 5.417 G.
+
 ## Plan 66 stage 4, the second fan-out (2026-10-15, todo entry 9)
 Suite **13657 / 13669** (tsgo's 13556 / 13568, 12 left; from 13618 / 13660), 0 lost. `scripts/oracles.py`: corpora
 all 0/0 but vue 0/2 (webpack 0/1 -> 0/0, effect 3/0 -> 0/0, vue 0/3 -> 0/2), DT 8594 / 8595, `$ExpectType` 68639

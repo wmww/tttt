@@ -47,7 +47,9 @@ checker count following the cores (plan 62).** Memory against bun gets a plannin
    922 -> 940 projects. Instructions +0.3-1.3% (B's return mapper +0.75% on valibot/effect/xstate is tsgo's own work:
    measured, justified). **For insights**: numericExportNameDeclaration's divergence argument rests on resolution order
    (plan 66's rule says that isn't enough): accept it or not.
-10. **Triage.**
+10. Done (2026-10-15): triage. triage.md drained (two parser/binder divergences fixed with own tests, the late-bound
+   method merge filed in bugs/type_core.md), ~150 lines of stale bug entries pruned (tests that pass now), plan 62
+   deleted (done), /tmp's old scratch deleted. Suite 13660 / 13672, every oracle unchanged.
 11. **Insights.**
 
 After the insights entry (for the next window): **plan 67 stage 1 first** (checker recycling: one session, the
