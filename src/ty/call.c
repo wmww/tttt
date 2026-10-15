@@ -633,7 +633,7 @@ static TyMapper const* outer_inference_mapper(Checker* me, OuterInference* outer
 // (defaults, else unknown, for the rest: cloneInferenceContext(context, InferenceFlags.None).mapper)
 static TyMapper const* outer_return_mapper(Checker* me, OuterInference* outer) {
     if (outer->outer_return_mapper) return outer->outer_return_mapper;
-    TyMapper const* inferred = inference_mapper(me, outer->sig, outer->inf, false);
+    TyMapper const* inferred = non_fixing_mapper(me, outer); // (Cached: what a fixing mapper of a clone gives)
     if (!outer->return_mapper) return outer->outer_return_mapper = inferred;
     TyList params = outer->sig->type_params;
     Ty const** targets = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
