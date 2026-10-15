@@ -1,0 +1,67 @@
+//// [test/cases/ttttSpreadReadonlyMemberSymbol.ts] ////
+
+=== /node_modules/foo/index.d.ts ===
+// A readonly member spread (into an object literal, or the synthetic namespace of `import * as` of a callable
+// `export =`) is a fresh symbol without a parent: a bare name in the symbols baseline
+declare function foo(): void;
+>foo : typeof foo
+
+declare namespace foo { export const items: string[]; export let other: number; }
+>foo : typeof foo
+>items : string[]
+>other : number
+
+export = foo;
+>foo : typeof foo
+
+=== /index.ts ===
+import * as foo from 'foo';
+>foo : typeof foo
+
+foo.items;
+>foo.items : string[]
+>foo : typeof foo
+>items : string[]
+
+foo.other;
+>foo.other : number
+>foo : typeof foo
+>other : number
+
+namespace ns { export const x = 1; export let y = 2; export function f() {} }
+>ns : typeof ns
+>x : 1
+>1 : 1
+>y : number
+>2 : 2
+>f : () => void
+
+const o = { ...ns };
+>o : { x: 1; y: number; f(): void; }
+>{ ...ns } : { x: 1; y: number; f(): void; }
+>ns : typeof ns
+
+o.x; o.y; o.f;
+>o.x : 1
+>o : { x: 1; y: number; f(): void; }
+>x : 1
+>o.y : number
+>o : { x: 1; y: number; f(): void; }
+>y : number
+>o.f : () => void
+>o : { x: 1; y: number; f(): void; }
+>f : () => void
+
+const o2 = { ...o };
+>o2 : { x: 1; y: number; f(): void; }
+>{ ...o } : { x: 1; y: number; f(): void; }
+>o : { x: 1; y: number; f(): void; }
+
+o2.x; o2.y;
+>o2.x : 1
+>o2 : { x: 1; y: number; f(): void; }
+>x : 1
+>o2.y : number
+>o2 : { x: 1; y: number; f(): void; }
+>y : number
+

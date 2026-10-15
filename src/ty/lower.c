@@ -1799,10 +1799,10 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
             TypeNode const* annotation = !prop->target && decl->node && decl->node->parsed && !decl->lazy &&
                 !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
             from[from_count++] = (ObjectLiteralProp){
-                .name = prop->name, .flags = prop->flags & (PROP_OPTIONAL | PROP_METHOD), .type = prop_type(me, prop),
+                .name = prop->name, .flags = (prop->flags & (PROP_OPTIONAL | PROP_METHOD)) | PROP_NO_VALUE_DECLARATION, .type = prop_type(me, prop),
                 .name_span = prop->decl->name_span, .name_form = ty_prop_name_form_of(prop),
                 .decl_spans = prop->decl->decl_spans, .decl_span_count = prop->decl->decl_span_count,
-                .spread_variable = prop->decl->symbol, .asserted = annotation,
+                .spread_variable = prop->decl->symbol, .spread_fresh = true, .asserted = annotation,
             };
         }
     }

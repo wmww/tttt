@@ -405,6 +405,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadReadonlyMemberSymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSuperConstructorsForTypeArguments': {
         errors: true,
         symbols: true,
@@ -17210,7 +17215,7 @@ const baselines = {
     },
     'globalArrayAugmentationWithAmbientModuleReexportMerge1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalFunctionAugmentationOverload': {

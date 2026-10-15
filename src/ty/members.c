@@ -5004,6 +5004,7 @@ Ty const* ty_object_literal_alternative(
             if (props[i].spread_variable) {
                 prop_decl_rare_mut(me, prop->decl)->spread_variable = props[i].spread_variable;
                 prop_decl_rare_mut(me, prop->decl)->spread_namespace = props[i].spread_namespace;
+                prop_decl_rare_mut(me, prop->decl)->spread_fresh = props[i].spread_fresh;
             }
             prop->parent = props[i].parent;
             prop_add_shared_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
@@ -5165,6 +5166,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
+            .spread_fresh = prop_decl_rare(prop->decl)->spread_fresh,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,
@@ -5421,6 +5423,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
+            .spread_fresh = prop_decl_rare(prop->decl)->spread_fresh,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,

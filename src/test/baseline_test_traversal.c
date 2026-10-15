@@ -361,8 +361,10 @@ static void collect_found_prop(Checker* checker, Ty const* object, Prop const* p
         }
         // (A namespace member spread into an object literal is still that member's symbol: tsc's getSpreadSymbol
         // keeps it, see PropDeclRare.spread_variable)
-        info->member_symbol = root->decl->symbol ? root->decl->symbol : prop_decl_rare(root->decl)->spread_variable;
-        if (!root->decl->symbol && prop_decl_rare(root->decl)->spread_namespace) info->namespace = prop_decl_rare(root->decl)->spread_namespace;
+        // (Unless the spread made a fresh symbol, a readonly one's copy: no parent, a bare name)
+        bool fresh = !root->decl->symbol && prop_decl_rare(root->decl)->spread_fresh;
+        info->member_symbol = root->decl->symbol ? root->decl->symbol : fresh ? nullptr : prop_decl_rare(root->decl)->spread_variable;
+        if (!root->decl->symbol && !fresh && prop_decl_rare(root->decl)->spread_namespace) info->namespace = prop_decl_rare(root->decl)->spread_namespace;
         info->name_span = root->decl->name_span;
         info->name_is_value = root->decl->name_is_value;
         info->first_declaration = first_declaration;

@@ -572,6 +572,9 @@ typedef struct PropDeclRare {
     // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
     Symbol const* spread_variable;
     Symbol const* spread_namespace; // The namespace or module whose export spread_variable is (symbols baseline)
+    // The spread made a fresh symbol (tsc's getSpreadSymbol of a readonly or set-only one, a partial spread's): not
+    // spread_variable's, no parent, a bare name in the symbols baseline
+    bool spread_fresh;
     // A type member getter with a body (TS1183) and no return annotation: its type is the body's return type
     FunctionImpl const* getter_body;
     // A class accessor's get and set declarations: declaration emit prints the property as them in an object type (tsc's
@@ -1920,6 +1923,7 @@ typedef struct ObjectLiteralProp {
     Symbol const* parent;
     Symbol const* spread_variable; // See PropDeclRare.spread_variable
     Symbol const* spread_namespace;
+    bool spread_fresh; // See PropDeclRare.spread_fresh
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker

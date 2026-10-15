@@ -9,7 +9,7 @@ in a namespace block has no local twin for the symbol chain. Fixed: duplicateVar
 importEqualsError45874, checkerInitializationCrash, moduleAugmentationWithNonExistentNamedImport, and the types of
 globalArrayAugmentationWithAmbientModuleReexportMerge1 (tests ttttCrossFileAliasMerge, ttttUmdGlobalUnknownExportEquals).
 
-Left, all three about the symbols tsgo *clones* rather than merges in place (cloneSymbol in mergeSymbol,
+Left, both about the symbols tsgo *clones* rather than merges in place (cloneSymbol in mergeSymbol,
 cloneTypeAsModuleType in resolveESModuleSymbol), which tttt doesn't make. About one session; start with an
 instrumented tsgo (overlay a patched checker.go: wrap mergeSymbol to log target/source/result, like
 scripts/variancetrace.py's build() does for relater.go; ~3 min to build the probe test binary with `go test -overlay
@@ -21,13 +21,6 @@ scripts/variancetrace.py's build() does for relater.go; ~3 min to build the prob
   `Symbol(knex.Knex, Decl(index.d.ts, 13, 10))` (one declaration, parent knex) and types it `any`: find which symbol
   getSymbolAtLocation returns there (getMergedSymbol of the local is recorded to the inner clone by cloneSymbol;
   something else must win) before modelling it. tttt merges into the namespace in place (merge_into_exports()).
-- globalArrayAugmentationWithAmbientModuleReexportMerge1 (symbols): `foo.items` through `import * as foo from 'foo'`
-  of an `export = foo` function+namespace prints bare `items` in tsgo (probe: also without the test's ambient module
-  merge; `import foo = require` and a namespace-only `export =` print `foo.items`). resolveESModuleSymbol gives the
-  namespace import a clone when the type has signatures (cloneTypeAsModuleType), so the chain can't go through the
-  import; tttt's symbol chain finds `[foo, items]` through the alias's resolved exports (candidate_list() in
-  symbol_chain.c; export_equals_namespace_import_is_clone() already stops is_accessible(), not the exports step).
-  Instrumenting getCandidateListForSymbol on the probe tells why tsgo's exports step doesn't find it either.
 - moduleAugmentationDuringSyntheticDefaultCheck (symbols, types): the augmentation merges into the esModuleInterop
   clone of a namespace import (bugs/binder_modules.md "Export= clones").
 
