@@ -99,6 +99,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationEmptyTupleLines': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLiteralText': {
         errors: true,
         symbols: true,

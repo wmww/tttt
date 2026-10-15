@@ -2610,7 +2610,8 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // (Declaration emit: written on several lines, one element per line: the printer's MultiLineTupleTypeElements,
             // a reused tuple node not being SingleLine)
             bool lines = false;
-            if (d.multiline && d.transformer_node && d.comments && span_valid(node->tuple.span) && vec_tuple_element_size(&node->tuple.elements)) {
+            // (An empty one too: the printer's emitList writes the line break of an empty multi-line list)
+            if (d.multiline && d.transformer_node && d.comments && span_valid(node->tuple.span)) {
                 // (From its full start: a tuple on a line of its own after `=` is multi-line, tsc's pos)
                 char const* close = span_end_ptr(node->tuple.span);
                 while (close > node->tuple.span.buf && close[-1] != ']') close--;

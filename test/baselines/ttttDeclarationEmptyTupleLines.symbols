@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationEmptyTupleLines.ts] ////
+
+=== ttttDeclarationEmptyTupleLines.ts ===
+// An empty tuple written after a line break is a multi-line list: the printer writes its line break
+type M<a, b, c, d> = [a, b, c, d];
+>M : Symbol(M, Decl(ttttDeclarationEmptyTupleLines.ts, 0, 0))
+>a : Symbol(a, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 7))
+>b : Symbol(b, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 9))
+>c : Symbol(c, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 12))
+>d : Symbol(d, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 15))
+>a : Symbol(a, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 7))
+>b : Symbol(b, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 9))
+>c : Symbol(c, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 12))
+>d : Symbol(d, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 15))
+
+export namespace N {
+>N : Symbol(N, Decl(ttttDeclarationEmptyTupleLines.ts, 1, 34))
+
+	export type multiply<t, count extends number> = M<
+>multiply : Symbol(multiply, Decl(ttttDeclarationEmptyTupleLines.ts, 2, 20))
+>t : Symbol(t, Decl(ttttDeclarationEmptyTupleLines.ts, 3, 22))
+>count : Symbol(count, Decl(ttttDeclarationEmptyTupleLines.ts, 3, 24))
+>M : Symbol(M, Decl(ttttDeclarationEmptyTupleLines.ts, 0, 0))
+
+		t,
+>t : Symbol(t, Decl(ttttDeclarationEmptyTupleLines.ts, 3, 22))
+
+		[],
+		count,
+>count : Symbol(count, Decl(ttttDeclarationEmptyTupleLines.ts, 3, 24))
+
+		[]
+	>
+}
+export type E = M<1, [], 2,
+>E : Symbol(E, Decl(ttttDeclarationEmptyTupleLines.ts, 9, 1))
+>M : Symbol(M, Decl(ttttDeclarationEmptyTupleLines.ts, 0, 0))
+
+	[]>;
+export type F = [];
+>F : Symbol(F, Decl(ttttDeclarationEmptyTupleLines.ts, 11, 5))
+
