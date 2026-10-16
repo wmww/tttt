@@ -1,0 +1,56 @@
+//// [test/cases/ttttTupleMissingPropertiesElaboration.ts] ////
+
+=== ttttTupleMissingPropertiesElaboration.ts ===
+// A tuple source lacking several properties of a non-array target says nothing more than the head (tsc's
+// tryElaborateArrayLikeErrors), though the tuple is related as the array it extends (mutation of
+// recursiveTypeReferences1)
+interface H { a: string; b: number; c: boolean; d: string; e: string }
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+>a : Symbol(H.a, Decl(ttttTupleMissingPropertiesElaboration.ts, 3, 13))
+>b : Symbol(H.b, Decl(ttttTupleMissingPropertiesElaboration.ts, 3, 24))
+>c : Symbol(H.c, Decl(ttttTupleMissingPropertiesElaboration.ts, 3, 35))
+>d : Symbol(H.d, Decl(ttttTupleMissingPropertiesElaboration.ts, 3, 47))
+>e : Symbol(H.e, Decl(ttttTupleMissingPropertiesElaboration.ts, 3, 58))
+
+declare const t2: [H, number];
+>t2 : Symbol(t2, Decl(ttttTupleMissingPropertiesElaboration.ts, 4, 13))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+
+const h: H = t2;
+>h : Symbol(h, Decl(ttttTupleMissingPropertiesElaboration.ts, 5, 5))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+>t2 : Symbol(t2, Decl(ttttTupleMissingPropertiesElaboration.ts, 4, 13))
+
+declare const t3: [H, number][];
+>t3 : Symbol(t3, Decl(ttttTupleMissingPropertiesElaboration.ts, 6, 13))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+
+const h3: H[] = t3;
+>h3 : Symbol(h3, Decl(ttttTupleMissingPropertiesElaboration.ts, 7, 5))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+>t3 : Symbol(t3, Decl(ttttTupleMissingPropertiesElaboration.ts, 6, 13))
+
+declare function f(x: H[]): void;
+>f : Symbol(f, Decl(ttttTupleMissingPropertiesElaboration.ts, 7, 19))
+>x : Symbol(x, Decl(ttttTupleMissingPropertiesElaboration.ts, 8, 19))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+
+f(t3);
+>f : Symbol(f, Decl(ttttTupleMissingPropertiesElaboration.ts, 7, 19))
+>t3 : Symbol(t3, Decl(ttttTupleMissingPropertiesElaboration.ts, 6, 13))
+
+declare const o: { x: number }[];
+>o : Symbol(o, Decl(ttttTupleMissingPropertiesElaboration.ts, 10, 13))
+>x : Symbol(x, Decl(ttttTupleMissingPropertiesElaboration.ts, 10, 18))
+
+const h4: H[] = o;
+>h4 : Symbol(h4, Decl(ttttTupleMissingPropertiesElaboration.ts, 11, 5))
+>H : Symbol(H, Decl(ttttTupleMissingPropertiesElaboration.ts, 0, 0))
+>o : Symbol(o, Decl(ttttTupleMissingPropertiesElaboration.ts, 10, 13))
+
+const h5: { a: string; length: string } = t2;
+>h5 : Symbol(h5, Decl(ttttTupleMissingPropertiesElaboration.ts, 12, 5))
+>a : Symbol(a, Decl(ttttTupleMissingPropertiesElaboration.ts, 12, 11))
+>length : Symbol(length, Decl(ttttTupleMissingPropertiesElaboration.ts, 12, 22))
+>t2 : Symbol(t2, Decl(ttttTupleMissingPropertiesElaboration.ts, 4, 13))
+

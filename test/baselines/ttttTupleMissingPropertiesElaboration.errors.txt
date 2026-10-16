@@ -1,0 +1,39 @@
+ttttTupleMissingPropertiesElaboration.ts(6,7): error TS2322: Type '[H, number]' is not assignable to type 'H'.
+ttttTupleMissingPropertiesElaboration.ts(8,7): error TS2322: Type '[H, number][]' is not assignable to type 'H[]'.
+  Type '[H, number]' is not assignable to type 'H'.
+ttttTupleMissingPropertiesElaboration.ts(10,3): error TS2345: Argument of type '[H, number][]' is not assignable to parameter of type 'H[]'.
+  Type '[H, number]' is not assignable to type 'H'.
+ttttTupleMissingPropertiesElaboration.ts(12,7): error TS2322: Type '{ x: number; }[]' is not assignable to type 'H[]'.
+  Type '{ x: number; }' is missing the following properties from type 'H': a, b, c, d, e
+ttttTupleMissingPropertiesElaboration.ts(13,7): error TS2741: Property 'a' is missing in type '[H, number]' but required in type '{ a: string; length: string; }'.
+
+
+==== ttttTupleMissingPropertiesElaboration.ts (5 errors) ====
+    // A tuple source lacking several properties of a non-array target says nothing more than the head (tsc's
+    // tryElaborateArrayLikeErrors), though the tuple is related as the array it extends (mutation of
+    // recursiveTypeReferences1)
+    interface H { a: string; b: number; c: boolean; d: string; e: string }
+    declare const t2: [H, number];
+    const h: H = t2;
+          ~
+!!! error TS2322: Type '[H, number]' is not assignable to type 'H'.
+    declare const t3: [H, number][];
+    const h3: H[] = t3;
+          ~~
+!!! error TS2322: Type '[H, number][]' is not assignable to type 'H[]'.
+!!! error TS2322:   Type '[H, number]' is not assignable to type 'H'.
+    declare function f(x: H[]): void;
+    f(t3);
+      ~~
+!!! error TS2345: Argument of type '[H, number][]' is not assignable to parameter of type 'H[]'.
+!!! error TS2345:   Type '[H, number]' is not assignable to type 'H'.
+    declare const o: { x: number }[];
+    const h4: H[] = o;
+          ~~
+!!! error TS2322: Type '{ x: number; }[]' is not assignable to type 'H[]'.
+!!! error TS2322:   Type '{ x: number; }' is missing the following properties from type 'H': a, b, c, d, e
+    const h5: { a: string; length: string } = t2;
+          ~~
+!!! error TS2741: Property 'a' is missing in type '[H, number]' but required in type '{ a: string; length: string; }'.
+!!! related TS2728 ttttTupleMissingPropertiesElaboration.ts:13:13: 'a' is declared here.
+    

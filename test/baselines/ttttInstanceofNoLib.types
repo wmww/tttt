@@ -1,0 +1,55 @@
+//// [test/cases/ttttInstanceofNoLib.ts] ////
+
+=== ttttInstanceofNoLib.ts ===
+// Without a lib, `instanceof` still narrows: the missing global Object and Function types are the empty object type,
+// which any object derives from (tsc's getGlobalType, narrowTypeByInstanceof) (mutation of awaitedTypeNoLib)
+type NP<T> = T extends Missing ? T : T;
+>NP : NP<T>
+
+class Th<T> {
+>Th : Th<T>
+
+  x: T;
+>x : T
+
+  h<R>(a: NP<R> | Th<R>, c: R | Th<R>, d: Th<R> | undefined) {
+>h : <R>(a: NP<R> | Th<R>, c: R | Th<R>, d: Th<R> | undefined) => void
+>a : Th<R> | NP<R>
+>c : R | Th<R>
+>d : Th<R> | undefined
+
+    if (a instanceof Th) {
+>a instanceof Th : boolean
+>a : Th<R> | NP<R>
+>Th : typeof Th
+
+      const a2: Th<R> = a;
+>a2 : Th<R>
+>a : Th<R>
+    }
+    if (c instanceof Th) {
+>c instanceof Th : boolean
+>c : R | Th<R>
+>Th : typeof Th
+
+      const c2: Th<R> = c;
+>c2 : Th<R>
+>c : Th<R>
+
+    } else {
+      c;
+>c : R
+    }
+    if (!(d instanceof Th)) {
+>!(d instanceof Th) : boolean
+>(d instanceof Th) : boolean
+>d instanceof Th : boolean
+>d : Th<R> | undefined
+>Th : typeof Th
+
+      d;
+>d : undefined
+    }
+  }
+}
+

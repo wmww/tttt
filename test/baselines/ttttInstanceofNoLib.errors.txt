@@ -1,0 +1,49 @@
+error TS2318: Cannot find global type 'Array'.
+error TS2318: Cannot find global type 'Boolean'.
+error TS2318: Cannot find global type 'CallableFunction'.
+error TS2318: Cannot find global type 'Function'.
+error TS2318: Cannot find global type 'IArguments'.
+error TS2318: Cannot find global type 'NewableFunction'.
+error TS2318: Cannot find global type 'Number'.
+error TS2318: Cannot find global type 'Object'.
+error TS2318: Cannot find global type 'RegExp'.
+error TS2318: Cannot find global type 'String'.
+ttttInstanceofNoLib.ts(3,24): error TS2304: Cannot find name 'Missing'.
+ttttInstanceofNoLib.ts(5,3): error TS2564: Property 'x' has no initializer and is not definitely assigned in the constructor.
+
+
+!!! error TS2318: Cannot find global type 'Array'.
+!!! error TS2318: Cannot find global type 'Boolean'.
+!!! error TS2318: Cannot find global type 'CallableFunction'.
+!!! error TS2318: Cannot find global type 'Function'.
+!!! error TS2318: Cannot find global type 'IArguments'.
+!!! error TS2318: Cannot find global type 'NewableFunction'.
+!!! error TS2318: Cannot find global type 'Number'.
+!!! error TS2318: Cannot find global type 'Object'.
+!!! error TS2318: Cannot find global type 'RegExp'.
+!!! error TS2318: Cannot find global type 'String'.
+==== ttttInstanceofNoLib.ts (2 errors) ====
+    // Without a lib, `instanceof` still narrows: the missing global Object and Function types are the empty object type,
+    // which any object derives from (tsc's getGlobalType, narrowTypeByInstanceof) (mutation of awaitedTypeNoLib)
+    type NP<T> = T extends Missing ? T : T;
+                           ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+    class Th<T> {
+      x: T;
+      ~
+!!! error TS2564: Property 'x' has no initializer and is not definitely assigned in the constructor.
+      h<R>(a: NP<R> | Th<R>, c: R | Th<R>, d: Th<R> | undefined) {
+        if (a instanceof Th) {
+          const a2: Th<R> = a;
+        }
+        if (c instanceof Th) {
+          const c2: Th<R> = c;
+        } else {
+          c;
+        }
+        if (!(d instanceof Th)) {
+          d;
+        }
+      }
+    }
+    

@@ -1,0 +1,71 @@
+//// [test/cases/ttttInstanceofNoLib.ts] ////
+
+=== ttttInstanceofNoLib.ts ===
+// Without a lib, `instanceof` still narrows: the missing global Object and Function types are the empty object type,
+// which any object derives from (tsc's getGlobalType, narrowTypeByInstanceof) (mutation of awaitedTypeNoLib)
+type NP<T> = T extends Missing ? T : T;
+>NP : Symbol(NP, Decl(ttttInstanceofNoLib.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 2, 8))
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 2, 8))
+>Missing : Symbol(Missing)
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 2, 8))
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 2, 8))
+
+class Th<T> {
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 3, 9))
+
+  x: T;
+>x : Symbol(Th.x, Decl(ttttInstanceofNoLib.ts, 3, 13))
+>T : Symbol(T, Decl(ttttInstanceofNoLib.ts, 3, 9))
+
+  h<R>(a: NP<R> | Th<R>, c: R | Th<R>, d: Th<R> | undefined) {
+>h : Symbol(Th.h, Decl(ttttInstanceofNoLib.ts, 4, 7))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>a : Symbol(a, Decl(ttttInstanceofNoLib.ts, 5, 7))
+>NP : Symbol(NP, Decl(ttttInstanceofNoLib.ts, 0, 0))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>c : Symbol(c, Decl(ttttInstanceofNoLib.ts, 5, 24))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>d : Symbol(d, Decl(ttttInstanceofNoLib.ts, 5, 38))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+
+    if (a instanceof Th) {
+>a : Symbol(a, Decl(ttttInstanceofNoLib.ts, 5, 7))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+
+      const a2: Th<R> = a;
+>a2 : Symbol(a2, Decl(ttttInstanceofNoLib.ts, 7, 11))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>a : Symbol(a, Decl(ttttInstanceofNoLib.ts, 5, 7))
+    }
+    if (c instanceof Th) {
+>c : Symbol(c, Decl(ttttInstanceofNoLib.ts, 5, 24))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+
+      const c2: Th<R> = c;
+>c2 : Symbol(c2, Decl(ttttInstanceofNoLib.ts, 10, 11))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+>R : Symbol(R, Decl(ttttInstanceofNoLib.ts, 5, 4))
+>c : Symbol(c, Decl(ttttInstanceofNoLib.ts, 5, 24))
+
+    } else {
+      c;
+>c : Symbol(c, Decl(ttttInstanceofNoLib.ts, 5, 24))
+    }
+    if (!(d instanceof Th)) {
+>d : Symbol(d, Decl(ttttInstanceofNoLib.ts, 5, 38))
+>Th : Symbol(Th, Decl(ttttInstanceofNoLib.ts, 2, 39))
+
+      d;
+>d : Symbol(d, Decl(ttttInstanceofNoLib.ts, 5, 38))
+    }
+  }
+}
+

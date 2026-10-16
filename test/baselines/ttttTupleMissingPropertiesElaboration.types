@@ -1,0 +1,50 @@
+//// [test/cases/ttttTupleMissingPropertiesElaboration.ts] ////
+
+=== ttttTupleMissingPropertiesElaboration.ts ===
+// A tuple source lacking several properties of a non-array target says nothing more than the head (tsc's
+// tryElaborateArrayLikeErrors), though the tuple is related as the array it extends (mutation of
+// recursiveTypeReferences1)
+interface H { a: string; b: number; c: boolean; d: string; e: string }
+>a : string
+>b : number
+>c : boolean
+>d : string
+>e : string
+
+declare const t2: [H, number];
+>t2 : [H, number]
+
+const h: H = t2;
+>h : H
+>t2 : [H, number]
+
+declare const t3: [H, number][];
+>t3 : [H, number][]
+
+const h3: H[] = t3;
+>h3 : H[]
+>t3 : [H, number][]
+
+declare function f(x: H[]): void;
+>f : (x: H[]) => void
+>x : H[]
+
+f(t3);
+>f(t3) : void
+>f : (x: H[]) => void
+>t3 : [H, number][]
+
+declare const o: { x: number }[];
+>o : { x: number; }[]
+>x : number
+
+const h4: H[] = o;
+>h4 : H[]
+>o : { x: number; }[]
+
+const h5: { a: string; length: string } = t2;
+>h5 : { a: string; length: string; }
+>a : string
+>length : string
+>t2 : [H, number]
+

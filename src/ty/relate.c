@@ -2724,9 +2724,9 @@ static Ternary props_related_impl(
                 ));
                 report_related(st, 2728, cstr_d("'", name, "' is declared here."), ty_prop_decl_span(missing_prop));
                 cstr_drop(&name);
-            } else if (!elaborate_array_like(me, source, target)) {
+            } else if (!elaborate_array_like(me, shown, target)) {
                 // Nothing to say about an array against a tuple and the like but the head (tsc's
-                // tryElaborateArrayLikeErrors)
+                // tryElaborateArrayLikeErrors), a tuple related as its array is the tuple
                 c_drop(cstr, &source_str, &target_str);
                 return TERNARY_FALSE;
             } else {

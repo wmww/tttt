@@ -2437,9 +2437,12 @@ static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr
         return type;
     }
     Ty const* right_type = ty_flow_expr_type(me, &binary->right);
+    // (Without a lib, the empty object type: tsc's getGlobalType, which anything object derives from)
     Ty const* object = ty_global_object_type(me);
     Ty const* function = ty_global_function_type(me);
-    if (!object || !function || !ty_is_type_derived_from(me, right_type, object)) return type;
+    if (!object) object = ty_empty_object_type(me);
+    if (!function) function = ty_empty_object_type(me);
+    if (!ty_is_type_derived_from(me, right_type, object)) return type;
     Atom const* has_instance = ty_well_known_symbol_name(me, "hasInstance");
     Ty const* predicate = has_instance ? has_instance_predicate_type(me, right_type, has_instance) : nullptr;
     if (predicate) return narrowed_type(me, type, predicate, assume_true, true);
