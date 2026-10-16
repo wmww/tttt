@@ -1,0 +1,68 @@
+//// [test/cases/ttttContravariantInferenceAliasedIntersection.ts] ////
+
+=== ttttContravariantInferenceAliasedIntersection.ts ===
+// A type parameter inferred from one contravariant candidate under a combining priority (return type inference: a
+// generic function argument contextually typed by `(v: T) => R`) is the intersection of the candidates, tsc's
+// getIntersectionType, which flattens a lone aliased intersection into its members: the inferred `C` is
+// `Base & { deps: string[] }`, not `Ctx` (feathers' generators printed `Promise<AppGeneratorContext>`)
+export type Base = { cwd: string };
+>Base : Symbol(Base, Decl(ttttContravariantInferenceAliasedIntersection.ts, 0, 0))
+>cwd : Symbol(cwd, Decl(ttttContravariantInferenceAliasedIntersection.ts, 4, 20))
+
+export type Ctx = Base & { deps: string[] };
+>Ctx : Symbol(Ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 4, 35))
+>Base : Symbol(Base, Decl(ttttContravariantInferenceAliasedIntersection.ts, 0, 0))
+>deps : Symbol(deps, Decl(ttttContravariantInferenceAliasedIntersection.ts, 5, 26))
+
+declare const render: <C extends Base>(t: string) => (ctx: C) => C;
+>render : Symbol(render, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 13))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 23))
+>Base : Symbol(Base, Decl(ttttContravariantInferenceAliasedIntersection.ts, 0, 0))
+>t : Symbol(t, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 39))
+>ctx : Symbol(ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 54))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 23))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 23))
+
+declare function call<T, R>(t: T, f: (v: T) => R): R;
+>call : Symbol(call, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 67))
+>T : Symbol(T, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 22))
+>R : Symbol(R, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 24))
+>t : Symbol(t, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 28))
+>T : Symbol(T, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 22))
+>f : Symbol(f, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 33))
+>v : Symbol(v, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 38))
+>T : Symbol(T, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 22))
+>R : Symbol(R, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 24))
+>R : Symbol(R, Decl(ttttContravariantInferenceAliasedIntersection.ts, 7, 24))
+
+declare const ctx: Ctx;
+>ctx : Symbol(ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 8, 13))
+>Ctx : Symbol(Ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 4, 35))
+
+export const viaCall = call(ctx, render('x'));
+>viaCall : Symbol(viaCall, Decl(ttttContravariantInferenceAliasedIntersection.ts, 9, 12))
+>call : Symbol(call, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 67))
+>ctx : Symbol(ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 8, 13))
+>render : Symbol(render, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 13))
+
+export const viaArrow = (c: Ctx) => call(c, render('x'));
+>viaArrow : Symbol(viaArrow, Decl(ttttContravariantInferenceAliasedIntersection.ts, 10, 12))
+>c : Symbol(c, Decl(ttttContravariantInferenceAliasedIntersection.ts, 10, 25))
+>Ctx : Symbol(Ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 4, 35))
+>call : Symbol(call, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 67))
+>c : Symbol(c, Decl(ttttContravariantInferenceAliasedIntersection.ts, 10, 25))
+>render : Symbol(render, Decl(ttttContravariantInferenceAliasedIntersection.ts, 6, 13))
+
+declare const id: <C extends Base>(c: C) => C;
+>id : Symbol(id, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 13))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 19))
+>Base : Symbol(Base, Decl(ttttContravariantInferenceAliasedIntersection.ts, 0, 0))
+>c : Symbol(c, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 35))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 19))
+>C : Symbol(C, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 19))
+
+export const direct = id(ctx);
+>direct : Symbol(direct, Decl(ttttContravariantInferenceAliasedIntersection.ts, 12, 12))
+>id : Symbol(id, Decl(ttttContravariantInferenceAliasedIntersection.ts, 11, 13))
+>ctx : Symbol(ctx, Decl(ttttContravariantInferenceAliasedIntersection.ts, 8, 13))
+

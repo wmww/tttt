@@ -1,0 +1,59 @@
+//// [test/cases/ttttContravariantInferenceAliasedIntersection.ts] ////
+
+=== ttttContravariantInferenceAliasedIntersection.ts ===
+// A type parameter inferred from one contravariant candidate under a combining priority (return type inference: a
+// generic function argument contextually typed by `(v: T) => R`) is the intersection of the candidates, tsc's
+// getIntersectionType, which flattens a lone aliased intersection into its members: the inferred `C` is
+// `Base & { deps: string[] }`, not `Ctx` (feathers' generators printed `Promise<AppGeneratorContext>`)
+export type Base = { cwd: string };
+>Base : Base
+>cwd : string
+
+export type Ctx = Base & { deps: string[] };
+>Ctx : Ctx
+>deps : string[]
+
+declare const render: <C extends Base>(t: string) => (ctx: C) => C;
+>render : <C extends Base>(t: string) => (ctx: C) => C
+>t : string
+>ctx : C
+
+declare function call<T, R>(t: T, f: (v: T) => R): R;
+>call : <T, R>(t: T, f: (v: T) => R) => R
+>t : T
+>f : (v: T) => R
+>v : T
+
+declare const ctx: Ctx;
+>ctx : Ctx
+
+export const viaCall = call(ctx, render('x'));
+>viaCall : Base & { deps: string[]; }
+>call(ctx, render('x')) : Base & { deps: string[]; }
+>call : <T, R>(t: T, f: (v: T) => R) => R
+>ctx : Ctx
+>render('x') : (ctx: Base & { deps: string[]; }) => Base & { deps: string[]; }
+>render : <C extends Base>(t: string) => (ctx: C) => C
+>'x' : "x"
+
+export const viaArrow = (c: Ctx) => call(c, render('x'));
+>viaArrow : (c: Ctx) => Base & { deps: string[]; }
+>(c: Ctx) => call(c, render('x')) : (c: Ctx) => Base & { deps: string[]; }
+>c : Ctx
+>call(c, render('x')) : Base & { deps: string[]; }
+>call : <T, R>(t: T, f: (v: T) => R) => R
+>c : Ctx
+>render('x') : (ctx: Base & { deps: string[]; }) => Base & { deps: string[]; }
+>render : <C extends Base>(t: string) => (ctx: C) => C
+>'x' : "x"
+
+declare const id: <C extends Base>(c: C) => C;
+>id : <C extends Base>(c: C) => C
+>c : C
+
+export const direct = id(ctx);
+>direct : Ctx
+>id(ctx) : Ctx
+>id : <C extends Base>(c: C) => C
+>ctx : Ctx
+

@@ -2098,6 +2098,16 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
     return inference_call_result_fallback(me, inf, i, keep_literals, nullptr);
 }
 
+// The intersection of contravariant candidates (tsc's getIntersectionType, which has no shortcut for one type: a lone
+// intersection is flattened into its members, so one by an alias is the same intersection without it, `Ctx` printing
+// as `Base & { deps: string[] }`)
+static Ty const* contra_intersection(Checker* me, Ty const* const* types, u32 len) {
+    if (len == 1 && types[0]->kind == TY_INTERSECTION && types[0]->alias) {
+        return ty_intersection(me, types[0]->composite.types.data, types[0]->composite.types.len, nullptr, (TyList){0});
+    }
+    return ty_intersection(me, types, len, nullptr, (TyList){0});
+}
+
 // `*fallback` (if asked for) gets the inference of the other variance when there are both, which the constraint
 // check takes instead of the constraint if it fits (tsc's getInferredType fallbackType)
 Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, bool keep_literals, Ty const** fallback) {
@@ -2151,7 +2161,7 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
     }
     // (Candidates of a priority that implies combining them are intersected)
     Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
-        ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0}) : common_subtype(me, param->contra, param->contra_len);
+        contra_intersection(me, param->contra, param->contra_len) : common_subtype(me, param->contra, param->contra_len);
     if (co && contra) {
         // The covariant inference wins if it fits what the contravariant positions ask for
         // ... and neither its own candidates (it isn't one of a conflicting set) nor those of a type parameter constrained
@@ -2190,7 +2200,7 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
         return reverse ? ty_union(me, param->co, param->co_len, nullptr, (TyList){0}) :
             ty_union_subtype_reduced(me, param->co, param->co_len);
     }
-    if (param->contra_len) return ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0});
+    if (param->contra_len) return contra_intersection(me, param->contra, param->contra_len);
     return nullptr;
 }
 

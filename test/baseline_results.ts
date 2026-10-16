@@ -87,6 +87,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttContravariantInferenceAliasedIntersection': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttCrossFileAliasMerge': {
         errors: true,
         symbols: true,
