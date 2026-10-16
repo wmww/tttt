@@ -2885,7 +2885,8 @@ static void display_node_mapped_inner(Checker* me, TyDisplay d, TypeNode const* 
         // (A node printed as its type isn't mapped, nor is one that has no position here)
         isize_t marked_at = cstr_size(d.target);
         char const* start = decl_map_type_start(node, D_MAP(d));
-        map_at(d, start);
+        // (A parsed one: what JSDoc tags make starts at a tag's `@`)
+        map_at(d, node->pos ? decl_map_jsdoc_line_start(D_MAP(d), start) : start);
         bool marked = cstr_size(d.target) != marked_at;
         TypeNode const* outer = node_fell_back;
         node_fell_back = nullptr;

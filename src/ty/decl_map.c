@@ -267,6 +267,18 @@ static char const* span_end_in(SourceFile const* file, Span span) {
     return end;
 }
 
+char const* decl_map_jsdoc_line_start(SourceFile const* file, char const* start) {
+    if (!file || !file->is_js || !start || !in_file(file, start)) return start;
+    char const* text = cstr_str(&file->contents);
+    char const* c = start;
+    while (c > text && (c[-1] == ' ' || c[-1] == '\t')) c--;
+    if (c <= text || c[-1] != '*') return start;
+    char const* star = c - 1;
+    c = star;
+    while (c > text && (c[-1] == ' ' || c[-1] == '\t')) c--;
+    return c > text && c[-1] == '\n' ? star : start;
+}
+
 char const* decl_map_type_start(TypeNode const* node, SourceFile const* file) {
     // (A JSDoc type literal of nested `@param`/`@property` tags starts at its first tag's `@`: tsgo's
     // parseNestedTypeLiteral)

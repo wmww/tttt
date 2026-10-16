@@ -36,6 +36,9 @@ char const* decl_map_skip_trivia(char const* at, char const* end);
 char const* decl_map_back_trivia(char const* at, char const* start);
 // Where a parsed type node starts and ends in `file` (TypeNode.pos, the ends from its parts), null if it wasn't parsed
 // there. A parenthesized node's are its parentheses', decl_map_type_inner() what is in them
+// A JSDoc type's mapped start: a node on a comment's continuation line starts at its `*` (tsgo maps
+// skipTrivia(pos), the full start being past the previous token: the leading `*` isn't trivia)
+char const* decl_map_jsdoc_line_start(SourceFile const* file, char const* start);
 char const* decl_map_type_start(struct TypeNode const* node, SourceFile const* file);
 char const* decl_map_type_end(struct TypeNode const* node, SourceFile const* file);
 // Inside the parentheses of a parenthesized node (`inner_start` past the `(`, `inner_end` before the `)`); the node's own

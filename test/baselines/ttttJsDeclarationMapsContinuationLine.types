@@ -1,0 +1,37 @@
+//// [test/cases/ttttJsDeclarationMapsContinuationLine.ts] ////
+
+=== b.ts ===
+export interface A { a: number } export interface B { b: number } export interface C { c: number }
+>a : number
+>b : number
+>c : number
+
+=== a.js ===
+/**
+ * @type {import('./b').A & import('./b').B &
+ *       import("./b").C}
+ */
+const config = { a: 1, b: 1, c: 1 };
+>config : import("./b").A & import("./b").B & import("./b").C
+>{ a: 1, b: 1, c: 1 } : { a: number; b: number; c: number; }
+>a : number
+>1 : 1
+>b : number
+>1 : 1
+>c : number
+>1 : 1
+
+export default config;
+>config : import("./b").A & import("./b").B & import("./b").C
+
+/**
+ * @param {string |
+ *   number} x
+ * @returns {Array<
+ *   string>}
+ */
+export function f(x) { return []; }
+>f : (x: string | number) => Array<string>
+>x : string | number
+>[] : never[]
+
