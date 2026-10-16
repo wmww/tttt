@@ -1,0 +1,62 @@
+//// [test/cases/ttttDeclarationInstantiatedSpreadOptionalAnnotation.ts] ////
+
+=== /a.ts ===
+declare const sym: unique symbol;
+>sym : unique symbol
+
+export type Tagged<M extends string> = M & { _: typeof sym };
+>Tagged : Tagged<M>
+>_ : unique symbol
+>sym : unique symbol
+
+export type Opts<T> = {
+>Opts : Opts<T>
+
+  links: T[];
+>links : T[]
+
+  transformer?: Tagged<'moved'>;
+>transformer : Tagged<"moved"> | undefined
+
+  kind?: 'x' | 'y';
+>kind : "x" | "y" | undefined
+
+  count?: number;
+>count : number | undefined
+
+  shape?: { a: 1 };
+>shape : { a: 1; } | undefined
+>a : 1
+
+};
+=== /b.ts ===
+import type { Opts } from './a';
+>Opts : Opts<T>
+
+function copy<T>(o: Opts<T>) {
+>copy : <T>(o: Opts<T>) => { links: T[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<T>
+
+  return { ...o };
+>{ ...o } : { links: T[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<T>
+}
+export function generic<R>(o: Opts<R>) {
+>generic : <R>(o: Opts<R>) => { links: R[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<R>
+
+  return copy(o);
+>copy(o) : { links: R[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>copy : <T>(o: Opts<T>) => { links: T[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<R>
+}
+export function concrete(o: Opts<number>) {
+>concrete : (o: Opts<number>) => { links: number[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<number>
+
+  return copy(o);
+>copy(o) : { links: number[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>copy : <T>(o: Opts<T>) => { links: T[]; transformer?: import("./a").Tagged<'moved'>; kind?: 'x' | 'y'; count?: number; shape?: { a: 1; }; }
+>o : Opts<number>
+}
+

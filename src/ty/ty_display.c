@@ -3019,8 +3019,14 @@ static bool annotation_is_d(Checker* me, TyDisplay d, TypeNode const* node, Ty c
     if (!node->parsed || (node->tag == TYPE_UNIQUE_SYMBOL && node->unique_symbol.key)) return false;
     Ty const* annotated = node_type(me, d, node);
     // (A type that is the error type is taken to be whatever the annotation says: tsgo's pseudoTypeEquivalentToType)
-    return annotated == ty || (optional && annotated == ty_without_undefined(me, ty)) ||
-        (ty->flags & TYF_ERROR);
+    if (annotated == ty || (ty->flags & TYF_ERROR)) return true;
+    Ty const* target = optional ? ty_without_undefined(me, ty) : ty;
+    if (annotated == target) return true;
+    // (Unions identical but for an alias, `string | number | null` and `type Id = number | string | null`: tsgo's
+    // compareTypesIdentical in pseudoTypeEquivalentToType)
+    if (!annotated || annotated->kind != TY_UNION) return false;
+    return (target->kind == TY_UNION && ty_is_related(me, annotated, target, TY_RELATION_IDENTITY)) ||
+        (target != ty && ty->kind == TY_UNION && ty_is_related(me, annotated, ty, TY_RELATION_IDENTITY));
 }
 
 // Prints `ty` by reprinting its declaration's annotation when that's allowed and says the same, else as a type
@@ -5180,7 +5186,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             }
             while (origin->target) origin = origin->target;
         }
-        TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted;
+        // (An instantiation's: the annotation its object literal reused, while it still says the same, checked below:
+        // tsgo's serializeTypeForDeclaration of the property's declaration, instantiated or not)
+        TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted ? prop->decl->asserted : origin->decl->asserted;
         if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !prop_decl_rare(origin->decl)->overload_count &&
             !origin->decl->symbol
         ) {

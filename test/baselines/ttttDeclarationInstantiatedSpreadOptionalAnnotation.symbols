@@ -1,0 +1,71 @@
+//// [test/cases/ttttDeclarationInstantiatedSpreadOptionalAnnotation.ts] ////
+
+=== /a.ts ===
+declare const sym: unique symbol;
+>sym : Symbol(sym, Decl(a.ts, 0, 13))
+
+export type Tagged<M extends string> = M & { _: typeof sym };
+>Tagged : Symbol(Tagged, Decl(a.ts, 0, 33))
+>M : Symbol(M, Decl(a.ts, 1, 19))
+>M : Symbol(M, Decl(a.ts, 1, 19))
+>_ : Symbol(_, Decl(a.ts, 1, 44))
+>sym : Symbol(sym, Decl(a.ts, 0, 13))
+
+export type Opts<T> = {
+>Opts : Symbol(Opts, Decl(a.ts, 1, 61))
+>T : Symbol(T, Decl(a.ts, 2, 17))
+
+  links: T[];
+>links : Symbol(links, Decl(a.ts, 2, 23))
+>T : Symbol(T, Decl(a.ts, 2, 17))
+
+  transformer?: Tagged<'moved'>;
+>transformer : Symbol(transformer, Decl(a.ts, 3, 13))
+>Tagged : Symbol(Tagged, Decl(a.ts, 0, 33))
+
+  kind?: 'x' | 'y';
+>kind : Symbol(kind, Decl(a.ts, 4, 32))
+
+  count?: number;
+>count : Symbol(count, Decl(a.ts, 5, 19))
+
+  shape?: { a: 1 };
+>shape : Symbol(shape, Decl(a.ts, 6, 17))
+>a : Symbol(a, Decl(a.ts, 7, 11))
+
+};
+=== /b.ts ===
+import type { Opts } from './a';
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+
+function copy<T>(o: Opts<T>) {
+>copy : Symbol(copy, Decl(b.ts, 0, 32))
+>T : Symbol(T, Decl(b.ts, 1, 14))
+>o : Symbol(o, Decl(b.ts, 1, 17))
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+>T : Symbol(T, Decl(b.ts, 1, 14))
+
+  return { ...o };
+>o : Symbol(o, Decl(b.ts, 1, 17))
+}
+export function generic<R>(o: Opts<R>) {
+>generic : Symbol(generic, Decl(b.ts, 3, 1))
+>R : Symbol(R, Decl(b.ts, 4, 24))
+>o : Symbol(o, Decl(b.ts, 4, 27))
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+>R : Symbol(R, Decl(b.ts, 4, 24))
+
+  return copy(o);
+>copy : Symbol(copy, Decl(b.ts, 0, 32))
+>o : Symbol(o, Decl(b.ts, 4, 27))
+}
+export function concrete(o: Opts<number>) {
+>concrete : Symbol(concrete, Decl(b.ts, 6, 1))
+>o : Symbol(o, Decl(b.ts, 7, 25))
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+
+  return copy(o);
+>copy : Symbol(copy, Decl(b.ts, 0, 32))
+>o : Symbol(o, Decl(b.ts, 7, 25))
+}
+

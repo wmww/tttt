@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationUnionAnnotationIdenticalButAlias.ts] ////
+
+=== ttttDeclarationUnionAnnotationIdenticalButAlias.ts ===
+// A property of an intersection, `{ id: Id } & { id?: Id }`, has the type the intersection of its declarations' types
+// makes, `string | number | null` without the alias: its first declaration's annotation `NS.Id` still says it (tsgo's
+// pseudoTypeEquivalentToType compares unions identical but for the alias), so the spread prints it (trpc's
+// transformer.d.ts printed `id: string | number | null`)
+export namespace NS {
+  export type Id = number | string | null;
+>Id : Id
+
+  export interface Base { id?: Id; jsonrpc?: '2.0'; }
+>id : Id | undefined
+>jsonrpc : "2.0" | undefined
+
+  export interface Err extends Base { error: string; }
+>error : string
+
+  export interface Res extends Base { result: number; }
+>result : number
+}
+export type Msg = { id: NS.Id } & (NS.Err | NS.Res);
+>Msg : Msg
+>id : NS.Id
+>NS : any
+>NS : any
+>NS : any
+
+export function spread(response: Msg) {
+>spread : (response: Msg) => { jsonrpc?: '2.0'; error: string; id: NS.Id; } | { jsonrpc?: '2.0'; result: number; id: NS.Id; }
+>response : Msg
+
+  return { ...response };
+>{ ...response } : { jsonrpc?: '2.0'; error: string; id: NS.Id; } | { jsonrpc?: '2.0'; result: number; id: NS.Id; }
+>response : Msg
+}
+

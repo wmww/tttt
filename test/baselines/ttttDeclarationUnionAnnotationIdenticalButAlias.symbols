@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationUnionAnnotationIdenticalButAlias.ts] ////
+
+=== ttttDeclarationUnionAnnotationIdenticalButAlias.ts ===
+// A property of an intersection, `{ id: Id } & { id?: Id }`, has the type the intersection of its declarations' types
+// makes, `string | number | null` without the alias: its first declaration's annotation `NS.Id` still says it (tsgo's
+// pseudoTypeEquivalentToType compares unions identical but for the alias), so the spread prints it (trpc's
+// transformer.d.ts printed `id: string | number | null`)
+export namespace NS {
+>NS : Symbol(NS, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 0, 0))
+
+  export type Id = number | string | null;
+>Id : Symbol(Id, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 4, 21))
+
+  export interface Base { id?: Id; jsonrpc?: '2.0'; }
+>Base : Symbol(Base, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 5, 42))
+>id : Symbol(Base.id, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 6, 25))
+>Id : Symbol(Id, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 4, 21))
+>jsonrpc : Symbol(Base.jsonrpc, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 6, 34))
+
+  export interface Err extends Base { error: string; }
+>Err : Symbol(Err, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 6, 53))
+>Base : Symbol(Base, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 5, 42))
+>error : Symbol(Err.error, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 7, 37))
+
+  export interface Res extends Base { result: number; }
+>Res : Symbol(Res, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 7, 54))
+>Base : Symbol(Base, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 5, 42))
+>result : Symbol(Res.result, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 8, 37))
+}
+export type Msg = { id: NS.Id } & (NS.Err | NS.Res);
+>Msg : Symbol(Msg, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 9, 1))
+>id : Symbol(id, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 10, 19))
+>NS : Symbol(NS, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 0, 0))
+>Id : Symbol(NS.Id, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 4, 21))
+>NS : Symbol(NS, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 0, 0))
+>Err : Symbol(NS.Err, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 6, 53))
+>NS : Symbol(NS, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 0, 0))
+>Res : Symbol(NS.Res, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 7, 54))
+
+export function spread(response: Msg) {
+>spread : Symbol(spread, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 10, 52))
+>response : Symbol(response, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 11, 23))
+>Msg : Symbol(Msg, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 9, 1))
+
+  return { ...response };
+>response : Symbol(response, Decl(ttttDeclarationUnionAnnotationIdenticalButAlias.ts, 11, 23))
+}
+

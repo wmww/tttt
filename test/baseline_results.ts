@@ -212,6 +212,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationInstantiatedSpreadOptionalAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLateBoundMemberPaints': {
         errors: true,
         symbols: true,
@@ -345,6 +351,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationTypeParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationUnionAnnotationIdenticalButAlias': {
         errors: true,
         symbols: true,
         types: true,
