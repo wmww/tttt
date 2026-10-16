@@ -1,0 +1,31 @@
+//// [test/cases/ttttMixinBaseNotConstructor.ts] ////
+
+=== ttttMixinBaseNotConstructor.ts ===
+// A class extending a type variable whose constraint isn't a constructor type (TS2507) has no base type, so it isn't
+// a mixin and its constructor isn't checked (TS2545) (mutation of doubleMixinConditionalTypeBaseClassWorks)
+const M = <C extends never>(Base: C) => class extends Base {};
+>M : <C extends never>(Base: C) => typeof (Anonymous class)
+><C extends never>(Base: C) => class extends Base {} : <C extends never>(Base: C) => typeof (Anonymous class)
+>Base : C
+>class extends Base {} : typeof (Anonymous class)
+>Base : C
+
+function f<C extends never>(Base: C) { return class extends Base {}; }
+>f : <C extends never>(Base: C) => typeof (Anonymous class)
+>Base : C
+>class extends Base {} : typeof (Anonymous class)
+>Base : C
+
+function g<C extends string>(Base: C) { return class extends Base {}; }
+>g : <C extends string>(Base: C) => typeof (Anonymous class)
+>Base : C
+>class extends Base {} : typeof (Anonymous class)
+>Base : C
+
+function h<C extends new (x: number) => {}>(Base: C) { return class extends Base {}; }
+>h : <C extends new (x: number) => {}>(Base: C) => { new (x: number): (Anonymous class); prototype: h.(Anonymous class); } & C
+>x : number
+>Base : C
+>class extends Base {} : { new (x: number): (Anonymous class); prototype: h.(Anonymous class); } & C
+>Base : {}
+

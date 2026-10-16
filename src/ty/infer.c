@@ -187,6 +187,11 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
     return ret;
 }
 
+// `type`: the parameter's type, instantiated or not
+Ty const* ty_sig_param_type(Checker* me, SigParam const* param, Ty const* type) {
+    return param->optional && !param->optionality_included ? ty_optional_param_type(me, type) : type;
+}
+
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
 // getRestTypeAtPosition, less its shortcut for a lone rest parameter)
 static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper, bool readonly);
@@ -236,7 +241,7 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
         names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
         labels[j] = names[j] ? param->decl : nullptr;
         // (An optional element includes undefined: tsc's createNormalizedTupleType addOptionality)
-        elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
+        elements[j] = ty_instantiate(me, ty_sig_param_type(me, param, param->type), mapper);
         if (optional && !param->optional && !param->rest) {
             elements[j] = ty_optional_param_type(me, elements[j]);
         }
@@ -281,7 +286,7 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
     if (i < sig->param_count && !sig->params[i].rest) {
         // (An optional parameter's type has the undefined, tsc's getTypeAtPosition)
         Ty const* type = ty_instantiate(me, sig->params[i].type, mapper);
-        return sig->params[i].optional ? ty_optional_param_type(me, type) : type;
+        return ty_sig_param_type(me, &sig->params[i], type);
     }
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
     Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
@@ -352,7 +357,7 @@ static void infer_from_params(
             break;
         }
         infer_step(me, inf, step, source_type,
-            target_param->optional ? ty_optional_param_type(me, target_param->type) : target_param->type);
+            ty_sig_param_type(me, target_param, target_param->type));
     }
 }
 

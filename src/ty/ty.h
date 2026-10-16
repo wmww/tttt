@@ -669,6 +669,10 @@ typedef struct SigParam {
     Ty const* type;
     bool optional;
     bool rest;
+    // `type` already is what the position takes, undefined included or reduced away: a combined union signature's
+    // `(number | undefined) & string` is never (tsc's combineUnionOrIntersectionParameters sets the resolved type, no
+    // optionality added). Else an optional parameter's position takes `type | undefined` (ty_sig_param_type())
+    bool optionality_included;
     struct FunctionArg const* decl; // Where it was declared, kept by instantiation. Null for synthesized ones
 } SigParam;
 
@@ -1525,6 +1529,8 @@ bool ty_signature_has_rest(Signature const* sig);
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual);
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is
 Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
+// What the position of `param` takes: an optional one's type with undefined (tsc's getTypeOfParameter) // infer.c
+Ty const* ty_sig_param_type(Checker* me, SigParam const* param, Ty const* type);
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
 u32 ty_min_argument_count(Checker* me, Signature const* sig); // relate.c: tsc's getMinArgumentCount, less trailing void
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);

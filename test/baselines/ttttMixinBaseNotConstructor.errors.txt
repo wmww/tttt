@@ -1,0 +1,25 @@
+ttttMixinBaseNotConstructor.ts(3,55): error TS2507: Type 'C' is not a constructor function type.
+ttttMixinBaseNotConstructor.ts(4,61): error TS2507: Type 'C' is not a constructor function type.
+ttttMixinBaseNotConstructor.ts(5,62): error TS2507: Type 'C' is not a constructor function type.
+ttttMixinBaseNotConstructor.ts(6,63): error TS2545: A mixin class must have a constructor with a single rest parameter of type 'any[]'.
+
+
+==== ttttMixinBaseNotConstructor.ts (4 errors) ====
+    // A class extending a type variable whose constraint isn't a constructor type (TS2507) has no base type, so it isn't
+    // a mixin and its constructor isn't checked (TS2545) (mutation of doubleMixinConditionalTypeBaseClassWorks)
+    const M = <C extends never>(Base: C) => class extends Base {};
+                                                          ~~~~
+!!! error TS2507: Type 'C' is not a constructor function type.
+!!! related TS2735 ttttMixinBaseNotConstructor.ts:3:12: Did you mean for 'C' to be constrained to type 'new (...args: any[]) => unknown'?
+    function f<C extends never>(Base: C) { return class extends Base {}; }
+                                                                ~~~~
+!!! error TS2507: Type 'C' is not a constructor function type.
+!!! related TS2735 ttttMixinBaseNotConstructor.ts:4:12: Did you mean for 'C' to be constrained to type 'new (...args: any[]) => unknown'?
+    function g<C extends string>(Base: C) { return class extends Base {}; }
+                                                                 ~~~~
+!!! error TS2507: Type 'C' is not a constructor function type.
+!!! related TS2735 ttttMixinBaseNotConstructor.ts:5:12: Did you mean for 'C' to be constrained to type 'new (...args: any[]) => unknown'?
+    function h<C extends new (x: number) => {}>(Base: C) { return class extends Base {}; }
+                                                                  ~~~~~
+!!! error TS2545: A mixin class must have a constructor with a single rest parameter of type 'any[]'.
+    

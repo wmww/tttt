@@ -1,0 +1,54 @@
+//// [test/cases/ttttUnionSignatureOptionalNeverParam.ts] ////
+
+=== ttttUnionSignatureOptionalNeverParam.ts ===
+// A union's combined signature takes the intersection of the parameter types at a position, an optional parameter's
+// undefined included: `(number | undefined) & string` is never, not made `undefined` again by the optionality
+// (tsc's combineUnionOrIntersectionParameters) (mutation of unionTypeCallSignatures4)
+type F1 = (a: string, b?: string) => void;
+>F1 : Symbol(F1, Decl(ttttUnionSignatureOptionalNeverParam.ts, 0, 0))
+>a : Symbol(a, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 11))
+>b : Symbol(b, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 21))
+
+type F2 = (a: string, b?: number, c?: string) => void;
+>F2 : Symbol(F2, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 42))
+>a : Symbol(a, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 11))
+>b : Symbol(b, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 21))
+>c : Symbol(c, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 33))
+
+type F3 = (a: string, ...rest: string[]) => void;
+>F3 : Symbol(F3, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 54))
+>a : Symbol(a, Decl(ttttUnionSignatureOptionalNeverParam.ts, 5, 11))
+>rest : Symbol(rest, Decl(ttttUnionSignatureOptionalNeverParam.ts, 5, 21))
+
+declare var f: F1 | F2 | F3;
+>f : Symbol(f, Decl(ttttUnionSignatureOptionalNeverParam.ts, 6, 11))
+>F1 : Symbol(F1, Decl(ttttUnionSignatureOptionalNeverParam.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 42))
+>F3 : Symbol(F3, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 54))
+
+f("a", "b");
+>f : Symbol(f, Decl(ttttUnionSignatureOptionalNeverParam.ts, 6, 11))
+
+declare var g: F2 | F3;
+>g : Symbol(g, Decl(ttttUnionSignatureOptionalNeverParam.ts, 8, 11))
+>F2 : Symbol(F2, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 42))
+>F3 : Symbol(F3, Decl(ttttUnionSignatureOptionalNeverParam.ts, 4, 54))
+
+g("a", "b");
+>g : Symbol(g, Decl(ttttUnionSignatureOptionalNeverParam.ts, 8, 11))
+
+g("a");
+>g : Symbol(g, Decl(ttttUnionSignatureOptionalNeverParam.ts, 8, 11))
+
+declare var h: F1 | F2;
+>h : Symbol(h, Decl(ttttUnionSignatureOptionalNeverParam.ts, 11, 11))
+>F1 : Symbol(F1, Decl(ttttUnionSignatureOptionalNeverParam.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttUnionSignatureOptionalNeverParam.ts, 3, 42))
+
+h("a", "b");
+>h : Symbol(h, Decl(ttttUnionSignatureOptionalNeverParam.ts, 11, 11))
+
+h("a", undefined);
+>h : Symbol(h, Decl(ttttUnionSignatureOptionalNeverParam.ts, 11, 11))
+>undefined : Symbol(undefined)
+

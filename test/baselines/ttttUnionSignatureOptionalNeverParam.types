@@ -1,0 +1,60 @@
+//// [test/cases/ttttUnionSignatureOptionalNeverParam.ts] ////
+
+=== ttttUnionSignatureOptionalNeverParam.ts ===
+// A union's combined signature takes the intersection of the parameter types at a position, an optional parameter's
+// undefined included: `(number | undefined) & string` is never, not made `undefined` again by the optionality
+// (tsc's combineUnionOrIntersectionParameters) (mutation of unionTypeCallSignatures4)
+type F1 = (a: string, b?: string) => void;
+>F1 : F1
+>a : string
+>b : string | undefined
+
+type F2 = (a: string, b?: number, c?: string) => void;
+>F2 : F2
+>a : string
+>b : number | undefined
+>c : string | undefined
+
+type F3 = (a: string, ...rest: string[]) => void;
+>F3 : F3
+>a : string
+>rest : string[]
+
+declare var f: F1 | F2 | F3;
+>f : F1 | F2 | F3
+
+f("a", "b");
+>f("a", "b") : void
+>f : F1 | F2 | F3
+>"a" : "a"
+>"b" : "b"
+
+declare var g: F2 | F3;
+>g : F2 | F3
+
+g("a", "b");
+>g("a", "b") : void
+>g : F2 | F3
+>"a" : "a"
+>"b" : "b"
+
+g("a");
+>g("a") : void
+>g : F2 | F3
+>"a" : "a"
+
+declare var h: F1 | F2;
+>h : F1 | F2
+
+h("a", "b");
+>h("a", "b") : void
+>h : F1 | F2
+>"a" : "a"
+>"b" : "b"
+
+h("a", undefined);
+>h("a", undefined) : void
+>h : F1 | F2
+>"a" : "a"
+>undefined : undefined
+

@@ -1336,6 +1336,8 @@ static void class_check_mixin(ClassDecl* me, ErrorCtx* errs) {
     // getBaseConstructorTypeOfClass, isConstructorType)
     Ty const* apparent = ty_apparent_type(checker, base_constructor);
     if (apparent->flags & TYF_ANY) return;
+    // (Nor is a primitive or never: `C extends never`)
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && apparent->kind != TY_UNION) return;
     if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !ty_members(checker, apparent)->construct_count) return;
     // (Without a name, the first token: tsc's getErrorSpanForNode)
     Span span = span_valid(my name) ? my name : block_first_token(my full_span);
