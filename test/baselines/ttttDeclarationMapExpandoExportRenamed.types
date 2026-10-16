@@ -1,0 +1,33 @@
+//// [test/cases/ttttDeclarationMapExpandoExportRenamed.ts] ////
+
+=== ttttDeclarationMapExpandoExportRenamed.ts ===
+// An expando assigned an identifier under another name is `export { x as y }`, x mapped to the assigned identifier
+// (sequelize's `sql.join = joinSql`); one under its own name isn't mapped
+function joinSql(a: string) { return a; }
+>joinSql : (a: string) => string
+>a : string
+>a : string
+
+function attribute(a: string) { return a; }
+>attribute : (a: string) => string
+>a : string
+>a : string
+
+export function sql() { return 1; }
+>sql : { (): number; attribute: (a: string) => string; join: (a: string) => string; }
+>1 : 1
+
+sql.attribute = attribute;
+>sql.attribute = attribute : (a: string) => string
+>sql.attribute : (a: string) => string
+>sql : { (): number; attribute: (a: string) => string; join: (a: string) => string; }
+>attribute : (a: string) => string
+>attribute : (a: string) => string
+
+sql.join = joinSql;
+>sql.join = joinSql : (a: string) => string
+>sql.join : (a: string) => string
+>sql : { (): number; attribute: (a: string) => string; join: (a: string) => string; }
+>join : (a: string) => string
+>joinSql : (a: string) => string
+

@@ -1,0 +1,30 @@
+//// [test/cases/ttttDeclarationMapExpandoExportRenamed.ts] ////
+
+=== ttttDeclarationMapExpandoExportRenamed.ts ===
+// An expando assigned an identifier under another name is `export { x as y }`, x mapped to the assigned identifier
+// (sequelize's `sql.join = joinSql`); one under its own name isn't mapped
+function joinSql(a: string) { return a; }
+>joinSql : Symbol(joinSql, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 0, 0))
+>a : Symbol(a, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 2, 17))
+>a : Symbol(a, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 2, 17))
+
+function attribute(a: string) { return a; }
+>attribute : Symbol(attribute, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 2, 41))
+>a : Symbol(a, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 3, 19))
+>a : Symbol(a, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 3, 19))
+
+export function sql() { return 1; }
+>sql : Symbol(sql, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 3, 43))
+
+sql.attribute = attribute;
+>sql.attribute : Symbol(sql.attribute, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 4, 35))
+>sql : Symbol(sql, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 3, 43))
+>attribute : Symbol(sql.attribute, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 4, 35))
+>attribute : Symbol(attribute, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 2, 41))
+
+sql.join = joinSql;
+>sql.join : Symbol(sql.join, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 5, 26))
+>sql : Symbol(sql, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 3, 43))
+>join : Symbol(sql.join, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 5, 26))
+>joinSql : Symbol(joinSql, Decl(ttttDeclarationMapExpandoExportRenamed.ts, 0, 0))
+

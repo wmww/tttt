@@ -3774,7 +3774,12 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, Span name, bool
                 }
                 has_export = true;
                 cstr text = cstr_from("export { ");
-                cstr_append_sv(&text, span_sv(expr_outer_span(value)));
+                // (The specifier's name is the assigned identifier, mapped when the specifier renames it: tsgo's
+                // `export { joinSql as join }` maps joinSql, `export { attribute }` nothing)
+                my out = &text;
+                if (csview_equals_sv(span_sv(expr_outer_span(value)), member_name)) w(me, span_sv(expr_outer_span(value)));
+                else w_name(me, expr_outer_span(value));
+                my out = outer;
                 if (!csview_equals_sv(span_sv(expr_outer_span(value)), member_name)) {
                     cstr_append_sv(&text, c_sv(" as "));
                     cstr_append_sv(&text, member_name);
