@@ -3,51 +3,28 @@ The work queue for "suite checker bugs" sessions: diagnostics tttt doesn't repor
 the failing tests behind them. Find fresh buckets with `scripts/failstats.py` (single-code tests: errors fail on one code
 alone in `build/failstats/tests.tsv`) and `scripts/unimplemented_codes.sh` (codes `src/` never mentions). Every test named
 here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in `harness.md`, type-core causes in
-`type_core.md`). Entries naming a mutant (`mutNNNN`, "X delete-stmt") describe a mutation of a test that itself passes; five of them rechecked as probes 2026-10-09
-(satisfies getter, `extends Object?.Bar`, drop-as, spread loop, deferredLookupTypeResolution2) all still differ.
+`type_core.md`). Entries naming a mutant (`mutNNNN`, "X delete-stmt") describe a mutation of a test that itself passes (pruned again 2026-10-16 by probes and hand-made mutants).
 
 ## Known missing checks
-- `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 on the
-  member's type argument is missing (xstate).
-- Missing TS2353 for `const x: Trans<E> = { NEXT: ... }` in a generic function with `Trans<E> = { [K in E['type'] |
-  '*']?: ... }` (xstate; excess property checks against a generic mapped type).
-- `declare const B = -1n` under a pre-ES2020 target lacks TS2737.
-- TS2507 "Type 'X' is not a constructor function type" for an `extends` expression (only `new` reports it), and its
-  related TS2735 for a type parameter ("Did you mean for 'T' to be constrained to type 'new (...args: any[]) =>
-  ...'?"). Plan 32 leftover.
 - **JS**: TS2565 for a property declared by a JS expression statement (`/** @type {F} */ C.prototype.m;`) read in the
   same flow container (tsc's getFlowTypeOfAccessExpression with assumeUninitialized); TS7032 for a setter whose type
   comes from `@type` (probe plan19/webpack/jsdoc_accessor_type.ts).
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
-  check only knows class and member decorators).
-- **Classes**: TS2386 across merged interface declarations (interface.c checks per body); TS2687 skips statics and
-  method/accessor pairs (hacks.md).
+  check only knows class and member decorators). In tsgo it comes from the emit resolver only (`m(@dec(C.s) x)`: the
+  suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI.
+- **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md).
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
-  exempts any property whose parent is the class); `globalThis.globalThis = x` (TS2540). Private names: TS18015.
-- **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc. TS2300 for a second
-  `export =`.
-- **Operators**: `void` operands/objects (UndefinedFacts in tsc: `v.x` with `v: void` is TS18048) aren't checked like
-  undefined. `for (x in o)` with a non-declaration target: TS2322 here, TS2405 in tsc.
-- **Type predicates**: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
-  callee without explicit types), a predicate function returning non-boolean.
+  exempts any property whose parent is the class). Private names: TS18015.
+- **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc.
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests plan 37 named for them
-  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types; TS7017
-  (`typeof globalThis` has no index signature).
+  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types.
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
-  infers more eagerly than tsc, so the two can disagree; `await` in a namespace body
-  counts as top level (tsc: TS1308).
-- **TS2538 with `any`**: `any[[]]` (a tuple as an index type on `any`): tsc's getPropertyTypeForIndexType reports past
-  the `any` object shortcut.
-- **Iteration**: TS2489/TS2490 (iterator without `next`/`value`), TS2763-2765 (iterator next-type mismatches);
+  infers more eagerly than tsc, so the two can disagree.
+- **Iteration**: TS2489 (iterator without `next`), TS2763-2765 (iterator next-type mismatches);
   generator next types aren't inferred from `yield` uses (tsc's `nextTypes`).
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
   require }` isn't type-only for TS2441; a nested
   `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace).
-- **Templates**: `${symbol}` not rejected.
-- **Misc**: TS2353 for an object literal assigned to an assignment pattern (`({ a } = { a, b })`); TS2561/TS2820 want
-  the spelling suggestion (`spelling_suggestion()` exists); TS2551 suggestions don't filter inaccessible members;
-  TS2793 only for function declarations, not overloaded methods/constructors (`add_implementation_success`); TS2406
-  (`for (#x in o)` says TS1451).
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
   one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
@@ -64,24 +41,10 @@ Each one mutant:
   body uses `a`: the binding element's type is computed (with error) from the contextual `unknown` before
   assignContextualParameterTypes replaces unknown by the pattern's type (`f(v, ({ b }) => { b; })` errors,
   `f(v, ({ b }) => {})` doesn't). tttt types elements once, lazily, from the final parameter type.
-- expandoFunctionSymbolProperty delete-stmt: an interface member with an unresolved (any-typed) computed key,
-  `readonly [symb]: boolean`, makes a number index signature in tsc (getIndexInfosOfIndexSymbol with
-  hasLateBindableIndexSignature: any is assignable to number), so `() => void` isn't assignable (TS2322 "Index
-  signature for type 'number' is missing"). tttt's late-bound index signatures (builder_add_computed_index_infos) exist
-  for classes only. Odd tsc detail when extending to interfaces: `interface A { [s]: boolean }` with `s: string` gives
-  A a string index whose reads are `any` (keyof A is string | number), while an any key's number index reads boolean.
-- contextualTypeFunctionObjectPropertyIntersection extends-object: `[K in TEvent["type"] as K extends Object<string> ?
-  K : never]?: Action<TEvent extends { type: K } ? TEvent : never>` (Object<string> is TS2315, errorType, so the
-  conditional is errorType and the key an any-keyed index signature) still gives `FOO: (ev) => ...` its contextual
-  type in tsc; tttt says TS7006. Repro: the interface MC/cm pair in the mutant (a reduced mapped type without the
-  `TEvent extends { type: K }` value type works).
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
   getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
   it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it.
-- infinitelyExpandingTypes1 add-optional: `owner?: List<List<T>>` against `owner: MyList<MyList<T>>` reaches tsc's
-  depth limit (TS2321 "Excessive stack depth comparing List<number> and MyList<number>" on `l == m`); tttt's
-  deeply-nested check stops it first. Needs tsc's exact isDeeplyNestedType accounting through optional properties.
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
   overload list).
@@ -106,14 +69,6 @@ Each one mutant:
 - Known families: typeGuardsAsAssertions null-arg and arrayFrom null-arg (tsc's errors from loop-flow / early
   binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
   finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
-- deferredLookupTypeResolution2 delete-stmt (StringContains deleted, so `ObjectHasKey<O, L>` is a named error type):
-  tsc reports TS2538 for `(X & { [k: string]: 'true' })[ObjectHasKey<T, '1'>]` (an object with a string index) but not
-  for `{ true: 'true' }[ObjectHasKey<T, '1'>]`; tttt reports both. A non-generic probe (`{ a: 1 }[G<1>]`,
-  `{ a: 1 }[Nope]`) gives TS2538 on both sides, so it's how a generic instantiation of an alias over the error type
-  is treated as an index (getPropertyTypeForIndexType's string-index branch vs the generic deferral).
-- mappedTypeAsClauseRelationships drop-as (line 17's ` as P` deleted): tsc reports TS2313 "Type parameter 'P' has a
-  circular constraint" at (16,33) plus two TS2322 that follow from it; tttt reports none. Not investigated (likely
-  circular constraint detection for a mapped type's key parameter, plan 39 area).
 
 ## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
 All four are check-order effects of tsc's checker reporting during type computation, which tttt's separate
@@ -194,23 +149,17 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   level, where tsgo relates each conditional's constraints to the whole union (RecursionFlags.Source) and only pushes
   the member inside unionOrIntersectionRelatedTo's attempts (popped after). Find which tttt path pushes the target
   member again inside an attempt (relate.c's conditional-source handling vs `some_related`).
-- vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
-  }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target
-  `Array<IWorkspaceFileEditDto | IWorkspaceTextEditDto | IWorkspaceCellEditDto>`, `Dto<T>` a conditional over a
-  homomorphic mapped type over `Omit<...> & {...}`. Three reductions all match tsc (which reports TS2375 there too).
-  Lead: tsc's elaborateElementwise (getBestMatchIndexedAccessTypeOrUndefined, then getBestMatchingType for a union
-  target member lacking the property may skip it). Next step: instrument tsc's elaborateElementwise on the real file.
 - Seed-5 mutation leftovers (triage 2026-10-07, `MUTATE_DIR=/tmp/tb-mutate scripts/mutate.py -n 8000 --seed 5`; 25 left):
-  `if (true) type s = string;` (TS1156) is bound into the enclosing block-scope container in tsc, so an earlier `"" as
-  s` resolves (tttt: spurious TS2304; interfaces work); `[...x = a] = a` never checks a rest element's initializer
+  `[...x = a] = a` never checks a rest element's initializer
   (TS1186 only), tttt resolves `a` at bind time (TS2304), `export default v` in a block likewise; `interface C1 extends
-  Object?.Bar` (TS2499) still resolves the name in tsc (TS2702 too); two `get [Symbol.hasInstance]()` (TS2355 from the
-  merged accessor's type); `({ key }) => {}` under a `[testD()]` computed key with testD unresolved is TS7031 in tsc
+  Object?.Bar` (TS2499) still resolves the name in tsc (TS2702 too); `({ key }) => {}` under a `[testD()]` computed key with testD unresolved is TS7031 in tsc
   (reason not found); `Object<Initable> & Initable` constraint (TS2315) then a mixin: tsc says TS2507 on `{...} & K`;
   missing TS2313 (mut4105/mut3177, plan 39); 9 text/elaboration ones.
-- Seed-4 mutation leftovers (`MUTATE_DIR=/tmp/tc-mutate4 scripts/mutate.py --last`, 21 left, lib DOM union order WONTFIX):
-  missing TS2339 x3, spurious TS2304 x3, TS2420, TS1109, TS2347, TS2741, TS2403, TS2355, TS2359, TS2551->TS2339,
-  spurious TS2322 (mut2988); elaboration paths mut4551/mut7482. Not looked at.
+- Seed-4 mutation leftovers (rerun 2026-10-16, `scripts/mutate.py -n 8000 --seed 4`: 12 differ, the suite's passing set
+  has moved so the mutants aren't the original 21's): missing TS2589 x2 (esNextWeakRefs_IterableWeakMap member-typo),
+  missing TS2430 (jsonRawJSON2), spurious TS2693 (reachabilityChecksNoCrash1 never-const), missing TS2698
+  (nestedSpreadsAndWidening), text TS2322 (templateLiteralTypeSurrogatePairConcatenation), and known families
+  (TS2310, TS2590, TS7022, localTypeParameterInferencePriority, signatureCombiningRestParameters1). Not looked at.
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
 (function_local_symbol_decls() and check_export_merge() patch over it; hacks.md "Exported and local declarations").
@@ -233,9 +182,6 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 - TS6229 isn't checked for union tag types or inside an overload chain.
 
 ## Messages: elaboration and printing (`scripts/errtextdiff.py`)
-- Into a `NoInfer` member: against `NoInfer<{ type: 'A' }> | Expr` tsc elaborates to `'"B"' is not assignable to
-  '"A"'`, tttt reports the whole argument (best_matching_type doesn't look through the substitution). tttt also adds
-  TS6500 related info on `NoInfer<{...}>` targets, tsc doesn't.
 - Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
   member; tttt omits it.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
@@ -257,9 +203,8 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported.
 
 ## From the 2026-10-08 hacks audit (parser, flow)
-- The parser drops some syntax with its diagnostics: decorators before an import in `parse_decl_statement()`'s fallback
-  (TS1206 lost); decorators without a declaration (tsc's MissingDeclaration: TS1128 at `@` instead of TS1146); index
-  signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304 in `[a = b]` lost).
+- The parser drops index signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304
+  in `[a: string = b]` lost).
 - `let o: { x?: number } | number = 1; ({ ...o } = { x: 1 });`: tsc reports TS2698 at the rest target `o` (narrowed
   to number), tttt nothing. Mechanism: the right side asks for its contextual type, which is getTypeOfExpression of
   the left pattern, i.e. checkObjectLiteral with its spread check (no TS2698 when the right asks for none: `= v as T`).
@@ -271,17 +216,6 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 
 ## Flagflip after agent D's distributed type parameters (2026-10-09, every cell but vscode: 453 -> 141 missing)
 The 141 are almost all the corpora's own default-flag misses repeated in every cell:
-- drizzle mysql2/session.ts:281, planetscale-serverless/session.ts:198, singlestore/session.ts:277 TS2416: tsgo finds
-  `MySqlQueryResultHKT` not assignable to `MySql2QueryResultHKT` through `with(...).update(...).set(...)`'s
-  MySqlUpdateBase<..., TQueryResult, ...>; tttt measures MySqlUpdateBase's TQueryResult variance as invariant +
-  unreliable (TTTT_DUMP_VARIANCES: 8) and the structural fallback passes. Variance measurement.
-- vue compiler-sfc/src/style/pluginScoped.ts:107 TS5115 ('Container', 'Diff' of postcss-selector-parser), and TS7006 at
-  :190/:235 (`n.nodes[0].each(ss => ...)`: the callback parameter is any once the instantiation gave up). tttt never
-  hits the instantiation-stack circularity there.
-- vue runtime-dom/src/directives/vModel.ts:446 TS2345 (`DirectiveBinding<any, string>` against the intersection of a
-  union's getSSRProps parameters): a reduced probe (DirectiveBinding/ObjectDirective/DirectiveHook, a union of three
-  ObjectDirectives) reports it in tttt too, so it's something in vue's full types (HostElement intersections of
-  ModelDirective, the contextually typed `vModelDynamic.getSSRProps = (binding, vnode) => ...`).
 - vue pluginScoped.ts:190 and :235 TS7006 (`n.nodes[0].each(ss => ...)`, n a postcss-selector-parser Pseudo): what
   tsgo's eager-base runaway (TS5115 at :107, which tttt reports since 2026-10-15) leaves behind. tsgo resolves Pseudo's
   base `Container<string, Selector>`'s type arguments in its deepest round, at the depth limit, so `Selector` is the
@@ -315,8 +249,7 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     this._d } set d(v: typeof this._d) {...} }` and `inv.d = src` with src `{ kind: "s"; a: boolean | undefined } |
     undefined` against `D { kind: "s"; a?: boolean }`. Needs the missing type to survive reads (deep).
   - vscode/eopt extensionsActions.ts:578 extra TS2412 next to tsc's TS2769 (dialogService.prompt's generic overloads,
-    `custom: cond ? undefined : {...}`), and chatGeneratedImages.fixture.ts:101/102 missing TS2322 (elements after
-    spreads of an array literal against a union element type): neither reproduced in a probe.
+    `custom: cond ? undefined : {...}`): not reproduced in a probe.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - **Suggestion diagnostics** (harness only, `@captureSuggestions`): TS6807 overshifts and TS6385 'x' is deprecated for
@@ -325,11 +258,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   deprecated signatures (a function's reference is decided by the call's signature in tsc: isUncalledFunctionReference),
   `@deprecated` on a declaration whose statement isn't right after the comment (declaration_deprecated() goes back over
   keywords only: the second declarator of `const a = 1, b = 2`). The CLI never prints suggestions.
-- types/ember/v2 (DT sweep): `import Ember from "ember"` in a test with `declare global { interface Function extends
-  Ember.FunctionPrototypeExtensions {} }`, the package a script whose `declare module "ember"` is what the import
-  means: tsgo reports TS2306 "is not a module" (then TS2339s), apparently because the alias is resolved while the
-  global augmentation merges, before the script's ambient modules are in the globals (8-line repro: an @types/ember
-  with `declare module "ember" { namespace Ember {...} export default Ember }`).
 
 ## Mutation seed 81 leftovers (2026-10-16, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 6000 --seed 81`)
 16 -> 7 differing (fixed: indexed access type's missing key resolving the object's members, never's property the
