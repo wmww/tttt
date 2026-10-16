@@ -128,6 +128,33 @@ tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
 Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react
 and nest are the sensitive ones: plan 63 stage 1 cost them 0.6-0.8%), the K1/T4 table rerun.
 
+## Where it stands (2026-10-15, todo entry 9's perf session, `scripts/bench.sh --runs 3 --bun`)
+Best wall s / peak MB; defaults = every core for both (tttt one checker per thread, recycling at 256 MB), single =
+`--singleThreaded` / `--threads=1`:
+| corpus | tttt | bun | tttt single | bun single |
+|---|---|---|---|---|
+| TypeScript6 compiler | 0.30 / 271 | 0.46 / 216 | 0.58 / 217 | 0.84 / 213 |
+| type-fest | 0.84 / 613 | 2.05 / 563 | 1.66 / 379 | 3.79 / 1012 |
+| valibot | 0.24 / 308 | 0.48 / 154 | 0.45 / 251 | 1.05 / 278 |
+| react | 0.12 / 169 | 0.36 / 299 | 0.19 / 145 | 0.39 / 177 |
+| nest | 0.10 / 144 | 0.13 / 177 | 0.17 / 127 | 0.22 / 156 |
+| webpack | 0.70 / 628 | 1.12 / 362 | 1.34 / 525 | 2.17 / 380 |
+| zod | 0.38 / 522 | 0.71 / 321 | 0.72 / 383 | 1.38 / 389 |
+| xstate | 0.19 / 272 | 0.29 / 162 | 0.36 / 215 | 0.59 / 174 |
+| drizzle | 0.52 / 595 | 1.03 / 342 | 0.87 / 387 | 1.66 / 376 |
+| vue | 0.41 / 386 | 0.57 / 220 | 0.76 / 330 | 1.21 / 285 |
+| effect | 0.72 / 722 | 1.39 / 315 | 1.47 / 531 | 3.18 / 375 |
+| vscode | 6.13 / 2778 | 7.99 / 1572 | 13.67 / 2485 | 20.59 / 1417 |
+| excalidraw | 0.48 / 467 | 0.81 / 277 | 0.92 / 373 | 1.50 / 358 |
+| tanstack-router | 0.34 / 391 | 0.73 / 333 | 0.65 / 333 | 1.22 / 325 |
+tttt is 1.3-3x faster than bun at the defaults (vscode and nest 1.3x, the narrowest) and 1.3-2.3x single-threaded. Memory:
+single-threaded tttt is within 1.4x of bun except vscode (1.75x) and effect (1.4x), at or below it on type-fest,
+react, nest; at the defaults bun's per-thread state is far smaller (effect 2.3x, valibot 2.0x, vscode, webpack,
+drizzle, vue, zod 1.6-1.8x), because tttt's checkers each hold up to 128 MB and their own copy of the libraries' types.
+Two levers left: the program (the compact AST decision, stage 2 item 3) and the per-checker share at T4 (128 MB
+floor; 64 MB cost vscode +6% wall in stage 1). Recycling's warm-up isn't a lever: it is redone shared work
+(bugs/perf_leads.md "Recycling's cost").
+
 ## Not doing
 - Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer
   return types from bodies anywhere, in any later checker.

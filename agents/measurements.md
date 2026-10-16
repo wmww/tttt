@@ -196,44 +196,44 @@ tsc 4.700, type-fest 19.256, valibot 3.458 (3.456 at 65aa0d23), react 1.506, nes
 xstate 2.726, drizzle 6.000, vue 6.598, effect 10.215, vscode 89.370, excalidraw 7.853, tanstack-router 5.391 G.
 Everything content-mapper is gated on the option: no corpus uses it.
 
-## Perf session (2026-10-14, todo entry 8)
-`scripts/bench.sh --runs 3` at the session start (0d243c6c, nothing else running; best wall s / peak RSS MB;
-defaults = 4 checkers on every core for both, single = `--singleThreaded`):
-| corpus | tttt | tsgo | tttt single | tsgo single |
-|---|---|---|---|---|
-| TypeScript6 compiler | 0.30 / 270 | 0.97 / 492 | 0.57 / 218 | 1.38 / 409 |
-| type-fest | 0.76 / 832 | 7.28 / 5664 | 1.41 / 716 | 8.22 / 4233 |
-| valibot | 0.23 / 316 | 1.29 / 815 | 0.45 / 257 | 1.92 / 631 |
-| react | 0.11 / 195 | 0.68 / 448 | 0.18 / 144 | 0.65 / 279 |
-| nest | 0.10 / 141 | 0.24 / 233 | 0.17 / 127 | 0.34 / 192 |
-| webpack | 0.72 / 627 | 2.08 / 1164 | 1.35 / 529 | 3.22 / 913 |
-| zod | 0.36 / 519 | 2.02 / 1401 | 0.68 / 440 | 2.66 / 937 |
-| xstate | 0.18 / 263 | 0.73 / 463 | 0.35 / 210 | 1.00 / 353 |
-| drizzle | 0.49 / 641 | 2.59 / 1671 | 0.78 / 444 | 2.71 / 902 |
-| vue | 0.40 / 382 | 1.44 / 837 | 0.75 / 335 | 2.27 / 666 |
-| effect | 0.71 / 784 | 2.60 / 1579 | 1.46 / 691 | 4.19 / 1216 |
-| vscode | 5.85 / 4782 | 14.58 / 7982 | 12.96 / 4160 | 26.50 / 6756 |
-| excalidraw | 0.50 / 464 | 2.90 / 2023 | 0.95 / 366 | 2.78 / 897 |
-| tanstack-router | 0.34 / 385 | 2.01 / 963 | 0.65 / 327 | 2.55 / 668 |
-| TypeScript6 `-b` | 1.12 / - | 2.00 / 576 | - | 2.97 / 513 |
-2.5-9.6x faster than tsgo at defaults (vscode 2.5x, type-fest 9.6x), 2.0-5.8x single-threaded, 0.15-0.6x its RSS;
-within drift of 2026-10-12's (vscode peak 5000 -> 4782 MB at defaults: plan 63 stage 1).
-- perfsweep (quiet machine, `oracles.py`'s): check median **0.16x** tsgo, types median 0.68, worst 1.62 (date-fns/pkgs/docs,
-  34k vs 21k types, 35 ms: not worth chasing), peak RSS median 0.64, worst 0.80. 14 small projects showed tttt's RSS
-  above tsgo's: an artifact (wait4's ru_maxrss carries the forked Python's ~45 MB over exec, both sides); the RSS ratios
-  now leave out projects under 64 MB.
-- Scaling probes (`scripts/scaleprobe.py`, new): five quadratic paths fixed (array literal contexts, statement
-  reachability, object literal / interface / class member checks), e.g. 64k-member object literal 5.5 -> 0.05 s, 64k-member
-  interface 13.7 -> 0.03 s, 32k-member class 7.4 -> 0.03 s, 64k statements 4.0 -> 0.07 s (tsgo 0.1-0.2 s). Full list
-  in perf_leads.md "Time".
-- Instructions (callgrind), session start -> end: tsc 4.766 -> **4.681** (-1.8%), type-fest 19.258 -> 19.254, valibot
-  3.450 -> 3.445, react 1.525 -> **1.494** (-2.0%), nest 1.183 -> 1.174, webpack 10.898 -> **9.964** (-8.6%: JSDoc host
-  lookup on minified lines 3.5%, array literal contexts 3%, the reachability memo the rest), zod 5.065 -> 5.049, xstate
-  2.711 -> 2.712, drizzle 6.019 -> 5.952 (-1.1%), vue 6.601 -> 6.581, effect 10.153 -> 10.151, vscode 90.442 -> **89.035**
-  (-1.6%), excalidraw 7.940 -> 7.830 (-1.4%), tanstack-router 5.420 -> 5.375 G. Against the window's start (Triage
-  2026-10-13) only type-fest is up more than 1% (+1.4%: TS2574's generic variadic check +0.84%, accepted in entry 7).
-- Every oracle unchanged: suite 13516 (+1 own test), corpora, DT sweep 8594, `$ExpectType` 68637, flagflip 42 / 6 / 3,
-  source sweep sample 811 / 822, kdiff 4 / 3363.
+## Perf session (2026-10-15/16, todo entry 9)
+`scripts/bench.sh --runs 3 --bun` (bun 1.4.3: `npm pack @oven/bun-linux-x64@1.4.3`; best wall s / peak RSS MB;
+defaults = every core, single = `--singleThreaded` / bun `--threads=1`):
+| corpus | tttt | tsgo | bun | tttt single | tsgo single | bun single |
+|---|---|---|---|---|---|---|
+| TypeScript6 compiler | 0.30 / 271 | 0.98 / 536 | 0.46 / 216 | 0.58 / 217 | 1.41 / 418 | 0.84 / 213 |
+| type-fest | 0.84 / 613 | 7.47 / 5368 | 2.05 / 563 | 1.66 / 379 | 8.21 / 4162 | 3.79 / 1012 |
+| valibot | 0.24 / 308 | 1.30 / 831 | 0.48 / 154 | 0.45 / 251 | 1.97 / 655 | 1.05 / 278 |
+| react | 0.12 / 169 | 0.69 / 455 | 0.36 / 299 | 0.19 / 145 | 0.66 / 296 | 0.39 / 177 |
+| nest | 0.10 / 144 | 0.25 / 236 | 0.13 / 177 | 0.17 / 127 | 0.35 / 192 | 0.22 / 156 |
+| webpack | 0.70 / 628 | 2.10 / 1163 | 1.12 / 362 | 1.34 / 525 | 3.33 / 971 | 2.17 / 380 |
+| zod | 0.38 / 522 | 2.10 / 1445 | 0.71 / 321 | 0.72 / 383 | 2.69 / 957 | 1.38 / 389 |
+| xstate | 0.19 / 272 | 0.71 / 466 | 0.29 / 162 | 0.36 / 215 | 0.99 / 347 | 0.59 / 174 |
+| drizzle | 0.52 / 595 | 2.74 / 1683 | 1.03 / 342 | 0.87 / 387 | 2.72 / 910 | 1.66 / 376 |
+| vue | 0.41 / 386 | 1.46 / 839 | 0.57 / 220 | 0.76 / 330 | 2.27 / 661 | 1.21 / 285 |
+| effect | 0.72 / 722 | 2.78 / 1555 | 1.39 / 315 | 1.47 / 531 | 4.23 / 1229 | 3.18 / 375 |
+| vscode | 6.13 / 2778 | 15.81 / 7982 | 7.99 / 1572 | 13.67 / 2485 | 26.85 / 6647 | 20.59 / 1417 |
+| excalidraw | 0.48 / 467 | 2.83 / 2038 | 0.81 / 277 | 0.92 / 373 | 2.72 / 852 | 1.50 / 358 |
+| tanstack-router | 0.34 / 391 | 2.00 / 970 | 0.73 / 333 | 0.65 / 333 | 2.55 / 657 | 1.22 / 325 |
+| TypeScript6 `-b` | 1.11 / 445 | 1.97 / 558 | - | - | 2.97 / 476 | - |
+2.5-8.9x faster than tsgo at the defaults, 2.0-4.9x single-threaded, at 0.11-0.6x its RSS; **1.3-3x faster than bun**
+at the defaults (vscode and nest 1.3x), 1.3-2.3x single-threaded, but **1.6-2.3x bun's memory at the defaults**
+(effect 2.3x, valibot 2.0x, vscode 1.77x) and ~1-1.75x single-threaded (plans/67 "Where it stands").
+- perfsweep (quiet machine): check median **0.21x** tsgo, types median 0.64, worst 1.62 (date-fns/pkgs/docs, as
+  before), peak RSS median 0.65, worst 0.80; one project above 1 on check time (lit/packages/labs/nextjs, 8 vs 6 ms).
+- **Recycling's warm-ups**: redone shared work, not overhead (bugs/perf_leads.md "Recycling's cost"); a tail rule
+  was tried and dropped (no time at T4, +60..90 MB).
+- **Emit under `--noEmit`**: nothing but the declaration diagnostics walk, which tsc's CLI computes too when there are
+  no other errors (drizzle 1.3%); it now stops once a checker reports a diagnostic sure to be reported (gated).
+- **scaleprobe `--emit`** (new): six quadratic paths fixed (union of objects 57 -> 0.09 s at 32k, object literal 3.4 ->
+  0.05, inferred return 4.7 -> 0.06, class 1.1 -> 0.06, namespace 0.47 -> 0.08, overloads 2.3 -> 0.07; overloads
+  under `--noEmit` 1.03 -> 0.07 too).
+- Oracles unchanged: suite 13697 / 13739 (0 lost), corpora 0 / 0 but vue 0 / 2, DT 8595, `$ExpectType` 68639, flagflip
+  18 / 6 / 3, source sweep **3352 / 3363** full (sample 817 / 822), dtsdiff 1077 / 1233 projects, 95611 files.
+- **Instructions** (callgrind, `--noEmit`), session start -> end: tsc 4.723 -> **4.643** (-1.7%), type-fest 23.420 ->
+  23.427, valibot 3.463 -> 3.464, react 1.512, nest 1.189, webpack 10.051 -> 10.048, zod 5.426 -> 5.425, xstate 2.771
+  -> 2.772, drizzle 6.917 -> **6.835** (-1.2%), vue 6.635 -> 6.633, effect 10.612 -> **10.401** (-2.0%), vscode 96.778
+  -> 96.763, excalidraw 7.930 -> 7.928, tanstack-router 5.412 -> 5.411 G.
 
 ## Source sweep + suite tail fan-out (2026-10-14, todo entry 7)
 4 agents (A source sweep relations + the TS5115 bucket, B source sweep calls/inference/flow, C suite errors tail, D

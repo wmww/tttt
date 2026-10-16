@@ -48,8 +48,10 @@ off the table** (vision.md): no session works on them unless real code shows the
    The biggest serial part is the loader thread's non-parse work, ~350 ms on vscode (194k stats for 34k paths, no
    exists cache; imports re-resolved): plan 72 stage 1. Checker imbalance is a lead (1.3-3x the mean at K12).
    `TTTT_RESOLVE_TIMES=1` times resolve's steps.
-9. **Perf session**: instructions after this window's features (recycling's warm-ups, emit's cost under `--noEmit`
-   must be zero), perfsweep, scaleprobe on emit, bench.sh against tsgo and bun-1.4.3 (plan 67's table refreshed).
+9. Done (perf session): scaleprobe `--emit` found six quadratic emit paths (fixed, e.g. 57 -> 0.09 s) and two in
+   merged overloads; the gated declaration walk stops at a sure error; recycling's warm-up is redone shared work (a
+   tail rule tried, dropped). Instructions flat or down (tsc -1.7%, effect -2.0%, drizzle -1.2%); bench.sh `--bun`:
+   tttt 1.3-3x faster than bun, 1.6-2.3x its memory at the defaults (plan 67 "Where it stands").
 10. **Triage.** Then create `claude-stop` in the repo root: the human asked (triage.md, 2026-10-15) to stop the
     agent loop after the next triage session. Leave the insights entry below for whoever restarts the loop.
 11. **Insights.**

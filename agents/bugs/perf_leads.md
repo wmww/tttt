@@ -256,6 +256,13 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - 2026-10-12: tuple targets share their element type parameters (`Checker.tuple_params`) and tuple element props a
   read-only `ty_prop_decl_value_name`: type-fest 2.06 -> 0.80 GB. The rest of the old candidate list (a ~40-byte
   instantiated Prop, the `Signature` split, interned lists keyed by their ids) is plan 60 stage 1.
+- **Recycling's cost is redone shared work** (2026-10-15 perf session): type-fest's +21% instructions at K1 (2
+  recycles) is mostly one file, `extract-rest-element.ts` (0.3 ms warm, 157 ms in a fresh checker: a `TupleOf<999>`
+  split an earlier file already did; tsgo takes 1.1 s on that file alone). drizzle's single recycle at ~90% of its
+  share costs +14% instructions for -61 MB. Tried a tail rule (no recycle when the share's remaining bytes are under a
+  quarter of what the segment checked, the checker allowed 1.25x its budget then): drizzle K1 -8% wall, but at the
+  defaults (T4) no time gained and +60..90 MB peaks (drizzle, effect, type-fest): dropped. Nothing cheap predicts
+  which files share a big type graph; a shared frozen type layer is the only real fix (plan 67 "options", rejected).
 - **Duplication across checkers** (plan 67, 2026-10-14: small, +19% of vscode's arena at T4; each checker's own
   linear growth is the problem, which recycling bounds; no shared lib layer): files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
@@ -287,6 +294,11 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   calls, type alias chains. Superlinear on both: a chain of N classes each extending the previous (1000: tttt 16 s /
   4 GB, tsgo 365 s / 20 GB), CommonJS `module.exports.cN = ...` (32k: 13 s on both). Rerun after big
   checker changes; add a kind (the KINDS table) when a real project shows a slow file (`TTTT_FILE_TIMES=1`).
+  **`--emit`** (2026-10-15 perf session: emitDeclarationOnly + declarationMap): six quadratic paths in the declaration
+  walk and the map encoder fixed (one long line's map columns, object literal member lookup, class overload
+  implementations, namespace export stripping, function properties, merged overload entries; e.g. 32k-member union
+  of objects 57 -> 0.09 s, object literal 3.4 -> 0.05 s). Every kind is now linear with emit except what is
+  superlinear on both sides anyway (tuple, union, switch, params, aliases, cjs). JS kinds: tsgo only (plan 64 stage 6).
 - `jsdoc_before_ex()` walked back to the line start from every JSDoc host (minified lines: 3.9% of webpack), fixed
   2026-10-14; what's left of JSDoc in webpack is parsing the comments themselves (`parse_jsdoc_comment` ~2.3%).
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's

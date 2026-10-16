@@ -23,8 +23,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   defaults, at 0.15-0.6x its RSS (measurements.md "Perf session (2026-10-14)"). **At breadth** (`scripts/perfsweep.py`,
   1786 source sweep projects): check time median ~0.2x tsgo's, worst types ratio 1.62, no project above tsgo's peak
   RSS. **At scale** (`scripts/scaleprobe.py`): no shape superlinear where tsgo is linear. **Bun's `bun check`** (a
-  Rust port of tsgo 7.0.2): tttt is 1.1-2.7x faster at equal threads, but bun uses 2-3x less memory: it bounds its
-  checker's state, tttt's checker grows ~190 KB per checked file forever (plan 67). Instructions crept +~1% this
+  Rust port of tsgo 7.0.2; 2026-10-16, after checker recycling): tttt is 1.3-3x faster at the defaults and 1.3-2.3x
+  single-threaded, but uses 1.6-2.3x bun's memory at the defaults and up to 1.75x single-threaded (vscode): the
+  program's AST representation and each checker's 128 MB recycling share (plan 67 "Where it stands"). Instructions crept +~1% this
   window (vscode 89.35 -> 90.04 G), mostly tsgo rules tttt lacked (the return mapper, +0.75% on valibot/effect).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
