@@ -52,8 +52,9 @@ off the table** (vision.md): no session works on them unless real code shows the
    merged overloads; the gated declaration walk stops at a sure error; recycling's warm-up is redone shared work (a
    tail rule tried, dropped). Instructions flat or down (tsc -1.7%, effect -2.0%, drizzle -1.2%); bench.sh `--bun`:
    tttt 1.3-3x faster than bun, 1.6-2.3x its memory at the defaults (plan 67 "Where it stands").
-10. **Triage.** Then create `claude-stop` in the repo root: the human asked (triage.md, 2026-10-15) to stop the
-    agent loop after the next triage session. Leave the insights entry below for whoever restarts the loop.
+10. Done (triage, 2026-10-16): TS2540's unique symbol name fixed (suite 13698 / 13740, sweep 8595, source sweep 3352
+    unchanged), TS5088 through `typeof this` root-caused into bugs/dts_emit.md, `claude-stop` created at the human's
+    request: the loop stops here. 7.1.0 still not stable (`latest` 7.0.2, `next` 7.1.0-dev.20261015.1).
 11. **Insights.**
 
 After the insights entry (for the next window): plan 72 stage 1 (the loader's serial work, one session), plans 73 and 74 (small cleanups), plan 64 stage 6 (chosen: JS sources), plan 58 +

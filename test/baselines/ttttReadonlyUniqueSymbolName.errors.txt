@@ -1,0 +1,32 @@
+ttttReadonlyUniqueSymbolName.ts(5,3): error TS2540: Cannot assign to '[a]' because it is a read-only property.
+ttttReadonlyUniqueSymbolName.ts(6,8): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+ttttReadonlyUniqueSymbolName.ts(8,3): error TS2540: Cannot assign to '[a]' because it is a read-only property.
+ttttReadonlyUniqueSymbolName.ts(11,3): error TS2540: Cannot assign to '[a]' because it is a read-only property.
+ttttReadonlyUniqueSymbolName.ts(12,7): error TS2741: Property '[a]' is missing in type '{}' but required in type '{ [a]: string; }'.
+
+
+==== ttttReadonlyUniqueSymbolName.ts (5 errors) ====
+    // Readonly-assignment messages name a unique symbol property as tsc writes it, `[a]`, not by its internal key
+    const a = Symbol();
+    class C { get [a]() { return ""; } }
+    declare const c: C;
+    c[a] = "x";
+      ~
+!!! error TS2540: Cannot assign to '[a]' because it is a read-only property.
+    delete c[a];
+           ~~~~
+!!! error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+    const o = { [a]: 1 } as const;
+    o[a] = 2;
+      ~
+!!! error TS2540: Cannot assign to '[a]' because it is a read-only property.
+    interface I { readonly [a]: number }
+    declare const i: I;
+    i[a] = 3;
+      ~
+!!! error TS2540: Cannot assign to '[a]' because it is a read-only property.
+    const s: { [a]: string } = {};
+          ~
+!!! error TS2741: Property '[a]' is missing in type '{}' but required in type '{ [a]: string; }'.
+!!! related TS2728 ttttReadonlyUniqueSymbolName.ts:12:12: '[a]' is declared here.
+    

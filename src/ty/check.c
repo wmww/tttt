@@ -4611,8 +4611,10 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
                 Atom const* member_name = ty_literal_name(me, key);
                 int readonly = member_name ? readonly_key_member(me, access, object, member_name) : -1;
                 if (readonly > 0) {
+                    cstr name_str = ty_prop_name_cstr(me, member_name);
                     error_ctx_error_d(errs, property_key_span(access), 2540,
-                        "Cannot assign to '", atom_sv(member_name), "' because it is a read-only property.");
+                        "Cannot assign to '", name_str, "' because it is a read-only property.");
+                    cstr_drop(&name_str);
                     continue;
                 }
                 if (readonly == 0 || index_reported || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
@@ -4715,8 +4717,10 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     refs.len = 0;
     if (readonly_assignment(me, access, object, &refs)) {
+        cstr name_str = ty_prop_name_cstr(me, name);
         error_ctx_error_d(errs, property_key_span(access), 2540,
-            "Cannot assign to '", atom_sv(name), "' because it is a read-only property.");
+            "Cannot assign to '", name_str, "' because it is a read-only property.");
+        cstr_drop(&name_str);
     }
 }
 

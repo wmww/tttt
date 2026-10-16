@@ -1,0 +1,66 @@
+//// [test/cases/ttttReadonlyUniqueSymbolName.ts] ////
+
+=== ttttReadonlyUniqueSymbolName.ts ===
+// Readonly-assignment messages name a unique symbol property as tsc writes it, `[a]`, not by its internal key
+const a = Symbol();
+>a : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class C { get [a]() { return ""; } }
+>C : C
+>[a] : string
+>a : unique symbol
+>"" : ""
+
+declare const c: C;
+>c : C
+
+c[a] = "x";
+>c[a] = "x" : "x"
+>c[a] : any
+>c : C
+>a : unique symbol
+>"x" : "x"
+
+delete c[a];
+>delete c[a] : boolean
+>c[a] : string
+>c : C
+>a : unique symbol
+
+const o = { [a]: 1 } as const;
+>o : { readonly [a]: 1; }
+>{ [a]: 1 } as const : { readonly [a]: 1; }
+>{ [a]: 1 } : { readonly [a]: 1; }
+>[a] : 1
+>a : unique symbol
+>1 : 1
+
+o[a] = 2;
+>o[a] = 2 : 2
+>o[a] : any
+>o : { readonly [a]: 1; }
+>a : unique symbol
+>2 : 2
+
+interface I { readonly [a]: number }
+>[a] : number
+>a : unique symbol
+
+declare const i: I;
+>i : I
+
+i[a] = 3;
+>i[a] = 3 : 3
+>i[a] : any
+>i : I
+>a : unique symbol
+>3 : 3
+
+const s: { [a]: string } = {};
+>s : { [a]: string; }
+>[a] : string
+>a : unique symbol
+>{} : {}
+

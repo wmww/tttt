@@ -743,6 +743,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttReadonlyUniqueSymbolName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRecursiveUnionInferenceDepth': {
         errors: true,
         symbols: true,

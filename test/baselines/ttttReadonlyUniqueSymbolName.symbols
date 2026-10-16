@@ -1,0 +1,53 @@
+//// [test/cases/ttttReadonlyUniqueSymbolName.ts] ////
+
+=== ttttReadonlyUniqueSymbolName.ts ===
+// Readonly-assignment messages name a unique symbol property as tsc writes it, `[a]`, not by its internal key
+const a = Symbol();
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+class C { get [a]() { return ""; } }
+>C : Symbol(C, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 19))
+>[a] : Symbol(C[a], Decl(ttttReadonlyUniqueSymbolName.ts, 2, 9))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+declare const c: C;
+>c : Symbol(c, Decl(ttttReadonlyUniqueSymbolName.ts, 3, 13))
+>C : Symbol(C, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 19))
+
+c[a] = "x";
+>c : Symbol(c, Decl(ttttReadonlyUniqueSymbolName.ts, 3, 13))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+delete c[a];
+>c : Symbol(c, Decl(ttttReadonlyUniqueSymbolName.ts, 3, 13))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+const o = { [a]: 1 } as const;
+>o : Symbol(o, Decl(ttttReadonlyUniqueSymbolName.ts, 6, 5))
+>[a] : Symbol([a], Decl(ttttReadonlyUniqueSymbolName.ts, 6, 11))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+>const : Symbol(const)
+
+o[a] = 2;
+>o : Symbol(o, Decl(ttttReadonlyUniqueSymbolName.ts, 6, 5))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+interface I { readonly [a]: number }
+>I : Symbol(I, Decl(ttttReadonlyUniqueSymbolName.ts, 7, 9))
+>[a] : Symbol(I[a], Decl(ttttReadonlyUniqueSymbolName.ts, 8, 13))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttReadonlyUniqueSymbolName.ts, 9, 13))
+>I : Symbol(I, Decl(ttttReadonlyUniqueSymbolName.ts, 7, 9))
+
+i[a] = 3;
+>i : Symbol(i, Decl(ttttReadonlyUniqueSymbolName.ts, 9, 13))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
+const s: { [a]: string } = {};
+>s : Symbol(s, Decl(ttttReadonlyUniqueSymbolName.ts, 11, 5))
+>[a] : Symbol([a], Decl(ttttReadonlyUniqueSymbolName.ts, 11, 10))
+>a : Symbol(a, Decl(ttttReadonlyUniqueSymbolName.ts, 1, 5))
+
