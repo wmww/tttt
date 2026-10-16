@@ -1,0 +1,60 @@
+//// [test/cases/ttttMappedKeyCircularConstraint.ts] ////
+
+=== ttttMappedKeyCircularConstraint.ts ===
+// A mapped type's key with a circular constraint (TS2313) has none: the mapped type's constraint is the error type
+// (tsc's getConstraintTypeFromMappedType), not a generic mapped type T relates to by its `T[P]` template. Related to
+// a target, the key is the unconstrained type parameter of TS2208, named where it's declared (mutations of
+// mappedTypeAsClauseRelationships)
+type Filter<T> = { [P in keyof T[P] extends Function ? P : never]: T[P] };
+>Filter : Symbol(Filter, Decl(ttttMappedKeyCircularConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 4, 12))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 4, 20))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 4, 12))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 4, 20))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 4, 20))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 4, 12))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 4, 20))
+
+type ModifyExclOpt<T> = { [P in keyof T extends string? `bool${P}`: never ]-?: T[P] };
+>ModifyExclOpt : Symbol(ModifyExclOpt, Decl(ttttMappedKeyCircularConstraint.ts, 4, 74))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 5, 19))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 5, 27))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 5, 19))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 5, 27))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 5, 19))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 5, 27))
+
+function fun<T>(val: T) {
+>fun : Symbol(fun, Decl(ttttMappedKeyCircularConstraint.ts, 5, 86))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 6, 13))
+>val : Symbol(val, Decl(ttttMappedKeyCircularConstraint.ts, 6, 16))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 6, 13))
+
+    let x: Filter<T> = val;
+>x : Symbol(x, Decl(ttttMappedKeyCircularConstraint.ts, 7, 7))
+>Filter : Symbol(Filter, Decl(ttttMappedKeyCircularConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 6, 13))
+>val : Symbol(val, Decl(ttttMappedKeyCircularConstraint.ts, 6, 16))
+}
+type Ok<T> = { [P in keyof T]: T[P] };
+>Ok : Symbol(Ok, Decl(ttttMappedKeyCircularConstraint.ts, 8, 1))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 9, 8))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 9, 16))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 9, 8))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 9, 8))
+>P : Symbol(P, Decl(ttttMappedKeyCircularConstraint.ts, 9, 16))
+
+function fun2<T>(val: T) {
+>fun2 : Symbol(fun2, Decl(ttttMappedKeyCircularConstraint.ts, 9, 38))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 10, 14))
+>val : Symbol(val, Decl(ttttMappedKeyCircularConstraint.ts, 10, 17))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 10, 14))
+
+    let x: Ok<T> = val;
+>x : Symbol(x, Decl(ttttMappedKeyCircularConstraint.ts, 11, 7))
+>Ok : Symbol(Ok, Decl(ttttMappedKeyCircularConstraint.ts, 8, 1))
+>T : Symbol(T, Decl(ttttMappedKeyCircularConstraint.ts, 10, 14))
+>val : Symbol(val, Decl(ttttMappedKeyCircularConstraint.ts, 10, 17))
+}
+

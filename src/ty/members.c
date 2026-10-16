@@ -814,6 +814,11 @@ static void builder_add_interface_member(
                     ty_type_param(me, i->key.mapped->owned_symbol) :
                     ty_synthetic_type_param(me, span_sv(i->key.mapped->type_name));
                 mapped->constraint = ty_from_node(me, &i->key.mapped->in_type, mapped_ctx);
+                // A circular one (TS2313: `[P in keyof T[P]]`) is none, the error type (tsc's
+                // getConstraintTypeFromMappedType: getConstraintOfTypeParameter or errorType)
+                if (i->key.mapped->owned_symbol && ty_param_constraint_is_circular(me, mapped->type_param)) {
+                    mapped->constraint = ty_intrinsic(me, TY_ERROR);
+                }
                 // `[P in any]` is over tsc's keyofConstraintType (getConstraintFromTypeParameter)
                 if (mapped->constraint == ty_intrinsic(me, TY_ANY)) {
                     Ty const* parts[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };

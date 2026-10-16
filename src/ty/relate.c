@@ -901,8 +901,10 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     Ty const* declared = source;
     while (declared->param.state->clone_of) declared = declared->param.state->clone_of;
     GenericItem const* item = declared->param.state->item;
-    // (An `infer X` has no GenericItem: it is named where its symbol is declared)
-    Symbol const* infer_symbol = !item && declared->param.state->is_infer ? declared->param.symbol : nullptr;
+    // (An `infer X` or a mapped type's key has no GenericItem: it is named where its symbol is declared)
+    Symbol const* infer_symbol = !item && declared->param.symbol && (declared->param.state->is_infer ||
+        (declared->param.symbol->decl_count && declared->param.symbol->decls[0].kind == SYMBOL_DECL_MAPPED_KEY)) ?
+        declared->param.symbol : nullptr;
     if (!item && !(infer_symbol && infer_symbol->decl_count)) return;
     // (Nor when the source as constrained by the target would have a circular base constraint, tsc's
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
