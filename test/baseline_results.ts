@@ -907,6 +907,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRestTypeUnionOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRestUnionGenericCallArg': {
         errors: true,
         symbols: true,

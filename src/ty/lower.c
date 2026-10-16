@@ -2887,7 +2887,15 @@ static Ty const* rest_literal(
     Ty const* ret = ty_object_literal_of(me, props, count, index, index_count, OBJECT_SYNTHETIC, symbol);
     u64 key[2] = { KEY_REST_SYMBOL, (u64)(uintptr_t)ret };
     void const** slot = intern_slot(me, &me->links, key, 2);
-    if (!*slot) *slot = symbol;
+    if (!*slot) {
+        *slot = symbol;
+        // (Ordered in unions by that symbol's declaration, like tsc's: before an object literal written later, which
+        // subtype reduction then checks first. A synthetic object's literal_expr is free)
+        if (ret->kind == TY_ANONYMOUS && !ret->anonymous.object_literal && !ret->anonymous.overload_count && !ret->anonymous.literal_expr) {
+            ((Ty*)ret)->anonymous.rest_binding = symbol;
+            ((Ty*)ret)->anonymous.rest_of_binding = true;
+        }
+    }
     return ret;
 }
 

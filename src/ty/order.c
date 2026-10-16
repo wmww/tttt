@@ -279,6 +279,8 @@ static ObjectSym object_symbol(Ty const* t) {
             if (t->anonymous.object_literal && t->anonymous.literal_expr) {
                 return sym_of_span(t->anonymous.literal_expr->inner_span, t->anonymous.literal_expr);
             }
+            // (A destructuring's rest has the binding's symbol, tsc's getRestType)
+            if (t->anonymous.rest_of_binding) return sym_of_symbol(t->anonymous.rest_binding);
             return (ObjectSym){0};
         default:
             return (ObjectSym){0};

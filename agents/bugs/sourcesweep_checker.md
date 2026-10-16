@@ -35,16 +35,10 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 Fixed that round: vencord (TS2589 at the template, intersection any-before-unions, never-reduction against generic
 references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
 dependencies in package ids, landed by agent D). Left:
-- **base-ui test/performance `CheckboxRoot.tsx:320/379` +TS2322**: reproduces in a copy of CheckboxRoot.tsx outside
-  the repo (imports made absolute, a tsconfig extending test/performance's with `paths` for react and @base-ui/*;
-  same file list as tsc). The `props: [ {...onKeyDown(event: BaseUIEvent<React.KeyboardEvent>) {...}}, elementProps,
-  otherGroupProps, ... ]` array of useRenderElement: tsc errors at 320 with any one of the other elements alone, but
-  not with elementProps and otherGroupProps both there; tttt errors in every variant. Suspect the array literal's
-  subtype reduction (tsc's getUnionType(elementTypes, UnionReduction.Subtype): the object literal, otherGroupProps
-  and elementProps (rest objects of the component props, all optional) removing each other with method bivariance)
-  or the contextual type that results. The test/performance project also lists 10 more files than tsc: a second
-  vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
-  the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
+- base-ui test/performance lists 10 more files than tsc: a second vitest 5.0.2 pnpm copy whose package id (peers
+  included) equals the first's: tttt dedups the file but still loads the duplicate's own imports (tsgo's redirect
+  doesn't parse them). No diagnostic difference (its CheckboxRoot TS2322s were rest types' union order, fixed
+  2026-10-16).
 - **arktype** (this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
   see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx: not looked at this round.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
@@ -324,6 +318,6 @@ read types). Left:
   Pseudo/Tag, 20 lines, `export {}`). Matching it means making the second round's error type land where tsc's does:
   plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
 - arktype (this.test.ts:190 +TS2322), better-auth,
-  es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit: unchanged, not looked at again (see
+  es-toolkit, knip, monkeytype, pixijs, redux-toolkit: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
 - The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.

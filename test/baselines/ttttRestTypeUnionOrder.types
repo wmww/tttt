@@ -1,0 +1,81 @@
+//// [test/cases/ttttRestTypeUnionOrder.ts] ////
+
+=== ttttRestTypeUnionOrder.ts ===
+// A destructuring's object rest has the binding's symbol (tsc's getRestType), which orders it in a union by that
+// binding's declaration: before an object literal written later. Subtype reduction (an array literal's element type)
+// checks the members from the last on, so the literal is dropped as a subtype of `g` before `g` is dropped as one of
+// `e`; with the rest types ordered last, `g` went first and the literal stayed (method parameters are bivariant, so
+// the literal is a subtype of `g` without being one of `e`). base-ui's CheckboxRoot, TS2322
+interface A { a: 1 }
+>a : 1
+
+interface B { a: 1; c: 1 }
+>a : 1
+>c : 1
+
+interface C { c: 1 }
+>c : 1
+
+interface P { id?: string; m?(e: A): void; extra?: number; x?: 1; y?: 2 }
+>id : string | undefined
+>m : ((e: A) => void) | undefined
+>e : A
+>extra : number | undefined
+>x : 1 | undefined
+>y : 2 | undefined
+
+interface Q { id?: string; m?(e: B): void; extra?: number; y?: 2; z?: 3; w?: 4 }
+>id : string | undefined
+>m : ((e: B) => void) | undefined
+>e : B
+>extra : number | undefined
+>y : 2 | undefined
+>z : 3 | undefined
+>w : 4 | undefined
+
+function f(p: P, q: Q) {
+>f : (p: P, q: Q) => (number | { id?: string; m?(e: A): void; extra?: number; y?: 2; }[] | undefined)[]
+>p : P
+>q : Q
+
+    const { x, ...e } = p;
+>x : 1 | undefined
+>e : { id?: string; m?(e: A): void; extra?: number; y?: 2; }
+>p : P
+
+    const { w, ...g } = q;
+>w : 4 | undefined
+>g : { id?: string; m?(e: B): void; extra?: number; y?: 2; z?: 3; }
+>q : Q
+
+    const arr: (typeof e)[] = [{ id: "s", m(event: C) {} }, e, g];
+>arr : { id?: string; m?(e: A): void; extra?: number; y?: 2; }[]
+>e : { id?: string; m?(e: A): void; extra?: number; y?: 2; }
+>[{ id: "s", m(event: C) {} }, e, g] : { id?: string; m?(e: A): void; extra?: number; y?: 2; }[]
+>{ id: "s", m(event: C) {} } : { id: string; m(event: C): void; }
+>id : string
+>"s" : "s"
+>m : (event: C) => void
+>event : C
+>e : { id?: string; m?(e: A): void; extra?: number; y?: 2; }
+>g : { id?: string; m?(e: B): void; extra?: number; y?: 2; z?: 3; }
+
+    const arr2: number = [{ id: "s", m(event: C) {} }, e, g];
+>arr2 : number
+>[{ id: "s", m(event: C) {} }, e, g] : { id?: string; m?(e: A): void; extra?: number; y?: 2; }[]
+>{ id: "s", m(event: C) {} } : { id: string; m(event: C): void; }
+>id : string
+>"s" : "s"
+>m : (event: C) => void
+>event : C
+>e : { id?: string; m?(e: A): void; extra?: number; y?: 2; }
+>g : { id?: string; m?(e: B): void; extra?: number; y?: 2; z?: 3; }
+
+    return [x, w, arr, arr2];
+>[x, w, arr, arr2] : (number | { id?: string; m?(e: A): void; extra?: number; y?: 2; }[] | undefined)[]
+>x : 1 | undefined
+>w : 4 | undefined
+>arr : { id?: string; m?(e: A): void; extra?: number; y?: 2; }[]
+>arr2 : number
+}
+

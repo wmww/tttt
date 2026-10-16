@@ -364,6 +364,9 @@ struct Ty {
                 // object_literal: the literal expression it is the type of (or was widened from), if known: where error
                 // messages print it from (tsc's symbol.valueDeclaration, see ty_report_enclosing())
                 struct Expr const* literal_expr;
+                // rest_of_binding (never an object_literal nor overloaded): the binding whose rest it is (tsc's
+                // getRestType gives it that symbol), which orders it in unions
+                struct Symbol const* rest_binding;
             };
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
@@ -395,6 +398,7 @@ struct Ty {
             // getTypeWithSyntheticDefaultImportType), which makes isEmptyAnonymousObjectType say it's empty
             bool empty_symbol : 1;
             bool mapped : 1; // A mapped type node (`{ [K in C]: X }`) or an instantiation of one (tsc's ObjectFlags.Mapped)
+            bool rest_of_binding : 1; // A destructuring's object rest: `rest_binding` is set
         } anonymous;
         struct {
             TyList types; // sorted by id, no duplicates

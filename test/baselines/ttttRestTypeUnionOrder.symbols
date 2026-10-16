@@ -1,0 +1,85 @@
+//// [test/cases/ttttRestTypeUnionOrder.ts] ////
+
+=== ttttRestTypeUnionOrder.ts ===
+// A destructuring's object rest has the binding's symbol (tsc's getRestType), which orders it in a union by that
+// binding's declaration: before an object literal written later. Subtype reduction (an array literal's element type)
+// checks the members from the last on, so the literal is dropped as a subtype of `g` before `g` is dropped as one of
+// `e`; with the rest types ordered last, `g` went first and the literal stayed (method parameters are bivariant, so
+// the literal is a subtype of `g` without being one of `e`). base-ui's CheckboxRoot, TS2322
+interface A { a: 1 }
+>A : Symbol(A, Decl(ttttRestTypeUnionOrder.ts, 0, 0))
+>a : Symbol(A.a, Decl(ttttRestTypeUnionOrder.ts, 5, 13))
+
+interface B { a: 1; c: 1 }
+>B : Symbol(B, Decl(ttttRestTypeUnionOrder.ts, 5, 20))
+>a : Symbol(B.a, Decl(ttttRestTypeUnionOrder.ts, 6, 13))
+>c : Symbol(B.c, Decl(ttttRestTypeUnionOrder.ts, 6, 19))
+
+interface C { c: 1 }
+>C : Symbol(C, Decl(ttttRestTypeUnionOrder.ts, 6, 26))
+>c : Symbol(C.c, Decl(ttttRestTypeUnionOrder.ts, 7, 13))
+
+interface P { id?: string; m?(e: A): void; extra?: number; x?: 1; y?: 2 }
+>P : Symbol(P, Decl(ttttRestTypeUnionOrder.ts, 7, 20))
+>id : Symbol(P.id, Decl(ttttRestTypeUnionOrder.ts, 8, 13))
+>m : Symbol(P.m, Decl(ttttRestTypeUnionOrder.ts, 8, 26))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 8, 30))
+>A : Symbol(A, Decl(ttttRestTypeUnionOrder.ts, 0, 0))
+>extra : Symbol(P.extra, Decl(ttttRestTypeUnionOrder.ts, 8, 42))
+>x : Symbol(P.x, Decl(ttttRestTypeUnionOrder.ts, 8, 58))
+>y : Symbol(P.y, Decl(ttttRestTypeUnionOrder.ts, 8, 65))
+
+interface Q { id?: string; m?(e: B): void; extra?: number; y?: 2; z?: 3; w?: 4 }
+>Q : Symbol(Q, Decl(ttttRestTypeUnionOrder.ts, 8, 73))
+>id : Symbol(Q.id, Decl(ttttRestTypeUnionOrder.ts, 9, 13))
+>m : Symbol(Q.m, Decl(ttttRestTypeUnionOrder.ts, 9, 26))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 9, 30))
+>B : Symbol(B, Decl(ttttRestTypeUnionOrder.ts, 5, 20))
+>extra : Symbol(Q.extra, Decl(ttttRestTypeUnionOrder.ts, 9, 42))
+>y : Symbol(Q.y, Decl(ttttRestTypeUnionOrder.ts, 9, 58))
+>z : Symbol(Q.z, Decl(ttttRestTypeUnionOrder.ts, 9, 65))
+>w : Symbol(Q.w, Decl(ttttRestTypeUnionOrder.ts, 9, 72))
+
+function f(p: P, q: Q) {
+>f : Symbol(f, Decl(ttttRestTypeUnionOrder.ts, 9, 80))
+>p : Symbol(p, Decl(ttttRestTypeUnionOrder.ts, 10, 11))
+>P : Symbol(P, Decl(ttttRestTypeUnionOrder.ts, 7, 20))
+>q : Symbol(q, Decl(ttttRestTypeUnionOrder.ts, 10, 16))
+>Q : Symbol(Q, Decl(ttttRestTypeUnionOrder.ts, 8, 73))
+
+    const { x, ...e } = p;
+>x : Symbol(x, Decl(ttttRestTypeUnionOrder.ts, 11, 11))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 11, 14))
+>p : Symbol(p, Decl(ttttRestTypeUnionOrder.ts, 10, 11))
+
+    const { w, ...g } = q;
+>w : Symbol(w, Decl(ttttRestTypeUnionOrder.ts, 12, 11))
+>g : Symbol(g, Decl(ttttRestTypeUnionOrder.ts, 12, 14))
+>q : Symbol(q, Decl(ttttRestTypeUnionOrder.ts, 10, 16))
+
+    const arr: (typeof e)[] = [{ id: "s", m(event: C) {} }, e, g];
+>arr : Symbol(arr, Decl(ttttRestTypeUnionOrder.ts, 13, 9))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 11, 14))
+>id : Symbol(id, Decl(ttttRestTypeUnionOrder.ts, 13, 32))
+>m : Symbol(m, Decl(ttttRestTypeUnionOrder.ts, 13, 41))
+>event : Symbol(event, Decl(ttttRestTypeUnionOrder.ts, 13, 44))
+>C : Symbol(C, Decl(ttttRestTypeUnionOrder.ts, 6, 26))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 11, 14))
+>g : Symbol(g, Decl(ttttRestTypeUnionOrder.ts, 12, 14))
+
+    const arr2: number = [{ id: "s", m(event: C) {} }, e, g];
+>arr2 : Symbol(arr2, Decl(ttttRestTypeUnionOrder.ts, 14, 9))
+>id : Symbol(id, Decl(ttttRestTypeUnionOrder.ts, 14, 27))
+>m : Symbol(m, Decl(ttttRestTypeUnionOrder.ts, 14, 36))
+>event : Symbol(event, Decl(ttttRestTypeUnionOrder.ts, 14, 39))
+>C : Symbol(C, Decl(ttttRestTypeUnionOrder.ts, 6, 26))
+>e : Symbol(e, Decl(ttttRestTypeUnionOrder.ts, 11, 14))
+>g : Symbol(g, Decl(ttttRestTypeUnionOrder.ts, 12, 14))
+
+    return [x, w, arr, arr2];
+>x : Symbol(x, Decl(ttttRestTypeUnionOrder.ts, 11, 11))
+>w : Symbol(w, Decl(ttttRestTypeUnionOrder.ts, 12, 11))
+>arr : Symbol(arr, Decl(ttttRestTypeUnionOrder.ts, 13, 9))
+>arr2 : Symbol(arr2, Decl(ttttRestTypeUnionOrder.ts, 14, 9))
+}
+
