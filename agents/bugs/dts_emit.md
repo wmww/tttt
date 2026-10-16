@@ -68,18 +68,7 @@ size on real code, each with an example:
   a union origin, checker-side); trpc's `TypeError<'...'>` property of CreateTRPCClientOptions (tsgo reuses the
   annotation, tttt reprints with `| undefined` and double quotes; a two-file probe matches, the real case doesn't);
   arktype bounds `OneCharComparator` and vscode instantiationService `const enum TraceType` locals tsgo keeps
-  (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an `infer T extends object` tsgo
-  prints anew, renamed `T_1`, tttt reuses and maps: the extends type literal of an instantiated conditional, whose
-  property annotation's type (T) isn't the instantiated property's (a fresh T), so tsgo's reuse check fails; tttt's
-  member annotation reuse under TyDisplay.mapped_by doesn't see an `infer` node as naming a mapped parameter);
-  trpc's `AsyncIterable<{...}, void, any>` (tsgo writes the trailing default argument, tttt drops it: type text),
-  `map: missing at AbstractTable ({)` (sequelize), the other
-  single-file map buckets.
-  a union origin, checker-side); graphql-js `class GraphQLEnumType/* <T> */  implements` (tsgo copies a plain comment
-  after a class name, two spaces); arktype bounds `OneCharComparator` and vscode instantiationService `const enum
-  TraceType` locals tsgo keeps (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an
-  `infer T extends object` tsgo prints anew, renamed `T_1`, tttt reuses and maps), `map: missing at AbstractTable ({)`
-  (sequelize), the other single-file map buckets.
+  (painting, not reproduced small).
 - **"type text" leftovers** (agent B 2026-10-16 fixed trpc's alias/spread reuse and AsyncIterable args, feathers'
   mapped literals and contravariant aliased intersections, fumadocs' implied infer constraints, ts-mixer's abstract
   constructor parens, tanstack-table's contextual intersection, slate, vitest, nextra, pi keybindings). Left:
@@ -125,7 +114,10 @@ size on real code, each with an example:
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps; a reused
   annotation from another file, `Plugin<Plugin>`, ttttDeclarationUnknownImportRenamed) and paints that import; a
   type printed from its type (not a reused node) may still not paint it (unverified).
-- **Declaration maps** (stage 5 done): 551 of 20435 dtsdiff maps differ, 271 of them because their `.d.ts` does;
-  `scripts/dtsdiff.py -k 'map:'` lists the rest by first differing mapping. Mostly tttt reusing a node tsgo prints
-  anew (it then maps what tsgo doesn't: trpc's `infer T extends object` in inferred type arguments, mixin constructor
-  types, `PromiseLike<void>` in testClientResource), `-0` literal types, singletons.
+- **Declaration maps** (stage 5 done; agent C 2026-10-16 modelled tsgo's per-enclosing-declaration serializedTypes
+  cache, TyPrintedTypes: a type printed again in the same scope is an unmapped clone, a signature with parameters a
+  new scope; mapped types left out since tttt interns instantiations tsgo doesn't). `scripts/dtsdiff.py -k 'map:'`
+  lists the rest, single files: babel-standalone `presets`, babel-traverse `traverse`, babel-types `_skip`, lit
+  (`NodeListOf`, `[Symbol`, `'_` constructor), redux-toolkit helpers `K (})`, telegraf `(tg`, xterm `number (start)`.
+  Not modelled: the printer flags in tsgo's cache key; a type reprinted in a new signature scope misses mappings
+  tsgo has (probe: an object literal with `use: () => p, withArg: (x: number) => p` of an inline conditional).
