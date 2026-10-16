@@ -2256,6 +2256,38 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
 // Duplicate members (TS2300, TS2804): tsc's binder conflicts in a class's member tables (a method, accessor or
 // property of the same name where the kinds don't merge) and its checkClassForDuplicateDeclarations
 void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs);
+// Which member declarations of a class declaration are one symbol (tsc's binder with TypeScript 7's excludes, then
+// lateBindMember, the late-bound symbols merged into the early ones of their names): per member, its symbol (an
+// entry number, the same for the declarations of one symbol)
+enum {
+    CLASS_MEMBER_ALONE = -1, // It conflicted with the symbol of its name (TS2300): a symbol of its own, no member
+    CLASS_MEMBER_NONE = -2, // Not a named member (a constructor, a static block, a name that names nothing)
+};
+typedef struct ClassMemberParam {
+    struct FunctionArg const* arg; // A parameter property
+    i32 entry;
+} ClassMemberParam;
+typedef struct ClassMemberSymbols {
+    i32 const* item_entry; // Per class item, by index
+    u32 item_count;
+    ClassMemberParam const* params;
+    u32 param_count;
+    u32 entry_count;
+    // Per entry: the item index of its first early-bound and first late-bound declaration (a parameter property's is
+    // its constructor's), UINT32_MAX for none
+    u32 const* first_early;
+    u32 const* first_late;
+    // Per entry: a late-bound symbol that didn't merge into the early symbol of its name, which one excludes
+    bool const* shadowed;
+} ClassMemberSymbols;
+// Whether a declaration of `entry` comes before the member at item `index` (`late`: a late-bound one, which comes after
+// every early-bound one) in tsc's order of the symbol's declarations
+static inline bool class_member_declared_before(ClassMemberSymbols const* me, i32 entry, u32 index, bool late) {
+    if (entry < 0) return false;
+    if (late) return my first_early[entry] != UINT32_MAX || my first_late[entry] < index;
+    return my first_early[entry] < index;
+}
+ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* class_decl);
 // The same for the members of type literals and interfaces: `lists` are the member lists of the declarations (one for
 // a type literal), whose binder table is shared; checkObjectTypeForDuplicateDeclarations runs per list
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs);

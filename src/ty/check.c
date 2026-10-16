@@ -3418,6 +3418,7 @@ typedef struct MemberEntry {
     // late-bound one sees (getMergedSymbol before late binding ran), see check_duplicate_declarations()
     u32 early_total;
     bool merged;
+    bool shadowed; // A late-bound one that didn't merge into the early one of its name
 } MemberEntry;
 
 typedef struct MemberTables {
@@ -3447,7 +3448,7 @@ static MemberEntry* add_member_entry(MemberTables* me) {
 // TS2300 at `at` naming `name` (once: the binder's and the checker's reports of a declaration are one)
 static void report_duplicate_named(Span at, csview name, ErrorCtx* errs) {
     // (A lib's declaration only when lib files are checked: the lib side of the conflict, tsc's check of the lib)
-    if (!span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_files_checked())) return;
+    if (!errs || !span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_files_checked())) return;
     Error* existing = error_ctx_find(errs, at, 2300);
     if (!existing) error_ctx_error_s(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
 }
@@ -3498,8 +3499,8 @@ static i32 declare_symbol_flags(
         report_duplicate(span, errs);
         // Declarations merged from other files point at each other (tsc's mergeSymbol across files: its
         // amalgamatedDuplicates with fewer than 8 names, TODO: one TS6200 per file from 8 on)
-        Error* error = error_ctx_find(errs, span, 2300);
-        for (u32 i = 0; i < entry->decl_count; i++) {
+        Error* error = errs ? error_ctx_find(errs, span, 2300) : nullptr;
+        for (u32 i = 0; i < entry->decl_count && errs; i++) {
             if (!span_valid(entry->decls[i]) || span_source(entry->decls[i]) == span_source(span)) continue;
             add_duplicate_related(error_ctx_find(errs, entry->decls[i], 2300), entry->decls[i], span);
             add_duplicate_related(error, span, entry->decls[i]);
@@ -3554,12 +3555,14 @@ typedef struct DupRecord {
     Atom const* name; // Its symbol's name
     Span span; // Its name
     void const* member; // The ClassItem or InterfaceMember, null for a parameter property
+    FunctionArg const* arg; // The parameter property
     i32 entry; // Its symbol: the MemberTables entry it joined, -1 a symbol of its own
     uint8_t table; // 0 instance, 1 static
     uint8_t check_kind; // 1 a property, 2 an accessor, 0 neither
     bool is_private;
     bool late; // Late bound: after the early declarations of its symbol once merge_late_members() merged it
     u32 list; // The declaration it is in (of an interface's)
+    u32 position; // The index of the class item (a parameter property's constructor)
 } DupRecord;
 
 #define g_key DupRecord, dup_record
@@ -3573,10 +3576,11 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
         if (late->table < LATE_TABLE) continue;
         MemberEntry* early = find_member(tables, late->name, late->table - LATE_TABLE);
         if (!early) continue;
+        late->shadowed = (early->flags & symbol_excludes(late->flags)) || (late->flags & symbol_excludes(early->flags));
         if (early->flags & symbol_excludes(late->flags)) {
             // tsc's mergeSymbol of the two: reportMergeSymbolError, named as the late symbol prints (`[foo]`), each
             // side's declarations pointing at the other's
-            if (!early->has_member || !late->decl_count) continue;
+            if (!early->has_member || !late->decl_count || !errs) continue;
             csview display = span_sv(late->decls[0]);
             for (u32 i = 0; i < late->decl_count; i++) {
                 report_duplicate_named(late->decls[i], display, errs);
@@ -3758,8 +3762,14 @@ static void check_class_interface_members(Checker* me, Symbol const* symbol, Mem
     }
 }
 
-void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
-    MemberTables* tables = &(MemberTables){0};
+// tsc's binder and lateBindMember for a class declaration's members: its tables (instance, static with the merged
+// namespaces' exports and `prototype`, private names, late-bound ones merged into the early ones) and a record per
+// member declaration (in member order) with the symbol it is a declaration of. With `errs`, the conflicts are reported
+// as they're found (TS2300)
+static void declare_class_members(
+    Checker* me, ClassDecl const* class_decl, MemberTables* tables, VecDupRecord* records_out, Symbol const** symbol_out,
+    ErrorCtx* errs
+) {
     // The static members share a table with the exports of the namespaces the class merges with, declared in binding
     // order: those before the class, the class's `prototype`, its members, those after
     Symbol const* symbol = class_decl->is_expression ? nullptr : class_decl->symbol;
@@ -3771,14 +3781,15 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     }
     declare_prototype(me, tables, errs);
     VecDupRecord records = {0};
-    for_each (i, vec_class_item, &class_decl->items) {
+    for_each (i, vec_class_item, (VecClassItem*)&class_decl->items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
             for_each (arg, vec_function_arg, &i->constructor.func.args) {
                 Binding const* binding = &arg->initializer.binding;
                 if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
                 Atom const* name = checker_atom(me, span_sv(binding->content_span));
                 i32 entry = declare_member(tables, name, 0, MEMBER_PROPERTY, binding->content_span, errs);
-                vec_dup_record_push(&records, (DupRecord){ .name = name, .span = binding->content_span, .entry = entry, .check_kind = 1 });
+                vec_dup_record_push(&records, (DupRecord){ .name = name, .span = binding->content_span, .arg = arg, .entry = entry,
+                    .check_kind = 1, .position = (u32)i_index });
             }
             continue;
         }
@@ -3814,7 +3825,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         vec_dup_record_push(&records, (DupRecord){
             .name = name, .span = name_span, .member = i, .entry = entry, .check_kind = check_kind,
             .table = is_static + (span_valid(private_name) ? PRIVATE_TABLE : 0),
-            .is_private = span_valid(private_name), .late = late_bound,
+            .is_private = span_valid(private_name), .late = late_bound, .position = (u32)i_index,
         });
     }
     for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
@@ -3822,6 +3833,56 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     }
     // (A late-bound symbol merged into the early one of its name is its later declarations)
     merge_late_members(tables, &records, errs);
+    *records_out = records;
+    *symbol_out = symbol;
+}
+
+ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* class_decl) {
+    ClassMemberSymbols const* cached = ty_link_get(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl);
+    if (cached) return cached;
+    MemberTables* tables = &(MemberTables){0};
+    VecDupRecord records = {0};
+    Symbol const* symbol;
+    declare_class_members(me, class_decl, tables, &records, &symbol, nullptr);
+    ClassMemberSymbols* ret = arena_new(&my arena, ClassMemberSymbols);
+    u32 item_count = (u32)vec_class_item_size(&class_decl->items);
+    i32* entries = arena_new_n(&my arena, i32, item_count ? item_count : 1);
+    for (u32 i = 0; i < item_count; i++) entries[i] = CLASS_MEMBER_NONE;
+    u32 param_count = 0;
+    for_each (r, vec_dup_record, &records) param_count += !r->member;
+    ClassMemberParam* params = arena_new_n(&my arena, ClassMemberParam, param_count ? param_count : 1);
+    param_count = 0;
+    for_each (r, vec_dup_record, &records) {
+        if (r->member) entries[(ClassItem const*)r->member - class_decl->items.data] = r->entry;
+        else params[param_count++] = (ClassMemberParam){ .arg = r->arg, .entry = r->entry };
+    }
+    u32* first_early = arena_new_n(&my arena, u32, tables->count ? tables->count : 1);
+    u32* first_late = arena_new_n(&my arena, u32, tables->count ? tables->count : 1);
+    bool* shadowed = arena_new_n(&my arena, bool, tables->count ? tables->count : 1);
+    for (u32 e = 0; e < tables->count; e++) {
+        first_early[e] = first_late[e] = UINT32_MAX;
+        shadowed[e] = tables->entries[e].shadowed;
+    }
+    for_each (r, vec_dup_record, &records) {
+        if (r->entry < 0) continue;
+        u32* first = r->late ? &first_late[r->entry] : &first_early[r->entry];
+        if (r->position < *first) *first = r->position;
+    }
+    *ret = (ClassMemberSymbols){ .item_entry = entries, .item_count = item_count, .params = params,
+        .param_count = param_count, .entry_count = tables->count, .first_early = first_early, .first_late = first_late,
+        .shadowed = shadowed };
+    vec_dup_record_drop(&records);
+    free(tables->entries);
+    member_tables_unindex(tables);
+    ty_link_set(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl, ret);
+    return ret;
+}
+
+void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
+    MemberTables* tables = &(MemberTables){0};
+    VecDupRecord records;
+    Symbol const* symbol;
+    declare_class_members(me, class_decl, tables, &records, &symbol, errs);
     // A field declared again (its symbol's later declaration) has the type of its symbol's first one (per entry, its
     // first record)
     DupRecord const** first_records = dup_first_records(tables, &records);

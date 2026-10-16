@@ -1398,8 +1398,8 @@ Prop const* ty_class_item_prop(Checker* me, Symbol const* class_symbol, ClassIte
 }
 
 static Prop* builder_add_class_prop_joined(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item,
-    Prop** joined
+    Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, cstr const* name_string, Symbol const* parent,
+    LowerCtx ctx, ClassItem const* item, Prop** joined
 ) {
     Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
     if (computed_key && builder->skip_computed && class_item_is_late(item)) return nullptr;
@@ -1408,26 +1408,31 @@ static Prop* builder_add_class_prop_joined(
     if (!name) return nullptr;
     Prop* existing = builder_find_prop(builder, name);
     if (existing) {
-        // A member after another of its name joins its symbol unless it conflicts (bind_member_symbols(): a field
-        // after a property or accessor, an accessor after a property), the first declaration's type. A field after a
-        // parameter property of its name, or after an interface's member merged with the class, joins it too
-        bool joins = item->symbol_first ? item->symbol_first != item : item->tag == CLASS_ITEM_FIELD;
-        // (An interface's property before it: a property and an accessor merge, tsgo 7.1)
-        bool accessor = (item->tag == CLASS_ITEM_FIELD && item->field.is_auto_accessor) ||
-            (item->tag == CLASS_ITEM_METHOD && item->method.accessor);
-        if (accessor && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) && !existing->decl->parameter_property && !existing->decl->function) joins = true;
-        // (A field after an interface's property: the merged class and interface members are one symbol, mergeSymbol)
-        if (item->tag == CLASS_ITEM_FIELD && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) &&
-            !existing->decl->parameter_property && !existing->decl->function
-        ) {
+        // A member joins the symbol a declaration of the class before it made (ty_class_member_symbols(): the
+        // binder's, the late-bound ones merged into the early ones), the first declaration's type. One that conflicted
+        // with the symbol of its name, or a late-bound one the early symbol of its name excludes, stands alone
+        ClassMemberSymbols const* symbols = ty_class_member_symbols(me, class_decl);
+        u32 index = (u32)(item - class_decl->items.data);
+        i32 entry = symbols->item_entry[index];
+        bool joins;
+        if (class_member_declared_before(symbols, entry, index, builder->only_late)) {
             joins = true;
-        }
-        // A late-bound member merges into the early symbol of its name unless one excludes the other (tsc's
-        // combineSymbolTables: mergeSymbol, after the early members of every declaration, see
-        // builder_add_declarations())
-        if (builder->only_late) {
+        } else if (entry == CLASS_MEMBER_ALONE || (entry >= 0 && symbols->shadowed[entry])) {
+            joins = false;
+        } else if (builder->only_late) {
+            // A late-bound member merges into the early symbol of its name, another declaration's (an interface's),
+            // unless one excludes the other (tsc's combineSymbolTables: mergeSymbol, after the early members of
+            // every declaration, see builder_add_declarations())
             joins = !(prop_meanings(existing) & meanings_excluded(class_item_meanings(item))) &&
                 !(class_item_meanings(item) & meanings_excluded(prop_meanings(existing)));
+        } else {
+            // The first of its symbol in the class, after an interface's member merged with the class: a field or
+            // an accessor after its property joins (the merged class and interface members are one table; a property
+            // and an accessor merge, tsgo 7.1)
+            bool accessor = (item->tag == CLASS_ITEM_FIELD && item->field.is_auto_accessor) ||
+                (item->tag == CLASS_ITEM_METHOD && item->method.accessor);
+            joins = (accessor || item->tag == CLASS_ITEM_FIELD) && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_FIELD)) &&
+                !existing->decl->parameter_property && !existing->decl->function;
         }
         if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         if (joins && joined) *joined = existing;
@@ -1447,9 +1452,10 @@ static Prop* builder_add_class_prop_joined(
 }
 
 static Prop* builder_add_class_prop(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
+    Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, cstr const* name_string, Symbol const* parent,
+    LowerCtx ctx, ClassItem const* item
 ) {
-    return builder_add_class_prop_joined(me, builder, name_string, parent, ctx, item, nullptr);
+    return builder_add_class_prop_joined(me, builder, class_decl, name_string, parent, ctx, item, nullptr);
 }
 
 // The members JavaScript assignments declare (`this.x = v`, `F.prototype.x = v`: Symbol.members). One the class body
@@ -1641,7 +1647,7 @@ static void builder_add_class_items(
             case CLASS_ITEM_FIELD: {
                 if (i->field.is_static != static_side) break;
                 Prop* joined = nullptr;
-                Prop* prop = builder_add_class_prop_joined(me, builder, &i->field.name_string, parent, ctx, i, &joined);
+                Prop* prop = builder_add_class_prop_joined(me, builder, class_decl, &i->field.name_string, parent, ctx, i, &joined);
                 // (An auto-accessor after a property of its name: one symbol, typed by the accessor, see the methods')
                 if (!prop && joined && i->field.is_auto_accessor && (joined->flags & PROP_FIELD) &&
                     !(joined->flags & (PROP_ACCESSOR | PROP_METHOD))
@@ -1670,7 +1676,7 @@ static void builder_add_class_items(
                 if (i->method.accessor) {
                     if (i->method.accessor_first != i) break; // The second half of a get/set pair
                     Prop* joined = nullptr;
-                    Prop* prop = builder_add_class_prop_joined(me, builder, &i->method.name_string, parent, ctx, i, &joined);
+                    Prop* prop = builder_add_class_prop_joined(me, builder, class_decl, &i->method.name_string, parent, ctx, i, &joined);
                     // An accessor after a property of its name joins the property's symbol (tsgo 7.1's binder:
                     // PropertyExcludes and the accessors' excludes allow each other), which getTypeOfSymbol then types
                     // as accessors (getTypeOfAccessors: the property's declaration says nothing)
@@ -1807,7 +1813,7 @@ static void builder_add_class_items(
                     }
                     LowerCtx method_ctx = ctx;
                     method_ctx.method = true;
-                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, method_ctx, i);
+                    Prop* prop = builder_add_class_prop(me, builder, class_decl, &i->method.name_string, parent, method_ctx, i);
                     if (!prop) break;
                     prop->decl->function = functions[0];
                     prop->flags |= PROP_METHOD;
@@ -1838,11 +1844,15 @@ static void builder_add_class_items(
                     Atom const* name = checker_atom(me, span_sv(binding->content_span));
                     Prop* existing = builder_find_prop(builder, name);
                     if (existing) {
-                        // A field declared before it: one symbol (tsc's PropertyExcludes is nothing), the field's type
-                        // (and the same parameter of another constructor declaration, an overload's: TS2369)
-                        if (((existing->flags & PROP_FIELD) && !(existing->flags & PROP_STATIC)) ||
-                            existing->decl->parameter_property
-                        ) {
+                        // A member declared before it: one symbol (tsc's PropertyExcludes is properties and accessors),
+                        // the member's type (and the same parameter of another constructor declaration, an overload's:
+                        // TS2369)
+                        ClassMemberSymbols const* symbols = ty_class_member_symbols(me, class_decl);
+                        i32 entry = CLASS_MEMBER_NONE;
+                        for (u32 p = 0; p < symbols->param_count; p++) {
+                            if (symbols->params[p].arg == arg) entry = symbols->params[p].entry;
+                        }
+                        if (class_member_declared_before(symbols, entry, (u32)i_index, false)) {
                             prop_add_shared_decl_spans(me, existing, &arg->span, 1);
                         }
                         continue;

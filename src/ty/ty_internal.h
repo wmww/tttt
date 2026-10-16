@@ -151,6 +151,7 @@ enum {
     KEY_PSEUDO,         // ObjectExprItem, FunctionArg or FunctionImpl (its return type) -> its Pseudo (pseudo.c)
     KEY_EXTENDED_CONTAINERS, // (Symbol, enclosing SourceFile) -> the modules of its imports that export it (symbol_chain.c)
     KEY_MODULE_DISPLAY_NAME, // (module Symbol, file printed from, override mode, usage ModuleRef) -> its name in `import()` (csview)
+    KEY_CLASS_MEMBER_SYMBOLS, // ClassDecl -> ClassMemberSymbols (check.c)
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
