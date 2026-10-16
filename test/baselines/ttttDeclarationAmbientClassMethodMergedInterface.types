@@ -1,0 +1,41 @@
+//// [test/cases/ttttDeclarationAmbientClassMethodMergedInterface.ts] ////
+
+=== ttttDeclarationAmbientClassMethodMergedInterface.ts ===
+// A class method an interface merged with the class declares too is left out only when it has a body (tsc's
+// isImplementationOfOverload): an ambient class's stays (vscode's declare class FileSystemObserver)
+export interface Obs {
+	observe(handle: string): Promise<void>;
+>observe : { (handle: string): Promise<void>; (handle: number, options?: { recursive: boolean; }): Promise<void>; (handle: string, options?: { recursive: boolean; }): Promise<void>; }
+>handle : string
+
+	observe(handle: number, options?: { recursive: boolean }): Promise<void>;
+>observe : { (handle: string): Promise<void>; (handle: number, options?: { recursive: boolean; }): Promise<void>; (handle: string, options?: { recursive: boolean; }): Promise<void>; }
+>handle : number
+>options : { recursive: boolean; } | undefined
+>recursive : boolean
+}
+export declare class Obs {
+>Obs : Obs
+
+	constructor(callback: () => void);
+>callback : () => void
+
+	observe(handle: string, options?: { recursive: boolean }): Promise<void>;
+>observe : { (handle: string): Promise<void>; (handle: number, options?: { recursive: boolean; }): Promise<void>; (handle: string, options?: { recursive: boolean; }): Promise<void>; }
+>handle : string
+>options : { recursive: boolean; } | undefined
+>recursive : boolean
+}
+export interface Impl {
+	run(a: string): void;
+>run : { (a: string): void; (a: string | number): void; }
+>a : string
+}
+export class Impl {
+>Impl : Impl
+
+	run(a: string | number): void {}
+>run : { (a: string): void; (a: string | number): void; }
+>a : string | number
+}
+

@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationAmbientClassMethodMergedInterface.ts] ////
+
+=== ttttDeclarationAmbientClassMethodMergedInterface.ts ===
+// A class method an interface merged with the class declares too is left out only when it has a body (tsc's
+// isImplementationOfOverload): an ambient class's stays (vscode's declare class FileSystemObserver)
+export interface Obs {
+>Obs : Symbol(Obs, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 0, 0), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 5, 1))
+
+	observe(handle: string): Promise<void>;
+>observe : Symbol(Obs.observe, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 2, 22), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 3, 40), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 7, 35))
+>handle : Symbol(handle, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 3, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+	observe(handle: number, options?: { recursive: boolean }): Promise<void>;
+>observe : Symbol(Obs.observe, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 2, 22), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 3, 40), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 7, 35))
+>handle : Symbol(handle, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 4, 9))
+>options : Symbol(options, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 4, 24))
+>recursive : Symbol(recursive, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 4, 36))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+}
+export declare class Obs {
+>Obs : Symbol(Obs, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 0, 0), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 5, 1))
+
+	constructor(callback: () => void);
+>callback : Symbol(callback, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 7, 13))
+
+	observe(handle: string, options?: { recursive: boolean }): Promise<void>;
+>observe : Symbol(Obs.observe, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 2, 22), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 3, 40), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 7, 35))
+>handle : Symbol(handle, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 8, 9))
+>options : Symbol(options, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 8, 24))
+>recursive : Symbol(recursive, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 8, 36))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+}
+export interface Impl {
+>Impl : Symbol(Impl, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 9, 1), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 12, 1))
+
+	run(a: string): void;
+>run : Symbol(Impl.run, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 10, 23), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 13, 19))
+>a : Symbol(a, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 11, 5))
+}
+export class Impl {
+>Impl : Symbol(Impl, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 9, 1), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 12, 1))
+
+	run(a: string | number): void {}
+>run : Symbol(Impl.run, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 10, 23), Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 13, 19))
+>a : Symbol(a, Decl(ttttDeclarationAmbientClassMethodMergedInterface.ts, 14, 5))
+}
+

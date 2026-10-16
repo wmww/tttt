@@ -2034,10 +2034,11 @@ static void check_field(Walk* me, ClassItem const* item) {
 }
 
 // A method an interface merged with the class declares too: the class's method implements its overloads (tsc's
-// getSignaturesOfSymbol has both), declaration emit leaves it out
+// getSignaturesOfSymbol has both), declaration emit leaves it out. Only one with a body (isImplementationOfOverload):
+// an ambient class's method stays (vscode's `declare class FileSystemObserver` merged with an interface)
 static bool interface_declares_method(ClassDecl const* cls, ClassItem const* item) {
     Symbol const* symbol = cls->symbol;
-    if (!symbol || item->method.computed_key || item->method.is_static) return false;
+    if (!symbol || item->method.computed_key || item->method.is_static || !item->method.func.has_body) return false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* decl = symbol->decls[i].node;
