@@ -1,0 +1,18 @@
+//// [test/cases/ttttDeclarationExportDefaultWidenedLiteral.ts] ////
+
+=== /a.ts ===
+
+export default 'ok' satisfies string;
+=== /b.ts ===
+export default Math.random() ? 'a' : 'b';
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+=== /c.ts ===
+
+export default (1 satisfies number);
+=== /d.ts ===
+export default ('ok' as const);
+>const : Symbol(const)
+

@@ -218,6 +218,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExportDefaultWidenedLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationExportedPattern': {
         errors: true,
         symbols: true,

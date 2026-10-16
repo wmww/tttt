@@ -1,0 +1,29 @@
+//// [test/cases/ttttDeclarationExportDefaultWidenedLiteral.ts] ////
+
+=== /a.ts ===
+export default 'ok' satisfies string;
+>'ok' satisfies string : "ok"
+>'ok' : "ok"
+
+=== /b.ts ===
+export default Math.random() ? 'a' : 'b';
+>Math.random() ? 'a' : 'b' : "a" | "b"
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>'a' : "a"
+>'b' : "b"
+
+=== /c.ts ===
+export default (1 satisfies number);
+>(1 satisfies number) : 1
+>1 satisfies number : 1
+>1 : 1
+
+=== /d.ts ===
+export default ('ok' as const);
+>('ok' as const) : "ok"
+>'ok' as const : "ok"
+>'ok' : "ok"
+

@@ -2903,7 +2903,9 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
             my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
             // (The `default` symbol's type: the expression's, widened)
             Ty const* type = lazy_type_get((LazyType*)&expr->lazy_type);
-            type = ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))));
+            // (The default export's type is the expression's widened like a variable's, fresh literals included: tsc's
+    // widenTypeForVariableLikeDeclaration in getTypeOfVariableOrParameterOrProperty, `'ok' satisfies string` is string)
+    type = ty_regular(my checker, ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, type))));
             serialize_declaration(me, pseudo_of_expression(my checker, expr, (PseudoPlace){0}), type, false, false);
             my root = outer_root;
             emit_leave(me, saved);
@@ -4858,7 +4860,9 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     Root outer_root = my root;
     my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
     Ty const* type = lazy_type_get((LazyType*)&expr->lazy_type);
-    type = ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))));
+    // (The default export's type is the expression's widened like a variable's, fresh literals included: tsc's
+    // widenTypeForVariableLikeDeclaration in getTypeOfVariableOrParameterOrProperty, `'ok' satisfies string` is string)
+    type = ty_regular(my checker, ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, type))));
     serialize_declaration(me, pseudo_of_expression(my checker, expr, (PseudoPlace){0}), type, false, false);
     my root = outer_root;
     emit_leave(me, saved);
