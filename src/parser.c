@@ -4683,13 +4683,46 @@ static Span jsdoc_tag_node_span(JsDocTag const* tag) {
     const char* at = tag->tag_name.buf - 1;
     const char* c = tag->tag_name.buf + tag->tag_name.size;
     if (span_valid(tag->name) && tag->name.buf + tag->name.size > c) c = tag->name.buf + tag->name.size;
+    // (`[name=default]`: past its `]`)
+    char const* bracket_end = nullptr;
+    if (tag->bracketed && span_valid(tag->name)) {
+        char const* close = c;
+        while (*close && *close != ']' && *close != '\n' && !(close[0] == '*' && close[1] == '/')) close++;
+        if (*close == ']') bracket_end = c = close + 1;
+    }
     bool line_start = false;
     for (; *c && !(c[0] == '*' && c[1] == '/'); c++) {
         if (*c == '\n') line_start = true;
         else if (line_start && *c == '@') break;
         else if (*c != ' ' && *c != '\t' && *c != '\r' && *c != '*') line_start = false;
     }
+    if (bracket_end && *c == '*') {
+        // (The comment's last tag, its name bracketed and no description after it: it ends at the `]`, the token the
+        // regular scanner read last, the end of the comment's text its next one's full start)
+        char const* last = c;
+        while (last > bracket_end && (last[-1] == ' ' || last[-1] == '\t' || last[-1] == '\r' || last[-1] == '\n' ||
+            last[-1] == '*')) {
+            last--;
+        }
+        if (last == bracket_end) c = bracket_end;
+    }
     return span_make_in(tag->tag_name, at, c);
+}
+
+// Where a `@typedef`/`@callback` tag ends in tsgo (parseTypedefTag, parseCallbackTag): with its properties' type literal
+// or its signature, else past its description, else at its name
+static char const* jsdoc_alias_end(JsDocTag const* tag, TypeNode const* type) {
+    if (type->tag == TYPE_ARRAY && type->array.element) type = type->array.element;
+    if (type->tag == TYPE_CALLABLE && type->callable->function->jsdoc_callback) return span_end_ptr(type->callable->function->full_span);
+    if (type->tag == TYPE_INTERFACE && type->interface.jsdoc_literal && vec_interface_member_size(&type->interface.members)) {
+        return span_end_ptr(vec_interface_member_back(&type->interface.members)->declaration);
+    }
+    Span name = jsdoc_tag_decl_span(tag);
+    Span node = jsdoc_tag_node_span(tag);
+    for (char const* c = span_end_ptr(name); c < span_end_ptr(node); c++) {
+        if (*c != ' ' && *c != '\t' && *c != '\r' && *c != '\n' && *c != '*') return span_end_ptr(node);
+    }
+    return span_end_ptr(name);
 }
 
 // `{Object}`, `{object}`, `{Object[]}`: a type a tag's nested `@property`/`@param` tags replace with a literal (tsc's
@@ -4740,6 +4773,18 @@ static bool jsdoc_names_equal(csview a, csview b) {
     }
 }
 
+// A tag's node span, the type literal its nested tags made included (tsgo's tag ends with its children)
+static Span jsdoc_tag_node_span_with(JsDocTag const* tag, TypeNode const* type) {
+    Span span = jsdoc_tag_node_span(tag);
+    if (type->tag == TYPE_ARRAY && type->array.element) type = type->array.element;
+    if (type->tag != TYPE_INTERFACE || !type->interface.jsdoc_literal || !vec_interface_member_size(&type->interface.members)) {
+        return span;
+    }
+    Span last = vec_interface_member_back(&type->interface.members)->declaration;
+    if (span_valid(last) && span_end_ptr(last) > span_end_ptr(span)) span = span_make_in(span, span.buf, span_end_ptr(last));
+    return span;
+}
+
 // The type literal the `@property`/`@param` tags named `prefix.x` among `props` make (`x` when prefix is empty; tsc's
 // JSDocTypeLiteral, nested through `o.a` names under an `{Object}` one)
 // `described`: its members keep their tags' descriptions as comments in declaration emit (a `@typedef`'s or
@@ -4772,7 +4817,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         Span name_span = span_make_in(tag->name, name.buf, name.buf + name.size);
         // (Spanned like tsgo's tag node: to the next tag, its description included)
         list_push(vec_interface_member, &members, interface_member_make(
-            jsdoc_tag_node_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
+            jsdoc_tag_node_span_with(tag, &type), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
         ));
     }
     TypeNode ret = type_interface((Interface){
@@ -5124,7 +5169,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
             else i->jsdoc_optional_initialized = true;
-            if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag));
+            if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span_with(tag, binding->explicit_type));
         }
         // `{...T=}` on a rest parameter makes it optional, which it can't be (tsgo's reparser gives it a question
         // token: checkGrammarParameterList's TS1047 at the whole tag)
@@ -5186,8 +5231,13 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
 // The function type of a `@callback` tag and its `@param`/`@returns` tags (tsc's JSDocSignature)
 static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isize count) {
     FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true, .jsdoc_callback = true };
+    char const* sig_start = span_end_ptr(jsdoc_tag_node_span(callback));
+    char const* sig_end = sig_start;
     for (isize i = 0; i < count; i++) {
         JsDocTag* tag = &children[i];
+        if (tag->kind == JSDOC_TAG_RETURNS && !function.ret_explicit && span_end_ptr(jsdoc_tag_node_span(tag)) > sig_end) {
+            sig_end = span_end_ptr(jsdoc_tag_node_span(tag));
+        }
         if (tag->kind == JSDOC_TAG_RETURNS) {
             if (tag->has_type && !function.ret_explicit) {
                 Span ret_span;
@@ -5236,7 +5286,12 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
         } else {
             type = jsdoc_synthesized(type_any); // (No type node: tsc's printer makes an `any`)
         }
-        if (type.jsdoc_optional || tag->bracketed) arg.explicit_optional = true;
+        arg.span = jsdoc_tag_node_span_with(tag, &type);
+        if (span_end_ptr(arg.span) > sig_end) sig_end = span_end_ptr(arg.span);
+        if (type.jsdoc_optional || tag->bracketed) {
+            arg.explicit_optional = true;
+            arg.jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag)); // (tsgo's reparser: the tag is its question token)
+        }
         // (`{...T}` makes a rest parameter of type T: tsgo's reparser, which TS2370 complains about unless T is an array)
         if (tag->variadic) {
             arg.rest = true;
@@ -5252,7 +5307,11 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
     }
     Span span = jsdoc_tag_decl_span(callback);
     function_impl_set_args_span(&function, span);
-    function.full_span = span;
+    // (The signature node: from where the callback's own text ends (its first child's `@`) to its last child's end,
+    // tsgo's parseJSDocSignature)
+    // (An `@overload` is a declaration, at its tag)
+    if (sig_end < sig_start) sig_end = sig_start;
+    function.full_span = callback->kind == JSDOC_TAG_CALLBACK ? span_make_in(span, sig_start, sig_end) : span;
     return function_impl_into_type(function);
 }
 
@@ -5576,6 +5635,7 @@ static void jsdoc_bind_comments(
                     .generic = jsdoc_template_generic(&tags),
                     .type = type,
                     .jsdoc = true,
+                    .jsdoc_end = jsdoc_alias_end(i, &type),
                 }),
                 .span = span,
             });

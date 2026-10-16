@@ -2295,7 +2295,7 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         if (!function->jsdoc_type) param_comments_begin(d, i);
         Binding const* binding = &i->initializer.binding;
         TyDisplay arg_d = d;
-        if (function->jsdoc_type) arg_d.no_map = true;
+        if (function->jsdoc_type && !function->jsdoc_callback) arg_d.no_map = true;
         map_at(arg_d, arg_start(i));
         if (i->rest) {
             Span rest = function_arg_rest_span(i);
@@ -2327,7 +2327,12 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         } else {
             out_mapped(arg_d, binding->content_span);
         }
-        if (i->explicit_optional) {
+        if (i->explicit_optional && !span_valid(function_arg_question_span(i)) && i->jsdoc_question) {
+            // (A JSDoc parameter's question token is its tag)
+            map_at(arg_d, i->jsdoc_question->buf);
+            out_lit(d, "?");
+            map_at(arg_d, span_end_ptr(*i->jsdoc_question));
+        } else if (i->explicit_optional) {
             Span question = function_arg_question_span(i);
             out_token_mapped(arg_d, span_valid(question) ? question.buf : nullptr, c_sv("?"));
         }
@@ -2340,7 +2345,9 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
             display_node(me, type_d, binding_type(binding));
         } else if (d.multiline && binding->tag != BINDING_IDENTIFIER) display_binding_pattern_type(d, binding);
         else out(reused_if(d, false), i->rest && d.multiline ? c_sv("any[]") : c_sv("any")); // tsc gives it a synthesized `any` (`any[]` a rest one, declaration emit)
-        map_span(arg_d, i->span, true);
+        // (A `@callback`'s parameter is its tag, which ends exactly at the next tag's `@`)
+        if (function->jsdoc_callback && span_valid(i->span)) map_at(arg_d, span_end_ptr(i->span));
+        else map_span(arg_d, i->span, true);
         if (!function->jsdoc_type) param_comments_end(d, i);
     }
     out_lit(d, ")");
@@ -2609,7 +2616,14 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 } else {
                     out_mapped(d, i->key.span);
                 }
-                if (i->optional) out_token_mapped(d, token_after(d, span_end_ptr(i->key.span), '?'), c_sv("?"));
+                if (i->optional && interface->jsdoc_literal && span_valid(i->declaration)) {
+                    // (A bracketed tag's question token is the whole tag: tsgo's reparser)
+                    map_at(d, i->declaration.buf);
+                    out_lit(d, "?");
+                    map_at(d, span_end_ptr(i->declaration));
+                } else if (i->optional) {
+                    out_token_mapped(d, token_after(d, span_end_ptr(i->key.span), '?'), c_sv("?"));
+                }
                 if ((i->key.tag == INTERFACE_KEY_NAME ? i->key.name_is_member_function : i->is_method) && i->type.tag == TYPE_CALLABLE) {
                     display_node_signature(me, d, i->type.callable->function, ": ");
                 } else {
@@ -2623,7 +2637,15 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 break;
         }
-        member_end_node_mapped(d, comment_span, ";,", true);
+        if (interface->jsdoc_literal && d.multiline && d.comments && span_valid(comment_span)) {
+            // (A JSDoc tag's member ends where its tag does, at the next tag's `@`: no trivia before it to skip back
+            // over, no comments in it)
+            out_lit(d, ";");
+            map_at(d, span_end_ptr(comment_span));
+            out_lit(d, "\n");
+        } else {
+            member_end_node_mapped(d, comment_span, ";,", true);
+        }
     }
     brace_close(outer);
 }
@@ -2817,6 +2839,8 @@ static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file) {
     if (!start) return true;
     char const* end = cstr_str(&file->contents) + cstr_size(&file->contents);
     if (node->readonly_invalid && end - start >= 8 && !memcmp(start, "readonly", 8)) start = decl_map_skip_trivia(start + 8, end);
+    // (JSDoc's `*`, printed `any`)
+    if (node->tag == TYPE_ANY && start < end && *start == '*') return true;
     size_t n = strlen(keyword);
     return end - start >= (isize_t)n && !memcmp(start, keyword, n);
 }

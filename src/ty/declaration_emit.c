@@ -3676,9 +3676,16 @@ static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg cons
     if (!is_this && is_optional_parameter(fn, arg)) {
         // (The `?` written, or one added for an initializer: new)
         Span question = arg->explicit_optional ? function_arg_question_span(arg) : span_null;
-        m_span(me, question, false);
-        w_lit(me, "?");
-        m_span(me, question, true);
+        if (!span_valid(question) && arg->explicit_optional && arg->jsdoc_question && span_valid(*arg->jsdoc_question)) {
+            // (A JSDoc `[name]`'s question token is its tag, ending exactly where the tag does: tsgo's reparser)
+            m(me, arg->jsdoc_question->buf);
+            w_lit(me, "?");
+            m(me, span_end_ptr(*arg->jsdoc_question));
+        } else {
+            m_span(me, question, false);
+            w_lit(me, "?");
+            m_span(me, question, true);
+        }
     }
     if (private_member) return;
     w_lit(me, ": ");
@@ -4917,7 +4924,7 @@ static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* sta
     w_lit(me, " = ");
     w_node_visited(me, &decl->type);
     w_lit(me, ";");
-    m(me, statement_end(statement));
+    m(me, decl->jsdoc && decl->jsdoc_end ? decl->jsdoc_end : statement_end(statement));
     w_lit(me, "\n");
 }
 

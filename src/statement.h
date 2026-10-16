@@ -75,6 +75,8 @@ typedef struct TypeDecl {
     // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;
+    // A JSDoc one's end in tsgo (its tag's, children included: the next tag's `@`...), what declaration maps map
+    char const* jsdoc_end;
     // Not a declaration: a JSDoc type that only gets resolved and checked (tsc checks every tag of a comment), like the
     // constraint of a `@template {C}` without a type parameter. No name, no symbol
     bool jsdoc_check_only;

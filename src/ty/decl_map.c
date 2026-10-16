@@ -4,6 +4,7 @@
 #include "../type.h"
 #include "../several_types.h"
 #include "../interface.h"
+#include "../interface_member.h"
 #include "../callable_type.h"
 #include "../function_impl.h"
 #include "../expr.h"
@@ -267,6 +268,18 @@ static char const* span_end_in(SourceFile const* file, Span span) {
 }
 
 char const* decl_map_type_start(TypeNode const* node, SourceFile const* file) {
+    // (A JSDoc type literal of nested `@param`/`@property` tags starts at its first tag's `@`: tsgo's
+    // parseNestedTypeLiteral)
+    if (file && !node->pos && node->tag == TYPE_INTERFACE && node->interface.jsdoc_literal &&
+        vec_interface_member_size(&node->interface.members)
+    ) {
+        Span first = vec_interface_member_at(&node->interface.members, 0)->declaration;
+        return span_valid(first) && in_file(file, first.buf) ? first.buf : nullptr;
+    }
+    if (file && !node->pos && node->tag == TYPE_CALLABLE && node->callable->function->jsdoc_callback) {
+        Span span = node->callable->function->full_span;
+        return span_valid(span) && in_file(file, span.buf) ? span.buf : nullptr;
+    }
     if (!file || !node->pos || node->pos - 1 > (u32)cstr_size(&file->contents)) return nullptr;
     return cstr_str(&file->contents) + node->pos - 1;
 }
@@ -289,6 +302,7 @@ char const* decl_map_type_inner_end(TypeNode const* node, SourceFile const* file
             char const* end = file_end(file);
             char const* c = start;
             if (node->readonly_invalid && c + 8 <= end && !memcmp(c, "readonly", 8)) c = decl_map_skip_trivia(c + 8, end);
+            if (node->tag == TYPE_ANY && c < end && *c == '*') return c + 1; // (JSDoc's `*`)
             while (c < end && word_char(*c)) c++;
             return c;
         }
@@ -323,8 +337,22 @@ char const* decl_map_type_inner_end(TypeNode const* node, SourceFile const* file
             }
             return end;
         }
-        case TYPE_CALLABLE: return span_end_in(file, node->callable->function->full_span);
-        case TYPE_INTERFACE: return span_end_in(file, node->interface.span);
+        case TYPE_CALLABLE: {
+            Span span = node->callable->function->full_span;
+            // (A `@callback`'s signature ends exactly where its last tag does)
+            if (node->callable->function->jsdoc_callback) return span_valid(span) && in_file(file, span.buf) ? span_end_ptr(span) : nullptr;
+            return span_end_in(file, span);
+        }
+        case TYPE_INTERFACE: {
+            // (A JSDoc type literal ends with its last tag)
+            isize_t count = vec_interface_member_size(&node->interface.members);
+            if (node->interface.jsdoc_literal && count) {
+                // (Exactly: a tag ends where tsgo's does, maybe past whitespace, jsdoc_tag_node_span())
+                Span last = vec_interface_member_at(&node->interface.members, count - 1)->declaration;
+                return span_valid(last) && in_file(file, last.buf) ? span_end_ptr(last) : nullptr;
+            }
+            return span_end_in(file, node->interface.span);
+        }
         case TYPE_ARRAY: return span_end_in(file, node->array.span);
         case TYPE_TUPLE: return span_end_in(file, node->tuple.span);
         case TYPE_INDEXED: return span_end_in(file, node->indexed->span);

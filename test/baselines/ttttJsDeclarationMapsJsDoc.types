@@ -1,0 +1,94 @@
+//// [test/cases/ttttJsDeclarationMapsJsDoc.ts] ////
+
+=== b.ts ===
+export interface X { a: number }
+>a : number
+
+=== a.js ===
+/**
+ * @param {Object} opts - Options for building configurations.
+ * @param {string[]} opts.entry - The entry array.
+ * @returns {import('./b').X}
+ */
+export function modernConfig(opts) {
+>modernConfig : (opts: { entry: string[]; }) => import('./b').X
+>opts : { entry: string[]; }
+
+  return { a: opts.entry.length };
+>{ a: opts.entry.length } : { a: number; }
+>a : number
+>opts.entry.length : number
+>opts.entry : string[]
+>opts : { entry: string[]; }
+>entry : string[]
+>length : number
+}
+
+/**
+ * @param {Object} o
+ * @param {string} o.x
+ * @param {Object} o.y
+ * @param {number} o.y.z */
+export function f(o) { return o; }
+>f : (o: { x: string; y: { z: number; }; }) => { x: string; y: { z: number; }; }
+>o : { x: string; y: { z: number; }; }
+>o : { x: string; y: { z: number; }; }
+
+/**
+ * @param {Object[]} arr - list
+ * @param {string} arr[].n
+ */
+export function h(arr) {}
+>h : (arr: { n: string; }[]) => void
+>arr : { n: string; }[]
+
+/**
+ * @param {Object} [o]
+ * @param {string} [o.x="a"]
+ */
+export function k(o) {}
+>k : (o?: { x?: string; }) => void
+>o : { x?: string; } | undefined
+
+/**
+ * @typedef {Object} A
+ * @property {number} [b]
+ */
+/**
+ * @typedef {Object} B
+ * @property {number} [b]
+ * @see x
+ */
+/**
+ * @typedef {Object} C
+ * @property {number} b
+ */
+/**
+ * @typedef {Object} D
+ * @property {number} [b=1]
+ * @property {number} c */
+/**
+ * @typedef {string} S
+ */
+/** @typedef {number} N */
+/**
+ * @callback Cb
+ * @param {Object} e
+ * @param {string} e.k
+ * @returns {void}
+ */
+/**
+ * @callback Cc
+ * @param {string} [e]
+ */
+
+/**
+ * @param {*} a
+ * @returns {*}
+ */
+export const g = (a) => a;
+>g : (a: any) => any
+>(a) => a : (a: any) => any
+>a : any
+>a : any
+
