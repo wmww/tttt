@@ -315,15 +315,26 @@ static void infer_from_params(
         SigParam const* target_param = &target->params[i];
         if (target_param->rest) {
             // `(...args: A) => any`: the rest of the source's parameters as a tuple
-            if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
+            // (A lone rest parameter as it is, unless it's a tuple: its elements are parameters, and tsc's
+            // getRestTypeAtPosition makes a new tuple of them, mutable unless inferring to a const type parameter;
+            // only the variable tail tsc's getEffectiveRestType slices off a tuple starting with one is mutable
+            // either way: `(...args: readonly [s: string]) => R` infers `[s: string]` for `Fn<infer P>`)
+            Ty const* rest = i < source->param_count && source->params[i].rest && i + 1 == source->param_count ?
+                ty_instantiate(me, source->params[i].type, mapper) : nullptr;
+            bool starts_variable = false;
+            if (rest && ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) {
+                TupleShape const* shape = ty_tuple_shape(rest);
+                starts_variable = shape->arity && (shape->flags[0] & TUPLE_ELEMENT_REST);
+                rest = nullptr;
+            }
+            if (rest) {
                 // (A rest parameter of type any is any[]: tsc's getEffectiveRestType)
-                Ty const* rest = ty_instantiate(me, source->params[i].type, mapper);
                 if (rest->kind == TY_INTRINSIC && (rest->flags & TYF_ANY)) rest = ty_array(me, rest, false);
                 infer_step(me, inf, step, rest, target_param->type);
             } else {
                 // (Readonly for a const type parameter that isn't constrained to a mutable array-like, tsc's
                 // applyToParameterTypes)
-                bool readonly = ty_is_const_type_variable(me, target_param->type, 0) &&
+                bool readonly = !starts_variable && ty_is_const_type_variable(me, target_param->type, 0) &&
                     !ty_some_mutable_array_like(me, target_param->type);
                 infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), target_param->type);
             }

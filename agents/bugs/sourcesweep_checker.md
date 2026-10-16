@@ -48,7 +48,7 @@ dependencies in package ids, landed by agent D). Left:
   or the contextual type that results. The test/performance project also lists 10 more files than tsc: a second
   vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
-- **arktype** (fn.test.ts:286, this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
+- **arktype** (this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
   see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx,
   **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
   looked at this round.
@@ -126,9 +126,9 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   assignable to `DefineComponent<unknown, ...>` (an intersection of a constructor type, ComponentOptionsBase and
   PublicProps) where tsc doesn't. Probe: /tmp-style project importing `defineComponent, DefineSetupFnComponent,
   PublicProps` from tiptap's vue `dist/vue.d.mts` by absolute path; a hand-written two-overload copy doesn't reproduce.
-- **arktype** root: fn.test.ts:286 +TS2769, this.test.ts:190 +TS2322 (exactOptionalPropertyTypes, a morph
-  `(child) => child` vs `Morph<{ child?: ... }>`). (type.test.ts:138/140 fixed 2026-10-16: the conditional types'
-  mention walk gave up past 16 bound type parameters, ttttConditionalManyBoundTypeParams.)
+- **arktype** root: this.test.ts:190 +TS2322 (exactOptionalPropertyTypes, a morph `(child) => child` vs
+  `Morph<{ child?: ... }>`). (Fixed 2026-10-16: type.test.ts:138/140, the conditional types' mention walk gave up past
+  16 bound type parameters; fn.test.ts:286, inference from a lone readonly rest tuple parameter.)
 - For agent D (mermaid is theirs now): mermaid's `renderHelpers.ts:150` +TS18048 (`insertNode`'s inferred return type
   keeps `undefined`) only reproduces in the full project with one checker: a probe with only renderHelpers.ts, or a
   file importing insertNode, matches tsc, and the files before it in program order don't reproduce it alone either.
@@ -335,7 +335,7 @@ read types). Left:
   plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
 - **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: still the zod v4 `[x: string]: any` index signature of
   the agent D 2026-10-12 entry; not reduced (zod v4's strictObject/shape types, big).
-- arktype (fn.test.ts:286 +TS2769, this.test.ts:190 +TS2322), better-auth,
+- arktype (this.test.ts:190 +TS2322), better-auth,
   es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit, tanstack-table: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
 - The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.

@@ -1,0 +1,90 @@
+//// [test/cases/ttttInferFromReadonlyRestTuple.ts] ////
+
+=== ttttInferFromReadonlyRestTuple.ts ===
+// Inferring from a lone rest parameter of a tuple type with fixed elements makes a new tuple of its elements, mutable
+// unless the inference is to a const type parameter (tsc's applyToParameterTypes: getEffectiveRestType is only the
+// tuple's variable tail, getRestTypeAtPosition makes the tuple). arktype's `TypedFn.params`, `Fn<infer params>` of a
+// signature taking `...args: readonly [s: string | unknown[]]`, was `Type<readonly [...]>` (fn.test.ts, TS2769)
+type Fn<A extends readonly any[] = any[], R = unknown> = (...args: A) => R;
+>Fn : Symbol(Fn, Decl(ttttInferFromReadonlyRestTuple.ts, 0, 0))
+>A : Symbol(A, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 8))
+>R : Symbol(R, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 41))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 58))
+>A : Symbol(A, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 8))
+>R : Symbol(R, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 41))
+
+type ParamsOf<F> = F extends Fn<infer P> ? P : never;
+>ParamsOf : Symbol(ParamsOf, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 75))
+>F : Symbol(F, Decl(ttttInferFromReadonlyRestTuple.ts, 5, 14))
+>F : Symbol(F, Decl(ttttInferFromReadonlyRestTuple.ts, 5, 14))
+>Fn : Symbol(Fn, Decl(ttttInferFromReadonlyRestTuple.ts, 0, 0))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 5, 37))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 5, 37))
+
+declare const fixed: (...args: readonly [s: string, n?: number]) => void;
+>fixed : Symbol(fixed, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 13))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 22))
+
+declare const variadic: (...args: readonly [...string[], number]) => void;
+>variadic : Symbol(variadic, Decl(ttttInferFromReadonlyRestTuple.ts, 7, 13))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 7, 25))
+
+declare const leading: (...args: readonly [a: string, ...rest: number[]]) => void;
+>leading : Symbol(leading, Decl(ttttInferFromReadonlyRestTuple.ts, 8, 13))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 8, 24))
+
+declare const array: (...args: readonly string[]) => void;
+>array : Symbol(array, Decl(ttttInferFromReadonlyRestTuple.ts, 9, 13))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 9, 22))
+
+const a: number = null! as ParamsOf<typeof fixed>;
+>a : Symbol(a, Decl(ttttInferFromReadonlyRestTuple.ts, 10, 5))
+>ParamsOf : Symbol(ParamsOf, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 75))
+>fixed : Symbol(fixed, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 13))
+
+const b: number = null! as ParamsOf<typeof variadic>;
+>b : Symbol(b, Decl(ttttInferFromReadonlyRestTuple.ts, 11, 5))
+>ParamsOf : Symbol(ParamsOf, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 75))
+>variadic : Symbol(variadic, Decl(ttttInferFromReadonlyRestTuple.ts, 7, 13))
+
+const c: number = null! as ParamsOf<typeof leading>;
+>c : Symbol(c, Decl(ttttInferFromReadonlyRestTuple.ts, 12, 5))
+>ParamsOf : Symbol(ParamsOf, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 75))
+>leading : Symbol(leading, Decl(ttttInferFromReadonlyRestTuple.ts, 8, 13))
+
+const d: number = null! as ParamsOf<typeof array>;
+>d : Symbol(d, Decl(ttttInferFromReadonlyRestTuple.ts, 13, 5))
+>ParamsOf : Symbol(ParamsOf, Decl(ttttInferFromReadonlyRestTuple.ts, 4, 75))
+>array : Symbol(array, Decl(ttttInferFromReadonlyRestTuple.ts, 9, 13))
+
+const e: number = null! as Parameters<typeof fixed>;
+>e : Symbol(e, Decl(ttttInferFromReadonlyRestTuple.ts, 14, 5))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>fixed : Symbol(fixed, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 13))
+
+declare function constParams<const P extends readonly unknown[]>(f: (...args: P) => void): P;
+>constParams : Symbol(constParams, Decl(ttttInferFromReadonlyRestTuple.ts, 14, 52))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 29))
+>f : Symbol(f, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 65))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 69))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 29))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 29))
+
+declare function mutableParams<const P extends unknown[]>(f: (...args: P) => void): P;
+>mutableParams : Symbol(mutableParams, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 93))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 16, 31))
+>f : Symbol(f, Decl(ttttInferFromReadonlyRestTuple.ts, 16, 58))
+>args : Symbol(args, Decl(ttttInferFromReadonlyRestTuple.ts, 16, 62))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 16, 31))
+>P : Symbol(P, Decl(ttttInferFromReadonlyRestTuple.ts, 16, 31))
+
+const f: number = constParams(fixed);
+>f : Symbol(f, Decl(ttttInferFromReadonlyRestTuple.ts, 17, 5))
+>constParams : Symbol(constParams, Decl(ttttInferFromReadonlyRestTuple.ts, 14, 52))
+>fixed : Symbol(fixed, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 13))
+
+const g: number = mutableParams(fixed);
+>g : Symbol(g, Decl(ttttInferFromReadonlyRestTuple.ts, 18, 5))
+>mutableParams : Symbol(mutableParams, Decl(ttttInferFromReadonlyRestTuple.ts, 15, 93))
+>fixed : Symbol(fixed, Decl(ttttInferFromReadonlyRestTuple.ts, 6, 13))
+

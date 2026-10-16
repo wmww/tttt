@@ -1,0 +1,44 @@
+ttttInferFromReadonlyRestTuple.ts(11,7): error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(12,7): error TS2322: Type '[...string[], number]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(13,7): error TS2322: Type '[a: string, ...rest: number[]]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(14,7): error TS2322: Type 'readonly string[]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(15,7): error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(18,7): error TS2322: Type 'readonly [s: string, n?: number | undefined]' is not assignable to type 'number'.
+ttttInferFromReadonlyRestTuple.ts(19,7): error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+
+
+==== ttttInferFromReadonlyRestTuple.ts (7 errors) ====
+    // Inferring from a lone rest parameter of a tuple type with fixed elements makes a new tuple of its elements, mutable
+    // unless the inference is to a const type parameter (tsc's applyToParameterTypes: getEffectiveRestType is only the
+    // tuple's variable tail, getRestTypeAtPosition makes the tuple). arktype's `TypedFn.params`, `Fn<infer params>` of a
+    // signature taking `...args: readonly [s: string | unknown[]]`, was `Type<readonly [...]>` (fn.test.ts, TS2769)
+    type Fn<A extends readonly any[] = any[], R = unknown> = (...args: A) => R;
+    type ParamsOf<F> = F extends Fn<infer P> ? P : never;
+    declare const fixed: (...args: readonly [s: string, n?: number]) => void;
+    declare const variadic: (...args: readonly [...string[], number]) => void;
+    declare const leading: (...args: readonly [a: string, ...rest: number[]]) => void;
+    declare const array: (...args: readonly string[]) => void;
+    const a: number = null! as ParamsOf<typeof fixed>;
+          ~
+!!! error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+    const b: number = null! as ParamsOf<typeof variadic>;
+          ~
+!!! error TS2322: Type '[...string[], number]' is not assignable to type 'number'.
+    const c: number = null! as ParamsOf<typeof leading>;
+          ~
+!!! error TS2322: Type '[a: string, ...rest: number[]]' is not assignable to type 'number'.
+    const d: number = null! as ParamsOf<typeof array>;
+          ~
+!!! error TS2322: Type 'readonly string[]' is not assignable to type 'number'.
+    const e: number = null! as Parameters<typeof fixed>;
+          ~
+!!! error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+    declare function constParams<const P extends readonly unknown[]>(f: (...args: P) => void): P;
+    declare function mutableParams<const P extends unknown[]>(f: (...args: P) => void): P;
+    const f: number = constParams(fixed);
+          ~
+!!! error TS2322: Type 'readonly [s: string, n?: number | undefined]' is not assignable to type 'number'.
+    const g: number = mutableParams(fixed);
+          ~
+!!! error TS2322: Type '[s: string, n?: number | undefined]' is not assignable to type 'number'.
+    
