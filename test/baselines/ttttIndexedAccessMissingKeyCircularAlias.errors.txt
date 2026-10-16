@@ -1,0 +1,47 @@
+ttttIndexedAccessMissingKeyCircularAlias.ts(4,6): error TS2456: Type alias 'Bad' circularly references itself.
+ttttIndexedAccessMissingKeyCircularAlias.ts(6,5): error TS2502: '"recur"' is referenced directly or indirectly in its own type annotation.
+ttttIndexedAccessMissingKeyCircularAlias.ts(6,14): error TS2315: Type 'Bad' is not generic.
+ttttIndexedAccessMissingKeyCircularAlias.ts(7,37): error TS2339: Property '42' does not exist on type '{ obj: { done: Arr; recur: any; }[D extends -1 ? "done" : "recur"]; }'.
+ttttIndexedAccessMissingKeyCircularAlias.ts(8,18): error TS2315: Type 'Bad' is not generic.
+ttttIndexedAccessMissingKeyCircularAlias.ts(10,6): error TS2456: Type alias 'Bad2' circularly references itself.
+ttttIndexedAccessMissingKeyCircularAlias.ts(10,15): error TS2502: 'obj' is referenced directly or indirectly in its own type annotation.
+ttttIndexedAccessMissingKeyCircularAlias.ts(10,27): error TS2339: Property 'x' does not exist on type '{ obj: any; }'.
+ttttIndexedAccessMissingKeyCircularAlias.ts(11,29): error TS2339: Property 'x' does not exist on type '{ obj: string; }'.
+ttttIndexedAccessMissingKeyCircularAlias.ts(13,12): error TS2339: Property 'x' does not exist on type 'I'.
+
+
+==== ttttIndexedAccessMissingKeyCircularAlias.ts (10 errors) ====
+    // An indexed access type whose key the object lacks is reported while the alias resolves, the object printed into the
+    // message: that resolves the object's member types, so a member referencing the alias is circular (TS2456, TS2502)
+    // (mutation of arrayFakeFlatNoCrashInferenceDeclarations)
+    type Bad<Arr, D extends number> = {obj: {
+         ~~~
+!!! error TS2456: Type alias 'Bad' circularly references itself.
+        "done": Arr,
+        "recur": Bad<Arr, [-1, 0, 1][D]>
+        ~~~~~~~
+!!! error TS2502: '"recur"' is referenced directly or indirectly in its own type annotation.
+                 ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2315: Type 'Bad' is not generic.
+    }[D extends -1 ? "done" : "recur"]}[42];
+                                        ~~
+!!! error TS2339: Property '42' does not exist on type '{ obj: { done: Arr; recur: any; }[D extends -1 ? "done" : "recur"]; }'.
+    declare const x: Bad<string, 1>;
+                     ~~~~~~~~~~~~~~
+!!! error TS2315: Type 'Bad' is not generic.
+    
+    type Bad2 = { obj: Bad2 }["x"];
+         ~~~~
+!!! error TS2456: Type alias 'Bad2' circularly references itself.
+                  ~~~
+!!! error TS2502: 'obj' is referenced directly or indirectly in its own type annotation.
+                              ~~~
+!!! error TS2339: Property 'x' does not exist on type '{ obj: any; }'.
+    type Fine = { obj: string }["x"];
+                                ~~~
+!!! error TS2339: Property 'x' does not exist on type '{ obj: string; }'.
+    interface I { obj: J }
+    type J = I["x"];
+               ~~~
+!!! error TS2339: Property 'x' does not exist on type 'I'.
+    

@@ -1,0 +1,37 @@
+//// [test/cases/ttttNeverPropertyInstantiationExpression.ts] ////
+
+=== ttttNeverPropertyInstantiationExpression.ts ===
+// A property of never is the error type (TS2339 only), which an instantiation expression has nothing to say about,
+// unlike any (TS2635) (mutation of symbolToNodeBoundaryNoStackOverflow)
+declare const node: never;
+>node : never
+
+type A = typeof node.foo<any>;
+>A : any
+>node.foo : any
+>node : never
+>foo : any
+
+const b = node.foo<any>;
+>b : any
+>node.foo<any> : any
+>node.foo : any
+>node : never
+>foo : any
+
+const c = node["foo"]<any>;
+>c : never
+>node["foo"]<any> : never
+>node["foo"] : never
+>node : never
+>"foo" : "foo"
+
+declare const n2: any;
+>n2 : any
+
+type C = typeof n2.foo<any>;
+>C : any
+>n2.foo : any
+>n2 : any
+>foo : any
+

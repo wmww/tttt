@@ -1,0 +1,47 @@
+//// [test/cases/ttttIndexedAccessMissingKeyCircularAlias.ts] ////
+
+=== ttttIndexedAccessMissingKeyCircularAlias.ts ===
+// An indexed access type whose key the object lacks is reported while the alias resolves, the object printed into the
+// message: that resolves the object's member types, so a member referencing the alias is circular (TS2456, TS2502)
+// (mutation of arrayFakeFlatNoCrashInferenceDeclarations)
+type Bad<Arr, D extends number> = {obj: {
+>Bad : Symbol(Bad, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 0, 0))
+>Arr : Symbol(Arr, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 9))
+>D : Symbol(D, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 13))
+>obj : Symbol(obj, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 35))
+
+    "done": Arr,
+>"done" : Symbol("done", Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 41))
+>Arr : Symbol(Arr, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 9))
+
+    "recur": Bad<Arr, [-1, 0, 1][D]>
+>"recur" : Symbol("recur", Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 4, 16))
+>Bad : Symbol(Bad, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 0, 0))
+>Arr : Symbol(Arr, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 9))
+>D : Symbol(D, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 13))
+
+}[D extends -1 ? "done" : "recur"]}[42];
+>D : Symbol(D, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 3, 13))
+
+declare const x: Bad<string, 1>;
+>x : Symbol(x, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 7, 13))
+>Bad : Symbol(Bad, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 0, 0))
+
+type Bad2 = { obj: Bad2 }["x"];
+>Bad2 : Symbol(Bad2, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 7, 32))
+>obj : Symbol(obj, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 9, 13))
+>Bad2 : Symbol(Bad2, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 7, 32))
+
+type Fine = { obj: string }["x"];
+>Fine : Symbol(Fine, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 9, 31))
+>obj : Symbol(obj, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 10, 13))
+
+interface I { obj: J }
+>I : Symbol(I, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 10, 33))
+>obj : Symbol(I.obj, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 11, 13))
+>J : Symbol(J, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 11, 22))
+
+type J = I["x"];
+>J : Symbol(J, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 11, 22))
+>I : Symbol(I, Decl(ttttIndexedAccessMissingKeyCircularAlias.ts, 10, 33))
+

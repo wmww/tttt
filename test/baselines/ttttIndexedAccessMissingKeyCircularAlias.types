@@ -1,0 +1,39 @@
+//// [test/cases/ttttIndexedAccessMissingKeyCircularAlias.ts] ////
+
+=== ttttIndexedAccessMissingKeyCircularAlias.ts ===
+// An indexed access type whose key the object lacks is reported while the alias resolves, the object printed into the
+// message: that resolves the object's member types, so a member referencing the alias is circular (TS2456, TS2502)
+// (mutation of arrayFakeFlatNoCrashInferenceDeclarations)
+type Bad<Arr, D extends number> = {obj: {
+>Bad : any
+>obj : { done: Arr; recur: Bad<Arr, [-1, 0, 1][D]>; }[D extends -1 ? "done" : "recur"]
+
+    "done": Arr,
+>"done" : Arr
+
+    "recur": Bad<Arr, [-1, 0, 1][D]>
+>"recur" : any
+>-1 : -1
+>1 : 1
+
+}[D extends -1 ? "done" : "recur"]}[42];
+>-1 : -1
+>1 : 1
+
+declare const x: Bad<string, 1>;
+>x : any
+
+type Bad2 = { obj: Bad2 }["x"];
+>Bad2 : any
+>obj : any
+
+type Fine = { obj: string }["x"];
+>Fine : any
+>obj : string
+
+interface I { obj: J }
+>obj : any
+
+type J = I["x"];
+>J : any
+

@@ -5911,8 +5911,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (An element access is the object's own error type: an unresolved name's, which prints as the name,
             // tsc's checkElementAccessExpression)
             if (object->flags & TYF_ERROR) return expr->property->form == PROPERTY_EXPR_BRACKET ? object : ty_intrinsic(me, TY_ERROR);
-            // `never` has no properties (TS2339), `never[k]` is never
-            if ((ty_reduced(me, object)->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
+            // `never` has no properties (TS2339, the error type: `never.a<T>` isn't TS2635 too), `never[k]` is never
+            if ((ty_reduced(me, object)->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return ty_intrinsic(me, TY_ERROR);
             Ty const* key = ty_access_key_type(me, expr->property);
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
             // `o[k]` with k any and no index signature that takes it is errorType (tsc's getPropertyTypeForIndexType

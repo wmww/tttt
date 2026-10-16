@@ -1,0 +1,24 @@
+ttttNeverPropertyInstantiationExpression.ts(4,22): error TS2339: Property 'foo' does not exist on type 'never'.
+ttttNeverPropertyInstantiationExpression.ts(5,16): error TS2339: Property 'foo' does not exist on type 'never'.
+ttttNeverPropertyInstantiationExpression.ts(6,23): error TS2635: Type 'never' has no signatures for which the type argument list is applicable.
+ttttNeverPropertyInstantiationExpression.ts(8,24): error TS2635: Type 'any' has no signatures for which the type argument list is applicable.
+
+
+==== ttttNeverPropertyInstantiationExpression.ts (4 errors) ====
+    // A property of never is the error type (TS2339 only), which an instantiation expression has nothing to say about,
+    // unlike any (TS2635) (mutation of symbolToNodeBoundaryNoStackOverflow)
+    declare const node: never;
+    type A = typeof node.foo<any>;
+                         ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'never'.
+    const b = node.foo<any>;
+                   ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'never'.
+    const c = node["foo"]<any>;
+                          ~~~
+!!! error TS2635: Type 'never' has no signatures for which the type argument list is applicable.
+    declare const n2: any;
+    type C = typeof n2.foo<any>;
+                           ~~~
+!!! error TS2635: Type 'any' has no signatures for which the type argument list is applicable.
+    

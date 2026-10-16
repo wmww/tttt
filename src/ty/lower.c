@@ -4128,6 +4128,13 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             Ty const* index = ty_from_node(me, &node->indexed->index, ctx);
             Ty const* object = ty_from_node(me, &node->indexed->interface, ctx);
             Ty const* ret = ty_indexed_written(me, object, index);
+            // A key the object lacks is reported right away, the object printed into the message (tsc's
+            // getIndexedAccessType with its accessNode): printing resolves an anonymous object's member types, so
+            // `type A = { a: A }["x"]` is circular like `{ a: A }["a"]` (the TS2339 itself is type_typecheck()'s)
+            if (ret == ty_intrinsic(me, TY_ERROR) && object->kind == TY_ANONYMOUS) {
+                cstr printed = ty_to_cstr(me, object);
+                cstr_drop(&printed);
+            }
             // `T["a"]` written as a type reads an optional property's missing as a real undefined (tsc's
             // getPropertyTypeForIndexType with an IndexedAccessTypeNode)
             if (ty_contains_missing(me, ret)) ret = ty_union(me, (Ty const*[]){ ret, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
