@@ -2532,6 +2532,18 @@ typedef struct DeclTracker {
     bool truncated;
 } DeclTracker;
 
+// The types one declaration's emit printed from their structure (tsgo's per-enclosing-declaration serializedTypes
+// cache: printed again, a type is a deep clone of the first print's nodes, whose reused annotation nodes then have no
+// mappings, though names made from declarations keep theirs). A pointer hash set; declaration_emit.c owns and resets it
+typedef struct TyPrintedTypes {
+    Ty const** slots;
+    u32 cap; // A power of two, 0 when empty
+    u32 count;
+} TyPrintedTypes;
+// Whether `ty` was printed before, adding it if not
+bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty);
+void ty_printed_types_clear(TyPrintedTypes* me);
+
 typedef struct TyDisplay {
     cstr* target;
     // Where in `target` the type starts (declaration emit writes into the file's text: the length limit is the type's)
@@ -2545,6 +2557,8 @@ typedef struct TyDisplay {
     // is the one being written), unless `no_map`. `param_declaration`: a type parameter printed is declared there (its
     // name gets its declaration's range). (In padding: the struct is copied on every call)
     bool no_map;
+    TyPrintedTypes* printed; // Declaration emit: see TyPrintedTypes (null elsewhere)
+    bool reprinted; // Inside a type the declaration printed before: reused nodes aren't mapped (see TyPrintedTypes)
     bool param_declaration;
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack

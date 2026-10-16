@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationMapReprintedTypeUnmapped.ts] ////
+
+=== ttttDeclarationMapReprintedTypeUnmapped.ts ===
+// A conditional or object type a declaration's emit printed before is tsgo's cached clone (serializedTypes): its
+// reused annotation nodes (here `infer T extends object`) are no longer mapped (trpc's middleware.d.ts.map)
+declare function factory<A, B>(): { create: (a: A, b: B) => [A, B] };
+>factory : Symbol(factory, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 0, 0))
+>A : Symbol(A, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 25))
+>B : Symbol(B, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 27))
+>create : Symbol(create, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 35))
+>a : Symbol(a, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 45))
+>A : Symbol(A, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 25))
+>b : Symbol(b, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 50))
+>B : Symbol(B, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 27))
+>A : Symbol(A, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 25))
+>B : Symbol(B, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 2, 27))
+
+export const make = <TCtx extends { ctx?: object; meta?: object }>() => ({
+>make : Symbol(make, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 12))
+>TCtx : Symbol(TCtx, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 21))
+>ctx : Symbol(ctx, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 35))
+>meta : Symbol(meta, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 49))
+
+    create: factory<
+>create : Symbol(create, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 74))
+>factory : Symbol(factory, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 0, 0))
+
+        TCtx extends { ctx: infer T extends object } ? T : any,
+>TCtx : Symbol(TCtx, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 21))
+>ctx : Symbol(ctx, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 5, 22))
+>T : Symbol(T, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 5, 33))
+>T : Symbol(T, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 5, 33))
+
+        TCtx extends { meta: infer T extends object } ? T : object
+>TCtx : Symbol(TCtx, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 3, 21))
+>meta : Symbol(meta, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 6, 22))
+>T : Symbol(T, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 6, 34))
+>T : Symbol(T, Decl(ttttDeclarationMapReprintedTypeUnmapped.ts, 6, 34))
+
+    >(),
+});
+

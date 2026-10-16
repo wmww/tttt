@@ -362,6 +362,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapReprintedTypeUnmapped': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMaps': {
         errors: true,
         symbols: true,

@@ -175,6 +175,7 @@ typedef struct Walk {
     // The file's declarations an emitted one names that aren't visible themselves: declaration emit emits them too
     // (late painting: tsc's aliasesToMakeVisible and lateMarkedStatements). `painted_done` of them were walked
     Symbol const** painted;
+    TyPrintedTypes printed_types; // What the declaration being emitted printed so far (TyDisplay.printed)
     u32 painted_count, painted_cap;
     bool* painted_done;
     bool late_pass; // Walking the statements again for painted ones only
@@ -462,6 +463,8 @@ static void report_access(Walk* me, SymbolAccessibility kind, csview symbol_name
 // ones to restore after it. `at`: where they go, if not at the name
 static Emitting emit_enter(Walk* me, EmitKind kind, EmitSig sig, Span name, Span at) {
     Emitting saved = my emitting;
+    // (tsgo's serializedTypes cache is per enclosing declaration)
+    if (my printed_types.count) ty_printed_types_clear(&my printed_types);
     my emitting = (Emitting){
         .kind = kind, .sig = sig, .is_static = my member_static, .in_class = my member_in_class, .name = name,
         .at = span_valid(at) ? at : name,
@@ -2980,7 +2983,7 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     }
     return (TyDisplay){
         .target = target, .target_start = cstr_size(target), .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
-        .multiline = true, .indent = my indent, .comments = &my comments,
+        .multiline = true, .indent = my indent, .comments = &my comments, .printed = &my printed_types,
         .printed_params = my in_return ? &my return_params : nullptr,
     };
 }
@@ -5271,6 +5274,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     }
     free(walk.exported_locals);
     free(walk.painted);
+    ty_printed_types_clear(&walk.printed_types);
     free(walk.painted_done);
     free(walk.late_taken);
     for (u32 i = 0; i < walk.specifier_count; i++) c_drop(cstr, &walk.specifiers[i].plain, &walk.specifiers[i].unsafe);

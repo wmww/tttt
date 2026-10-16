@@ -2697,7 +2697,7 @@ static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node) 
 }
 
 static void display_node_mapped_inner(Checker* me, TyDisplay d, TypeNode const* node) {
-    if (D_MAP(d) && !node_in_mapped_file(node, D_MAP(d))) d.no_map = true;
+    if (D_MAP(d) && (d.reprinted || !node_in_mapped_file(node, D_MAP(d)))) d.no_map = true;
     if (D_MAP(d)) {
         // (A node printed as its type isn't mapped, nor is one that has no position here)
         isize_t marked_at = cstr_size(d.target);
@@ -5881,6 +5881,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
+    // (Declaration maps: a conditional or object type the declaration printed before is tsgo's cached deep clone,
+    // unmapped: trpc's `infer T extends object` in a repeated inferred type argument)
+    if (d.printed && D_MAP(d) && !d.reprinted && (ty->kind == TY_CONDITIONAL || ty->kind == TY_ANONYMOUS) && !shows_alias(d, ty) &&
+        ty_printed_types_add(d.printed, ty)
+    ) {
+        d.reprinted = true;
+    }
     // (Where nothing truncates, tsc has no limit but the length: deep enough for a recursive alias's arguments. Declaration
     // emit: unchanged, see hacks.md TS7056)
     if (d.depth > (truncating(d) ? MAX_DISPLAY_DEPTH * 4 : d.tracker ? 8 * 16 : 1024)) {
@@ -6548,3 +6555,34 @@ void ty_append_binding_pattern_commented(cstr* out, Binding const* binding, Sour
 }
 
 bool ty_is_identifier_name(csview name) { return is_identifier_name(name); }
+
+bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty) {
+    if (my count * 2 >= my cap) {
+        u32 cap = my cap ? my cap * 2 : 16;
+        Ty const** slots = calloc(cap, sizeof(Ty const*));
+        panic_if(!slots, "out of memory");
+        for (u32 i = 0; i < my cap; i++) {
+            Ty const* old = my slots[i];
+            if (!old) continue;
+            u32 h = (u32)(((uintptr_t)old >> 4) * 2654435761u) & (cap - 1);
+            while (slots[h]) h = (h + 1) & (cap - 1);
+            slots[h] = old;
+        }
+        free(my slots);
+        my slots = slots;
+        my cap = cap;
+    }
+    u32 h = (u32)(((uintptr_t)ty >> 4) * 2654435761u) & (my cap - 1);
+    while (my slots[h]) {
+        if (my slots[h] == ty) return true;
+        h = (h + 1) & (my cap - 1);
+    }
+    my slots[h] = ty;
+    my count++;
+    return false;
+}
+
+void ty_printed_types_clear(TyPrintedTypes* me) {
+    free(my slots);
+    *me = (TyPrintedTypes){0};
+}
