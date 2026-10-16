@@ -1,0 +1,82 @@
+//// [test/cases/ttttContextualIntersectionUnionConstraintMember.ts] ////
+
+=== ttttContextualIntersectionUnionConstraintMember.ts ===
+// The contextual type of a property of `T & V<T>`, V a conditional type whose constraint is the union of its branches,
+// is what each alternative of the intersection distributed over that union says (tsc's getApparentTypeOfIntersectionType
+// makes `(C & {}) | (C & M)`), not the intersection of C's property with the union's: the generic call there infers its
+// type parameters from `(t: any) => ...` (ui's tanstack-table demos printed `Table<TableFeatures, any>` for
+// `createFilteredRowModel()` in `tableFeatures({...})`)
+interface Feats { a?: number; m?: (t: any) => () => RowModel<any, any> }
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>a : Symbol(Feats.a, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 5, 17))
+>m : Symbol(Feats.m, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 5, 29))
+>t : Symbol(t, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 5, 35))
+>RowModel : Symbol(RowModel, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 50))
+
+interface Table<F extends Feats, D> { f: F; d: D }
+>Table : Symbol(Table, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 5, 72))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 16))
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 32))
+>f : Symbol(Table.f, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 37))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 16))
+>d : Symbol(Table.d, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 43))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 32))
+
+interface RowModel<F extends Feats, D> { rf: F; rd: D }
+>RowModel : Symbol(RowModel, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 50))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 19))
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 35))
+>rf : Symbol(RowModel.rf, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 40))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 19))
+>rd : Symbol(RowModel.rd, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 47))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 35))
+
+declare function mk<F extends Feats, D = any>(): (t: Table<F, D>) => () => RowModel<F, D>;
+>mk : Symbol(mk, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 55))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 20))
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 36))
+>t : Symbol(t, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 50))
+>Table : Symbol(Table, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 5, 72))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 20))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 36))
+>RowModel : Symbol(RowModel, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 6, 50))
+>F : Symbol(F, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 20))
+>D : Symbol(D, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 36))
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : Symbol(IsAny, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 90))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 9, 11))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 9, 11))
+
+type V<T extends Feats> = IsAny<T> extends true ? {} : { [K in keyof T as K extends 'm' ? K : never]: T[K] };
+>V : Symbol(V, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 9, 47))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 7))
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>IsAny : Symbol(IsAny, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 8, 90))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 7))
+>K : Symbol(K, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 58))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 7))
+>K : Symbol(K, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 58))
+>K : Symbol(K, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 58))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 7))
+>K : Symbol(K, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 58))
+
+declare function take<T extends Feats>(x: T & V<T>): T;
+>take : Symbol(take, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 109))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 11, 22))
+>Feats : Symbol(Feats, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 0, 0))
+>x : Symbol(x, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 11, 39))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 11, 22))
+>V : Symbol(V, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 9, 47))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 11, 22))
+>T : Symbol(T, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 11, 22))
+
+export const features = take({ m: mk() });
+>features : Symbol(features, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 12, 12))
+>take : Symbol(take, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 10, 109))
+>m : Symbol(m, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 12, 30))
+>mk : Symbol(mk, Decl(ttttContextualIntersectionUnionConstraintMember.ts, 7, 55))
+

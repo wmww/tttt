@@ -87,6 +87,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttContextualIntersectionUnionConstraintMember': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttContravariantInferenceAliasedIntersection': {
         errors: true,
         symbols: true,

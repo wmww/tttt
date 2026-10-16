@@ -1,0 +1,47 @@
+//// [test/cases/ttttContextualIntersectionUnionConstraintMember.ts] ////
+
+=== ttttContextualIntersectionUnionConstraintMember.ts ===
+// The contextual type of a property of `T & V<T>`, V a conditional type whose constraint is the union of its branches,
+// is what each alternative of the intersection distributed over that union says (tsc's getApparentTypeOfIntersectionType
+// makes `(C & {}) | (C & M)`), not the intersection of C's property with the union's: the generic call there infers its
+// type parameters from `(t: any) => ...` (ui's tanstack-table demos printed `Table<TableFeatures, any>` for
+// `createFilteredRowModel()` in `tableFeatures({...})`)
+interface Feats { a?: number; m?: (t: any) => () => RowModel<any, any> }
+>a : number | undefined
+>m : ((t: any) => () => RowModel<any, any>) | undefined
+>t : any
+
+interface Table<F extends Feats, D> { f: F; d: D }
+>f : F
+>d : D
+
+interface RowModel<F extends Feats, D> { rf: F; rd: D }
+>rf : F
+>rd : D
+
+declare function mk<F extends Feats, D = any>(): (t: Table<F, D>) => () => RowModel<F, D>;
+>mk : <F extends Feats, D = any>() => (t: Table<F, D>) => () => RowModel<F, D>
+>t : Table<F, D>
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+>IsAny : IsAny<T>
+>true : true
+>false : false
+
+type V<T extends Feats> = IsAny<T> extends true ? {} : { [K in keyof T as K extends 'm' ? K : never]: T[K] };
+>V : V<T>
+>true : true
+
+declare function take<T extends Feats>(x: T & V<T>): T;
+>take : <T extends Feats>(x: T & V<T>) => T
+>x : T & V<T>
+
+export const features = take({ m: mk() });
+>features : { m: (t: Table<any, any>) => () => RowModel<any, any>; }
+>take({ m: mk() }) : { m: (t: Table<any, any>) => () => RowModel<any, any>; }
+>take : <T extends Feats>(x: T & V<T>) => T
+>{ m: mk() } : { m: (t: Table<any, any>) => () => RowModel<any, any>; }
+>m : (t: Table<any, any>) => () => RowModel<any, any>
+>mk() : (t: Table<any, any>) => () => RowModel<any, any>
+>mk : <F extends Feats, D = any>() => (t: Table<F, D>) => () => RowModel<F, D>
+

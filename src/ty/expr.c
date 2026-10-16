@@ -659,25 +659,54 @@ static Ty const* prop_context_key(Checker* me, PropContextKey const* k) {
     return k->key ? k->key : ty_prop_name_literal(me, k->name);
 }
 
+static Ty const* intersection_members_prop_context(Checker* me, Ty const* object, Ty const* const* members, u32 len, Ty const* key, u32 depth);
+
 static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty const* key) {
+    return intersection_members_prop_context(me, object, object->composite.types.data, object->composite.types.len, key, 0);
+}
+
+// (`object` is the intersection, the `this` of its members; `members` what it is made of with the type variables seen
+// so far as their constraints)
+static Ty const* intersection_members_prop_context(Checker* me, Ty const* object, Ty const* const* members, u32 len, Ty const* key, u32 depth) {
+    // A type variable member as its constraint (tsc's getApparentTypeOfIntersectionType: getTypeWithThisArgument with
+    // needApparentType, which makes a new intersection): one that is a union distributes the intersection over it,
+    // each alternative what its members say (`T & (IsAny<T> extends true ? {} : M)` is `(C & {}) | (C & M)`), one that
+    // is an intersection adds its members
+    for (u32 i = 0; i < len && depth < 4; i++) {
+        if (!is_contextual_type_variable(members[i])) continue;
+        Ty const* apparent = ty_apparent_type(me, members[i]);
+        if (apparent->kind != TY_UNION && apparent->kind != TY_INTERSECTION) continue;
+        TyList inner = apparent->composite.types;
+        u32 width = apparent->kind == TY_INTERSECTION ? inner.len : 1;
+        Ty const** list = malloc(sizeof(Ty const*) * (len - 1 + width));
+        panic_if(!list, "out of memory");
+        memcpy(list, members, sizeof(Ty const*) * i);
+        memcpy(list + i + width, members + i + 1, sizeof(Ty const*) * (len - i - 1));
+        Ty const* ret = nullptr;
+        if (apparent->kind == TY_INTERSECTION) {
+            memcpy(list + i, inner.data, sizeof(Ty const*) * inner.len);
+            ret = intersection_members_prop_context(me, object, list, len - 1 + width, key, depth + 1);
+        } else {
+            TyBuf alternatives = {0};
+            for (u32 j = 0; j < inner.len; j++) {
+                list[i] = inner.data[j];
+                Ty const* alternative = intersection_members_prop_context(me, object, list, len, key, depth + 1);
+                if (alternative) ty_buf_push(&alternatives, alternative);
+            }
+            ret = !alternatives.len ? nullptr : alternatives.len == 1 ? alternatives.data[0] :
+                ty_union(me, alternatives.data, alternatives.len, nullptr, (TyList){0});
+            ty_buf_drop(&alternatives);
+        }
+        free(list);
+        return ret;
+    }
     TyBuf parts = {0};
     TyBuf index_candidates = {0};
     bool ignore_index = false;
     Atom const* name = ty_literal_name(me, key);
-    TyList members = object->composite.types;
-    for (u32 i = 0; i < members.len; i++) {
-        Ty const* member = members.data[i];
-        // A type variable member as its constraint (tsc's getApparentTypeOfIntersectionType: getTypeWithThisArgument
-        // with needApparentType). One that is a union or intersection: what that says (tsc distributes the
-        // intersection over it instead)
-        if (is_contextual_type_variable(member)) {
-            member = ty_apparent_type(me, member);
-            if (member->kind == TY_UNION || member->kind == TY_INTERSECTION) {
-                PropContextKey member_key = { name, key };
-                push_prop_context_part(me, &parts, context_map(me, member, get_prop_context, &member_key));
-                continue;
-            }
-        }
+    for (u32 i = 0; i < len; i++) {
+        Ty const* member = members[i];
+        if (is_contextual_type_variable(member)) member = ty_apparent_type(me, member);
         if (!(member->flags & TYF_OBJECT)) continue;
         if (is_generic_mapped_context(me, member)) {
             push_prop_context_part(me, &parts, ty_generic_mapped_prop_context(me, member, key));
