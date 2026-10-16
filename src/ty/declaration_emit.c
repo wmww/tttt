@@ -2060,6 +2060,18 @@ static bool is_class_overload_implementation(ClassDecl const* cls, ClassItem con
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
         if (other && other != fn && function_impl_rare(other)->overload_implementation == fn) return true;
     }
+    // A computed name's overloads are the methods of its symbol (tsc's isImplementationOfOverload: more than one
+    // signature declaration), which the checker's member symbols know: `[Symbol.toPrimitive](h: 'string'): R;` and its
+    // implementation
+    if (item->tag == CLASS_ITEM_METHOD && item->method.computed_key && !item->method.accessor) {
+        ClassMemberSymbols const* symbols = ty_class_member_symbols(current_checker, cls);
+        u32 at = (u32)(item - cls->items.data);
+        i32 entry = symbols && at < symbols->item_count ? symbols->item_entry[at] : CLASS_MEMBER_NONE;
+        for (u32 k = 0; entry >= 0 && k < symbols->item_count; k++) {
+            ClassItem const* other = &cls->items.data[k];
+            if (k != at && symbols->item_entry[k] == entry && other->tag == CLASS_ITEM_METHOD && !other->method.accessor) return true;
+        }
+    }
     return false;
 }
 

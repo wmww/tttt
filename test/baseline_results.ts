@@ -140,6 +140,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationComputedOverloadImplementation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationComputedParameterName': {
         errors: true,
         symbols: true,
@@ -42746,7 +42752,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'symbolDeclarationEmit4': {
         errors: true,

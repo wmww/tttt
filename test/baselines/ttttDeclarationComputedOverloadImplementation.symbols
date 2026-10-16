@@ -1,0 +1,35 @@
+//// [test/cases/ttttDeclarationComputedOverloadImplementation.ts] ////
+
+=== ttttDeclarationComputedOverloadImplementation.ts ===
+// A method with a computed name implementing overloads is left out of declaration emit like a written name's
+// (tsc's isImplementationOfOverload by the late-bound symbol: mikro-orm's [Symbol.toPrimitive])
+export class R {
+>R : Symbol(R, Decl(ttttDeclarationComputedOverloadImplementation.ts, 0, 0))
+
+  [Symbol.toPrimitive](hint: 'string'): string;
+>[Symbol.toPrimitive] : Symbol(R[Symbol.toPrimitive], Decl(ttttDeclarationComputedOverloadImplementation.ts, 2, 16), Decl(ttttDeclarationComputedOverloadImplementation.ts, 3, 47))
+>Symbol.toPrimitive : Symbol(SymbolConstructor.toPrimitive, Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>toPrimitive : Symbol(SymbolConstructor.toPrimitive, Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>hint : Symbol(hint, Decl(ttttDeclarationComputedOverloadImplementation.ts, 3, 23))
+
+  [Symbol.toPrimitive](hint: string): string | never {
+>[Symbol.toPrimitive] : Symbol(R[Symbol.toPrimitive], Decl(ttttDeclarationComputedOverloadImplementation.ts, 2, 16), Decl(ttttDeclarationComputedOverloadImplementation.ts, 3, 47))
+>Symbol.toPrimitive : Symbol(SymbolConstructor.toPrimitive, Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>toPrimitive : Symbol(SymbolConstructor.toPrimitive, Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>hint : Symbol(hint, Decl(ttttDeclarationComputedOverloadImplementation.ts, 4, 23))
+
+    return "";
+  }
+  ['lit'](a: 1): void;
+>['lit'] : Symbol(R['lit'], Decl(ttttDeclarationComputedOverloadImplementation.ts, 6, 3), Decl(ttttDeclarationComputedOverloadImplementation.ts, 7, 22))
+>'lit' : Symbol(R['lit'], Decl(ttttDeclarationComputedOverloadImplementation.ts, 6, 3), Decl(ttttDeclarationComputedOverloadImplementation.ts, 7, 22))
+>a : Symbol(a, Decl(ttttDeclarationComputedOverloadImplementation.ts, 7, 10))
+
+  ['lit'](a: number): void {}
+>['lit'] : Symbol(R['lit'], Decl(ttttDeclarationComputedOverloadImplementation.ts, 6, 3), Decl(ttttDeclarationComputedOverloadImplementation.ts, 7, 22))
+>'lit' : Symbol(R['lit'], Decl(ttttDeclarationComputedOverloadImplementation.ts, 6, 3), Decl(ttttDeclarationComputedOverloadImplementation.ts, 7, 22))
+>a : Symbol(a, Decl(ttttDeclarationComputedOverloadImplementation.ts, 8, 10))
+}
+
