@@ -458,6 +458,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   keyless mapped types tipped TS5115 (flagflip nosnc/sloppy +7). Correct: instantiation accounting that doesn't
   depend on member resolution, or a lazy template for keyless mapped types.
 
+- `rest_literal()` (ty/lower.c) / `object_symbol()` (ty/order.c): a destructuring rest's binding symbol, which orders
+  it in unions (tsc's getRestType symbol), lives in the anonymous type's `literal_expr` union slot (`rest_binding`,
+  flagged `rest_of_binding`), free for synthetic objects; it is also kept in KEY_REST_SYMBOL links. Readers of
+  `literal_expr` must keep checking `object_literal` first. Correct: a symbol on anonymous types like tsc's. Oracle: the
+  suite's union order (ttttRestTypeUnionOrder).
+- `ty_keyof()` (ty/checker.c): a mapped type with an `as` clause over `keyof X` gets its keys from
+  ty_mapped_type_name_keys() (tsc's getIndexTypeForMappedType), other renamed mapped types still from their expanded
+  members (an `any` name there would be a string index signature). Oracle: ttttKeyofMappedAsAnyName.
+
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_duplicate_declarations()` (TS2300): artifact of tsgo's checking order: in a class, a member before the first
   late-bound one counts only its early symbol's declarations (`MemberEntry.early_total`), keyed on the `private_names`
