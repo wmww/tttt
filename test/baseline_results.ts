@@ -83,6 +83,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConditionalInferAliasedIntersectionFlattened': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttConditionalManyBoundTypeParams': {
         errors: true,
         symbols: true,

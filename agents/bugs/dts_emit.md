@@ -96,8 +96,6 @@ size on real code, each with an example:
     `Observable<any>`, redux-toolkit `LazyExoticComponent<typeof import(...)>` (tsgo: the module's default's
     signature), react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures, effect's 5 and
     excalidraw's 3 (see "Checker types, uninvestigated"): one file each, not looked at.
-  - discord.js ui stories' `PropsWithChildren<IAlert>` (tsgo: `IAlert & { children?: ... }`): see hacks.md's
-    "Conditional `infer` contra candidates keep a lone intersection's alias".
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,

@@ -2202,10 +2202,8 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
         return reverse ? ty_union(me, param->co, param->co_len, nullptr, (TyList){0}) :
             ty_union_subtype_reduced(me, param->co, param->co_len);
     }
-    // HACK: not flattened like the call inference's contra candidates (contra_intersection()), though tsc's
-    // getTypeFromInference does: the unaliased intersection made @testing-library/user-event's `Instance` (`this:
-    // Instance` through OmitThisParameter) report a spurious TS2502, tttt resolving its members where tsc doesn't
-    if (param->contra_len) return ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0});
+    // (tsc's getTypeFromInference: a lone aliased intersection flattened, see contra_intersection())
+    if (param->contra_len) return contra_intersection(me, param->contra, param->contra_len);
     return nullptr;
 }
 

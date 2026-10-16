@@ -5287,6 +5287,20 @@ static Ty const* intersection_prop_type(
 
 // The properties of an intersection target, each the intersection of its members' (tsc's propertiesRelatedTo on the
 // intersection with IntersectionState.None)
+// The property of an intersection when exactly one of its members has one by that name (that member's own), else null
+static Prop const* sole_member_prop(Checker* me, Ty const* intersection, Atom const* name) {
+    Prop const* found = nullptr;
+    TyList members = intersection->composite.types;
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(members.data[i]->flags & TYF_OBJECT)) return nullptr;
+        Prop const* prop = ty_get_prop(me, members.data[i], name);
+        if (!prop) continue;
+        if (found) return nullptr;
+        found = prop;
+    }
+    return found;
+}
+
 static Ternary intersection_props_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     Ternary result = TERNARY_TRUE;
     TyList members = target->composite.types;
@@ -5315,6 +5329,11 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // propertiesRelatedTo skips `sourceProp === targetProp`; its type may still be being computed: a class's
             // static `create = f(C)` relating `typeof C` to `C & ...`)
             if (part_count == 1 && source->flags & TYF_OBJECT && ty_get_prop(me, apparent_type(me, source), name) == part_props[0]) continue;
+            // (An intersection source's too: tsc's getPropertyOfType of an intersection is the member's own symbol when
+            // one member alone has it. Relating an intersection to the same one by another alias, `Instance` to its
+            // members flattened by inference, would otherwise resolve the types of properties still being resolved,
+            // a spurious TS2502)
+            if (part_count == 1 && source->kind == TY_INTERSECTION && sole_member_prop(me, source, name) == part_props[0]) continue;
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0 };
             // (Of two parts, the intersection is made with the property, of more only when its type is asked for: tsc's
             // createUnionOrIntersectionProperty defers `propTypes.length > 2`, which may explode when normalized. Of a
