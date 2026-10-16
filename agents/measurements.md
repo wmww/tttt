@@ -81,6 +81,12 @@ Instructions (`scripts/instrcount.sh`, callgrind; HEAD f760ecdc -> stage 1): tsc
 95.564, excalidraw 7.928 -> 7.891, tanstack-router 5.411 -> 5.397.
 The pre-stage split per thread count, declare+link, checker duplication and imbalance: plans/72_core_scaling.md.
 
+## Plan 74, one reporting run where tsc has one (2026-10-16, todo entry 2)
+Suite 13698 / 13740 unchanged (complexRecursiveCollections kept without failed_log, by the interface heritage check's
+single run), every `scripts/oracles.py` line unchanged. Instructions (callgrind) before -> after: tsc 4.640 -> 4.642,
+effect 10.340 -> 10.346, drizzle 6.786 -> 6.803, vue 6.608 -> 6.597, xstate 2.761 -> 2.763, type-fest 23.422 ->
+23.421 G: flat. relationComplexityError 1.21 -> 0.57 s (its TS2859 explained from the cached overflow).
+
 ## Plan 71, the hacks.md audit (2026-10-15, todo entry 7)
 Suite **13697 / 13739** (lost noImplicitAnyUnionNormalizedObjectLiteral1 and
 declarationEmitAugmentationUsesCorrectSourceFile, argued in tsgo_divergences.md; +1 own test). `scripts/oracles.py`:
