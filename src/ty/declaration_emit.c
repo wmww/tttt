@@ -2913,18 +2913,22 @@ static void push_exported_local(Walk* me, Symbol const* symbol, u32* cap) {
     my exported_locals[my exported_local_count++] = symbol;
 }
 
-// What `export { x }` and `export default x` name in a module
-static void collect_exported_locals(Walk* me, VecStatement const* statements) {
-    u32 cap = 0;
+// What `export { x }` and `export default x` name in a module, a namespace's `export { x }` too (tsc's
+// aliasMarkingVisitor walks the whole file)
+static void collect_exported_locals(Walk* me, VecStatement const* statements, u32* cap) {
     for_each (i, vec_statement, statements) {
+        if (i->tag == STATEMENT_DECL_NAMESPACE) {
+            collect_exported_locals(me, &i->decl.namespace->contents.statements, cap);
+            continue;
+        }
         if (i->tag == STATEMENT_IMPORT_EXPORT) {
             PortStatement const* port = i->import_export;
             if (port->module_ref) continue;
             for_each (j, vec_port_item, &port->items) {
-                if (j->tag == PORT_EXPORT_SPECIFIC && j->source_symbol) push_exported_local(me, j->source_symbol, &cap);
+                if (j->tag == PORT_EXPORT_SPECIFIC && j->source_symbol) push_exported_local(me, j->source_symbol, cap);
             }
         } else if (i->tag == STATEMENT_EXPORT_DEFAULT_EXPR && i->expr.tag == EXPR_IDENTIFIER && i->expr.identifier.symbol) {
-            push_exported_local(me, i->expr.identifier.symbol, &cap);
+            push_exported_local(me, i->expr.identifier.symbol, cap);
         }
     }
 }
@@ -5131,7 +5135,10 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         emit = false;
         goto walked;
     }
-    if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
+    if (file->is_module) {
+        u32 cap = 0;
+        collect_exported_locals(&walk, &file->ast.statements, &cap);
+    }
     Container top = { .global = !file->is_module, .module_top_level = file->is_module };
     check_statements(&walk, &file->ast.statements, top);
     // What the walk painted, and what that paints (transformAndReplaceLatePaintedStatements)

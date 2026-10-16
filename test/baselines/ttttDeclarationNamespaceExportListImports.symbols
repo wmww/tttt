@@ -1,0 +1,29 @@
+//// [test/cases/ttttDeclarationNamespaceExportListImports.ts] ////
+
+=== m.ts ===
+export interface A { a: number }
+>A : Symbol(A, Decl(m.ts, 0, 0))
+>a : Symbol(A.a, Decl(m.ts, 0, 20))
+
+export interface B { b: number }
+>B : Symbol(B, Decl(m.ts, 0, 32))
+>b : Symbol(B.b, Decl(m.ts, 1, 20))
+
+=== index.ts ===
+import type { A, B } from "./m";
+>A : Symbol(A, Decl(index.ts, 0, 13))
+>B : Symbol(B, Decl(index.ts, 0, 16))
+
+export declare namespace JSX {
+>JSX : Symbol(JSX, Decl(index.ts, 0, 32))
+
+    export { A, B as Bee };
+>A : Symbol(A, Decl(index.ts, 2, 12))
+>B : Symbol(B, Decl(index.ts, 0, 16))
+>Bee : Symbol(Bee, Decl(index.ts, 2, 15))
+}
+export declare namespace N2 { namespace Deep { export { B }; } }
+>N2 : Symbol(N2, Decl(index.ts, 3, 1))
+>Deep : Symbol(Deep, Decl(index.ts, 4, 29))
+>B : Symbol(B, Decl(index.ts, 4, 55))
+

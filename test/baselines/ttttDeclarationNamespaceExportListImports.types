@@ -1,0 +1,27 @@
+//// [test/cases/ttttDeclarationNamespaceExportListImports.ts] ////
+
+=== m.ts ===
+export interface A { a: number }
+>a : number
+
+export interface B { b: number }
+>b : number
+
+=== index.ts ===
+import type { A, B } from "./m";
+>A : A
+>B : B
+
+export declare namespace JSX {
+>JSX : typeof JSX
+
+    export { A, B as Bee };
+>A : any
+>B : any
+>Bee : any
+}
+export declare namespace N2 { namespace Deep { export { B }; } }
+>N2 : typeof N2
+>Deep : typeof Deep
+>B : any
+

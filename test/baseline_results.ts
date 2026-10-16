@@ -266,6 +266,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationNamespaceExportListImports': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationOverloadTypeofInstantiated': {
         errors: true,
         symbols: true,
