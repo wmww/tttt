@@ -1,0 +1,639 @@
+//// [test/cases/ttttDeclarationManyExportedLocals.ts] ////
+
+=== m.ts ===
+export const v1 = 1;
+>v1 : Symbol(v1, Decl(m.ts, 0, 12))
+
+export const v2 = 2;
+>v2 : Symbol(v2, Decl(m.ts, 1, 12))
+
+export const v3 = 3;
+>v3 : Symbol(v3, Decl(m.ts, 2, 12))
+
+export const v4 = 4;
+>v4 : Symbol(v4, Decl(m.ts, 3, 12))
+
+export const v5 = 5;
+>v5 : Symbol(v5, Decl(m.ts, 4, 12))
+
+export const v6 = 6;
+>v6 : Symbol(v6, Decl(m.ts, 5, 12))
+
+export const v7 = 7;
+>v7 : Symbol(v7, Decl(m.ts, 6, 12))
+
+export const v8 = 8;
+>v8 : Symbol(v8, Decl(m.ts, 7, 12))
+
+export const v9 = 9;
+>v9 : Symbol(v9, Decl(m.ts, 8, 12))
+
+export const v10 = 10;
+>v10 : Symbol(v10, Decl(m.ts, 9, 12))
+
+export const v11 = 11;
+>v11 : Symbol(v11, Decl(m.ts, 10, 12))
+
+export const v12 = 12;
+>v12 : Symbol(v12, Decl(m.ts, 11, 12))
+
+export const v13 = 13;
+>v13 : Symbol(v13, Decl(m.ts, 12, 12))
+
+export const v14 = 14;
+>v14 : Symbol(v14, Decl(m.ts, 13, 12))
+
+export const v15 = 15;
+>v15 : Symbol(v15, Decl(m.ts, 14, 12))
+
+export const v16 = 16;
+>v16 : Symbol(v16, Decl(m.ts, 15, 12))
+
+export const v17 = 17;
+>v17 : Symbol(v17, Decl(m.ts, 16, 12))
+
+export const v18 = 18;
+>v18 : Symbol(v18, Decl(m.ts, 17, 12))
+
+export const v19 = 19;
+>v19 : Symbol(v19, Decl(m.ts, 18, 12))
+
+export const v20 = 20;
+>v20 : Symbol(v20, Decl(m.ts, 19, 12))
+
+export const v21 = 21;
+>v21 : Symbol(v21, Decl(m.ts, 20, 12))
+
+export const v22 = 22;
+>v22 : Symbol(v22, Decl(m.ts, 21, 12))
+
+export const v23 = 23;
+>v23 : Symbol(v23, Decl(m.ts, 22, 12))
+
+export const v24 = 24;
+>v24 : Symbol(v24, Decl(m.ts, 23, 12))
+
+export const v25 = 25;
+>v25 : Symbol(v25, Decl(m.ts, 24, 12))
+
+export const v26 = 26;
+>v26 : Symbol(v26, Decl(m.ts, 25, 12))
+
+export const v27 = 27;
+>v27 : Symbol(v27, Decl(m.ts, 26, 12))
+
+export const v28 = 28;
+>v28 : Symbol(v28, Decl(m.ts, 27, 12))
+
+export const v29 = 29;
+>v29 : Symbol(v29, Decl(m.ts, 28, 12))
+
+export const v30 = 30;
+>v30 : Symbol(v30, Decl(m.ts, 29, 12))
+
+export const v31 = 31;
+>v31 : Symbol(v31, Decl(m.ts, 30, 12))
+
+export const v32 = 32;
+>v32 : Symbol(v32, Decl(m.ts, 31, 12))
+
+export const v33 = 33;
+>v33 : Symbol(v33, Decl(m.ts, 32, 12))
+
+export const v34 = 34;
+>v34 : Symbol(v34, Decl(m.ts, 33, 12))
+
+export const v35 = 35;
+>v35 : Symbol(v35, Decl(m.ts, 34, 12))
+
+export const v36 = 36;
+>v36 : Symbol(v36, Decl(m.ts, 35, 12))
+
+export const v37 = 37;
+>v37 : Symbol(v37, Decl(m.ts, 36, 12))
+
+export const v38 = 38;
+>v38 : Symbol(v38, Decl(m.ts, 37, 12))
+
+export const v39 = 39;
+>v39 : Symbol(v39, Decl(m.ts, 38, 12))
+
+export const v40 = 40;
+>v40 : Symbol(v40, Decl(m.ts, 39, 12))
+
+export const v41 = 41;
+>v41 : Symbol(v41, Decl(m.ts, 40, 12))
+
+export const v42 = 42;
+>v42 : Symbol(v42, Decl(m.ts, 41, 12))
+
+export const v43 = 43;
+>v43 : Symbol(v43, Decl(m.ts, 42, 12))
+
+export const v44 = 44;
+>v44 : Symbol(v44, Decl(m.ts, 43, 12))
+
+export const v45 = 45;
+>v45 : Symbol(v45, Decl(m.ts, 44, 12))
+
+export const v46 = 46;
+>v46 : Symbol(v46, Decl(m.ts, 45, 12))
+
+export const v47 = 47;
+>v47 : Symbol(v47, Decl(m.ts, 46, 12))
+
+export const v48 = 48;
+>v48 : Symbol(v48, Decl(m.ts, 47, 12))
+
+export const v49 = 49;
+>v49 : Symbol(v49, Decl(m.ts, 48, 12))
+
+export const v50 = 50;
+>v50 : Symbol(v50, Decl(m.ts, 49, 12))
+
+export const v51 = 51;
+>v51 : Symbol(v51, Decl(m.ts, 50, 12))
+
+export const v52 = 52;
+>v52 : Symbol(v52, Decl(m.ts, 51, 12))
+
+export const v53 = 53;
+>v53 : Symbol(v53, Decl(m.ts, 52, 12))
+
+export const v54 = 54;
+>v54 : Symbol(v54, Decl(m.ts, 53, 12))
+
+export const v55 = 55;
+>v55 : Symbol(v55, Decl(m.ts, 54, 12))
+
+export const v56 = 56;
+>v56 : Symbol(v56, Decl(m.ts, 55, 12))
+
+export const v57 = 57;
+>v57 : Symbol(v57, Decl(m.ts, 56, 12))
+
+export const v58 = 58;
+>v58 : Symbol(v58, Decl(m.ts, 57, 12))
+
+export const v59 = 59;
+>v59 : Symbol(v59, Decl(m.ts, 58, 12))
+
+export const v60 = 60;
+>v60 : Symbol(v60, Decl(m.ts, 59, 12))
+
+export const v61 = 61;
+>v61 : Symbol(v61, Decl(m.ts, 60, 12))
+
+export const v62 = 62;
+>v62 : Symbol(v62, Decl(m.ts, 61, 12))
+
+export const v63 = 63;
+>v63 : Symbol(v63, Decl(m.ts, 62, 12))
+
+export const v64 = 64;
+>v64 : Symbol(v64, Decl(m.ts, 63, 12))
+
+export const v65 = 65;
+>v65 : Symbol(v65, Decl(m.ts, 64, 12))
+
+export const v66 = 66;
+>v66 : Symbol(v66, Decl(m.ts, 65, 12))
+
+export const v67 = 67;
+>v67 : Symbol(v67, Decl(m.ts, 66, 12))
+
+export const v68 = 68;
+>v68 : Symbol(v68, Decl(m.ts, 67, 12))
+
+export const v69 = 69;
+>v69 : Symbol(v69, Decl(m.ts, 68, 12))
+
+export const v70 = 70;
+>v70 : Symbol(v70, Decl(m.ts, 69, 12))
+
+=== index.ts ===
+import {
+    v1,
+>v1 : Symbol(v1, Decl(index.ts, 0, 8))
+
+    v2,
+>v2 : Symbol(v2, Decl(index.ts, 1, 7))
+
+    v3,
+>v3 : Symbol(v3, Decl(index.ts, 2, 7))
+
+    v4,
+>v4 : Symbol(v4, Decl(index.ts, 3, 7))
+
+    v5,
+>v5 : Symbol(v5, Decl(index.ts, 4, 7))
+
+    v6,
+>v6 : Symbol(v6, Decl(index.ts, 5, 7))
+
+    v7,
+>v7 : Symbol(v7, Decl(index.ts, 6, 7))
+
+    v8,
+>v8 : Symbol(v8, Decl(index.ts, 7, 7))
+
+    v9,
+>v9 : Symbol(v9, Decl(index.ts, 8, 7))
+
+    v10,
+>v10 : Symbol(v10, Decl(index.ts, 9, 7))
+
+    v11,
+>v11 : Symbol(v11, Decl(index.ts, 10, 8))
+
+    v12,
+>v12 : Symbol(v12, Decl(index.ts, 11, 8))
+
+    v13,
+>v13 : Symbol(v13, Decl(index.ts, 12, 8))
+
+    v14,
+>v14 : Symbol(v14, Decl(index.ts, 13, 8))
+
+    v15,
+>v15 : Symbol(v15, Decl(index.ts, 14, 8))
+
+    v16,
+>v16 : Symbol(v16, Decl(index.ts, 15, 8))
+
+    v17,
+>v17 : Symbol(v17, Decl(index.ts, 16, 8))
+
+    v18,
+>v18 : Symbol(v18, Decl(index.ts, 17, 8))
+
+    v19,
+>v19 : Symbol(v19, Decl(index.ts, 18, 8))
+
+    v20,
+>v20 : Symbol(v20, Decl(index.ts, 19, 8))
+
+    v21,
+>v21 : Symbol(v21, Decl(index.ts, 20, 8))
+
+    v22,
+>v22 : Symbol(v22, Decl(index.ts, 21, 8))
+
+    v23,
+>v23 : Symbol(v23, Decl(index.ts, 22, 8))
+
+    v24,
+>v24 : Symbol(v24, Decl(index.ts, 23, 8))
+
+    v25,
+>v25 : Symbol(v25, Decl(index.ts, 24, 8))
+
+    v26,
+>v26 : Symbol(v26, Decl(index.ts, 25, 8))
+
+    v27,
+>v27 : Symbol(v27, Decl(index.ts, 26, 8))
+
+    v28,
+>v28 : Symbol(v28, Decl(index.ts, 27, 8))
+
+    v29,
+>v29 : Symbol(v29, Decl(index.ts, 28, 8))
+
+    v30,
+>v30 : Symbol(v30, Decl(index.ts, 29, 8))
+
+    v31,
+>v31 : Symbol(v31, Decl(index.ts, 30, 8))
+
+    v32,
+>v32 : Symbol(v32, Decl(index.ts, 31, 8))
+
+    v33,
+>v33 : Symbol(v33, Decl(index.ts, 32, 8))
+
+    v34,
+>v34 : Symbol(v34, Decl(index.ts, 33, 8))
+
+    v35,
+>v35 : Symbol(v35, Decl(index.ts, 34, 8))
+
+    v36,
+>v36 : Symbol(v36, Decl(index.ts, 35, 8))
+
+    v37,
+>v37 : Symbol(v37, Decl(index.ts, 36, 8))
+
+    v38,
+>v38 : Symbol(v38, Decl(index.ts, 37, 8))
+
+    v39,
+>v39 : Symbol(v39, Decl(index.ts, 38, 8))
+
+    v40,
+>v40 : Symbol(v40, Decl(index.ts, 39, 8))
+
+    v41,
+>v41 : Symbol(v41, Decl(index.ts, 40, 8))
+
+    v42,
+>v42 : Symbol(v42, Decl(index.ts, 41, 8))
+
+    v43,
+>v43 : Symbol(v43, Decl(index.ts, 42, 8))
+
+    v44,
+>v44 : Symbol(v44, Decl(index.ts, 43, 8))
+
+    v45,
+>v45 : Symbol(v45, Decl(index.ts, 44, 8))
+
+    v46,
+>v46 : Symbol(v46, Decl(index.ts, 45, 8))
+
+    v47,
+>v47 : Symbol(v47, Decl(index.ts, 46, 8))
+
+    v48,
+>v48 : Symbol(v48, Decl(index.ts, 47, 8))
+
+    v49,
+>v49 : Symbol(v49, Decl(index.ts, 48, 8))
+
+    v50,
+>v50 : Symbol(v50, Decl(index.ts, 49, 8))
+
+    v51,
+>v51 : Symbol(v51, Decl(index.ts, 50, 8))
+
+    v52,
+>v52 : Symbol(v52, Decl(index.ts, 51, 8))
+
+    v53,
+>v53 : Symbol(v53, Decl(index.ts, 52, 8))
+
+    v54,
+>v54 : Symbol(v54, Decl(index.ts, 53, 8))
+
+    v55,
+>v55 : Symbol(v55, Decl(index.ts, 54, 8))
+
+    v56,
+>v56 : Symbol(v56, Decl(index.ts, 55, 8))
+
+    v57,
+>v57 : Symbol(v57, Decl(index.ts, 56, 8))
+
+    v58,
+>v58 : Symbol(v58, Decl(index.ts, 57, 8))
+
+    v59,
+>v59 : Symbol(v59, Decl(index.ts, 58, 8))
+
+    v60,
+>v60 : Symbol(v60, Decl(index.ts, 59, 8))
+
+    v61,
+>v61 : Symbol(v61, Decl(index.ts, 60, 8))
+
+    v62,
+>v62 : Symbol(v62, Decl(index.ts, 61, 8))
+
+    v63,
+>v63 : Symbol(v63, Decl(index.ts, 62, 8))
+
+    v64,
+>v64 : Symbol(v64, Decl(index.ts, 63, 8))
+
+    v65,
+>v65 : Symbol(v65, Decl(index.ts, 64, 8))
+
+    v66,
+>v66 : Symbol(v66, Decl(index.ts, 65, 8))
+
+    v67,
+>v67 : Symbol(v67, Decl(index.ts, 66, 8))
+
+    v68,
+>v68 : Symbol(v68, Decl(index.ts, 67, 8))
+
+    v69,
+>v69 : Symbol(v69, Decl(index.ts, 68, 8))
+
+    v70,
+>v70 : Symbol(v70, Decl(index.ts, 69, 8))
+
+} from './m';
+export {
+    v1,
+>v1 : Symbol(v1, Decl(index.ts, 72, 8))
+
+    v2,
+>v2 : Symbol(v2, Decl(index.ts, 73, 7))
+
+    v3,
+>v3 : Symbol(v3, Decl(index.ts, 74, 7))
+
+    v4,
+>v4 : Symbol(v4, Decl(index.ts, 75, 7))
+
+    v5,
+>v5 : Symbol(v5, Decl(index.ts, 76, 7))
+
+    v6,
+>v6 : Symbol(v6, Decl(index.ts, 77, 7))
+
+    v7,
+>v7 : Symbol(v7, Decl(index.ts, 78, 7))
+
+    v8,
+>v8 : Symbol(v8, Decl(index.ts, 79, 7))
+
+    v9,
+>v9 : Symbol(v9, Decl(index.ts, 80, 7))
+
+    v10,
+>v10 : Symbol(v10, Decl(index.ts, 81, 7))
+
+    v11,
+>v11 : Symbol(v11, Decl(index.ts, 82, 8))
+
+    v12,
+>v12 : Symbol(v12, Decl(index.ts, 83, 8))
+
+    v13,
+>v13 : Symbol(v13, Decl(index.ts, 84, 8))
+
+    v14,
+>v14 : Symbol(v14, Decl(index.ts, 85, 8))
+
+    v15,
+>v15 : Symbol(v15, Decl(index.ts, 86, 8))
+
+    v16,
+>v16 : Symbol(v16, Decl(index.ts, 87, 8))
+
+    v17,
+>v17 : Symbol(v17, Decl(index.ts, 88, 8))
+
+    v18,
+>v18 : Symbol(v18, Decl(index.ts, 89, 8))
+
+    v19,
+>v19 : Symbol(v19, Decl(index.ts, 90, 8))
+
+    v20,
+>v20 : Symbol(v20, Decl(index.ts, 91, 8))
+
+    v21,
+>v21 : Symbol(v21, Decl(index.ts, 92, 8))
+
+    v22,
+>v22 : Symbol(v22, Decl(index.ts, 93, 8))
+
+    v23,
+>v23 : Symbol(v23, Decl(index.ts, 94, 8))
+
+    v24,
+>v24 : Symbol(v24, Decl(index.ts, 95, 8))
+
+    v25,
+>v25 : Symbol(v25, Decl(index.ts, 96, 8))
+
+    v26,
+>v26 : Symbol(v26, Decl(index.ts, 97, 8))
+
+    v27,
+>v27 : Symbol(v27, Decl(index.ts, 98, 8))
+
+    v28,
+>v28 : Symbol(v28, Decl(index.ts, 99, 8))
+
+    v29,
+>v29 : Symbol(v29, Decl(index.ts, 100, 8))
+
+    v30,
+>v30 : Symbol(v30, Decl(index.ts, 101, 8))
+
+    v31,
+>v31 : Symbol(v31, Decl(index.ts, 102, 8))
+
+    v32,
+>v32 : Symbol(v32, Decl(index.ts, 103, 8))
+
+    v33,
+>v33 : Symbol(v33, Decl(index.ts, 104, 8))
+
+    v34,
+>v34 : Symbol(v34, Decl(index.ts, 105, 8))
+
+    v35,
+>v35 : Symbol(v35, Decl(index.ts, 106, 8))
+
+    v36,
+>v36 : Symbol(v36, Decl(index.ts, 107, 8))
+
+    v37,
+>v37 : Symbol(v37, Decl(index.ts, 108, 8))
+
+    v38,
+>v38 : Symbol(v38, Decl(index.ts, 109, 8))
+
+    v39,
+>v39 : Symbol(v39, Decl(index.ts, 110, 8))
+
+    v40,
+>v40 : Symbol(v40, Decl(index.ts, 111, 8))
+
+    v41,
+>v41 : Symbol(v41, Decl(index.ts, 112, 8))
+
+    v42,
+>v42 : Symbol(v42, Decl(index.ts, 113, 8))
+
+    v43,
+>v43 : Symbol(v43, Decl(index.ts, 114, 8))
+
+    v44,
+>v44 : Symbol(v44, Decl(index.ts, 115, 8))
+
+    v45,
+>v45 : Symbol(v45, Decl(index.ts, 116, 8))
+
+    v46,
+>v46 : Symbol(v46, Decl(index.ts, 117, 8))
+
+    v47,
+>v47 : Symbol(v47, Decl(index.ts, 118, 8))
+
+    v48,
+>v48 : Symbol(v48, Decl(index.ts, 119, 8))
+
+    v49,
+>v49 : Symbol(v49, Decl(index.ts, 120, 8))
+
+    v50,
+>v50 : Symbol(v50, Decl(index.ts, 121, 8))
+
+    v51,
+>v51 : Symbol(v51, Decl(index.ts, 122, 8))
+
+    v52,
+>v52 : Symbol(v52, Decl(index.ts, 123, 8))
+
+    v53,
+>v53 : Symbol(v53, Decl(index.ts, 124, 8))
+
+    v54,
+>v54 : Symbol(v54, Decl(index.ts, 125, 8))
+
+    v55,
+>v55 : Symbol(v55, Decl(index.ts, 126, 8))
+
+    v56,
+>v56 : Symbol(v56, Decl(index.ts, 127, 8))
+
+    v57,
+>v57 : Symbol(v57, Decl(index.ts, 128, 8))
+
+    v58,
+>v58 : Symbol(v58, Decl(index.ts, 129, 8))
+
+    v59,
+>v59 : Symbol(v59, Decl(index.ts, 130, 8))
+
+    v60,
+>v60 : Symbol(v60, Decl(index.ts, 131, 8))
+
+    v61,
+>v61 : Symbol(v61, Decl(index.ts, 132, 8))
+
+    v62,
+>v62 : Symbol(v62, Decl(index.ts, 133, 8))
+
+    v63,
+>v63 : Symbol(v63, Decl(index.ts, 134, 8))
+
+    v64,
+>v64 : Symbol(v64, Decl(index.ts, 135, 8))
+
+    v65,
+>v65 : Symbol(v65, Decl(index.ts, 136, 8))
+
+    v66,
+>v66 : Symbol(v66, Decl(index.ts, 137, 8))
+
+    v67,
+>v67 : Symbol(v67, Decl(index.ts, 138, 8))
+
+    v68,
+>v68 : Symbol(v68, Decl(index.ts, 139, 8))
+
+    v69,
+>v69 : Symbol(v69, Decl(index.ts, 140, 8))
+
+    v70,
+>v70 : Symbol(v70, Decl(index.ts, 141, 8))
+
+};
+

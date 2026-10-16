@@ -2905,27 +2905,26 @@ static void check_statements(Walk* me, VecStatement const* statements, Container
     for_each (i, vec_statement, statements) check_statement(me, i, container);
 }
 
+static void push_exported_local(Walk* me, Symbol const* symbol, u32* cap) {
+    if (my exported_local_count == *cap) {
+        *cap = *cap ? *cap * 2 : 8;
+        my exported_locals = realloc(my exported_locals, *cap * sizeof(Symbol const*));
+    }
+    my exported_locals[my exported_local_count++] = symbol;
+}
+
 // What `export { x }` and `export default x` name in a module
 static void collect_exported_locals(Walk* me, VecStatement const* statements) {
     u32 cap = 0;
     for_each (i, vec_statement, statements) {
-        Symbol const* found[64];
-        u32 count = 0;
         if (i->tag == STATEMENT_IMPORT_EXPORT) {
             PortStatement const* port = i->import_export;
             if (port->module_ref) continue;
             for_each (j, vec_port_item, &port->items) {
-                if (j->tag == PORT_EXPORT_SPECIFIC && j->source_symbol && count < c_arraylen(found)) found[count++] = j->source_symbol;
+                if (j->tag == PORT_EXPORT_SPECIFIC && j->source_symbol) push_exported_local(me, j->source_symbol, &cap);
             }
         } else if (i->tag == STATEMENT_EXPORT_DEFAULT_EXPR && i->expr.tag == EXPR_IDENTIFIER && i->expr.identifier.symbol) {
-            found[count++] = i->expr.identifier.symbol;
-        }
-        for (u32 j = 0; j < count; j++) {
-            if (my exported_local_count == cap) {
-                cap = cap ? cap * 2 : 8;
-                my exported_locals = realloc(my exported_locals, cap * sizeof(Symbol const*));
-            }
-            my exported_locals[my exported_local_count++] = found[j];
+            push_exported_local(me, i->expr.identifier.symbol, &cap);
         }
     }
 }
