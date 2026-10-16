@@ -2361,8 +2361,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 out_lit(d, "(): ");
             } else {
                 out_lit(d, "(");
-                out(d, accessor && span_valid(accessor->setter_param) ? span_sv(accessor->setter_param) :
-                    accessor && span_valid(accessor->setter_pattern) ? span_sv(accessor->setter_pattern) : c_sv("value"));
+                // (The parameter and its name, mapped)
+                Span param = accessor && span_valid(accessor->setter_param) ? accessor->setter_param :
+                    accessor && span_valid(accessor->setter_pattern) ? accessor->setter_pattern : span_null;
+                if (span_valid(param)) out_mapped(d, param);
+                else out_lit(d, "value");
                 out_lit(d, ": ");
             }
             if (i->type.parsed) display_node(me, d, &i->type);
@@ -2646,8 +2649,11 @@ static SourceFile const* node_source_file(TypeNode const* node, u32 depth) {
         case TYPE_TYPEOF: if (node->typeof_->expr) span = expr_outer_span(node->typeof_->expr); break;
         case TYPE_JSDOC: span = node->jsdoc->span; break;
         case TYPE_UNION: case TYPE_INTERSECTION:
+            // (The first member that knows its file: a keyword doesn't, `string | null`)
             for_each (i, vec_type, &node->composite) {
-                if (!i->placeholder) return node_source_file(i, depth + 1);
+                if (i->placeholder) continue;
+                SourceFile const* source = node_source_file(i, depth + 1);
+                if (source) return source;
             }
             break;
         default: break;

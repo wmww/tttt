@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationMapSetterParamAndForeignUnion.ts] ////
+
+=== acc.ts ===
+export interface A {
+>A : Symbol(A, Decl(acc.ts, 0, 0))
+
+	set tools(tools: string[]);
+>tools : Symbol(A.tools, Decl(acc.ts, 0, 20), Decl(acc.ts, 1, 28))
+>tools : Symbol(tools, Decl(acc.ts, 1, 11))
+
+	get tools(): string[];
+>tools : Symbol(A.tools, Decl(acc.ts, 0, 20), Decl(acc.ts, 1, 28))
+
+	get x(): number;
+>x : Symbol(A.x, Decl(acc.ts, 2, 23), Decl(acc.ts, 3, 17))
+
+	set x(v: number);
+>x : Symbol(A.x, Decl(acc.ts, 2, 23), Decl(acc.ts, 3, 17))
+>v : Symbol(v, Decl(acc.ts, 4, 7))
+}
+export type T = {
+>T : Symbol(T, Decl(acc.ts, 5, 1))
+
+	set y(v: number);
+>y : Symbol(y, Decl(acc.ts, 6, 17))
+>v : Symbol(v, Decl(acc.ts, 7, 7))
+
+};
+=== b.ts ===
+export interface R {
+>R : Symbol(R, Decl(b.ts, 0, 0))
+
+    s: string | null;
+>s : Symbol(R.s, Decl(b.ts, 0, 20))
+
+    n: number;
+>n : Symbol(R.n, Decl(b.ts, 1, 21))
+}
+=== a.ts ===
+import type { R } from "./b";
+>R : Symbol(R, Decl(a.ts, 0, 13))
+
+export const f = (r: R) => ({ ...r });
+>f : Symbol(f, Decl(a.ts, 1, 12))
+>r : Symbol(r, Decl(a.ts, 1, 18))
+>R : Symbol(R, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 1, 18))
+

@@ -1,0 +1,46 @@
+//// [test/cases/ttttDeclarationMapSetterParamAndForeignUnion.ts] ////
+
+=== acc.ts ===
+export interface A {
+	set tools(tools: string[]);
+>tools : string[]
+>tools : string[]
+
+	get tools(): string[];
+>tools : string[]
+
+	get x(): number;
+>x : number
+
+	set x(v: number);
+>x : number
+>v : number
+}
+export type T = {
+>T : T
+
+	set y(v: number);
+>y : number
+>v : number
+
+};
+=== b.ts ===
+export interface R {
+    s: string | null;
+>s : string | null
+
+    n: number;
+>n : number
+}
+=== a.ts ===
+import type { R } from "./b";
+>R : R
+
+export const f = (r: R) => ({ ...r });
+>f : (r: R) => { s: string | null; n: number; }
+>(r: R) => ({ ...r }) : (r: R) => { s: string | null; n: number; }
+>r : R
+>({ ...r }) : { s: string | null; n: number; }
+>{ ...r } : { s: string | null; n: number; }
+>r : R
+
