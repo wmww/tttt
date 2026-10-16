@@ -27,6 +27,9 @@ typedef struct ClassItem {
     AccessModifier access;
     bool is_override; // `override`, or in JavaScript a JSDoc `@override` (fields, methods, accessors)
     bool interface_member_static; // CLASS_ITEM_INTERFACE_MEMBER: `static [k: string]: T`
+    // CLASS_ITEM_CONSTRUCTOR: a JavaScript JSDoc `@readonly` (TS1024; tsgo's reparser makes it a modifier, which
+    // declaration emit keeps)
+    bool jsdoc_readonly;
     // A method, accessor or field with a written name: the first declaration of the member symbol tsc's binder puts it
     // in, itself if it stands alone because it conflicts with what came first (`x: T; get x()`) or is that first one
     // (see bind_member_symbols()). Set when looking up names, null for other items

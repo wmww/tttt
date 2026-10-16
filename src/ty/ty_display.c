@@ -1777,6 +1777,8 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     }
     Ty const* type = node_type(me, d, node);
     if (type->kind != TY_REFERENCE) return true;
+    // (Of a class or interface: an alias of a tuple or an instantiation is a reference whose parameters aren't the name's)
+    if (!(identifier->target->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ALIAS))) return true;
     TyList params = type->reference.target->declared.type_params;
     u32 min = 0;
     for (u32 i = 0; i < params.len; i++) {

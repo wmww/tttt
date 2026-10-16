@@ -824,6 +824,27 @@ static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning
     c_drop(cstr, &name, &module);
 }
 
+// A module's export that merges `export { x }` with declarations of its own (a JavaScript module's dotted `@typedef`
+// namespaces `x.T` next to `const x`): what the specifier names, when every other declaration is visible. tsgo's
+// binder merges those namespaces into x's local symbol, which the name resolves to; here the module's export has them
+static Symbol const* export_specifier_local(Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->exported) return nullptr;
+    bool specifier = false, others = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_ALIAS && decl->node && ((PortItem const*)decl->node)->tag == PORT_EXPORT_SPECIFIC) {
+            specifier = true;
+        } else if (decl->kind == SYMBOL_DECL_NAMESPACE) {
+            others = true;
+        } else {
+            return nullptr;
+        }
+    }
+    if (!specifier || !others) return nullptr;
+    Symbol const* target = symbol_resolve_alias((Symbol*)symbol);
+    return target && target != symbol ? target : nullptr;
+}
+
 // tsc's isEntityNameVisible of a name in a written type, and handleSymbolAccessibilityError: `symbol` is what its first
 // identifier resolved to (null: unresolved, which the checker reports)
 static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 meaning) {
@@ -838,6 +859,11 @@ static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 me
     }
     if (symbol_has_visible_declarations(symbol)) {
         paint(me, symbol);
+        return;
+    }
+    Symbol const* local = export_specifier_local(symbol);
+    if (local && symbol_has_visible_declarations(local)) {
+        paint(me, local);
         return;
     }
     report_access(me, SYMBOL_NOT_ACCESSIBLE, span_sv(first), c_sv(""), false, first);
@@ -2326,7 +2352,8 @@ static u32 js_this_properties(Walk* me, ClassDecl const* cls, ThisProperty** out
             (*out)[k - 1] = t;
         }
     }
-    // (What a base already has)
+    // (What a base already has: tsgo's IsThisPropertyAssignmentDeclarationRedundant looks in the base instance types,
+    // a static member's too)
     Expr const* base = &cls->extends;
     bool extends_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
     if (base->tag != EXPR_IMPLICIT_ANY && !extends_null) {
@@ -2335,10 +2362,6 @@ static u32 js_this_properties(Walk* me, ClassDecl const* cls, ThisProperty** out
         for (u32 i = 0; i < count; i++) {
             ThisProperty const* p = &(*out)[i];
             Ty const* base_side = instance;
-            if (p->is_static) {
-                Ty const* base_type = lazy_type_get((LazyType*)&(base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base)->lazy_type);
-                base_side = base_type;
-            }
             Prop const* base_prop = base_side ? ty_get_prop(my checker, base_side, checker_atom(my checker, p->member->name)) : nullptr;
             bool redundant = false;
             if (base_prop) {
@@ -4519,10 +4542,14 @@ static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
             w(me, name);
             w_lit(me, "\"");
         }
-        w_lit(me, ": ");
-        TypeNode const* annotation = symbol_decl_jsdoc_type(p->decl);
-        if (annotation) w_node(me, annotation);
-        else w_type(me, ty_type_of_symbol(my checker, p->member));
+        // (`/** @private */ this.x = v` has no type, nor a modifier: ensureType's GetEffectiveDeclarationFlags sees the
+        // tag, the modifiers aren't the JSDoc's)
+        if (!(p->decl->jsdoc_modifiers & JSDOC_MODIFIER_PRIVATE)) {
+            w_lit(me, ": ");
+            TypeNode const* annotation = symbol_decl_jsdoc_type(p->decl);
+            if (annotation) w_node(me, annotation);
+            else w_type(me, ty_type_of_symbol(my checker, p->member));
+        }
         w_lit(me, ";\n");
     }
     free(props);
@@ -4658,6 +4685,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 w_indent(me);
                 m_span(me, i->span, false);
                 w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
+                if (i->jsdoc_readonly) w_lit(me, "readonly ");
                 w_lit(me, "constructor");
                 w_parameters(me, ctor, i->access == ACCESS_MODIFIER_PRIVATE);
                 w_lit(me, ";");
@@ -4984,8 +5012,9 @@ static void emit_namespace(Walk* me, NamespaceDecl const* decl, Statement const*
         if (my needs_scope_fix) {
             w_indent(me);
             w_lit(me, "export {};\n");
-        } else {
-            // (Every statement is exported: the modifiers are left out)
+        } else if (!decl->jsdoc) {
+            // (Every statement is exported: the modifiers are left out. Not a dotted `@typedef`'s namespace's, whose
+            // alias tsgo's stripExportModifiers leaves alone)
             u32 from = outer_offsets;
             while (from < my export_offset_count && my export_offsets[from] < body_start) from++;
             erase_texts(my out, my export_offsets + from, my export_offset_count - from, 7);
@@ -5419,6 +5448,18 @@ static void emit_export_assignment_of(
     my type_out = outer;
     cstr name = expr->tag == EXPR_IDENTIFIER ? export_default_name_or(me, expr->inner_span, fallback) :
         export_default_name_or(me, span_null, fallback);
+    // (`module.exports = (x) => {}` with a JSDoc `@type`: tsgo's transformFunctionLikeToDeclaration of the full signature,
+    // the export assignment first like a function's)
+    bool export_first = annotation && export_equals && expr->tag == EXPR_FUNCTION && !expr->function->is_constructor;
+    if (export_first) {
+        w_indent(me);
+        m_span(me, span, false);
+        w(me, keyword);
+        w(me, cstr_sv(&name));
+        w_lit(me, ";");
+        m(me, end_mark);
+        w_lit(me, "\n");
+    }
     w_leading(me, comments_from);
     w_indent(me);
     if (is_file) w_lit(me, "declare ");
@@ -5442,13 +5483,15 @@ static void emit_export_assignment_of(
     w_lit(me, ";");
     decl_comments_trailing(&my comments, my out, my indent, comments_end);
     w_lit(me, "\n");
-    w_indent(me);
-    m_span(me, span, false);
-    w(me, keyword);
-    w(me, cstr_sv(&name));
-    w_lit(me, ";");
-    m(me, end_mark);
-    w_lit(me, "\n");
+    if (!export_first) {
+        w_indent(me);
+        m_span(me, span, false);
+        w(me, keyword);
+        w(me, cstr_sv(&name));
+        w_lit(me, ";");
+        m(me, end_mark);
+        w_lit(me, "\n");
+    }
     if (name_out) cstr_take(name_out, name);
     else cstr_drop(&name);
 }
@@ -5834,17 +5877,8 @@ static void emit_file(Walk* me, Container top) {
     else decl_comments_empty_file_end(&my comments, my out);
 }
 
-static bool js_declaration_diagnostics_wanted(SourceFile const* file);
+// Whether a file's declaration emit is walked for its diagnostics (written where emitting)
 bool declaration_diagnostics_wanted(SourceFile const* file) {
-    // (A JavaScript file's declaration emit has its diagnostics too, but the walk only knows TypeScript's declarations:
-    // only isolatedDeclarations' are reported there, and its CommonJS exports' (check_js_commonjs_exports()), see
-    // agents/hacks.md)
-    if (file->is_js && !compiler_options()->isolated_declarations) return false;
-    return js_declaration_diagnostics_wanted(file);
-}
-
-// declaration_diagnostics_wanted() whatever the file's language
-static bool js_declaration_diagnostics_wanted(SourceFile const* file) {
     CompilerOptions const* options = compiler_options();
     if (!options->declaration && !options->composite) return false;
     if (file->is_declaration || file->is_json || file->is_stdlib || file->is_config) return false;
@@ -5928,18 +5962,14 @@ static void check_js_commonjs_exports(Walk* me) {
 }
 
 void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool emit) {
-    if (file->is_js) js_declaration_diagnostics_check(file, errs);
-    // (A JavaScript file's own, outside isolatedDeclarations: its CommonJS exports only)
-    bool js_exports = file->is_js && file->is_commonjs && !compiler_options()->isolated_declarations &&
-        js_declaration_diagnostics_wanted(file);
-    // (A JavaScript file that isn't CommonJS is written by the TypeScript walk, plan 64 stage 6; its diagnostics outside
-    // isolatedDeclarations aren't reported yet: they go to a scratch context)
-    bool js_written = emit && file->is_js && !file->is_commonjs && !compiler_options()->isolated_declarations &&
-        js_declaration_diagnostics_wanted(file);
-    if (!js_exports && !js_written && !declaration_diagnostics_wanted(file)) return;
-    ErrorCtx js_scratch = { .phase = errs->phase, .parent = errs->parent };
-    if (js_written) errs = &js_scratch;
+    // (TS6424 blocks the file's emit too)
     isize_t errors_before = vec_error_size(&errs->errors);
+    if (file->is_js) js_declaration_diagnostics_check(file, errs);
+    if (!declaration_diagnostics_wanted(file)) return;
+    // (A JavaScript file's are its declaration emit's like a TypeScript file's: the walk is the same, plan 64 stage 6.
+    // A CommonJS file's exports are checked first, outside isolatedDeclarations)
+    bool js_exports = file->is_js && file->is_commonjs && !compiler_options()->isolated_declarations;
+    ErrorCtx js_scratch = { .phase = errs->phase, .parent = errs->parent };
     Walk walk = {
         .file = file,
         .errs = errs,
@@ -5958,12 +5988,11 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     if (js_exports) {
         collect_commonjs(&walk);
         check_js_commonjs_exports(&walk);
-        if (!emit) goto walked;
-        // (check_js_commonjs_exports() reported what the exports' declarations do; the rest of the walk's diagnostics
-        // aren't reported in JavaScript yet: a dotted `@typedef`'s namespace doesn't merge with its variable, TS4078 in
-        // jsDeclarationsImportAliasExposedWithinNamespace)
+        // (check_js_commonjs_exports() reported what the exports' declarations do: their serialization again only
+        // paints)
         walk.errs = &js_scratch;
         check_commonjs_exports(&walk);
+        walk.errs = errs;
     }
     if (file->is_module) {
         u32 cap = 0;
@@ -5982,7 +6011,6 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
         for (u32 i = 0; i < count; i++) walk.painted_done[i] = true;
         walked = count;
     }
-    walked:
     // The second walk writes the file, unless the first reported something about it (tsc doesn't write a declaration
     // file whose transform has diagnostics)
     if (emit && vec_error_size(&reported->errors) == errors_before) {

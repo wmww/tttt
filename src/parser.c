@@ -8002,6 +8002,7 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
                 "An accessibility modifier cannot be used with a private identifier.");
         }
     }
+    if ((modifiers & JSDOC_MODIFIER_READONLY) && item->tag == CLASS_ITEM_CONSTRUCTOR) item->jsdoc_readonly = true;
     if ((modifiers & JSDOC_MODIFIER_READONLY) && (item->tag == CLASS_ITEM_CONSTRUCTOR || item->tag == CLASS_ITEM_METHOD)) {
         // (tsgo's reparser makes the tag a modifier, checkGrammarModifiers' TS1024 is at it: the whole tag)
         for_each (i, vec_jsdoc_tag, &tags) {
