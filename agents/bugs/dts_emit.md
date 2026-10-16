@@ -135,3 +135,25 @@ size on real code, each with an example:
   (`NodeListOf`, `[Symbol`, `'_` constructor), redux-toolkit helpers `K (})`, telegraf `(tg`, xterm `number (start)`.
   Not modelled: the printer flags in tsgo's cache key; a type reprinted in a new signature scope misses mappings
   tsgo has (probe: an object literal with `use: () => p, withArg: (x: number) => p` of an inline conditional).
+
+## 2026-10-16 worktree agent (wt-a): JS maps / missing files / small buckets, leftovers
+- **babel-standalone preset-stage-1.d.ts.map**: a keyword annotation of a signature declared in *another* file is
+  mapped because node_in_mapped_file() checks a keyword TypeNode (no file) by its text at the same offset here (the
+  twin file has `any` there too). Turning mapping off for other-file signatures' parameters (67fec73a, reverted)
+  unmapped trpc's/apollo-client's names tsgo does map: a keyword TypeNode needs to know its file.
+- **xterm CoreTerminal `new Emitter<{ start: number, end: number }>()`**: tsgo doesn't map the `number`s (its
+  serializeTypeForDeclaration goes through the pseudochecker; maybe the property isn't reused there), but it maps the
+  `1` of `type S = { a: 1 } & ...` printed structurally. tttt does the opposite. Unexplained.
+- **babel-traverse `const NodePath_Final = class NodePath {...}`**: overloaded methods printed from the instance type:
+  tsgo doesn't map the parameters of overloads with type parameters (isThisless is false for several declarations, so
+  the signatures are instantiated with fresh type parameters and not reused). tttt's members.c thisless ignores the
+  declaration count; making it `visible == 1` alone changed nothing in the display (the class expression's members
+  don't seem to go through the this-instantiation there). Probe: /tmp-style `export const C = class N { t<S>(x: V<S>,
+  s: S): void; t(x: V<any>): void; t(x, s?) {} }`.
+- **lit ssr-dom-shim `labels = [] as unknown as NodeListOf<...>`** in a class expression printed as a literal: tsgo
+  maps the asserted type (pseudo type of the field initializer); tttt's class-literal members don't use pseudo_of_field.
+- **telegraf `as (tg.MessageEntity & { type: SelectedTypes; ... })[]`**: tsgo reuses the node with only the local alias
+  reference replaced (partial reuse); tttt prints from the type (same text, no mappings).
+- **formatjs err.tsx** `import from 'foo'` recovery: tsgo writes `import from = ;`.
+- Suite JS dts quirks left as tsgo bugs: jsdocTemplateTagDefault (`= ` empty default), jsdocReadonlyDeclarations
+  (`readonly constructor`), jsdocAccessibilityTagsDeclarations (`c;`).
