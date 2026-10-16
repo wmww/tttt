@@ -17,16 +17,20 @@ size on real code, each with an example:
   artifact (the right one from the real path). tsgo's checker-wide memo of a successful import lookup
   (KEY_EXTENDED_CONTAINERS, filled from inside an import declaration) makes names depend on what a checker printed
   first, as in tsgo; tttt's checkers don't split files like tsgo's.
-- **Member order** (31 files left of ~170; the zod-style mapped/intersection and spread cases are fixed): tsgo sorts
-  every resolved object type's properties by compareSymbols (getNamedMembers), tttt sorts at Members build
-  (builder_sort_stable). What's left:
+- **Member order** (agent C 2026-10-16 fixed arktype's filtering `as` clauses, JS classes' `this.x` members, the
+  isDeclarationContainedBy offset quirk of mixins): tsgo sorts every resolved object type's properties by
+  compareSymbols (getNamedMembers), tttt sorts at Members build (builder_sort_stable). What's left:
   - `?: undefined` members of normalized object literal unions (postiz-app `*.provider.d.ts`, slate
-    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`): tsgo's getUndefinedProperty caches one
-    symbol per name per checker, declared where the first property it was made for is, so the order depends on which
-    file that checker checked first (tsgo runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its
-    checking order/distribution differs. Plan-sized: needs tsgo's file-to-checker assignment and check order.
-  - mermaid radar `styles.d.ts` (a JS class instance type: constructor `this.x` assignments vs methods), trpc
-    next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
+    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`; likely react-navigation's
+    `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per checker, declared
+    where the first property it was made for is, so the order depends on which file that checker checked first (tsgo
+    runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its checking order/distribution differs.
+    Plan-sized: needs tsgo's file-to-checker assignment and check order.
+  - qwik mcp `page.d.ts`: union order, checker-side. `inc ? { ...signal, value } : signal` with `signal` a parameter's
+    rest binding (`({ value, ...signal }: T)`) is `{ name; hookType } | { name; hookType; value }` in tsgo (the rest
+    type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
+    (object_rest_type, rest_literal) gets a later id than the spread's object.
+  - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
 - **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15): corpus:effect `test/Effect/query-repro.test.d.ts`
   (`Equals<Omit<A, ...>, {}> extends true ? void : {...}` resolved to its false branch by tttt, deferred by tsgo);
   excalidraw `MainMenu.d.ts` (`Trigger: typeof import(...).default` where tsgo expands it), `App.d.ts` (`callback?:
@@ -53,7 +57,11 @@ size on real code, each with an example:
   `this` to the symbol of getThisContainer and, when IsSymbolAccessible says no (an object literal's method), the
   reuse fails (silently: the wrapping tracker swallows ReportInaccessibleThisError) and the type is printed, which
   reaches the object literal type inside itself (TS5088). tttt's display_node_typeof() never rejects a `this`
-  leftmost; it needs the this container of a type node (none exists in ty_display.c yet) and its accessibility.
+  leftmost. Agent C 2026-10-16 tried rejecting a `this` whose IdentifierExpr.this_function is an object literal
+  method: it isn't one here, the `typeof this` in a parameter's annotation resolves `this` in the scope around the
+  method (THIS_ANY, this_function the outer `make`, not the method), unlike tsc's getThisContainer from the
+  parameter. Needs the parameter types' `this` resolved in the method's own this scope first (checker-wide: the type
+  of `this` in parameter annotations), or a separate "this container" link for type nodes.
 - **Content-mapped files' outputs**: tsgo names a `.vue` file's declaration output `x.d.vue.ts`
   (ChangeToDeclarationExtension with the content mapper's extensions) and emits the supplemental module
   (`component.vue.0.d.ts`, `/// <reference path>` to it); tttt writes `x.vue.d.ts` and no supplemental one
@@ -61,31 +69,27 @@ size on real code, each with an example:
 - **Worktree artifacts**: dtsdiff run in a worktree with symlinked corpora differs in `.d.ts.map` `sources` and in
   TS2883 "cannot be named without a reference to '/home/ai/tttt/...'" (excalidraw-app/collab): not bugs.
 
-- **Painting gaps** ("import", 40 projects / 64 files after agent A's four fixes: inferred predicates, late bound
-  members, readonly enum fields, enum-valued keys): corpus:vscode's 13 left (`SymbolKind`, `URI`, `RefCountedDisposable`,
-  `IReference` dropped: each a name printed from a type without `d.tracker->track_symbol()`), qwik `EffectProperty`,
-  gemini-cli `SettingScope`, xstate `AnyEventObject`, react-navigation `PartialState`/`EventMapBase`, yup
-  `MergeObjectTypes`, typedoc `IntrinsicElements`, effect `fiberRuntime.d.ts` (`import type * as Either`), excalidraw
-  `actionProperties.d.ts`. `scripts/dtsdiff.py --last -k import` lists them; reduce one to a probe and find the display
-  path that prints without tracking (the four fixed ones were all of that kind).
 - **B's second pass leftovers** (2026-10-15): pi durable's `A & (B | C)` printed distributed (`(A & B) | (A & C)`:
   a union origin, checker-side); trpc's `TypeError<'...'>` property of CreateTRPCClientOptions (tsgo reuses the
   annotation, tttt reprints with `| undefined` and double quotes; a two-file probe matches, the real case doesn't);
-  graphql-js `class GraphQLEnumType/* <T> */  implements` (tsgo copies a plain comment after a class name, two
-  spaces); arktype bounds `OneCharComparator` and vscode instantiationService `const enum TraceType` locals tsgo keeps
+  arktype bounds `OneCharComparator` and vscode instantiationService `const enum TraceType` locals tsgo keeps
   (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an `infer T extends object` tsgo
-  prints anew, renamed `T_1`, tttt reuses and maps), `map: missing at AbstractTable ({)` (sequelize), the other
+  prints anew, renamed `T_1`, tttt reuses and maps: the extends type literal of an instantiated conditional, whose
+  property annotation's type (T) isn't the instantiated property's (a fresh T), so tsgo's reuse check fails; tttt's
+  member annotation reuse under TyDisplay.mapped_by doesn't see an `infer` node as naming a mapped parameter);
+  trpc's `AsyncIterable<{...}, void, any>` (tsgo writes the trailing default argument, tttt drops it: type text),
+  `map: missing at AbstractTable ({)` (sequelize), the other
   single-file map buckets.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
-  painted destructurings' types; vscode and hexo/graphql-codegen now match). Left, one or two files each:
-  react-navigation `useNavigationHelpers` (tsgo names PartialState `CommonActions<State>`: a chain through the
-  `export * as CommonActions` namespace, quirk to understand first), gemini-cli `MessageBusType`, qwik
-  `FunctionComponent`/`_EFFECT_BACK_REF`, yup `MergeObjectTypes`, typedoc `IntrinsicElements`, effect
-  `test/Effect/query*.test` (`Context`), excalidraw `ExcalidrawFreeDrawElement`, apollo-client `core/index`, fp-ts
-  `index`, better-auth test-utils, reselect, slate-hyperscript, shadcn templates, vitest `logger`/`console`; and the
-  other way, discord.js structures keeps `ActivityType` where tsgo drops it. `scripts/dtsdiff.py --last -k import`;
-  each is a name printed (or written) without `track_symbol()`, or a statement the late pass doesn't walk.
+  painted destructurings' types; agent C 2026-10-16 fixed unresolved-import names reused across files, export lists
+  past 64 names, a namespace's export list, value-only `export =` property imports used as types, the first walk
+  printing without type parameter names (discord.js's ActivityType), augmentation-kept imports (vue)). What's left in
+  the bucket is type text whose names differ (checker-side, the import line follows): yup `MergeObjectTypes` (an alias
+  of a distributive conditional expanded), gemini-cli `MessageBusType` (a generic signature `<T extends Message>(type:
+  T['type'], ...)` tsgo instantiates), qwik `FunctionComponent`/`_EFFECT_BACK_REF`, effect `test/Effect/query*.test`
+  (`Context`), excalidraw `ExcalidrawFreeDrawElement`, react-navigation `useNavigationHelpers` (tsgo names PartialState
+  `CommonActions<State>` through the `export * as CommonActions` namespace, and `State_1` renaming), slate-hyperscript.
 - **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
