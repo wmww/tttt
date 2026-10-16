@@ -1,0 +1,64 @@
+//// [test/cases/ttttDeclarationHeritageLeadingComments.ts] ////
+
+=== a.ts ===
+export interface S {}
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+export class E /* <T> */ implements S {}
+>E : Symbol(E, Decl(a.ts, 0, 21))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+export class F /* c */ {}
+>F : Symbol(F, Decl(a.ts, 1, 40))
+
+export class G<T> /* c */ implements S {}
+>G : Symbol(G, Decl(a.ts, 2, 25))
+>T : Symbol(T, Decl(a.ts, 3, 15))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+export function foo /* c */ () {}
+>foo : Symbol(foo, Decl(a.ts, 3, 41))
+
+export const v /* c */ = 1;
+>v : Symbol(v, Decl(a.ts, 5, 12))
+
+export interface I /* c */ { a: 1 }
+>I : Symbol(I, Decl(a.ts, 5, 27))
+>a : Symbol(I.a, Decl(a.ts, 6, 28))
+
+export type A /* c */ = 1;
+>A : Symbol(A, Decl(a.ts, 6, 35))
+
+=== b.ts ===
+export class B {}
+>B : Symbol(B, Decl(b.ts, 0, 0))
+
+export class H /* c */ extends B {}
+>H : Symbol(H, Decl(b.ts, 0, 17))
+>B : Symbol(B, Decl(b.ts, 0, 0))
+
+export class J /* c */ extends B /* d */ implements Object /* e */ {}
+>J : Symbol(J, Decl(b.ts, 1, 35))
+>B : Symbol(B, Decl(b.ts, 0, 0))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+export class K /* c */
+>K : Symbol(K, Decl(b.ts, 2, 69))
+
+  // line
+  extends B {}
+>B : Symbol(B, Decl(b.ts, 0, 0))
+
+=== c.ts ===
+export interface J {}
+>J : Symbol(J, Decl(c.ts, 0, 0))
+
+export interface I /* c */ extends J {}
+>I : Symbol(I, Decl(c.ts, 0, 21))
+>J : Symbol(J, Decl(c.ts, 0, 0))
+
+export interface I2<T> /* c */ extends J /* d */ {}
+>I2 : Symbol(I2, Decl(c.ts, 1, 39))
+>T : Symbol(T, Decl(c.ts, 2, 20))
+>J : Symbol(J, Decl(c.ts, 0, 0))
+

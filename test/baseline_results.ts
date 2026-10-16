@@ -260,6 +260,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationHeritageLeadingComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationImportOfPropertyNotType': {
         errors: true,
         symbols: true,

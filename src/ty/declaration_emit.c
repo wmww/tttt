@@ -4075,6 +4075,7 @@ static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
 }
 
 static void w_heritage(Walk* me, VecSpannedType const* types, char const* keyword);
+static void w_heritage_comments(Walk* me, char const* keyword_at);
 
 // `statement` null: a class expression written as a declaration named `name` (an export default's)
 static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name) {
@@ -4127,6 +4128,8 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     if (base->tag != EXPR_IMPLICIT_ANY) {
         // (The clause from its keyword, the expression with its type arguments)
         m_span(me, cls->extends_clause, false);
+        w_heritage_comments(me, span_valid(cls->extends_clause) && span_source(cls->extends_clause) == my file ?
+            span_start_ptr(cls->extends_clause) : nullptr);
         w_lit(me, " extends ");
         Span base_span = expr_outer_span(base_name);
         m_span(me, base_span, false); // (The expression replaced by `C_base` keeps the range)
@@ -4327,10 +4330,28 @@ static void w_members(Walk* me, TypeNode const* type) {
 
 // A heritage clause's types after its keyword (`extends A, B`): the clause is mapped from the keyword (its leading space
 // in it) to its last type's end
+// Where `word` ends right before `at` (whitespace apart) in the file, null if it doesn't
+static char const* keyword_before(SourceFile const* file, char const* at, char const* word) {
+    char const* text = cstr_str(&file->contents);
+    if (!at || at < text || at > text + cstr_size(&file->contents)) return nullptr;
+    char const* c = at;
+    while (c > text && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+    size_t n = strlen(word);
+    if (c - text < (isize_t)n || memcmp(c - n, word, n)) return nullptr;
+    return c - n;
+}
+
+// A heritage clause's leading comments on the line of the token before it, each and a space (tsc emits the clause
+// node's leading comments: `class E/* <T> */  implements S`); none without a clause
+static void w_heritage_comments(Walk* me, char const* keyword_at) {
+    if (keyword_at) decl_comments_intervening(&my comments, my out, my indent, keyword_at);
+}
+
 static void w_heritage(Walk* me, VecSpannedType const* types, char const* keyword) {
     if (!vec_spanned_type_size(types)) return;
     Span first = vec_spanned_type_at(types, 0)->span;
     m(me, span_valid(first) ? m_keyword_before(me, first.buf, keyword) : nullptr);
+    w_heritage_comments(me, span_valid(first) && span_source(first) == my file ? keyword_before(my file, first.buf, keyword) : nullptr);
     w_lit(me, " ");
     w(me, csview_from(keyword));
     w_lit(me, " ");

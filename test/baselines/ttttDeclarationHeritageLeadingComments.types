@@ -1,0 +1,51 @@
+//// [test/cases/ttttDeclarationHeritageLeadingComments.ts] ////
+
+=== a.ts ===
+export interface S {}
+export class E /* <T> */ implements S {}
+>E : E
+
+export class F /* c */ {}
+>F : F
+
+export class G<T> /* c */ implements S {}
+>G : G<T>
+
+export function foo /* c */ () {}
+>foo : () => void
+
+export const v /* c */ = 1;
+>v : 1
+>1 : 1
+
+export interface I /* c */ { a: 1 }
+>a : 1
+
+export type A /* c */ = 1;
+>A : 1
+
+=== b.ts ===
+export class B {}
+>B : B
+
+export class H /* c */ extends B {}
+>H : H
+>B : B
+
+export class J /* c */ extends B /* d */ implements Object /* e */ {}
+>J : J
+>B : B
+
+export class K /* c */
+>K : K
+
+  // line
+  extends B {}
+>B : B
+
+=== c.ts ===
+
+export interface J {}
+export interface I /* c */ extends J {}
+export interface I2<T> /* c */ extends J /* d */ {}
+
