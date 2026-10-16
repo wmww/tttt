@@ -3131,7 +3131,7 @@ static isize stdlib_priority(SourceFile const* source) {
     return (isize)lib_name_count + 2;
 }
 
-static void program_order_stdlib_first(Program* me) {
+void program_order_stdlib_first(Program* me) {
     isize count = vec_source_file_ptr_size(&my source_files_ordered);
     if (!count) return;
     SourceFile** files = (SourceFile**)vec_source_file_ptr_at_mut(&my source_files_ordered, 0);
@@ -3719,6 +3719,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (share_of(me, at) == c) last = at;
     }
     u32 segment_start = 0;
+    // What the checker held after its segment's first file: its warm-up (the libraries' and the shared graph's types).
+    // A recycle only pays when the checker has grown well past it (dokploy's trpc graph is ~150 MB, over a 128 MB
+    // budget after any one file: recycled after nearly every file it was 20x slower)
+    u64 segment_base = 0;
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
     bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
     for (u32 at = 0; at < total; at++) {
@@ -3749,10 +3753,12 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (my checker_budget == UINT64_MAX || at == last) continue;
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
-        if (held <= my checker_budget) continue;
+        if (!segment_base) segment_base = held;
+        if (held <= my checker_budget || held <= 2 * segment_base) continue;
         check_segment_after(me, checker, c, segment_start, at + 1);
         checker = checker_recycled(me, checker, c);
         segment_start = at + 1;
+        segment_base = 0;
     }
     check_segment_after(me, checker, c, segment_start, total);
     u64 held = checker_memory(checker);

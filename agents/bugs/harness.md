@@ -81,8 +81,8 @@
   and watchOptions/typeAcquisition keys aren't checked.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
-- `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1). `--listFiles` prints tttt's own lib paths
-  (thirdparty/lib/X.d.ts, not lib.X.d.ts) in tttt's file order: not compared against tsc.
+- `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1): plan 76 sizes them. `--listFiles` and
+  `--listFilesOnly` match tsgo on probes (2026-10-16) but no oracle compares them.
 - `tsgo_skips_configuration()` still reads module/moduleResolution as written to skip tsgo's removed configurations;
   `@module: none` no longer parses (TS6046), so such configurations run with the default module unless they have no
   baselines (all 7 `@module: none` tests have none).

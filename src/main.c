@@ -672,6 +672,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (opts->list_files_only) {
         // (tsc's listFilesOnly: the options and syntactic diagnostics, nothing checked)
         drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
+        program_order_stdlib_first(program);
         report_errors(&shown, errs);
         intptr_t count = print_diagnostics(opts, out, program, &shown);
         if (counts) counts->errors += count;

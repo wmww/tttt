@@ -84,6 +84,10 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*);
 // resolving names on me. me must not be used after other is destroyed
 void program_copy_globals_from(Program* me, Program const* other);
 
+// The files in tsc's order (the default libraries first, tsc's lib order): for listing them without resolving names.
+// program_resolve_names() does it otherwise
+void program_order_stdlib_first(Program* me);
+
 // Should be called once after loading all files is done. Should always be called before typechecking
 void program_resolve_names(Program* me);
 

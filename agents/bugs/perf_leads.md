@@ -220,6 +220,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   CommonJS, JSDoc), not one regression.
 
 ## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/75_memory_endgame.md the compact AST; measurements.md "Memory breakdown" the corpus table)
+- (2026-10-16) Recycling only pays past the warm-up: `check_share()` recycles once a checker holds more than its
+  budget *and* twice what it held after its segment's first file (dokploy 55 -> 3 s at K4; elsewhere unchanged). A
+  program whose warm state exceeds the budget now holds ~2x its warm state per checker instead of thrashing.
 - **The AST's allocation** (plan 63, closed 2026-10-16; its measurements are in measurements.md "Plan 63"): the AST is
   in per-file arenas (`ast_alloc.h`). What is left of it:
   - **The drop is still a walk**: `block_drop()` frees the AST's malloc'd parts (cooked string literals and template

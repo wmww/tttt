@@ -46,12 +46,14 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
 7. Done 2026-10-16: plan 75, closed. The CLI's default caps the checkers' recycle budget at 1.5 GB together (64 MB
    each at K24: vscode K24 on 4 threads 4.90 -> 3.56 GB for +1% wall; unchanged at K <= 12). The compact AST: no-go
    (~165 MB of vscode's 557 MB of AST zero words is union padding; the Expr 72 -> 40 option is in bugs/perf_leads.md).
-8. **Plan 76** (planning): watch / incremental / the refused CLI modes, measured against tsgo's incremental rebuild;
-   a recommendation and a question for the human.
+8. Done 2026-10-16: plan 76 planned (measured, recommendation and the human's question at its end). tttt's full check
+   beats tsgo's incremental rebuild after an export edit almost everywhere, loses after a body edit on 12 of 19
+   projects (1.2-2x, up to 7x); tsgo's incremental rebuild runs away on webpack (28 GB). Found on the way: dokploy at
+   the default checkers 55 -> 3 s (recycle thrash, `check_share()`), `--listFilesOnly`'s library order.
 9. **Perf + real code**: instrcount against this window's start, perfsweep, scaleprobe, mutate.py for missing checks;
    fix what is cheap, file the rest (bugs/perf_leads.md, bugs/missing_checks.md).
 10. **Triage.**
-11. **Insights.**
+11. **Insights.** report.md asks the human plan 76's question (local loop: none / watch + `-b` buildinfo / LSP).
 
 After the insights entry (for the next window): what the human decides on plan
 76, checker balance (bugs/perf_leads.md), webpack's serial declare (the 12-core bench: declare+link 15% there, 5% on vscode), plan 58 + plan 66

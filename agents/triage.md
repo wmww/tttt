@@ -19,3 +19,13 @@ content-mapped outputs went to bugs/dts_emit.md, the human's stop request was ho
 - (2026-10-16, plan 73) The members builder groups a class's method signatures by source text (`class_methods_same_name`):
   `[a]() {}` and `[b]() {}` with b of `typeof a` are one member under tsc with two overloads; tttt joins the spans but
   drops the second signature. Also a late-bound accessor merged into an early accessor's symbol isn't typed by both.
+- (2026-10-16, plan 76) **No oracle times tttt at its default checker count**: perfsweep runs `--checkers 1`, the sweeps
+  `--threads 1`. dokploy/apps/dokploy took 55 s at the defaults (2.9 s at K1): each checker's warm state (~150 MB of
+  trpc/drizzle types) was over its 128 MB recycle budget, so it was recycled after nearly every file. Fixed by
+  `check_share()`'s segment_base (a recycle only once the checker has doubled since its segment's first file). An
+  old-build scan of the 150 slowest source sweep projects found no other case. perfsweep (or a cheap variant) should
+  also time the defaults, or report recycle counts.
+- (2026-10-16, plan 76) `tttt -b` rewrites every `.d.ts` even when its bytes are unchanged (new mtimes; tsgo `-b` then
+  "updates output timestamps"). tsc skips unchanged writes? Check tsgo's writeFile and match it.
+- (2026-10-16, plan 76) `lazy_slot_new()`'s process-wide counter (2^30) is never reset: a watch mode re-parsing
+  vscode per rebuild would run out after an unmeasured number of rebuilds. Only matters if plan 76's watch is built.
