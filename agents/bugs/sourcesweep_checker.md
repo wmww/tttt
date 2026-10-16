@@ -39,8 +39,7 @@ dependencies in package ids, landed by agent D). Left:
   included) equals the first's: tttt dedups the file but still loads the duplicate's own imports (tsgo's redirect
   doesn't parse them). No diagnostic difference (its CheckboxRoot TS2322s were rest types' union order, fixed
   2026-10-16).
-- **arktype** (this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
-  see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx: not looked at this round.
+- (2026-10-16, agent A) arktype this.test.ts, redux-toolkit, monkeytype: see the 2026-10-16 section at the end.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
   origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
   never_reduced_prop() type-variable member gap of the redux-toolkit entry).
@@ -85,9 +84,7 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
   the common supertype of its candidates, only `{ requestParserResult }`. Reduced to one file (17 lines, the two
   overloads, `declare function parse(): Promise<P | Response> | P | Response`). How tsc combines the candidates there
   (priority, return-type inference of the nested call) not found yet.
-- **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
-  over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
-  storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
+- monkeytype storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
 - Display differences seen on the way: tsc prints `Nullable<Vals<K>>` (`{ [K in keyof T]: T[K] | null } & {}` over a
   mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
   TS2345 elaboration prints `Partial<T>[K] & null` where tsc normalizes to `T[K] & null`; isolatedDeclarations on
@@ -112,9 +109,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   assignable to `DefineComponent<unknown, ...>` (an intersection of a constructor type, ComponentOptionsBase and
   PublicProps) where tsc doesn't. Probe: /tmp-style project importing `defineComponent, DefineSetupFnComponent,
   PublicProps` from tiptap's vue `dist/vue.d.mts` by absolute path; a hand-written two-overload copy doesn't reproduce.
-- **arktype** root: this.test.ts:190 +TS2322 (exactOptionalPropertyTypes, a morph `(child) => child` vs
-  `Morph<{ child?: ... }>`). (Fixed 2026-10-16: type.test.ts:138/140, the conditional types' mention walk gave up past
-  16 bound type parameters; fn.test.ts:286, inference from a lone readonly rest tuple parameter.)
 - For agent D (mermaid is theirs now): mermaid's `renderHelpers.ts:150` +TS18048 (`insertNode`'s inferred return type
   keeps `undefined`) only reproduces in the full project with one checker: a probe with only renderHelpers.ts, or a
   file importing insertNode, matches tsc, and the files before it in program order don't reproduce it alone either.
@@ -317,7 +311,31 @@ read types). Left:
   `NodeTypes { selector; root; pseudo; tag }`, `Node = NodeTypes[keyof NodeTypes]`, Base/Container/_Selector/Root/
   Pseudo/Tag, 20 lines, `export {}`). Matching it means making the second round's error type land where tsc's does:
   plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
-- arktype (this.test.ts:190 +TS2322), better-auth,
-  es-toolkit, knip, monkeytype, pixijs, redux-toolkit: unchanged, not looked at again (see
+- better-auth,
+  es-toolkit, knip, pixijs: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
 - The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.
+
+## Source sweep fan-out 2026-10-16 (agent A)
+Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui (see git log). 7 projects left in the
+full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entries above), and:
+- **arktype this.test.ts:190 +TS2322** (`type({ name: "string", "child?": ["this", "=>", child => child] })`):
+  reproduces in a probe project extending arktype's tsconfig (imports by absolute path). Both sides type the callback
+  parameter `{ name: string; child?: never }` (tsc prints `name` first, tttt `child` first: the types are built
+  differently); tsc's error for a wrongly typed callback shows the target `Morph<{ name: string; child?: <the
+  callback's type> }>`, so for `child => child` it compares `{ child?: { child?: never; ... } }` to `{ child?: never }`
+  under exactOptionalPropertyTypes and still says nothing: probably a deeply nested / recursion-identity Maybe on the
+  `this` expansion that tttt answers False. Not reduced further; next step is TTTT_DEBUG_RELATE_NESTED on the probe
+  against an instrumented tsgo (scripts/variancetrace.py's build has the relation log).
+- **monkeytype SearchableAutoSetting.tsx:56/59**: tsc reports TS2589 (instantiation excessively deep) at
+  `name={props.key}` of `<form.Field>` (the line the @ts-expect-error covers); tttt doesn't hit the limit and reports
+  the validators mismatch instead. tanstack form-core's DeepKeys/DeepKeysAndValues over `{ [x: string]: Config[T] }`
+  with T generic. Matching tsc's TS2589 there means matching its instantiation count/depth on a big recursive type:
+  not attempted. Probe: a tsconfig extending frontend's with `"types": []`, `"paths": {"*": [frontend node_modules]}`,
+  SearchableAutoSetting's imports made absolute (@monkeytype/schemas -> packages/schemas/src).
+- **redux-toolkit module.ts:656 / react/module.ts:216**: no progress. Seen on the way: with
+  `interface Api<Defs extends Record<string, QD | MD>> { util: { get<EN extends keyof Defs>(n: EN): Res<Defs[EN] &
+  { type: "query" }> | undefined } }` (QD/MD discriminated by a string enum), tsc prints `c.util.get`'s return as
+  `Res<ED & { type: "query"; }> | undefined` for `c: Api<Record<string, ED>>` where tttt prints `Res<never>`; without
+  the `util` wrapper and the `| undefined`, both print `Res<never>`. Possibly the same eager never-reduction the
+  entry above suspects.
