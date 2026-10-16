@@ -5927,7 +5927,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     // unmapped: trpc's `infer T extends object` in a repeated inferred type argument)
     // (Keyed by the print of the outermost signature with parameters being printed: tsgo's enterNewScope makes a fresh
     // fake scope the enclosing declaration there, whose cache starts empty; nested signatures reuse that scope)
-    if (d.printed && D_MAP(d) && !d.reprinted && (ty->kind == TY_CONDITIONAL || ty->kind == TY_ANONYMOUS) && !shows_alias(d, ty) &&
+    if (d.printed && D_MAP(d) && !d.reprinted && (ty->kind == TY_CONDITIONAL || (ty->kind == TY_ANONYMOUS && !ty->anonymous.mapped)) && !shows_alias(d, ty) &&
         ty_printed_types_add(d.printed, ty, (void const*)(uintptr_t)printed_scope(d.printed_params))
     ) {
         d.reprinted = true;
