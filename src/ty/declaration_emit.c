@@ -3105,7 +3105,7 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
     isize_t size = decl_map_text_end(cstr_sv(my out));
     bool line_break = size && cstr_str(my out)[size - 1] == '\n';
     if (line_break) cstr_erase(my out, size - 1, 1);
-    decl_comments_trailing(&my comments, my out, end);
+    decl_comments_trailing(&my comments, my out, my indent, end);
     if (line_break) w_lit(me, "\n");
     return true;
 }
@@ -3380,7 +3380,7 @@ static void w_parameter_with_comments(Walk* me, FunctionImpl const* fn, Function
     w_leading(me, arg->span.buf);
     w_indent(me);
     w_parameter(me, fn, arg, false);
-    decl_comments_trailing(&my comments, my out, span_end_ptr(arg->span));
+    decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(arg->span));
 }
 
 static void w_parameters(Walk* me, FunctionImpl const* fn, bool private_member) {
@@ -3636,7 +3636,7 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
         Span end = init->tag != EXPR_IMPLICIT_ANY ? expr_outer_span(init) :
             binding->has_explicit_type ? binding_explicit_type_span(binding) : binding->content_span;
         m_span(me, end, true);
-        if (span_valid(end)) decl_comments_trailing(&my comments, my out, span_end_ptr(end));
+        if (span_valid(end)) decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(end));
     }
     my out = outer;
     if (written) {
@@ -4412,7 +4412,7 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
         }
         // (The member ends after its initializer)
         m_span(me, i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value), true);
-        decl_comments_trailing(&my comments, my out, span_end_ptr(i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value)));
+        decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value)));
     }
     if (written) w_line(me);
     my indent--;
@@ -4611,7 +4611,7 @@ static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, 
             w_name(me, i->decl_name);
         }
         m_span(me, i->full_span, true);
-        if (start) decl_comments_trailing(&my comments, my out, span_end_ptr(i->full_span));
+        if (start) decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(i->full_span));
         last = i;
     }
     if (!written) {
@@ -4829,7 +4829,7 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         w_name(me, expr->inner_span);
         w_lit(me, ";");
         m(me, statement_end(statement));
-        decl_comments_trailing(&my comments, my out, comments_end);
+        decl_comments_trailing(&my comments, my out, my indent, comments_end);
         w_lit(me, "\n");
         return;
     }
@@ -4851,13 +4851,13 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
             w(me, cstr_sv(&name));
             w_signature(me, expr->function, false);
             w_lit(me, ";");
-            decl_comments_trailing(&my comments, my out, comments_end);
+            decl_comments_trailing(&my comments, my out, my indent, comments_end);
             w_lit(me, "\n");
         } else {
             emit_class(me, expr->class_decl, nullptr, container, cstr_sv(&name));
             isize_t size = cstr_size(my out);
             cstr_erase(my out, size - 1, 1);
-            decl_comments_trailing(&my comments, my out, comments_end);
+            decl_comments_trailing(&my comments, my out, my indent, comments_end);
             w_lit(me, "\n");
         }
         cstr_drop(&name);
@@ -4895,7 +4895,7 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         w_serialized(me, &text);
     }
     w_lit(me, ";");
-    decl_comments_trailing(&my comments, my out, comments_end);
+    decl_comments_trailing(&my comments, my out, my indent, comments_end);
     w_lit(me, "\n");
     w_indent(me);
     m_span(me, statement->span, false);

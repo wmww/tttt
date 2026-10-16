@@ -1,0 +1,32 @@
+//// [test/cases/ttttDeclarationTrailingBlockCommentIndent.ts] ////
+
+=== ttttDeclarationTrailingBlockCommentIndent.ts ===
+// A trailing block comment's later lines are re-indented by the writer's indent like a leading one's (tsc's
+// writeCommentRangeWorker: indent - first line's column + the line's column; effect's STM.d.ts)
+export interface I {
+    a: string; /* first
+>a : string
+
+ second */
+    b: number;
+>b : number
+}
+export declare const x: {
+>x : { c: string; }
+
+    c: string; /**
+>c : string
+
+ * doc
+ */
+};
+export namespace N {
+>N : typeof N
+
+    export const y = 1; /* one
+>y : 1
+>1 : 1
+
+   two */
+}
+

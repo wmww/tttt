@@ -396,13 +396,14 @@ static void file_end_from(DeclComments const* me, cstr* out, char const* pos) {
     write_line(out);
 }
 
-void decl_comments_trailing(DeclComments const* me, cstr* out, char const* end) {
+void decl_comments_trailing(DeclComments const* me, cstr* out, u32 indent, char const* end) {
     if (!me || me->off || !decl_comments_in_file(me, end)) return;
     end = full_start(me->file, end);
     Comments comments;
     comment_ranges(me->file, end, true, &comments);
     filter_kept(&comments);
-    write_comments(me, out, 0, &comments, true);
+    // (A block comment's later lines are re-indented by the writer's indent, tsc's writeCommentRangeWorker)
+    write_comments(me, out, indent, &comments, true);
 }
 
 void decl_comments_intervening(DeclComments const* me, cstr* out, u32 indent, char const* token) {

@@ -174,7 +174,7 @@ static void member_end_node_mapped(TyDisplay d, Span declaration, char const* se
     out_lit(d, ";");
     char const* end = decl_comments_end(d.comments, span_end_ptr(declaration), separators);
     if (mapped) map_at(d, end);
-    decl_comments_trailing(d.comments, d.target, end);
+    decl_comments_trailing(d.comments, d.target, d.indent, end);
     out_lit(d, "\n");
 }
 
@@ -1655,7 +1655,7 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
             arg_d.comments_container_end = decl_map_type_end(&i->type, d.comments->file);
         }
         display_node(me, arg_d, &i->type); // (A generic function type first stays bare, see display_list())
-        if (d.comments && span_valid(i->span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->span));
+        if (d.comments && span_valid(i->span)) decl_comments_trailing(d.comments, d.target, d.indent, span_end_ptr(i->span));
     }
     out_lit(d, ">");
 }
@@ -2062,7 +2062,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
             display_node(me, param_d, i->fallback);
         }
         if (D_MAP(param_d) && span_valid(i->full_span)) map_at(param_d, decl_map_back_trivia(span_end_ptr(i->full_span), i->full_span.buf));
-        if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(i->full_span));
+        if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, d.indent, span_end_ptr(i->full_span));
     }
     out_lit(d, ">");
 }
@@ -2130,7 +2130,7 @@ static void param_comments_begin_at(TyDisplay d, Span span) {
 static void param_comments_begin(TyDisplay d, FunctionArg const* arg) { param_comments_begin_at(d, arg->span); }
 
 static void param_comments_end(TyDisplay d, FunctionArg const* arg) {
-    if (d.comments && span_valid(arg->span)) decl_comments_trailing(d.comments, d.target, span_end_ptr(arg->span));
+    if (d.comments && span_valid(arg->span)) decl_comments_trailing(d.comments, d.target, d.indent, span_end_ptr(arg->span));
 }
 
 static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
@@ -2578,7 +2578,7 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     d.comments_container_start = start;
     d.comments_container_end = end;
     display_node_mapped(me, d, node);
-    if (end != container_end) decl_comments_trailing(d.comments, d.target, end);
+    if (end != container_end) decl_comments_trailing(d.comments, d.target, d.indent, end);
 }
 
 // The file a reused node was written in, as far as one of its spans says (null if none does)

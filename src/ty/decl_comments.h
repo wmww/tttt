@@ -31,7 +31,7 @@ void decl_comments_leading(DeclComments const* me, cstr* out, u32 indent, char c
 // token (emitListItems' comments between a list element's end and the delimiter after it)
 void decl_comments_leading_at(DeclComments const* me, cstr* out, u32 indent, char const* pos);
 // The trailing comments after `end`, a node's end
-void decl_comments_trailing(DeclComments const* me, cstr* out, char const* end);
+void decl_comments_trailing(DeclComments const* me, cstr* out, u32 indent, char const* end);
 // The comments on the line before a list element (a parameter, a variable declaration after the first: tsc's
 // emitListItems' intervening comments, which aren't filtered), written before it
 void decl_comments_intervening(DeclComments const* me, cstr* out, u32 indent, char const* token);

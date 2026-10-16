@@ -434,6 +434,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationTrailingBlockCommentIndent': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationTypeComments': {
         errors: true,
         symbols: true,
