@@ -1,0 +1,34 @@
+//// [test/cases/ttttDeclarationMapsComputedBindingName.ts] ////
+
+=== a.ts ===
+interface R { strings: string[]; _$litType$: number; [k: string]: unknown }
+>strings : string[]
+>_$litType$ : number
+>k : string
+
+const k = "x";
+>k : "x"
+>"x" : "x"
+
+export class Template {
+>Template : Template
+
+  constructor(
+    // A comment
+    {strings, ['_$litType$']: type}: R,
+>strings : string[]
+>'_$litType$' : "_$litType$"
+>type : number
+
+    options?: number
+>options : number | undefined
+
+  ) {}
+}
+export function f({ [k]: x, [0]: y }: R) {}
+>f : ({ [k]: x, [0]: y }: R) => void
+>k : "x"
+>x : unknown
+>0 : 0
+>y : unknown
+

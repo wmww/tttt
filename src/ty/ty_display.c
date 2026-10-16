@@ -4048,7 +4048,19 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
             mark_in(out, map, start);
             if (!shorthand) {
                 mark_span_in(out, map, item->source_span, false);
-                cstr_append_sv(out, span_sv(item->source_span));
+                Span key = item->computed_key ? expr_outer_span(item->computed_key) : span_null;
+                if (map && span_valid(key) && span_valid(item->source_span) && key.buf >= item->source_span.buf &&
+                    span_end_ptr(key) <= span_end_ptr(item->source_span)
+                ) {
+                    // (A computed name's expression is a node of its own: `['_$litType$']: type`)
+                    cstr_append_n(out, item->source_span.buf, key.buf - item->source_span.buf);
+                    mark_span_in(out, map, key, false);
+                    cstr_append_sv(out, span_sv(key));
+                    mark_span_in(out, map, key, true);
+                    cstr_append_n(out, span_end_ptr(key), span_end_ptr(item->source_span) - span_end_ptr(key));
+                } else {
+                    cstr_append_sv(out, span_sv(item->source_span));
+                }
                 mark_span_in(out, map, item->source_span, true);
                 cstr_append_sv(out, c_sv(": "));
             }

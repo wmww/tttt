@@ -1,0 +1,36 @@
+//// [test/cases/ttttDeclarationMapsComputedBindingName.ts] ////
+
+=== a.ts ===
+interface R { strings: string[]; _$litType$: number; [k: string]: unknown }
+>R : Symbol(R, Decl(a.ts, 0, 0))
+>strings : Symbol(R.strings, Decl(a.ts, 0, 13))
+>_$litType$ : Symbol(R._$litType$, Decl(a.ts, 0, 32))
+>k : Symbol(k, Decl(a.ts, 0, 54))
+
+const k = "x";
+>k : Symbol(k, Decl(a.ts, 1, 5))
+
+export class Template {
+>Template : Symbol(Template, Decl(a.ts, 1, 14))
+
+  constructor(
+    // A comment
+    {strings, ['_$litType$']: type}: R,
+>strings : Symbol(strings, Decl(a.ts, 5, 5))
+>'_$litType$' : Symbol(type, Decl(a.ts, 5, 13))
+>type : Symbol(type, Decl(a.ts, 5, 13))
+>R : Symbol(R, Decl(a.ts, 0, 0))
+
+    options?: number
+>options : Symbol(options, Decl(a.ts, 5, 39))
+
+  ) {}
+}
+export function f({ [k]: x, [0]: y }: R) {}
+>f : Symbol(f, Decl(a.ts, 8, 1))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>x : Symbol(x, Decl(a.ts, 9, 19))
+>0 : Symbol(y, Decl(a.ts, 9, 27))
+>y : Symbol(y, Decl(a.ts, 9, 27))
+>R : Symbol(R, Decl(a.ts, 0, 0))
+
