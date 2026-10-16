@@ -961,15 +961,17 @@ static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, T
 // The first type argument that doesn't satisfy its constraint in `sig` (tsc's checkTypeArguments with reportErrors)
 static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr const* me, Signature const* sig, ErrorCtx* errs) {
     for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
-        Ty const* constraint = ty_param_constraint(checker, sig->type_params.data[i]);
-        if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
+        Ty const* constraint = ty_type_argument_constraint(checker, sig->type_params, &my params, i);
+        if (!constraint) continue;
         SpannedType const* arg = vec_spanned_type_at(&my params, i);
-        // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
+        // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo, one run)
         Ty const* arg_type = ty_of_node(&arg->type);
+        VecTyReportLine lines = {0};
+        if (ty_relate_explaining(checker, arg_type, constraint, 2344, &lines, errs)) continue;
         // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
         cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
             ty_report_target(checker, arg_type, constraint), "'.");
-        ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
+        ty_report_explained_with_head(errs, &lines, 2344, head, arg->span);
         return false;
     }
     return true;

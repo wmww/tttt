@@ -891,8 +891,6 @@ void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
         }
         Ty const* type = ty_of_node(i);
         if (template_placeholder_trivially_fits(type)) continue;
-        // (The silent, cached relation first: the reporting one only for what fails)
-        if (ty_is_related(checker, type, allowed, TY_RELATION_ASSIGNABLE)) continue;
         ty_check_assignable(checker, type, allowed, *vec_span_at(&my type_spans, i_index), errs);
     }
 }

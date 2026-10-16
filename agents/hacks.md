@@ -261,11 +261,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   return type needs what's being resolved (mikro-orm's `toJSON(strict = true): Omit<EntityDTO<this>, I>`).
 
 ## Relations (`ty/relate.c`)
-- Reporting runs (plan 74): tttt always relates a pair plainly, then again to explain; tsc does that only in
-  checkTypeRelatedToAndOptionallyElaborate. Its error-node checkTypeAssignableTo callers (heritage, TS2344, ...) run once,
-  so `check_related()`'s Checker.failed_log forgets the plain run's cached failures before the reporting run of the same
-  pair (complexRecursiveCollections), also for two-run callers where tsc keeps them. Cost of the second run: ~0.5% of
-  relation work (suite and corpora), results never differ. Fix: per-call-site shape, then delete failed_log.
+- Reporting runs: tsc's error-node checkTypeAssignableTo callers run once, explaining (check.c relate_explaining(),
+  ty_check_assignable()); the checkTypeRelatedToAndOptionallyElaborate ones (check_assignable()) and the overload
+  error reports run plainly first, like tsc's. Two one-run callers still run plainly first: the static side
+  (`ty_check_static_heritage`, TS2417: it relates to each intersection member plainly to name the one that fails, which
+  tsc's single run does inside typeRelatedToEachType) and instantiation expressions' TS2344
+  (expr.c `check_type_argument_constraints`, which also explains against the *uninstantiated* constraint while the
+  plain run used the instantiated one).
 - **Optional property types lack their undefined** (`find_prop()`/`find_prop_in()`, also optional parameters above):
   readers add it; tsc's getTypeOfSymbol has it. All-optional intersection parts intersect read types only when one has
   undefined and all are one type (react-select), not under exactOptionalPropertyTypes; a non-member part (`typeof f &

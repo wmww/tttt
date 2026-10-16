@@ -671,10 +671,14 @@ static void report_iterator_methods(Checker* me, Ty const* iterable, bool async,
 // What the consumer sends must fit the parameter of the iterator's `next` (tsc's getIteratedTypeOrElementType with
 // checkAssignability): for-of, spread and destructuring send undefined, yield* what its generator is sent
 static void check_sent_type(Checker* me, u32 use, Ty const* sent, Ty const* next, Span span, ErrorCtx* errs) {
-    if (!sent || !next || ty_is_related(me, sent, next, TY_RELATION_ASSIGNABLE)) return;
+    if (!sent || !next) return;
     char const* what = use & ITERATION_FOR_OF_FLAG ? "for-of" : use & ITERATION_SPREAD_FLAG ? "array spread" :
         use & ITERATION_DESTRUCTURING_FLAG ? "array destructuring" : nullptr;
     if (!what && !(use & ITERATION_YIELD_STAR_FLAG)) return;
+    unsigned code = use & ITERATION_FOR_OF_FLAG ? 2763 : use & ITERATION_SPREAD_FLAG ? 2764 :
+        use & ITERATION_DESTRUCTURING_FLAG ? 2765 : 2766;
+    VecTyReportLine lines = {0};
+    if (ty_relate_explaining(me, sent, next, code, &lines, errs)) return;
     cstr sent_str, next_str;
     ty_report_pair_cstr(me, sent, next, &sent_str, &next_str);
     cstr head = what ?
@@ -682,9 +686,7 @@ static void check_sent_type(Checker* me, u32 use, Ty const* sent, Ty const* next
             " will always send '", sent_str, "'.") :
         cstr_d("Cannot delegate iteration to value because the 'next' method of its iterator expects type '", next_str,
             "', but the containing generator will always send '", sent_str, "'.");
-    unsigned code = use & ITERATION_FOR_OF_FLAG ? 2763 : use & ITERATION_SPREAD_FLAG ? 2764 :
-        use & ITERATION_DESTRUCTURING_FLAG ? 2765 : 2766;
-    ty_report_unassignable_with_head(me, sent, next, code, head, span, errs);
+    ty_report_explained_with_head(errs, &lines, code, head, span);
     c_drop(cstr, &sent_str, &next_str);
 }
 

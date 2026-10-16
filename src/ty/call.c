@@ -4151,12 +4151,15 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
     }
     collected.errors.size = 0;
     error_ctx_drop(&collected);
-    if ((ret->flags & TYF_ANY) || ty_is_related(me, ret, dc.ret, TY_RELATION_ASSIGNABLE)) return;
+    if (ret->flags & TYF_ANY) return;
+    unsigned code = dc.void_only ? 1271 : 1270;
+    VecTyReportLine lines = {0};
+    if (ty_relate_explaining(me, ret, dc.ret, code, &lines, errs)) return;
     cstr source_str, target_str;
     ty_report_pair_cstr(me, ret, dc.ret, &source_str, &target_str);
     cstr head = dc.void_only ?
         cstr_d("Decorator function return type is '", source_str, "' but is expected to be 'void' or 'any'.") :
         cstr_d("Decorator function return type '", source_str, "' is not assignable to type '", target_str, "'.");
     c_drop(cstr, &source_str, &target_str);
-    ty_report_unassignable_with_head(me, ret, dc.ret, dc.void_only ? 1271 : 1270, head, expr_outer_span(decorator), errs);
+    ty_report_explained_with_head(errs, &lines, code, head, expr_outer_span(decorator));
 }

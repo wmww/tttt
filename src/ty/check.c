@@ -53,15 +53,30 @@ static AssignHead const HEAD_SATISFIES = { nullptr, nullptr, 1360 };
 static AssignHead const HEAD_EXACT_PROP = { nullptr, nullptr, 2412 }; // "... with 'exactOptionalPropertyTypes: true'..."
 
 
+static Error* report_explained_with_head(
+    ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, bool keep_natural_head, Span span
+);
 static Error* report_unassignable_with_head(
     Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
     ErrorCtx* errs
 );
 
-// Reports that source isn't assignable to target (it isn't), explained. Returns the error, to add related information
-// to right away
-static Error* report_unassignable(
-    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, ErrorCtx* errs
+// tsc's checkTypeRelatedTo with an error node: one run that explains as it goes, with no plain run before it (what it
+// caches as failed on the way is then what tsc's run has; a plain run first would leave a pair the explaining run is
+// still relating cached as failed). True if related, else `lines` (outermost first) say why. Without `errs`, nothing
+// would be reported: a plain run
+static bool relate_explaining(
+    Checker* me, TyRelation relation, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines,
+    ErrorCtx* errs
+) {
+    if (!errs) return ty_is_related(me, source, target, relation);
+    return ty_explain_unrelated_headed(me, source, target, relation, head_code, lines);
+}
+
+// Reports that source isn't assignable to target, explained by `lines` (taken: relate_explaining()'s). Returns the
+// error, to add related information to right away
+static Error* report_unassignable_explained(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, VecTyReportLine* lines, Span span, ErrorCtx* errs
 ) {
     // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
     // room for literals
@@ -69,26 +84,18 @@ static Error* report_unassignable(
     Ty const* head_target = ty_report_target(me, source, target);
     ty_report_pair_cstr(me, ty_report_source(me, source), head_target, &source_str, &target_str);
     if (head.ts_code == HEAD_SATISFIES.ts_code) {
-        Error* error = report_unassignable_with_head(me, source, target, 1360, cstr_d(
+        Error* error = report_explained_with_head(errs, lines, 1360, cstr_d(
             "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."
-        ), false, span, errs);
+        ), false, span);
         c_drop(cstr, &source_str, &target_str);
         return error;
     }
-
-    // Why not, outermost line first
-    VecTyReportLine lines = {0};
-    if (ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines)) {
-        vec_ty_report_line_drop(&lines);
-        c_drop(cstr, &source_str, &target_str);
-        return nullptr;
-    }
-    span = relocated_span(&lines, span);
+    span = relocated_span(lines, span);
 
     isize_t first_nested = 0;
     Error* error;
     bool default_head = head.ts_code == 2322;
-    TyReportLine const* natural_head = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    TyReportLine const* natural_head = vec_ty_report_line_size(lines) ? vec_ty_report_line_at(lines, 0) : nullptr;
     if (natural_head && natural_head->related) natural_head = nullptr;
     if (natural_head && (span_valid(natural_head->span) || natural_head->replaces_head || natural_head->missing_head)) {
         // An error that knows exactly where it is (an excess property) replaces the head, whatever it was
@@ -126,10 +133,24 @@ static Error* report_unassignable(
         if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2375 || natural_head->ts_code == 2719 ||
             natural_head->ts_code == 2820)) first_nested = 1; // (2820: the did-you-mean form, tsc's only without a head)
     }
-    attach_explanation(error, &lines, first_nested);
-    vec_ty_report_line_drop(&lines);
+    attach_explanation(error, lines, first_nested);
+    vec_ty_report_line_drop(lines);
     c_drop(cstr, &source_str, &target_str);
     return error;
+}
+
+// Reports that source isn't assignable to target (it isn't: tsc's checkTypeRelatedToAndOptionallyElaborate, which
+// relates without explaining first), explained. Returns the error, to add related information to right away
+static Error* report_unassignable(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, ErrorCtx* errs
+) {
+    VecTyReportLine lines = {0};
+    unsigned head_code = head.ts_code == HEAD_SATISFIES.ts_code ? HEAD_SATISFIES.ts_code : 0;
+    if (ty_explain_unrelated_headed(me, source, target, TY_RELATION_ASSIGNABLE, head_code, &lines)) {
+        vec_ty_report_line_drop(&lines);
+        return nullptr;
+    }
+    return report_unassignable_explained(me, head, source, target, &lines, span, errs);
 }
 
 // Elaboration (tsc's elaborateError): a failed assignment of an object or array literal, or of an arrow function with
@@ -753,16 +774,14 @@ static bool check_assignable(
 // An error whose head says something of its own (`head`, taken), followed by why source isn't assignable to target.
 // `keep_natural_head`: the elaboration starts with "Type 'S' is not assignable to type 'T'." (tsc's containing message
 // chain) rather than having it replaced (tsc's head message)
-static Error* report_unrelated_with_head(
-    Checker* me, TyRelation relation, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head,
-    Span span, ErrorCtx* errs
+// (`lines` taken: relate_explaining()'s)
+static Error* report_explained_with_head(
+    ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, bool keep_natural_head, Span span
 ) {
-    VecTyReportLine lines = {0};
-    ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
     Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = error_ctx_error_s;
-    span = relocated_span(&lines, span);
+    span = relocated_span(lines, span);
     isize_t first = 0;
-    TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    TyReportLine const* natural = vec_ty_report_line_size(lines) ? vec_ty_report_line_at(lines, 0) : nullptr;
     Error* error;
     // (TS2678 is checkTypeComparableTo without a head message: a more specific line, a missing property, stands in
     // for it like for TS2322)
@@ -784,9 +803,18 @@ static Error* report_unrelated_with_head(
     ) {
         first = 1;
     }
-    attach_explanation(error, &lines, first);
-    vec_ty_report_line_drop(&lines);
+    attach_explanation(error, lines, first);
+    vec_ty_report_line_drop(lines);
     return error;
+}
+
+static Error* report_unrelated_with_head(
+    Checker* me, TyRelation relation, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head,
+    Span span, ErrorCtx* errs
+) {
+    VecTyReportLine lines = {0};
+    ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
+    return report_explained_with_head(errs, &lines, ts_code, head, keep_natural_head, span);
 }
 
 static Error* report_unassignable_with_head(
@@ -845,28 +873,31 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
     }
     Ty const* ret = signature_return_type(me, sig);
     Ty const* boolean = ty_intrinsic(me, TY_BOOLEAN);
-    if (ty_is_related(me, ret, boolean, TY_RELATION_ASSIGNABLE)) return;
-    report_unassignable_with_head(me, ret, boolean, 2861, cstr_lit("An object's '[Symbol.hasInstance]' method must return a "
-        "boolean value for it to be used on the right-hand side of an 'instanceof' expression."), false, right_span, errs);
+    VecTyReportLine ret_lines = {0};
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, ret, boolean, 2861, &ret_lines, errs)) return;
+    report_explained_with_head(errs, &ret_lines, 2861, cstr_lit("An object's '[Symbol.hasInstance]' method must return a "
+        "boolean value for it to be used on the right-hand side of an 'instanceof' expression."), false, right_span);
 }
 
 // tsc's checkTypeComparableTo without a head message: TS2678 and why, or what replaces it (an excess property)
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
+    VecTyReportLine lines = {0};
+    if (relate_explaining(me, TY_RELATION_COMPARABLE, source, target, 2678, &lines, errs)) return;
     // (A literal source is shown widened unless the target could hold it: tsc's reportRelationError)
     cstr source_str, target_str;
     ty_report_pair_cstr(me, source, target, &source_str, &target_str);
-    report_unrelated_with_head(me, TY_RELATION_COMPARABLE, source, target, 2678, cstr_d(
+    report_explained_with_head(errs, &lines, 2678, cstr_d(
         "Type '", source_str, "' is not comparable to type '", target_str, "'."
-    ), false, span, errs);
+    ), false, span);
     c_drop(cstr, &source_str, &target_str);
 }
 
 // tsc's checkTypePredicate: `x is T` needs T assignable to x's type (TS2677, the usual explanation under it)
 void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs) {
-    if (ty_is_related(me, predicate, param, TY_RELATION_ASSIGNABLE)) return;
-    report_unassignable_with_head(me, predicate, param, 2677,
-        cstr_from("A type predicate's type must be assignable to its parameter's type."), true, span, errs);
+    VecTyReportLine lines = {0};
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, predicate, param, 2677, &lines, errs)) return;
+    report_explained_with_head(errs, &lines, 2677,
+        cstr_from("A type predicate's type must be assignable to its parameter's type."), true, span);
 }
 
 void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target, Span span, ErrorCtx* errs) {
@@ -877,12 +908,13 @@ void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target,
     Ty const* source = ty_regular_object_literal(me, ty_base_type_of_literal(me, expr_type));
     Ty const* widened = ty_widened_nullable(me, ty_widened_objects(me, source));
     if (ty_is_related(me, target, widened, TY_RELATION_COMPARABLE)) return;
-    if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
+    VecTyReportLine lines = {0};
+    if (relate_explaining(me, TY_RELATION_COMPARABLE, source, target, 2352, &lines, errs)) return;
     cstr source_str = ty_to_cstr(me, source);
     cstr target_str = ty_to_cstr(me, target);
     cstr head = cstr_d("Conversion of type '", source_str, "' to type '", target_str, "' may be a mistake because neither "
         "type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.");
-    report_unrelated_with_head(me, TY_RELATION_COMPARABLE, source, target, 2352, head, false, span, errs);
+    report_explained_with_head(errs, &lines, 2352, head, false, span);
     c_drop(cstr, &source_str, &target_str);
 }
 
@@ -901,10 +933,26 @@ bool ty_check_heritage(
 ) {
     if ((derived->flags | base->flags) & TYF_ANY) return true;
     u32 limit_hits = my instantiation_limit_hits;
-    if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) return true;
-    if (my instantiation_limit_hits != limit_hits) return false;
+    // An interface's bases (no members to blame) are related once, explaining (tsc's checkTypeAssignableTo with the
+    // error node); a class is related plainly first, then member by member (tsc's issueMemberSpecificError)
+    VecTyReportLine lines = {0};
+    if (!members) {
+        if (relate_explaining(me, TY_RELATION_ASSIGNABLE, derived, base, ts_code, &lines, errs)) return true;
+    } else if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) {
+        return true;
+    }
+    if (my instantiation_limit_hits != limit_hits) {
+        vec_ty_report_line_drop(&lines);
+        return false;
+    }
     cstr derived_str = ty_to_cstr(me, derived);
     cstr base_str = ty_to_cstr(me, base);
+    if (!members) {
+        report_explained_with_head(errs, &lines, ts_code, cstr_d(what, " '", derived_str, "' ", relation, " '", base_str, "'."),
+            false, span);
+        c_drop(cstr, &derived_str, &base_str);
+        return false;
+    }
     // Each of the type's own members that doesn't fit the base's (tsc's issueMemberSpecificError), else the whole type
     bool issued = false;
     Ty const* derived_apparent = ty_apparent_type(me, derived);
@@ -929,12 +977,13 @@ bool ty_check_heritage(
                 }
             }
         }
-        if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
+        VecTyReportLine member_lines = {0};
+        if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 2416, &member_lines, errs)) continue;
         cstr name = ty_prop_written_name(me, prop);
-        report_unassignable_with_head(me, source, target, 2416, cstr_d(
+        report_explained_with_head(errs, &member_lines, 2416, cstr_d(
             "Property '", name, "' in type '", derived_str, "' is not assignable to the same property in base type '",
             base_str, "'."
-        ), true, members[i].span, errs);
+        ), true, members[i].span);
         cstr_drop(&name);
         issued = true;
     }
@@ -1065,11 +1114,13 @@ void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic con
         bool out = modifiers == VARIANCE_MODIFIER_OUT;
         Ty const* source = ty_variance_check_instance(me, owner, i, out);
         Ty const* target = ty_variance_check_instance(me, owner, i, !out);
-        if (!source || !target || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
+        if (!source || !target) continue;
+        VecTyReportLine lines = {0};
+        if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 2636, &lines, errs)) continue;
         cstr source_str, target_str;
         ty_report_pair_cstr(me, source, target, &source_str, &target_str);
-        report_unassignable_with_head(me, source, target, 2636, cstr_d("Type '", source_str, "' is not assignable to type '",
-            target_str, "' as implied by variance annotation."), false, item->full_span, errs);
+        report_explained_with_head(errs, &lines, 2636, cstr_d("Type '", source_str, "' is not assignable to type '",
+            target_str, "' as implied by variance annotation."), false, item->full_span);
         c_drop(cstr, &source_str, &target_str);
     }
 }
@@ -1077,16 +1128,39 @@ void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic con
 // A computed enum member's value is a number (tsc's computeEnumMemberValue for what it can't evaluate)
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs) {
     Ty const* number = ty_intrinsic(me, TY_NUMBER);
-    if (ty_is_related(me, source, number, TY_RELATION_ASSIGNABLE)) return;
+    VecTyReportLine lines = {0};
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, number, 18033, &lines, errs)) return;
     cstr source_str, target_str;
     ty_report_pair_cstr(me, source, number, &source_str, &target_str);
-    report_unassignable_with_head(me, source, number, 18033, cstr_d("Type '", source_str, "' is not assignable to type '",
-        target_str, "' as required for computed enum member values."), false, span, errs);
+    report_explained_with_head(errs, &lines, 18033, cstr_d("Type '", source_str, "' is not assignable to type '",
+        target_str, "' as required for computed enum member values."), false, span);
     c_drop(cstr, &source_str, &target_str);
 }
 
-void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    check_assignable(me, HEAD_TYPE, source, target, span, nullptr, errs);
+// (tsc's checkTypeAssignableTo with an error node: one run, nothing to elaborate)
+bool ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
+    u32 limit_hits = my instantiation_limit_hits;
+    VecTyReportLine lines = {0};
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 0, &lines, errs)) return true;
+    // (What ran into the instantiation limits has been reported as that, TS2589, or TS2859 by the run itself)
+    if (my instantiation_limit_hits != limit_hits) {
+        vec_ty_report_line_drop(&lines);
+        return false;
+    }
+    // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
+    while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
+    report_unassignable_explained(me, HEAD_TYPE, source, target, &lines, span, errs);
+    return false;
+}
+
+bool ty_relate_explaining(
+    Checker* me, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines, ErrorCtx* errs
+) {
+    return relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, head_code, lines, errs);
+}
+
+Error* ty_report_explained_with_head(ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, Span span) {
+    return report_explained_with_head(errs, lines, ts_code, head, false, span);
 }
 
 void ty_report_unassignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs) {
@@ -1244,13 +1318,18 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
     Ty const* target = my disposable_targets[is_await];
     if (!target || source->flags & TYF_ANY) return;
     u32 limit_hits = my instantiation_limit_hits;
-    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
-    if (my instantiation_limit_hits != limit_hits) return;
-    Error* error = report_unassignable_with_head(me, source, target, is_await ? 2851 : 2850, is_await ?
+    VecTyReportLine lines = {0};
+    unsigned code = is_await ? 2851 : 2850;
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, code, &lines, errs)) return;
+    if (my instantiation_limit_hits != limit_hits) {
+        vec_ty_report_line_drop(&lines);
+        return;
+    }
+    Error* error = report_explained_with_head(errs, &lines, code, is_await ?
         cstr_lit("The initializer of an 'await using' declaration must be either an object with a "
             "'[Symbol.asyncDispose]()' or '[Symbol.dispose]()' method, or be 'null' or 'undefined'.") :
         cstr_lit("The initializer of a 'using' declaration must be either an object with a '[Symbol.dispose]()' "
-            "method, or be 'null' or 'undefined'."), false, span, errs);
+            "method, or be 'null' or 'undefined'."), false, span);
     // A plain `using` of something async disposable: a hint at `await using` (tsgo's checkVariableLikeDeclaration,
     // AddMessageChain: a line of the chain's first level)
     if (!is_await && error) {
@@ -1287,9 +1366,9 @@ void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span 
 // component." over what isn't valid about it ("Its return type 'R' is not a valid JSX element."), over why `source`
 // isn't assignable to `target`. False if it isn't (then it was reported)
 bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs) {
-    if ((source->flags & TYF_ANY) || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    if (source->flags & TYF_ANY) return true;
     VecTyReportLine lines = {0};
-    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 0, &lines, errs)) return true;
     Error* error = error_ctx_error_d(errs, tag_name, 2786, "'", tag_name, "' cannot be used as a JSX component.");
     // (The message is reportRelationError's head: the names told apart from the target's if they'd print the same)
     // (Against the target as isRelatedTo has it when it reports: `JSX.Element | null` without the null, tsc's
@@ -2644,31 +2723,32 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         if (!constraint) continue;
         constraint = ty_instantiate(me, constraint, mapper);
         if (filled[i]->flags & TYF_ERROR) continue;
-        if (ty_is_related(me, filled[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
+        VecTyReportLine lines = {0};
+        if (relate_explaining(me, TY_RELATION_ASSIGNABLE, filled[i], constraint, 2344, &lines, errs)) continue;
         cstr source_str, target_str;
         ty_report_pair_cstr(me, ty_report_source(me, filled[i]), ty_report_target(me, filled[i], constraint), &source_str, &target_str);
-        report_unassignable_with_head(me, filled[i], constraint, 2344, cstr_d(
+        report_explained_with_head(errs, &lines, 2344, cstr_d(
             "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."
-        ), false, vec_spanned_type_at(args, i)->span, errs);
+        ), false, vec_spanned_type_at(args, i)->span);
         c_drop(cstr, &source_str, &target_str);
         return;
     }
 }
 
 // Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments
-bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index) {
+Ty const* ty_type_argument_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index) {
     Ty const* lowered[32];
     u32 len = 0;
     for (; len < params.len && len < c_arraylen(lowered) && (isize_t)len < vec_spanned_type_size(args); len++) {
         lowered[len] = ty_of_node(&vec_spanned_type_at(args, len)->type);
     }
-    if (index >= len) return true;
+    if (index >= len) return nullptr;
     Ty const* constraint = ty_param_constraint(me, params.data[index]);
-    if (!constraint) return true;
+    if (!constraint) return nullptr;
     // The constraint can mention the other type parameters, which stand for the arguments here
     // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = len }, (TyList){ .data = lowered, .len = len });
-    return ty_is_related(me, lowered[index], ty_instantiate(me, constraint, mapper), TY_RELATION_ASSIGNABLE);
+    return ty_instantiate(me, constraint, mapper);
 }
 
 // Member modifiers
@@ -4838,9 +4918,9 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
     }
     Ty const* non_null = ty_check_non_null_type(me, right, right_expr, errs);
     if (!non_null) return;
-    if (!ty_is_related(me, non_null, ty_intrinsic(me, TY_NON_PRIMITIVE), TY_RELATION_ASSIGNABLE)) {
-        ty_check_assignable(me, non_null, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs);
-    } else if (has_empty_object_intersection(me, right)) {
+    if (ty_check_assignable(me, non_null, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs) &&
+        has_empty_object_intersection(me, right)
+    ) {
         cstr right_str = ty_to_cstr(me, right);
         error_ctx_error_d(errs, right_expr->inner_span, 2638, "Type '", right_str,
             "' may represent a primitive value, which is not permitted as the right operand of the 'in' operator.");

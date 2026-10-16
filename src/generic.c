@@ -56,11 +56,12 @@ static void generic_check_default(GenericItem const* item, Ty const* param, Erro
     if (!constraint || (fallback->flags & TYF_ERROR) || fallback == constraint) return;
     TyMapper const* mapper = ty_mapper_new(checker, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &fallback, .len = 1 });
     Ty const* target = ty_with_this_arg(checker, ty_instantiate(checker, constraint, mapper), fallback);
-    if (ty_is_related(checker, fallback, target, TY_RELATION_ASSIGNABLE)) return;
+    VecTyReportLine lines = {0};
+    if (ty_relate_explaining(checker, fallback, target, 2344, &lines, errs)) return;
     cstr source_str, target_str;
     ty_report_pair_cstr(checker, fallback, ty_report_target(checker, fallback, target), &source_str, &target_str);
-    ty_report_unassignable_with_head(checker, fallback, target, 2344, cstr_d(
-        "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."), item->fallback_span, errs);
+    ty_report_explained_with_head(errs, &lines, 2344, cstr_d(
+        "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."), item->fallback_span);
     c_drop(cstr, &source_str, &target_str);
 }
 

@@ -1108,16 +1108,6 @@ struct Checker {
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
-    // The failures a top-level relation check cached on its way to failing (relate.c check_related()): the reporting
-    // check of the same pair that usually follows forgets them, like tsc's single reporting pass never had them
-    struct {
-        u64* keys;
-        u32 len, cap;
-        bool on;
-        u32 relation;
-        struct Ty const* source;
-        struct Ty const* target;
-    } failed_log;
     // The function whose return type is being inferred from its return statements (function.c), and whether a return
     // of a bare call to it was left out (tsc's checkAndAggregateReturnExpressionTypes, hasReturnOfTypeNever)
     FunctionImpl const* return_inference_of;
@@ -2199,7 +2189,7 @@ Ty const* ty_unwrapped_return_type(Checker* me, FunctionImpl const* function);
 Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type);
 
 // check.c: what the statement/expression walk checks, with tsc's errors
-void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+bool ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
 void ty_report_no_property(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs);
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2678 & co
 void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs); // TS2677
@@ -2207,6 +2197,13 @@ void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, 
 // (tsc's elaborateError). Returns whether it was assignable
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
+// tsc's checkTypeAssignableTo with an error node: related once, explaining as it goes (no plain run first). True if
+// assignable, else `lines` say why, for ty_report_explained_with_head() (its `ts_code` is `head_code`)
+bool ty_relate_explaining(
+    Checker* me, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines, ErrorCtx* errs
+);
+// Error `ts_code` with message `head`, then `lines` (both consumed)
+struct Error* ty_report_explained_with_head(ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, Span span);
 // `source` isn't assignable to `target` (the caller checked): error `ts_code` with message `head` (consumed), then why
 void ty_report_unassignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs);
 bool ty_check_assignable_to_access(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, Expr const* left, ErrorCtx* errs);
@@ -2361,7 +2358,8 @@ Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* acc
 bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed);
 bool ty_is_numeric_string_type(Checker* me, Ty const* ty); // `${number}` (tsc's numericStringType)
 void ty_check_infer_constraints(Checker* me, struct InferredType const* inferred, ErrorCtx* errs);
-bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
+// The constraint of type parameter `index` of `params`, instantiated with `args` (null if none or no argument)
+Ty const* ty_type_argument_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
 void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs);
 
 // call.c

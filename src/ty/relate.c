@@ -36,6 +36,9 @@ enum {
     // ReportsUnmeasurable)
     CACHE_UNRELIABLE = 4,
     CACHE_UNMEASURABLE = 8,
+    // A top-level relation that ran out of its budget (with CACHE_FAILED): not computed again, even to explain it
+    // (tsc's RelationComparisonResultComplexityOverflow)
+    CACHE_OVERFLOW = 16,
 };
 
 #define MAX_RELATION_DEPTH 100
@@ -183,17 +186,6 @@ static void relation_cache_put(RelationCache* me, u64 key, unsigned value) {
         my len++;
     }
     my values[i] = (unsigned char)value;
-}
-
-// See Checker.failed_log
-static void failed_log_push(Checker* me, u64 key) {
-    if (!my failed_log.on) return;
-    if (my failed_log.len == my failed_log.cap) {
-        my failed_log.cap = my failed_log.cap ? my failed_log.cap * 2 : 64;
-        my failed_log.keys = realloc(my failed_log.keys, sizeof(u64) * my failed_log.cap);
-        panic_if(!my failed_log.keys, "out of memory");
-    }
-    my failed_log.keys[my failed_log.len++] = key;
 }
 
 static u64 relation_key(Ty const* source, Ty const* target) {
@@ -6608,6 +6600,14 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
+    // Explaining a pair that ran out of budget runs out again (TS2859), without the work
+    if (cached & CACHE_OVERFLOW) {
+        if (report) {
+            st->overflow = true;
+            st->relation_count = 0;
+        }
+        return TERNARY_FALSE;
+    }
     // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
@@ -6628,7 +6628,6 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     if (fails_common_properties(me, st, source, target, report)) {
         relation_cache_put(cache, key, CACHE_FAILED);
-        failed_log_push(me, key);
         return TERNARY_FALSE;
     }
     if (st->relation_count <= 0) {
@@ -6699,7 +6698,6 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         }
     } else {
         relation_cache_put(cache, key, CACHE_FAILED | unreliable);
-        failed_log_push(me, key);
         st->relation_count--;
         maybe_truncate(st, maybe_start);
     }
@@ -7670,40 +7668,17 @@ static bool check_related(
     ) {
         return true;
     }
-    // tsc relates a pair it reports on once, explaining as it goes (checkTypeRelatedTo); tttt first asks without
-    // explaining, then again to explain. What the first run cached as failed along the way, the reporting run must not
-    // find: tsc's single run finds a pair it is still relating on its maybe stack there (a member compared before the
-    // one that fails, complexRecursiveCollections' overloads), not a failure. So a top-level run logs the failures it
-    // caches, and the reporting run of the same pair forgets them first
-    bool log_failures = !st->reporting && !st->outer && !my failed_log.on;
-    if (log_failures) {
-        my failed_log.on = true;
-        my failed_log.len = 0;
-    } else if (st->reporting && !st->outer && my failed_log.len && my failed_log.relation == (u32)relation &&
-        my failed_log.source == source && my failed_log.target == target
-    ) {
-        RelationCache* cache = &my relations[relation];
-        for (u32 i = 0; i < my failed_log.len; i++) {
-            if (!cache->cap) break;
-            u32 slot = relation_cache_index(cache, my failed_log.keys[i]);
-            if (cache->keys[slot] && (cache->values[slot] & (CACHE_SUCCEEDED | CACHE_FAILED)) == CACHE_FAILED) cache->values[slot] = 0;
-        }
-        my failed_log.len = 0;
-    }
     my relating = st;
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
-    if (log_failures) {
-        my failed_log.on = false;
-        if (result) my failed_log.len = 0;
-        my failed_log.relation = (u32)relation;
-        my failed_log.source = source;
-        my failed_log.target = target;
-    }
     if (st->overflow) {
         // tsc's checkTypeRelatedTo: TS2859 when the relation count ran out, else TS2321 (the stack reached 100), at the
         // error node, else the current node
         bool complexity = st->relation_count <= 0;
+        if (complexity) {
+            bool constrained;
+            relation_cache_put(&my relations[relation], relation_key_of(me, source, target, &constrained), CACHE_FAILED | CACHE_OVERFLOW);
+        }
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
         ty_error_at_current_node_d(me, complexity ? 2859 : 2321, complexity ? "Excessive complexity" : "Excessive stack depth",
