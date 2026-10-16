@@ -81,6 +81,11 @@ Instructions (`scripts/instrcount.sh`, callgrind; HEAD f760ecdc -> stage 1): tsc
 95.564, excalidraw 7.928 -> 7.891, tanstack-router 5.411 -> 5.397.
 The pre-stage split per thread count, declare+link, checker duplication and imbalance: plans/72_core_scaling.md.
 
+## Plan 73, one table of a class's member symbols (2026-10-16, todo entry 2)
+Suite 13699 / 13741 (+1: ttttLateBoundAccessorPairs), every `scripts/oracles.py` line unchanged, dtsdiff 1077 / 1233
+projects (95611 / 96726 files) unchanged. Instructions (callgrind): tsc 4.643, effect 10.346, drizzle 6.808, vue 6.599,
+xstate 2.762, type-fest 23.420 G: flat against plan 74's.
+
 ## Plan 74, one reporting run where tsc has one (2026-10-16, todo entry 2)
 Suite 13698 / 13740 unchanged (complexRecursiveCollections kept without failed_log, by the interface heritage check's
 single run), every `scripts/oracles.py` line unchanged. Instructions (callgrind) before -> after: tsc 4.640 -> 4.642,

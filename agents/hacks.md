@@ -112,10 +112,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   from `module_resolved_exports()`.
 - `block_is_instantiated` (statement.c): a nested namespace is judged with its parent's `outer` scope.
 - Class/interface members aren't symbols (`Prop` is the identity): `bind_member_symbols` + `class_decl_lookup_names`
-  apply binder rules at lookup; `ty_check_class_duplicate_members` / `object_bind_members` replay the binder at check
-  time; computed keys pair by source text (`computed_symbol_first()` for classes, not object literals) where tsc
-  late-binds only literal/unique-symbol names (`["a"]` pairs with `a`: computedPropertyNames2); `ty_member_name()`
-  evaluates every computed key. Which declarations make one member symbol: see "three copies" under Expressions (plan 73).
+  apply binder rules at lookup (written names only); `ty_class_member_symbols()` (check.c) is the checker's declareSymbol
+  + lateBindMember for a class (computed names by the key's type), `object_bind_members` replays the binder for object
+  literals, where computed keys still pair by source text; `ty_member_name()` evaluates every computed key. See
+  "member symbols" under Expressions.
 - Merged interface/class type parameters share one symbol per name (`scope_new_generic_merged`, serial walk) except
   against the shared lib; `type_parameter_is_unused` compensates.
 - TS2301/TS2844: fields are walked before the constructor's scope exists, so `constructor_locals()` (class_decl.c)
@@ -217,11 +217,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
-- **"Which declarations make one member symbol" has three copies** (plan 73): class_decl.c's bind_member_symbols
-  (the binder, syntactic, legitimately separate) with computed_symbol_first (groups late-bound members by key source
-  text, tsc by resolved name: `get [a]` / `set [b]` with `b: typeof a` don't pair), the checker's MembersBuilder join
-  rules (builder_add_class_prop_joined: interface joins, only_late's excludes test), and check.c's MemberTables (the
-  most faithful declareSymbol, TS2300 reporting). The symbols baseline asks the checker (ty_class_item_prop()).
+- Member symbols: a class's are `ty_class_member_symbols()` (check.c: TS2300, the builder's joins, overload
+  groups, computed accessor pairs via `ty_class_accessor_first/getter/setter()`), the binder's for written names
+  (bind_member_symbols, symbol_first/accessor_first: syntactic like tsc's). Left on top: the builder's rules for a member
+  whose namesake comes from *another* declaration (an interface merged with the class: `builder_add_class_prop_joined`'s
+  interface joins and the late pass's meanings test; `builder_add_interface_member`'s own member_kinds, and check.c's
+  class + interface table `check_class_interface_members` is separate), and the builder's method signatures, grouped by
+  source text (`class_methods_same_name`): `[a]() {}` and `[b]() {}` with b of `typeof a` are one member (joined spans)
+  but the second's signature isn't an overload of it. A late-bound accessor merged into an early accessor's symbol
+  isn't paired with it (tsc types the merged symbol by both).
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a mentioned type parameter is unmapped or mapped
   to something generic (tsc: any reference with a node). Needed by conditional.c's "infer constraint stays generic"
   (react-relay); drizzle -24% types.
@@ -525,7 +529,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   in it, a spread-only literal from nowhere; context sensitivity is guessed from member types. Correct: the literal's
   type knows its node (or the resolve walk stores a scope on the Expr). Shown by: errtextdiff.py header buckets.
 
-### Symbols baseline reconstruction (harness: tttt has no tsc-shaped member symbols, see plan 73)
+### Symbols baseline reconstruction (harness: tttt has no tsc-shaped member symbols)
 - `collect_prop_symbol()`: a non-object union member lacks the property only for binding patterns, because a property
   access's object is sometimes narrowed less than tsc's (applying it everywhere loses 70 symbols components). Correct:
   narrow like tsc, then drop the gate.

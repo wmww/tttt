@@ -13,3 +13,9 @@ content-mapped outputs went to bugs/dts_emit.md, the human's stop request was ho
   (~40% at T4 here); the 24-thread vscode load phase was 389 ms with workers 59% busy. Rerunning
   `TTTT_LOAD_POOL_STATS=1 ./release/tttt -q --keep-going --noEmit --time -p thirdparty/corpora/vscode/src/tsconfig.corpus.json`
   there says whether plan 72 needs a stage 2 (its stage 1 section).
+- (2026-10-16, plan 73) TS2676/TS2808 (class_decl.c, "a getter and setter pair agree on abstract") skip every computed
+  name (`!i->method.computed_key`); tsc's checkAccessorDeclaration checks all but non-bindable dynamic names, so
+  `get ["x"]()` / `set ["x"](v)` and late-bound pairs (now `ty_class_accessor_getter()`) are unchecked. Probe and fix.
+- (2026-10-16, plan 73) The members builder groups a class's method signatures by source text (`class_methods_same_name`):
+  `[a]() {}` and `[b]() {}` with b of `typeof a` are one member under tsc with two overloads; tttt joins the spans but
+  drops the second signature. Also a late-bound accessor merged into an early accessor's symbol isn't typed by both.

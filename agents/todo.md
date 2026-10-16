@@ -23,12 +23,13 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
 1. Done 2026-10-16: plan 72 stage 1. vscode load T4 940 -> 805 ms, T1 2525 -> 2310 (the loader takes the workers'
    resolutions, `./` names cached by joined path, path normalization skipped for clean paths, a stat cache); "< 150 ms
    at T1" not met (real resolution left), plan 72 says what a stage 2 would need. Every oracle unchanged.
-2. Done 2026-10-16: plan 74. tsc's one-run callers (heritage of interfaces, TS2416 members, TS2344, TS2352/2678/2677,
-   TS2786, the expr-less ty_check_assignable, ...) relate once explaining; failed_log deleted; a top-level overflow
-   cached (relationComplexityError 2x faster). Suite and every oracle unchanged, instructions flat. Two leftovers in
-   hacks.md ("Reporting runs"). Plan 73 started after it (see entry 3).
-3. **Plan 73** finished (or, if entry 2 finished it, a real-code fan-out on the source sweep's 11 and dtsdiff's
-   non-JS leftovers: bugs/sourcesweep_checker.md, bugs/dts_emit.md).
+2. Done 2026-10-16: plan 74 and plan 73. Plan 74: tsc's one-run callers relate once explaining, failed_log deleted, a
+   top-level overflow cached (relationComplexityError 2x faster). Plan 73: a class's member symbols are one checker
+   table (ty_class_member_symbols()): TS2300, the builder's joins, overload groups and computed accessor pairs (by key
+   type: computed_symbol_first deleted). Suite 13699 / 13741 (+1 own test), every oracle and dtsdiff unchanged,
+   instructions flat. Leftovers in hacks.md ("Reporting runs", "Member symbols").
+3. **Real-code fan-out** (execution, sub-agents in worktrees): the source sweep's leftovers (bugs/sourcesweep_checker.md)
+   and dtsdiff's non-JS buckets (bugs/dts_emit.md: type text 42 projects, import 22, maps 16).
 4. **Plan 64 stage 6** (execution): `.d.ts` for JavaScript sources, first session (77 dtsdiff projects).
 5. **Plan 64 stage 6** continued, or its leftovers by fan-out; then plan 64 is closed into bugs/dts_emit.md.
 6. **Plan 63 stage 2** (execution): per-file parse arenas (its 2a audit may stop it; say why in the plan).

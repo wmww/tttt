@@ -35,8 +35,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   checker recycling, declaration diagnostics, the declaration writer with comments and maps, project references /
   `-b`, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language. ~145k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
-  (cloneTypeAsModuleType), permissive instantiation, member identity (members aren't Symbols; three copies of "which
-  declarations make one member": plan 73), `.d.ts` for JS sources (plan 64
+  (cloneTypeAsModuleType), permissive instantiation, member identity (members aren't Symbols; a class's member symbols are one
+  checker table, interfaces merged with classes still apply rules on top), `.d.ts` for JS sources (plan 64
   stage 6), the CLI modes above.
 
 ## Course correction (insights of 2026-10-16, end of the seventeenth window)
