@@ -341,6 +341,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   resolution resolves members of mapped types in flight, which tttt then keeps incomplete
   (mappedTypeAsClauseRecursiveNoCrash1 loses keys). A keyof clause the shape can't read counts as remapping (no
   declarations linked: member order by name). Fix: make member resolution re-entrant like tsc's empty-members-upfront.
+- **An indexed access type node's missing key prints its object to a dropped string** (`lower()` TYPE_INDEXED,
+  lower.c): tsc reports the key inside getIndexedAccessType, and the typeToString of its message resolves an
+  anonymous object's member types while the alias resolves (`type A = { a: A }["x"]` is TS2456). tttt reproduces
+  the side effect by printing; the TS2339 itself is still type_typecheck()'s. Artifact model like the eager bases.
 - Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; a deliberate artifact
   model: webpack and zod need it).
   Approximations: probes run only when the reference's arguments mention a type whose members are in flight or whose

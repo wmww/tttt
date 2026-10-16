@@ -331,6 +331,47 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   global augmentation merges, before the script's ambient modules are in the globals (8-line repro: an @types/ember
   with `declare module "ember" { namespace Ember {...} export default Ember }`).
 
+## Mutation seed 81 leftovers (2026-10-16, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 6000 --seed 81`)
+16 -> 7 differing (fixed: indexed access type's missing key resolving the object's members, never's property the
+error type, mixin check without a constructor base, combined union parameters' optionality, tuple elaboration,
+instanceof without a lib, function type parameters in the function's flow container, circular mapped key
+constraint, TS2208 for a mapped key). Left, each looked at:
+- **Binding elements typed before the contextual assignment** (arrayFrom return-void, destructuringWithGenericParameter
+  null-arg): `g2(v, ({ e }) => { e; })` with `v: void` failing `ArrayLike<T>` is TS2345 + TS2339 "Property 'e' does
+  not exist on type 'unknown'" in tsgo, only TS2345 in tttt (`g2(v, ({ e }) => {})`, no reference to e, is TS2345
+  alone in both). tsgo's checkFunctionExpressionOrObjectLiteralMethod queues the arrow's deferred check
+  (checkNodeDeferred) even under SkipContextSensitive, before the failed call queues its resolveUntypedCall; so the
+  body is checked first, `e` asks its parent parameter's type through getContextuallyTypedParameterType (T of the
+  failure candidate: unknown) without assignParameterType's binding pattern fallback, and the element reports. tttt
+  reports binding elements at the parameter, against the fallen-back `{ e: any }`. An evaluation-order artifact;
+  modelling it needs "body checked before contextual assignment" state per function, not cheap.
+- **TS2589 through a constraint check** (infiniteConstraints2 extends-object: `T extends Object[]` instead of
+  `unknown[]` in Prepend): tsgo reports instantiation depth at `Prepend<T, Conv<...>>` (line 13), tttt nothing. The
+  constraint check of `Conv<ExactExtract<U, T>, {a: number}>` against `Object[]` expands Conv recursively in tsgo;
+  `unknown[]` (and `any[]`) short-circuit. Not looked into further: which relation path recurses in tsgo.
+- **TS2310/TS2506 from a class expression base checked during base resolution** (recursiveClassBaseType
+  return-void): `class Derived1 extends class extends Base1 { root() { return; } } {}` with `abstract root():
+  Derived1` in Base1: tsgo's checkClassExpression checks the expression's members (root's `void` against
+  `Derived1`, which needs Derived1's structure) while Derived1's base types resolve: circular. `return undefined as
+  any` relates to anything without resolving Derived1. tttt checks the class expression later, outside the
+  resolution. Architectural (eager checks inside type resolution).
+- **TS7022/TS7023 from a satisfies elaboration** (noCircularitySelfReferentialGetter4 num-to-str): `const a = { prop:
+  "42", get self() { return a; } } satisfies { prop: number; self: any }`: tsgo's failed satisfies check elaborates
+  every property during a's initializer (elaborateElementwise reads `self`'s type -> a, circular); the passing
+  relation never reads it (target `any` short-circuits isPropertySymbolTypeRelated). tttt checks satisfies after a's
+  type is done. Same shape as the TS2310 one.
+- **Instantiated type parameter constraint printed through its declaration node** (text TS2322,
+  contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 never-const): `const matcher: never = typeTags<Value>()`
+  prints P's constraint as `{ readonly [Tag in Tags<"_tag", Value> & string]: (_: Extract<Value, ...>) => any; }` in
+  tsgo (the written node reused with I mapped to Value), resolved members in tttt. Printer node reuse, plan 21
+  territory (displaydiff's buckets).
+- **Spurious TS2208 for `null extends T ? K | null : K`** (render, conditionalContextualReturnSubstitutionCache
+  drop-as): `function g<T, K>(value: T): null extends T ? K | null : K { return value; }`: tsgo gives no "This type
+  parameter might need an `extends ...` constraint", tttt does. `string extends T ? K | null : K` and `null extends T ?
+  K : K` have it in both, so tsgo's hasNonCircularBaseConstraint of the synthetic parameter must find a circularity
+  only with a null check type and null in the true branch. Not found where (getConditionalType's `null extends T'`
+  with T' unconstrained while its constraint is assigned?).
+
 ## Mutation seeds 61/62 leftovers (2026-10-14, agent C: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
 Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
 - **Circularity met by a check tsgo runs inside a type computation** (seed 61 noCircularitySelfReferentialGetter3/4
@@ -369,12 +410,9 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   (first-iteration) type: `Property 'some' does not exist on type 'None'` where tttt says `Optional<r>` (with the
   `None` elaboration). tttt checks once with the final type. Modelling it means reporting from the flow-loop
   evaluation (tsgo's checkExpressionCached during getTypeAtFlowLoopLabel); plan-sized, deterministic in tsgo.
-- **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in some type parameter positions**
-  (seed 41 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1): tsgo says implicit any (no flow node there)
-  for a type alias's constraint and an interface call signature's default, but not for an alias's default or body
-  (probes in the commit message's spirit: `type T2<X extends typeof a> = X` errors, `type T1<X = typeof a> = X`
-  doesn't). tttt types them all by the flow (`undefined`). Find which identifiers get no flow node in tsgo's binder
-  before touching it.
+- **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
+  fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
+  `<X extends typeof a>` and `<X = typeof a>` say nothing in tsgo nor tttt (2026-10-16 probe).
 - **Lazy name resolution** (seed 41 restElementWithInitializer2 delete-stmt): `[...x = a] = a` with x undeclared: tsgo
   only reports TS2304 for x when something resolves it (it's TS1186 and unchecked; the post-emit pass or a later flow
   walk through the assignment reports it); tttt reports every unresolved name at bind time. Suppressing it at the
