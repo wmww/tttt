@@ -3533,7 +3533,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     if (!params) params = sig->params;
     TyDisplayParams printed = {
         .params = params, .count = param_count, .originals = sig->params, .original_count = sig->param_count,
-        .function = function, .outer = d.printed_params,
+        .function = function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0,
     };
     if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
     if (sig->this_type) {
@@ -4791,7 +4791,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             TyDisplay sig_d = reused_if(d, false);
             // (Its parameters are in scope in its return type: tsgo's enterNewScope)
             TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
-                .function = pseudo->function, .outer = d.printed_params };
+                .function = pseudo->function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0 };
             if (sig) sig_d.printed_params = &printed;
             u32 saved = param_names_enter(sig_d); // (Its type parameters are its own: a sibling may reuse their names)
             display_node_type_params(me, sig_d, &pseudo->function->generic);
@@ -4844,7 +4844,8 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         u32 saved = param_names_enter(member_d); // (Its type parameters are its own)
                         TyDisplay method_d = member_d;
                         TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
-                            .function = member->function, .outer = member_d.printed_params };
+                            .function = member->function, .outer = member_d.printed_params,
+                            .serial = member_d.printed ? ++member_d.printed->serial : 0 };
                         if (sig) method_d.printed_params = &printed;
                         display_node_type_params(me, method_d, &member->function->generic);
                         display_pseudo_params(me, method_d, member->params, member->param_count, sig);
@@ -5849,6 +5850,15 @@ static void display_cut_off(Checker* me, TyDisplay d, Ty const* ty) {
     }
 }
 
+// The serial of the outermost printed signature with parameters, 0 for none (see TyPrintedTypes)
+static u32 printed_scope(TyDisplayParams const* params) {
+    u32 scope = 0;
+    for (TyDisplayParams const* i = params; i; i = i->outer) {
+        if (i->count) scope = i->serial;
+    }
+    return scope;
+}
+
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     // (The node builder's from here on, and so is the length limit)
     if (d.transformer_node) d.target_start = cstr_size(d.target);
@@ -5883,10 +5893,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     // (Declaration maps: a conditional or object type the declaration printed before is tsgo's cached deep clone,
     // unmapped: trpc's `infer T extends object` in a repeated inferred type argument)
+    // (Keyed by the print of the outermost signature with parameters being printed: tsgo's enterNewScope makes a fresh
+    // fake scope the enclosing declaration there, whose cache starts empty; nested signatures reuse that scope)
     if (d.printed && D_MAP(d) && !d.reprinted && (ty->kind == TY_CONDITIONAL || ty->kind == TY_ANONYMOUS) && !shows_alias(d, ty) &&
-        ty_printed_types_add(d.printed, ty)
+        ty_printed_types_add(d.printed, ty, (void const*)(uintptr_t)printed_scope(d.printed_params))
     ) {
         d.reprinted = true;
+        d.no_map = true;
     }
     // (Where nothing truncates, tsc has no limit but the length: deep enough for a recursive alias's arguments. Declaration
     // emit: unchanged, see hacks.md TS7056)
@@ -6556,28 +6569,28 @@ void ty_append_binding_pattern_commented(cstr* out, Binding const* binding, Sour
 
 bool ty_is_identifier_name(csview name) { return is_identifier_name(name); }
 
-bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty) {
+bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty, void const* scope) {
     if (my count * 2 >= my cap) {
         u32 cap = my cap ? my cap * 2 : 16;
-        Ty const** slots = calloc(cap, sizeof(Ty const*));
+        TyPrintedKey* slots = calloc(cap, sizeof(TyPrintedKey));
         panic_if(!slots, "out of memory");
         for (u32 i = 0; i < my cap; i++) {
-            Ty const* old = my slots[i];
-            if (!old) continue;
-            u32 h = (u32)(((uintptr_t)old >> 4) * 2654435761u) & (cap - 1);
-            while (slots[h]) h = (h + 1) & (cap - 1);
+            TyPrintedKey old = my slots[i];
+            if (!old.ty) continue;
+            u32 h = (u32)((((uintptr_t)old.ty >> 4) ^ ((uintptr_t)old.scope >> 3)) * 2654435761u) & (cap - 1);
+            while (slots[h].ty) h = (h + 1) & (cap - 1);
             slots[h] = old;
         }
         free(my slots);
         my slots = slots;
         my cap = cap;
     }
-    u32 h = (u32)(((uintptr_t)ty >> 4) * 2654435761u) & (my cap - 1);
-    while (my slots[h]) {
-        if (my slots[h] == ty) return true;
+    u32 h = (u32)((((uintptr_t)ty >> 4) ^ ((uintptr_t)scope >> 3)) * 2654435761u) & (my cap - 1);
+    while (my slots[h].ty) {
+        if (my slots[h].ty == ty && my slots[h].scope == scope) return true;
         h = (h + 1) & (my cap - 1);
     }
-    my slots[h] = ty;
+    my slots[h] = (TyPrintedKey){ ty, scope };
     my count++;
     return false;
 }

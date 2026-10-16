@@ -2533,15 +2533,21 @@ typedef struct DeclTracker {
 } DeclTracker;
 
 // The types one declaration's emit printed from their structure (tsgo's per-enclosing-declaration serializedTypes
-// cache: printed again, a type is a deep clone of the first print's nodes, whose reused annotation nodes then have no
-// mappings, though names made from declarations keep theirs). A pointer hash set; declaration_emit.c owns and resets it
+// cache: printed again in the same scope, a type is a deep clone of the first print's nodes, which have no mappings).
+// A hash set of (type, the print of the outermost printed signature with parameters); declaration_emit.c owns and
+// resets it
+typedef struct TyPrintedKey {
+    Ty const* ty;
+    void const* scope;
+} TyPrintedKey;
 typedef struct TyPrintedTypes {
-    Ty const** slots;
+    TyPrintedKey* slots;
     u32 cap; // A power of two, 0 when empty
     u32 count;
+    u32 serial; // Signatures printed (TyDisplayParams.serial)
 } TyPrintedTypes;
 // Whether `ty` was printed before, adding it if not
-bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty);
+bool ty_printed_types_add(TyPrintedTypes* me, Ty const* ty, void const* scope);
 void ty_printed_types_clear(TyPrintedTypes* me);
 
 typedef struct TyDisplay {
@@ -2558,7 +2564,7 @@ typedef struct TyDisplay {
     // name gets its declaration's range). (In padding: the struct is copied on every call)
     bool no_map;
     TyPrintedTypes* printed; // Declaration emit: see TyPrintedTypes (null elsewhere)
-    bool reprinted; // Inside a type the declaration printed before: reused nodes aren't mapped (see TyPrintedTypes)
+    bool reprinted; // Inside a type the declaration printed before (no_map, see TyPrintedTypes)
     bool param_declaration;
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
@@ -2650,6 +2656,9 @@ typedef struct TyDisplayParams {
     u32 original_count;
     struct FunctionImpl const* function; // Whose parameters they are, if known
     struct TyDisplayParams const* outer;
+    // Declaration maps: this print's number (TyPrintedTypes.serial), which tsgo's fake scope of a signature with
+    // parameters is a fresh enclosing declaration of (its serializedTypes cache): see ty_display()
+    u32 serial;
 } TyDisplayParams;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 // Declaration emit (plan 64): a written type node as tsc's printer reprints it, a declaration's type parameter list
