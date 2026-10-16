@@ -11,3 +11,11 @@ declare function f3<const def>(d: def): { [k in keyof def as k extends "zz" ? ne
 export const a1 = f1({ name: "s", age: 1 });
 export const a2 = f2({ name: "s", age: 1 });
 export const a3 = f3({ name: "s", age: 1, zz: 2 });
+// What the shape doesn't tell is related: arktype's keys through `infer` (also a key renamed by the clause, `email?`
+// to `email`, keeps its declaration: tsc links every property of a filtering mapped type to its key's)
+type preparse<k> = k extends `${infer inner}?` ? { kind: "optional"; normalized: inner } : { kind: "required"; normalized: k };
+type reqKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "required"; normalized: infer n } ? n : never : never;
+type optKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "optional"; normalized: infer n } ? n : never : never;
+type infer_<def> = show<{ -readonly [k in keyof def as reqKey<k>]: def[k] } & { -readonly [k in keyof def as optKey<k>]?: def[k] }>;
+declare function type<const def>(d: def): infer_<def>;
+export const User = type({ name: "string", age: "number", "email?": "string", tags: "string[]", role: "x" });

@@ -324,6 +324,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   rule in `relation_line_said()` (vitest TS2344), `intersection_props_related`'s TS2741 member choice (a valibot probe).
 
 ## Type core (`src/ty/`)
+- **A mapped type's `as` clause kind by shape, then by relation unless it mentions `keyof`**
+  (`mapped_name_type_filters()`, members.c): tsc's getMappedTypeNameTypeKind relates the clause to the key; tttt
+  first reads the shape (`name_type_filters()`), then relates (cached per declared mapped type, KEY_MAPPED_FILTERING)
+  only when the clause's source text has no `keyof` token: relating `${K}.${keyof Self<T[K]>}` from inside member
+  resolution resolves members of mapped types in flight, which tttt then keeps incomplete
+  (mappedTypeAsClauseRecursiveNoCrash1 loses keys). A keyof clause the shape can't read counts as remapping (no
+  declarations linked: member order by name). Fix: make member resolution re-entrant like tsc's empty-members-upfront.
 - Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; a deliberate artifact
   model: webpack and zod need it).
   Approximations: probes run only when the reference's arguments mention a type whose members are in flight or whose

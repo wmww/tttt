@@ -51,6 +51,7 @@ enum {
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_NORMALIZED_INTERSECTION, // (intersection type id, writing) -> normalized_intersection() of it (relate.c)
+    KEY_MAPPED_FILTERING, // declared mapped type's key parameter -> 1 remapping, 2 filtering, by relation (members.c)
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
     KEY_PROP_WRITE_TYPE, // Prop with .write_type_known -> prop_write_type() of it, null for none (members.c)
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)

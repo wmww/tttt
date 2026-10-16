@@ -52,3 +52,45 @@ export const a3 = f3({ name: "s", age: 1, zz: 2 });
 >zz : 2
 >2 : 2
 
+// What the shape doesn't tell is related: arktype's keys through `infer` (also a key renamed by the clause, `email?`
+// to `email`, keeps its declaration: tsc links every property of a filtering mapped type to its key's)
+type preparse<k> = k extends `${infer inner}?` ? { kind: "optional"; normalized: inner } : { kind: "required"; normalized: k };
+>preparse : preparse<k>
+>kind : "optional"
+>normalized : inner
+>kind : "required"
+>normalized : k
+
+type reqKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "required"; normalized: infer n } ? n : never : never;
+>reqKey : reqKey<k>
+>kind : "required"
+>normalized : n
+
+type optKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "optional"; normalized: infer n } ? n : never : never;
+>optKey : optKey<k>
+>kind : "optional"
+>normalized : n
+
+type infer_<def> = show<{ -readonly [k in keyof def as reqKey<k>]: def[k] } & { -readonly [k in keyof def as optKey<k>]?: def[k] }>;
+>infer_ : { -readonly [k in keyof def as reqKey<k>]: def[k]; } & { -readonly [k in keyof def as optKey<k>]?: def[k] | undefined; } extends infer T ? { [k in keyof T]: T[k]; } : never
+
+declare function type<const def>(d: def): infer_<def>;
+>type : <const def>(d: def) => infer_<def>
+>d : def
+
+export const User = type({ name: "string", age: "number", "email?": "string", tags: "string[]", role: "x" });
+>User : { name: "string"; age: "number"; email?: "string" | undefined; tags: "string[]"; role: "x"; }
+>type({ name: "string", age: "number", "email?": "string", tags: "string[]", role: "x" }) : { name: "string"; age: "number"; email?: "string" | undefined; tags: "string[]"; role: "x"; }
+>type : <const def>(d: def) => infer_<def>
+>{ name: "string", age: "number", "email?": "string", tags: "string[]", role: "x" } : { name: "string"; age: "number"; "email?": "string"; tags: "string[]"; role: "x"; }
+>name : "string"
+>"string" : "string"
+>age : "number"
+>"number" : "number"
+>"email?" : "string"
+>"string" : "string"
+>tags : "string[]"
+>"string[]" : "string[]"
+>role : "x"
+>"x" : "x"
+

@@ -71,3 +71,75 @@ export const a3 = f3({ name: "s", age: 1, zz: 2 });
 >age : Symbol(age, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 33))
 >zz : Symbol(zz, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 41))
 
+// What the shape doesn't tell is related: arktype's keys through `infer` (also a key renamed by the clause, `email?`
+// to `email`, keeps its declaration: tsc links every property of a filtering mapped type to its key's)
+type preparse<k> = k extends `${infer inner}?` ? { kind: "optional"; normalized: inner } : { kind: "required"; normalized: k };
+>preparse : Symbol(preparse, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 51))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 14))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 14))
+>inner : Symbol(inner, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 37))
+>kind : Symbol(kind, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 50))
+>normalized : Symbol(normalized, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 68))
+>inner : Symbol(inner, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 37))
+>kind : Symbol(kind, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 92))
+>normalized : Symbol(normalized, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 110))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 14))
+
+type reqKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "required"; normalized: infer n } ? n : never : never;
+>reqKey : Symbol(reqKey, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 127))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 12))
+>preparse : Symbol(preparse, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 51))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 12))
+>parsed : Symbol(parsed, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 42))
+>parsed : Symbol(parsed, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 42))
+>kind : Symbol(kind, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 68))
+>normalized : Symbol(normalized, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 86))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 104))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 104))
+
+type optKey<k> = preparse<k> extends infer parsed ? parsed extends { kind: "optional"; normalized: infer n } ? n : never : never;
+>optKey : Symbol(optKey, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 129))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 12))
+>preparse : Symbol(preparse, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 51))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 12))
+>parsed : Symbol(parsed, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 42))
+>parsed : Symbol(parsed, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 42))
+>kind : Symbol(kind, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 68))
+>normalized : Symbol(normalized, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 86))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 104))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 104))
+
+type infer_<def> = show<{ -readonly [k in keyof def as reqKey<k>]: def[k] } & { -readonly [k in keyof def as optKey<k>]?: def[k] }>;
+>infer_ : Symbol(infer_, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 129))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 12))
+>show : Symbol(show, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 0, 0))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 37))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 12))
+>reqKey : Symbol(reqKey, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 13, 127))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 37))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 12))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 37))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 91))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 12))
+>optKey : Symbol(optKey, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 14, 129))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 91))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 12))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 91))
+
+declare function type<const def>(d: def): infer_<def>;
+>type : Symbol(type, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 132))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 17, 22))
+>d : Symbol(d, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 17, 33))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 17, 22))
+>infer_ : Symbol(infer_, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 15, 129))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 17, 22))
+
+export const User = type({ name: "string", age: "number", "email?": "string", tags: "string[]", role: "x" });
+>User : Symbol(User, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 12))
+>type : Symbol(type, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 16, 132))
+>name : Symbol(name, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 26))
+>age : Symbol(age, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 42))
+>"email?" : Symbol("email?", Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 57))
+>tags : Symbol(tags, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 77))
+>role : Symbol(role, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 18, 95))
+

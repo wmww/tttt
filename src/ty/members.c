@@ -3956,6 +3956,37 @@ static bool name_type_filters(Checker* me, Ty const* name, Ty const* key, u32 de
     }
 }
 
+// Whether an identifier token `keyof` appears in a span of source text
+static bool span_mentions_keyof(Span span) {
+    if (!span_valid(span)) return true;
+    csview text = span_sv(span);
+    for (isize_t i = 0; i + 5 <= text.size; i++) {
+        if (memcmp(text.buf + i, "keyof", 5)) continue;
+        bool before = i > 0 && (isalnum((unsigned char)text.buf[i - 1]) || text.buf[i - 1] == '_' || text.buf[i - 1] == '$');
+        bool after = i + 5 < text.size && (isalnum((unsigned char)text.buf[i + 5]) || text.buf[i + 5] == '_' || text.buf[i + 5] == '$');
+        if (!before && !after) return true;
+    }
+    return false;
+}
+
+// tsc's getMappedTypeNameTypeKind of a declared mapped type: Filtering when its `as` clause is assignable to its key.
+// name_type_filters() answers by shape; what it can't tell (arktype's `as nonOptionalKeyFromEntry<k, def[k], ...>`,
+// a conditional whose branches reach the key through `infer`) is related as tsc does, once per declared mapped type.
+// HACK: not when the clause mentions `keyof` (hacks.md): relating `${K}.${keyof Self<T[K]>}` from here resolves
+// members of mapped types being resolved, which tttt then keeps incomplete (mappedTypeAsClauseRecursiveNoCrash1)
+static bool mapped_name_type_filters(Checker* me, MappedInfo const* declared) {
+    if (name_type_filters(me, declared->name_type, declared->type_param, 0)) return true;
+    Symbol const* symbol = declared->type_param->kind == TY_TYPE_PARAM ? declared->type_param->param.symbol : nullptr;
+    InterfaceMember const* member = symbol ? symbol_find_node(symbol, SYMBOL_DECL_MAPPED_KEY) : nullptr;
+    if (!member || !member->key.mapped->has_as_type || span_mentions_keyof(member->key.mapped->as_type_span)) return false;
+    void const** slot = intern_slot(me, &my links, (u64[]){ KEY_MAPPED_FILTERING, (u64)(uintptr_t)declared->type_param }, 2);
+    if (!*slot) {
+        bool filters = ty_is_related(me, declared->name_type, declared->type_param, TY_RELATION_ASSIGNABLE);
+        *slot = (void const*)(uintptr_t)(filters ? 2 : 1);
+    }
+    return *slot == (void const*)(uintptr_t)2;
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -4089,8 +4120,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     // (Of the declared mapped type, tsc's type.target)
     MappedInfo const* declared_mapped = mapped;
     while (declared_mapped->template_from) declared_mapped = declared_mapped->template_from;
-    bool remapping = declared_mapped->name_type &&
-        !name_type_filters(me, declared_mapped->name_type, declared_mapped->type_param, 0);
+    bool remapping = declared_mapped->name_type && !mapped_name_type_filters(me, declared_mapped);
     for (u32 i = 0; i < key_count; i++) {
         Ty const* key = keys[i];
         TyMapper const* mapper = ty_mapper_new(
@@ -4146,7 +4176,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 *intern_slot(me, &my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2) = ty;
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause remaps rather than filters (any key: tsc's shouldLinkPropDeclarations, see below)
-                Prop const* declared = prop_name == key && !remapping ? from : nullptr;
+                Prop const* declared = !remapping ? from : nullptr;
                 while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
                     prop->decl = arena_new(&my arena, PropDecl);
