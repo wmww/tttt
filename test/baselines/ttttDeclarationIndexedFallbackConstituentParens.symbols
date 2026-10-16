@@ -1,0 +1,61 @@
+//// [test/cases/ttttDeclarationIndexedFallbackConstituentParens.ts] ////
+
+=== /c.ts ===
+type Url = { u: 1 } | string;
+>Url : Symbol(Url, Decl(c.ts, 0, 0))
+>u : Symbol(u, Decl(c.ts, 0, 12))
+
+export interface LinkProps<T = any> { href: Url; as?: Url; t?: T }
+>LinkProps : Symbol(LinkProps, Decl(c.ts, 0, 29))
+>T : Symbol(T, Decl(c.ts, 1, 27))
+>href : Symbol(LinkProps.href, Decl(c.ts, 1, 37))
+>Url : Symbol(Url, Decl(c.ts, 0, 0))
+>as : Symbol(LinkProps.as, Decl(c.ts, 1, 48))
+>Url : Symbol(Url, Decl(c.ts, 0, 0))
+>t : Symbol(LinkProps.t, Decl(c.ts, 1, 58))
+>T : Symbol(T, Decl(c.ts, 1, 27))
+
+=== /a.ts ===
+import type { LinkProps } from './c';
+>LinkProps : Symbol(LinkProps, Decl(a.ts, 0, 13))
+
+type NLP = LinkProps;
+>NLP : Symbol(NLP, Decl(a.ts, 0, 37))
+>LinkProps : Symbol(LinkProps, Decl(a.ts, 0, 13))
+
+type Props = Omit<NLP, 'href'> & { href?: NLP['href'] | undefined; list?: NLP['href'][] };
+>Props : Symbol(Props, Decl(a.ts, 1, 21))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>NLP : Symbol(NLP, Decl(a.ts, 0, 37))
+>href : Symbol(href, Decl(a.ts, 2, 34))
+>NLP : Symbol(NLP, Decl(a.ts, 0, 37))
+>list : Symbol(list, Decl(a.ts, 2, 66))
+>NLP : Symbol(NLP, Decl(a.ts, 0, 37))
+
+type FC<P> = (p: P) => void;
+>FC : Symbol(FC, Decl(a.ts, 2, 90))
+>P : Symbol(P, Decl(a.ts, 3, 8))
+>p : Symbol(p, Decl(a.ts, 3, 14))
+>P : Symbol(P, Decl(a.ts, 3, 8))
+
+export const Anchor: FC<Props> = () => {};
+>Anchor : Symbol(Anchor, Decl(a.ts, 4, 12))
+>FC : Symbol(FC, Decl(a.ts, 2, 90))
+>Props : Symbol(Props, Decl(a.ts, 1, 21))
+
+=== /b.ts ===
+import { Anchor } from './a';
+>Anchor : Symbol(Anchor, Decl(b.ts, 0, 8))
+
+import type { LinkProps } from './c';
+>LinkProps : Symbol(LinkProps, Decl(b.ts, 1, 13))
+
+export type Again = LinkProps;
+>Again : Symbol(Again, Decl(b.ts, 1, 37))
+>LinkProps : Symbol(LinkProps, Decl(b.ts, 1, 13))
+
+export const comps = { a: Anchor };
+>comps : Symbol(comps, Decl(b.ts, 3, 12))
+>a : Symbol(a, Decl(b.ts, 3, 22))
+>Anchor : Symbol(Anchor, Decl(b.ts, 0, 8))
+

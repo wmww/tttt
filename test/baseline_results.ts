@@ -254,6 +254,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationIndexedFallbackConstituentParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationInferImpliedConstraint': {
         errors: true,
         symbols: true,

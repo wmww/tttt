@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationIndexedFallbackConstituentParens.ts] ////
+
+=== /c.ts ===
+type Url = { u: 1 } | string;
+>Url : Url
+>u : 1
+
+export interface LinkProps<T = any> { href: Url; as?: Url; t?: T }
+>href : Url
+>as : Url | undefined
+>t : T | undefined
+
+=== /a.ts ===
+import type { LinkProps } from './c';
+>LinkProps : LinkProps<T>
+
+type NLP = LinkProps;
+>NLP : NLP
+
+type Props = Omit<NLP, 'href'> & { href?: NLP['href'] | undefined; list?: NLP['href'][] };
+>Props : Props
+>href : (string | { u: 1; }) | undefined
+>list : (string | { u: 1; })[] | undefined
+
+type FC<P> = (p: P) => void;
+>FC : FC<P>
+>p : P
+
+export const Anchor: FC<Props> = () => {};
+>Anchor : FC<Props>
+>() => {} : () => void
+
+=== /b.ts ===
+import { Anchor } from './a';
+>Anchor : (p: Omit<LinkProps<any>, "href"> & { href?: (string | { u: 1; }) | undefined; list?: (string | { u: 1; })[]; }) => void
+
+import type { LinkProps } from './c';
+>LinkProps : LinkProps<T>
+
+export type Again = LinkProps;
+>Again : Again
+
+export const comps = { a: Anchor };
+>comps : { a: (p: Omit<LinkProps<any>, "href"> & { href?: (string | { u: 1; }) | undefined; list?: (string | { u: 1; })[]; }) => void; }
+>{ a: Anchor } : { a: (p: Omit<LinkProps<any>, "href"> & { href?: (string | { u: 1; }) | undefined; list?: (string | { u: 1; })[]; }) => void; }
+>a : (p: Omit<LinkProps<any>, "href"> & { href?: (string | { u: 1; }) | undefined; list?: (string | { u: 1; })[]; }) => void
+>Anchor : (p: Omit<LinkProps<any>, "href"> & { href?: (string | { u: 1; }) | undefined; list?: (string | { u: 1; })[]; }) => void
+

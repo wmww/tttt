@@ -2833,7 +2833,11 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_INDEXED: {
             // (A parenthesized object doesn't fail the whole: its own part prints its type, in the parentheses)
             if (!node->indexed->interface.parenthesized && simple_node_fails(me, d, &node->indexed->interface)) {
-                display_node_fallback(me, d, node);
+                // (Parenthesized where its type needs it as a member or element, see TYPE_KEYOF)
+                TyDisplay element_d = d;
+                element_d.array_element_node = array_element;
+                element_d.constituent_node = constituent;
+                display_node_fallback(me, element_d, node);
                 break;
             }
             // (Parenthesized as written: tsgo keeps a reused node's parentheses and adds none)
@@ -2847,7 +2851,8 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_KEYOF: {
             if (!node->keyof->interface.parenthesized && simple_node_fails(me, d, &node->keyof->interface)) {
                 // (Its type, a union of the keys, is parenthesized where this node was a member or element: `keyof T &
-                // string` with T mapped to an object type is `("a" | "b") & string`)
+                // string` with T mapped to an object type is `("a" | "b") & string`; in a union too, `(A | B) | undefined`,
+                // tsgo's factory parenthesizing a union constituent of a union)
                 TyDisplay element_d = d;
                 element_d.array_element_node = array_element;
                 element_d.constituent_node = constituent;
