@@ -33,8 +33,9 @@ size on real code, each with an example:
   - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
 - **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15): corpus:effect `test/Effect/query-repro.test.d.ts`
   (`Equals<Omit<A, ...>, {}> extends true ? void : {...}` resolved to its false branch by tttt, deferred by tsgo);
-  excalidraw `MainMenu.d.ts` (`Trigger: typeof import(...).default` where tsgo expands it), `App.d.ts` (`callback?:
-  () => void` reused where tsgo prints `(() => void) | undefined`), `tests/helpers/api.d.ts` (tsgo keeps `declare
+  excalidraw `App.d.ts` (`callback?: () => void` reused where tsgo prints `(() => void) | undefined`: React's
+  `Component<any, AppState>["setState"]` through useContext; a probe with the same class shape in a `.d.ts` matches,
+  so the Block-rule guess below may not be it either), `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
   through another unresolved import alias, the unknown-symbol quirk below) and better-auth's similar wrong-looking
   names (`GenericEndpointContext[]`, `AuthContext`).
@@ -95,8 +96,11 @@ size on real code, each with an example:
     in the function member of `NavigationAction | ((state) => NavigationAction)`; a two-file probe matches),
     react-scan `Component<P>` vs `Component<Attributes, {}>` (an inferred `this` type), react-redux (tsgo reuses
     `import("redux").Dispatch` as written without type arguments, tttt prints `Dispatch<UnknownAction>`; a three-file
-    probe matches), mockoon `Observable<any>`, react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures, effect's 5 and
-    excalidraw's 3 (see "Checker types, uninvestigated"): one file each, not looked at.
+    probe matches), mockoon `Observable<any>`, react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures: one file
+    each, not looked at. excalidraw `LibraryUnit.d.ts` drops the comment in `LibraryItem["id"] | /** for pending item
+    */ null` of a reused node the node builder copies (the "comments of nodes the node builder copies" item below; the
+    transformer's own nodes keep theirs). effect's and excalidraw's others: see "Checker types, uninvestigated"
+    (effect ExecutionPlan and fiberRuntime fixed 2026-10-16).
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
