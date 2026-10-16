@@ -1,0 +1,53 @@
+//// [test/cases/ttttDeclarationKeyofFallbackConstituentParens.ts] ////
+
+=== ttttDeclarationKeyofFallbackConstituentParens.ts ===
+// A reused `keyof T & string` whose T is mapped to an object type prints `keyof T`'s type, the union of the keys, in
+// its place: parenthesized as an intersection member like any fallback of a constituent node (slate-hyperscript's jsx
+// printed `S extends "anchor" | ... | "text" & string`)
+const createFactory = <T extends Record<string, (...a: any[]) => any>>(creators: T) => {
+>createFactory : Symbol(createFactory, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 5))
+>T : Symbol(T, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 23))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 49))
+>creators : Symbol(creators, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 71))
+>T : Symbol(T, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 23))
+
+  const jsx = <S extends keyof T & string>(tagName: S): ReturnType<T[S]> => creators[tagName]();
+>jsx : Symbol(jsx, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 7))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 15))
+>T : Symbol(T, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 23))
+>tagName : Symbol(tagName, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 43))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 15))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 23))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 15))
+>creators : Symbol(creators, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 71))
+>tagName : Symbol(tagName, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 43))
+
+  return jsx;
+>jsx : Symbol(jsx, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 4, 7))
+
+};
+export const jsx = createFactory({ anchor: () => 1, text: () => 'x' });
+>jsx : Symbol(jsx, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 7, 12))
+>createFactory : Symbol(createFactory, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 3, 5))
+>anchor : Symbol(anchor, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 7, 34))
+>text : Symbol(text, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 7, 51))
+
+type K = keyof { a: 1; b: 2 };
+>K : Symbol(K, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 7, 71))
+>a : Symbol(a, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 8, 16))
+>b : Symbol(b, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 8, 22))
+
+export declare function g<S extends K & string>(s: S): S;
+>g : Symbol(g, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 8, 30))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 9, 26))
+>K : Symbol(K, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 7, 71))
+>s : Symbol(s, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 9, 48))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 9, 26))
+>S : Symbol(S, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 9, 26))
+
+export const g2 = g;
+>g2 : Symbol(g2, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 10, 12))
+>g : Symbol(g, Decl(ttttDeclarationKeyofFallbackConstituentParens.ts, 8, 30))
+

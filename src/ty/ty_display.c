@@ -2846,7 +2846,12 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         }
         case TYPE_KEYOF: {
             if (!node->keyof->interface.parenthesized && simple_node_fails(me, d, &node->keyof->interface)) {
-                display_node_fallback(me, d, node);
+                // (Its type, a union of the keys, is parenthesized where this node was a member or element: `keyof T &
+                // string` with T mapped to an object type is `("a" | "b") & string`)
+                TyDisplay element_d = d;
+                element_d.array_element_node = array_element;
+                element_d.constituent_node = constituent;
+                display_node_fallback(me, element_d, node);
                 break;
             }
             out_lit(d, "keyof ");
