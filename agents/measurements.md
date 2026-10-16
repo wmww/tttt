@@ -229,7 +229,7 @@ at the defaults (vscode and nest 1.3x), 1.3-2.3x single-threaded, but **1.6-2.3x
   0.05, inferred return 4.7 -> 0.06, class 1.1 -> 0.06, namespace 0.47 -> 0.08, overloads 2.3 -> 0.07; overloads
   under `--noEmit` 1.03 -> 0.07 too).
 - Oracles unchanged: suite 13697 / 13739 (0 lost), corpora 0 / 0 but vue 0 / 2, DT 8595, `$ExpectType` 68639, flagflip
-  18 / 6 / 3, source sweep **3352 / 3363** full (sample 817 / 822), dtsdiff 1077 / 1233 projects, 95611 files.
+  18 / 6 / 3, source sweep **3352 / 3363** full (sample 817 / 822), dtsdiff 1077 / 1233 projects, 95611 files, kdiff 1 / 3363, recycle 4 / 3363.
 - **Instructions** (callgrind, `--noEmit`), session start -> end: tsc 4.723 -> **4.643** (-1.7%), type-fest 23.420 ->
   23.427, valibot 3.463 -> 3.464, react 1.512, nest 1.189, webpack 10.051 -> 10.048, zod 5.426 -> 5.425, xstate 2.771
   -> 2.772, drizzle 6.917 -> **6.835** (-1.2%), vue 6.635 -> 6.633, effect 10.612 -> **10.401** (-2.0%), vscode 96.778
