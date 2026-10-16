@@ -1,0 +1,32 @@
+//// [test/cases/ttttDeclarationMapConstEmptyTuple.ts] ////
+
+=== ttttDeclarationMapConstEmptyTuple.ts ===
+// An `as const` object with an empty array is its pseudo type too (the empty tuple is its tuple target, no
+// reference): the property names are mapped like tsgo's (pi's tool prompt contributions)
+export const c = {
+>c : Symbol(c, Decl(ttttDeclarationMapConstEmptyTuple.ts, 2, 12))
+
+	snippet: "List",
+>snippet : Symbol(snippet, Decl(ttttDeclarationMapConstEmptyTuple.ts, 2, 18))
+
+} as const;
+>const : Symbol(const)
+
+export const e = {
+>e : Symbol(e, Decl(ttttDeclarationMapConstEmptyTuple.ts, 5, 12))
+
+	g: [],
+>g : Symbol(g, Decl(ttttDeclarationMapConstEmptyTuple.ts, 5, 18))
+
+} as const;
+>const : Symbol(const)
+
+export const f = {
+>f : Symbol(f, Decl(ttttDeclarationMapConstEmptyTuple.ts, 8, 12))
+
+	g: [1],
+>g : Symbol(g, Decl(ttttDeclarationMapConstEmptyTuple.ts, 8, 18))
+
+} as const;
+>const : Symbol(const)
+

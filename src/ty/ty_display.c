@@ -4414,6 +4414,10 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             return true;
         }
         case PSEUDO_TUPLE: {
+            // (An empty tuple is its target itself, no reference: `readonly []` of an `as const` `[]`)
+            if (stripped->kind == TY_DECLARED && stripped->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+                return !pseudo->count && !stripped->declared.tuple->arity;
+            }
             if (stripped->kind != TY_REFERENCE || stripped->reference.target->declared.kind != TY_DECLARED_TUPLE_TARGET) return false;
             TupleShape const* shape = stripped->reference.target->declared.tuple;
             // (From an `as const` array literal: only required elements)
