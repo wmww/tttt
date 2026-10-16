@@ -1,0 +1,63 @@
+//// [test/cases/ttttJsCommonJsReassignedFunctionExport.ts] ////
+
+=== a.js ===
+if (Math.random()) {
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+    exports.f = function (msg) { console.log(msg) }
+>exports.f : Symbol(f, Decl(a.js, 0, 20), Decl(a.js, 2, 8))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>f : Symbol(f, Decl(a.js, 0, 20), Decl(a.js, 2, 8))
+>msg : Symbol(msg, Decl(a.js, 1, 26))
+>console.log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>console : Symbol(console, Decl(lib.dom.d.ts, --, --))
+>log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>msg : Symbol(msg, Decl(a.js, 1, 26))
+
+} else {
+    exports.f = function (msg) { }
+>exports.f : Symbol(f, Decl(a.js, 0, 20), Decl(a.js, 2, 8))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>f : Symbol(f, Decl(a.js, 0, 20), Decl(a.js, 2, 8))
+>msg : Symbol(msg, Decl(a.js, 3, 26))
+}
+exports.h = function () { };
+>exports.h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+
+exports.h.x = 1;
+>exports.h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+
+exports.h = function (x) { };
+>exports.h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>h : Symbol(h, Decl(a.js, 4, 1), Decl(a.js, 6, 16))
+>x : Symbol(x, Decl(a.js, 7, 22))
+
+class C {}
+>C : Symbol(C, Decl(a.js, 7, 29))
+
+C.k = function () {};
+>C.k : Symbol(C.k, Decl(a.js, 8, 10), Decl(a.js, 9, 21))
+>C : Symbol(C, Decl(a.js, 7, 29))
+>k : Symbol(C.k, Decl(a.js, 8, 10), Decl(a.js, 9, 21))
+
+C.k = function (y) {};
+>C.k : Symbol(C.k, Decl(a.js, 8, 10), Decl(a.js, 9, 21))
+>C : Symbol(C, Decl(a.js, 7, 29))
+>k : Symbol(C.k, Decl(a.js, 8, 10), Decl(a.js, 9, 21))
+>y : Symbol(y, Decl(a.js, 10, 16))
+
+module.exports.C = C;
+>module.exports.C : Symbol(C, Decl(a.js, 10, 22))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>C : Symbol(C, Decl(a.js, 10, 22))
+>C : Symbol(C, Decl(a.js, 7, 29))
+

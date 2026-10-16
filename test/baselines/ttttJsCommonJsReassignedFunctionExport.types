@@ -1,0 +1,82 @@
+//// [test/cases/ttttJsCommonJsReassignedFunctionExport.ts] ////
+
+=== a.js ===
+if (Math.random()) {
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+
+    exports.f = function (msg) { console.log(msg) }
+>exports.f = function (msg) { console.log(msg) } : (msg: any) => void
+>exports.f : ((msg: any) => void) | ((msg: any) => void)
+>exports : typeof import("./a")
+>f : ((msg: any) => void) | ((msg: any) => void)
+>function (msg) { console.log(msg) } : (msg: any) => void
+>msg : any
+>console.log(msg) : void
+>console.log : (...data: any[]) => void
+>console : Console
+>log : (...data: any[]) => void
+>msg : any
+
+} else {
+    exports.f = function (msg) { }
+>exports.f = function (msg) { } : (msg: any) => void
+>exports.f : ((msg: any) => void) | ((msg: any) => void)
+>exports : typeof import("./a")
+>f : ((msg: any) => void) | ((msg: any) => void)
+>function (msg) { } : (msg: any) => void
+>msg : any
+}
+exports.h = function () { };
+>exports.h = function () { } : () => void
+>exports.h : (() => void) | ((x: any) => void)
+>exports : typeof import("./a")
+>h : (() => void) | ((x: any) => void)
+>function () { } : () => void
+
+exports.h.x = 1;
+>exports.h.x = 1 : 1
+>exports.h.x : any
+>exports.h : (() => void) | ((x: any) => void)
+>exports : typeof import("./a")
+>h : (() => void) | ((x: any) => void)
+>x : any
+>1 : 1
+
+exports.h = function (x) { };
+>exports.h = function (x) { } : (x: any) => void
+>exports.h : (() => void) | ((x: any) => void)
+>exports : typeof import("./a")
+>h : (() => void) | ((x: any) => void)
+>function (x) { } : (x: any) => void
+>x : any
+
+class C {}
+>C : C
+
+C.k = function () {};
+>C.k = function () {} : () => void
+>C.k : (() => void) | ((y: any) => void)
+>C : typeof C
+>k : (() => void) | ((y: any) => void)
+>function () {} : () => void
+
+C.k = function (y) {};
+>C.k = function (y) {} : (y: any) => void
+>C.k : (() => void) | ((y: any) => void)
+>C : typeof C
+>k : (() => void) | ((y: any) => void)
+>function (y) {} : (y: any) => void
+>y : any
+
+module.exports.C = C;
+>module.exports.C = C : typeof C
+>module.exports.C : typeof C
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>C : typeof C
+>C : typeof C
+

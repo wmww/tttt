@@ -1,0 +1,33 @@
+a.js(2,27): error TS7006: Parameter 'msg' implicitly has an 'any' type.
+a.js(4,27): error TS7006: Parameter 'msg' implicitly has an 'any' type.
+a.js(7,11): error TS2339: Property 'x' does not exist on type '(() => void) | ((x: any) => void)'.
+  Property 'x' does not exist on type '() => void'.
+a.js(8,23): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.js(11,17): error TS7006: Parameter 'y' implicitly has an 'any' type.
+
+
+==== a.js (5 errors) ====
+    if (Math.random()) {
+        exports.f = function (msg) { console.log(msg) }
+                              ~~~
+!!! error TS7006: Parameter 'msg' implicitly has an 'any' type.
+    } else {
+        exports.f = function (msg) { }
+                              ~~~
+!!! error TS7006: Parameter 'msg' implicitly has an 'any' type.
+    }
+    exports.h = function () { };
+    exports.h.x = 1;
+              ~
+!!! error TS2339: Property 'x' does not exist on type '(() => void) | ((x: any) => void)'.
+!!! error TS2339:   Property 'x' does not exist on type '() => void'.
+    exports.h = function (x) { };
+                          ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    class C {}
+    C.k = function () {};
+    C.k = function (y) {};
+                    ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+    module.exports.C = C;
+    

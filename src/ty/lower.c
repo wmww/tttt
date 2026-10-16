@@ -2040,17 +2040,6 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         Symbol const* target = symbol_resolve_alias((Symbol*)symbol);
         if (target && target != symbol) return ty_type_of_symbol(me, target);
     }
-    // A JavaScript function or class expression assigned first is the type, whatever the later assignments are (tsc's
-    // getWidenedTypeForAssignmentDeclaration: an expando initializer of the value declaration is a container of its own)
-    SourceFile const* first_file = span_source(symbol->decls[0].full);
-    if (first_file && first_file->is_js && symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-        !symbol_decl_jsdoc_type(&symbol->decls[0]) && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
-    ) {
-        Expr* init = expando_initializer((Expr*)symbol->decls[0].node, true, false);
-        if (init && (init->tag == EXPR_FUNCTION || init->tag == EXPR_CLASS_DECL)) {
-            return ty_widened_literal(me, ty_expr_type(me, init));
-        }
-    }
     // The first JSDoc `@type` of an assignment is the type, as declared (tsgo has no definedInMethod `| undefined`);
     // the last one when every declaration is a `this.x =` (tsgo's isConstructorDeclaredThisProperty overwrites it)
     bool all_this = symbol->decl_count > 0;
