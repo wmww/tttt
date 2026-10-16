@@ -7,9 +7,6 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 
 ## Older leftovers (2026-10-08..09), still mismatching
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
-- tanstack-table examples (`spans.reduce((total, span) => ...)` with `spans: unknown` from an unresolved Playwright
-  call): tsgo's untyped call gives the callbacks contextual any, tttt TS7006 (a plain `unknown.reduce(...)` probe is
-  fine: the difference is in how `spans` becomes unknown).
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent A)
 Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
@@ -50,8 +47,7 @@ dependencies in package ids, landed by agent D). Left:
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
 - **arktype** (this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
   see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx,
-  **nextra-theme-docs** layout-props.test-d.ts:18, **tanstack-table** table-core rowModelSlots.test.ts:368: not
-  looked at this round.
+  **nextra-theme-docs** layout-props.test-d.ts:18: not looked at this round.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
   origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
   never_reduced_prop() type-variable member gap of the redux-toolkit entry).
@@ -139,8 +135,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   full project (`ShapeID = keyof typeof shapes`, and `shapes` is built from handlers whose parameters mention
   `Node`, whose `shape` is `ShapeID`). tsc itself resolves `ShapeID` to `string` mid-circularity (the Record has 176
   literal keys), and a probe importing the types alone gets the same as tsc in tttt: order-dependent circularity.
-- **tanstack-table table-core `rowModelSlots.test.ts:368` +TS2322**: AggregationFnListItem/AggregationFnRef relation
-  over the large inferred feature type; not reduced.
 - **dexie samples/dexie-cloud-todo-app +TS2502 `todoLists` (and TS2615 changeOwner)**: `todoLists!: DexieCloudTable<
   TodoList, 'id'>` where InsertType maps over TodoList's keys asking which are functions, and TodoList's methods' inferred
   return types read `db.todoLists`: tttt evaluates that during the property declaration's check, tsc lazily.
@@ -336,6 +330,6 @@ read types). Left:
 - **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: still the zod v4 `[x: string]: any` index signature of
   the agent D 2026-10-12 entry; not reduced (zod v4's strictObject/shape types, big).
 - arktype (this.test.ts:190 +TS2322), better-auth,
-  es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit, tanstack-table: unchanged, not looked at again (see
+  es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
 - The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.

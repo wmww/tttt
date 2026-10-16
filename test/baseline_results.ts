@@ -557,6 +557,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferArrayToReadonlyArrayByElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferFromReadonlyRestTuple': {
         errors: true,
         symbols: true,

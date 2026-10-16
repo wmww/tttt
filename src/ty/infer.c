@@ -1861,11 +1861,15 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 source = apparent;
             }
         }
+        // (An array to an array, mutable or not, too: `T[]` to `readonly U[]`)
         bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
-            source->reference.target == target->reference.target && !(source->reference.deferred && target->reference.deferred);
+            (source->reference.target == target->reference.target || (ty_is_array(me, source) && ty_is_array(me, target))) &&
+            !(source->reference.deferred && target->reference.deferred);
         if (same_reference) {
             // By type argument without going on the stack below: nested references to one type (`Box<Box<T>>`) aren't
-            // deeply nested objects (tsc's inferFromTypes; only two deferred references go through invokeOnce)
+            // deeply nested objects (tsc's inferFromTypes; only two deferred references go through invokeOnce). An array
+            // on the stack made a nested pair of deferred arrays look deeply nested: tanstack-table's columns array
+            // literal to `ReadonlyArray<ColumnDef<...>>` cut its `aggregationFn: readonly Item<F>[]` short
             infer_from_type_args(me, inf, source, target);
         } else if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !visited_add(inf, source, target)) {
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
