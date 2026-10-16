@@ -134,6 +134,11 @@ typedef struct FunctionImplRare {
     // a setter's first of two), which is this one's when it has none (getSignatureFromDeclaration) and types a setter's
     // unannotated one (getTypeForVariableLikeDeclaration). Set by the resolve walk
     struct FunctionArg const* paired_this;
+    // An accessor of a class whose computed name isn't a literal: its class and member, whose pair is its symbol's
+    // (ty_class_accessor_first(), by the key's type: the checker's). The resolve walk pairs the others (paired_this,
+    // setter_type, InitializedBindingRare.getter); read through function_impl_paired_this(), function_impl_setter_type()
+    struct ClassDecl const* late_accessor_class;
+    struct ClassItem const* late_accessor_item;
     u32 iife_arg_count; // See FunctionImpl.is_iife
     struct CallExpr const* iife_call; // The call it is the callee of, when is_iife
     // What a `this` in it may be typed by (tsc's getContextualThisParameterType), set when resolving: the object literal
@@ -315,6 +320,10 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, struc
 // setter_type, unless the computed name the pair shares isn't late bindable after all (`[C.n]` with n a number: two
 // symbols to tsc's isLateBindableName, which goes by the name's type)
 TypeNode const* function_impl_setter_type(FunctionImpl const* me);
+// paired_this, or a late-bound accessor's (see FunctionImplRare.late_accessor_class)
+struct FunctionArg const* function_impl_paired_this(FunctionImpl const* me);
+// The getter a late-bound setter is paired with, null if none
+FunctionImpl const* function_impl_late_getter(FunctionImpl const* setter);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 // TS2842 for the unused renamings in a bodiless signature's patterns (part of function_impl_typecheck_signature())
 void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs);

@@ -1,0 +1,115 @@
+//// [test/cases/ttttLateBoundAccessorPairs.ts] ////
+
+=== ttttLateBoundAccessorPairs.ts ===
+// An accessor pair with computed names is one symbol by the key's type, not its text (tsc's lateBindMember):
+// `[a]` and `[b]` with b of `typeof a` pair (the setter's parameter has the getter's type, the property is writable).
+// A name of type string isn't late bindable: its accessors stay apart (TS7032 on the setter), and accessors after a
+// method of their name conflict with it, each its own symbol
+const a = Symbol();
+>a : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+declare const b: typeof a;
+>b : unique symbol
+>a : unique symbol
+
+class C {
+>C : C
+
+    get [a](): string { return ""; }
+>[a] : string
+>a : unique symbol
+>"" : ""
+
+    set [b](v) { v.length; }
+>[b] : string
+>b : unique symbol
+>v : string
+>v.length : number
+>v : string
+>length : number
+}
+declare const c: C;
+>c : C
+
+c[a] = "x";
+>c[a] = "x" : "x"
+>c[a] : string
+>c : C
+>a : unique symbol
+>"x" : "x"
+
+const k = "x";
+>k : "x"
+>"x" : "x"
+
+declare const k2: typeof k;
+>k2 : "x"
+>k : "x"
+
+class D {
+>D : D
+
+    get [k](): string { return ""; }
+>[k] : string
+>k : "x"
+>"" : ""
+
+    set [k2](v) { v.length; }
+>[k2] : string
+>k2 : "x"
+>v : string
+>v.length : number
+>v : string
+>length : number
+}
+declare const d: D;
+>d : D
+
+d[k] = "y";
+>d[k] = "y" : "y"
+>d[k] : string
+>d : D
+>k : "x"
+>"y" : "y"
+
+declare const ks: string;
+>ks : string
+
+class E {
+>E : E
+
+    get [ks](): number { return 1; }
+>[ks] : number
+>ks : string
+>1 : 1
+
+    set [ks](v) { }
+>[ks] : any
+>ks : string
+>v : any
+}
+const uu = Symbol();
+>uu : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class F {
+>F : F
+
+    [uu]() {}
+>[uu] : () => void
+>uu : unique symbol
+
+    get [uu](): number { return 1; }
+>[uu] : number
+>uu : unique symbol
+>1 : 1
+
+    set [uu](v) { }
+>[uu] : any
+>uu : unique symbol
+>v : any
+}
+

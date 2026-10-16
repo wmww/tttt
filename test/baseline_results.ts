@@ -608,6 +608,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLateBoundAccessorPairs': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLateBoundMemberMerge': {
         errors: true,
         symbols: true,

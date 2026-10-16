@@ -888,6 +888,7 @@ static Ty const* auto_type(InitializedBinding const* me) {
 }
 
 FunctionImpl const* initialized_binding_getter(InitializedBinding const* me) {
+    if (initialized_binding_rare(me)->late_setter) return function_impl_late_getter(initialized_binding_rare(me)->late_setter);
     if (!initialized_binding_rare(me)->getter) return nullptr;
     Expr const* key = initialized_binding_rare(me)->getter_key;
     if (!key || key->tag == EXPR_LITERAL) return initialized_binding_rare(me)->getter;

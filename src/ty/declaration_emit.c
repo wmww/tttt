@@ -1971,8 +1971,9 @@ static bool item_has_private_name(ClassItem const* item) { return span_valid(cla
 // The accessor pair of a class accessor
 static Accessors class_accessors(ClassItem const* item) {
     Accessors pair = {0};
-    ClassItem const* first = item->method.accessor_first ? item->method.accessor_first : item;
-    ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : item->method.accessor_getter;
+    ClassItem const* first = ty_class_accessor_first(current_checker, item);
+    if (!first) first = item;
+    ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : ty_class_accessor_getter(current_checker, item);
     if (!getter && first->method.accessor == CLASS_ACCESSOR_GET) getter = first;
     if (getter) {
         pair.getter = &getter->method.func;
@@ -1989,7 +1990,7 @@ static Accessors class_accessors(ClassItem const* item) {
 static void find_setter(ClassDecl const* cls, ClassItem const* getter, Accessors* pair) {
     for_each (i, vec_class_item, &cls->items) {
         if (i->tag != CLASS_ITEM_METHOD || i->method.accessor != CLASS_ACCESSOR_SET) continue;
-        if (i->method.accessor_getter == getter) {
+        if (ty_class_accessor_getter(current_checker, i) == getter) {
             pair->setter = &i->method.func;
             pair->setter_name = i->method.name_span;
             return;

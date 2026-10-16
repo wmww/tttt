@@ -2279,7 +2279,20 @@ typedef struct ClassMemberSymbols {
     u32 const* first_late;
     // Per entry: a late-bound symbol that didn't merge into the early symbol of its name, which one excludes
     bool const* shadowed;
+    // Per class item, for an accessor with a computed name: the first accessor, getter and setter of its symbol among
+    // the accessors with computed names (item indexes, -1 for none). See ty_class_accessor_first()
+    i32 const* accessor_first;
+    i32 const* accessor_getter;
+    i32 const* accessor_setter;
 } ClassMemberSymbols;
+// The first accessor of the accessor pair a class's accessor `item` is part of (itself if it leads or stands alone),
+// its getter and its setter (null for none). A written name's pair is the binder's (ClassItem.accessor_first), a
+// computed name's is its symbol's (ty_class_member_symbols(): by the key's type, `[a]` and `[b]` pair when b is
+// `typeof a`), among the accessors with computed names
+struct ClassItem const* ty_class_accessor_first(Checker* me, struct ClassItem const* item);
+struct ClassItem const* ty_class_accessor_getter(Checker* me, struct ClassItem const* item);
+// (`class_decl` for a written name's: the binder links setters to getters only)
+struct ClassItem const* ty_class_accessor_setter(Checker* me, ClassDecl const* class_decl, struct ClassItem const* item);
 // Whether a declaration of `entry` comes before the member at item `index` (`late`: a late-bound one, which comes after
 // every early-bound one) in tsc's order of the symbol's declarations
 static inline bool class_member_declared_before(ClassMemberSymbols const* me, i32 entry, u32 index, bool late) {

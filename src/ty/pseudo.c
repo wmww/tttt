@@ -495,7 +495,9 @@ static Pseudo const* add_undefined_if_definitely_required(Build* me, Pseudo cons
 // The setter a setter's parameter belongs to has its pair's type: the getter of the same property
 static FunctionImpl const* paired_getter(FunctionImpl const* setter) {
     FunctionArg const* arg = vec_function_arg_size(&setter->args) ? vec_function_arg_at(&setter->args, 0) : nullptr;
-    return arg ? initialized_binding_rare(&arg->initializer)->getter : nullptr;
+    if (!arg) return nullptr;
+    FunctionImpl const* late = initialized_binding_rare(&arg->initializer)->late_setter;
+    return late ? function_impl_late_getter(late) : initialized_binding_rare(&arg->initializer)->getter;
 }
 
 // typeFromParameterWorker

@@ -2209,8 +2209,8 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         return;
     }
     Symbol const* symbol = my target;
-    if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me) && function_impl_rare(identifier_this_function(me))->paired_this) {
-        symbol = function_impl_rare(identifier_this_function(me))->paired_this->initializer.binding.symbol;
+    if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me) && function_impl_paired_this(identifier_this_function(me))) {
+        symbol = function_impl_paired_this(identifier_this_function(me))->initializer.binding.symbol;
     }
     if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me)) {
         Signature const* sig = ty_function_assigned_contextual_signature(checker, identifier_this_function(me));

@@ -364,7 +364,7 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
                 // (Not a `declare` member: tsc's parser gives it NodeFlags.Ambient, which checkUnusedClassMembers skips)
                 if (i->tag == CLASS_ITEM_METHOD ? i->method.is_declare : i->field.is_declare) break;
                 // An accessor pair is reported on the getter
-                if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter) break;
+                if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && ty_class_accessor_getter(checker, i)) break;
                 if (ty_member_is_referenced(checker, i->span)) break;
                 report_never_read(r, false, name, name);
             }   break;

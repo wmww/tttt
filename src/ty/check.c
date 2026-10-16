@@ -3837,6 +3837,16 @@ static void declare_class_members(
     *symbol_out = symbol;
 }
 
+// An accessor with a computed name that isn't a literal: paired by the checker (ty_class_accessor_first()), its class
+// recorded by the resolve walk
+static ClassDecl const* accessor_late_class(ClassItem const* item) {
+    return function_impl_rare(&item->method.func)->late_accessor_class;
+}
+
+static bool accessor_late(ClassItem const* item) {
+    return item->method.computed_key && !computed_key_early_name(item->method.computed_key, nullptr);
+}
+
 ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* class_decl) {
     ClassMemberSymbols const* cached = ty_link_get(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl);
     if (cached) return cached;
@@ -3868,14 +3878,74 @@ ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* 
         u32* first = r->late ? &first_late[r->entry] : &first_early[r->entry];
         if (r->position < *first) *first = r->position;
     }
+    // The accessors with computed names, paired by symbol (the written names' pairs are the binder's)
+    i32* accessor_first = arena_new_n(&my arena, i32, item_count ? item_count : 1);
+    i32* accessor_getter = arena_new_n(&my arena, i32, item_count ? item_count : 1);
+    i32* accessor_setter = arena_new_n(&my arena, i32, item_count ? item_count : 1);
+    i32* entry_accessor[3];
+    for (u32 k = 0; k < 3; k++) {
+        entry_accessor[k] = malloc(sizeof(i32) * (tables->count ? tables->count : 1));
+        panic_if(!entry_accessor[k], "out of memory");
+        for (u32 e = 0; e < tables->count; e++) entry_accessor[k][e] = -1;
+    }
+    for (u32 pass = 0; pass < 2; pass++) {
+        for (u32 i = 0; i < item_count; i++) {
+            ClassItem const* item = &class_decl->items.data[i];
+            accessor_first[i] = accessor_getter[i] = accessor_setter[i] = -1;
+            if (item->tag != CLASS_ITEM_METHOD || !item->method.accessor || !accessor_late(item)) continue;
+            bool get = item->method.accessor == CLASS_ACCESSOR_GET;
+            i32 e = entries[i];
+            if (e < 0) {
+                accessor_first[i] = (i32)i;
+                (get ? accessor_getter : accessor_setter)[i] = (i32)i;
+            } else if (pass == 0) {
+                if (entry_accessor[0][e] < 0) entry_accessor[0][e] = (i32)i;
+                if (entry_accessor[get ? 1 : 2][e] < 0) entry_accessor[get ? 1 : 2][e] = (i32)i;
+            } else {
+                accessor_first[i] = entry_accessor[0][e];
+                accessor_getter[i] = entry_accessor[1][e];
+                accessor_setter[i] = entry_accessor[2][e];
+            }
+        }
+    }
+    for (u32 k = 0; k < 3; k++) free(entry_accessor[k]);
     *ret = (ClassMemberSymbols){ .item_entry = entries, .item_count = item_count, .params = params,
         .param_count = param_count, .entry_count = tables->count, .first_early = first_early, .first_late = first_late,
-        .shadowed = shadowed };
+        .shadowed = shadowed, .accessor_first = accessor_first, .accessor_getter = accessor_getter,
+        .accessor_setter = accessor_setter };
     vec_dup_record_drop(&records);
     free(tables->entries);
     member_tables_unindex(tables);
     ty_link_set(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl, ret);
     return ret;
+}
+
+ClassItem const* ty_class_accessor_first(Checker* me, ClassItem const* item) {
+    ClassDecl const* class_decl = accessor_late_class(item);
+    if (!class_decl) return item->method.accessor_first;
+    i32 at = ty_class_member_symbols(me, class_decl)->accessor_first[item - class_decl->items.data];
+    return at >= 0 ? &class_decl->items.data[at] : item;
+}
+
+ClassItem const* ty_class_accessor_getter(Checker* me, ClassItem const* item) {
+    ClassDecl const* class_decl = accessor_late_class(item);
+    if (!class_decl) return item->method.accessor_getter;
+    i32 at = ty_class_member_symbols(me, class_decl)->accessor_getter[item - class_decl->items.data];
+    return at >= 0 ? &class_decl->items.data[at] : nullptr;
+}
+
+ClassItem const* ty_class_accessor_setter(Checker* me, ClassDecl const* class_decl, ClassItem const* item) {
+    if (item->method.accessor == CLASS_ACCESSOR_SET) return item;
+    if (!accessor_late_class(item)) {
+        ClassItem const* getter = item->method.accessor_getter;
+        for_each (i, vec_class_item, (VecClassItem*)&class_decl->items) {
+            if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter == getter) return i;
+        }
+        return nullptr;
+    }
+    class_decl = accessor_late_class(item);
+    i32 at = ty_class_member_symbols(me, class_decl)->accessor_setter[item - class_decl->items.data];
+    return at >= 0 ? &class_decl->items.data[at] : nullptr;
 }
 
 void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
@@ -4459,7 +4529,7 @@ void ty_check_index_constraints(
         if ((!is_method && item->tag != CLASS_ITEM_FIELD) || class_item_is_static(item) != is_static) continue;
         Expr const* computed = is_method ? item->method.computed_key : item->field.computed_key;
         if (!computed || ty_member_name(me, is_method ? &item->method.name_string : &item->field.name_string, computed)) continue;
-        if (is_method && item->method.accessor == CLASS_ACCESSOR_SET && item->method.accessor_first != item) continue;
+        if (is_method && item->method.accessor == CLASS_ACCESSOR_SET && ty_class_accessor_first(me, item) != item) continue;
         Span item_name = is_method ? item->method.name_span : item->field.name_span;
         Ty const* key = ty_expr_type(me, computed);
         Ty const* item_ty = nullptr;

@@ -529,7 +529,46 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
     }
 }
 
+// The other accessor of a late-bound accessor's pair (see FunctionImplRare.late_accessor_class), null if none
+static FunctionImpl const* late_accessor_pair(FunctionImpl const* me) {
+    FunctionImplRare const* rare = function_impl_rare(me);
+    if (!rare->late_accessor_item) return nullptr;
+    ClassItem const* other = my accessor == 2 ? ty_class_accessor_getter(current_checker, rare->late_accessor_item) :
+        ty_class_accessor_setter(current_checker, rare->late_accessor_class, rare->late_accessor_item);
+    return other && other != rare->late_accessor_item ? &other->method.func : nullptr;
+}
+
+FunctionImpl const* function_impl_late_getter(FunctionImpl const* setter) {
+    return late_accessor_pair(setter);
+}
+
+FunctionArg const* function_impl_paired_this(FunctionImpl const* me) {
+    if (function_impl_rare(me)->paired_this) return function_impl_rare(me)->paired_this;
+    FunctionImpl const* other = late_accessor_pair(me);
+    if (!other) return nullptr;
+    // (What function_impl_pair_setter() gives each)
+    if (my accessor == 2) {
+        FunctionArg const* getter_this = accessor_this_parameter(other, false);
+        bool own = vec_function_arg_size(&my args) && is_this_parameter(vec_function_arg_at(&my args, 0)) &&
+            vec_function_arg_at(&my args, 0)->initializer.binding.has_explicit_type;
+        return getter_this && !own ? getter_this : nullptr;
+    }
+    FunctionArg const* setter_this = accessor_this_parameter(other, true);
+    bool own = vec_function_arg_size(&my args) && is_this_parameter(vec_function_arg_at(&my args, 0));
+    return setter_this && !own ? setter_this : nullptr;
+}
+
 TypeNode const* function_impl_setter_type(FunctionImpl const* me) {
+    if (my accessor == 1 && !my ret_explicit && function_impl_rare(me)->late_accessor_item) {
+        // (A late-bound getter's: its setter's first parameter but `this`, annotated)
+        FunctionImpl const* setter = late_accessor_pair(me);
+        if (!setter) return nullptr;
+        for_each (i, vec_function_arg, &setter->args) {
+            if (i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this")) continue;
+            return i->initializer.binding.has_explicit_type ? binding_type(&i->initializer.binding) : nullptr;
+        }
+        return nullptr;
+    }
     TypeNode const* type = function_impl_rare(me)->setter_type;
     Expr const* key = function_impl_rare(me)->setter_key;
     if (!type || !key || key->tag == EXPR_LITERAL) return type;

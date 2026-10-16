@@ -144,6 +144,9 @@ typedef struct InitializedBindingRare {
     // Their computed name (`set [k](v)`), if any: they are one property only if its type is a literal or unique symbol
     // (tsc's isLateBindableName), see initialized_binding_getter()
     struct Expr const* getter_key;
+    // The unannotated parameter of a class's setter whose computed name isn't a literal: its setter, whose getter the
+    // checker finds (function_impl_late_getter())
+    struct FunctionImpl const* late_setter;
     // The parameter of a JavaScript function whose JSDoc `@type` types it (FunctionImpl.jsdoc_signature_type)
     struct FunctionImpl const* jsdoc_typed_by;
     // An unannotated `this` parameter: its function, whose contextual `this` type it has (tsc's

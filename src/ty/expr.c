@@ -1271,7 +1271,7 @@ Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* pa
     FunctionImpl const* this_of = initialized_binding_rare(parameter)->this_of;
     if (!ret && this_of) {
         // (A setter's: the getter's `this` parameter, tsc's getTypeForVariableLikeDeclaration)
-        FunctionArg const* paired_this = this_of->accessor == 2 ? function_impl_rare(this_of)->paired_this : nullptr;
+        FunctionArg const* paired_this = this_of->accessor == 2 ? function_impl_paired_this(this_of) : nullptr;
         ret = paired_this ? ty_type_of_symbol(me, paired_this->initializer.binding.symbol) : ty_contextual_this_type(me, this_of);
     }
     return ret;
@@ -1976,7 +1976,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
-            FunctionArg const* paired_this = identifier_this_function(identifier) ? function_impl_rare(identifier_this_function(identifier))->paired_this : nullptr;
+            FunctionArg const* paired_this = identifier_this_function(identifier) ? function_impl_paired_this(identifier_this_function(identifier)) : nullptr;
             if (paired_this) return ty_type_of_symbol(me, paired_this->initializer.binding.symbol);
             Ty const* contextual = identifier_this_function(identifier) ? ty_contextual_this_type(me, identifier_this_function(identifier)) : nullptr;
             return contextual ? contextual : any_type(me);
@@ -2304,7 +2304,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         type = declared_type;
         if (identifier->this_kind == THIS_ANY) {
             FunctionImpl const* function = identifier_this_function(identifier);
-            if (!function || (!function_impl_rare(function)->paired_this && !ty_contextual_this_type(me, function))) return type;
+            if (!function || (!function_impl_paired_this(function) && !ty_contextual_this_type(me, function))) return type;
         }
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }

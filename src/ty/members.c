@@ -1608,7 +1608,7 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             u32 kind = computed_index_kind(me, i, static_side);
             if (!(kind & (1u << k))) continue;
             bool field = i->tag == CLASS_ITEM_FIELD;
-            if (!field && i->method.accessor && i->method.accessor_first != i) continue; // One type per accessor pair
+            if (!field && i->method.accessor && ty_class_accessor_first(me, i) != i) continue; // One type per accessor pair
             Ty const* type = field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func);
             // (The type of each member's symbol: an optional one's has undefined, getTypeOfSymbol)
             bool optional = field ? i->field.is_optional : i->method.is_optional;
@@ -1674,7 +1674,9 @@ static void builder_add_class_items(
             case CLASS_ITEM_METHOD: {
                 if (i->method.is_static != static_side) break;
                 if (i->method.accessor) {
-                    if (i->method.accessor_first != i) break; // The second half of a get/set pair
+                    if (ty_class_accessor_first(me, i) != i) break; // The second half of a get/set pair
+                    // (A computed name's pair can be written otherwise, `[a]` and `[b]`: every computed one is looked at)
+                    bool computed = i->method.computed_key != nullptr;
                     Prop* joined = nullptr;
                     Prop* prop = builder_add_class_prop_joined(me, builder, class_decl, &i->method.name_string, parent, ctx, i, &joined);
                     // An accessor after a property of its name joins the property's symbol (tsgo 7.1's binder:
@@ -1693,9 +1695,9 @@ static void builder_add_class_items(
                     bool has_setter = false, has_getter = false;
                     TypeNode const* setter_type = nullptr;
                     u32 get_access = access_prop_flags(i->access), set_access = get_access;
-                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, computed); class_namesakes_next(&it);) {
                         ClassItem const* other = it.item;
-                        if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
+                        if (other->tag != CLASS_ITEM_METHOD || !other->method.accessor || ty_class_accessor_first(me, other) != i) continue;
                         has_setter |= other->method.accessor == CLASS_ACCESSOR_SET;
                         has_getter |= other->method.accessor == CLASS_ACCESSOR_GET;
                         FunctionImpl const* func = &other->method.func;
@@ -1713,9 +1715,9 @@ static void builder_add_class_items(
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
                     if (has_getter) prop->flags |= PROP_CLASS_GETTER;
-                    for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, computed); class_namesakes_next(&it);) {
                         ClassItem const* other = it.item;
-                        if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
+                        if (other->tag != CLASS_ITEM_METHOD || !other->method.accessor || ty_class_accessor_first(me, other) != i) continue;
                         PropDeclRare* rare = prop_decl_rare_mut(me, prop->decl);
                         if (other->method.accessor == CLASS_ACCESSOR_GET && !rare->class_getter) rare->class_getter = &other->method.func;
                         if (other->method.accessor == CLASS_ACCESSOR_SET && !rare->class_setter) rare->class_setter = &other->method.func;
@@ -4822,7 +4824,7 @@ static Span prop_annotation_circularity_span(Prop const* prop) {
     }
     if (lazy->tag != LAZY_TYPE_CLASS_ITEM_ACCESSOR) return span_null;
     ClassItem const* item = c_container_of(lazy, ClassItem, method.accessor_type);
-    ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : item->method.accessor_getter;
+    ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : ty_class_accessor_getter(current_checker, item);
     if (getter && getter->method.func.ret_explicit) return getter->method.name_span;
     if (item->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&item->method.func.args) &&
         vec_function_arg_at(&item->method.func.args, 0)->initializer.binding.has_explicit_type

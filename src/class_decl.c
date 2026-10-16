@@ -160,8 +160,9 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     Expr const* key = my method.computed_key;
     bool late_bound = !key || key->tag == EXPR_LITERAL ||
         (ty_expr_type(checker, (Expr*)key)->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL));
-    if (my method.accessor == CLASS_ACCESSOR_SET && my method.accessor_getter && late_bound) {
-        return lazy_type_get(&my method.accessor_getter->method.accessor_type);
+    ClassItem const* getter = my method.accessor == CLASS_ACCESSOR_SET ? ty_class_accessor_getter(checker, me) : nullptr;
+    if (getter && late_bound) {
+        return lazy_type_get(&((ClassItem*)getter)->method.accessor_type);
     }
     Members const* members = ty_members(checker, ty_function_type(checker, &my method.func));
     if (members->call_count != 1) return ty_intrinsic(checker, TY_ANY);
@@ -603,45 +604,6 @@ static void bind_member_symbols(ClassDecl* me) {
     free(full);
 }
 
-// The first member of a computed name's late-bound symbol that `target` is part of (tsc's lateBindMember, which
-// declares like the binder: a member that conflicts with the symbol already bound to the name stands alone), going
-// by the key's source text the way accessor pairs are matched. `[k]() {}` before `get [k]()` and `set [k](v)` keeps
-// both accessors alone: no pair. Null for a member without a computed name
-static ClassItem const* computed_symbol_first(ClassDecl const* me, ClassItem const* target) {
-    if (!item_late_key(target)) return nullptr;
-    bool target_static = class_item_is_static((ClassItem*)target);
-    cstr const* name = target->tag == CLASS_ITEM_METHOD ? &target->method.name_string : &target->field.name_string;
-    // (Each earlier member of the name with the first of its symbol)
-    ClassItem const* seen[64];
-    ClassItem const* seen_first[64];
-    u32 seen_count = 0;
-    for (ClassItem const* i = my items.data; i <= target; i++) {
-        bool method = i->tag == CLASS_ITEM_METHOD;
-        if ((!method && i->tag != CLASS_ITEM_FIELD) || !item_late_key(i)) continue;
-        if (class_item_is_static((ClassItem*)i) != target_static) continue;
-        if (!cstr_eq(method ? &i->method.name_string : &i->field.name_string, name)) continue;
-        u32 flags = i->tag == CLASS_ITEM_FIELD ? (i->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY) :
-            i->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET : i->method.accessor == CLASS_ACCESSOR_SET ? BIND_SET : BIND_METHOD;
-        ClassItem const* first = seen_count ? seen[0] : nullptr;
-        u32 existing = 0;
-        for (u32 j = 0; j < seen_count; j++) {
-            if (seen_first[j] != first) continue;
-            ClassItem const* other = seen[j];
-            existing |= other->tag == CLASS_ITEM_FIELD ? (other->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY) :
-                other->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET : other->method.accessor == CLASS_ACCESSOR_SET ? BIND_SET : BIND_METHOD;
-        }
-        u32 excludes = flags == BIND_PROPERTY ? (u32)~(BIND_PROPERTY | BIND_GET | BIND_SET) : flags == BIND_METHOD ? (u32)~BIND_METHOD :
-            flags == (BIND_GET | BIND_SET) ? (u32)~BIND_PROPERTY :
-            flags == BIND_GET ? (u32)~(BIND_SET | BIND_PROPERTY) : (u32)~(BIND_GET | BIND_PROPERTY);
-        ClassItem const* own_first = first && !(existing & excludes) ? first : i;
-        if (i == target) return own_first;
-        if (seen_count == 64) return target; // (Pathological: treat it as alone)
-        seen[seen_count] = i;
-        seen_first[seen_count++] = own_first;
-    }
-    return target;
-}
-
 // Each overload signature of a method or constructor: its implementation, see FunctionImpl.overload_implementation
 static void link_overload_implementations(ClassDecl* me) {
     for_each (i, vec_class_item, &my items) {
@@ -729,20 +691,29 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                 &i->field.explicit_type, &i->field.value
             );
         }
-        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
-            // (A computed name that isn't a literal or an entity name, `["" + ""]`, is a symbol of its own: tsc's
-            // isLateBindableName)
-            Expr const* own_key = item_late_key(i);
-            bool bindable = !own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key);
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && item_late_key(i)) {
+            // A computed name that isn't a literal: its pair is its symbol's, which goes by the key's type (`[a]` and
+            // `[b]` with b of `typeof a` are one; a name of type string none, tsc's isLateBindableName): the checker's
+            // (ty_class_accessor_first()). Alone here
+            i->method.accessor_first = i;
+            i->method.accessor_getter = i->method.accessor == CLASS_ACCESSOR_GET ? i : nullptr;
+            function_impl_rare_mut(&i->method.func)->late_accessor_class = me;
+            function_impl_rare_mut(&i->method.func)->late_accessor_item = i;
+            for_each (arg, vec_function_arg, &i->method.func.args) {
+                Binding const* binding = &arg->initializer.binding;
+                if (i->method.accessor != CLASS_ACCESSOR_SET) break;
+                if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                if (!binding->has_explicit_type) initialized_binding_rare_mut(&arg->initializer)->late_setter = &i->method.func;
+                break;
+            }
+        } else if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
             for (ClassNamesakes it = class_namesakes(me, i, false); class_namesakes_next(&it);) {
                 ClassItem* other = it.item;
-                if (!bindable && other != i) continue;
                 if (other->tag == CLASS_ITEM_METHOD &&
                     other->method.accessor &&
                     other->method.is_static == i->method.is_static &&
                     class_methods_same_name(other, i) &&
-                    other->symbol_first == i->symbol_first &&
-                    (!own_key || computed_symbol_first(me, other) == computed_symbol_first(me, i))
+                    other->symbol_first == i->symbol_first && !item_late_key(other)
                 ) {
                     if (!i->method.accessor_first) {
                         i->method.accessor_first = other;
@@ -1728,30 +1699,11 @@ static void report_implementation_expected(ClassDecl const* me, ClassItem const*
     }
 }
 
-// The first early-bound member of the name a late-bound method binds (the early symbol of that name, which its late
-// symbol merges into), null if none
-static ClassItem const* early_namesake_of_late(ClassDecl const* me, ClassItem const* item) {
-    Atom const* name = bindable_computed_name(item);
-    if (!name) return nullptr;
-    for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
-        ClassItem const* other = it.item;
-        if ((other->tag != CLASS_ITEM_METHOD && other->tag != CLASS_ITEM_FIELD) || item_late_key(other) || !other->symbol_first ||
-            class_item_is_static((ClassItem*)other) != item->method.is_static || span_valid(class_item_private_name(other))
-        ) {
-            continue;
-        }
-        cstr const* other_name = other->tag == CLASS_ITEM_METHOD ? &other->method.name_string : &other->field.name_string;
-        if (cstr_equals_sv(other_name, atom_sv(name))) return other->symbol_first;
-    }
-    return nullptr;
-}
-
 // The declarations of the method symbol (or the constructor) `item` leads, in tsc's order, into `out`: 0 unless `item`
 // leads one. An early-bound method's symbol is the binder's (ClassItem.symbol_first), then the late-bound methods that
-// merge into it (when it is a method's: mergeSymbol); a late-bound one not merged leads its own (lateBindMember's,
-// see computed_symbol_first())
-// (`early_of`: per item, the early method a late-bound one merges into; null when none does)
-static u32 overload_symbol_declarations(ClassDecl const* me, ClassItem const* item, ClassItem const* const* early_of, ClassItem const** out, u32 cap) {
+// merge into it (when it is a method's: mergeSymbol); a late-bound one not merged leads its own (lateBindMember's):
+// the late-bound ones by the checker's symbols (ty_class_member_symbols())
+static u32 overload_symbol_declarations(ClassDecl const* me, ClassItem const* item, ClassItem const** out, u32 cap) {
     if (!overloadable(item)) return 0;
     u32 len = 0;
     if (item->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -1763,28 +1715,32 @@ static u32 overload_symbol_declarations(ClassDecl const* me, ClassItem const* it
         return len;
     }
     if (!bindable_method(item)) return 0;
+    ClassMemberSymbols const* symbols = ty_class_member_symbols(current_checker, me);
+    u32 index = (u32)(item - my items.data);
+    i32 entry = symbols->item_entry[index];
     if (item_late_key(item)) {
-        if (early_of && early_of[item - my items.data]) return 0; // (Merged: the early one leads)
-        if (computed_symbol_first(me, item) != item) return 0;
-        for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
-            ClassItem const* other = it.item;
-            if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && item_late_key(other) &&
-                other->method.is_static == item->method.is_static && cstr_eq(&other->method.name_string, &item->method.name_string) &&
-                computed_symbol_first(me, other) == item && len < cap
-            ) {
-                out[len++] = other;
-            }
+        if (entry < 0) { // (Conflicted: a symbol of its own)
+            out[len++] = item;
+            return len;
         }
-        return len;
+        // (Merged into an early method, which leads, or after the first of its own)
+        if (symbols->first_early[entry] != UINT32_MAX || symbols->first_late[entry] != index) return 0;
+    } else {
+        if (item->symbol_first != item) return 0;
+        for (ClassNamesakes it = class_namesakes(me, item, false); class_namesakes_next(&it);) {
+            ClassItem const* other = it.item;
+            if (overloadable(other) && other->symbol_first == item && len < cap) out[len++] = other;
+        }
+        if (entry < 0) return len;
     }
-    if (item->symbol_first != item) return 0;
-    for (ClassNamesakes it = class_namesakes(me, item, false); class_namesakes_next(&it);) {
+    // The late-bound methods of the symbol
+    for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
         ClassItem const* other = it.item;
-        if (overloadable(other) && other->symbol_first == item && len < cap) out[len++] = other;
-    }
-    for (ClassNamesakes it = class_namesakes(me, item, true); early_of && class_namesakes_next(&it);) {
-        ClassItem const* other = it.item;
-        if (early_of[other - my items.data] == item && len < cap) out[len++] = other;
+        if (overloadable(other) && other->tag == CLASS_ITEM_METHOD && item_late_key(other) &&
+            symbols->item_entry[other - my items.data] == entry && len < cap
+        ) {
+            out[len++] = other;
+        }
     }
     return len;
 }
@@ -1798,24 +1754,10 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     // Each method symbol's declarations (and the constructor's), in tsc's order: the early ones, then the late-bound
     // ones merged into them (see overload_symbol_declarations())
     ClassItem const** decls = malloc(sizeof(ClassItem const*) * (size_t)(count ? count : 1));
-    ClassItem const** early_of = calloc((size_t)(count ? count : 1), sizeof(ClassItem const*));
-    panic_if(!decls || !early_of, "out of memory");
-    bool merged = false;
+    panic_if(!decls, "out of memory");
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
-        if (overloadable(item) && item->tag == CLASS_ITEM_METHOD && item_late_key(item) && bindable_method(item)) {
-            ClassItem const* early = early_namesake_of_late(me, item);
-            if (early && early->tag == CLASS_ITEM_METHOD && !early->method.accessor) early_of[i] = early;
-            merged |= early_of[i] != nullptr;
-        }
-    }
-    if (!merged) {
-        free(early_of);
-        early_of = nullptr;
-    }
-    for (isize i = 0; i < count; i++) {
-        ClassItem const* item = vec_class_item_at(&my items, i);
-        u32 decl_count = overload_symbol_declarations(me, item, early_of, decls, (u32)count);
+        u32 decl_count = overload_symbol_declarations(me, item, decls, (u32)count);
         if (!decl_count) continue;
         // tsc's walk of the declarations: one not right after the previous one (and not a second implementation)
         // leaves the previous one without its implementation
@@ -1844,7 +1786,6 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         }
     }
     free(decls);
-    free(early_of);
     // The overloads of each method (and of the constructor) fit its implementation (TS2394)
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
@@ -2371,7 +2312,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         ) {
             FunctionImpl const* func = &i->method.func;
             if (i->method.accessor == CLASS_ACCESSOR_SET) {
-                ClassItem const* getter = i->method.accessor_getter;
+                ClassItem const* getter = ty_class_accessor_getter(current_checker, i);
                 bool typed = vec_function_arg_size(&func->args) &&
                     vec_function_arg_at(&func->args, 0)->initializer.binding.has_explicit_type;
                 if (!typed && (!getter || (!getter->method.func.ret_explicit && !getter->method.func.has_body && !getter->method.func.body_missing))) {
@@ -2381,7 +2322,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             } else if (!func->ret_explicit && !func->has_body && !func->body_missing) {
                 bool has_setter = false;
                 for_each (j, vec_class_item, &my items) {
-                    has_setter |= j->tag == CLASS_ITEM_METHOD && j->method.accessor == CLASS_ACCESSOR_SET && j->method.accessor_getter == i;
+                    has_setter |= j->tag == CLASS_ITEM_METHOD && j->method.accessor == CLASS_ACCESSOR_SET &&
+                        ty_class_accessor_getter(current_checker, j) == i;
                 }
                 if (!has_setter) {
                     error_ctx_error_d(errs, i->method.name_span, 7033, "Property '", i->method.name_span,
@@ -2507,7 +2449,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
         if (vec_expr_size(&i->decorators) && !decorators_rejected && decorator_metadata_checked()) {
             // (tsc's markDecoratorAliasReferenced)
             if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
-                ClassItem const* getter = i->method.accessor == CLASS_ACCESSOR_GET ? i : i->method.accessor_getter;
+                ClassItem const* getter = i->method.accessor == CLASS_ACCESSOR_GET ? i : ty_class_accessor_getter(current_checker, i);
                 FunctionImpl const* func = &i->method.func;
                 if (getter && getter->method.func.ret_explicit) check_decorator_metadata_type(&getter->method.func.ret, errs);
                 else if (i->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
@@ -2563,8 +2505,9 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                     }
                 }
                 // (tsc's checkGrammarModifiers: legacy decorators on both accessors of a pair, at the second)
+                ClassItem const* accessor_first = i->method.accessor ? ty_class_accessor_first(current_checker, i) : nullptr;
                 if (i->method.accessor && compiler_options()->experimental_decorators && vec_expr_size(&i->decorators) &&
-                    i->method.accessor_first && i->method.accessor_first != i && vec_expr_size(&i->method.accessor_first->decorators)
+                    accessor_first && accessor_first != i && vec_expr_size(&accessor_first->decorators)
                 ) {
                     error_ctx_grammar_error_d(errs, block_first_token(i->span), 1207,
                         "Decorators cannot be applied to multiple get/set accessors of the same name.");

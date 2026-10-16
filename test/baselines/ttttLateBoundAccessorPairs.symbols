@@ -1,0 +1,104 @@
+//// [test/cases/ttttLateBoundAccessorPairs.ts] ////
+
+=== ttttLateBoundAccessorPairs.ts ===
+// An accessor pair with computed names is one symbol by the key's type, not its text (tsc's lateBindMember):
+// `[a]` and `[b]` with b of `typeof a` pair (the setter's parameter has the getter's type, the property is writable).
+// A name of type string isn't late bindable: its accessors stay apart (TS7032 on the setter), and accessors after a
+// method of their name conflict with it, each its own symbol
+const a = Symbol();
+>a : Symbol(a, Decl(ttttLateBoundAccessorPairs.ts, 4, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+declare const b: typeof a;
+>b : Symbol(b, Decl(ttttLateBoundAccessorPairs.ts, 5, 13))
+>a : Symbol(a, Decl(ttttLateBoundAccessorPairs.ts, 4, 5))
+
+class C {
+>C : Symbol(C, Decl(ttttLateBoundAccessorPairs.ts, 5, 26))
+
+    get [a](): string { return ""; }
+>[a] : Symbol(C[a], Decl(ttttLateBoundAccessorPairs.ts, 6, 9), Decl(ttttLateBoundAccessorPairs.ts, 7, 36))
+>a : Symbol(a, Decl(ttttLateBoundAccessorPairs.ts, 4, 5))
+
+    set [b](v) { v.length; }
+>[b] : Symbol(C[a], Decl(ttttLateBoundAccessorPairs.ts, 6, 9), Decl(ttttLateBoundAccessorPairs.ts, 7, 36))
+>b : Symbol(b, Decl(ttttLateBoundAccessorPairs.ts, 5, 13))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 8, 12))
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 8, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+declare const c: C;
+>c : Symbol(c, Decl(ttttLateBoundAccessorPairs.ts, 10, 13))
+>C : Symbol(C, Decl(ttttLateBoundAccessorPairs.ts, 5, 26))
+
+c[a] = "x";
+>c : Symbol(c, Decl(ttttLateBoundAccessorPairs.ts, 10, 13))
+>a : Symbol(a, Decl(ttttLateBoundAccessorPairs.ts, 4, 5))
+
+const k = "x";
+>k : Symbol(k, Decl(ttttLateBoundAccessorPairs.ts, 12, 5))
+
+declare const k2: typeof k;
+>k2 : Symbol(k2, Decl(ttttLateBoundAccessorPairs.ts, 13, 13))
+>k : Symbol(k, Decl(ttttLateBoundAccessorPairs.ts, 12, 5))
+
+class D {
+>D : Symbol(D, Decl(ttttLateBoundAccessorPairs.ts, 13, 27))
+
+    get [k](): string { return ""; }
+>[k] : Symbol(D[k], Decl(ttttLateBoundAccessorPairs.ts, 14, 9), Decl(ttttLateBoundAccessorPairs.ts, 15, 36))
+>k : Symbol(k, Decl(ttttLateBoundAccessorPairs.ts, 12, 5))
+
+    set [k2](v) { v.length; }
+>[k2] : Symbol(D[k], Decl(ttttLateBoundAccessorPairs.ts, 14, 9), Decl(ttttLateBoundAccessorPairs.ts, 15, 36))
+>k2 : Symbol(k2, Decl(ttttLateBoundAccessorPairs.ts, 13, 13))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 16, 13))
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 16, 13))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+declare const d: D;
+>d : Symbol(d, Decl(ttttLateBoundAccessorPairs.ts, 18, 13))
+>D : Symbol(D, Decl(ttttLateBoundAccessorPairs.ts, 13, 27))
+
+d[k] = "y";
+>d : Symbol(d, Decl(ttttLateBoundAccessorPairs.ts, 18, 13))
+>k : Symbol(k, Decl(ttttLateBoundAccessorPairs.ts, 12, 5))
+
+declare const ks: string;
+>ks : Symbol(ks, Decl(ttttLateBoundAccessorPairs.ts, 20, 13))
+
+class E {
+>E : Symbol(E, Decl(ttttLateBoundAccessorPairs.ts, 20, 25))
+
+    get [ks](): number { return 1; }
+>[ks] : Symbol(E[ks], Decl(ttttLateBoundAccessorPairs.ts, 21, 9))
+>ks : Symbol(ks, Decl(ttttLateBoundAccessorPairs.ts, 20, 13))
+
+    set [ks](v) { }
+>[ks] : Symbol(E[ks], Decl(ttttLateBoundAccessorPairs.ts, 22, 36))
+>ks : Symbol(ks, Decl(ttttLateBoundAccessorPairs.ts, 20, 13))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 23, 13))
+}
+const uu = Symbol();
+>uu : Symbol(uu, Decl(ttttLateBoundAccessorPairs.ts, 25, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+class F {
+>F : Symbol(F, Decl(ttttLateBoundAccessorPairs.ts, 25, 20))
+
+    [uu]() {}
+>[uu] : Symbol(F[uu], Decl(ttttLateBoundAccessorPairs.ts, 26, 9))
+>uu : Symbol(uu, Decl(ttttLateBoundAccessorPairs.ts, 25, 5))
+
+    get [uu](): number { return 1; }
+>[uu] : Symbol(F[uu], Decl(ttttLateBoundAccessorPairs.ts, 27, 13))
+>uu : Symbol(uu, Decl(ttttLateBoundAccessorPairs.ts, 25, 5))
+
+    set [uu](v) { }
+>[uu] : Symbol(F[uu], Decl(ttttLateBoundAccessorPairs.ts, 28, 36))
+>uu : Symbol(uu, Decl(ttttLateBoundAccessorPairs.ts, 25, 5))
+>v : Symbol(v, Decl(ttttLateBoundAccessorPairs.ts, 29, 13))
+}
+
