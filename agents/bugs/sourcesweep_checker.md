@@ -283,17 +283,25 @@ subtype pass). Left:
 ## History dependences recycling exposes (plan 67 stage 1, 2026-10-15)
 `scripts/kdiff.py -k 1 -m 0` (a fresh checker per file against one that never recycles; `scripts/oracles.py`'s
 `recycle`) lists 4 / 3363 source sweep projects, where K=16 lists 1. In each, the never-recycling run is the one that
-matches tsc. The default budget (256 MB) doesn't recycle any of them, so the sweeps don't show them:
+matches tsc's cached (`--checkers 1`) output. The default budget (256 MB) doesn't recycle any of them, so the sweeps don't show them:
 - **inbox-zero/apps/web**: the `x?: undefined` member order of widened object literals (tsgo's per-checker
   undefinedProperties cache, `widen_object_literal()`'s KEY_UNDEFINED_PROPERTY). tsgo depends on its history here too.
   The same mechanism changes 4 vscode `.d.ts` files at the default budget (dtsdiff 74466 -> 74462:
   `terminal/test/browser/xterm/recordings/rich/windows11_pwsh7_*.d.ts`, `data?:`/`id?: undefined` swapped). Accepted:
-  only a checker's history can reproduce it.
-- **sequelize, sequelize/packages/core**: TS7022 on `models` (sequelize-typescript.ts:335) is lost with a fresh checker
-  per file. That's circularity that depends on what an earlier file resolved first. Reduce it with `TTTT_CHECK_ONLY` /
-  `TTTT_DEBUG_CYCLE=1`: does tsgo report it on that file alone?
-- **lucide**: the elaboration line `Type 'RenderedElement' is not assignable to type 'ReactNode'` is missing with a
-  fresh checker per file (a relation cached or a type made earlier changes the elaboration).
+  only a checker's history can reproduce it. (2026-10-16: it is also the one K=16 difference of `scripts/kdiff.py`,
+  while tsgo's output for inbox-zero/apps/web is identical at `--checkers 1` and 16: tsgo's history there doesn't
+  follow the checker split the way tttt's does.)
+- **sequelize, sequelize/packages/core**: TS7022 on `models` (sequelize-typescript.ts:335, `readonly models = new
+  ModelSetView<Dialect>(this, this.#models)`) appears with a fresh checker per file (and then TS2322 :1053 / TS2488
+  :1080 go, models being any). **tsgo does the same**: `tsc -p packages/core --checkers 4` (or 16, 64, 256) prints
+  exactly that, `--checkers 1` (the cached oracle) doesn't. The cycle (gdb on members.c's `prop->circular = true`):
+  checking `this` against ModelSetView's `sequelize: SequelizeTypeScript<Dialect>` parameter simplifies a conditional
+  type, whose definitely-assignable check measures some variance, which relates SequelizeTypeScript structurally and
+  reads `models` while its initializer is being typed. A checker that measured those variances in an earlier file
+  never gets there. tsgo-history-dependent: accepted, no fix wanted (matching it would mean matching which files each
+  of tsgo's checkers sees first). TTTT_DEBUG_CYCLE doesn't print class property cycles (it follows LazyTypes only).
+- lucide: matched in the 2026-10-16 `-k 1 -m 0` run (5 / 3363: inbox-zero, the two sequelize, and dokploy / folo
+  TIMEOUT on a loaded machine, a fresh checker per file being slower).
 
 ## Fan-out 2026-10-15 (agent D, checker diagnostics on real code)
 Fixed: DT's last mismatch (ember/v2: imports resolved by tsc's global-type initialization before the ambient modules
