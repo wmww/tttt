@@ -77,7 +77,9 @@ before checking is the missing piece. Ideas, none measured: per-file node counts
 `.ts` against plain code); splitting a heavy checker's leftover files once it finishes last (work stealing at file
 granularity; the output must stay K-independent, `scripts/kdiff.py`). bugs/perf_leads.md "Checker balance" keeps it.
 
-## For the human's 12-core bench (triage.md)
-Besides `scripts/bench.sh --checkers "4 8 12 16"`, one line per corpus decides which of the above matters there:
-`TTTT_RESOLVE_TIMES=1 TTTT_LOAD_POOL_STATS=1 ./release/tttt -q --keep-going --noEmit --time -p <corpus>` for vscode,
-webpack and effect at the default thread count.
+## The 12-core bench (done 2026-10-16, measurements.md "The 12-core machine")
+vscode at 24 threads: load phase 389 ms (the loader waited 6 ms, workers 59% busy: the loader thread is still the
+critical path, stage 1 stands), declare+link 130 ms = 5% of the 2.5 s wall (under the 10% bar: parallel declare/link
+stays "not now" for vscode), check 1424 ms with max/mean 1.3x across 24 checkers, ~250 ms startup + exit. webpack:
+declare+link 45 ms = 15% of 0.30 s, over the bar: look at its serial `declare` first (above). The pre-scan stays
+unjustified (6-8 ms waited). The 1.2 s gap the estimate above asked about is gone: vscode is 2.5 s at 24 threads.

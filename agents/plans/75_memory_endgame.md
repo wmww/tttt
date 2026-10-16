@@ -18,6 +18,13 @@ the program (vscode 2.19 GB, the AST 1.74 GB of it with 38% zero words; bun's wh
 - Output: a default policy (budget formula, checker-count cap) with its wall-time cost; implement it if it is small
   (it is a `program_set_checker_memory()` / `deal_files()` policy change), else a stage below.
 
+**Measured on the 12-core machine (2026-10-16, measurements.md "The 12-core machine")**: a fresh checker is 7 MB of
+arena (the libraries aren't the floor); the K-proportional cost is the 128 MB recycle budget filling, ~170 MB per
+checker on vscode. Past K12 the wall gain is 0-11%. vscode K24: B128 2.50 s / 6.5 GB, B64 2.56 / 4.75, B32 2.65 /
+3.64; K12 B64 2.88 / 3.62. Mid-size corpora don't fill B64. So the simulation above isn't needed: pick the policy
+(a total budget split across K with a 32-64 MB floor, maybe a K cap of 12-16) and check its wall cost on this
+4-vCPU box, where K = 4.
+
 ## Question 2: the compact AST, prototyped on one family
 - From `scripts/memtrack.sh --phase resolve_names` on vscode, pick the node family with the most zero words (expected:
   `Expr`, its inline union sized to the largest variant). Prototype exact-size allocation for it in the per-file arena

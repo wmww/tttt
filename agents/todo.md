@@ -28,7 +28,7 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
 4. **Plan 64 stage 6** (execution): `.d.ts` for JavaScript sources, first session (77 dtsdiff projects).
 5. **Plan 64 stage 6** continued, or its leftovers by fan-out; then plan 64 is closed into bugs/dts_emit.md.
 6. **Plan 63 stage 2** (execution): per-file parse arenas (its 2a audit may stop it; say why in the plan).
-7. **Plan 75** (planning with a prototype): the per-checker floor at K = 8-16 first (implement the policy if small),
+7. **Plan 75** (planning with a prototype): the per-checker policy first (12-core numbers are in; implement if small),
    then the compact AST prototype and its go/no-go.
 8. **Plan 76** (planning): watch / incremental / the refused CLI modes, measured against tsgo's incremental rebuild;
    a recommendation and a question for the human.
@@ -38,5 +38,5 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
 11. **Insights.**
 
 After the insights entry (for the next window): the compact AST if plan 75 says go, what the human decides on plan
-76, checker balance (bugs/perf_leads.md), parallel declare/link only if the 12-core numbers ask, plan 58 + plan 66
+76, checker balance (bugs/perf_leads.md), webpack's serial declare (the 12-core bench: declare+link 15% there, 5% on vscode), plan 58 + plan 66
 stage 5 if not done.

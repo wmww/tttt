@@ -7,7 +7,66 @@ AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GC
 is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
-vscode (exit 2): the same diagnostics on both (realworld.py), so equal work.
+vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **The 12-core machine** (the human's
+Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
+there (`nproc` 24): its section below; it is the one to read for core scaling.
+
+## The 12-core machine: checkers per K, bun, tsgo (2026-10-16, f760ecdc)
+**Framework laptop**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, 62 GB, GCC 16.2, "balanced" power profile on
+AC, load < 0.3. `scripts/bench.sh --runs 3 --checkers "4 8 12 16" --bun` (bun 1.4.3); best wall s / peak RSS MB.
+tttt's default here is 24 threads and 24 checkers (one per 64 KB caps none of these but react/nest); K = `--checkers K`
+at 24 threads; single = `--singleThreaded` / bun `--threads=1`. Exit codes as on the other box (webpack, drizzle, vue,
+effect, vscode 2 under tttt and tsgo).
+| corpus | tttt (K24) | K4 | K8 | K12 | K16 | tttt single | tsgo | tsgo single | bun | bun single |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 compiler | 0.27 / 487 | 0.25 / 363 | 0.23 / 409 | 0.23 / 433 | 0.24 / 465 | 0.49 / 217 | 0.61 / 498 | 1.13 / 406 | 0.34 / 350 | 0.76 / 212 |
+| type-fest | 0.38 / 1007 | 0.75 / 657 | 0.48 / 884 | 0.38 / 951 | 0.42 / 965 | 1.46 / 380 | 3.87 / 5697 | 5.95 / 4317 | 1.01 / 850 | 3.36 / 1009 |
+| valibot | 0.13 / 492 | 0.18 / 373 | 0.16 / 412 | 0.16 / 442 | 0.14 / 464 | 0.39 / 252 | 0.73 / 829 | 1.51 / 627 | 0.22 / 281 | 1.33 / 276 |
+| react | 0.11 / 256 | 0.09 / 284 | 0.10 / 314 | 0.08 / 341 | 0.09 / 383 | 0.16 / 147 | 0.38 / 448 | 0.54 / 283 | 0.27 / 378 | 0.36 / 176 |
+| nest | 0.08 / 241 | 0.08 / 235 | 0.08 / 254 | 0.08 / 268 | 0.08 / 269 | 0.15 / 130 | 0.13 / 259 | 0.30 / 207 | 0.10 / 232 | 0.26 / 154 |
+| webpack | 0.30 / 1006 | 0.47 / 714 | 0.38 / 808 | 0.35 / 857 | 0.37 / 925 | 1.13 / 525 | 1.16 / 1159 | 2.46 / 961 | 0.57 / 526 | 2.25 / 377 |
+| zod | 0.21 / 935 | 0.28 / 628 | 0.24 / 707 | 0.22 / 784 | 0.22 / 838 | 0.62 / 382 | 1.04 / 1360 | 2.06 / 949 | 0.37 / 515 | 1.73 / 391 |
+| xstate | 0.14 / 561 | 0.15 / 350 | 0.13 / 400 | 0.13 / 450 | 0.14 / 490 | 0.31 / 214 | 0.41 / 477 | 0.79 / 368 | 0.18 / 244 | 0.68 / 177 |
+| drizzle | 0.28 / 1161 | 0.38 / 701 | 0.32 / 871 | 0.31 / 962 | 0.32 / 1066 | 0.75 / 387 | 1.44 / 1629 | 2.02 / 921 | 0.48 / 599 | 1.46 / 382 |
+| vue | 0.23 / 646 | 0.30 / 480 | 0.25 / 522 | 0.22 / 552 | 0.23 / 574 | 0.65 / 330 | 0.88 / 745 | 1.76 / 683 | 0.31 / 346 | 1.06 / 280 |
+| effect | 0.29 / 1092 | 0.49 / 825 | 0.40 / 960 | 0.33 / 1004 | 0.33 / 1046 | 1.25 / 528 | 1.46 / 1545 | 3.11 / 1303 | 0.58 / 502 | 2.79 / 370 |
+| vscode | 2.50 / 6459 | 4.43 / 3089 | 3.11 / 3810 | 2.81 / 4511 | 2.59 / 5118 | 11.45 / 2485 | 7.95 / 7880 | 19.50 / 6710 | 2.92 / 2138 | 18.21 / 1413 |
+| excalidraw | 0.26 / 867 | 0.32 / 552 | 0.29 / 653 | 0.26 / 727 | 0.26 / 772 | 0.79 / 372 | 1.44 / 1822 | 2.15 / 898 | 0.40 / 416 | 1.90 / 357 |
+| tanstack-router | 0.19 / 646 | 0.25 / 472 | 0.23 / 527 | 0.21 / 562 | 0.21 / 578 | 0.58 / 336 | 1.16 / 988 | 2.00 / 659 | 0.47 / 477 | 1.14 / 327 |
+`-b TypeScript6/src`: tttt 0.53 / 683, tsgo -b 1.28 / 675 (single 2.41 / 526).
+- **Speed**: at the defaults tttt is 1.2-2.5x faster than bun (vscode 2.50 vs 2.92) and 1.6-10x faster than tsgo;
+  single-threaded 1.6-3.4x faster than bun (vscode 11.45 vs 18.21). Scaling K4 -> K12 is 1.2-2.0x (vscode 1.58x,
+  type-fest 2.0x, effect 1.5x); **past 12 almost nothing**: K12 -> K24 gains 0-11% on vscode / webpack / effect, 0 on
+  the rest, and type-fest's K16 is slower than K12. Mid-size corpora stop gaining at K8-12.
+- **Memory**: each checker past 4 adds ~10-30 MB on mid-size corpora and **~170 MB on vscode** (K4 3.1 GB -> K24 6.5
+  GB). At the defaults bun uses less on 13 of 14 (vscode 3.0x, effect 2.2x, drizzle 1.9x, webpack 1.9x; tttt less on
+  react only).
+- **The floor isn't the libraries**: a fresh checker on a one-line program (esnext + dom libs) holds a 7 MB arena
+  (13k types, process RSS 90 MB). The K-proportional growth is each checker filling its recycle budget (128 MB) plus
+  its malloc side (~25-30 MB per checker on vscode at B=32: (3639 - 2267 resident after names) / 24 = 57 MB per
+  checker). Plan 67's "no" to a shared frozen lib layer stands; the lever is the budget.
+- **Recycle budget per K** (`--checker-memory B`; best of 3 wall s / peak MB):
+
+| corpus | K12 B256 | K12 B128 | K12 B64 | K12 B32 | K16 B128 | K16 B64 | K16 B32 | K24 B128 | K24 B64 | K24 B32 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| vscode | 2.78 / 4518 | 2.67 / 4545 | 2.88 / 3622 | 2.97 / 3037 | 2.61 / 5160 | 2.81 / 3919 | 2.84 / 3283 | 2.50 / 6501 | 2.56 / 4750 | 2.65 / 3639 |
+| type-fest | 0.40 / 949 | 0.44 / 961 | 0.45 / 870 | 0.45 / 757 | 0.46 / 976 | 0.47 / 855 | 0.47 / 820 | 0.40 / 996 | 0.44 / 937 | 0.45 / 912 |
+| effect | 0.32 / 1001 | 0.34 / 1012 | 0.35 / 1004 | 0.33 / 735 | 0.34 / 1044 | 0.35 / 1044 | 0.33 / 876 | 0.31 / 1103 | 0.29 / 1099 | 0.31 / 1033 |
+| drizzle | 0.30 / 969 | 0.29 / 970 | 0.30 / 883 | 0.37 / 632 | 0.30 / 1059 | 0.32 / 1030 | 0.37 / 714 | 0.29 / 1136 | 0.29 / 1138 | 0.32 / 867 |
+| zod | 0.20 / 769 | 0.21 / 772 | 0.20 / 768 | 0.21 / 619 | 0.22 / 833 | 0.21 / 842 | 0.22 / 744 | 0.22 / 934 | 0.21 / 934 | 0.20 / 850 |
+| webpack | 0.34 / 864 | 0.33 / 857 | 0.33 / 854 | 0.34 / 777 | 0.37 / 923 | 0.35 / 919 | 0.31 / 879 | 0.33 / 1000 | 0.32 / 996 | 0.31 / 981 |
+  vscode K24 B64 is -1.75 GB for +2.4% wall, K24 B32 -2.86 GB for +6% (still faster than bun's 2.92 s, 1.7x its RSS);
+  mid-size corpora barely move below B=64 (they don't fill it) and gain 100-300 MB at B=32 for 0-25% wall
+  (drizzle's +25% the worst). A total budget (e.g. ~1.5 GB split across K, floored at 32-64 MB) and a K cap around
+  12-16 are the two policy knobs for plan 75; both are cheap on this machine.
+- **Plan 72's lines** (`TTTT_RESOLVE_TIMES=1 TTTT_LOAD_POOL_STATS=1 --time`, 24 threads, ms): vscode libs 63, files
+  389 (11035 paths, 543 parsed by the loader, the loader **waited 6 ms**, workers busy 6414 of 10839 thread-ms = 59%),
+  declare 76 + link 54 = **130 (5% of the 2.5 s wall)**, walk 237, typecheck 1424 (24 checkers 746-1443 ms each:
+  max/mean 1.3x, five recycled once), startup + exit ~250. webpack: libs 23, files 24 (waited 8), declare 39 + link 6
+  = **45 (15% of 0.30 s)**, walk 34, check 171. effect: libs 19, files 16, declare 9.5 + link 3.9 = 13 (4%), walk 29,
+  check 199. So: the loader thread is still the load phase's critical path (59% worker busy) but the phase is only
+  16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
+  `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
 ## Plan 72, where the serial time is (2026-10-15, todo entry 8)
 The phase split per thread count (vscode, webpack, effect), the loader's own non-parse work (vscode ~350 ms at T1,
@@ -393,7 +452,7 @@ renovate 2.7 vs 4.5 s): don't read perfsweep walls taken right after `oracles.py
 
 ## Memory breakdown (2026-10-12, plan 60 research, e043e9e2)
 Peak RSS per corpus at K1/K4 with the resident after name resolution, checker arenas, and tsgo 7.1 `--singleThreaded`
-"Memory used" (Bun-4 from the other machine, below):
+"Memory used" (Bun-4 from the 12-core machine's 2026-10-11 run, `git show f760ecdc:agents/measurements.md`):
 
 | corpus | tttt K1 RSS / bound / arena MB | tttt K4 RSS / arena sum | tsgo 1 thread "Memory used" | Bun-4 RSS (other machine) |
 |---|---|---|---|---|
@@ -416,34 +475,6 @@ which makes fresh parameters per target). No huge-page slack: RSS is the same wi
 - Instructions (callgrind, after it): tsc 4.665, type-fest 18.609 (19.687 before: -5.5%), valibot 3.486, react 1.488,
   nest 1.159, webpack 10.352, zod 4.933, xstate 2.662, drizzle 5.910, vue 6.547, effect 9.998, vscode 90.478,
   excalidraw 7.891, tanstack-router 5.285 G.
-
-## tttt vs Bun 1.4.3's `bun check` vs tsgo 7.1 (2026-10-11, bd67619c + the GCC 16 fix)
-**Other machine**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, GCC 16.2, load ~2 (an idle desktop). Best of 3 wall
-s / peak RSS MB, `/usr/bin/time`. tttt default = 4 checkers / 4 threads (its cap), tttt-12 = `--checkers 12 --threads 12`;
-bun default = 24 threads, bun-4 = `--threads=4`; tsgo = the pinned 7.1 at its defaults. tsc-compiler with
-`--composite false --incremental false --emitDeclarationOnly false` for all three. Bun 1.4.3 is a port of tsgo 7.0.2
-(it claims its full conformance suite), so its diagnostics differ from 7.1's on webpack (591 vs 589), drizzle (18 vs
-41), vue (9 vs 14), effect (4 vs 5) and vscode (0 vs 10); tttt matches tsgo 7.1's counts but on drizzle 38 / vue 11 / effect 8.
-| corpus | tttt | tttt-12 | bun | bun-4 | tsgo 7.1 |
-|---|---|---|---|---|---|
-| tsc `src/compiler` | 0.38 / 328 | **0.26** / 449 | 0.36 / 351 | 0.42 / 221 | 0.58 / 497 |
-| type-fest | 0.90 / 2393 | **0.48** / 2630 | 1.05 / 835 | 1.70 / 555 | 4.06 / 5436 |
-| valibot | 0.24 / 343 | **0.15** / 424 | 0.25 / 276 | 0.43 / 158 | 0.72 / 823 |
-| react | 0.11 / 219 | **0.08** / 326 | 0.29 / 377 | 0.30 / 301 | 0.42 / 451 |
-| nest | 0.08 / 159 | **0.07** / 194 | 0.10 / 232 | 0.11 / 181 | 0.15 / 258 |
-| webpack | 0.53 / 699 | **0.35** / 877 | 0.60 / 521 | 1.10 / 356 | 1.17 / 1172 |
-| zod | 0.33 / 583 | **0.25** / 763 | 0.40 / 507 | 0.64 / 325 | 1.05 / 1314 |
-| xstate | 0.16 / 313 | **0.13** / 435 | 0.20 / 244 | 0.26 / 173 | 0.42 / 466 |
-| drizzle | 0.59 / 918 | **0.37** / 1285 | 0.48 / 597 | 0.91 / 347 | 1.43 / 1631 |
-| vue | 0.39 / 438 | **0.21** / 553 | 0.29 / 348 | 0.55 / 224 | 0.88 / 735 |
-| effect | 0.74 / 904 | **0.37** / 1059 | 0.59 / 511 | 1.30 / 307 | 1.44 / 1544 |
-| vscode | 4.43 / 5952 | **3.08** / 7595 | 3.29 / 2133 | 6.81 / 1557 | 8.21 / 7857 |
-| excalidraw | 0.42 / 540 | **0.27** / 753 | 0.41 / 416 | 0.79 / 266 | 1.57 / 1747 |
-| tanstack-router | 0.28 / 410 | **0.21** / 525 | 0.51 / 480 | 0.73 / 338 | 1.25 / 987 |
-At equal threads (4) tttt is 1.1-2.7x faster than bun but uses more memory on 12 of 14 corpora (up to 4.3x on
-type-fest, 3.8x on vscode; less on react and nest). At their defaults bun uses less memory on 10 of 14 (type-fest 2.9x,
-vscode 2.8x). Bun's own claim: 3-6.4x faster than tsgo 7.0.2 on a 16-core Mac; here it is 1.4-3.9x
-faster than tsgo 7.1 at defaults (2.5x on vscode).
 
 ## Triage (2026-10-09..11, todo entry 10)
 Suite **13316 / 13571** (0 lost); corpora 0 but webpack 0/5, drizzle 0/3, vue 0/3 (4 -> 3: tsgo's include-pattern

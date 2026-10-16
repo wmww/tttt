@@ -22,8 +22,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   at every core and single-threaded (plan 67 "Where it stands"). **Memory is the one axis we lose**: 1.6-2.3x bun's
   at the defaults, up to 1.75x single-threaded (vscode 2.5 GB vs 1.4). Checker recycling (plan 67 stage 1) took
   vscode 4.2 -> 2.6 GB; what remains is the program (the AST: 1.74 GB of vscode's 2.19 GB, 38% zero words) and each
-  checker's 128 MB floor plus its own copy of the libraries' types, which grows with the core count. Core scaling
-  past 4 is unmeasured (this box has 4 vCPUs; the human's 12-core bench is still open in triage.md).
+  checker's 128 MB floor plus its own copy of the libraries' types, which grows with the core count. On the
+  human's 12-core machine (2026-10-16): vscode 2.50 s vs bun 2.92 vs tsgo 7.95, but 6.5 GB vs 2.1; checkers past 12
+  buy 0-11% for ~170 MB each, and a 64 MB recycle budget at K24 saves 1.75 GB for +2.4% (plan 75 question 1).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow (return mappers included) and
@@ -73,8 +74,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   resolution scale with it), and since plan 62 (2026-10-14) `--checkers` follows them: one checker per thread, at
   most one per 64 KB of checked source (a small project's second checker saves milliseconds and copies the lib
   types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
-  which tsgo shares). K 4 -> 16 costs +7..47% RSS; wall-time scaling past 4 cores
-  waits on the human's 12-core bench (triage.md).
+  which tsgo shares). On 12 cores / 24 threads (2026-10-16): K4 -> K12
+  1.2-2.0x faster, K12 -> K24 0-11%, at ~170 MB per checker on vscode: the budget or a K cap should follow (plan 75).
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -186,4 +187,4 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    (63 stage 2), the memory endgame's prototype gate (75), CLI modes (76). Plan 58 (7.1.0 stable re-pin, then plan
    66 stage 5's fan-out) once it's on npm, whenever that falls.
 19. Then: the compact AST if plan 75 says yes, what plan 76 and the human decide (watch / incremental), checker
-   balance, parallel declare/link if the 12-core numbers ask for it.
+   balance, parallel declare/link only for webpack-like serial declare (12 cores: 5% on vscode, 15% webpack).
