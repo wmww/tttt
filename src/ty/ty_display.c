@@ -1974,6 +1974,26 @@ static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
     }
 }
 
+// Whether an object literal initializes a visible variable of its file (exported, or a script's): what tsc's
+// getContainersOfSymbol names its members through
+static bool object_literal_variable_visible(Expr const* literal) {
+    SourceFile const* file = span_valid(literal->inner_span) ? span_source(literal->inner_span) : nullptr;
+    if (!file || !file->scope) return false;
+    SymbolTable const* tables[2] = { scope_locals(file->scope), file->scope->container ? file->scope->container->exports : nullptr };
+    for (u32 t = 0; t < 2; t++) {
+        for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
+            Symbol const* symbol = tables[t]->entries[i].symbol;
+            if (!(symbol->flags & SYMBOL_VARIABLE) || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) continue;
+            Binding const* binding = symbol->decls[0].node;
+            if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) continue;
+            Expr const* value = ((InitializedBinding const*)binding)->value;
+            if (value != literal) continue;
+            return symbol->exported || !file->is_module;
+        }
+    }
+    return false;
+}
+
 static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
     Expr const* leftmost = entity_leftmost(node->typeof_->expr);
     // (In JavaScript a name through `exports` or `module.exports` is never reused: tsc's trackExistingEntityName)
@@ -1984,6 +2004,25 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         if (exports) {
             display_node_fallback(me, d, node);
             return;
+        }
+    }
+    // A leftmost `this` stands for its container's symbol (tsc's trackExistingEntityName: getThisContainer, its
+    // accessibility from the `this` itself). An object literal's method or accessor is accessible only through a visible
+    // variable the literal initializes (getContainersOfSymbol's variable of an object literal: an exported one, or a
+    // script's), a function expression never: else the query prints its type (that object literal's, reaching itself:
+    // TS5088 in declaration emit; headlessui's `disposables()` returns a local `let api = { ... }`)
+    if (leftmost->tag == EXPR_IDENTIFIER && leftmost->identifier.keyword == KEYWORD_IDENTIFIER_THIS &&
+        leftmost->identifier.this_kind == THIS_ANY && d.enclosing
+    ) {
+        FunctionImpl const* container = identifier_this_function(&leftmost->identifier);
+        if (container && container->is_expression && !function_impl_is_arrow(container)) {
+            Expr const* literal = function_impl_rare(container)->this_literal;
+            bool visible = literal && !function_impl_rare(container)->this_literal_parenthesized &&
+                object_literal_variable_visible(literal);
+            if (!visible) {
+                display_node_fallback(me, d, node);
+                return;
+            }
         }
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&

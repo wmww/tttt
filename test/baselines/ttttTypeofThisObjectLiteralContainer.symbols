@@ -1,0 +1,42 @@
+//// [test/cases/ttttTypeofThisObjectLiteralContainer.ts] ////
+
+=== ttttTypeofThisObjectLiteralContainer.ts ===
+// A reused `typeof this` stands for its this container's symbol (tsc's trackExistingEntityName): an object literal's
+// method is accessible only through a visible variable the literal initializes, else the query prints its type
+// (headlessui's disposables(): a local object literal reaching itself, TS5088). The symbols baseline has no symbol for
+// such a `this` in a type query (a this type, none outside classes)
+export const q = { n: 1, m() { return (x: typeof this) => x.n; } }.m;
+>q : Symbol(q, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 12))
+>{ n: 1, m() { return (x: typeof this) => x.n; } }.m : Symbol(m, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 24))
+>n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 18))
+>m : Symbol(m, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 24))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 39))
+>x.n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 18))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 39))
+>n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 18))
+>m : Symbol(m, Decl(ttttTypeofThisObjectLiteralContainer.ts, 4, 24))
+
+export const o = {
+>o : Symbol(o, Decl(ttttTypeofThisObjectLiteralContainer.ts, 5, 12))
+
+    n: 1,
+>n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 5, 18))
+
+    m() { return (x: typeof this) => x.n; },
+>m : Symbol(m, Decl(ttttTypeofThisObjectLiteralContainer.ts, 6, 9))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 7, 18))
+>x.n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 5, 18))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 7, 18))
+>n : Symbol(n, Decl(ttttTypeofThisObjectLiteralContainer.ts, 5, 18))
+
+};
+export class C {
+>C : Symbol(C, Decl(ttttTypeofThisObjectLiteralContainer.ts, 8, 2))
+
+    m(x: typeof this) { return x; }
+>m : Symbol(C.m, Decl(ttttTypeofThisObjectLiteralContainer.ts, 9, 16))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 10, 6))
+>this : Symbol(C, Decl(ttttTypeofThisObjectLiteralContainer.ts, 8, 2))
+>x : Symbol(x, Decl(ttttTypeofThisObjectLiteralContainer.ts, 10, 6))
+}
+

@@ -50,18 +50,12 @@ size on real code, each with an example:
   {}>` (effect query-repro: tttt resolves it to false). The one-line fix in ty_keyof() makes ramdaToolsNoInfinite2
   report a spurious TS5114: the permissive instantiation of ts-toolbelt's `__ListOf` then recurses 40 iterations, and
   tttt's instantiation depth per level is higher than tsgo's. Needs tsgo's depth accounting first.
-- **TS5088 through `typeof this`** (headlessui `@headlessui-react`/`-vue` `disposables.ts`, `machine.ts`,
-  `use-disposables.ts`: dtsdiff's 2 `extra file` projects). Repro: `export function make() { let api = { group(cb:
-  (d: typeof this) => void) { return 1; } }; return api; }` with `declaration`: tsgo reports TS5088 at `make` and
-  writes no `.d.ts`, tttt reuses `typeof this`. tsgo's trackExistingEntityName (nodecopy.go) resolves a leftmost
-  `this` to the symbol of getThisContainer and, when IsSymbolAccessible says no (an object literal's method), the
-  reuse fails (silently: the wrapping tracker swallows ReportInaccessibleThisError) and the type is printed, which
-  reaches the object literal type inside itself (TS5088). tttt's display_node_typeof() never rejects a `this`
-  leftmost. Agent C 2026-10-16 tried rejecting a `this` whose IdentifierExpr.this_function is an object literal
-  method: it isn't one here, the `typeof this` in a parameter's annotation resolves `this` in the scope around the
-  method (THIS_ANY, this_function the outer `make`, not the method), unlike tsc's getThisContainer from the
-  parameter. Needs the parameter types' `this` resolved in the method's own this scope first (checker-wide: the type
-  of `this` in parameter annotations), or a separate "this container" link for type nodes.
+- **`typeof this` in an object literal, types baseline** (agent C 2026-10-16 fixed the declaration side: headlessui's
+  TS5088 matches). Printing a cyclic object literal whose methods mention `typeof this`, tsgo expands one level more
+  than tttt: its `this` there is the fresh object literal type (getContextualThisParameterType without a contextual
+  type: getWidenedType of the literal's own, fresh, type), a different type from the variable's regular one, so the
+  printer's visited check lets it through once. tttt's contextual this is the regular type. Checker-side (the type of
+  `this` in object literal methods); no suite test shows it.
 - **Content-mapped files' outputs**: tsgo names a `.vue` file's declaration output `x.d.vue.ts`
   (ChangeToDeclarationExtension with the content mapper's extensions) and emits the supplemental module
   (`component.vue.0.d.ts`, `/// <reference path>` to it); tttt writes `x.vue.d.ts` and no supplemental one

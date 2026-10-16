@@ -1063,6 +1063,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeofThisObjectLiteralContainer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUmdGlobalUnknownExportEquals': {
         errors: true,
         symbols: true,

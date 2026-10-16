@@ -1,0 +1,50 @@
+//// [test/cases/ttttTypeofThisObjectLiteralContainer.ts] ////
+
+=== ttttTypeofThisObjectLiteralContainer.ts ===
+// A reused `typeof this` stands for its this container's symbol (tsc's trackExistingEntityName): an object literal's
+// method is accessible only through a visible variable the literal initializes, else the query prints its type
+// (headlessui's disposables(): a local object literal reaching itself, TS5088). The symbols baseline has no symbol for
+// such a `this` in a type query (a this type, none outside classes)
+export const q = { n: 1, m() { return (x: typeof this) => x.n; } }.m;
+>q : () => (x: { n: number; m(): (x: any) => number; }) => number
+>{ n: 1, m() { return (x: typeof this) => x.n; } }.m : () => (x: { n: number; m(): (x: any) => number; }) => number
+>{ n: 1, m() { return (x: typeof this) => x.n; } } : { n: number; m(): (x: { n: number; m(): (x: any) => number; }) => number; }
+>n : number
+>1 : 1
+>m : () => (x: { n: number; m(): (x: any) => number; }) => number
+>(x: typeof this) => x.n : (x: { n: number; m(): (x: any) => number; }) => number
+>x : { n: number; m(): (x: any) => number; }
+>this : { n: number; m(): (x: any) => number; }
+>x.n : number
+>x : { n: number; m(): (x: any) => number; }
+>n : number
+>m : () => (x: { n: number; m(): (x: any) => number; }) => number
+
+export const o = {
+>o : { n: number; m(): (x: typeof this) => number; }
+>{    n: 1,    m() { return (x: typeof this) => x.n; },} : { n: number; m(): (x: typeof this) => number; }
+
+    n: 1,
+>n : number
+>1 : 1
+
+    m() { return (x: typeof this) => x.n; },
+>m : () => (x: typeof this) => number
+>(x: typeof this) => x.n : (x: typeof this) => number
+>x : { n: number; m(): (x: typeof this) => number; }
+>this : { n: number; m(): (x: typeof this) => number; }
+>x.n : number
+>x : { n: number; m(): (x: typeof this) => number; }
+>n : number
+
+};
+export class C {
+>C : C
+
+    m(x: typeof this) { return x; }
+>m : (x: typeof this) => this
+>x : this
+>this : this
+>x : this
+}
+

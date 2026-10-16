@@ -2213,6 +2213,9 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         ) {
             symbol = first->initializer.binding.symbol;
         }
+        // (`typeof this` isn't in an expression context: tsc takes a this *type* there, which a function that isn't a
+        // class member has none of)
+        if (!symbol && ctx->in_type_query) return;
         Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, identifier_this_function(me));
         Expr const* literal = function_impl_rare(identifier_this_function(me))->this_literal;
         // (`o.m = function () { this }` of an object literal o: that literal's)
