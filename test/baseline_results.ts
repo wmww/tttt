@@ -1043,6 +1043,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttThisParameterAliasedIntersectionCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
         errors: true,
         symbols: true,

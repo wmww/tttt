@@ -591,3 +591,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations, plan 64), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
+- **Conditional `infer` contra candidates keep a lone intersection's alias** (`inference_conditional_result`, infer.c):
+  tsc's getTypeFromInference intersects contra candidates with getIntersectionType, which flattens a lone aliased
+  intersection into an unaliased one (the call-inference site, `contra_intersection()`, does that). Done here too it
+  made `OmitThisParameter<typeof f>` with `this: Instance`, Instance an alias of an intersection holding that very
+  property, report a spurious TS2502 (test ttttThisParameterAliasedIntersectionCycle): relating the `this` types
+  (aliased vs unaliased, different identities) resolves the property types structurally, where tsc's
+  typeRelatedToEachType finds each target member identical to a source member first. Fix that relation shortcut,
+  then flatten here (discord.js ui's stories then print `IAlert & { children?: ... }` like tsgo, not
+  `PropsWithChildren<IAlert>`).

@@ -1636,6 +1636,14 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
     return intersection_cached(me, types, len, alias, alias_args, false);
 }
 
+// An intersection made by an alias as the same intersection without it (tsc's getIntersectionType of the one type
+// flattens it into its members, which are reduced already: nothing to compute again, and resolving their members here
+// could reach a declaration being resolved, a spurious TS2502)
+Ty const* ty_intersection_unaliased(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_INTERSECTION || !ty->alias) return ty;
+    return intern_composite(me, TY_INTERSECTION, ty->composite.types.data, ty->composite.types.len, nullptr, (TyList){0});
+}
+
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     return intersection_cached(me, types, len, alias, alias_args, INTERSECT_KEEP_EMPTY_OBJECT);
 }

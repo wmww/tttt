@@ -2106,9 +2106,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
 // intersection is flattened into its members, so one by an alias is the same intersection without it, `Ctx` printing
 // as `Base & { deps: string[] }`)
 static Ty const* contra_intersection(Checker* me, Ty const* const* types, u32 len) {
-    if (len == 1 && types[0]->kind == TY_INTERSECTION && types[0]->alias) {
-        return ty_intersection(me, types[0]->composite.types.data, types[0]->composite.types.len, nullptr, (TyList){0});
-    }
+    if (len == 1) return ty_intersection_unaliased(me, types[0]);
     return ty_intersection(me, types, len, nullptr, (TyList){0});
 }
 
@@ -2204,7 +2202,10 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
         return reverse ? ty_union(me, param->co, param->co_len, nullptr, (TyList){0}) :
             ty_union_subtype_reduced(me, param->co, param->co_len);
     }
-    if (param->contra_len) return contra_intersection(me, param->contra, param->contra_len);
+    // HACK: not flattened like the call inference's contra candidates (contra_intersection()), though tsc's
+    // getTypeFromInference does: the unaliased intersection made @testing-library/user-event's `Instance` (`this:
+    // Instance` through OmitThisParameter) report a spurious TS2502, tttt resolving its members where tsc doesn't
+    if (param->contra_len) return ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0});
     return nullptr;
 }
 

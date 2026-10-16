@@ -80,6 +80,31 @@ size on real code, each with an example:
   trpc's `AsyncIterable<{...}, void, any>` (tsgo writes the trailing default argument, tttt drops it: type text),
   `map: missing at AbstractTable ({)` (sequelize), the other
   single-file map buckets.
+  a union origin, checker-side); graphql-js `class GraphQLEnumType/* <T> */  implements` (tsgo copies a plain comment
+  after a class name, two spaces); arktype bounds `OneCharComparator` and vscode instantiationService `const enum
+  TraceType` locals tsgo keeps (painting, not reproduced small); dtsdiff `map: extra at infer (ctx)` (trpc ×9: an
+  `infer T extends object` tsgo prints anew, renamed `T_1`, tttt reuses and maps), `map: missing at AbstractTable ({)`
+  (sequelize), the other single-file map buckets.
+- **"type text" leftovers** (agent B 2026-10-16 fixed trpc's alias/spread reuse and AsyncIterable args, feathers'
+  mapped literals and contravariant aliased intersections, fumadocs' implied infer constraints, ts-mixer's abstract
+  constructor parens, tanstack-table's contextual intersection, slate, vitest, nextra, pi keybindings). Left:
+  - qwik `FunctionComponent<{...}>` (`{ renderFn(...) }['renderFn']` alias): tsgo keeps the alias on
+    `registerSingleton<FunctionComponent<X>>(...)`'s result; a one-file probe doesn't (tsgo prints the signature there
+    too), so it's an order effect: an earlier `FunctionComponent<X>` with the same arguments made the instantiation,
+    alias included, that later ones find in tsgo's cache. Needs tsgo's instantiation cache keyed without the alias.
+  - ui `registry/config.d.ts` `z.ZodEnum<[Base, ...unknown[]]>` (tsgo) vs `[Base, ...Base[]]`: zod 3's
+    `Writeable<[BaseName, ...BaseName[]]>`, a homomorphic mapped type over a tuple with a rest element; tsgo's
+    `unknown[]` looks like its own quirk, uninvestigated.
+  - feathers generators `language: "js" | "ts"` (tsgo prints, no comments, an intersection member repeated) after a
+    long `.then()` chain of prompts: checker-side identity, uninvestigated.
+  - react-navigation `useNavigationBuilder`/`useNavigationHelpers` (`Readonly<{...}>` expanded vs `NavigationAction`),
+    react-scan `Component<P>` vs `Component<Attributes, {}>` (an inferred `this` type), react-redux, mockoon
+    `Observable<any>`, redux-toolkit `LazyExoticComponent<typeof import(...)>` (tsgo: the module's default's
+    signature), react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures, effect's 5 and
+    excalidraw's 3 (see "Checker types, uninvestigated"): one file each, not looked at.
+  - discord.js ui stories' `PropsWithChildren<IAlert>` (tsgo: `IAlert & { children?: ... }`): see hacks.md's
+    "Conditional `infer` contra candidates keep a lone intersection's alias".
+  - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
   painted destructurings' types; agent C 2026-10-16 fixed unresolved-import names reused across files, export lists
@@ -98,7 +123,7 @@ size on real code, each with an example:
   of an `as const` pseudo type mapped where tsgo doesn't map it (dtsdiff `map: extra at string (message)`,
   `'RATE_LIMIT`); feathers' `language: 'js' | 'ts'` and comments of a spread's properties where tsgo prints the type
   (`"js" | "ts"`, no comments, an intersection member repeated: a spread of an intersection with prompt answers,
-  checker-side).
+  checker-side, see "type text" leftovers).
 - **Unknown-symbol naming (tsgo quirk, matched)**: tsgo names an unresolved type through any import alias that also
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps; a reused
   annotation from another file, `Plugin<Plugin>`, ttttDeclarationUnknownImportRenamed) and paints that import; a

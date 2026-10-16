@@ -1,0 +1,31 @@
+//// [test/cases/ttttThisParameterAliasedIntersectionCycle.ts] ////
+
+=== ttttThisParameterAliasedIntersectionCycle.ts ===
+// `OmitThisParameter<typeof f>` where f's `this` is an alias of an intersection that has a property of that very type:
+// no TS2502 (a regression of flattening the lone aliased contravariant candidate at ThisParameterType's `infer U`,
+// @testing-library/user-event's setup.d.ts `Instance`)
+declare function dispatchEvent(this: Instance, target: Element): boolean;
+>dispatchEvent : (this: Instance, target: Element) => boolean
+>this : Instance
+>target : Element
+
+declare const api: { click(this: Instance): void };
+>api : { click(this: Instance): void; }
+>click : (this: Instance) => void
+>this : Instance
+
+type Instance = typeof api & {
+>Instance : Instance
+>api : { click(this: Instance): void; }
+
+  config: number;
+>config : number
+
+  dispatchEvent: OmitThisParameter<typeof dispatchEvent>;
+>dispatchEvent : (target: Element) => boolean
+>dispatchEvent : (this: Instance, target: Element) => boolean
+
+};
+export declare const i: Instance;
+>i : Instance
+
