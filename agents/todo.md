@@ -31,7 +31,11 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
 3. Done 2026-10-16: real-code fan-out (3 agents, ~55 picks). Source sweep 3352 -> 3356 / 3363, dtsdiff 1077 -> 1116 /
    1233 projects (95611 -> 95824 files), suite 13745 / 13783, every other oracle unchanged; leftovers in
    bugs/sourcesweep_checker.md and bugs/dts_emit.md. Instructions: measurements.md "Real-code fan-out 2".
-4. **Plan 64 stage 6** (execution): `.d.ts` for JavaScript sources, first session (77 dtsdiff projects).
+4. Done 2026-10-16: plan 64 stage 6, first session. JavaScript declaration emit (ES module JS, JSDoc declarations,
+   `this.x` members, class expandos, `@overload`s, CommonJS exports, `require` imports): suite JS dts 0 -> 320 / 346
+   (apart), headline 13746 / 13787 (+1 own test), dtsdiff 1116 -> 1166 / 1233 projects (96584 / 96726 files), clidiff
+   `--emit` 309 -> 369 / 396, every other oracle unchanged. Left: plan 64's status (JS declaration diagnostics, the
+   last 26 JS tests, folding them into the headline).
 5. **Plan 64 stage 6** continued, or its leftovers by fan-out; then plan 64 is closed into bugs/dts_emit.md.
 6. **Plan 63 stage 2** (execution): per-file parse arenas (its 2a audit may stop it; say why in the plan).
 7. **Plan 75** (planning with a prototype): the per-checker policy first (12-core numbers are in; implement if small),

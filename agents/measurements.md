@@ -68,6 +68,15 @@ effect, vscode 2 under tttt and tsgo).
   16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
   `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
+## Plan 64 stage 6, JavaScript declaration emit (2026-10-16, todo entry 4)
+Suite **13746 / 13787** (+1 own test, 0 lost; TS dts 1478 / 1502 unchanged, **JS dts 0 -> 320 / 346** apart),
+**dtsdiff 1116 -> 1166 / 1233 projects, 95824 -> 96584 / 96726 files** (0 written that tsgo doesn't), clidiff `--emit`
+309 -> 369 / 396, corpora all 0/0 but vue 0/2, DT 8595 / 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep
+3356 / 3363, perfsweep median 0.22 (worst types ratio 1.62, date-fns docs), kdiff 1 / 3363, recycle 3 / 3363.
+Instructions (callgrind, `--noEmit`; JS emit only runs when emitting) flat against entry 3's end: tsc 4.648, type-fest
+23.523, valibot 3.596, react 1.494, nest 1.146, webpack 10.022, zod 5.434, xstate 2.754, drizzle 6.830, vue 6.628,
+effect 10.356, vscode 95.798, excalidraw 7.931, tanstack-router 5.422 G.
+
 ## Real-code fan-out 2 (2026-10-16, todo entry 3)
 Three agents (A source sweep diagnostics, B dtsdiff "type text", C dtsdiff's emitter buckets: import, member order,
 comments, maps), ~55 picks, 0 lost at every merge, 0 conflicts, 0 duplicates. `scripts/oracles.py`: suite **13745 /

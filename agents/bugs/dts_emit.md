@@ -1,12 +1,17 @@
 # Declaration emit: what still differs from tsgo (plan 64)
 
-State 2026-10-16 (after todo entry 3's fan-out): suite dts component in the headline; `scripts/dtsdiff.py` **1116 / 1233
-projects, 95824 / 96726 files** byte-identical (77 of the remaining projects / ~800 files are JS sources, stage 6).
+State 2026-10-16 (after todo entry 4, JavaScript declaration emit): suite dts component in the headline (JS tests apart:
+320 / 346, plan 64's status lists what's left); `scripts/dtsdiff.py` **1166 / 1233 projects, 96584 / 96726 files**
+byte-identical.
 `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 
-- **JavaScript sources** ("missing file", ~690 files): JS declaration emit is plan 64 stage 6 (not started). crawlee,
-  mermaid, astro/benchmark, query/*: `.js`/`.mjs` sources with allowJs.
+- **JavaScript sources** (plan 64 stage 6, first session done): left on real code are query's
+  `root.tsdown.config.d.ts.map` (17 projects, a JSDoc type literal member's mapped end: trivia trimmed before the next
+  tag) and create-t3-app's `prettier.config.d.mts.map` (a type on a JSDoc continuation line starts at its `*` in tsgo).
+- **Missing TypeScript files** (6 projects: mermaid's `rendering-util/fastdom.d.ts`, sequelize's `model-typescript.d.ts`
+  and `sequelize-typescript.d.ts`, zigbee2mqtt/test's mocks): tttt writes nothing, uninvestigated (a spurious
+  declaration diagnostic is the likely cause).
 - **Import specifier choice** (agent A 2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
   in the enclosing location's mode, no container cap, no package copies as containers, existing imports only through
   their realpath, program-wide dependency links by package directory, exports conditions by the target's format;

@@ -1678,8 +1678,9 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return node_type(me, d, node)->flags & TYF_ERROR;
     Symbol const* first = identifier_type_namespace_count(identifier) ?
         (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
+    // (A CommonJS export's alias has no import item)
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
-        ((PortItem const*)first->decls[0].node)->jsdoc
+        first->decls[0].node && ((PortItem const*)first->decls[0].node)->jsdoc
     ) {
         return false;
     }
@@ -2476,6 +2477,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
                     display_node_computed_name(me, d, i->key.expr);
+                } else if (interface->jsdoc_literal && !ty_is_identifier_name(span_sv(i->key.span))) {
+                    // (A JSDoc `@property {T} a-b` is a string literal name: tsgo's reparser)
+                    map_span(d, i->key.span, false);
+                    display_quoted_string(d, span_sv(i->key.span), false, true);
+                    map_span(d, i->key.span, true);
                 } else {
                     out_mapped(d, i->key.span);
                 }

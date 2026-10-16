@@ -4,6 +4,26 @@ Scoped 2026-10-14 (todo entry 9). **Recommendation: yes, TypeScript sources firs
 about one session each (stage 2 may take two); JavaScript declaration emit only if the data after stage 4 asks for
 it.**
 
+## Status (2026-10-16, todo entry 4 of the eighteenth window): stage 6 first session done
+- **JavaScript declaration emit** (documentation.md "JavaScript declaration emit"): ES module JS through the TS walk,
+  JSDoc typedefs/callbacks/dotted namespaces/`@import`s before their statement, `this.x` class members, class
+  expandos, `@overload`s, CommonJS `module.exports =` / `exports.x =` / `Object.defineProperty(exports, ...)` (tsgo's
+  transformExportAssignment / transformCommonJSExportWorker shapes), `require` as imports; `// @ts-nocheck` JS files
+  are emitted too; the CLI's "not written" stderr note is gone. **Suite JS dts 0 -> 320 / 346** (counted apart:
+  `baseline_tests --dts-js`, `scripts/dtsstats.py --js`), headline +1 (own test ttttJsDeclarationEmitCommonJs), TS dts
+  unchanged (1478 / 1502). **dtsdiff 1116 -> 1166 / 1233 projects, 95824 -> 96584 / 96726 files**, 0 files tttt writes
+  that tsgo doesn't; the JS-only "missing file" bucket is gone. `clidiff.py --emit` 309 -> 369 / 396 (it also skips a
+  tsBuildInfoFile not named `*.tsbuildinfo` now: better-auth's 19 "missing files").
+- **Left for the next session** (todo entry 5): (1) JS declaration diagnostics: the walk's TS4xxx in JS go to a
+  scratch context (hacks.md "JavaScript declaration diagnostics"); reporting them costs one suite test until a dotted
+  `@typedef`'s namespace merges with its variable like tsgo's (TS4078 in jsDeclarationsImportAliasExposedWithinNamespace).
+  (2) The suite's 26 JS dts failures (`scripts/dtsstats.py --js`): `@property` descriptions as comments
+  (preservePartialJsDoc), `@param` names that aren't identifiers (`props-like` -> `props_like`), `this.x` in static
+  blocks, JSDoc `@type` on a function (FullSignature: a `const` of the tag's type), `export =` of an arrow, a few
+  checker types. (3) Fold the JS tests into the headline `dts` component once they're >= 95% (and the suite doesn't
+  lose tests by it). (4) Maps: a JSDoc type literal member's end (query's root.tsdown.config, 17 projects), a type on a
+  JSDoc continuation line (create-t3-app).
+
 ## Status (2026-10-15, todo entry 5 of the seventeenth window): stages 1-5 done, stage 6 chosen (next window)
 - **Stage 5 done** (`ty/decl_map.c`, documentation.md "Declaration maps"): `.d.ts.map` files, the trailer,
   sourceRoot/mapRoot, the CLI writes them; marks in the writer's text, `TypeNode.pos` for reused type nodes. dtsdiff

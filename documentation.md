@@ -19,8 +19,7 @@ and global diagnostics (no file, or in the config) hide the semantic ones (every
 otherwise (`Options.implicit_no_emit`, not with `-b` or `--noEmit` on the command line). Emitting, `check_files()` writes
 each file's `SourceFile.declaration_output` to its `declaration_output_path` (`write_declarations()`): nothing after any
 diagnostic with noEmitOnError, nothing over a path TS5055/TS5056 blocked (`program_emit_blocked()`), TS5033 for a failed
-write, `--listEmittedFiles`; a JavaScript source's declarations aren't written (a note on stderr: plan 64 stage 6). `-b`
-does the same per project. JavaScript is never emitted, and no `.tsbuildinfo` is written (a later `tsc -b` rebuilds
+write, `--listEmittedFiles`; JavaScript sources' declarations too (plan 64 stage 6). `-b` does the same per project. JavaScript is never emitted, and no `.tsbuildinfo` is written (a later `tsc -b` rebuilds
 everything). `--no-write` emits but writes nothing: **every oracle script passes `--noEmit` with `-p` and `--no-write`
 with `-b`** (the two `-b` corpora are `emitDeclarationOnly`); a new tool must too, or it writes into shared checkouts.
 `--version` prints `TTTT_TYPESCRIPT_VERSION` (main.c), what the pinned tsgo prints: bump it with the oracle.
@@ -90,7 +89,7 @@ The `Program` struct owns the source code buffers and ASTs of all loaded files, 
 Each `Program` owns one (`program_options()`, change it before loading files). Code that parses, resolves names or checks reads the current program's through the thread-local `compiler_options()`, which `program.c` sets around each phase (and its load pool and checker threads for themselves). Most options are parsed but not acted on yet. The resolution options (`baseUrl`, `paths` with the directory they are relative to, `rootDirs`, `typeRoots`, `types`, `moduleSuffixes`, `customConditions`, `config_dir`) are strings and `StrList`s as written; `module_resolution.c` makes them absolute.
 
 ### Test configurations
-A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone. The **dts** component (plan 64) is the declaration files of a test's `.js` baseline (the sections after the input files and the JavaScript outputs, before a `DtsFileErrors` section), compared per file by output name with tttt's `SourceFile.declaration_output`, in program order (tsgo's emit order), by output name (the base name of `SourceFile.declaration_output_path`, the path without the test path prefixes with `@fullEmitPaths`); tests with JavaScript inputs are counted apart (JavaScript declaration emit isn't done). A test with the component passes only if it passes too (`dts: true/false` in `baseline_results.ts` only for tests that have it). tttt's own tests keep their `.js` baseline (the dts component) when they set `@declaration` or `@composite`.
+A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone. The **dts** component (plan 64) is the declaration files of a test's `.js` baseline (the sections after the input files and the JavaScript outputs, before a `DtsFileErrors` section), compared per file by output name with tttt's `SourceFile.declaration_output`, in program order (tsgo's emit order), by output name (the base name of `SourceFile.declaration_output_path`, the path without the test path prefixes with `@fullEmitPaths`); tests with JavaScript inputs are counted apart (`--dts-js` shows their diffs). A test with the component passes only if it passes too (`dts: true/false` in `baseline_results.ts` only for tests that have it). tttt's own tests keep their `.js` baseline (the dts component) when they set `@declaration` or `@composite`.
 
 ### Symbols, tables, scopes (the binder, `scope.h`/`scope.c`)
 The model is tsc's, because the symbols baseline, the merging rules and the diagnostics encode it:
@@ -411,6 +410,25 @@ this file's (`SourceFile.declaration_output_path`, which `program_typecheck()` s
 `SourceDirectiveStatement.referenced`). The suite compares it as the `dts` component (`baseline_tests --dts`, the `.js` baselines'
 declaration sections, `scripts/dtsstats.py`), real projects with `scripts/dtsdiff.py` (the CLI's writes, in a sandbox), the
 CLI's stdout, exit code and written tree with `scripts/clidiff.py --emit`.
+
+**JavaScript declaration emit** (plan 64 stage 6) is the same walk over what tsgo's reparser makes of a JavaScript file.
+JSDoc declarations (`@typedef`/`@callback` type aliases, dotted ones' namespaces, `@import`s as `import type`) are
+synthesized statements that the parser appends after the statement whose comments hold them; `emit_statements()`
+writes them before it, like tsgo's reparsed nodes, without comments, exported in a module (IsImplicitlyExportedJSDocDeclaration). A class
+gets a property for each `this.x = v` (or `this["x"]`) its members' bodies assign and it doesn't declare
+(`js_this_properties()`, tsgo's collectThisPropertyAssignments: the member symbols' first assignment in source order,
+with its statement's comments, skipped where a base class member already says it), and its expandos (`C.x = v`) as a
+namespace after it. `@overload`s are a function's or method's declarations (`js_overload_count()`), the implementation
+dropped. A CommonJS file's exports come first (tsgo's appendCjsExports), collected by `collect_commonjs()` from the
+whole file in source order: the last `module.exports = v` through `emit_export_assignment_of()` (the `export default`
+writer: `export = x`, a function or class declaration of the expression's name or `_exports`, else `declare const
+_exports: T`), then each `exports.x = v` once per name (`emit_commonjs_member()`: `export { a as x }` for a top-level
+alias, a class declaration (in a `_ns` namespace when its name differs from the export's or its members name it), `export
+declare var x: T`, or `_exported`/`_default` variables), each in a namespace of the `export=`'s name where it has one.
+`const x = require("m")` is `import x = require("m")`. The first walk paints what all of these name
+(`check_commonjs_exports()`); its diagnostics in JavaScript go to a scratch context except those
+`check_js_commonjs_exports()` reports (agents/hacks.md). The suite counts JavaScript tests' `dts` component apart
+(`baseline_tests --dts-js`, `scripts/dtsstats.py --js`).
 
 **Declaration maps** (`declarationMap`, plan 64 stage 5, `ty/decl_map.c`): tsc's printer maps the start (past trivia) and
 the end of every node it prints that has a source position, and of every comment it copies; what the transformer or

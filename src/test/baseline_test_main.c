@@ -44,7 +44,8 @@ static void show_help(FILE* target) {
         "  --err                     show errors diffs for failing tests\n\n"
         "  --sym                     show symbols diffs for failing tests\n\n"
         "  --typ                     show types diffs for failing tests\n"
-        "  --dts                     show declaration emit diffs (the dts component, plan 64)\n\n"
+        "  --dts                     show declaration emit diffs (the dts component, plan 64)\n"
+        "  --dts-js                  show those of the tests with JavaScript inputs instead (counted apart)\n\n"
     ));
 }
 
@@ -89,6 +90,9 @@ static_failable parse_args(int argc, const char** argv) {
             baseline_show_dts = true;
         } else if (streq(argv[i], "--dts")) {
             baseline_show_dts = true;
+        } else if (streq(argv[i], "--dts-js")) {
+            baseline_show_dts = true;
+            baseline_dts_js = true;
         } else if (streq(argv[i], "--err")) {
             show_errs = true;
         } else if (streq(argv[i], "--sym")) {

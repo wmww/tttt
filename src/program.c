@@ -3752,7 +3752,8 @@ static void check_share(Program* me, u32 c, u32 count) {
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || source->is_js) continue;
+        // (A JavaScript file's only when it is emitted: its declaration diagnostics aren't reported, plan 64 stage 6)
+        if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || (source->is_js && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);

@@ -4768,8 +4768,9 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         // (A bracketed property is `foo?: T`: tsgo's reparser gives the property signature a question token)
         bool optional = tag->bracketed || type.jsdoc_optional;
         Span name_span = span_make_in(tag->name, name.buf, name.buf + name.size);
+        // (Spanned like tsgo's tag node: to the next tag, its description included)
         list_push(vec_interface_member, &members, interface_member_make(
-            jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
+            jsdoc_tag_node_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
         ));
     }
     TypeNode ret = type_interface((Interface){ .members = members, .parsed = true, .jsdoc_literal = true, .span = span });

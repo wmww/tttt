@@ -61,6 +61,7 @@ static bool compare_outputs(
 }
 
 bool baseline_show_dts = false;
+bool baseline_dts_js = false;
 
 // A `//// [name]\r\n` section of a `.js` baseline: its name and its whole text (header included)
 typedef struct JsSection {
@@ -140,7 +141,7 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
         my has_dts = !js_inputs;
         my dts_js = js_inputs;
     }
-    if (!my has_dts) {
+    if (!my has_dts && !my dts_js) {
         free(sections);
         cstr_drop(&expected);
         return;
@@ -210,7 +211,7 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
     c_drop(cstr, &map_path, &maps);
     csview ours_sv = cstr_sv(&ours), expected_sv = cstr_sv(&expected_text);
     my dts_passed = csview_equals_sv(ours_sv, expected_sv);
-    if (!my dts_passed && baseline_show_dts) {
+    if (!my dts_passed && baseline_show_dts && my dts_js == baseline_dts_js) {
         println(my name, ": dts did not match:");
         cstr result_display = cstr_d("tttt dts:\n", ours_sv, "\n");
         cstr expected_display = cstr_d(js_path, ":\n", expected_sv, "\n");

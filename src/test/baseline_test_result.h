@@ -26,10 +26,11 @@ typedef struct BaselineTestResult {
     bool dts_js;
     bool has_dts_prev; // The saved results have a dts entry
     bool dts_prev;
-    bool dts_passed;
+    bool dts_passed; // (For a dts_js test: its JavaScript declaration outputs match, counted apart)
 } BaselineTestResult;
 
 extern bool baseline_show_dts; // baseline_tests --dts: show the dts component's diffs
+extern bool baseline_dts_js; // baseline_tests --dts-js: show the diffs of the tests with JavaScript inputs instead
 
 // Takes ownership of both
 BaselineTestResult make_baseline_test_result(cstr source_path, cstr config);

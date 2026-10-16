@@ -783,6 +783,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsDeclarationEmitCommonJs': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsDefaultTypeArgumentAny': {
         errors: true,
         symbols: true,

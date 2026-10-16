@@ -15,11 +15,12 @@ ap.add_argument('-f', default=None)
 ap.add_argument('-k', default=None)
 ap.add_argument('--names', action='store_true')
 ap.add_argument('--last', action='store_true')
+ap.add_argument('--js', action='store_true')
 args = ap.parse_args()
-OUT = '/tmp/dtsstats.txt'
+OUT = '/tmp/dtsstats-js.txt' if args.js else '/tmp/dtsstats.txt'
 if not args.last:
     subprocess.run(['ninja', '-C', 'release'], check=True, stdout=subprocess.DEVNULL)
-    cmd = ['./release/baseline_tests', '--dts'] + (['-f', args.f] if args.f else [])
+    cmd = ['./release/baseline_tests', '--dts-js' if args.js else '--dts'] + (['-f', args.f] if args.f else [])
     text = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8', 'replace')
     open(OUT, 'w').write(re.sub(r'\x1b\[[0-9;]*m', '', text))
 text = open(OUT, errors='replace').read()
@@ -52,7 +53,7 @@ if args.k is not None:
         for name, first in items:
             print(name if args.names else f'{name}: {first}')
     sys.exit(0)
-summary = re.search(r'dts \(declaration emit.*?\): (\d+) / (\d+)', text)
+summary = re.search(r'JavaScript inputs apart: (\d+) / (\d+)' if args.js else r'dts \(declaration emit.*?\): (\d+) / (\d+)', text)
 if summary:
     print(f'dts {summary.group(1)} / {summary.group(2)}, {total} failing ({len(buckets)} buckets; `-` tttt wrote, `+` tsgo did)')
 for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))[:60]:

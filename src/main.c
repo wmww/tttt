@@ -496,14 +496,11 @@ static void dump_declarations(char const* dir, Program const* program) {
 
 // tsc --emitDeclarationOnly (plan 64): writes each file's declarations (SourceFile.declaration_output) where tsc would
 // (SourceFile.declaration_output_path), but not over a path TS5055/TS5056 blocked. A failed write is tsc's TS5033 in
-// errs. JavaScript sources' declarations aren't written: said on stderr (plan 64 stage 6). Returns whether anything
-// failed
+// errs. Returns whether anything failed
 static bool write_declarations(Options const* opts, Output* out, Program* program, ErrorCtx* errs) {
     bool failed = false;
-    u32 js = 0;
     for (u32 i = 0; i < program_source_count(program); i++) {
         SourceFile const* source = program_source_at(program, i);
-        if (source->is_js && !source->is_json && program_source_may_be_emitted(program, source)) js++;
         csview path = cstr_sv(&source->declaration_output_path);
         if (!source->declaration_output || !path.size || program_emit_blocked(program, path) || opts->no_write) continue;
         FailableResult made = fs_mkdir(fs, dirname_of(path));
@@ -533,10 +530,6 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
             continue;
         }
         if (opts->list_emitted_files) cstr_append_d(&out->emitted, DEFAULT_DISPLAY, "TSFILE: ", path, "\n");
-    }
-    if (js) {
-        output_flush(out);
-        eprintln("tttt: declarations of JavaScript files aren't emitted yet: ", (i64)js, " not written");
     }
     return failed;
 }

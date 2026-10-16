@@ -66,7 +66,8 @@ def emitted(cmd, cwd, checkout, timeout):
         for d, _, names in os.walk(up):
             for f in names:
                 path = os.path.join(d, f)
-                if not f.endswith('.tsbuildinfo') and os.path.isfile(path) and not os.path.islink(path):
+                # (A config's tsBuildInfoFile may be named anything ending so: better-auth's `.cache/ts/tsbuildinfo`)
+                if not f.endswith('tsbuildinfo') and os.path.isfile(path) and not os.path.islink(path):
                     files[os.path.relpath(path, up)] = open(path, 'rb').read()
         return out, code, files
     finally:

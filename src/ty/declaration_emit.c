@@ -17,6 +17,7 @@
 #include "expr.h"
 #include "ty/pseudo.h"
 #include "import_attributes.h"
+#include "ast_walk.h"
 
 #include <math.h>
 
@@ -219,7 +220,28 @@ typedef struct Walk {
     isize_t statement_start; // Where the statement being written starts in `out`, its leading comments first
     bool statement_synthesized; // The statement is written as declarations made anew, without its comments
     bool map; // declarationMap: the writer marks where source nodes start and end (decl_map.h)
+    // A CommonJS JavaScript file's exports (collect_commonjs()): the last `module.exports = v` (the assignment) and
+    // whether it is a statement of the file, the `exports.x = v` and `Object.defineProperty(exports, ...)` of each
+    // name, first first. `cjs_names`: the names the writer generated for them
+    struct Expr const* cjs_export_equals;
+    bool cjs_export_equals_top_level;
+    struct CjsMember* cjs_members;
+    u32 cjs_member_count;
+    cstr cjs_names;
+    // Writing a class expression an export assigns: whether its own symbol was printed (tsgo's watchedClassSymbol)
+    Symbol const* cjs_watched_class;
+    bool cjs_class_tracked;
 } Walk;
+
+// A CommonJS export of a JavaScript file (tsgo's transformCommonJSExport input): `exports.x = v`, `module.exports.x =
+// v`, `Object.defineProperty(exports, "x", descriptor)`
+typedef struct CjsMember {
+    Expr const* expr; // The assignment or the call
+    Expr const* value; // What is assigned: the descriptor's `value` (null without one)
+    csview name;
+    bool identifier; // The name is an identifier (else written as a string literal)
+    bool top_level; // The expression of a statement of the file
+} CjsMember;
 
 typedef struct SpecifierMemo {
     SourceFile const* target;
@@ -780,6 +802,7 @@ static void track_computed_name(DeclTracker* tracker, csview name, SourceFile co
 static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning) {
     Walk* me = tracker->ctx;
     if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
+    if (my cjs_watched_class && symbol == my cjs_watched_class) my cjs_class_tracked = true;
     SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
     if (access.kind == SYMBOL_ACCESSIBLE) {
         paint(me, access.head);
@@ -1693,9 +1716,16 @@ typedef struct Container {
     bool module_top_level; // `export { x }` can name the declarations
 } Container;
 
+// A JavaScript module's `@typedef`/`@callback` is exported (tsgo's IsImplicitlyExportedJSDocDeclaration)
+static bool implicitly_exported_jsdoc(Statement const* statement, Container container) {
+    return container.module_top_level && ((statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc) ||
+        (statement->tag == STATEMENT_DECL_NAMESPACE && statement->decl.namespace->jsdoc));
+}
+
 static bool statement_visible_at_first(Walk* me, Statement const* statement, Container container, Symbol const* symbol) {
     if (container.global || container.ambient) return true;
     if (statement_declares_name(statement->tag) && statement->decl.props.exported != DECL_EXPORTED_NO) return true;
+    if (implicitly_exported_jsdoc(statement, container)) return true;
     return container.module_top_level && is_exported_local(me, symbol);
 }
 
@@ -2252,11 +2282,100 @@ static void check_js_this_properties(Walk* me, ClassDecl const* cls) {
     }
 }
 
+// A JavaScript class's `this.x = v` members (tsgo's collectThisPropertyAssignments): a property for each name (and
+// side) the class doesn't declare, in the order of their first assignment, with the type of the member (an
+// assignment's JSDoc `@type` as written). Not one whose base class member already says it: a method or accessor, or
+// a property of the identical type and modifiers (IsThisPropertyAssignmentDeclarationRedundant)
+typedef struct ThisProperty {
+    Symbol const* member;
+    SymbolDecl const* decl; // Its first `this.x =` in source order
+    bool is_static;
+} ThisProperty;
+
+static u32 js_this_properties(Walk* me, ClassDecl const* cls, ThisProperty** out) {
+    *out = nullptr;
+    Symbol const* symbol = cls->symbol;
+    if (!symbol) return 0;
+    u32 count = 0;
+    for (u32 side = 0; side < 2; side++) {
+        SymbolTable const* table = side ? symbol->exports : symbol_rare(symbol)->members;
+        for (u32 i = 0; table && i < table->count; i++) {
+            Symbol const* member = table->entries[i].symbol;
+            SymbolDecl const* first = nullptr;
+            for (u32 j = 0; j < member->decl_count; j++) {
+                SymbolDecl const* decl = &member->decls[j];
+                if (decl->kind != SYMBOL_DECL_ASSIGNMENT ||
+                    (decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD)
+                ) {
+                    continue;
+                }
+                if (!first || decl->full.buf < first->full.buf) first = decl;
+            }
+            if (!first) continue;
+            csview name = symbol_entry_name(&table->entries[i]);
+            if (csview_equals(name, "constructor") || class_decl_find_member(cls, name, side)) continue;
+            *out = realloc(*out, (count + 1) * sizeof(ThisProperty));
+            (*out)[count++] = (ThisProperty){ member, first, side };
+        }
+    }
+    for (u32 i = 1; i < count; i++) {
+        for (u32 k = i; k > 0 && (*out)[k - 1].decl->full.buf > (*out)[k].decl->full.buf; k--) {
+            ThisProperty t = (*out)[k];
+            (*out)[k] = (*out)[k - 1];
+            (*out)[k - 1] = t;
+        }
+    }
+    // (What a base already has)
+    Expr const* base = &cls->extends;
+    bool extends_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
+    if (base->tag != EXPR_IMPLICIT_ANY && !extends_null) {
+        Ty const* instance = ty_class_base_instance(my checker, cls);
+        u32 kept = 0;
+        for (u32 i = 0; i < count; i++) {
+            ThisProperty const* p = &(*out)[i];
+            Ty const* base_side = instance;
+            if (p->is_static) {
+                Ty const* base_type = lazy_type_get((LazyType*)&(base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base)->lazy_type);
+                base_side = base_type;
+            }
+            Prop const* base_prop = base_side ? ty_get_prop(my checker, base_side, checker_atom(my checker, p->member->name)) : nullptr;
+            bool redundant = false;
+            if (base_prop) {
+                Ty const* own_side = p->is_static ? ty_type_of_symbol(my checker, symbol) : ty_class_instance_type(my checker, symbol);
+                Prop const* own = own_side ? ty_get_prop(my checker, own_side, checker_atom(my checker, p->member->name)) : nullptr;
+                redundant = (base_prop->flags & (PROP_METHOD | PROP_ACCESSOR | PROP_GETTER | PROP_SETTER)) ||
+                    (own && ty_props_identical(my checker, own, base_prop));
+            }
+            if (!redundant) (*out)[kept++] = *p;
+        }
+        count = kept;
+    }
+    return count;
+}
+
+// The first walk of them: what their types name is painted
+static void check_js_this_property_types(Walk* me, ClassDecl const* cls) {
+    ThisProperty* props;
+    u32 count = js_this_properties(me, cls, &props);
+    for (u32 i = 0; i < count; i++) {
+        TypeNode const* annotation = symbol_decl_jsdoc_type(props[i].decl);
+        Span at = props[i].decl->full;
+        Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, at, at);
+        my emitting.name_not_node = true;
+        static Pseudo const no_result = { .kind = PSEUDO_NO_RESULT };
+        if (annotation) check_written_type(me, annotation);
+        else serialize_declaration(me, &no_result, ty_type_of_symbol(my checker, props[i].member), false, false);
+        emit_leave(me, saved);
+    }
+    free(props);
+}
+
 static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     check_late_indexes(me, cls);
     if (my file->is_js) check_js_this_properties(me, cls);
+    if (my file->is_js && !my isolated) check_js_this_property_types(me, cls);
     for_each (i, vec_class_item, &cls->items) {
         if (is_internal_declaration(i->span)) continue;
         my member_static = class_item_is_static((ClassItem*)i);
@@ -2876,7 +2995,7 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
         }
         case STATEMENT_DECL_TYPE: {
             TypeDecl const* decl = statement->decl.type;
-            if (decl->jsdoc || decl->jsdoc_check_only) return;
+            if (decl->jsdoc_check_only) return;
             if (statement_visible(me, statement, container, decl->symbol)) {
                 check_generic(me, &decl->generic, SIG_TYPE_ALIAS);
                 // (A type literal that is the alias's type gives its members diagnostics of their own)
@@ -2915,6 +3034,12 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
                 return;
             }
             Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
+            // (A JavaScript one's JSDoc `@type` is its type as written)
+            if (statement->expr_jsdoc_type) {
+                check_written_type(me, statement->expr_jsdoc_type);
+                emit_leave(me, saved);
+                return;
+            }
             Root outer_root = my root;
             my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
             // (The `default` symbol's type: the expression's, widened)
@@ -2959,6 +3084,170 @@ static void collect_exported_locals(Walk* me, VecStatement const* statements, u3
             }
         } else if (i->tag == STATEMENT_EXPORT_DEFAULT_EXPR && i->expr.tag == EXPR_IDENTIFIER && i->expr.identifier.symbol) {
             push_exported_local(me, i->expr.identifier.symbol, cap);
+        }
+    }
+}
+
+// CommonJS exports (tsgo's visitCJSExportAssignments and visitNestedExpression: anywhere in the file, in source order)
+typedef struct CjsCollect {
+    Walk* walk;
+    Statement const* statement;
+} CjsCollect;
+
+static bool name_is_identifier(csview name) {
+    bool identifier = name.size && !isdigit((unsigned char)name.buf[0]);
+    for (isize_t c = 0; c < name.size; c++) {
+        char ch = name.buf[c];
+        identifier &= isalnum((unsigned char)ch) || ch == '_' || ch == '$' || (unsigned char)ch >= 0x80;
+    }
+    return identifier;
+}
+
+static void cjs_add_member(Walk* me, Expr const* expr, Expr const* value, csview name, bool top_level) {
+    // (Once per name: the first, tsgo's witnessedCjsExports)
+    for (u32 i = 0; i < my cjs_member_count; i++) {
+        if (csview_equals_sv(my cjs_members[i].name, name)) return;
+    }
+    my cjs_members = realloc(my cjs_members, (my cjs_member_count + 1) * sizeof(CjsMember));
+    my cjs_members[my cjs_member_count++] = (CjsMember){
+        .expr = expr, .value = value, .name = name, .identifier = name_is_identifier(name), .top_level = top_level,
+    };
+}
+
+static AstWalk cjs_collect_visit(Expr const* expr, void* arg) {
+    CjsCollect* collect = arg;
+    Walk* me = collect->walk;
+    bool top_level = collect->statement->tag == STATEMENT_EXPR && &collect->statement->expr == expr && !expr_is_perenthisized(expr);
+    if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_EQUAL) {
+        Span name = span_null;
+        CommonJsTarget target = binary_commonjs_declaration(expr->binary_op, &name);
+        if (target == COMMONJS_TARGET_MODULE_EXPORTS && !expr_is_plain_identifier(&expr->binary_op->right, "exports")) {
+            my cjs_export_equals = expr;
+            my cjs_export_equals_top_level = top_level;
+        } else if (target == COMMONJS_TARGET_EXPORTS_PROPERTY && span_valid(name)) {
+            cjs_add_member(me, expr, &expr->binary_op->right, span_sv(name), top_level);
+        }
+    } else if (expr->tag == EXPR_CALL) {
+        Span name;
+        if (expr_is_define_property_call(expr, &name) && expr_is_exports_object(vec_expr_at(&expr->call->args, 0))) {
+            Expr const* descriptor = vec_expr_at(&expr->call->args, 2);
+            Expr const* value = nullptr;
+            if (descriptor->tag == EXPR_OBJECT) {
+                for_each (j, vec_object_expr_item, &descriptor->object) {
+                    if (j->tag == OBJECT_ITEM_PROPERTY && !j->computed_key && cstr_equals(&j->name_string, "value")) value = &j->value;
+                }
+            }
+            cjs_add_member(me, expr, value, span_sv(name), top_level);
+        }
+    }
+    return AST_WALK_CONTINUE;
+}
+
+static void collect_commonjs(Walk* me) {
+    for_each (i, vec_statement, &my file->ast.statements) {
+        CjsCollect collect = { me, i };
+        ast_walk_statement(i, cjs_collect_visit, &collect);
+    }
+}
+
+// What `module.exports = v` exports: the value assigned last (`module.exports = exports = v`)
+static Expr const* cjs_assigned_value(Expr const* assignment) {
+    Expr const* value = &assignment->binary_op->right;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    return value;
+}
+
+// The export symbol a member declares
+static Symbol const* cjs_member_symbol(Walk* me, CjsMember const* member) {
+    Symbol const* module = my file->scope ? my file->scope->container : nullptr;
+    return module && module->exports ? symbol_table_get(module->exports, member->name) : nullptr;
+}
+
+// `exports.x = a` at the top level, of a name declared once: `export { a as x }` (tsgo's isCommonJSAliasExport)
+static bool cjs_member_is_alias(Walk* me, CjsMember const* member) {
+    // (An assignment's: `Object.defineProperty(exports, "x", { value: a })` is a variable)
+    if (!member->top_level || member->expr->tag != EXPR_BINARY_OP || !member->value || member->value->tag != EXPR_IDENTIFIER || expr_is_perenthisized(member->value)) {
+        return false;
+    }
+    Symbol const* symbol = cjs_member_symbol(me, member);
+    return symbol && symbol->decl_count == 1;
+}
+
+static Expr const* cjs_unparenthesized(Expr const* expr) {
+    return expr;
+}
+
+// The type a member's declaration gets: its export's (the assignments' union), else what is assigned
+static Ty const* cjs_member_type(Walk* me, CjsMember const* member) {
+    Symbol const* symbol = cjs_member_symbol(me, member);
+    if (symbol) return ty_type_of_symbol(my checker, symbol);
+    Ty const* type = member->value ? lazy_type_get((LazyType*)&member->value->lazy_type) : nullptr;
+    return type ? ty_widened_literal(my checker, type) : nullptr;
+}
+
+// A member's JSDoc `@type` (`/** @type {T} */ exports.x = v`)
+static TypeNode const* cjs_member_annotation(CjsMember const* member) {
+    return member->expr->tag == EXPR_BINARY_OP ? member->expr->binary_op->jsdoc_type : nullptr;
+}
+
+static void cjs_serialize_member(Walk* me, CjsMember const* member) {
+    Span whole = expr_outer_span(member->expr);
+    Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, whole, whole);
+    my emitting.name_not_node = true;
+    static Pseudo const no_result = { .kind = PSEUDO_NO_RESULT };
+    Pseudo const* pseudo = member->value ? pseudo_of_expression(my checker, member->value, (PseudoPlace){0}) : &no_result;
+    serialize_declaration(me, pseudo, cjs_member_type(me, member), false, false);
+    emit_leave(me, saved);
+}
+
+// The first walk of the declarations the exports make (painting what they name; their diagnostics aren't reported:
+// check_js_commonjs_exports() reports those tsc's do)
+static void check_commonjs_exports(Walk* me) {
+    if (my cjs_export_equals) {
+        Expr const* value = cjs_assigned_value(my cjs_export_equals);
+        Span at = expr_outer_span(my cjs_export_equals);
+        TypeNode const* annotation = my cjs_export_equals->binary_op->jsdoc_type;
+        if (value->tag == EXPR_IDENTIFIER && my cjs_export_equals_top_level) {
+            paint(me, value->identifier.symbol);
+        } else if (annotation) {
+            Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, at);
+            check_written_type(me, annotation);
+            emit_leave(me, saved);
+        } else if (value->tag == EXPR_CLASS_DECL) {
+            check_class(me, value->class_decl, at);
+        } else if (value->tag == EXPR_FUNCTION) {
+            FunctionImpl const* fn = value->function;
+            check_written_signature(me, fn, SIG_FUNCTION, true);
+            check_declaration_parameters(me, fn, SIG_FUNCTION);
+            check_declaration_return(me, fn, SIG_FUNCTION, (Span){0}, at);
+        } else {
+            Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, at);
+            Ty const* type = lazy_type_get((LazyType*)&value->lazy_type);
+            type = ty_regular(my checker, ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, type))));
+            serialize_declaration(me, pseudo_of_expression(my checker, value, (PseudoPlace){0}), type, false, false);
+            emit_leave(me, saved);
+        }
+    }
+    for (u32 i = 0; i < my cjs_member_count; i++) {
+        CjsMember const* member = &my cjs_members[i];
+        if (cjs_member_is_alias(me, member)) {
+            paint(me, member->value->identifier.symbol);
+            continue;
+        }
+        Expr const* value = member->value ? cjs_unparenthesized(member->value) : nullptr;
+        if (value && value->tag == EXPR_CLASS_DECL) {
+            check_class(me, value->class_decl, expr_outer_span(member->expr));
+            continue;
+        }
+        if (cjs_member_annotation(member)) {
+            Span whole = expr_outer_span(member->expr);
+            Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, whole, whole);
+            check_written_type(me, cjs_member_annotation(member));
+            emit_leave(me, saved);
+        } else {
+            cjs_serialize_member(me, member);
         }
     }
 }
@@ -3299,6 +3588,7 @@ static void erase_texts(cstr* out, u32 const* offsets, u32 count, isize_t chars)
 static void w_statement_modifiers_and(Walk* me, Statement const* statement, Container container, bool always_type, char const* more) {
     DeclExported exported = statement_declares_name(statement->tag) || statement->tag == STATEMENT_DECL_VARIABLE ?
         statement->decl.props.exported : DECL_EXPORTED_NO;
+    if (implicitly_exported_jsdoc(statement, container)) exported = DECL_EXPORTED_YES;
     bool is_file = container_is_file(container);
     Modifiers mods = {0};
     if (exported != DECL_EXPORTED_NO) {
@@ -3463,6 +3753,37 @@ static void w_signature(Walk* me, FunctionImpl const* fn, bool private_member) {
         w_lit(me, "()");
         return;
     }
+    // (A JavaScript function typed by a generic JSDoc `@type {F}`: its signature's type parameters, tsgo's
+    // CreateTypeParametersOfSignatureDeclaration of the FullSignature, so the whole signature is printed)
+    if (my file->is_js && generic_empty(&fn->generic) && fn->rare && function_impl_rare(fn)->jsdoc_signature_type) {
+        Signature const* sig = ty_function_signature(my checker, fn);
+        if (sig && sig->type_params.len) {
+            // (Its type parameter list, cut from the printed signature: the parameters are the function's own)
+            SINKS_OFF;
+            cstr printed = cstr_init();
+            TyParamNames names = walk_param_names(me);
+            TyDisplay d = emit_display(me, &printed);
+            d.param_names = &names;
+            d.tracker = nullptr;
+            ty_display_signature(my checker, d, sig);
+            ty_param_names_drop(&names);
+            SINKS_ON;
+            csview text = cstr_sv(&printed);
+            isize_t end = 0;
+            for (isize_t i = 0, depth = 0; i < text.size; i++) {
+                if (text.buf[i] == '<') depth++;
+                else if (text.buf[i] == '>' && (i == 0 || text.buf[i - 1] != '=') && !--depth) {
+                    end = i + 1;
+                    break;
+                }
+            }
+            if (csview_starts_with(text, "<") && end) w(me, csview_slice(text, 0, end));
+            cstr_drop(&printed);
+            w_parameters(me, fn, false);
+            if (!fn->is_constructor) w_return(me, fn, false);
+            return;
+        }
+    }
     w_type_params(me, &fn->generic);
     w_parameters(me, fn, false);
     if (!fn->is_constructor) w_return(me, fn, false);
@@ -3596,6 +3917,48 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
     u32 written = 0;
     for_each (i, vec_initialized_binding, &variable->initializers) {
         Binding const* binding = &i->binding;
+        // A CommonJS file's `const x = require("m")` is `import x = require("m")`, `const { a, b: c } = require("m")`
+        // `import { a, b as c } from "m"` (tsgo's transformCjsRequireVariableDeclaration), before the rest
+        if (my file->is_js && my file->is_commonjs && expr_is_require_call(initialized_binding_value(i)) &&
+            vec_expr_at(&initialized_binding_value(i)->call->args, 0)->tag == EXPR_LITERAL &&
+            vec_expr_at(&initialized_binding_value(i)->call->args, 0)->literal.tag == VALUE_STRING
+        ) {
+            if (binding->tag == BINDING_ARRAY) continue;
+            bool shown = visible || binding_name_visible(me, binding, container.module_top_level);
+            for (u32 k = 0; !shown && i->rare && k < initialized_binding_rare(i)->require_port_count; k++) {
+                shown = was_painted(me, initialized_binding_rare(i)->require_ports[k].symbol);
+            }
+            if (!shown) continue;
+            csview specifier = span_sv(vec_expr_at(&initialized_binding_value(i)->call->args, 0)->inner_span);
+            my out = outer;
+            w_indent(me);
+            if (binding->tag == BINDING_IDENTIFIER) {
+                w_lit(me, "import ");
+                w(me, span_sv(binding->content_span));
+                w_lit(me, " = require(");
+                w(me, specifier);
+                w_lit(me, ");\n");
+            } else {
+                w_lit(me, "import { ");
+                u32 names = 0;
+                for_each (j, vec_object_binding_item, &binding->object) {
+                    if (j->target.tag != BINDING_IDENTIFIER) continue;
+                    if (names++) w_lit(me, ", ");
+                    csview name = span_sv(j->target.content_span);
+                    if (!j->computed_key && span_valid(j->source_span) && !csview_equals_sv(span_sv(j->source_span), name)) {
+                        w(me, span_sv(j->source_span));
+                        w_lit(me, " as ");
+                    }
+                    w(me, name);
+                }
+                w(me, names ? c_sv(" } from ") : c_sv("} from "));
+                w(me, specifier);
+                w_lit(me, ";\n");
+            }
+            my has_module_indicator = true;
+            my out = &declarations;
+            continue;
+        }
         if (binding->tag != BINDING_IDENTIFIER && binding_has_initializers(binding)) {
             w_binding_elements(me, binding, container, visible, &written);
             continue;
@@ -3708,6 +4071,9 @@ static bool is_reserved_word(csview name) {
 // bound one's, `f[k] = v`, what k's type names), `name`
 static bool expando_member_written(Walk* me, Symbol const* member, csview* name) {
     if (!member || !member->decl_count || member->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) return false;
+    // (A JavaScript class's static `this.x = v` is a member of the class)
+    AssignmentDeclKind kind = member->decls[0].assignment;
+    if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || kind == ASSIGNMENT_DECL_THIS_IN_METHOD) return false;
     *name = member->name;
     Expr const* key = symbol_rare(member)->late_bound_key;
     if (key) {
@@ -3858,6 +4224,16 @@ static void emit_expando_namespace(Walk* me, Symbol const* host, Span name, bool
     free(statements);
 }
 
+// The JSDoc `@overload`s of a JavaScript function or method that are signatures
+static u32 js_overload_count(FunctionImpl const* fn) {
+    if (!fn->rare) return 0;
+    FunctionImplRare const* rare = function_impl_rare(fn);
+    for (u32 i = 0; i < rare->jsdoc_overload_count; i++) {
+        if (rare->jsdoc_overloads[i].tag != TYPE_CALLABLE) return 0;
+    }
+    return rare->jsdoc_overload_count;
+}
+
 static void emit_function_declaration(Walk* me, Statement const* statement, Container container) {
     FunctionImpl const* fn = statement->decl.function.impl;
     if (is_overload_implementation(fn)) return;
@@ -3882,6 +4258,25 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
         w(me, span_sv(fn->name));
         w_lit(me, ";\n");
         emit_expando_namespace(me, symbol, fn->name, true, c_sv("declare "));
+        return;
+    }
+    // A JavaScript function's `@overload`s are its declarations, without comments (tsgo's reparsed signatures before it,
+    // the implementation elided)
+    u32 overloads = js_overload_count(fn);
+    if (overloads) {
+        my statement_synthesized = true;
+        if (my statement_start <= (isize_t)cstr_size(my out)) cstr_erase(my out, my statement_start, cstr_size(my out) - my statement_start);
+        for (u32 i = 0; i < overloads; i++) {
+            FunctionImpl const* overload = function_impl_rare(fn)->jsdoc_overloads[i].callable->function;
+            w_indent(me);
+            w_statement_modifiers(me, statement, container, false);
+            w_lit(me, "function ");
+            w(me, span_sv(fn->name));
+            u32 saved = enter_type_params(me, &overload->generic);
+            w_signature(me, overload, false);
+            leave_type_params(me, saved);
+            w_lit(me, ";\n");
+        }
         return;
     }
     w_indent(me);
@@ -4086,7 +4481,54 @@ static void w_heritage(Walk* me, VecSpannedType const* types, char const* keywor
 static void w_heritage_comments(Walk* me, char const* keyword_at);
 
 // `statement` null: a class expression written as a declaration named `name` (an export default's)
-static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name) {
+// `this["x"] = v`'s name, the string literal as written (empty for any other)
+static csview this_property_literal_name(Walk* me, SymbolDecl const* decl) {
+    Span full = decl->full;
+    if (!span_valid(full) || span_source(full) != my file || !csview_starts_with(span_sv(full), "this")) return (csview){0};
+    char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
+    char const* c = decl_map_skip_trivia(full.buf + 4, end);
+    if (c >= end || *c != '[') return (csview){0};
+    c = decl_map_skip_trivia(c + 1, end);
+    if (c >= end || (*c != '"' && *c != '\'')) return (csview){0};
+    char const* close = c + 1;
+    while (close < end && *close != *c && *close != '\n') close += *close == '\\' ? 2 : 1;
+    return close < end && *close == *c ? csview_from_n(c, close + 1 - c) : (csview){0};
+}
+
+static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
+    ThisProperty* props;
+    u32 count = js_this_properties(me, cls, &props);
+    for (u32 i = 0; i < count; i++) {
+        ThisProperty const* p = &props[i];
+        csview name = p->member->name;
+        // (With the comments of its expression statement: preserveJsDoc)
+        w_leading(me, p->decl->full.buf);
+        w_indent(me);
+        if (p->is_static) w_lit(me, "static ");
+        // (`this["a-b"] = v`: a string literal name, as written)
+        csview literal = this_property_literal_name(me, p->decl);
+        bool identifier = name.size && !isdigit((unsigned char)name.buf[0]);
+        for (isize_t c = 0; c < name.size; c++) identifier &= is_word_char(name.buf[c]);
+        if (literal.size) {
+            w(me, literal);
+        } else if (identifier) {
+            w(me, name);
+        } else {
+            w_lit(me, "\"");
+            w(me, name);
+            w_lit(me, "\"");
+        }
+        w_lit(me, ": ");
+        TypeNode const* annotation = symbol_decl_jsdoc_type(p->decl);
+        if (annotation) w_node(me, annotation);
+        else w_type(me, ty_type_of_symbol(my checker, p->member));
+        w_lit(me, ";\n");
+    }
+    free(props);
+}
+
+// (Without a statement: `modifiers` are written, `declare ` where empty in a file)
+static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name, csview modifiers) {
     // A base that isn't a name is a variable of its type, `C_base` (transformClassDeclaration)
     Expr const* base = &cls->extends;
     Expr const* base_name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
@@ -4117,11 +4559,19 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
         cstr_drop(&line);
     }
     w_indent(me);
+    cstr class_modifiers = cstr_init();
     if (statement) {
         m_span(me, statement->span, false);
+        isize_t modifiers_start = (isize_t)cstr_size(my out);
         w_statement_modifiers_and(me, statement, container, false, cls->is_abstract ? "abstract" : nullptr);
+        cstr_take(&class_modifiers, cstr_from_sv(csview_slice(cstr_sv(my out), modifiers_start, cstr_size(my out))));
+        decl_map_strip(&class_modifiers);
+        // (The namespace of its expandos has the others)
+        isize_t abstract_at = cstr_find(&class_modifiers, "abstract ");
+        if (abstract_at != c_NPOS) cstr_erase(&class_modifiers, abstract_at, 9);
     } else {
-        if (container_is_file(container)) w_lit(me, "declare ");
+        if (modifiers.size) w(me, modifiers);
+        else if (container_is_file(container)) w_lit(me, "declare ");
         if (cls->is_abstract) w_lit(me, "abstract ");
     }
     w_lit(me, "class");
@@ -4183,6 +4633,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             w_unless_written(me, start, written_from, span_end_ptr(j->span));
         }
     }
+    if (my file->is_js) emit_js_this_properties(me, cls);
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     for_each (i, vec_class_item, &cls->items) {
@@ -4217,6 +4668,22 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 if (item_has_private_name(i)) break;
                 FunctionImpl const* fn = &i->method.func;
                 bool private_member = i->access == ACCESS_MODIFIER_PRIVATE;
+                if (i->method.accessor == CLASS_ACCESSOR_NONE && js_overload_count(fn)) {
+                    // (A JavaScript method's `@overload`s, each with the method's comments)
+                    u32 overloads = js_overload_count(fn);
+                    for (u32 o = 0; o < overloads; o++) {
+                        FunctionImpl const* overload = function_impl_rare(fn)->jsdoc_overloads[o].callable->function;
+                        if (o) w_leading(me, i->span.buf);
+                        w_indent(me);
+                        w_member_modifiers(me, i->span.buf, i->access, i->method.is_abstract, i->method.is_static, false, false);
+                        w_member_name(me, i->method.name_span, i->method.computed_key);
+                        u32 saved = enter_type_params(me, &overload->generic);
+                        w_signature(me, overload, false);
+                        leave_type_params(me, saved);
+                        w_lit(me, ";\n");
+                    }
+                    break;
+                }
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
                     if (is_class_overload_implementation(cls, i, fn) || interface_declares_method(cls, i)) break;
                     // (A private method is a property without a type: omitPrivateMethodType, once per name)
@@ -4314,6 +4781,11 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     w_lit(me, "}");
     if (statement) m(me, statement_end(statement));
     w_lit(me, "\n");
+    // (A JavaScript class's expandos, `C.x = v`: a namespace after it, tsgo's transformExpandoHost)
+    if (statement && my file->is_js && span_valid(cls->name) && expando_any_written(me, cls->symbol)) {
+        emit_expando_namespace(me, cls->symbol, cls->name, true, cstr_sv(&class_modifiers));
+    }
+    cstr_drop(&class_modifiers);
     cstr_drop(&base_variable_name);
 }
 
@@ -4661,7 +5133,6 @@ static void w_port_items(Walk* me, PortStatement const* port, bool const* kept, 
 
 static void emit_port(Walk* me, Statement const* statement, Container container) {
     PortStatement const* port = statement->import_export;
-    if (port->jsdoc) return;
     bool is_file = container_is_file(container);
     csview specifier = span_sv(port->target_path_span);
     if (span_equals(port->keyword_span, "export") && !port->main.export_import) {
@@ -4794,7 +5265,7 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
         char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
         if (my map) m(me, decl_map_skip_trivia(span_end_ptr(port->keyword_span), end));
     }
-    if (port->main.type_only) w_lit(me, "type ");
+    if (port->main.type_only || port->jsdoc) w_lit(me, "type ");
     if (port->source_phase) w_lit(me, "source ");
     if (default_kept) {
         w_name(me, port->main.decl_name);
@@ -4825,52 +5296,87 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
 
 // The name an export default's declaration gets: the function or class expression's own, else `_default` (tsc's
 // getNameOfExportedAssignedExpression), `_1`... where that is taken in the scope
-static cstr export_default_name(Walk* me, Span own) {
-    csview base = span_valid(own) && !span_equals(own, "default") ? span_sv(own) : c_sv("_default");
+static bool cjs_name_taken(Walk* me, csview name) {
+    for (csview rest = cstr_sv(&my cjs_names); rest.size;) {
+        isize_t eol = csview_find_sv(rest, c_sv("\n"));
+        if (csview_equals_sv(csview_slice(rest, 0, eol), name)) return true;
+        rest = csview_slice(rest, eol + 1, rest.size);
+    }
+    return false;
+}
+
+// A generated name (the printer's optimistic unique names): `base`, else `base_1`... avoiding what resolves where the
+// file's declarations are, the file's words, and what the writer generated already
+static cstr generated_unique_name(Walk* me, csview base, bool generated) {
     cstr name = cstr_from_sv(base);
-    // (The printer's unique names avoid every identifier of the file too: isUniqueName)
-    bool generated = !span_valid(own) || span_equals(own, "default");
     for (u32 n = 1; (my scope && scope_resolve(my scope, cstr_sv(&name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE)) ||
-        (generated && file_has_word(my file, cstr_sv(&name))); n++
+        (generated && (file_has_word(my file, cstr_sv(&name)) || cjs_name_taken(me, cstr_sv(&name)))); n++
     ) {
         cstr_take(&name, cstr_d(base, "_", n));
+    }
+    if (generated) {
+        cstr_append_sv(&my cjs_names, cstr_sv(&name));
+        cstr_append(&my cjs_names, "\n");
     }
     return name;
 }
 
+static cstr export_default_name_or(Walk* me, Span own, csview fallback) {
+    bool generated = !span_valid(own) || span_equals(own, "default");
+    // (The printer's unique names avoid every identifier of the file too: isUniqueName)
+    return generated_unique_name(me, generated ? fallback : span_sv(own), generated);
+}
+
+static cstr export_default_name(Walk* me, Span own) { return export_default_name_or(me, own, c_sv("_default")); }
+
 // `export default <expression>` (tsc's transformExportAssignment): a name as written, a function or class expression as a
 // declaration after the export (the statement's comments on it), anything else as `declare const _default: T;` before
 // it (the comments on that)
+static void emit_export_assignment_of(
+    Walk* me, Expr const* expr, TypeNode const* annotation, char const* end_mark, Span span, bool export_equals, bool name_kept,
+    Container container, csview fallback, cstr* name_out
+);
+
 static void emit_export_default(Walk* me, Statement const* statement, Container container) {
-    Expr const* expr = &statement->expr;
+    emit_export_assignment_of(me, &statement->expr, statement->expr_jsdoc_type, statement_end(statement), statement->span,
+        statement->export_equals, true, container, c_sv("_default"), nullptr);
+}
+
+// (`span`: the statement's, or a JavaScript file's `module.exports = v` (its comments are those before it), `end_mark`
+// where it ends for the declaration map. Without `name_kept` a name is a value like any other. `name_out`: the name a
+// declaration got, if one did. `annotation`: a JavaScript one's JSDoc `@type`, the type written)
+static void emit_export_assignment_of(
+    Walk* me, Expr const* expr, TypeNode const* annotation, char const* end_mark, Span span, bool export_equals, bool name_kept,
+    Container container, csview fallback, cstr* name_out
+) {
     bool is_file = container_is_file(container);
     if (is_file) my has_module_indicator = true;
     my has_scope_marker = true;
-    char const* comments_from = statement->span.buf;
-    char const* comments_end = span_end_ptr(statement->span);
-    csview keyword = statement->export_equals ? c_sv("export = ") : c_sv("export default ");
+    char const* comments_from = span.buf;
+    char const* comments_end = span_end_ptr(span);
+    csview keyword = export_equals ? c_sv("export = ") : c_sv("export default ");
     // (The export assignment keeps the statement's range, tsc's AssignSourceMapRange)
-    if (expr->tag == EXPR_IDENTIFIER) {
+    if (expr->tag == EXPR_IDENTIFIER && name_kept) {
         w_leading(me, comments_from);
         w_indent(me);
-        m_span(me, statement->span, false);
+        m_span(me, span, false);
         w(me, keyword);
         w_name(me, expr->inner_span);
         w_lit(me, ";");
-        m(me, statement_end(statement));
+        m(me, end_mark);
         decl_comments_trailing(&my comments, my out, my indent, comments_end);
         w_lit(me, "\n");
         return;
     }
-    if ((expr->tag == EXPR_FUNCTION && !expr->function->is_constructor) || expr->tag == EXPR_CLASS_DECL) {
+    if (!annotation && ((expr->tag == EXPR_FUNCTION && !expr->function->is_constructor) || expr->tag == EXPR_CLASS_DECL)) {
         Span own = expr->tag == EXPR_FUNCTION ? expr->function->name : expr->class_decl->name;
-        cstr name = export_default_name(me, own);
+        cstr name = export_default_name_or(me, own, fallback);
         w_indent(me);
-        m_span(me, statement->span, false);
+        m_span(me, span, false);
         w(me, keyword);
         w(me, cstr_sv(&name));
         w_lit(me, ";");
-        m(me, statement_end(statement));
+        m(me, end_mark);
         w_lit(me, "\n");
         w_leading(me, comments_from);
         if (expr->tag == EXPR_FUNCTION) {
@@ -4883,24 +5389,25 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
             decl_comments_trailing(&my comments, my out, my indent, comments_end);
             w_lit(me, "\n");
         } else {
-            emit_class(me, expr->class_decl, nullptr, container, cstr_sv(&name));
+            emit_class(me, expr->class_decl, nullptr, container, cstr_sv(&name), c_sv(""));
             isize_t size = cstr_size(my out);
             cstr_erase(my out, size - 1, 1);
             decl_comments_trailing(&my comments, my out, my indent, comments_end);
             w_lit(me, "\n");
         }
-        cstr_drop(&name);
+        if (name_out) cstr_take(name_out, name);
+        else cstr_drop(&name);
         return;
     }
     // `declare const _default: T; export default _default;` (a literal's: `= "x"`)
     cstr text = cstr_init();
     Ty const* expr_type = lazy_type_get((LazyType*)&expr->lazy_type);
-    bool literal_value = expr_type && ty_is_fresh(expr_type) && is_primitive_literal_value(expr, true);
+    bool literal_value = !annotation && expr_type && ty_is_fresh(expr_type) && is_primitive_literal_value(expr, true);
     cstr* outer = my type_out;
-    my type_out = &text;
-    Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
+    my type_out = annotation ? nullptr : &text;
+    Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, span);
     Root outer_root = my root;
-    my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = statement->span };
+    my root = (Root){ .kind = ROOT_EXPORT_DEFAULT, .expr = expr, .at = span };
     Ty const* type = lazy_type_get((LazyType*)&expr->lazy_type);
     // (The default export's type is the expression's widened like a variable's, fresh literals included: tsc's
     // widenTypeForVariableLikeDeclaration in getTypeOfVariableOrParameterOrProperty, `'ok' satisfies string` is string)
@@ -4909,7 +5416,8 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     my root = outer_root;
     emit_leave(me, saved);
     my type_out = outer;
-    cstr name = export_default_name(me, span_null);
+    cstr name = expr->tag == EXPR_IDENTIFIER ? export_default_name_or(me, expr->inner_span, fallback) :
+        export_default_name_or(me, span_null, fallback);
     w_leading(me, comments_from);
     w_indent(me);
     if (is_file) w_lit(me, "declare ");
@@ -4919,6 +5427,13 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
         cstr_drop(&text);
         w_lit(me, " = ");
         w_literal_value(me, expr_type);
+    } else if (annotation) {
+        cstr_drop(&text);
+        w_lit(me, ": ");
+        // (`export default`'s is printed as its type, `module.exports =`' reused: tsgo's reparser makes the former a
+        // cast of the expression)
+        if (export_equals) w_node(me, annotation);
+        else w_type(me, ty_of_node(annotation));
     } else {
         w_lit(me, ": ");
         w_serialized(me, &text);
@@ -4927,20 +5442,34 @@ static void emit_export_default(Walk* me, Statement const* statement, Container 
     decl_comments_trailing(&my comments, my out, my indent, comments_end);
     w_lit(me, "\n");
     w_indent(me);
-    m_span(me, statement->span, false);
+    m_span(me, span, false);
     w(me, keyword);
     w(me, cstr_sv(&name));
     w_lit(me, ";");
-    m(me, statement_end(statement));
+    m(me, end_mark);
     w_lit(me, "\n");
-    cstr_drop(&name);
+    if (name_out) cstr_take(name_out, name);
+    else cstr_drop(&name);
 }
 
 static void emit_statement_inner(Walk* me, Statement const* statement, Container container);
 static void emit_export_default(Walk* me, Statement const* statement, Container container);
 
+// A JavaScript statement list has its statements' JSDoc declarations (`@typedef`, `@callback`, `@import`) after each
+// statement (jsdoc_bind_comments()); tsgo's parser puts its reparsed ones before it: they are written there
+static bool is_jsdoc_declaration(Statement const* statement) {
+    return (statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc) ||
+        (statement->tag == STATEMENT_DECL_NAMESPACE && statement->decl.namespace->jsdoc) ||
+        (statement->tag == STATEMENT_IMPORT_EXPORT && statement->import_export->jsdoc);
+}
+
 static void emit_statement(Walk* me, Statement const* statement, Container container) {
     if (is_internal_declaration(statement->span)) return;
+    if (is_jsdoc_declaration(statement)) {
+        // (Made from a tag: the comment stays where it is, the declaration has none)
+        emit_statement_inner(me, statement, container);
+        return;
+    }
     if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
         emit_export_default(me, statement, container); // (Its comments go to the declaration it makes)
         return;
@@ -4970,7 +5499,7 @@ static void emit_statement_inner(Walk* me, Statement const* statement, Container
             return;
         case STATEMENT_DECL_CLASS:
             if (emit_visible(me, statement, container, statement->decl.class->symbol)) {
-                emit_class(me, statement->decl.class, statement, container, c_sv(""));
+                emit_class(me, statement->decl.class, statement, container, c_sv(""), c_sv(""));
             }
             return;
         case STATEMENT_DECL_INTERFACE:
@@ -4980,7 +5509,7 @@ static void emit_statement_inner(Walk* me, Statement const* statement, Container
             return;
         case STATEMENT_DECL_TYPE: {
             TypeDecl const* decl = statement->decl.type;
-            if (decl->jsdoc || decl->jsdoc_check_only) return;
+            if (decl->jsdoc_check_only) return;
             if (emit_visible(me, statement, container, decl->symbol)) emit_type_alias(me, decl, statement, container);
             return;
         }
@@ -5000,8 +5529,28 @@ static void emit_statement_inner(Walk* me, Statement const* statement, Container
     }
 }
 
+
 static void emit_statements(Walk* me, VecStatement const* statements, Container container) {
-    for_each (i, vec_statement, statements) emit_statement(me, i, container);
+    if (!my file->is_js) {
+        for_each (i, vec_statement, statements) emit_statement(me, i, container);
+        return;
+    }
+    isize count = vec_statement_size(statements);
+    for (isize i = 0; i < count;) {
+        Statement const* statement = vec_statement_at(statements, i);
+        isize next = i + 1;
+        if (!is_jsdoc_declaration(statement)) {
+            char const* end = span_end_ptr(statement->span);
+            while (next < count && is_jsdoc_declaration(vec_statement_at(statements, next)) &&
+                span_start_ptr(vec_statement_at(statements, next)->span) < end
+            ) {
+                next++;
+            }
+            for (isize j = i + 1; j < next; j++) emit_statement(me, vec_statement_at(statements, j), container);
+        }
+        emit_statement(me, statement, container);
+        i = next;
+    }
 }
 
 // The `/// <reference ... preserve="true" />` directives (tsc's getReferencedFiles, getTypeReferences, getLibReferences:
@@ -5048,6 +5597,213 @@ static void emit_directives(Walk* me) {
     }
 }
 
+// The export's name finds something else where the file's declarations are (tsgo's GetReferencedValueDeclaration of
+// the name: a lexical lookup), which a variable of that name would shadow
+static bool cjs_name_resolves_elsewhere(Walk* me, CjsMember const* member) {
+    Symbol const* found = my file->scope ? scope_resolve(my file->scope, member->name, SYMBOL_VALUE) : nullptr;
+    return found && found != cjs_member_symbol(me, member);
+}
+
+// A CommonJS export's name as an export specifier's: an identifier, else a string literal
+static void w_export_name(Walk* me, CjsMember const* member) {
+    if (member->identifier) {
+        w(me, member->name);
+        return;
+    }
+    w_lit(me, "\"");
+    w(me, member->name);
+    w_lit(me, "\"");
+}
+
+// `<modifiers>const NAME: T;` of a member's type
+static void w_cjs_member_variable(Walk* me, CjsMember const* member, char const* keyword, csview name) {
+    TypeNode const* annotation = cjs_member_annotation(member);
+    cstr text = cstr_init();
+    if (!annotation) {
+        cstr* outer = my type_out;
+        my type_out = &text;
+        cjs_serialize_member(me, member);
+        my type_out = outer;
+    }
+    w_indent(me);
+    w(me, csview_from(keyword));
+    w(me, name);
+    w_lit(me, ": ");
+    if (annotation) {
+        w_node(me, annotation);
+        cstr_drop(&text);
+    } else {
+        w_serialized(me, &text);
+    }
+    w_lit(me, ";\n");
+}
+
+// Whether a class expression's members print its own symbol (written into a scratch string to find out)
+static bool cjs_class_self_referenced(Walk* me, ClassDecl const* cls) {
+    if (!cls->symbol) return false;
+    cstr* outer = my out;
+    cstr scratch = cstr_init();
+    my out = &scratch;
+    bool map = my map;
+    my map = false;
+    my cjs_watched_class = cls->symbol;
+    my cjs_class_tracked = false;
+    emit_class(me, cls, nullptr, (Container){0}, span_sv(cls->name), c_sv("export "));
+    bool tracked = my cjs_class_tracked;
+    my cjs_watched_class = nullptr;
+    my map = map;
+    my out = outer;
+    cstr_drop(&scratch);
+    return tracked;
+}
+
+// A CommonJS export (tsgo's transformCommonJSExportWorker), in a namespace of the `export=`'s name where there is one
+// (wrapInCJSExportNamespace: one per export, without `declare`s)
+static void emit_commonjs_member(Walk* me, CjsMember const* member, csview ns) {
+    bool wrapped = ns.size;
+    cstr* outer = my out;
+    cstr content = cstr_init();
+    my out = &content;
+    if (wrapped) my indent++;
+    char const* declare = wrapped ? "" : "declare ";
+    my has_module_indicator = my has_scope_marker = true;
+    Expr const* value = member->value;
+    char const* comments_from = expr_outer_span(member->expr).buf;
+    if (cjs_member_is_alias(me, member)) {
+        // `export { a as x };`
+        w_indent(me);
+        w_lit(me, "export { ");
+        csview source = span_sv(value->inner_span);
+        if (!member->identifier || !csview_equals_sv(source, member->name)) {
+            w(me, source);
+            w_lit(me, " as ");
+        }
+        w_export_name(me, member);
+        w_lit(me, " };\n");
+    } else if (value && value->tag == EXPR_CLASS_DECL) {
+        ClassDecl const* cls = value->class_decl;
+        bool named = span_valid(cls->name) && cls->name.size;
+        cstr modifiers = cstr_d("export ", declare);
+        // (Its members see its own name)
+        Scope const* outer_scope = my scope;
+        if (cls->name_scope) my scope = cls->name_scope;
+        bool isolated = named && (!member->identifier || !csview_equals_sv(span_sv(cls->name), member->name) ||
+            cjs_class_self_referenced(me, cls));
+        if (named && !isolated) {
+            w_leading(me, comments_from);
+            emit_class(me, cls, nullptr, (Container){ .module_top_level = !wrapped }, span_sv(cls->name), cstr_sv(&modifiers));
+        } else if (named) {
+            // (Another name than the export's: the class in a namespace of its own, `_ns`, exported through an alias)
+            cstr ns_name = generated_unique_name(me, c_sv("_ns"), true);
+            cstr alias_base = member->identifier && name_is_identifier(member->name) ? cstr_d("_", member->name) : cstr_from("_exported");
+            cstr alias = generated_unique_name(me, cstr_sv(&alias_base), true);
+            w_indent(me);
+            w(me, csview_from(declare));
+            w_lit(me, "namespace ");
+            w(me, cstr_sv(&ns_name));
+            w_lit(me, " {\n");
+            my indent++;
+            w_leading(me, comments_from);
+            emit_class(me, cls, nullptr, (Container){0}, span_sv(cls->name), c_sv("export "));
+            my indent--;
+            w_indent(me);
+            w_lit(me, "}\n");
+            w_indent(me);
+            w_lit(me, "import ");
+            w(me, cstr_sv(&alias));
+            w_lit(me, " = ");
+            w(me, cstr_sv(&ns_name));
+            w_lit(me, ".");
+            w(me, span_sv(cls->name));
+            w_lit(me, ";\n");
+            w_indent(me);
+            w_lit(me, "export { ");
+            w(me, cstr_sv(&alias));
+            w_lit(me, " as ");
+            w_export_name(me, member);
+            w_lit(me, " };\n");
+            c_drop(cstr, &ns_name, &alias_base, &alias);
+        } else if (member->identifier) {
+            w_leading(me, comments_from);
+            emit_class(me, cls, nullptr, (Container){ .module_top_level = !wrapped }, member->name, cstr_sv(&modifiers));
+        } else {
+            cstr name = generated_unique_name(me, c_sv("_class"), true);
+            w_leading(me, comments_from);
+            emit_class(me, cls, nullptr, (Container){ .module_top_level = !wrapped }, cstr_sv(&name), cstr_sv(&modifiers));
+            w_indent(me);
+            w_lit(me, "export { ");
+            w(me, cstr_sv(&name));
+            w_lit(me, " as ");
+            w_export_name(me, member);
+            w_lit(me, " };\n");
+            cstr_drop(&name);
+        }
+        my scope = outer_scope;
+        cstr_drop(&modifiers);
+    } else if (member->identifier && csview_equals(member->name, "default")) {
+        // `declare const _default: T; export default _default;`
+        cstr name = generated_unique_name(me, c_sv("_default"), true);
+        w_leading(me, comments_from);
+        w_cjs_member_variable(me, member, wrapped ? "const " : "declare const ", cstr_sv(&name));
+        w_indent(me);
+        w_lit(me, "export default ");
+        w(me, cstr_sv(&name));
+        w_lit(me, ";\n");
+        cstr_drop(&name);
+    } else if (member->identifier && !cjs_name_resolves_elsewhere(me, member)) {
+        w_cjs_member_variable(me, member, wrapped ? "export var " : "export declare var ", member->name);
+    } else {
+        // `declare const _exported: T; export { _exported as "x" };`
+        cstr name = generated_unique_name(me, c_sv("_exported"), true);
+        w_leading(me, comments_from);
+        w_cjs_member_variable(me, member, wrapped ? "const " : "declare const ", cstr_sv(&name));
+        w_indent(me);
+        w_lit(me, "export { ");
+        w(me, cstr_sv(&name));
+        w_lit(me, " as ");
+        w_export_name(me, member);
+        w_lit(me, " };\n");
+        cstr_drop(&name);
+    }
+    if (wrapped) my indent--;
+    my out = outer;
+    if (wrapped) {
+        w_indent(me);
+        w_lit(me, "declare namespace ");
+        w(me, ns);
+        w_lit(me, " {\n");
+    }
+    w(me, cstr_sv(&content));
+    if (wrapped) {
+        w_indent(me);
+        w_lit(me, "}\n");
+    }
+    cstr_drop(&content);
+}
+
+// A CommonJS file's exports, before its statements (tsgo's appendCjsExports): the `export=`, then each export
+static void emit_commonjs(Walk* me, Container top) {
+    cstr ns = cstr_init();
+    if (my cjs_export_equals) {
+        Expr const* assignment = my cjs_export_equals;
+        Expr const* value = cjs_assigned_value(assignment);
+        Statement const* statement = nullptr;
+        if (my cjs_export_equals_top_level) {
+            for_each (i, vec_statement, &my file->ast.statements) {
+                if (i->tag == STATEMENT_EXPR && &i->expr == assignment) statement = i;
+            }
+        }
+        Span span = statement ? statement->span : expr_outer_span(assignment);
+        char const* end_mark = statement ? statement_end(statement) :
+            my map ? decl_comments_end(&my comments, span_end_ptr(span), ";") : nullptr;
+        emit_export_assignment_of(me, value, assignment->binary_op->jsdoc_type, end_mark, span, true,
+            my cjs_export_equals_top_level, top, c_sv("_exports"), &ns);
+        my has_module_indicator = my has_scope_marker = true;
+    }
+    for (u32 i = 0; i < my cjs_member_count; i++) emit_commonjs_member(me, &my cjs_members[i], cstr_sv(&ns));
+    cstr_drop(&ns);
+}
+
 // The second walk: the file's `.d.ts`
 static void emit_file(Walk* me, Container top) {
     my comments = (DeclComments){ .file = my file, .off = compiler_options()->remove_comments, .map = my map };
@@ -5062,6 +5818,7 @@ static void emit_file(Walk* me, Container top) {
     }
     decl_comments_detached(&my comments, my out);
     emit_directives(me);
+    if (my file->is_js && my file->is_commonjs) emit_commonjs(me, top);
     emit_statements(me, &my file->ast.statements, top);
     // (A module whose declarations wouldn't say so, or one with a declaration that isn't exported and nothing that says
     // which are: `export {};`)
@@ -5070,7 +5827,7 @@ static void emit_file(Walk* me, Container top) {
     }
     Statement const* last = nullptr;
     for_each (i, vec_statement, &my file->ast.statements) {
-        if (span_valid(i->span) && i->tag != STATEMENT_SOURCE_DIRECTIVE) last = i;
+        if (span_valid(i->span) && i->tag != STATEMENT_SOURCE_DIRECTIVE && !is_jsdoc_declaration(i)) last = i;
     }
     if (last) decl_comments_file_end(&my comments, my out, span_end_ptr(last->span));
     else decl_comments_empty_file_end(&my comments, my out);
@@ -5174,7 +5931,13 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     // (A JavaScript file's own, outside isolatedDeclarations: its CommonJS exports only)
     bool js_exports = file->is_js && file->is_commonjs && !compiler_options()->isolated_declarations &&
         js_declaration_diagnostics_wanted(file);
-    if (!js_exports && !declaration_diagnostics_wanted(file)) return;
+    // (A JavaScript file that isn't CommonJS is written by the TypeScript walk, plan 64 stage 6; its diagnostics outside
+    // isolatedDeclarations aren't reported yet: they go to a scratch context)
+    bool js_written = emit && file->is_js && !file->is_commonjs && !compiler_options()->isolated_declarations &&
+        js_declaration_diagnostics_wanted(file);
+    if (!js_exports && !js_written && !declaration_diagnostics_wanted(file)) return;
+    ErrorCtx js_scratch = { .phase = errs->phase, .parent = errs->parent };
+    if (js_written) errs = &js_scratch;
     isize_t errors_before = vec_error_size(&errs->errors);
     Walk walk = {
         .file = file,
@@ -5190,11 +5953,16 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     };
     symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
     symbol_chain_set_module_specifier(walk_module_specifier, &walk);
+    ErrorCtx* reported = errs;
     if (js_exports) {
-        // (No `.d.ts` of it: the walk doesn't know the rest of JavaScript declaration emit)
+        collect_commonjs(&walk);
         check_js_commonjs_exports(&walk);
-        emit = false;
-        goto walked;
+        if (!emit) goto walked;
+        // (check_js_commonjs_exports() reported what the exports' declarations do; the rest of the walk's diagnostics
+        // aren't reported in JavaScript yet: a dotted `@typedef`'s namespace doesn't merge with its variable, TS4078 in
+        // jsDeclarationsImportAliasExposedWithinNamespace)
+        walk.errs = &js_scratch;
+        check_commonjs_exports(&walk);
     }
     if (file->is_module) {
         u32 cap = 0;
@@ -5216,7 +5984,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     walked:
     // The second walk writes the file, unless the first reported something about it (tsc doesn't write a declaration
     // file whose transform has diagnostics)
-    if (emit && vec_error_size(&errs->errors) == errors_before) {
+    if (emit && vec_error_size(&reported->errors) == errors_before) {
         ErrorCtx scratch = { .phase = errs->phase, .parent = errs->parent };
         cstr* output = c_new(cstr, cstr_init());
         walk.errs = &scratch;
@@ -5257,7 +6025,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
             }
             cstr_take(output, crlf);
         }
-        walk.errs = errs;
+        walk.errs = reported;
         error_ctx_drop(&scratch);
         if (writable->declaration_output) {
             cstr_drop(writable->declaration_output);
@@ -5284,4 +6052,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     free(walk.late_taken);
     for (u32 i = 0; i < walk.specifier_count; i++) c_drop(cstr, &walk.specifiers[i].plain, &walk.specifiers[i].unsafe);
     free(walk.specifiers);
+    free(walk.cjs_members);
+    cstr_drop(&walk.cjs_names);
+    error_ctx_drop(&js_scratch);
 }

@@ -1,0 +1,154 @@
+//// [test/cases/ttttJsDeclarationEmitCommonJs.ts] ////
+
+=== lib.js ===
+/** @typedef {{ x: number }} Coord */
+class Point {
+>Point : Point
+
+    constructor() {
+        /** The x coordinate */
+        this.x = 1;
+>this.x = 1 : 1
+>this.x : any
+>this : this
+>x : any
+>1 : 1
+
+        this["y-z"] = "a";
+>this["y-z"] = "a" : "a"
+>this["y-z"] : any
+>this : this
+>"y-z" : "y-z"
+>"a" : "a"
+    }
+}
+module.exports = { Point };
+>module.exports = { Point } : { Point: typeof Point; }
+>module.exports : { Point: typeof Point; }
+>module : { exports: { Point: typeof Point; }; }
+>exports : { Point: typeof Point; }
+>{ Point } : { Point: typeof Point; }
+>Point : typeof Point
+
+module.exports.Point = Point;
+>module.exports.Point = Point : typeof Point
+>module.exports.Point : typeof Point
+>module.exports : { Point: typeof Point; }
+>module : { exports: { Point: typeof Point; }; }
+>exports : { Point: typeof Point; }
+>Point : typeof Point
+>Point : typeof Point
+
+=== index.js ===
+const { Point } = require("./lib");
+>Point : typeof Point
+>require("./lib") : { Point: typeof Point; }
+>require : any
+>"./lib" : "./lib"
+
+/** @typedef {{ a: number }} Options */
+/**
+ * @param {Options} o
+ */
+function make(o) { return o.a; }
+>make : (o: Options) => number
+>o : Options
+>o.a : number
+>o : Options
+>a : number
+
+exports.version = "1.0";
+>exports.version = "1.0" : "1.0"
+>exports.version : "1.0"
+>exports : typeof import(".")
+>version : "1.0"
+>"1.0" : "1.0"
+
+exports.make = make;
+>exports.make = make : (o: Options) => number
+>exports.make : (o: Options) => number
+>exports : typeof import(".")
+>make : (o: Options) => number
+>make : (o: Options) => number
+
+exports.Sub = class Sub { self = new Sub(); };
+>exports.Sub = class Sub { self = new Sub(); } : typeof Sub
+>exports.Sub : typeof Sub
+>exports : typeof import(".")
+>Sub : typeof Sub
+>class Sub { self = new Sub(); } : typeof Sub
+>Sub : typeof Sub
+>self : Sub
+>new Sub() : Sub
+>Sub : typeof Sub
+
+exports.Maker = class Maker {
+>exports.Maker = class Maker {    constructor() {        this.made = make({ a: 1 });        this.version = exports.version;    }} : typeof Maker
+>exports.Maker : typeof Maker
+>exports : typeof import(".")
+>Maker : typeof Maker
+>class Maker {    constructor() {        this.made = make({ a: 1 });        this.version = exports.version;    }} : typeof Maker
+>Maker : typeof Maker
+
+    constructor() {
+        this.made = make({ a: 1 });
+>this.made = make({ a: 1 }) : number
+>this.made : any
+>this : this
+>made : any
+>make({ a: 1 }) : number
+>make : (o: Options) => number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+        this.version = exports.version;
+>this.version = exports.version : "1.0"
+>this.version : any
+>this : this
+>version : any
+>exports.version : "1.0"
+>exports : typeof import(".")
+>version : "1.0"
+    }
+};
+=== esm.js ===
+/** @import { Coord } from "./lib" */
+/**
+ * @overload
+ * @param {number} x
+ * @returns {number}
+ */
+/**
+ * @overload
+ * @param {string} x
+ * @returns {string}
+ */
+/**
+ * @param {unknown} x
+ */
+export function id(x) { return x; }
+>id : { (x: number): number; (x: string): string; }
+>x : unknown
+>x : unknown
+
+export class Holder {
+>Holder : Holder
+
+    constructor() {
+        /** @type {Coord | undefined} */
+        this.point = undefined;
+>this.point = undefined : undefined
+>this.point : Coord | undefined
+>this : this
+>point : Coord | undefined
+>undefined : undefined
+    }
+}
+Holder.count = 0;
+>Holder.count = 0 : 0
+>Holder.count : number
+>Holder : typeof Holder
+>count : number
+>0 : 0
+

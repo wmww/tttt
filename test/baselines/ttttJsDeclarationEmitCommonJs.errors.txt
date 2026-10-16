@@ -1,0 +1,56 @@
+lib.js(9,1): error TS2309: An export assignment cannot be used in a module with other exported elements.
+
+
+==== lib.js (1 errors) ====
+    /** @typedef {{ x: number }} Coord */
+    class Point {
+        constructor() {
+            /** The x coordinate */
+            this.x = 1;
+            this["y-z"] = "a";
+        }
+    }
+    module.exports = { Point };
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2309: An export assignment cannot be used in a module with other exported elements.
+    module.exports.Point = Point;
+==== index.js (0 errors) ====
+    const { Point } = require("./lib");
+    /** @typedef {{ a: number }} Options */
+    /**
+     * @param {Options} o
+     */
+    function make(o) { return o.a; }
+    exports.version = "1.0";
+    exports.make = make;
+    exports.Sub = class Sub { self = new Sub(); };
+    exports.Maker = class Maker {
+        constructor() {
+            this.made = make({ a: 1 });
+            this.version = exports.version;
+        }
+    };
+==== esm.js (0 errors) ====
+    /** @import { Coord } from "./lib" */
+    /**
+     * @overload
+     * @param {number} x
+     * @returns {number}
+     */
+    /**
+     * @overload
+     * @param {string} x
+     * @returns {string}
+     */
+    /**
+     * @param {unknown} x
+     */
+    export function id(x) { return x; }
+    export class Holder {
+        constructor() {
+            /** @type {Coord | undefined} */
+            this.point = undefined;
+        }
+    }
+    Holder.count = 0;
+    

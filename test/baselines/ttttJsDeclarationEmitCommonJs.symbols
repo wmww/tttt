@@ -1,0 +1,129 @@
+//// [test/cases/ttttJsDeclarationEmitCommonJs.ts] ////
+
+=== lib.js ===
+/** @typedef {{ x: number }} Coord */
+class Point {
+>Point : Symbol(Point, Decl(lib.js, 0, 0))
+
+    constructor() {
+        /** The x coordinate */
+        this.x = 1;
+>this.x : Symbol(Point.x, Decl(lib.js, 2, 19))
+>this : Symbol(Point, Decl(lib.js, 0, 0))
+>x : Symbol(Point.x, Decl(lib.js, 2, 19))
+
+        this["y-z"] = "a";
+>this : Symbol(Point, Decl(lib.js, 0, 0))
+>"y-z" : Symbol(Point["y-z"], Decl(lib.js, 4, 19))
+    }
+}
+module.exports = { Point };
+>module.exports : Symbol(exports, Decl(lib.js, 0, 0))
+>module : Symbol(module, Decl(lib.js, 0, 0))
+>exports : Symbol(exports, Decl(lib.js, 0, 0))
+>Point : Symbol(Point, Decl(lib.js, 8, 18))
+
+module.exports.Point = Point;
+>module.exports.Point : Symbol(Point, Decl(lib.js, 8, 18))
+>module.exports : Symbol(exports, Decl(lib.js, 0, 0))
+>module : Symbol(module, Decl(lib.js, 0, 0))
+>exports : Symbol(exports, Decl(lib.js, 0, 0))
+>Point : Symbol(Point, Decl(lib.js, 8, 18))
+>Point : Symbol(Point, Decl(lib.js, 0, 0))
+
+=== index.js ===
+const { Point } = require("./lib");
+>Point : Symbol(Point, Decl(index.js, 0, 7))
+>require : Symbol(require)
+>"./lib" : Symbol("./lib", Decl(lib.js, 0, 0))
+
+/** @typedef {{ a: number }} Options */
+/**
+ * @param {Options} o
+ */
+function make(o) { return o.a; }
+>make : Symbol(make, Decl(index.js, 0, 35))
+>o : Symbol(o, Decl(index.js, 5, 14))
+>o.a : Symbol(a, Decl(index.js, 1, 15))
+>o : Symbol(o, Decl(index.js, 5, 14))
+>a : Symbol(a, Decl(index.js, 1, 15))
+
+exports.version = "1.0";
+>exports.version : Symbol(version, Decl(index.js, 5, 32))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>version : Symbol(version, Decl(index.js, 5, 32))
+
+exports.make = make;
+>exports.make : Symbol(make, Decl(index.js, 6, 24))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>make : Symbol(make, Decl(index.js, 6, 24))
+>make : Symbol(make, Decl(index.js, 0, 35))
+
+exports.Sub = class Sub { self = new Sub(); };
+>exports.Sub : Symbol(Sub, Decl(index.js, 7, 20))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>Sub : Symbol(Sub, Decl(index.js, 7, 20))
+>Sub : Symbol(Sub, Decl(index.js, 8, 13))
+>self : Symbol(Sub.self, Decl(index.js, 8, 25))
+>Sub : Symbol(Sub, Decl(index.js, 8, 13))
+
+exports.Maker = class Maker {
+>exports.Maker : Symbol(Maker, Decl(index.js, 8, 46))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>Maker : Symbol(Maker, Decl(index.js, 8, 46))
+>Maker : Symbol(Maker, Decl(index.js, 9, 15))
+
+    constructor() {
+        this.made = make({ a: 1 });
+>this.made : Symbol(Maker.made, Decl(index.js, 10, 19))
+>this : Symbol(Maker, Decl(index.js, 9, 15))
+>made : Symbol(Maker.made, Decl(index.js, 10, 19))
+>make : Symbol(make, Decl(index.js, 0, 35))
+>a : Symbol(a, Decl(index.js, 11, 26))
+
+        this.version = exports.version;
+>this.version : Symbol(Maker.version, Decl(index.js, 11, 35))
+>this : Symbol(Maker, Decl(index.js, 9, 15))
+>version : Symbol(Maker.version, Decl(index.js, 11, 35))
+>exports.version : Symbol(version, Decl(index.js, 5, 32))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>version : Symbol(version, Decl(index.js, 5, 32))
+    }
+};
+=== esm.js ===
+/** @import { Coord } from "./lib" */
+/**
+ * @overload
+ * @param {number} x
+ * @returns {number}
+ */
+/**
+ * @overload
+ * @param {string} x
+ * @returns {string}
+ */
+/**
+ * @param {unknown} x
+ */
+export function id(x) { return x; }
+>id : Symbol(id, Decl(esm.js, 2, 4), Decl(esm.js, 7, 4), Decl(esm.js, 0, 0))
+>x : Symbol(x, Decl(esm.js, 14, 19))
+>x : Symbol(x, Decl(esm.js, 14, 19))
+
+export class Holder {
+>Holder : Symbol(Holder, Decl(esm.js, 14, 35))
+
+    constructor() {
+        /** @type {Coord | undefined} */
+        this.point = undefined;
+>this.point : Symbol(Holder.point, Decl(esm.js, 16, 19))
+>this : Symbol(Holder, Decl(esm.js, 14, 35))
+>point : Symbol(Holder.point, Decl(esm.js, 16, 19))
+>undefined : Symbol(undefined)
+    }
+}
+Holder.count = 0;
+>Holder.count : Symbol(Holder.count, Decl(esm.js, 20, 1))
+>Holder : Symbol(Holder, Decl(esm.js, 14, 35))
+>count : Symbol(Holder.count, Decl(esm.js, 20, 1))
+
