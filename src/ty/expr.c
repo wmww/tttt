@@ -3983,6 +3983,7 @@ typedef struct LiteralMember {
     bool getter;
     bool numeric_name, symbol_name; // (A computed name of type `any` is both)
     Expr const* computed_key;
+    ObjectExprItem const* item;
 } LiteralMember;
 typedef struct LiteralMembers {
     LiteralMember* items;
@@ -3999,7 +4000,7 @@ static IndexInfo literal_members_index(Checker* me, LiteralMembers const* member
         bool included = key == TY_STRING ? !m->symbol_name : key == TY_NUMBER ? m->numeric_name : m->symbol_name;
         if (!included) continue;
         types[n] = m->type ? m->type : ty_object_literal_accessor_type(me, m->accessor, m->getter);
-        if (m->computed_key) components[component_count++] = (IndexComponent){ .name = m->computed_key, .type = types[n] };
+        if (m->computed_key) components[component_count++] = (IndexComponent){ .name = m->computed_key, .type = types[n], .item = m->item };
         n++;
     }
     IndexInfo ret = {
@@ -4498,7 +4499,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             (!name && ty_is_related(me, key_type, ty_intrinsic(me, TY_ES_SYMBOL), TY_RELATION_ASSIGNABLE)));
         literal_members_push(&members, (LiteralMember){
             .type = type, .accessor = is_accessor ? i->value.function : nullptr, .getter = i->tag == OBJECT_ITEM_GETTER,
-            .numeric_name = numeric_name, .symbol_name = symbol_name, .computed_key = i->computed_key,
+            .numeric_name = numeric_name, .symbol_name = symbol_name, .computed_key = i->computed_key, .item = i,
         });
 
         if (!name) {

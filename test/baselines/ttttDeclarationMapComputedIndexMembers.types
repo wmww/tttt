@@ -1,0 +1,56 @@
+//// [test/cases/ttttDeclarationMapComputedIndexMembers.ts] ////
+
+=== ttttDeclarationMapComputedIndexMembers.ts ===
+// An object literal's computed entity names that only make an index signature print as members (tsc's
+// indexInfoToObjectComputedNamesOrSignatureDeclaration), mapped like tsgo's reused members: the member, `[`, each
+// name, `]` (mcp-sdk's OAUTH_ERRORS)
+export class E { static errorCode: string; }
+>E : E
+>errorCode : string
+
+export class A extends E { static override errorCode = 'a'; }
+>A : A
+>E : E
+>errorCode : string
+>'a' : "a"
+
+export class B extends E { static override errorCode = 'b'; }
+>B : B
+>E : E
+>errorCode : string
+>'b' : "b"
+
+export const ERRS = {
+>ERRS : { readonly [A.errorCode]: typeof A; readonly [B.errorCode]: typeof B; }
+>{    [A.errorCode]: A,    [B.errorCode]: B,} as const : { readonly [A.errorCode]: typeof A; readonly [B.errorCode]: typeof B; }
+>{    [A.errorCode]: A,    [B.errorCode]: B,} : { readonly [A.errorCode]: typeof A; readonly [B.errorCode]: typeof B; }
+
+    [A.errorCode]: A,
+>[A.errorCode] : typeof A
+>A.errorCode : string
+>A : typeof A
+>errorCode : string
+>A : typeof A
+
+    [B.errorCode]: B,
+>[B.errorCode] : typeof B
+>B.errorCode : string
+>B : typeof B
+>errorCode : string
+>B : typeof B
+
+} as const;
+export const PLAIN = {
+>PLAIN : { readonly [A.errorCode]: typeof A; }
+>{    [A.errorCode]: A,} as const : { readonly [A.errorCode]: typeof A; }
+>{    [A.errorCode]: A,} : { readonly [A.errorCode]: typeof A; }
+
+    [A.errorCode]: A,
+>[A.errorCode] : typeof A
+>A.errorCode : string
+>A : typeof A
+>errorCode : string
+>A : typeof A
+
+} as const;
+

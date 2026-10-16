@@ -5047,12 +5047,25 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                     d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
                 }
                 member_begin(d);
+                // (Declaration maps: the member's node and its name's tokens keep their ranges, the type is made)
+                ObjectExprItem const* item = D_MAP(d) && component->item && span_valid(component->item->name_span) ? component->item : nullptr;
+                if (item) map_span(d, item->span, false);
                 if (info->readonly) out_lit(reused, "readonly ");
-                out_lit(reused, "[");
-                out(reused, span_sv(expr_outer_span(component->name)));
-                out_lit(reused, "]: ");
+                if (item) {
+                    map_span(d, item->name_span, false);
+                    out_lit(reused, "[");
+                    display_entity_expr(me, reused, component->name);
+                    out_lit(reused, "]");
+                    map_span(d, item->name_span, true);
+                    out_lit(reused, ": ");
+                } else {
+                    out_lit(reused, "[");
+                    out(reused, span_sv(expr_outer_span(component->name)));
+                    out_lit(reused, "]: ");
+                }
                 ty_display(me, d, component->type);
                 out_lit(reused, ";");
+                if (item) map_span(d, item->span, true);
                 out(d, d.multiline ? c_sv("\n") : c_sv(" "));
             }
             continue;

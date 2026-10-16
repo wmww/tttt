@@ -344,6 +344,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapComputedIndexMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMapConstEmptyTuple': {
         errors: true,
         symbols: true,

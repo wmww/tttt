@@ -727,6 +727,7 @@ static_assert(sizeof(Signature) == 160);
 typedef struct IndexComponent {
     Expr const* name; // What's in the brackets
     Ty const* type;
+    struct ObjectExprItem const* item; // The member (declaration maps), if known
 } IndexComponent;
 
 typedef struct IndexInfo {
