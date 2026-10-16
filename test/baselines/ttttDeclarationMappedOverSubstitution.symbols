@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationMappedOverSubstitution.ts] ////
+
+=== a.ts ===
+export const f = <O, S2 = undefined>() => {
+>f : Symbol(f, Decl(a.ts, 0, 12))
+>O : Symbol(O, Decl(a.ts, 0, 18))
+>S2 : Symbol(S2, Decl(a.ts, 0, 20))
+
+  type X<T> = { [K in keyof T as T[K] extends { a: unknown } ? K : never]: T[K] };
+>X : Symbol(X, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>K : Symbol(K, Decl(a.ts, 1, 17))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>K : Symbol(K, Decl(a.ts, 1, 17))
+>a : Symbol(a, Decl(a.ts, 1, 47))
+>K : Symbol(K, Decl(a.ts, 1, 17))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>K : Symbol(K, Decl(a.ts, 1, 17))
+
+  type Y<T> = { [K in keyof T]?: T[K] };
+>Y : Symbol(Y, Decl(a.ts, 1, 82))
+>T : Symbol(T, Decl(a.ts, 2, 9))
+>K : Symbol(K, Decl(a.ts, 2, 17))
+>T : Symbol(T, Decl(a.ts, 2, 9))
+>T : Symbol(T, Decl(a.ts, 2, 9))
+>K : Symbol(K, Decl(a.ts, 2, 17))
+
+  type R = O extends { s: infer S } ? S extends { b: string } ? X<S> | Y<S> : undefined : undefined;
+>R : Symbol(R, Decl(a.ts, 2, 40))
+>O : Symbol(O, Decl(a.ts, 0, 18))
+>s : Symbol(s, Decl(a.ts, 3, 22))
+>S : Symbol(S, Decl(a.ts, 3, 31))
+>S : Symbol(S, Decl(a.ts, 3, 31))
+>b : Symbol(b, Decl(a.ts, 3, 49))
+>X : Symbol(X, Decl(a.ts, 0, 43))
+>S : Symbol(S, Decl(a.ts, 3, 31))
+>Y : Symbol(Y, Decl(a.ts, 1, 82))
+>S : Symbol(S, Decl(a.ts, 3, 31))
+
+  return {} as unknown as undefined extends S2 ? R : S2;
+>S2 : Symbol(S2, Decl(a.ts, 0, 20))
+>R : Symbol(R, Decl(a.ts, 2, 40))
+>S2 : Symbol(S2, Decl(a.ts, 0, 20))
+
+};
+
