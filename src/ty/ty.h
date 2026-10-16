@@ -2642,6 +2642,10 @@ typedef struct TyDisplay {
     // Declaration emit: the node being printed is one the declaration transformer visits (a written annotation), not one
     // the node builder reuses: those of its mapped types and tuples aren't SingleLine (tryReuseExistingTypeNode sets it)
     bool transformer_node;
+    // Declaration emit, inside such a node: the node builder reprints this part (a JavaScript property signature's type,
+    // tsgo's ensureType through TryJSTypeNodeToTypeNode): its mapped types are SingleLine, its JSDoc literals' members
+    // have no descriptions
+    bool builder_part;
     // Declaration emit: where the node being reprinted (whose comments are written around it) starts and ends: a part
     // of it starting or ending there leaves them to it (the printer's containerPos and containerEnd). A caller that
     // writes a declaration's trailing comments itself sets the end to its annotation's

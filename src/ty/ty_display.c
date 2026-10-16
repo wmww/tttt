@@ -215,9 +215,16 @@ static void out_jsdoc_property_description(TyDisplay d, Span tag, Span name) {
         while (c < end && (*c == ' ' || *c == '\t')) c++;
     }
     if (c >= end) return;
+    // (The margin: the column the description starts at, or the tag's where it starts on a later line)
     char const* line_start = c;
     while (line_start > tag.buf && line_start[-1] != '\n') line_start--;
     isize margin = c - line_start;
+    if (*c == '\n' || *c == '\r') {
+        char const* tag_line = tag.buf;
+        char const* file_start = cstr_str(&span_source(tag)->contents);
+        while (tag_line > file_start && tag_line[-1] != '\n') tag_line--;
+        margin = tag.buf - tag_line;
+    }
     cstr text = cstr_init();
     bool first = true;
     while (c < end) {
@@ -244,7 +251,7 @@ static void out_jsdoc_property_description(TyDisplay d, Span tag, Span name) {
     char const* t = cstr_str(&text);
     isize n = cstr_size(&text);
     isize from = 0;
-    while (from < n && (t[from] == '\n' || t[from] == ' ' || t[from] == '\t')) from++;
+    while (from < n && (t[from] == '\n' || t[from] == '\r')) from++;
     while (n > from && (t[n - 1] == '\n' || t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\r')) n--;
     if (n > from) {
         out_lit(d, "/**\n");
@@ -2475,7 +2482,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
         Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
         member_begin_node(d, comment_span);
-        if (interface->jsdoc_described && d.transformer_node && d.multiline && d.comments && i->key.tag == INTERFACE_KEY_NAME &&
+        if (interface->jsdoc_described && d.transformer_node && !d.builder_part && d.multiline && d.comments && i->key.tag == INTERFACE_KEY_NAME &&
             span_valid(i->declaration)
         ) {
             out_jsdoc_property_description(d, i->declaration, i->key.span);
@@ -2592,7 +2599,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     display_node_signature(me, d, i->type.callable->function, ": ");
                 } else {
                     out_lit(d, ": ");
-                    if (i->type.parsed) display_node(me, d, &i->type);
+                    // (A JavaScript property signature's type goes through the node builder: tsgo's ensureType,
+                    // TryJSTypeNodeToTypeNode)
+                    TyDisplay type_d = d;
+                    if (d.transformer_node && d.comments && d.comments->file && d.comments->file->is_js) type_d.builder_part = true;
+                    if (i->type.parsed) display_node(me, type_d, &i->type);
                     else out(reused_if(d, false), c_sv("any"));
                 }
                 break;
@@ -2914,7 +2925,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_INTERFACE: {
             // (A mapped type the node builder reuses is SingleLine)
             TyDisplay interface_d = d;
-            if (!d.transformer_node && vec_interface_member_size(&node->interface.members) == 1 &&
+            if ((!d.transformer_node || d.builder_part) && vec_interface_member_size(&node->interface.members) == 1 &&
                 vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED
             ) {
                 interface_d.multiline = false;
@@ -2949,7 +2960,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             // a reused tuple node not being SingleLine)
             bool lines = false;
             // (An empty one too: the printer's emitList writes the line break of an empty multi-line list)
-            if (d.multiline && d.transformer_node && d.comments && span_valid(node->tuple.span)) {
+            if (d.multiline && d.transformer_node && !d.builder_part && d.comments && span_valid(node->tuple.span)) {
                 // (From its full start: a tuple on a line of its own after `=` is multi-line, tsc's pos)
                 char const* close = span_end_ptr(node->tuple.span);
                 while (close > node->tuple.span.buf && close[-1] != ']') close--;

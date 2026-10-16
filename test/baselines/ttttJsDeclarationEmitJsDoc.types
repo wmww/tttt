@@ -1,0 +1,46 @@
+//// [test/cases/ttttJsDeclarationEmitJsDoc.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {Object} Opts
+ * @property {string} a The a
+ *   continued here
+ *     indented more
+ * @property {string} [b=x] - with {@link Opts} default
+ *
+ * @property {number} c
+ *    starts on next line
+ * @property {Object} d The d
+ * @property {string} d.e The e
+ * @property {{ [K in "x"|"y"]: number }} m mapped
+ * @prop {number} f Last one */
+/** @type {Opts} */
+export const o = /** @type {any} */ (null);
+>o : Opts
+>(null) : any
+
+/** @type {{ [K in "a"|"b"]: number }} */
+export const x = /** @type {any} */ (null);
+>x : { a: number; b: number; }
+>(null) : any
+
+/**
+ * @param {{ [K in "a"]: [a: string, b: number] }} p
+ * @returns {{ [K in "a"]: { q: number } }}
+ */
+export function f(p) { return /** @type {any} */ (p); }
+>f : (p: { [K in "a"]: [a: string, b: number]; }) => { [K in "a"]: { q: number; }; }
+>p : { a: [a: string, b: number]; }
+>(p) : any
+>p : { a: [a: string, b: number]; }
+
+/** @typedef {{ [K in "a"]: number }} M */
+/** @typedef {[a: string,
+ *   b: number]} T */
+/** @typedef {number} NS.Inner */
+/**
+ * @callback Cb
+ * @param {string} [a-b]
+ * @returns {void}
+ */
+

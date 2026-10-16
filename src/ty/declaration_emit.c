@@ -3430,13 +3430,16 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
 #define SINKS_OFF cstr* sinks_type = my type_out; cstr* sinks_pseudo = my pseudo_out; my type_out = my pseudo_out = nullptr
 #define SINKS_ON my type_out = sinks_type; my pseudo_out = sinks_pseudo
 
-static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration) {
+// `visited`: a node tsgo's transformer visits in JavaScript too (a type alias's type, heritage type arguments, an
+// interface's members), not an annotation, which goes through the node builder there (TryJSTypeNodeToTypeNode)
+static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration, bool visited) {
     SINKS_OFF;
     TyParamNames names = walk_param_names(me);
     // (JavaScript's annotations go through the node builder, tsgo's TryJSTypeNodeToTypeNode)
     names.as_written = !my file->is_js;
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
+    d.builder_part = my file->is_js && !visited;
     // (The declaration ends with it: its trailing comments are the declaration's, which the caller writes)
     if (ends_declaration) d.comments_container_end = decl_map_type_end(node, my file);
     ty_display_node(my checker, d, node);
@@ -3444,9 +3447,10 @@ static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration) {
     SINKS_ON;
 }
 
-static void w_node(Walk* me, TypeNode const* node) { w_node_in(me, node, false); }
+static void w_node(Walk* me, TypeNode const* node) { w_node_in(me, node, false, false); }
+static void w_node_visited(Walk* me, TypeNode const* node) { w_node_in(me, node, false, true); }
 // A parameter's or variable's annotation
-static void w_node_last(Walk* me, TypeNode const* node) { w_node_in(me, node, true); }
+static void w_node_last(Walk* me, TypeNode const* node) { w_node_in(me, node, true, false); }
 
 static void w_type(Walk* me, Ty const* type) {
     SINKS_OFF;
@@ -4626,7 +4630,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             w_lit(me, "<");
             for_each (i, vec_spanned_type, &base->generic_params->params) {
                 if (i_index) w_lit(me, ", ");
-                w_node(me, &i->type);
+                w_node_visited(me, &i->type);
             }
             w_lit(me, ">");
         }
@@ -4682,6 +4686,20 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
             case CLASS_ITEM_CONSTRUCTOR: {
                 FunctionImpl const* ctor = &i->constructor.func;
                 if (is_class_overload_implementation(cls, i, ctor)) break;
+                if (js_overload_count(ctor)) {
+                    // (A JavaScript constructor's `@overload`s, without its comments: tsgo's reparsed constructors)
+                    cstr_erase(my out, member_start, cstr_size(my out) - member_start);
+                    u32 overloads = js_overload_count(ctor);
+                    for (u32 o = 0; o < overloads; o++) {
+                        FunctionImpl const* overload = function_impl_rare(ctor)->jsdoc_overloads[o].callable->function;
+                        w_indent(me);
+                        w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
+                        w_lit(me, "constructor");
+                        w_parameters(me, overload, i->access == ACCESS_MODIFIER_PRIVATE);
+                        w_lit(me, ";\n");
+                    }
+                    continue;
+                }
                 w_indent(me);
                 m_span(me, i->span, false);
                 w_member_modifiers(me, i->span.buf, i->access, false, false, false, false);
@@ -4789,10 +4807,10 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
                 m_span(me, member->key.index->name, false);
                 w_name(me, member->key.index->name);
                 w_lit(me, ": ");
-                w_node(me, &member->key.index->type);
+                w_node_visited(me, &member->key.index->type);
                 m(me, decl_map_type_end(&member->key.index->type, my file));
                 w_lit(me, "]: ");
-                w_node(me, &member->type);
+                w_node_visited(me, &member->type);
                 w_lit(me, ";");
                 m(me, member_end);
                 w_lit(me, "\n");
@@ -4827,7 +4845,7 @@ static void w_members(Walk* me, TypeNode const* type) {
         // (An interface's body isn't a node: not mapped itself)
         TypeNode body = *type;
         body.pos = 0;
-        w_node(me, &body);
+        w_node_visited(me, &body);
         // (Every member left out)
         if (cstr_size(my out) - start != 2 || cstr_str(my out)[start] != '{') return;
         cstr_erase(my out, start, 2);
@@ -4866,7 +4884,7 @@ static void w_heritage(Walk* me, VecSpannedType const* types, char const* keywor
     w_lit(me, " ");
     for_each (i, vec_spanned_type, types) {
         if (i_index) w_lit(me, ", ");
-        w_node(me, &i->type);
+        w_node_visited(me, &i->type);
     }
     Span last = vec_spanned_type_back(types)->span;
     m_span(me, last, true);
@@ -4894,7 +4912,7 @@ static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* sta
     w_name(me, decl->name);
     w_type_params(me, &decl->generic);
     w_lit(me, " = ");
-    w_node(me, &decl->type);
+    w_node_visited(me, &decl->type);
     w_lit(me, ";");
     m(me, statement_end(statement));
     w_lit(me, "\n");
