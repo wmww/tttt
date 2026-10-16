@@ -416,6 +416,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationWalkPrintsWithParamNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,

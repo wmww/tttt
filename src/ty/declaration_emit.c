@@ -530,10 +530,12 @@ static void print_type(Walk* me, Ty const* type, bool reports) {
     // (With the types baseline's node reuse: tsc's declaration emit reuses annotations the same way, naming what a
     // reused name refers to anew where it means something else here)
     cstr text = cstr_init();
+    TyParamNames names = walk_param_names(me);
     ty_display(my checker, (TyDisplay){
         .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
-        .suppress_fallback = !reports, .in_object_literal = my in_object_literal,
+        .suppress_fallback = !reports, .in_object_literal = my in_object_literal, .param_names = &names,
     }, type);
+    ty_param_names_drop(&names);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
         fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.size, my emitting.name.buf, cstr_str(&text));
     }

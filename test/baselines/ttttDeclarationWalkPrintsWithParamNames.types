@@ -1,0 +1,67 @@
+//// [test/cases/ttttDeclarationWalkPrintsWithParamNames.ts] ////
+
+=== m.ts ===
+export enum ActivityType { Playing, Streaming }
+>ActivityType : ActivityType
+>Playing : ActivityType.Playing
+>Streaming : ActivityType.Streaming
+
+export interface GatewayActivity { name: string; type: ActivityType }
+>name : string
+>type : ActivityType
+
+=== s.ts ===
+export const kData = Symbol('data');
+>kData : unique symbol
+>Symbol('data') : unique symbol
+>Symbol : SymbolConstructor
+>'data' : "data"
+
+export type ReplaceOmittedWithUnknown<Omitted extends keyof Data | '', Data> = {
+>ReplaceOmittedWithUnknown : ReplaceOmittedWithUnknown<Omitted, Data>
+
+    [Key in keyof Data]: Key extends Omitted ? unknown : Data[Key];
+};
+export abstract class Structure<DataType extends {}, Omitted extends keyof DataType | '' = ''> {
+>Structure : Structure<DataType, Omitted>
+
+    protected [kData]: Readonly<ReplaceOmittedWithUnknown<Omitted, DataType>>;
+>[kData] : Readonly<ReplaceOmittedWithUnknown<Omitted, DataType>>
+>kData : unique symbol
+
+    constructor(data: any) { this[kData] = data; }
+>data : any
+>this[kData] = data : any
+>this[kData] : Readonly<ReplaceOmittedWithUnknown<Omitted, DataType>>
+>this : this
+>kData : unique symbol
+>data : any
+}
+=== a.ts ===
+import type { GatewayActivity, ActivityType } from './m';
+>GatewayActivity : GatewayActivity
+>ActivityType : ActivityType
+
+import { Structure } from './s';
+>Structure : typeof Structure
+
+import { kData } from './s';
+>kData : unique symbol
+
+export class Activity<Omitted extends keyof GatewayActivity | '' = ''> extends Structure<GatewayActivity, Omitted> {
+>Activity : Activity<Omitted>
+>Structure : Structure<GatewayActivity, Omitted>
+
+    /** When type is {@link ActivityType.Streaming} */
+    public get type() {
+>type : "type" extends infer T ? T extends "type" ? T extends Omitted ? unknown : GatewayActivity[T] : never : never
+
+        return this[kData].type;
+>this[kData].type : "type" extends infer T ? T extends "type" ? T extends Omitted ? unknown : GatewayActivity[T] : never : never
+>this[kData] : Readonly<import("./s").ReplaceOmittedWithUnknown<Omitted, GatewayActivity>>
+>this : this
+>kData : unique symbol
+>type : "type" extends infer T ? T extends "type" ? T extends Omitted ? unknown : GatewayActivity[T] : never : never
+    }
+}
+
