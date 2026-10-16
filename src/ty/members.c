@@ -293,6 +293,63 @@ static void builder_sort_stable_from(MembersBuilder* builder, u32 from) {
 
 static void builder_sort_stable(MembersBuilder* builder) { builder_sort_stable_from(builder, 0); }
 
+// tsgo's getNamedMembers of a class or interface: the members "contained by" the container first, then the others,
+// each group sorted. Its isDeclarationContainedBy compares text ranges without looking at files, so an inherited
+// member of another file whose declaration's offsets fall inside the container's is in the first group too (babel's
+// `class ESTreeParserMixin extends superClass` lists util.ts's addExtra before its own members). The own members
+// (before `own_props`) are taken as they are unless such an inherited one joins them; the rest sorted by declaration
+static void builder_sort_class_members(MembersBuilder* builder, u32 own_props, Symbol const* container) {
+    bool joins = false;
+    for (u32 i = own_props; container && i < builder->props_count && !joins; i++) {
+        Prop const* prop = builder->props[i];
+        while (prop && !prop->decl->decl_span_count && prop->target) prop = prop->target;
+        if (!prop || !prop->decl->decl_span_count || !span_source(prop->decl->decl_spans[0])) continue;
+        Span d = prop->decl->decl_spans[0];
+        isize_t start = d.buf - cstr_str(&span_source(d)->contents), end = start + d.size;
+        for (u32 k = 0; k < container->decl_count && !joins; k++) {
+            Span c = container->decls[k].full;
+            if (!span_valid(c) || !span_source(c) || span_source(c) == span_source(d)) continue;
+            isize_t cs = c.buf - cstr_str(&span_source(c)->contents), ce = cs + c.size;
+            joins = start >= cs && end <= ce;
+        }
+    }
+    if (!joins) {
+        builder_sort_stable_from(builder, own_props);
+        return;
+    }
+    // (Partition: the own ones and the contained inherited ones, then the others; each sorted by declaration)
+    builder_unindex(builder);
+    u32 n = builder->props_count - own_props;
+    Prop** rest = malloc(sizeof(Prop*) * n);
+    panic_if(!rest, "out of memory");
+    u32 first = own_props, others = 0;
+    for (u32 i = own_props; i < builder->props_count; i++) {
+        Prop* prop = builder->props[i];
+        Prop const* declared = prop;
+        while (declared && !declared->decl->decl_span_count && declared->target) declared = declared->target;
+        bool contained = false;
+        if (declared && declared->decl->decl_span_count && span_source(declared->decl->decl_spans[0])) {
+            Span d = declared->decl->decl_spans[0];
+            isize_t start = d.buf - cstr_str(&span_source(d)->contents), end = start + d.size;
+            for (u32 k = 0; k < container->decl_count && !contained; k++) {
+                Span c = container->decls[k].full;
+                if (!span_valid(c) || !span_source(c)) continue;
+                isize_t cs = c.buf - cstr_str(&span_source(c)->contents), ce = cs + c.size;
+                contained = start >= cs && end <= ce;
+            }
+        }
+        if (contained) builder->props[first++] = prop;
+        else rest[others++] = prop;
+    }
+    memcpy(builder->props + first, rest, sizeof(Prop*) * others);
+    free(rest);
+    u32 total = builder->props_count;
+    builder->props_count = first;
+    builder_sort_stable_from(builder, 0);
+    builder->props_count = total;
+    builder_sort_stable_from(builder, first);
+}
+
 // tsc's getNamedMembers lists a class's static members declared in the class first, then the others by declaration
 // (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
 static void builder_prototype_last(MembersBuilder* builder) {
@@ -2765,7 +2822,7 @@ static bool base_is_dynamic(Checker* me, Ty const* base, u32 depth) {
 }
 
 // Raw members with their bases' (Members.bases) added as they are
-static Members const* complete_members(Checker* me, Members const* raw) {
+static Members const* complete_members(Checker* me, Members const* raw, Symbol const* container) {
     if (!members_rare(raw)->base_count) return raw;
     MembersBuilder builder = {0};
     for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, raw->props[i]);
@@ -2775,7 +2832,7 @@ static Members const* complete_members(Checker* me, Members const* raw) {
     for (u32 i = 0; i < members_rare(raw)->base_count; i++) builder_add_inherited(me, &builder, members_rare(raw)->bases[i]);
     // (tsgo's getNamedMembers: the members declared in the type first, then the inherited ones, all of them by where
     // they're declared rather than base by base: ElementContentEditable's before HTMLElement's own in HTMLSpanElement)
-    builder_sort_stable_from(&builder, raw->prop_count);
+    builder_sort_class_members(&builder, raw->prop_count, container);
     return builder_finish(me, &builder);
 }
 
@@ -3113,7 +3170,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     for (u32 j = constructs; j < builder.construct_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.construct[j]);
                 }
             }
-            builder_sort_stable_from(&builder, own_props); // (Inherited ones by declaration, see complete_members())
+            builder_sort_class_members(&builder, own_props, decl); // (Inherited ones by declaration, see complete_members())
             ty_buf_drop(&bases);
             ty_buf_drop(&written_bases);
             Members const* ret = builder_finish(me, &builder);
@@ -4543,7 +4600,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 Ty const* self = ty->declared.type_params.len ? ty_reference(me, ty, ty->declared.type_params) : ty;
                 return resolve_members_with_this(me, ty, ty->declared.type_params, self);
             }
-            if (ty->declared.raw) return complete_members(me, declared_raw_members(me, ty));
+            if (ty->declared.raw) return complete_members(me, declared_raw_members(me, ty), ty->declared.symbol);
             return resolve_declared_members(me, ty);
 
         case TY_REFERENCE: {

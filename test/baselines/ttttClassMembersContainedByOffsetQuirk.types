@@ -1,0 +1,54 @@
+//// [test/cases/ttttClassMembersContainedByOffsetQuirk.ts] ////
+
+=== a.ts ===
+// Padding so that Base's members sit at offsets inside Mixed's text range in b.ts.
+// ..........................................................................................
+// ..........................................................................................
+export class Base {
+>Base : Base
+
+    alpha(): void {}
+>alpha : () => void
+
+    beta(): void {}
+>beta : () => void
+}
+export class Far {
+>Far : Far
+
+    gamma(): void {}
+>gamma : () => void
+}
+=== b.ts ===
+import { Base } from "./a";
+>Base : typeof Base
+
+export const mixin = (sup: typeof Base) => class Mixed extends sup {
+>mixin : (sup: typeof Base) => typeof Mixed
+>(sup: typeof Base) => class Mixed extends sup {    // ..........................................................................................    // ..........................................................................................    // ..........................................................................................    own(): void {}} : (sup: typeof Base) => typeof Mixed
+>sup : typeof Base
+>Base : typeof Base
+>class Mixed extends sup {    // ..........................................................................................    // ..........................................................................................    // ..........................................................................................    own(): void {}} : typeof Mixed
+>Mixed : typeof Mixed
+>sup : Base
+
+    // ..........................................................................................
+    // ..........................................................................................
+    // ..........................................................................................
+    own(): void {}
+>own : () => void
+
+};
+export const mixin2 = (sup: typeof Base) => class extends sup {
+>mixin2 : (sup: typeof Base) => typeof (Anonymous class)
+>(sup: typeof Base) => class extends sup {    own2(): void {}} : (sup: typeof Base) => typeof (Anonymous class)
+>sup : typeof Base
+>Base : typeof Base
+>class extends sup {    own2(): void {}} : typeof (Anonymous class)
+>sup : Base
+
+    own2(): void {}
+>own2 : () => void
+
+};
+

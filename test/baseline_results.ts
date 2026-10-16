@@ -67,6 +67,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassMembersContainedByOffsetQuirk': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttComputedDestructuringNarrowing': {
         errors: true,
         symbols: true,
