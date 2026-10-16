@@ -570,21 +570,24 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`): its emit-only option
   diagnostics (TS5055/5056 of .js outputs) are missing and noEmitOnError's exit code is 2 where tsc's is 1;
   `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit (plan 64).
-- JavaScript declaration diagnostics (`declaration_diagnostics_check()`): outside isolatedDeclarations only a CommonJS
-  file's exports report (`check_js_commonjs_exports()`, `Emitting.name_not_node`); when emitting, the rest of a JS
-  file's walk (and `check_commonjs_exports()`, which repeats the exports' serialization for painting) reports into
-  `js_scratch`, so tttt writes a `.d.ts` where tsgo reports TS4xxx and writes none (own test
-  ttttJsDeclarationEmitCommonJs had one). Reporting them for real costs jsDeclarationsImportAliasExposedWithinNamespace
-  (a dotted `@typedef`'s namespace doesn't merge with its `const`: spurious TS4078) and is neutral on dtsdiff. Under
-  `--noEmit` JS files aren't walked at all beyond their CommonJS exports.
+- JavaScript declaration diagnostics (`declaration_diagnostics_check()`): `check_commonjs_exports()` repeats the
+  CommonJS exports' serialization (for painting) into a scratch context, `check_js_commonjs_exports()` having reported
+  them. `export_specifier_local()` (check_entity_name()): a module export merging `export { x }` with a dotted
+  `@typedef`'s namespaces is checked as x's local, where tsgo's binder merges the namespaces. Shown by:
+  jsDeclarationsImportAliasExposedWithinNamespace.
+- JavaScript declaration emit guesses (one or two suite tests each): a default-exported function's `@overload`s keep
+  the statement's comments, other functions' don't (`emit_function_declaration()`); a constructor's `@overload`s have no
+  comments; `@property` description margins follow parseTagComments by observation (the first line's text column, or
+  the tag's column when the description starts on the next line; `out_jsdoc_property_description()`, `{@link}` copied
+  as written); `ty_jsdoc_name_is_type()` copies tsgo eliding the import of a JSDoc name its fallback resolves as a
+  value (tsgo's own `.d.ts` then doesn't resolve).
 - JavaScript declaration emit (`declaration_emit.c`, plan 64 stage 6): CommonJS exports are found by a syntactic
   walk (`collect_commonjs()`, `ast_walk_statement()`), not the binder's export symbols; whether a member's name
   "resolves elsewhere" (tsgo's GetReferencedValueDeclaration) is looked up from the file's scope wherever the
   assignment is; a class expression's self-reference (tsgo's watchedClassSymbol) is found by writing the class into a
   scratch string first (`cjs_class_self_referenced()`); `this["x"]`'s quotes are re-read from source text
   (`this_property_literal_name()`); a JSDoc type literal member's span reaches the next tag but the map trims trivia
-  before it (query's root.tsdown.config maps); `@property` descriptions aren't written as comments (tsgo's
-  preservePartialJsDoc); `export default`'s `@type` is printed as its type, `module.exports =`'s reused (by
+  before it (query's root.tsdown.config maps); `export default`'s `@type` is printed as its type, `module.exports =`'s reused (by
   observation of tsgo's quotes); a function typed by a generic JSDoc `@type {F}` gets its type parameter list cut out
   of the printed signature (`w_signature()`). Shown by: `baseline_tests --dts-js`, dtsdiff.
 - `raise_stack_limit` (main.c): conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops

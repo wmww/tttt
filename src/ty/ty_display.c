@@ -1887,6 +1887,17 @@ static bool import_type_options_valid(csview options) {
     return true;
 }
 
+// Whether tsgo's trackExistingEntityName finds a JSDoc reference's name as a type, tracking (painting) it: not a value
+// the JSDoc fallback makes a type of (a JavaScript constructor function, TS2749's), nor a `const { X } = require()`
+// of a `module.exports = { X }` property, which tsgo's alias resolves to the property, a value. Its import is elided
+// then, which tsgo's own output can't resolve (jsDeclarationsFunctionLikeClasses)
+bool ty_jsdoc_name_is_type(Symbol const* found, IdentifierType const* identifier) {
+    if (identifier->target && !(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return false;
+    if (!(found->flags & SYMBOL_ALIAS) || !found->alias || !found->alias->item || !found->alias->item->require_binding) return true;
+    Symbol const* target = symbol_resolve_alias((Symbol*)found);
+    return !(target && target != found && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY);
+}
+
 static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->keyword) {
@@ -2025,7 +2036,9 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
     if (d.tracker && first && !(first->flags & SYMBOL_TYPE_PARAMETER) && !first->is_parameter && d.enclosing) {
         Symbol const* found = scope_resolve(d.enclosing, span_sv(qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) :
             identifier->name), qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
-        if (found) d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
+        if (found && (qualified || !identifier->jsdoc || ty_jsdoc_name_is_type(found, identifier))) {
+            d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
+        }
     }
     for_each (i, vec_span, identifier_type_namespaces(identifier)) {
         out_mapped(d, *i);

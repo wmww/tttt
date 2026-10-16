@@ -276,9 +276,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
         color_error, failed, color_normal, " failed, ",
         vec_baseline_test_result_size(&my results) - skipped, " total\n"
     );
-    if (dts_total || dts_js) {
+    if (dts_total) {
         println("  dts (declaration emit, counted above): ", color_good, dts_passed, color_normal, " / ", dts_total,
-            " (JavaScript inputs apart: ", dts_js_passed, " / ", dts_js, ")\n");
+            " (with JavaScript inputs: ", dts_js_passed, " / ", dts_js, ")\n");
     }
     if (skipped) println("  (", skipped, " configurations skipped: tsgo doesn't run them, an option 7.0 removed)\n");
     if (my has_filter && passed + failed == 0) {

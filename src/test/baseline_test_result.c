@@ -138,10 +138,10 @@ static void run_dts(BaselineTestResult* me, BaselineTestCase const* test_case, c
     JsSection* sections = c_new_n(JsSection, CAP);
     u32 count = js_baseline_declarations(cstr_sv(&expected), inputs, sections, CAP);
     if (count) {
-        my has_dts = !js_inputs;
+        my has_dts = true;
         my dts_js = js_inputs;
     }
-    if (!my has_dts && !my dts_js) {
+    if (!my has_dts) {
         free(sections);
         cstr_drop(&expected);
         return;

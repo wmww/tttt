@@ -53,7 +53,7 @@ if args.k is not None:
         for name, first in items:
             print(name if args.names else f'{name}: {first}')
     sys.exit(0)
-summary = re.search(r'JavaScript inputs apart: (\d+) / (\d+)' if args.js else r'dts \(declaration emit.*?\): (\d+) / (\d+)', text)
+summary = re.search(r'with JavaScript inputs: (\d+) / (\d+)' if args.js else r'dts \(declaration emit.*?\): (\d+) / (\d+)', text)
 if summary:
     print(f'dts {summary.group(1)} / {summary.group(2)}, {total} failing ({len(buckets)} buckets; `-` tttt wrote, `+` tsgo did)')
 for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))[:60]:

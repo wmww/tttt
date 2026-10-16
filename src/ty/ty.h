@@ -2684,6 +2684,9 @@ struct DeclComments;
 void ty_append_binding_pattern_commented(cstr* out, struct Binding const* binding, struct SourceFile const* map,
     struct DeclComments const* comments, u32 indent);
 bool ty_is_identifier_name(csview name); // An identifier as written (`#x` too)
+// Declaration emit: whether a JSDoc type reference's name, `found` as a type from where it is printed, is one tsgo tracks
+// (trackExistingEntityName, or checkEntityNameVisibility): not a value the JSDoc fallback makes a type of
+bool ty_jsdoc_name_is_type(struct Symbol const* found, struct IdentifierType const* identifier);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);

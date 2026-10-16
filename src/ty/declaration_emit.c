@@ -2684,6 +2684,7 @@ static void check_type_reference(Walk* me, IdentifierType const* type) {
     // (An import of a value-only property of what `export =` names isn't a type: the name means a global there, tsc's
     // resolveName goes on past the import; node's `import { Console } from 'node:console'`)
     if (!type->jsdoc && ty_export_equals_property_means_global(my checker, type)) return;
+    if (type->jsdoc && type->symbol && !ty_jsdoc_name_is_type(type->symbol, type)) return;
     check_entity_name(me, type->symbol, type->name, SYMBOL_TYPE);
 }
 
@@ -4292,8 +4293,10 @@ static void emit_function_declaration(Walk* me, Statement const* statement, Cont
     // the implementation elided)
     u32 overloads = js_overload_count(fn);
     if (overloads) {
-        my statement_synthesized = true;
-        if (my statement_start <= (isize_t)cstr_size(my out)) cstr_erase(my out, my statement_start, cstr_size(my out) - my statement_start);
+        // (A default export's keep the statement's comments)
+        bool default_export = statement->decl.props.exported == DECL_EXPORTED_YES_DEFAULT;
+        my statement_synthesized = !default_export;
+        if (!default_export && my statement_start <= (isize_t)cstr_size(my out)) cstr_erase(my out, my statement_start, cstr_size(my out) - my statement_start);
         for (u32 i = 0; i < overloads; i++) {
             FunctionImpl const* overload = function_impl_rare(fn)->jsdoc_overloads[i].callable->function;
             w_indent(me);
