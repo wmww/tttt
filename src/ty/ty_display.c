@@ -4195,6 +4195,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     out_lit(d, "[");
     TyDisplay name_d = reused_if(d, !fresh_mapper);
     name_d.approx = nullptr; // (tsc's typeParameterToDeclarationWithConstraint doesn't count the name)
+    name_d.param_declaration = true; // (Declaration maps: typeParameterToName gives it its declaration's range)
     ty_display(me, name_d, type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
     append_printed(d, &constraint_text);

@@ -1,0 +1,17 @@
+//// [test/cases/ttttDeclarationMapsMappedTypeParam.ts] ////
+
+=== a.ts ===
+export function f<R>(r: R) {
+>f : <R>(r: R) => Promise<string> & { [K in keyof R]: R[K]; }
+>r : R
+
+  type S = Promise<string> & {
+>S : Promise<string> & { [K in keyof R]: R[K]; }
+
+    [K in keyof R]: R[K]
+  };
+  return null as any as S;
+>null as any as S : Promise<string> & { [K in keyof R]: R[K]; }
+>null as any : any
+}
+

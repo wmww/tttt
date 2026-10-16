@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationMapsMappedTypeParam.ts] ////
+
+=== a.ts ===
+export function f<R>(r: R) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>R : Symbol(R, Decl(a.ts, 0, 18))
+>r : Symbol(r, Decl(a.ts, 0, 21))
+>R : Symbol(R, Decl(a.ts, 0, 18))
+
+  type S = Promise<string> & {
+>S : Symbol(S, Decl(a.ts, 0, 28))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    [K in keyof R]: R[K]
+>K : Symbol(K, Decl(a.ts, 2, 5))
+>R : Symbol(R, Decl(a.ts, 0, 18))
+>R : Symbol(R, Decl(a.ts, 0, 18))
+>K : Symbol(K, Decl(a.ts, 2, 5))
+
+  };
+  return null as any as S;
+>S : Symbol(S, Decl(a.ts, 0, 28))
+}
+
