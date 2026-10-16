@@ -54,7 +54,10 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
    intersection dedup): type-fest -38% instructions, every corpus -1..-4% (measurements.md "Perf + real code"), folo's
    worst file 11 -> 0.6 s; scaleprobe all linear, perfsweep median 0.21. Mutation seed 81 (one agent): 16 -> 7, suite
    13764 / 13803 (+8 own tests); leftovers in bugs/missing_checks.md, perf leftovers in bugs/perf_leads.md.
-10. **Triage.**
+10. Done 2026-10-16: triage. Computed accessor pairs get TS2676/TS2808, late-bound method overloads group by symbol
+   (suite 13766 / 13805, +2 own tests; every oracle unchanged, instructions flat). `scripts/perfsweep.py --defaults`
+   times tttt at its default checkers: dokploy gains nothing at K4 for 2x memory (bugs/perf_leads.md). One agent pruned
+   ~50 fixed entries from bugs/missing_checks.md and bugs/sourcesweep_checker.md (some were tsc 5 behaviour, not tsgo's).
 11. **Insights.** report.md asks the human plan 76's question (local loop: none / watch + `-b` buildinfo / LSP).
 
 After the insights entry (for the next window): what the human decides on plan
