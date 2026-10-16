@@ -1,0 +1,34 @@
+//// [test/cases/ttttDeclarationNestedParenthesizedTypes.ts] ////
+
+=== ttttDeclarationNestedParenthesizedTypes.ts ===
+// Nested parentheses around a type, `((C<Step>))`, are each a node tsgo reuses: declaration emit writes them all and
+// maps each (effect's ExecutionPlan StepProvides; tttt kept one `parenthesized` flag)
+type C<T> = T extends { p: infer P } ? P : unknown;
+>C : Symbol(C, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 7))
+>T : Symbol(T, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 7))
+>p : Symbol(p, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 23))
+>P : Symbol(P, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 32))
+>P : Symbol(P, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 32))
+
+export type S<Steps, Out = unknown> = Steps extends [infer Step, ...infer Rest] ? S<Rest, Out & ((C<Step>))> : Out;
+>S : Symbol(S, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 51))
+>Steps : Symbol(Steps, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 14))
+>Out : Symbol(Out, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 20))
+>Steps : Symbol(Steps, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 14))
+>Step : Symbol(Step, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 58))
+>Rest : Symbol(Rest, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 73))
+>S : Symbol(S, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 2, 51))
+>Rest : Symbol(Rest, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 73))
+>Out : Symbol(Out, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 20))
+>C : Symbol(C, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 0, 0))
+>Step : Symbol(Step, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 58))
+>Out : Symbol(Out, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 3, 20))
+
+export declare const x: ((string)) | (((number[])));
+>x : Symbol(x, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 4, 20))
+
+export declare function f(a: ((() => void)) | null): void;
+>f : Symbol(f, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 4, 52))
+>a : Symbol(a, Decl(ttttDeclarationNestedParenthesizedTypes.ts, 5, 26))
+

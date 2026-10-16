@@ -127,6 +127,8 @@ typedef struct TypeNode {
     } tag;
     bool parsed : 1;
     bool parenthesized : 1; // Written in parentheses (the types baseline reprints annotations as written)
+    // Written in more parentheses than one, `((T))`, how many more (up to 3): tsgo reuses each ParenthesizedType node
+    uint8_t paren_extra : 2;
     bool placeholder : 1; // The empty operand before a leading `|` or `&` (`| A | B`), not written
     // JSDoc `T=`: the union `T | undefined` it means, which an `@param` takes for an optional parameter of type `T`
     bool jsdoc_optional : 1;

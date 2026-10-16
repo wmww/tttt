@@ -2771,6 +2771,17 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
     d.array_element_node = false;
     d.constituent_node = false;
     if (node->parenthesized) {
+        // (Each nested pair is a node of its own, mapped from inside its `(`)
+        SourceFile const* file = D_MAP(d);
+        char const* at = node->paren_extra && file ? decl_map_type_start(node, file) : nullptr;
+        char const* file_end = file ? cstr_str(&file->contents) + cstr_size(&file->contents) : nullptr;
+        for (u32 i = 0; i < node->paren_extra; i++) {
+            out_lit(d, "(");
+            if (at && at < file_end && *at == '(') {
+                at = decl_map_skip_trivia(at + 1, file_end);
+                map_at(d, at);
+            }
+        }
         out_lit(d, "(");
         map_at(d, decl_map_type_inner_start(node, D_MAP(d)));
     }
@@ -3061,8 +3072,19 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
         }   break;
     }
     if (node->parenthesized) {
-        map_at(d, decl_map_type_inner_end(node, D_MAP(d)));
+        SourceFile const* file = D_MAP(d);
+        char const* at = decl_map_type_inner_end(node, file);
+        map_at(d, at);
         out_lit(d, ")");
+        char const* file_end = file ? cstr_str(&file->contents) + cstr_size(&file->contents) : nullptr;
+        for (u32 i = 0; i < node->paren_extra; i++) {
+            if (at && at < file_end) {
+                at = decl_map_skip_trivia(at, file_end);
+                if (at < file_end && *at == ')') at = at + 1;
+                map_at(d, at);
+            }
+            out_lit(d, ")");
+        }
     }
 }
 

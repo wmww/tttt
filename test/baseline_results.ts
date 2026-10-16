@@ -392,6 +392,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationNestedParenthesizedTypes': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationOverloadTypeofInstantiated': {
         errors: true,
         symbols: true,

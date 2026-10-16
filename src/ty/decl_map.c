@@ -275,8 +275,8 @@ char const* decl_map_type_inner_start(TypeNode const* node, SourceFile const* fi
     char const* start = decl_map_type_start(node, file);
     if (!start || !node->parenthesized) return start;
     char const* end = file_end(file);
-    // (One `(`: tttt keeps one flag for nested parentheses, and what is inside may start with one, `(() => T)`)
-    if (start < end && *start == '(') start = decl_map_skip_trivia(start + 1, end);
+    // (As many `(` as written, and no more: what is inside may start with one, `(() => T)`)
+    for (u32 i = 0; i <= node->paren_extra && start < end && *start == '('; i++) start = decl_map_skip_trivia(start + 1, end);
     return start;
 }
 
@@ -359,5 +359,13 @@ char const* decl_map_type_end(TypeNode const* node, SourceFile const* file) {
     if (!end || !node->parenthesized) return end;
     char const* stop = file_end(file);
     end = decl_map_skip_trivia(end, stop);
-    return end < stop && *end == ')' ? end + 1 : end;
+    if (end >= stop || *end != ')') return end;
+    end++;
+    // (`((T))`: past each `)`)
+    for (u32 i = 0; i < node->paren_extra; i++) {
+        char const* close = decl_map_skip_trivia(end, stop);
+        if (close >= stop || *close != ')') break;
+        end = close + 1;
+    }
+    return end;
 }

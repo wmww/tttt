@@ -3402,6 +3402,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     } parsed;
 
     bool parenthesized = false;
+    uint8_t paren_extra = 0;
     bool placeholder = false;
     Span readonly_span = span_null;
     if (hop_start_if_ends_on_word_break(&p, "readonly")) {
@@ -3547,6 +3548,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         hop_whitespace(&p);
         expect_char(&p, ')');
         parenthesized = true;
+        // (Nested: one more around one already parenthesized, `((T))`)
+        if (ret->parenthesized) paren_extra = ret->paren_extra < 3 ? ret->paren_extra + 1 : 3;
     } else if (c == '{' && parse_interface(&p, false, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else if (*p.pos == '|' || *p.pos == '&') {
@@ -3562,6 +3565,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     if (p.shared->text) ret->pos = type_pos(&p, left_start);
     // (Some branches above only write part of `ret`, over what a failed attempt may have left)
     ret->parenthesized = parenthesized;
+    ret->paren_extra = parenthesized ? paren_extra : 0;
     ret->placeholder = placeholder;
     if (!p.shared->in_jsdoc || ret->tag != TYPE_UNION) ret->jsdoc_optional = false;
     ret->from_jsdoc = false;
