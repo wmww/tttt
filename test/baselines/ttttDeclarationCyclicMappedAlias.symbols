@@ -1,0 +1,56 @@
+//// [test/cases/ttttDeclarationCyclicMappedAlias.ts] ////
+
+=== fastdom.d.ts ===
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+>Omit : Symbol(Omit, Decl(fastdom.d.ts, 0, 0))
+>T : Symbol(T, Decl(fastdom.d.ts, 0, 10))
+>K : Symbol(K, Decl(fastdom.d.ts, 0, 12))
+>T : Symbol(T, Decl(fastdom.d.ts, 0, 10))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(fastdom.d.ts, 0, 10))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(fastdom.d.ts, 0, 10))
+>K : Symbol(K, Decl(fastdom.d.ts, 0, 12))
+
+declare class Fastdom {
+>Fastdom : Symbol(Fastdom, Decl(fastdom.d.ts, 0, 63))
+
+  clear<T extends () => void>(task: T): boolean;
+>clear : Symbol(Fastdom.clear, Decl(fastdom.d.ts, 2, 23))
+>T : Symbol(T, Decl(fastdom.d.ts, 3, 8))
+>task : Symbol(task, Decl(fastdom.d.ts, 3, 30))
+>T : Symbol(T, Decl(fastdom.d.ts, 3, 8))
+
+  extend<T extends object>(props: T): Omit<this, keyof T & keyof this> & T;
+>extend : Symbol(Fastdom.extend, Decl(fastdom.d.ts, 3, 48))
+>T : Symbol(T, Decl(fastdom.d.ts, 4, 9))
+>props : Symbol(props, Decl(fastdom.d.ts, 4, 27))
+>T : Symbol(T, Decl(fastdom.d.ts, 4, 9))
+>Omit : Symbol(Omit, Decl(fastdom.d.ts, 0, 0))
+>T : Symbol(T, Decl(fastdom.d.ts, 4, 9))
+>T : Symbol(T, Decl(fastdom.d.ts, 4, 9))
+
+  catch: null | ((e: unknown) => any);
+>catch : Symbol(Fastdom.catch, Decl(fastdom.d.ts, 4, 75))
+>e : Symbol(e, Decl(fastdom.d.ts, 5, 18))
+}
+
+declare const fastdom: Fastdom
+>fastdom : Symbol(fastdom, Decl(fastdom.d.ts, 8, 13))
+>Fastdom : Symbol(Fastdom, Decl(fastdom.d.ts, 0, 63))
+
+export default fastdom;
+>fastdom : Symbol(fastdom, Decl(fastdom.d.ts, 8, 13))
+
+=== a.ts ===
+import fastdomModule from './fastdom';
+>fastdomModule : Symbol(fastdomModule, Decl(a.ts, 0, 6))
+
+export const fastdom = fastdomModule.extend({ raf(cb: () => void) {} });
+>fastdom : Symbol(fastdom, Decl(a.ts, 1, 12))
+>fastdomModule.extend : Symbol(Fastdom.extend, Decl(fastdom.d.ts, 3, 48))
+>fastdomModule : Symbol(fastdomModule, Decl(a.ts, 0, 6))
+>extend : Symbol(Fastdom.extend, Decl(fastdom.d.ts, 3, 48))
+>raf : Symbol(raf, Decl(a.ts, 1, 45))
+>cb : Symbol(cb, Decl(a.ts, 1, 50))
+

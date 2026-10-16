@@ -709,6 +709,9 @@ static cstr unsafe_specifier(Walk* me, SourceFile const* target) {
     SpecifierMode override = SPECIFIER_MODE_NONE;
     // (An import type of an ES module from another format says so)
     if (node_next && target->has_format && target->is_esm && !file_esm) override = SPECIFIER_MODE_ESM;
+    // (With that attribute it's never reported, whatever the specifier: tsgo's symbolToTypeNode checks importModeOverride,
+    // which the attribute already set)
+    if (override != SPECIFIER_MODE_NONE) return cstr_null;
     cstr specifier = program_module_specifier(program, my file, target, override);
     if (!reaches_into_node_modules(&specifier)) {
         cstr_drop(&specifier);

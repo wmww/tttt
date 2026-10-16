@@ -851,8 +851,27 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty);
 
 // tsc's getTypeAliasForTypeLiteral: the type alias whose declared type is this type literal (written directly, perhaps
 // in parentheses)
-static Symbol const* type_alias_of_literal(Ty const* ty) {
+// (A mapped type has no node: its declaration is the alias whose type is a mapped type with its template node, the
+// alias its uninstantiated root goes by, whatever alias an instantiation does: `Omit<T, K>`'s `Pick<...>` is Pick's)
+static Symbol const* type_alias_of_literal(Checker* me, Ty const* ty) {
     TypeNode const* node = ty->anonymous.node;
+    if (!node && ty->anonymous.mapped) {
+        Ty const* root = ty;
+        for (u32 depth = 0; root->anonymous.target && root->anonymous.target->kind == TY_ANONYMOUS && depth < 16; depth++) {
+            root = root->anonymous.target;
+        }
+        Symbol const* alias = root->alias;
+        MappedInfo const* mapped = root->anonymous.mapped ? ty_mapped_info_unexpanded(me, root) : nullptr;
+        if (!mapped || !mapped->template_node || !alias || !(alias->flags & SYMBOL_TYPE_ALIAS)) return nullptr;
+        for (u32 i = 0; i < alias->decl_count; i++) {
+            if (alias->decls[i].kind != SYMBOL_DECL_TYPE_ALIAS) continue;
+            TypeDecl const* decl = alias->decls[i].node;
+            if (!decl || decl->type.tag != TYPE_INTERFACE || vec_interface_member_size(&decl->type.interface.members) != 1) continue;
+            InterfaceMember const* member = vec_interface_member_at(&decl->type.interface.members, 0);
+            if (member->key.tag == INTERFACE_KEY_MAPPED && &member->type == mapped->template_node) return alias;
+        }
+        return nullptr;
+    }
     Symbol const* alias = ty->alias;
     if (!node || node->tag != TYPE_INTERFACE || !alias || !(alias->flags & SYMBOL_TYPE_ALIAS)) return nullptr;
     for (u32 i = 0; i < alias->decl_count; i++) {
@@ -4076,6 +4095,10 @@ static bool mapped_needs_wrapper(Checker* me, TyDisplay d, MappedInfo const* map
 // A mapped type written inside a conditional type: parenthesized like one
 static bool mapped_as_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS || shows_alias(d, ty)) return false;
+    // (Inside itself it's a name or the cyclic placeholder: no parentheses)
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        if (i->ty == ty) return false;
+    }
     Members const* members = ty_members(me, ty);
     bool homomorphic_lost;
     return members->mapped && mapped_needs_wrapper(me, d, members->mapped, &homomorphic_lost);
@@ -6471,7 +6494,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     return;
                 }
                 // (and a type alias's type literal by the alias: tsc's getTypeAliasForTypeLiteral)
-                Symbol const* alias = type_alias_of_literal(ty);
+                Symbol const* alias = type_alias_of_literal(me, ty);
                 if (alias) {
                     out_symbol_name(me, d, alias, SYMBOL_TYPE);
                     return;

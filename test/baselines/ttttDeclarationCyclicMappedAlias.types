@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationCyclicMappedAlias.ts] ////
+
+=== fastdom.d.ts ===
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+>Omit : Omit<T, K>
+
+declare class Fastdom {
+>Fastdom : Fastdom
+
+  clear<T extends () => void>(task: T): boolean;
+>clear : <T extends () => void>(task: T) => boolean
+>task : T
+
+  extend<T extends object>(props: T): Omit<this, keyof T & keyof this> & T;
+>extend : <T extends object>(props: T) => Omit<this, keyof T & keyof this> & T
+>props : T
+
+  catch: null | ((e: unknown) => any);
+>catch : ((e: unknown) => any) | null
+>e : unknown
+}
+
+declare const fastdom: Fastdom
+>fastdom : Fastdom
+
+export default fastdom;
+>fastdom : Fastdom
+
+=== a.ts ===
+import fastdomModule from './fastdom';
+>fastdomModule : Fastdom
+
+export const fastdom = fastdomModule.extend({ raf(cb: () => void) {} });
+>fastdom : { clear: <T extends () => void>(task: T) => boolean; extend: <T extends object>(props: T) => (Exclude<"catch", keyof T & keyof Fastdom> | Exclude<"clear", keyof T & keyof Fastdom> | Exclude<"extend", keyof T & keyof Fastdom> extends infer T_1 extends keyof Fastdom ? { [P in T_1]: Fastdom[P]; } : never) & T; catch: null | ((e: unknown) => any); } & { raf(cb: () => void): void; }
+>fastdomModule.extend({ raf(cb: () => void) {} }) : { clear: <T extends () => void>(task: T) => boolean; extend: <T extends object>(props: T) => (Exclude<"catch", keyof T & keyof Fastdom> | Exclude<"clear", keyof T & keyof Fastdom> | Exclude<"extend", keyof T & keyof Fastdom> extends infer T_1 extends keyof Fastdom ? { [P in T_1]: Fastdom[P]; } : never) & T; catch: null | ((e: unknown) => any); } & { raf(cb: () => void): void; }
+>fastdomModule.extend : <T extends object>(props: T) => (Exclude<"catch", keyof T & keyof Fastdom> | Exclude<"clear", keyof T & keyof Fastdom> | Exclude<"extend", keyof T & keyof Fastdom> extends infer T_1 extends keyof Fastdom ? { [P in T_1]: Fastdom[P]; } : never) & T
+>fastdomModule : Fastdom
+>extend : <T extends object>(props: T) => (Exclude<"catch", keyof T & keyof Fastdom> | Exclude<"clear", keyof T & keyof Fastdom> | Exclude<"extend", keyof T & keyof Fastdom> extends infer T_1 extends keyof Fastdom ? { [P in T_1]: Fastdom[P]; } : never) & T
+>{ raf(cb: () => void) {} } : { raf(cb: () => void): void; }
+>raf : (cb: () => void) => void
+>cb : () => void
+
