@@ -725,6 +725,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIndexedAccessMissingKeyCircularAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferArrayToReadonlyArrayByElement': {
         errors: true,
         symbols: true,
@@ -752,6 +757,11 @@ const baselines = {
         types: true,
     },
     'ttttInheritedMembersDeclarationOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInstanceofNoLib': {
         errors: true,
         symbols: true,
         types: true,
@@ -958,6 +968,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttMappedKeyCircularConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverDeferredConstraintProps': {
         errors: true,
         symbols: true,
@@ -970,6 +985,11 @@ const baselines = {
         types: true,
     },
     'ttttMissingInitializerImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMixinBaseNotConstructor': {
         errors: true,
         symbols: true,
         types: true,
@@ -996,6 +1016,11 @@ const baselines = {
         dts: true,
     },
     'ttttNeverIndexRecord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNeverPropertyInstantiationExpression': {
         errors: true,
         symbols: true,
         types: true,
@@ -1181,7 +1206,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTupleMissingPropertiesElaboration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeParamDefaultOuterAutoVariable': {
         errors: true,
         symbols: true,
         types: true,
@@ -1212,6 +1247,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionRestSignaturesCombined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionSignatureOptionalNeverParam': {
         errors: true,
         symbols: true,
         types: true,
