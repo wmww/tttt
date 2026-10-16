@@ -57,6 +57,7 @@ typedef struct ResolvedModule {
 } ResolvedModule;
 
 void resolved_module_drop(ResolvedModule* me);
+ResolvedModule resolved_module_clone(ResolvedModule const* me);
 
 // fs and options must outlive the resolver. Options are read at resolution time, so they may still change after this
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options);

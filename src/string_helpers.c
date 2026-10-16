@@ -215,3 +215,18 @@ void text_decode_utf16_bom(cstr* contents) {
     cstr_drop(contents);
     *contents = out;
 }
+
+bool path_is_normalized(csview path) {
+    if (!path.size) return false;
+    const char* c = path.buf;
+    const char* end = path.buf + path.size;
+    if (*c == '/' && ++c == end) return true;
+    for (;;) {
+        const char* next = memchr(c, '/', (size_t)(end - c));
+        if (!next) next = end;
+        isize n = next - c;
+        if (!n || (c[0] == '.' && (n == 1 || (n == 2 && c[1] == '.')))) return false;
+        if (next == end) return true;
+        c = next + 1;
+    }
+}

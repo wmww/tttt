@@ -23,6 +23,7 @@
 #include "load_pool.h"
 #include "project.h"
 #include "symbol_chain.h"
+#include "cached_fs.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -90,7 +91,9 @@ typedef struct Program {
     bool follow_lib_references; // program_follow_lib_references()
     cstr lib_dir; // cstr_null: default_lib_dir
     ErrorCtx* errs; // unowned
-    Fs const* fs;
+    Fs const* fs; // cached_fs's
+    CachedFs* cached_fs;
+    double loader_parse_ms; // TTTT_LOAD_POOL_STATS without a pool: program_make_source()'s time
     cstr cwd; // program_cwd()
     Binder* binder;
     ModuleResolver* resolver; // Made on first use, the options are final by then
@@ -194,9 +197,11 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     check(errs);
     check(fs);
+    CachedFs* cached = cached_fs_new(fs);
     Program* ret = c_new(Program, {
         .errs = errs,
-        .fs = fs,
+        .fs = cached_fs_fs(cached),
+        .cached_fs = cached,
         .binder = binder_new(errs),
         .options = compiler_options_init(),
         .symlinks = symlink_cache_new(),
@@ -282,6 +287,7 @@ static void program_drop(Program* me) {
     }
     free(my extended_configs);
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
+    cached_fs_destroy(my cached_fs);
 }
 
 static csview program_cwd(Program const* me);
@@ -598,6 +604,26 @@ static csview program_cwd(Program const* me) {
     return cstr_sv(&my cwd);
 }
 
+// relative_path_of(program_cwd(me), path), which every lookup of a file by path does: without normalizing (two
+// allocations and a segment walk) a path that is already normalized and in the working directory, the common case. A
+// view of path then, else of *storage (which the caller drops)
+static csview program_canonical_view(Program const* me, csview path, cstr* storage) {
+    csview cwd = program_cwd(me);
+    if (path_is_normalized(path)) {
+        if (path.buf[0] != '/') return path;
+        if (cwd.size > 1 && path.size > cwd.size + 1 && path.buf[cwd.size] == '/' && !memcmp(path.buf, cwd.buf, cwd.size))
+            return csview_slice(path, cwd.size + 1, path.size);
+    }
+    *storage = relative_path_of(cwd, path);
+    return cstr_sv(storage);
+}
+
+static cstr program_canonical_path(Program const* me, csview path) {
+    cstr storage = cstr_null;
+    csview view = program_canonical_view(me, path, &storage);
+    return cstr_size(&storage) ? storage : cstr_from_sv(view);
+}
+
 void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path), void* ctx) {
     my file_size = file_size;
     my file_size_ctx = ctx;
@@ -737,13 +763,53 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
     return mode;
 }
 
+// SourceFile.preresolved: a worker's resolutions of the file's imports, in module_refs order (the loader asks in that
+// order too, so it looks from where it found the last). What the resolver's cache has for them, minus the lookup
+typedef struct PreresolvedEntry {
+    ModuleRef const* ref;
+    ResolutionMode mode;
+    ResolvedModule resolved;
+} PreresolvedEntry;
+
+typedef struct Preresolved {
+    PreresolvedEntry* entries;
+    u32 count, next;
+} Preresolved;
+
+static void preresolved_destroy(Preresolved* me) {
+    if (!me) return;
+    for (u32 i = 0; i < my count; i++) resolved_module_drop(&my entries[i].resolved);
+    free(my entries);
+    free(me);
+}
+
+// The worker's resolution of ref in mode, moved out, if it made one
+static bool preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode, ResolvedModule* out) {
+    if (!me) return false;
+    for (u32 n = 0; n < my count; n++) {
+        u32 i = (my next + n) % my count;
+        PreresolvedEntry* entry = &my entries[i];
+        if (entry->ref != ref) continue;
+        if (entry->mode != mode) return false;
+        *out = entry->resolved;
+        entry->resolved = (ResolvedModule){0};
+        entry->ref = nullptr;
+        my next = i + 1;
+        return true;
+    }
+    return false;
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     program_resolver(me);
     ModuleResolver* resolver = program_resolver_of(me, source);
     csview containing = cstr_sv(&source->canonical_path);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
-    ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    ResolvedModule resolved;
+    if (!preresolved_take(source->preresolved, ref, mode, &resolved)) {
+        resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    }
     program_learn_symlink(me, &resolved);
     csview unbuilt = program_output_of_resolved(me, &resolved);
     if (unbuilt.size) {
@@ -1494,12 +1560,14 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
 
 static void source_file_free(void* ctx, SourceFile* file) {
     ignore ctx;
+    preresolved_destroy(file->preresolved);
+    file->preresolved = nullptr;
     source_file_drop(file);
     free(file);
 }
 
 static void program_queue_path(Program* me, LoadPool* pool, csview absolute, bool is_stdlib) {
-    cstr canonical = relative_path_of(program_cwd(me), absolute);
+    cstr canonical = program_canonical_path(me, absolute);
     i64 size = my file_size ? my file_size(my file_size_ctx, cstr_sv(&canonical)) : 0;
     load_pool_queue(pool, cstr_sv(&canonical), is_stdlib, size);
     cstr_drop(&canonical);
@@ -1507,16 +1575,21 @@ static void program_queue_path(Program* me, LoadPool* pool, csview absolute, boo
 
 // Queues what the loader will probably load from a parsed file: a guess (the loader decides with what it learns after
 // parsing, like the file's module-ness, the helpers and JSX runtime imports), so a wrong one only costs a parse.
-// Resolutions go to the shared resolver's cache, where the loader finds them
-static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile const* file) {
+// Resolutions go to the shared resolver's cache, and to the file (SourceFile.preresolved), where the loader finds them
+static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* file) {
     if (my options.no_resolve) return;
     ModuleResolver* resolver = program_resolver_of(me, file);
     csview containing = cstr_sv(&file->canonical_path);
+    Preresolved* preresolved = file->module_ref_count ? c_new(Preresolved, {
+        .entries = c_new_n(PreresolvedEntry, file->module_ref_count),
+    }) : nullptr;
     for (u32 i = 0; i < file->module_ref_count; i++) {
         ModuleRef const* ref = file->module_refs[i];
         if (ref->is_declaration || ref->ambient_only) continue;
         ResolutionMode mode = program_module_ref_mode(me, file, ref);
-        ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+        ResolvedModule raw = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+        ResolvedModule resolved = resolved_module_clone(&raw);
+        preresolved->entries[preresolved->count++] = (PreresolvedEntry){ .ref = ref, .mode = mode, .resolved = raw };
         program_redirect_resolved(me, &resolved);
         bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
             (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
@@ -1524,6 +1597,12 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
         if (load) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
         resolved_module_drop(&resolved);
     }
+    if (preresolved && !preresolved->count) {
+        preresolved_destroy(preresolved);
+        preresolved = nullptr;
+    }
+    preresolved_destroy(file->preresolved);
+    file->preresolved = preresolved;
     for_each (s, vec_statement, &file->ast.statements) {
         if (s->tag != STATEMENT_SOURCE_DIRECTIVE) continue;
         SourceDirectiveStatement const* directive = s->source_directive;
@@ -1643,24 +1722,31 @@ static void record_include_reason(Program* me, SourceFile* file) {
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
-    cstr canonical_path = relative_path_of(program_cwd(me), path);
-
-    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
+    cstr storage = cstr_null;
+    csview canonical_view = program_canonical_view(me, path, &storage);
+    auto cached_source = hmap_box_source_file_get(&my source_files_map, canonical_view);
     if (cached_source) {
         record_include_reason(me, cached_source->second.get);
         // A source file is already created for this path
-        cstr_drop(&canonical_path);
+        cstr_drop(&storage);
         SourceFile* found = cached_source->second.get;
         if (found->found_searching_node_modules && !my node_modules_depth) program_found_outside_node_modules(found);
         return found;
     }
 
+    cstr canonical_path = cstr_size(&storage) ? storage : cstr_from_sv(canonical_view);
     // No source file is created for this path: a load pool worker may have parsed it, else parse it here
     program_resolver(me);
     SourceFile* source_file = nullptr;
     if (program_pool(me)) source_file = load_pool_take(my pool, cstr_sv(&canonical_path), my loading_stdlib, my errs);
     if (!source_file) {
+        struct timespec start, end;
+        timespec_get(&start, TIME_UTC);
         source_file = program_make_source(me, cstr_sv(&canonical_path), my loading_stdlib, my errs);
+        timespec_get(&end, TIME_UTC);
+        double ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+        if (my pool) load_pool_note_inline(my pool, ms);
+        else my loader_parse_ms += ms;
         if (!source_file) {
             cstr_drop(&canonical_path);
             return nullptr;
@@ -1775,6 +1861,9 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         if (hmap_box_source_file_get(&my source_files_map, cstr_sv(&supplemental->canonical_path))) continue;
         program_add_made_source(me, cstr_clone(supplemental->canonical_path), supplemental);
     }
+
+    preresolved_destroy(source_file->preresolved);
+    source_file->preresolved = nullptr;
 
     // Add here so imports come before importing file
     source_file->program_order = my order_base + (u32)vec_source_file_ptr_size(&my source_files_ordered);
@@ -1901,9 +1990,9 @@ SourceFile* program_source_at(Program const* me, u32 index) {
 }
 
 SourceFile* program_find_source(Program const* me, csview path) {
-    cstr canonical_path = relative_path_of(program_cwd(me), path);
-    auto found = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
-    cstr_drop(&canonical_path);
+    cstr storage = cstr_null;
+    auto found = hmap_box_source_file_get(&my source_files_map, program_canonical_view(me, path, &storage));
+    cstr_drop(&storage);
     return found ? found->second.get : nullptr;
 }
 
@@ -3274,6 +3363,7 @@ void program_resolve_names(Program* me) {
     program_report_content_mapper_options(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
+    if (!my pool && getenv("TTTT_LOAD_POOL_STATS")) eprintln("load: no pool, the loader read and parsed for ", my loader_parse_ms, " ms");
     load_pool_destroy(my pool);
     my pool = nullptr;
     program_verify_options(me);

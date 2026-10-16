@@ -5,6 +5,7 @@
 #include <strings.h>
 
 #include "tsconfig.h"
+#include "string_helpers.h"
 #include "content_mapper.h"
 #include "json.h"
 
@@ -54,6 +55,10 @@ void tsconfig_diagnostics_drop(TsconfigDiagnostics* me) {
 
 static cstr path_join(csview dir, csview rest) {
     if (rest.size && rest.buf[0] == '/') return absolute_path_of(c_sv("/"), rest);
+    // (A directory walk's: both normalized already)
+    if (dir.size && dir.buf[0] == '/' && path_is_normalized(dir) && path_is_normalized(rest)) {
+        return dir.size == 1 ? cstr_d("/", rest) : cstr_d(dir, "/", rest);
+    }
     cstr combined = cstr_d(dir, "/", rest);
     cstr ret = absolute_path_of(c_sv("/"), cstr_sv(&combined));
     cstr_drop(&combined);

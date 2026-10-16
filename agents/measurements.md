@@ -68,10 +68,18 @@ effect, vscode 2 under tttt and tsgo).
   16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
   `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
-## Plan 72, where the serial time is (2026-10-15, todo entry 8)
-The phase split per thread count (vscode, webpack, effect), the loader's own non-parse work (vscode ~350 ms at T1,
-194k `newfstatat` for 34k paths), declare+link (vscode 150 ms), check work at K = 1 / 4 / 12 (+8-17%) and per-checker
-imbalance at K12 (1.3-3.1x the mean): the table is in plans/72_core_scaling.md, which is what a re-measurement replaces.
+## Plan 72 stage 1, the loader's serial work (2026-10-16, todo entry 1)
+vscode `load+parse files` (`--listFilesOnly`, 3 runs, HEAD f760ecdc against stage 1): T1 2525 -> 2310 ms, T4 940 ->
+805; effect T4 76 -> 45, webpack T4 100 -> 95. The loader's own work at T4 (`TTTT_LOAD_POOL_STATS=1`) 630 -> ~385 ms,
+non-parse at T1 ~415 -> ~225. `newfstatat` 194k -> 43k. Callgrind `--listFilesOnly --threads 1` vscode 16.88 -> 15.68
+G (non-parse load work 2.46 -> 1.30 G). Peak RSS vscode (full check) T1 2540 -> 2548 MB, T4 2806 -> 2830. Every
+oracle as at the window's start (suite 13698, corpora 0/0 but vue 0/2, sweep 8595, `$ExpectType` 68639, flagflip
+18/6/3, source sweep 3352 / 3363, dts 1077 / 1233, kdiff 1, scenarios 211 / 0 failed), threadcheck identical.
+Instructions (`scripts/instrcount.sh`, callgrind; HEAD f760ecdc -> stage 1): tsc 4.643 -> 4.640, type-fest 23.427 ->
+23.422, valibot 3.463 -> 3.426, react 1.512 -> 1.490, nest 1.189 -> 1.143, webpack 10.048 -> 9.953, zod 5.425 ->
+5.410, xstate 2.772 -> 2.761, drizzle 6.835 -> 6.787, vue 6.633 -> 6.608, effect 10.401 -> 10.340, vscode 96.763 ->
+95.564, excalidraw 7.928 -> 7.891, tanstack-router 5.411 -> 5.397.
+The pre-stage split per thread count, declare+link, checker duplication and imbalance: plans/72_core_scaling.md.
 
 ## Plan 71, the hacks.md audit (2026-10-15, todo entry 7)
 Suite **13697 / 13739** (lost noImplicitAnyUnionNormalizedObjectLiteral1 and

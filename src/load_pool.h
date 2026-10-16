@@ -29,6 +29,8 @@ void load_pool_queue(LoadPool* me, csview path, bool is_stdlib, i64 size);
 // is_stdlib, with its parse errors moved to errs; null if the loader has to parse it itself, and then no worker will.
 // The loader runs LoadPoolParse too then, with the compiler options set
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs);
+// For TTTT_LOAD_POOL_STATS: how long the loader spent parsing a file load_pool_take() left to it
+void load_pool_note_inline(LoadPool* me, double ms);
 
 // The stack size for worker threads: the main thread's (at least 8 MB, at most 256): parsing and checking recurse per
 // nesting level

@@ -1,6 +1,6 @@
 # Plan 72: core scaling
 Planned 2026-10-15 (todo entry 8). The answer: **parallel declare/link is a "not now"**. The biggest serial part is
-the loader thread's own work during loading, so stage 1 cuts that. Checker imbalance is the biggest non-serial loss and
+the loader thread's own work during loading, so stage 1 cut that (done 2026-10-16, below; the table is from before it). Checker imbalance is the biggest non-serial loss and
 stays a lead without a stage. Numbers are from this 4-vCPU box (2 cores x SMT), release build, best of a few runs, load
 < 1. `TTTT_RESOLVE_TIMES=1` (added by this session) prints name resolution's steps.
 
@@ -43,21 +43,31 @@ where 3x was ideal). That run was before checker recycling. The ~1.2 s between i
 this box can't show (memory bandwidth, page faults on 7.6 GB, allocator). **That is the open question for the
 human's bench.**
 
-## Stage 1: the loader's serial work (one session)
-Goal: vscode's loader non-parse time at `--threads 1` from ~350 to < 150 ms, with output unchanged.
-1. Measure it first. Add a loader-thread split to `TTTT_LOAD_POOL_STATS` (time in `program_make_source` on the
-   loader thread against the phase; a thread-local accumulator, which this session prototyped and reverted). Profile
-   with callgrind on `--listFilesOnly --threads 1` and `--toggle-collect=program_load*`.
-2. A filesystem probe cache in the resolver's `Fs`: file-exists and directory-exists results by path, shared under
-   the resolver's lock or kept per thread. This is tsc's cached compiler host. The suite's `mock_fs` must keep working.
-   Expect most of the 160k redundant stats to go.
-3. Don't resolve on the loader what a worker resolved. `program_load_ahead_from()` resolves a parsed file's imports on
-   the worker; the loader then does it again through the cache (key building, lock). Hand over the worker's
-   `ResolvedModule`s with the file, keeping the loader's program-order decisions where they need it
-   (`program_load_module_ref()`).
-4. Path normalization (`push_segments`, `path_next_segment`): find who normalizes the same path again and again.
-Validate: `scripts/threadcheck.sh`, `scripts/oracles.py --quick`, suite, `scripts/scenarios.py`; record the vscode
-loader split at T1/T4 and the stat count (`strace -f -c`) in measurements.md.
+## Stage 1: the loader's serial work (done 2026-10-16, todo entry 1)
+vscode `load+parse files`, HEAD f760ecdc against stage 1, 3 runs each (`--listFilesOnly`): **T1 2525 -> 2310 ms, T4
+940 -> 805 ms (-15%)**; effect T4 76 -> 45, webpack T4 100 -> 95. Output unchanged (every oracle, threadcheck,
+scenarios, full source sweep). Peak RSS +8 MB at T1, +24 MB at T4 on vscode (+0.9%: the probe cache, the joined-path
+keys, resolutions held until the loader takes them).
+- The split is in `TTTT_LOAD_POOL_STATS=1` now: "the loader parsed X ms itself; its own work Y" (pool lifetime minus
+  waits and its own parses), and without a pool "the loader read and parsed for X ms". vscode T4: own work 630 -> ~385
+  ms; T1: non-parse ~415 -> ~225 ms. Instructions at T1 (callgrind `--listFilesOnly`): 16.88 -> 15.68 G, the non-parse
+  load work outside the config's globbing 2.46 -> 1.30 G.
+- What did it, by size: (a) the loader takes the worker's resolutions (`SourceFile.preresolved`) instead of asking the
+  shared resolver again: the T4 win, mostly the resolver lock's contention with the workers, not the lookups; (b) a
+  `./`/`../` name is also cached by the path it joins to (`resolves_by_joined_path()`): resolution misses 62k -> 11k
+  on vscode; (c) `program_canonical_view()`: cleat's `relative_path_of()` (1.1 G instructions, two allocations and a
+  segment walk) skipped for normalized paths in the working directory, likewise the resolver's `absolute_path_fast()`/
+  `join()`, its cache key built in one allocation, tsconfig's `path_join()`; (d) `CachedFs` (`src/cached_fs.c`):
+  194k `newfstatat` -> 43k. The stat cache barely moved the wall (a stat is ~1 us): the plan's guess that stats were
+  the cost was wrong, path strings were.
+- Not met: "< 150 ms at T1". What's left at T1 is real resolution (11k misses, ~170 M instructions), the resolver's
+  `join()` of `../` names (slow path, 137 M), clones of cached results (100 M) and parse-side work counted as loading
+  (`source_file_make`, reading). At T4 on this box the phase is parse-throughput bound (workers ~94% busy, the loader
+  waits ~15 ms), so the loader's remaining ~385 ms only shows at more cores: the 12-core `TTTT_LOAD_POOL_STATS` line
+  (below) says whether a stage 2 is worth it. Candidates if so: the inline-parsed files' resolutions (the loader
+  parses ~1/3 of vscode's files itself at T4, and resolves their imports itself), fewer `ResolvedModule` clones (a
+  refcounted result), the config's glob walk (0.25 G instructions, before loading: `glob_matches`, `fs_is_directory`
+  per directory entry where `d_type` would do).
 
 ## Not now: parallel declare/link
 150 ms on vscode (~8% of a 12-core run), 48 on webpack (~16%), < 15 on everything mid-size. The way to do it is

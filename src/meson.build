@@ -28,6 +28,7 @@ core_files = files(
     'content_mapper.c',
     'source_file.c',
     'program.c',
+    'cached_fs.c',
     'json.c',
     'module_resolution.c',
     'module_specifiers.c',

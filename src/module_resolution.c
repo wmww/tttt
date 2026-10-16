@@ -2,7 +2,9 @@
 #include "json.h"
 #include "content_mapper.h"
 #include "project.h"
+#include "string_helpers.h"
 #include <pthread.h>
+#include <stdatomic.h>
 
 // tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
 enum { TS_VERSION_MAJOR = 6, TS_VERSION_MINOR = 0 };
@@ -64,7 +66,9 @@ static void package_json_box_drop(PackageJsonBox* me) {
 typedef struct ModuleResolver {
     Fs const* fs;
     CompilerOptions const* options;
-    cstr cwd;
+    cstr cwd; // Once cwd_known
+    _Atomic bool cwd_known;
+    bool cwd_normalized; // An absolute path_is_normalized() one: containing files are joined to it as they are
     RealpathFn realpath;
     void* realpath_ctx;
     ProjectRedirects const* redirects; // module_resolver_set_redirects()
@@ -107,7 +111,7 @@ void resolved_module_drop(ResolvedModule* me) {
     *me = (ResolvedModule){0};
 }
 
-static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
+ResolvedModule resolved_module_clone(ResolvedModule const* me) {
     ResolvedModule ret = *me;
     ret.path = cstr_clone(my path);
     ret.suggested_extension = cstr_clone(my suggested_extension);
@@ -203,8 +207,18 @@ static void push_segments(char* out, intptr_t* len, csview path) {
 }
 
 // absolute_path_of(cwd, path) in one buffer (it appends a segment at a time; the resolver makes paths by the thousand)
+// dir and rest, both normalized (path_is_normalized()), dir absolute and rest not
+static cstr concat_normalized(csview dir, csview rest) {
+    return dir.size == 1 ? cstr_d("/", rest) : cstr_d(dir, "/", rest);
+}
+
 static cstr absolute_path_fast(csview cwd, csview path) {
     bool rooted = path.size && path.buf[0] == '/';
+    // (Most paths are normalized already: resolved files, the program's canonical paths)
+    if (path_is_normalized(path)) {
+        if (rooted) return cstr_from_sv(path);
+        if (cwd.size && cwd.buf[0] == '/' && path_is_normalized(cwd)) return concat_normalized(cwd, path);
+    }
     cstr ret = cstr_with_size(1 + (rooted ? 0 : cwd.size + 1) + path.size, 0);
     char* out = cstr_data(&ret);
     intptr_t len = 1;
@@ -217,6 +231,7 @@ static cstr absolute_path_fast(csview cwd, csview path) {
 
 static cstr join(csview dir, csview rest) {
     if (rest.size && rest.buf[0] == '/') return absolute_path_fast(c_sv("/"), rest); // A rooted name: `import "/foo"`
+    if (dir.size && dir.buf[0] == '/' && path_is_normalized(dir) && path_is_normalized(rest)) return concat_normalized(dir, rest);
     cstr ret = absolute_path_fast(c_sv("/"), dir);
     intptr_t len = cstr_size(&ret);
     cstr_resize(&ret, len + 1 + rest.size, 0);
@@ -1477,10 +1492,14 @@ static void add_condition(State* me, const char* condition) {
 
 // The working directory as of the first resolution: whoever made the resolver may still have been setting up
 static void resolver_init_cwd(ModuleResolver* resolver) {
+    if (atomic_load_explicit(&resolver->cwd_known, memory_order_acquire)) return;
     pthread_mutex_lock(&resolver->lock);
     if (!cstr_size(&resolver->cwd)) {
         try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
+        resolver->cwd_normalized = cstr_size(&resolver->cwd) && cstr_str(&resolver->cwd)[0] == '/' &&
+            path_is_normalized(cstr_sv(&resolver->cwd));
     }
+    atomic_store_explicit(&resolver->cwd_known, true, memory_order_release);
     pthread_mutex_unlock(&resolver->lock);
 }
 
@@ -1508,6 +1527,34 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
     cstr absolute = absolute_path_fast(cstr_sv(&my cwd), containing_file);
     cstr ret = cstr_from_sv(parent_of(cstr_sv(&absolute)));
     cstr_drop(&absolute);
+    return ret;
+}
+
+// module_resolver_resolve()'s cache key: the containing directory (absolute), a line break (no path has one), the mode
+// and the specifier. Built in place for the usual normalized containing file
+static cstr resolution_key(ModuleResolver* me, csview containing_file, ResolutionMode mode, csview specifier) {
+    if (my cwd_normalized && path_is_normalized(containing_file)) {
+        isize slash = containing_file.size;
+        while (slash > 0 && containing_file.buf[slash - 1] != '/') slash--;
+        bool rooted = containing_file.buf[0] == '/';
+        csview cwd = cstr_sv(&my cwd);
+        // (The directory: the file's up to its last slash, joined to the working directory unless rooted)
+        csview own = csview_slice(containing_file, 0, slash ? slash - 1 : 0);
+        if (rooted && !own.size) own = c_sv("/");
+        csview base = rooted ? c_sv("") : cwd;
+        bool separator = !rooted && own.size && cwd.size > 1;
+        cstr ret = cstr_with_capacity(base.size + separator + own.size + 2 + specifier.size);
+        cstr_append_sv(&ret, base);
+        if (separator) cstr_append_n(&ret, "/", 1);
+        cstr_append_sv(&ret, own);
+        char middle[2] = { '\n', (char)('0' + mode) };
+        cstr_append_n(&ret, middle, 2);
+        cstr_append_sv(&ret, specifier);
+        return ret;
+    }
+    cstr dir = absolute_containing_dir(me, containing_file);
+    cstr ret = cstr_d(dir, "\n", (char)('0' + mode), specifier);
+    cstr_drop(&dir);
     return ret;
 }
 
@@ -1606,6 +1653,15 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
     return ret;
 }
 
+// A `./` or `../` name that means a file (not `./dir/`, `..`): what it resolves to only depends on the path it makes
+// joined to the directory, and the mode (paths aren't consulted, rootDirs and the extension suggestion go by that
+// path). module_resolver_resolve() caches those by that path too: a file imported from many directories is looked
+// for once (vscode's lifecycle.ts, from a thousand)
+static bool resolves_by_joined_path(csview specifier) {
+    if (!csview_starts_with(specifier, "./") && !csview_starts_with(specifier, "../")) return false;
+    return !ends_with(specifier, "/") && !ends_with(specifier, "/.") && !ends_with(specifier, "/..");
+}
+
 ResolvedModule module_resolver_resolve(
     ModuleResolver* me,
     csview specifier,
@@ -1614,22 +1670,40 @@ ResolvedModule module_resolver_resolve(
 ) {
     if (!specifier.size) return (ResolvedModule){0};
     resolver_init_cwd(me);
-    cstr dir = absolute_containing_dir(me, containing_file);
-    // (Paths are C strings further down: the directory is its own string, and no path has a line break)
-    cstr key = cstr_d(dir, "\n", (char)('0' + mode), specifier);
+    cstr key = resolution_key(me, containing_file, mode, specifier);
     pthread_mutex_lock(&my lock);
     auto cached = hmap_resolved_module_get(&my resolutions, cstr_sv(&key));
     ResolvedModule ret = cached ? resolved_module_clone(&cached->second) : (ResolvedModule){0};
     pthread_mutex_unlock(&my lock);
     if (cached) {
         cstr_drop(&key);
-    } else {
-        ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
-        ResolvedModule copy = resolved_module_clone(&ret);
-        pthread_mutex_lock(&my lock);
-        hmap_resolved_module_insert(&my resolutions, key, copy);
-        pthread_mutex_unlock(&my lock);
+        return ret;
     }
+    // (Paths are C strings further down: the directory is its own string)
+    cstr dir = cstr_from_sv(csview_slice(cstr_sv(&key), 0, csview_find(cstr_sv(&key), "\n")));
+    // The joined path's key: the path, a carriage return (no directory key has one before its line break), the mode
+    cstr joined_key = cstr_null;
+    if (resolves_by_joined_path(specifier)) {
+        cstr joined = join(cstr_sv(&dir), specifier);
+        joined_key = cstr_d(joined, "\r", (char)('0' + mode));
+        cstr_drop(&joined);
+        pthread_mutex_lock(&my lock);
+        auto by_path = hmap_resolved_module_get(&my resolutions, cstr_sv(&joined_key));
+        if (by_path) {
+            ret = resolved_module_clone(&by_path->second);
+            hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
+        }
+        pthread_mutex_unlock(&my lock);
+        if (by_path) {
+            c_drop(cstr, &dir, &joined_key);
+            return ret;
+        }
+    }
+    ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
+    pthread_mutex_lock(&my lock);
+    hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
+    if (cstr_size(&joined_key)) hmap_resolved_module_insert(&my resolutions, joined_key, resolved_module_clone(&ret));
+    pthread_mutex_unlock(&my lock);
     cstr_drop(&dir);
     return ret;
 }

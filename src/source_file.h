@@ -255,6 +255,9 @@ typedef struct SourceFile {
     const char* display_path_override; // Used for the tests
     ModuleRef** module_refs; // Owned, in source order
     u32 module_ref_count;
+    // While loading: what the load pool worker that parsed the file resolved its imports to, for the loader to take
+    // rather than resolve again (program.c's, owned by the program until it has loaded the file)
+    struct Preresolved* preresolved;
     u32 module_ref_cap;
     // With `importHelpers`, a module that isn't a declaration file imports "tslib" implicitly (tsc's
     // externalHelpersModuleReference). The first of module_refs, with an empty span at the start of the file

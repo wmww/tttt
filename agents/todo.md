@@ -20,8 +20,9 @@ the last window.
 and the per-checker floor at many cores), the loader's serial work, `.d.ts` for JS, and a plan for the CLI modes
 users run tsc in (watch, incremental). Two small debt plans. The suite's last 12 stay off the table.
 
-1. **Plan 72 stage 1** (execution): the loader's serial work (an exists cache in the resolver's `Fs`, no
-   re-resolving what a worker resolved, path normalization). vscode loader non-parse ~350 -> < 150 ms at T1.
+1. Done 2026-10-16: plan 72 stage 1. vscode load T4 940 -> 805 ms, T1 2525 -> 2310 (the loader takes the workers'
+   resolutions, `./` names cached by joined path, path normalization skipped for clean paths, a stat cache); "< 150 ms
+   at T1" not met (real resolution left), plan 72 says what a stage 2 would need. Every oracle unchanged.
 2. **Plan 74** (execution, half a session), then start **plan 73** (member symbols' one table).
 3. **Plan 73** finished (or, if entry 2 finished it, a real-code fan-out on the source sweep's 11 and dtsdiff's
    non-JS leftovers: bugs/sourcesweep_checker.md, bugs/dts_emit.md).

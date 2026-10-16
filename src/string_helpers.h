@@ -23,6 +23,10 @@ const char* string_to_double(
     double* ret
 );
 
+// A path that normalizing (absolute_path_of(), relative_path_of()) leaves alone, absolute or not: not empty, and no
+// empty, `.` or `..` segment (no `//`, no trailing slash). `/` is
+bool path_is_normalized(csview path);
+
 // Skip the Byte Order Mark
 const char* file_start_excluding_bom(const char* contents);
 

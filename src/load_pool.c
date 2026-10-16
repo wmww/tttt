@@ -47,7 +47,7 @@ typedef struct LoadPool {
     u32 thread_count;
     // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
     isize taken, inline_parses;
-    double wait_ms, busy_ms, started_at, helped_ms;
+    double wait_ms, busy_ms, started_at, helped_ms, inline_ms;
 } LoadPool;
 
 // (Address space only: pages are committed as the stack grows)
@@ -208,6 +208,10 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
     return ret;
 }
 
+void load_pool_note_inline(LoadPool* me, double ms) {
+    my inline_ms += ms;
+}
+
 void load_pool_destroy(LoadPool* me) {
     if (!me) return;
     struct timespec now;
@@ -237,6 +241,8 @@ void load_pool_destroy(LoadPool* me) {
             " never started");
         eprintln("load pool: the loader waited ", my wait_ms, " ms (parsing queued files for ", my helped_ms,
             " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count);
+        eprintln("load pool: the loader parsed ", my inline_ms, " ms itself; its own work the rest of the pool's ",
+            lifetime, " ms: ", lifetime - my wait_ms - my inline_ms);
     }
     vec_load_entry_ptr_drop(&my entries);
     vec_load_entry_ptr_drop(&my heap);
