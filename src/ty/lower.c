@@ -507,9 +507,10 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
 // binder can't know, so the type side is decided here (resolve_alias_target(), identifier_type_lookup_names()).
 // Null for none: missing (TS2305 comes from the import) or a value only (TS2749 here)
 static Symbol const* export_equals_property_resolve(
-    Checker* me, Symbol const* property, IdentifierType const* identifier, bool report, bool* missing
+    Checker* me, Symbol const* property, IdentifierType const* identifier, bool report, bool* missing, bool* global_type
 ) {
     *missing = false;
+    if (global_type) *global_type = false;
     Ty const* assigned = ty_type_of_symbol(me, property->decls[0].node);
     if (assigned->flags & TYF_ERROR) return nullptr;
     Ty const* holder = assigned->flags & (TYF_OBJECT | TYF_INTERSECTION) ? assigned : ty_apparent_type(me, assigned);
@@ -539,7 +540,10 @@ static Symbol const* export_equals_property_resolve(
     // A value-only property isn't a type: tsc's resolveName goes on past the import, and imports live in module
     // scope, whose parent is the global one (lib.dom's `Plugin` for a `Plugin` value property)
     Symbol const* global = program_get_global(me->program, span_sv(identifier->name), SYMBOL_TYPE);
-    if (global) return canonical(me, global);
+    if (global) {
+        if (global_type) *global_type = true;
+        return canonical(me, global);
+    }
     if (report) {
         ty_error_at(me, identifier->name, 2749, cstr_d("'", span_sv(identifier->name),
             "' refers to a value, but is being used as a type here. Did you mean 'typeof ", span_sv(identifier->name), "'?"));
@@ -549,7 +553,7 @@ static Symbol const* export_equals_property_resolve(
 
 static Symbol const* export_equals_property_type(Checker* me, Symbol const* property, IdentifierType const* identifier) {
     bool missing;
-    return export_equals_property_resolve(me, property, identifier, true, &missing);
+    return export_equals_property_resolve(me, property, identifier, true, &missing, nullptr);
 }
 
 Symbol const* ty_export_equals_property_shown(Checker* me, IdentifierType const* identifier) {
@@ -560,8 +564,20 @@ Symbol const* ty_export_equals_property_shown(Checker* me, IdentifierType const*
         return nullptr;
     }
     bool missing;
-    Symbol const* ret = export_equals_property_resolve(me, decl, identifier, false, &missing);
+    Symbol const* ret = export_equals_property_resolve(me, decl, identifier, false, &missing, nullptr);
     return ret ? ret : missing ? identifier->symbol : nullptr;
+}
+
+bool ty_export_equals_property_means_global(Checker* me, IdentifierType const* identifier) {
+    Symbol const* decl = identifier->target ? canonical(me, identifier->target) : nullptr;
+    if (!decl || !decl->decl_count || decl->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY ||
+        identifier_type_namespace_count(identifier) || span_valid(identifier_type_import_span(identifier))
+    ) {
+        return false;
+    }
+    bool missing, global;
+    export_equals_property_resolve(me, decl, identifier, false, &missing, &global);
+    return global;
 }
 
 // tsc checks every type reference (checkTypeReferenceNode): one to a property of what `export =` names is TS2749 when

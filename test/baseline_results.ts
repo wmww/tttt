@@ -206,6 +206,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationImportOfPropertyNotType': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationImportTypeQuotes': {
         errors: true,
         symbols: true,

@@ -1,0 +1,67 @@
+//// [test/cases/ttttDeclarationImportOfPropertyNotType.ts] ////
+
+=== m.d.ts ===
+declare global {
+>global : Symbol(global, Decl(m.d.ts, 0, 0))
+
+    interface Foo { Foo: FooCtor; hi(): void }
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+>Foo : Symbol(Foo.Foo, Decl(m.d.ts, 1, 19))
+>FooCtor : Symbol(FooCtor, Decl(m.d.ts, 1, 46))
+>hi : Symbol(Foo.hi, Decl(m.d.ts, 1, 33))
+
+    interface FooCtor { new(): Foo }
+>FooCtor : Symbol(FooCtor, Decl(m.d.ts, 1, 46))
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+
+    var foo: Foo;
+>foo : Symbol(foo, Decl(m.d.ts, 3, 7))
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+}
+export = globalThis.foo;
+>globalThis.foo : Symbol(foo, Decl(m.d.ts, 3, 7))
+>globalThis : Symbol(globalThis)
+>foo : Symbol(foo, Decl(m.d.ts, 3, 7))
+
+=== a.ts ===
+import { Foo } from './m';
+>Foo : Symbol(Foo, Decl(a.ts, 0, 8))
+
+export class L {
+>L : Symbol(L, Decl(a.ts, 0, 26))
+
+    public c: Foo;
+>c : Symbol(L.c, Decl(a.ts, 1, 16))
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+
+    constructor() { this.c = new Foo(); }
+>this.c : Symbol(L.c, Decl(a.ts, 1, 16))
+>this : Symbol(L, Decl(a.ts, 0, 26))
+>c : Symbol(L.c, Decl(a.ts, 1, 16))
+>Foo : Symbol(Foo, Decl(a.ts, 0, 8))
+}
+export const f = (c: Foo) => c;
+>f : Symbol(f, Decl(a.ts, 5, 12))
+>c : Symbol(c, Decl(a.ts, 5, 18))
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+>c : Symbol(c, Decl(a.ts, 5, 18))
+
+=== b.ts ===
+import { Foo } from './m';
+>Foo : Symbol(Foo, Decl(b.ts, 0, 8))
+
+import { f } from './a';
+>f : Symbol(f, Decl(b.ts, 1, 8))
+
+export const g = f;
+>g : Symbol(g, Decl(b.ts, 2, 12))
+>f : Symbol(f, Decl(b.ts, 1, 8))
+
+export const h = (x: Foo) => [f(x), new Foo()];
+>h : Symbol(h, Decl(b.ts, 3, 12))
+>x : Symbol(x, Decl(b.ts, 3, 18))
+>Foo : Symbol(Foo, Decl(m.d.ts, 0, 16))
+>f : Symbol(f, Decl(b.ts, 1, 8))
+>x : Symbol(x, Decl(b.ts, 3, 18))
+>Foo : Symbol(Foo, Decl(b.ts, 0, 8))
+

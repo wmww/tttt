@@ -2520,6 +2520,9 @@ static void check_type_reference(Walk* me, IdentifierType const* type) {
             SYMBOL_NAMESPACE);
         return;
     }
+    // (An import of a value-only property of what `export =` names isn't a type: the name means a global there, tsc's
+    // resolveName goes on past the import; node's `import { Console } from 'node:console'`)
+    if (!type->jsdoc && ty_export_equals_property_means_global(my checker, type)) return;
     check_entity_name(me, type->symbol, type->name, SYMBOL_TYPE);
 }
 

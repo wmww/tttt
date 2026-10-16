@@ -1,0 +1,65 @@
+//// [test/cases/ttttDeclarationImportOfPropertyNotType.ts] ////
+
+=== m.d.ts ===
+declare global {
+>global : typeof global
+
+    interface Foo { Foo: FooCtor; hi(): void }
+>Foo : FooCtor
+>hi : () => void
+
+    interface FooCtor { new(): Foo }
+    var foo: Foo;
+>foo : Foo
+}
+export = globalThis.foo;
+>globalThis.foo : Foo
+>globalThis : typeof globalThis
+>foo : Foo
+
+=== a.ts ===
+import { Foo } from './m';
+>Foo : FooCtor
+
+export class L {
+>L : L
+
+    public c: Foo;
+>c : Foo
+
+    constructor() { this.c = new Foo(); }
+>this.c = new Foo() : Foo
+>this.c : Foo
+>this : this
+>c : Foo
+>new Foo() : Foo
+>Foo : FooCtor
+}
+export const f = (c: Foo) => c;
+>f : (c: Foo) => Foo
+>(c: Foo) => c : (c: Foo) => Foo
+>c : Foo
+>c : Foo
+
+=== b.ts ===
+import { Foo } from './m';
+>Foo : FooCtor
+
+import { f } from './a';
+>f : (c: Foo) => Foo
+
+export const g = f;
+>g : (c: Foo) => Foo
+>f : (c: Foo) => Foo
+
+export const h = (x: Foo) => [f(x), new Foo()];
+>h : (x: Foo) => Foo[]
+>(x: Foo) => [f(x), new Foo()] : (x: Foo) => Foo[]
+>x : Foo
+>[f(x), new Foo()] : Foo[]
+>f(x) : Foo
+>f : (c: Foo) => Foo
+>x : Foo
+>new Foo() : Foo
+>Foo : FooCtor
+
