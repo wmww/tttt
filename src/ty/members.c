@@ -4862,6 +4862,11 @@ Members const* ty_members(Checker* me, Ty const* ty) {
     impossible;
 }
 
+bool ty_members_done(Ty const* ty) {
+    TyObjectState* state = object_state(ty);
+    return !state || state->members_state == LAZY_STATE_DONE;
+}
+
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
     Members const* members = ty_members(me, ty);
     if (members->props_by_name) {

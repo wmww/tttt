@@ -2755,10 +2755,13 @@ bool ty_prop_is_key(Checker* me, Prop const* prop) {
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) return unique;
+    // (Keyed like literal_type() by the atom: a hit without cooking and hashing the text again)
+    u64 key[4] = { KEY_LITERAL, VALUE_STRING, (u64)(uintptr_t)name, 0 };
+    Ty const* known = intern_get(&my types, key, 4);
+    if (known) return known;
     // (A private name's atom isn't the plain one of its text, also one no class declares, see ty_access_key_type())
     if (!name->len || name->str[0] != '#' || name == checker_atom(me, atom_sv(name))) return ty_string_literal(me, atom_sv(name));
     // A string literal of the private atom (keyed like literal_type(): the atom is none of its)
-    u64 key[4] = { KEY_LITERAL, VALUE_STRING, (u64)(uintptr_t)name, 0 };
     void const** slot = intern_slot(me, &my types, key, 4);
     if (!*slot) {
         Ty* ret = ty_alloc(me, TY_LITERAL, TYF_STRING_LITERAL);
@@ -2986,6 +2989,11 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
                 }
                 return names;
             }
+            // (Remembered per type: tsc builds it again each time, instantiations of `keyof X` over one big X ask
+            // thousands of times, i18next's key paths)
+            u64 cache_key[2] = { KEY_KEYOF_PROPERTIES, operand->id };
+            Ty const* cached = intern_get(&my links, cache_key, 2);
+            if (cached) return cached;
             TyBuf parts = {0};
             u32 entries = 0; // (tsc's list of one type per property and per index info: getUnionType returns one alone as it is)
             for (u32 i = 0; i < members->prop_count; i++) {
@@ -3021,8 +3029,9 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
                 for (u32 i = 0; i < ret->composite.types.len && same; i++) {
                     same = ret->composite.types.data[i] == renamed->constraint->composite.types.data[i];
                 }
-                if (same) return renamed->constraint;
+                if (same) ret = renamed->constraint;
             }
+            if (ty_members_done(operand)) *intern_slot(me, &my links, cache_key, 2) = ret;
             return ret;
         }
     }

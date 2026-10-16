@@ -1459,6 +1459,7 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
+bool ty_members_done(Ty const* ty); // Its members are resolved (not in flight: what ty_members() gives is final)
 uint16_t ty_merged_owner_index(Checker* me, Ty const* declared); // See LowerCtx.merged_owner
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 // The member of a class's type that a field or method of its declaration declares (Prop.decl's spans: all of its

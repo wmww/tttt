@@ -49,6 +49,7 @@ enum {
     KEY_CALL_RESOLUTION, // CallExpr or tagged template Expr -> CallResolution (call.c): what its one resolution returned and reported
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
+    KEY_KEYOF_PROPERTIES, // object type id -> ty_keyof() of it from its properties and index signatures (checker.c)
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_NORMALIZED_INTERSECTION, // (intersection type id, writing) -> normalized_intersection() of it (relate.c)
     KEY_MAPPED_FILTERING, // declared mapped type's key parameter -> 1 remapping, 2 filtering, by relation (members.c)
