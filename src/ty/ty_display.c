@@ -4570,6 +4570,16 @@ static void display_pseudo_member_name(Checker* me, TyDisplay d, Prop const* pro
     ) {
         cstr_resize(d.target, at, '\0');
         out_mapped(d, item->name_span);
+    } else if (D_MAP(d) && item && span_valid(item->name_span) && item->name_span.size &&
+        (item->name_span.buf[0] == '"' || item->name_span.buf[0] == '\'')
+    ) {
+        // (A string literal name printed otherwise, `'a'` as `a`: the renamed node keeps the name's range)
+        cstr printed = cstr_from_sv(csview_slice(cstr_sv(d.target), at, cstr_size(d.target)));
+        cstr_resize(d.target, at, '\0');
+        map_span(d, item->name_span, false);
+        out(d, cstr_sv(&printed));
+        map_span(d, item->name_span, true);
+        cstr_drop(&printed);
     }
 }
 

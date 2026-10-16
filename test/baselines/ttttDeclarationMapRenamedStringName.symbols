@@ -1,0 +1,20 @@
+//// [test/cases/ttttDeclarationMapRenamedStringName.ts] ////
+
+=== ttttDeclarationMapRenamedStringName.ts ===
+// An object literal's string literal property name printed otherwise (`'a'` as `a`, `"a-b"` requoted) keeps the
+// name's mappings (tsgo's reuseName keeps the range: query's codemod fixtures)
+export const f = () => {
+>f : Symbol(f, Decl(ttttDeclarationMapRenamedStringName.ts, 2, 12))
+
+  return {
+    'useErrorBoundary': true,
+>'useErrorBoundary' : Symbol('useErrorBoundary', Decl(ttttDeclarationMapRenamedStringName.ts, 3, 10))
+
+    "a-b": 1,
+>"a-b" : Symbol("a-b", Decl(ttttDeclarationMapRenamedStringName.ts, 4, 29))
+
+    'c': 'x',
+>'c' : Symbol('c', Decl(ttttDeclarationMapRenamedStringName.ts, 5, 13))
+  }
+}
+
