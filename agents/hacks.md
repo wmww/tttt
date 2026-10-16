@@ -263,11 +263,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 ## Relations (`ty/relate.c`)
 - Reporting runs: tsc's error-node checkTypeAssignableTo callers run once, explaining (check.c relate_explaining(),
   ty_check_assignable()); the checkTypeRelatedToAndOptionallyElaborate ones (check_assignable()) and the overload
-  error reports run plainly first, like tsc's. Two one-run callers still run plainly first: the static side
+  error reports run plainly first, like tsc's. One one-run caller still runs plainly first: the static side
   (`ty_check_static_heritage`, TS2417: it relates to each intersection member plainly to name the one that fails, which
-  tsc's single run does inside typeRelatedToEachType) and instantiation expressions' TS2344
-  (expr.c `check_type_argument_constraints`, which also explains against the *uninstantiated* constraint while the
-  plain run used the instantiated one).
+  tsc's single run does inside typeRelatedToEachType).
 - **Optional property types lack their undefined** (`find_prop()`/`find_prop_in()`, also optional parameters above):
   readers add it; tsc's getTypeOfSymbol has it. All-optional intersection parts intersect read types only when one has
   undefined and all are one type (react-select), not under exactOptionalPropertyTypes; a non-member part (`typeof f &
