@@ -1070,6 +1070,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttSubtypeReducedUnionNamedOrigin': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttSuperConstructorsForTypeArguments': {
         errors: true,
         symbols: true,

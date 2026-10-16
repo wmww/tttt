@@ -1,0 +1,76 @@
+//// [test/cases/ttttSubtypeReducedUnionNamedOrigin.ts] ////
+
+=== ttttSubtypeReducedUnionNamedOrigin.ts ===
+// A union made with subtype reduction (inferred return types) keeps an origin of the named unions it was made of when
+// they and the members outside them don't overlap and are all left (tsc's getUnionTypeWorker after removeSubtypes):
+// `Exit | Primitive`, a narrowed subtype of both dropped (effect's fiberRuntime `Exit.Exit<any, never> | core.Primitive`)
+interface A { _op: "a" } interface B { _op: "b" } interface F { _op: "f"; _tag: "Failure" }
+>_op : "a"
+>_op : "b"
+>_op : "f"
+>_tag : "Failure"
+
+interface ExitS { _tag: "Success"; value: number } interface ExitF { _tag: "Failure"; cause: string }
+>_tag : "Success"
+>value : number
+>_tag : "Failure"
+>cause : string
+
+type Exit = ExitS | ExitF;
+>Exit : Exit
+
+export type Primitive = A | B | F;
+>Primitive : Primitive
+
+declare function isExit(u: unknown): u is Exit;
+>isExit : (u: unknown) => u is Exit
+>u : unknown
+
+declare function get(): Primitive;
+>get : () => Primitive
+
+export function run() {
+>run : () => Exit | Primitive
+
+  const p = get();
+>p : Primitive
+>get() : Primitive
+>get : () => Primitive
+
+  if (!isExit(p)) return p;
+>!isExit(p) : boolean
+>isExit(p) : boolean
+>isExit : (u: unknown) => u is Exit
+>p : Primitive
+>p : Primitive
+
+  return null! as Exit;
+>null! as Exit : Exit
+>null! : never
+}
+export function run2() {
+>run2 : () => Exit | Primitive
+
+  const p = get();
+>p : Primitive
+>get() : Primitive
+>get : () => Primitive
+
+  if (!isExit(p)) { return p; } else if (p._tag === "Failure") { return p; }
+>!isExit(p) : boolean
+>isExit(p) : boolean
+>isExit : (u: unknown) => u is Exit
+>p : Primitive
+>p : Primitive
+>p._tag === "Failure" : boolean
+>p._tag : "Failure" | "Success"
+>p : (A & ExitF) | (A & ExitS) | (B & ExitF) | (B & ExitS) | (F & ExitF)
+>_tag : "Failure" | "Success"
+>"Failure" : "Failure"
+>p : (A & ExitF) | (B & ExitF) | (F & ExitF)
+
+  return null! as Exit;
+>null! as Exit : Exit
+>null! : never
+}
+

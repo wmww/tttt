@@ -1,0 +1,79 @@
+//// [test/cases/ttttSubtypeReducedUnionNamedOrigin.ts] ////
+
+=== ttttSubtypeReducedUnionNamedOrigin.ts ===
+// A union made with subtype reduction (inferred return types) keeps an origin of the named unions it was made of when
+// they and the members outside them don't overlap and are all left (tsc's getUnionTypeWorker after removeSubtypes):
+// `Exit | Primitive`, a narrowed subtype of both dropped (effect's fiberRuntime `Exit.Exit<any, never> | core.Primitive`)
+interface A { _op: "a" } interface B { _op: "b" } interface F { _op: "f"; _tag: "Failure" }
+>A : Symbol(A, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 0, 0))
+>_op : Symbol(A._op, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 13))
+>B : Symbol(B, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 24))
+>_op : Symbol(B._op, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 38))
+>F : Symbol(F, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 49))
+>_op : Symbol(F._op, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 63))
+>_tag : Symbol(F._tag, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 73))
+
+interface ExitS { _tag: "Success"; value: number } interface ExitF { _tag: "Failure"; cause: string }
+>ExitS : Symbol(ExitS, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 91))
+>_tag : Symbol(ExitS._tag, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 17))
+>value : Symbol(ExitS.value, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 34))
+>ExitF : Symbol(ExitF, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 50))
+>_tag : Symbol(ExitF._tag, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 68))
+>cause : Symbol(ExitF.cause, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 85))
+
+type Exit = ExitS | ExitF;
+>Exit : Symbol(Exit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 101))
+>ExitS : Symbol(ExitS, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 91))
+>ExitF : Symbol(ExitF, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 50))
+
+export type Primitive = A | B | F;
+>Primitive : Symbol(Primitive, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 5, 26))
+>A : Symbol(A, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 0, 0))
+>B : Symbol(B, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 24))
+>F : Symbol(F, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 49))
+
+declare function isExit(u: unknown): u is Exit;
+>isExit : Symbol(isExit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 6, 34))
+>u : Symbol(u, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 7, 24))
+>u : Symbol(u, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 7, 24))
+>Exit : Symbol(Exit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 101))
+
+declare function get(): Primitive;
+>get : Symbol(get, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 7, 47))
+>Primitive : Symbol(Primitive, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 5, 26))
+
+export function run() {
+>run : Symbol(run, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 8, 34))
+
+  const p = get();
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 10, 7))
+>get : Symbol(get, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 7, 47))
+
+  if (!isExit(p)) return p;
+>isExit : Symbol(isExit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 6, 34))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 10, 7))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 10, 7))
+
+  return null! as Exit;
+>Exit : Symbol(Exit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 101))
+}
+export function run2() {
+>run2 : Symbol(run2, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 13, 1))
+
+  const p = get();
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 15, 7))
+>get : Symbol(get, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 7, 47))
+
+  if (!isExit(p)) { return p; } else if (p._tag === "Failure") { return p; }
+>isExit : Symbol(isExit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 6, 34))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 15, 7))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 15, 7))
+>p._tag : Symbol(_tag, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 68), Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 17), Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 73))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 15, 7))
+>_tag : Symbol(_tag, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 68), Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 17), Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 3, 73))
+>p : Symbol(p, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 15, 7))
+
+  return null! as Exit;
+>Exit : Symbol(Exit, Decl(ttttSubtypeReducedUnionNamedOrigin.ts, 4, 101))
+}
+

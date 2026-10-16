@@ -958,15 +958,36 @@ static bool sorted_list_contains(TyList list, Ty const* t) {
     return false;
 }
 
-// tsc's getUnionType after a subtype reduction: the inputs' only named union, if it has every member left (a reduced
-// `Basic | undefined` is still Basic, though Function went for object). Null otherwise
+static void insert_by_id(TyBuf* buf, Ty const* t);
+
+// tsc's getUnionTypeWorker after a subtype reduction (`members`, sorted, what is left of the inputs' members): the
+// inputs' only named union if it has every member left (a reduced `Basic | undefined` is still Basic, though Function
+// went for object), else, if the named unions (aliased, or with an origin) and the members outside them don't overlap
+// and are all left, the union with those as its origin (`Exit | Primitive` of return types, a narrowed subtype of
+// both dropped). Null otherwise: the plain union
 Ty const* ty_named_union_of_reduced(Checker* me, Ty const* const* inputs, u32 len, Ty const* const* members, u32 count) {
-    (void)me;
     TyBuf named = {0};
     add_named_unions(&named, inputs, len);
-    Ty const* ret = named.len == 1 ? named.data[0] : nullptr;
-    for (u32 i = 0; ret && i < count; i++) {
-        if (!sorted_list_contains(ret->composite.types, members[i])) ret = nullptr;
+    Ty const* ret = nullptr;
+    if (named.len) {
+        TyBuf reduced = {0};
+        for (u32 i = 0; i < count; i++) {
+            bool in_named = false;
+            for (u32 j = 0; j < named.len && !in_named; j++) in_named = sorted_list_contains(named.data[j]->composite.types, members[i]);
+            if (!in_named) ty_buf_push(&reduced, members[i]);
+        }
+        if (named.len == 1 && reduced.len == 0) {
+            ret = named.data[0];
+        } else {
+            u32 named_count = 0;
+            for (u32 j = 0; j < named.len; j++) named_count += named.data[j]->composite.types.len;
+            if (named_count + reduced.len == count) {
+                for (u32 j = 0; j < named.len; j++) insert_by_id(&reduced, named.data[j]);
+                OriginSpec spec = { TY_UNION, reduced.data, reduced.len };
+                ret = intern_composite_origin(me, TY_UNION, members, count, nullptr, (TyList){0}, &spec);
+            }
+        }
+        ty_buf_drop(&reduced);
     }
     ty_buf_drop(&named);
     return ret;
