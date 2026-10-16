@@ -519,6 +519,30 @@ Checker* checker_new(Program* program) {
     return me;
 }
 
+// The atom of an index's decimal name (a tuple element's, an array pattern's): tuples ask for millions on type-fest,
+// formatting and hashing each again
+Atom const* ty_index_atom(Checker* me, u32 index) {
+    if (index >= 4096) {
+        char digits[16];
+        int n = snprintf(digits, sizeof digits, "%u", index);
+        return checker_atom(me, csview_from_n(digits, n));
+    }
+    if (index >= my index_atoms_len) {
+        u32 len = my index_atoms_len ? my index_atoms_len : 16;
+        while (len <= index) len *= 2;
+        my index_atoms = realloc(my index_atoms, sizeof(Atom const*) * len);
+        panic_if(!my index_atoms, "out of memory");
+        memset(my index_atoms + my index_atoms_len, 0, sizeof(Atom const*) * (len - my index_atoms_len));
+        my index_atoms_len = len;
+    }
+    if (!my index_atoms[index]) {
+        char digits[16];
+        int n = snprintf(digits, sizeof digits, "%u", index);
+        my index_atoms[index] = checker_atom(me, csview_from_n(digits, n));
+    }
+    return my index_atoms[index];
+}
+
 thread_local Checker* current_checker;
 
 void checker_make_current(Checker* me) {
@@ -551,6 +575,7 @@ void checker_drop(Checker* me) {
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
     lazy_slots_drop(&my lazy);
+    free(my index_atoms);
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);

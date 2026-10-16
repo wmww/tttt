@@ -3301,9 +3301,7 @@ static Ternary tuple_shapes_related(
         if (can_exclude) {
             if ((source_flags | target_flags) & TUPLE_ELEMENT_REST) can_exclude = false;
             if (can_exclude) {
-                char digits[16];
-                snprintf(digits, sizeof(digits), "%u", i);
-                Atom const* name = checker_atom(me, csview_from(digits));
+                Atom const* name = ty_index_atom(me, i);
                 bool skip = false;
                 for (u32 d = 0; d < excluded_len && !skip; d++) skip = excluded[d] == name;
                 if (skip) continue;
@@ -5814,9 +5812,7 @@ static Ternary structured_related_members(
                 TupleShape const* shape = operand->reference.target->declared.tuple;
                 TyBuf keys = {0};
                 for (u32 i = 0; i < shape->arity && !(shape->flags[i] & TUPLE_ELEMENT_REST); i++) {
-                    char digits[16];
-                    snprintf(digits, sizeof digits, "%u", i);
-                    ty_buf_push(&keys, ty_string_literal(me, csview_from(digits)));
+                    ty_buf_push(&keys, ty_prop_name_literal(me, ty_index_atom(me, i)));
                 }
                 // (The declared type is a reference to itself with its own type parameter: `T[]`)
                 Ty const* array = shape->readonly ? ty_readonly_array_target(me) : my array_target;

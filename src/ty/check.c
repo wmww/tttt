@@ -410,9 +410,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
     bool reported = false;
     for_each (i, vec_expr, &expr->array) {
         // Elements the target doesn't have: a length error on the whole is likely better
-        char digits[16];
-        snprintf(digits, sizeof(digits), "%u", (unsigned)i_index);
-        Atom const* name = checker_atom(me, csview_from(digits));
+        Atom const* name = ty_index_atom(me, (u32)i_index);
         if (target_tuple_like && !target_prop_of(me, declared, name) && !(ty_is_tuple(declared) && i_index < (isize_t)fixed)) {
             continue;
         }
@@ -517,9 +515,7 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             }
             // (An optional element's type is shown without the missing type: tsc's removeMissingType)
             if (compiler_options()->exact_optional_property_types && !(tuple_like->flags & TYF_NEVER)) {
-                char digits[16];
-                snprintf(digits, sizeof(digits), "%u", index - 1);
-                FoundProp found = ty_find_prop(me, tuple_like, checker_atom(me, csview_from(digits)));
+                FoundProp found = ty_find_prop(me, tuple_like, ty_index_atom(me, index - 1));
                 if (found.found && (found.flags & PROP_OPTIONAL)) element_target = ty_remove_missing(me, element_target, true);
             }
             if (text) {

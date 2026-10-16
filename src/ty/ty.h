@@ -1035,6 +1035,8 @@ struct Checker {
     struct Atom const* atom_constructor;
     struct Atom const* atom_prototype;
     struct Atom const* atom_bind;
+    struct Atom const** index_atoms; // ty_index_atom(): "0", "1"... by index
+    u32 index_atoms_len;
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
@@ -1218,6 +1220,7 @@ void ty_check_destructured_member(
     Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
 );
 Atom const* checker_atom(Checker* me, csview sv);
+Atom const* ty_index_atom(Checker* me, u32 index); // "0", "1"... (an index's property name)
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 
 // Intern key building. Keys are small, build them on the stack: u64 key[1 + n] = { n, ... }

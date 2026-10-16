@@ -1881,9 +1881,7 @@ static Atom const* pattern_element_name(Checker* me, Binding const* pattern, Sym
     Binding const* binding = symbol->decls[0].node;
     if (binding->parent != pattern || binding->default_value || binding->rest) return nullptr;
     if (pattern->tag == BINDING_ARRAY) {
-        char buf[16];
-        int n = snprintf(buf, sizeof buf, "%u", (unsigned)binding->parent_index);
-        return checker_atom(me, csview_from_n(buf, n));
+        return ty_index_atom(me, (u32)binding->parent_index);
     }
     ObjectBindingItem const* item = binding->parent_item;
     if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
@@ -1922,9 +1920,7 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
         Atom const* name = nullptr;
         Symbol const* symbol = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword ? expr->identifier.target : nullptr;
         if (symbol && symbol->is_parameter && parameter_index(q->parameters_of, symbol, &index)) {
-            char buf[16];
-            int n = snprintf(buf, sizeof buf, "%u", (unsigned)index);
-            name = checker_atom(me, csview_from_n(buf, n));
+            name = ty_index_atom(me, (u32)index);
         }
         return name && is_discriminant_property(me, computed, name) ? (DiscriminantAccess){ nullptr, name } : none;
     }

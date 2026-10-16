@@ -20,8 +20,9 @@ Lib files are checked unless skipLibCheck/skipDefaultLibCheck (vision.md). An em
 0.16 G -> 0.43 G instructions, ~42 ms check (tsgo --singleThreaded: ~156 ms, 31.5k types vs tttt's 13.4k); quill
 and pinia/nuxt +8% total. lib.dom.d.ts is ~32 ms of it. The callgrind split: interface heritage relations
 (`HTMLElement extends Element...`, ty_check_heritage -> structured_related_members) ~127M, `ty_indexed_access_index_ok`
-68M (the `K extends keyof XEventMap` / `XEventMap[K]` of every addEventListener overload), `ty_keyof` 49M with 50M in
-msort (keyof of the big tag/event maps sorted again and again?). Cheap leads if small projects ever matter.
+68M (the `K extends keyof XEventMap` / `XEventMap[K]` of every addEventListener overload). Cheap leads if small
+projects ever matter. (`ty_keyof` of the big tag/event maps rebuilt and sorted per call: fixed 2026-10-16, keyof of an
+object type is remembered per type, the empty dom project 460.7 -> 412.5 M.)
 
 ## Perf at breadth (plan 59): `scripts/perfsweep.py` ranks the outliers
 Stage 2 (2026-10-12) drained every project above 1.5x tsgo's types (measurements.md "Perf at breadth": worst 16.4 ->

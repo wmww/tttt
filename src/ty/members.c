@@ -176,6 +176,41 @@ static int prop_cmp_name(void const* a, void const* b) {
     return a_name < b_name ? -1 : a_name > b_name;
 }
 
+// Sorts props by name (atom address) like qsort() with prop_cmp_name(), without its indirect calls: big tuples (200+
+// elements on type-fest, each instance sorted) made that 8% of the corpus
+static void sort_props_by_name(Prop** props, u32 len) {
+    // Stable (a name twice keeps its order, like qsort()'s merge sort): insertion sorted runs of 16, then merged
+    enum { RUN = 16 };
+    for (u32 start = 0; start < len; start += RUN) {
+        u32 end = start + RUN < len ? start + RUN : len;
+        for (u32 i = start + 1; i < end; i++) {
+            Prop* p = props[i];
+            u32 j = i;
+            for (; j > start && (uintptr_t)props[j - 1]->name > (uintptr_t)p->name; j--) props[j] = props[j - 1];
+            props[j] = p;
+        }
+    }
+    if (len <= RUN) return;
+    Prop** tmp = malloc(sizeof(Prop*) * len);
+    panic_if(!tmp, "out of memory");
+    Prop** src = props;
+    Prop** dst = tmp;
+    for (u32 width = RUN; width < len; width *= 2) {
+        for (u32 lo = 0; lo < len; lo += 2 * width) {
+            u32 mid = lo + width < len ? lo + width : len, hi = lo + 2 * width < len ? lo + 2 * width : len;
+            u32 i = lo, j = mid, k = lo;
+            while (i < mid && j < hi) dst[k++] = (uintptr_t)src[j]->name < (uintptr_t)src[i]->name ? src[j++] : src[i++];
+            while (i < mid) dst[k++] = src[i++];
+            while (j < hi) dst[k++] = src[j++];
+        }
+        Prop** t = src;
+        src = dst;
+        dst = t;
+    }
+    if (src != props) memcpy(props, src, sizeof(Prop*) * len);
+    free(tmp);
+}
+
 // A member named by a computed name that isn't a string or numeric literal (`[Symbol.iterator]`, `[k]`): tsc's binder
 // leaves it to be late bound (getDeclarationName), and late-bound members come after all the early-bound ones of all
 // declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables)
@@ -392,7 +427,7 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
         }
         if (!placed) {
             memcpy(sorted, builder->props, sizeof(Prop*) * builder->props_count);
-            qsort(sorted, builder->props_count, sizeof(Prop*), prop_cmp_name);
+            sort_props_by_name(sorted, builder->props_count);
         }
         ret->props_by_name = sorted;
     }
@@ -4422,11 +4457,9 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         }
         bool optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0;
         if (!optional) min_length = i + 1;
-        cstr name = cstr_d(i);
         Prop* prop = arena_new(&my arena, Prop);
         prop->decl = (PropDecl*)&ty_prop_decl_value_name; // (Named by a number, nothing else to say: shared)
-        prop->name = checker_atom(me, cstr_sv(&name));
-        cstr_drop(&name);
+        prop->name = ty_index_atom(me, i);
         prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
         prop->type = elements.data[i];
         prop->type_state = LAZY_STATE_DONE;
