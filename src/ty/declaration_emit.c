@@ -1970,12 +1970,13 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
     emit_leave(me, saved);
 }
 
-// tsc's isImplementationOfOverload for a function declaration
+// tsc's isImplementationOfOverload for a function declaration: the symbol has another signature (an overload, or
+// another implementation: a duplicate, TS2393, makes both implementations of overloads)
 static bool is_overload_implementation(FunctionImpl const* fn) {
     if (!fn->has_body || !fn->symbol) return false;
     for (u32 i = 0; i < fn->symbol->decl_count; i++) {
         SymbolDecl const* decl = &fn->symbol->decls[i];
-        if (decl->kind == SYMBOL_DECL_FUNCTION && decl->node != fn && !((FunctionImpl const*)decl->node)->has_body) return true;
+        if (decl->kind == SYMBOL_DECL_FUNCTION && decl->node != fn) return true;
     }
     return false;
 }

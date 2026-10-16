@@ -183,6 +183,87 @@ static void member_end_node(TyDisplay d, Span declaration, char const* separator
     member_end_node_mapped(d, declaration, separators, false);
 }
 
+// Declaration emit: a JSDoc `@property {T} name description` member's description as a comment of its own (tsgo's
+// preservePartialJsDoc: the transformer visits the reparsed property signature, GetTextOfJSDocComment of the tag).
+// `tag` is the member's span (from the `@` to the next tag), `name` its name. Continuation lines lose their leading
+// `*` and the whitespace before the column the description started at (parseTagComments' margin)
+static void out_jsdoc_property_description(TyDisplay d, Span tag, Span name) {
+    char const* c = span_end_ptr(name);
+    char const* end = span_end_ptr(tag);
+    // (The name may be the last part of a dotted one, `[person.age]`: the bracket is before its first)
+    char const* before = name.buf;
+    while (before > tag.buf && before[-1] != ' ' && before[-1] != '\t' && before[-1] != '\n' && before[-1] != '}') before--;
+    while (*before == ' ' || *before == '\t') before++;
+    if (*before == '[') {
+        // (`[name=default]`)
+        int depth = 0;
+        for (; c < end && !(depth == 0 && *c == ']'); c++) {
+            if (*c == '[' || *c == '{' || *c == '(') depth++;
+            else if (*c == ']' || *c == '}' || *c == ')') depth--;
+        }
+        if (c < end) c++;
+    }
+    while (c < end && (*c == ' ' || *c == '\t')) c++;
+    if (c < end && *c == '{') {
+        // (`@property name {T}`: the type after the name)
+        int depth = 0;
+        for (; c < end; c++) {
+            if (*c == '{') depth++;
+            else if (*c == '}' && !--depth) break;
+        }
+        if (c < end) c++;
+        while (c < end && (*c == ' ' || *c == '\t')) c++;
+    }
+    if (c >= end) return;
+    char const* line_start = c;
+    while (line_start > tag.buf && line_start[-1] != '\n') line_start--;
+    isize margin = c - line_start;
+    cstr text = cstr_init();
+    bool first = true;
+    while (c < end) {
+        char const* eol = c;
+        while (eol < end && *eol != '\n') eol++;
+        char const* text_end = eol;
+        if (text_end > c && text_end[-1] == '\r') text_end--;
+        if (!first) {
+            // (The line's leading whitespace and `*`, then what's left of the margin)
+            char const* l = c;
+            while (l < text_end && (*l == ' ' || *l == '\t')) l++;
+            if (l < text_end && *l == '*') l++;
+            char const* ws = l;
+            while (l < text_end && (*l == ' ' || *l == '\t')) l++;
+            char const* keep = c + margin;
+            c = l == text_end ? text_end : keep > l ? l : keep < ws ? ws : keep;
+            cstr_append_n(&text, "\n", 1);
+        }
+        cstr_append_n(&text, c, text_end - c);
+        first = false;
+        c = eol < end ? eol + 1 : end;
+    }
+    // (removeLeadingNewlines, removeTrailingWhitespace)
+    char const* t = cstr_str(&text);
+    isize n = cstr_size(&text);
+    isize from = 0;
+    while (from < n && (t[from] == '\n' || t[from] == ' ' || t[from] == '\t')) from++;
+    while (n > from && (t[n - 1] == '\n' || t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\r')) n--;
+    if (n > from) {
+        out_lit(d, "/**\n");
+        for (isize i = from; i < n;) {
+            isize j = i;
+            while (j < n && t[j] != '\n') j++;
+            out_indent(d);
+            out_lit(d, " * ");
+            out(d, (csview){ t + i, j - i });
+            out_lit(d, "\n");
+            i = j + 1;
+        }
+        out_indent(d);
+        out_lit(d, " */\n");
+        out_indent(d);
+    }
+    cstr_drop(&text);
+}
+
 // (With the TyDisplay brace_open() was given)
 static void brace_close(TyDisplay d) {
     if (d.multiline) out_indent(d);
@@ -2205,6 +2286,20 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
             }
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
+        } else if (function->jsdoc_type && !ty_is_identifier_name(span_sv(binding->content_span))) {
+            // (`@param {T} a-b` of a `@callback`/`@overload`: tsgo's reparser names the parameter `a_b`, each character
+            // that can't be in an identifier made `_`)
+            csview name = span_sv(binding->content_span);
+            cstr valid = cstr_from_sv(name);
+            char* c = cstr_data(&valid);
+            for (isize k = 0; k < name.size; k++) {
+                unsigned char ch = (unsigned char)c[k];
+                bool part = ch >= 0x80 || ch == '_' || ch == '$' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                    (k && ch >= '0' && ch <= '9');
+                if (!part) c[k] = '_';
+            }
+            out(arg_d, cstr_sv(&valid));
+            cstr_drop(&valid);
         } else {
             out_mapped(arg_d, binding->content_span);
         }
@@ -2378,6 +2473,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
         Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
         member_begin_node(d, comment_span);
+        if (interface->jsdoc_described && d.transformer_node && d.multiline && d.comments && i->key.tag == INTERFACE_KEY_NAME &&
+            span_valid(i->declaration)
+        ) {
+            out_jsdoc_property_description(d, i->declaration, i->key.span);
+        }
         map_span(d, comment_span, false);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {

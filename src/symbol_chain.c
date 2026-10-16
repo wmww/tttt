@@ -99,8 +99,13 @@ static void add_locals_with_exports(ChainCtx* me, SymbolTable const* locals, Sym
 // this thread
 static thread_local SymbolTable const* expando_scope;
 
+static thread_local u32 access_memo_generation;
+
 void symbol_chain_set_expando_host(Symbol const* host) {
-    expando_scope = host ? host->exports : nullptr;
+    SymbolTable const* scope = host ? host->exports : nullptr;
+    // (The members' names shadow the file's: what was accessible outside the namespace may not be inside it, and back)
+    if (scope != expando_scope) access_memo_generation++;
+    expando_scope = scope;
 }
 
 static void chain_ctx_init(ChainCtx* me, Scope const* enclosing) {
@@ -1268,7 +1273,6 @@ typedef struct AccessMemo {
 #define ACCESS_MEMO_SIZE 1024
 static thread_local AccessMemo* access_memo;
 static thread_local u32 access_memo_painted;
-static thread_local u32 access_memo_generation;
 
 void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count) {
     painted_symbols = symbols;
