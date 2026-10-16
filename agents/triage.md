@@ -9,3 +9,7 @@ content-mapped outputs went to bugs/dts_emit.md, the human's stop request was ho
 - **The 12-core bench is in** (2026-10-16, measurements.md "The 12-core machine"): past K12 checkers buy 0-11% wall
   for ~170 MB each on vscode (6.5 GB at the default K24); `--checker-memory 64` at K24 is -1.75 GB for +2.4%. Plan 75
   question 1 has its numbers (a K cap and/or a total budget); plan 72's declare+link is 5% on vscode, 15% on webpack.
+- **For the human, when next on the 12-core machine** (2026-10-16): plan 72 stage 1 cut the loader thread's own work
+  (~40% at T4 here); the 24-thread vscode load phase was 389 ms with workers 59% busy. Rerunning
+  `TTTT_LOAD_POOL_STATS=1 ./release/tttt -q --keep-going --noEmit --time -p thirdparty/corpora/vscode/src/tsconfig.corpus.json`
+  there says whether plan 72 needs a stage 2 (its stage 1 section).

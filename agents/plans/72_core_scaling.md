@@ -63,8 +63,9 @@ keys, resolutions held until the loader takes them).
 - Not met: "< 150 ms at T1". What's left at T1 is real resolution (11k misses, ~170 M instructions), the resolver's
   `join()` of `../` names (slow path, 137 M), clones of cached results (100 M) and parse-side work counted as loading
   (`source_file_make`, reading). At T4 on this box the phase is parse-throughput bound (workers ~94% busy, the loader
-  waits ~15 ms), so the loader's remaining ~385 ms only shows at more cores: the 12-core `TTTT_LOAD_POOL_STATS` line
-  (below) says whether a stage 2 is worth it. Candidates if so: the inline-parsed files' resolutions (the loader
+  waits ~15 ms), so the loader's remaining ~385 ms only shows at more cores. The 12-core line (below, measured before
+  stage 1: load 389 ms at 24 threads, workers 59% busy, so the loader was the critical path) is the gate: rerun it
+  there after stage 1, and a stage 2 is worth it only if the load phase is still well above the workers' busy share. Candidates if so: the inline-parsed files' resolutions (the loader
   parses ~1/3 of vscode's files itself at T4, and resolves their imports itself), fewer `ResolvedModule` clones (a
   refcounted result), the config's glob walk (0.25 G instructions, before loading: `glob_matches`, `fs_is_directory`
   per directory entry where `d_type` would do).
