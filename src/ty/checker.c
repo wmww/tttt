@@ -2089,17 +2089,33 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         u32 family = 0;
         Ty const* literal = nullptr;
         bool is_never = false;
+        bool seen_empty = false;
+        // (Duplicates by a set of ids past a few members: type-fest intersects hundreds)
+        u32 set_cap = 0;
+        u32* set = nullptr;
+        if (buf.len > 16) {
+            set_cap = 32;
+            while (set_cap < buf.len * 2) set_cap *= 2;
+            set = calloc(set_cap, sizeof(u32));
+            panic_if(!set, "out of memory");
+        }
         for (u32 i = 0; i < buf.len && !is_never; i++) {
             Ty const* t = buf.data[i];
             if (t->flags & TYF_UNKNOWN) continue;
             bool duplicate = false;
-            for (u32 j = 0; j < out; j++) duplicate |= buf.data[j] == t;
+            if (set) {
+                u32 slot = (u32)(t->id * 0x9E3779B1u) & (set_cap - 1);
+                while (set[slot] && set[slot] != t->id) slot = (slot + 1) & (set_cap - 1);
+                duplicate = set[slot] == t->id;
+                set[slot] = t->id;
+            } else {
+                for (u32 j = 0; j < out; j++) duplicate |= buf.data[j] == t;
+            }
             if (duplicate) continue;
             // (Only the first empty object type: tsc's addTypeToIntersection, `C & {}` with `type C = {}` is C)
             if (ty_is_empty_anonymous_object(me, t)) {
-                bool seen_empty = false;
-                for (u32 j = 0; j < out && !seen_empty; j++) seen_empty = ty_is_empty_anonymous_object(me, buf.data[j]);
                 if (seen_empty) continue;
+                seen_empty = true;
             }
             u32 t_family = primitive_family(t);
             // (void and undefined are both void-like, which aren't disjoint: `undefined & void` is undefined)
@@ -2114,6 +2130,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             }
             buf.data[out++] = t;
         }
+        free(set);
         // `object` and a primitive (null and undefined included) are disjoint domains (tsc's getIntersectionType)
         if ((includes & TYF_NON_PRIMITIVE) && (family || (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)))) {
             is_never = true;
