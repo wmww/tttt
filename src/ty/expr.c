@@ -662,7 +662,22 @@ static Ty const* prop_context_key(Checker* me, PropContextKey const* k) {
 static Ty const* intersection_members_prop_context(Checker* me, Ty const* object, Ty const* const* members, u32 len, Ty const* key, u32 depth);
 
 static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty const* key) {
-    return intersection_members_prop_context(me, object, object->composite.types.data, object->composite.types.len, key, 0);
+    TyList members = object->composite.types;
+    bool distributes = false;
+    for (u32 i = 0; i < members.len && !distributes; i++) {
+        if (!is_contextual_type_variable(members.data[i])) continue;
+        Ty const* apparent = ty_apparent_type(me, members.data[i]);
+        distributes = apparent->kind == TY_INTERSECTION || (apparent->kind == TY_UNION && apparent->composite.types.len <= 8);
+    }
+    if (!distributes) return intersection_members_prop_context(me, object, members.data, members.len, key, 0);
+    // (Distributed, remembered per intersection and key: tsc makes the apparent type once, resolvedApparentType, and
+    // looks properties up in its members' resolved ones; recomputing it per lookup cost tanstack-router ~1.2%)
+    static char const none;
+    void const** cached = intern_slot(me, &my links, (u64[]){ KEY_INTERSECTION_PROP_CONTEXT, object->id, key->id }, 3);
+    if (*cached) return *cached == &none ? nullptr : *cached;
+    Ty const* ret = intersection_members_prop_context(me, object, members.data, members.len, key, 0);
+    *cached = ret ? (void const*)ret : &none;
+    return ret;
 }
 
 // (`object` is the intersection, the `this` of its members; `members` what it is made of with the type variables seen

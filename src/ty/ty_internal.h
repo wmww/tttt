@@ -105,6 +105,7 @@ enum {
     KEY_LITERAL_ANCHOR, // Object literal Expr -> ContextAnchor (expr.c)
     KEY_QUICK_CALLEE_CHECKED, // Assignment Expr -> non-null once flow checked its call's callee (flow.c, check_assigned_callee())
     KEY_FUNCTION_ANCHOR, // FunctionImpl -> ContextAnchor (expr.c): where its contextual type comes from, if from a call argument
+    KEY_INTERSECTION_PROP_CONTEXT, // Intersection id, key type id -> what a property's contextual type is, when its type variable members distribute (expr.c's intersection_prop_context)
     KEY_UNDEFINED_PROPERTY, // Property name atom -> the Prop the first normalized-in optional `undefined` property of the name was made of
     KEY_SYNTHETIC_PROP_PARTS, // Prop (an intersection's property made of several, Prop.synthetic) -> SyntheticParts
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
