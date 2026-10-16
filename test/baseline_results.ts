@@ -93,6 +93,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConstContextConditionalBranches': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttContextualIntersectionUnionConstraintMember': {
         errors: true,
         symbols: true,

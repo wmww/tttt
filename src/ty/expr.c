@@ -6028,6 +6028,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             ty_expr_type(me, &expr->ternary->condition);
             // In source order: union members print in the order their types were made
             ExprCtx branch = passed_on_context(ctx);
+            // (Not in a const context for being in one: tsc's isConstContext passes through parentheses, array
+            // literals, spreads and property assignments, not a conditional's branches, so `c ? "a" : ["b"]` in `as
+            // const` is `"a" | string[]`. A const type parameter's contextual type still makes them one)
+            branch.is_const = false;
             Ty const* yes = check_with(me, &expr->ternary->yes, branch);
             Ty const* no = check_with(me, &expr->ternary->no, branch);
             return union_of_two(me, yes, no);

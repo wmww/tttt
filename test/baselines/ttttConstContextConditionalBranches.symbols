@@ -1,0 +1,60 @@
+//// [test/cases/ttttConstContextConditionalBranches.ts] ////
+
+=== ttttConstContextConditionalBranches.ts ===
+// A conditional expression's branches aren't in a const context for the conditional being in one (tsc's
+// isConstContext passes through parentheses, array literals, spreads and property assignments only): in `as const`,
+// `c ? "a" : ["b"]` is `"a" | string[]`; a const type parameter's contextual type still makes them const (pi's
+// keybindings printed `"ctrl+up" | ["ctrl+shift+up", "ctrl+up"]`)
+declare const w: boolean;
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+
+type Def = { defaultKeys: string | string[] };
+>Def : Symbol(Def, Decl(ttttConstContextConditionalBranches.ts, 4, 25))
+>defaultKeys : Symbol(defaultKeys, Decl(ttttConstContextConditionalBranches.ts, 5, 12))
+
+export const K = {
+>K : Symbol(K, Decl(ttttConstContextConditionalBranches.ts, 6, 12))
+
+  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },
+>a : Symbol(a, Decl(ttttConstContextConditionalBranches.ts, 6, 18))
+>defaultKeys : Symbol(defaultKeys, Decl(ttttConstContextConditionalBranches.ts, 7, 6))
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+
+  b: { defaultKeys: ["x", "y"] },
+>b : Symbol(b, Decl(ttttConstContextConditionalBranches.ts, 7, 67))
+>defaultKeys : Symbol(defaultKeys, Decl(ttttConstContextConditionalBranches.ts, 8, 6))
+
+} as const satisfies Record<string, Def>;
+>const : Symbol(const)
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Def : Symbol(Def, Decl(ttttConstContextConditionalBranches.ts, 4, 25))
+
+export const K2 = {
+>K2 : Symbol(K2, Decl(ttttConstContextConditionalBranches.ts, 10, 12))
+
+  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },
+>a : Symbol(a, Decl(ttttConstContextConditionalBranches.ts, 10, 19))
+>defaultKeys : Symbol(defaultKeys, Decl(ttttConstContextConditionalBranches.ts, 11, 6))
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+
+} as const;
+>const : Symbol(const)
+
+declare function f<const T>(t: T): T;
+>f : Symbol(f, Decl(ttttConstContextConditionalBranches.ts, 12, 11))
+>T : Symbol(T, Decl(ttttConstContextConditionalBranches.ts, 13, 19))
+>t : Symbol(t, Decl(ttttConstContextConditionalBranches.ts, 13, 28))
+>T : Symbol(T, Decl(ttttConstContextConditionalBranches.ts, 13, 19))
+>T : Symbol(T, Decl(ttttConstContextConditionalBranches.ts, 13, 19))
+
+export const K3 = f(w ? ["a"] : ["b", 1]);
+>K3 : Symbol(K3, Decl(ttttConstContextConditionalBranches.ts, 14, 12))
+>f : Symbol(f, Decl(ttttConstContextConditionalBranches.ts, 12, 11))
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+
+export const K5 = [w ? "a" : "b", w ? ["x"] : 1] as const;
+>K5 : Symbol(K5, Decl(ttttConstContextConditionalBranches.ts, 15, 12))
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+>w : Symbol(w, Decl(ttttConstContextConditionalBranches.ts, 4, 13))
+>const : Symbol(const)
+

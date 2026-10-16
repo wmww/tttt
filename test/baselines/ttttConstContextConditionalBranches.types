@@ -1,0 +1,87 @@
+//// [test/cases/ttttConstContextConditionalBranches.ts] ////
+
+=== ttttConstContextConditionalBranches.ts ===
+// A conditional expression's branches aren't in a const context for the conditional being in one (tsc's
+// isConstContext passes through parentheses, array literals, spreads and property assignments only): in `as const`,
+// `c ? "a" : ["b"]` is `"a" | string[]`; a const type parameter's contextual type still makes them const (pi's
+// keybindings printed `"ctrl+up" | ["ctrl+shift+up", "ctrl+up"]`)
+declare const w: boolean;
+>w : boolean
+
+type Def = { defaultKeys: string | string[] };
+>Def : Def
+>defaultKeys : string | string[]
+
+export const K = {
+>K : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; readonly b: { readonly defaultKeys: ["x", "y"]; }; }
+>{  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },  b: { defaultKeys: ["x", "y"] },} as const satisfies Record<string, Def> : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; readonly b: { readonly defaultKeys: ["x", "y"]; }; }
+>{  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },  b: { defaultKeys: ["x", "y"] },} as const : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; readonly b: { readonly defaultKeys: ["x", "y"]; }; }
+>{  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },  b: { defaultKeys: ["x", "y"] },} : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; readonly b: { readonly defaultKeys: ["x", "y"]; }; }
+
+  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },
+>a : { readonly defaultKeys: "ctrl+up" | string[]; }
+>{ defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] } : { readonly defaultKeys: "ctrl+up" | string[]; }
+>defaultKeys : "ctrl+up" | string[]
+>w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] : "ctrl+up" | string[]
+>w : boolean
+>"ctrl+up" : "ctrl+up"
+>["ctrl+shift+up", "ctrl+up"] : string[]
+>"ctrl+shift+up" : "ctrl+shift+up"
+>"ctrl+up" : "ctrl+up"
+
+  b: { defaultKeys: ["x", "y"] },
+>b : { readonly defaultKeys: ["x", "y"]; }
+>{ defaultKeys: ["x", "y"] } : { readonly defaultKeys: ["x", "y"]; }
+>defaultKeys : ["x", "y"]
+>["x", "y"] : ["x", "y"]
+>"x" : "x"
+>"y" : "y"
+
+} as const satisfies Record<string, Def>;
+export const K2 = {
+>K2 : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; }
+>{  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },} as const : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; }
+>{  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },} : { readonly a: { readonly defaultKeys: "ctrl+up" | string[]; }; }
+
+  a: { defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] },
+>a : { readonly defaultKeys: "ctrl+up" | string[]; }
+>{ defaultKeys: w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] } : { readonly defaultKeys: "ctrl+up" | string[]; }
+>defaultKeys : "ctrl+up" | string[]
+>w ? "ctrl+up" : ["ctrl+shift+up", "ctrl+up"] : "ctrl+up" | string[]
+>w : boolean
+>"ctrl+up" : "ctrl+up"
+>["ctrl+shift+up", "ctrl+up"] : string[]
+>"ctrl+shift+up" : "ctrl+shift+up"
+>"ctrl+up" : "ctrl+up"
+
+} as const;
+declare function f<const T>(t: T): T;
+>f : <const T>(t: T) => T
+>t : T
+
+export const K3 = f(w ? ["a"] : ["b", 1]);
+>K3 : readonly ["a"] | readonly ["b", 1]
+>f(w ? ["a"] : ["b", 1]) : readonly ["a"] | readonly ["b", 1]
+>f : <const T>(t: T) => T
+>w ? ["a"] : ["b", 1] : ["a"] | ["b", 1]
+>w : boolean
+>["a"] : ["a"]
+>"a" : "a"
+>["b", 1] : ["b", 1]
+>"b" : "b"
+>1 : 1
+
+export const K5 = [w ? "a" : "b", w ? ["x"] : 1] as const;
+>K5 : readonly ["a" | "b", 1 | string[]]
+>[w ? "a" : "b", w ? ["x"] : 1] as const : readonly ["a" | "b", 1 | string[]]
+>[w ? "a" : "b", w ? ["x"] : 1] : readonly ["a" | "b", 1 | string[]]
+>w ? "a" : "b" : "a" | "b"
+>w : boolean
+>"a" : "a"
+>"b" : "b"
+>w ? ["x"] : 1 : 1 | string[]
+>w : boolean
+>["x"] : string[]
+>"x" : "x"
+>1 : 1
+
