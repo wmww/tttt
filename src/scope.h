@@ -922,6 +922,12 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
 // Reports what scope_report_value_not_found() deferred, with the checker current
 void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
+// Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
+bool symbol_alias_of_unknown(Symbol const* symbol);
+// How tsc names its unknownSymbol from here (getAccessibleSymbolChain matches aliases by what they resolve to): the
+// first alias of it in the innermost symbol table that has one (a namespace's table is its exports; the globals last),
+// else null
+Symbol const* scope_unknown_alias(Scope const* me);
 // A value `name` used here, which resolved to `found` (maybe null), passes an instance field on the way whose
 // constructor declares a value of that name (TS2301): that field, else null
 struct ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found);

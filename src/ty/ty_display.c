@@ -1511,6 +1511,12 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         }
     }
     if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
+    // (An import of nothing is tsc's unknownSymbol: where it's printed, the name must find an alias of nothing too,
+    // getSymbolIfSameReference)
+    if (d.enclosing && symbol_alias_of_unknown(symbol)) {
+        Symbol const* found = scope_resolve(d.enclosing, first, meaning);
+        return found && (found == symbol || symbol_alias_of_unknown(found));
+    }
     // (A name that doesn't resolve with this meaning, a value used as a type (TS2749): tsc's resolveEntityName finds
     // nothing, here or there, and the node is reused, AllowUnresolvedNames)
     if (meaning != SYMBOL_VALUE && (symbol->is_placeholder || !symbol_for_meaning(symbol, meaning))) return true;
@@ -1701,7 +1707,10 @@ static Expr const* entity_leftmost(Expr const* expr);
 
 // How tsc's tryVisitTypeReference reprints a (non-keyword, non-import) type reference: as written, by a name of its
 // target from where it's printed (serializeTypeName), or not at all (the node prints its type)
-typedef enum IdentifierReuse { IDENTIFIER_REUSED, IDENTIFIER_RENAMED, IDENTIFIER_MAPPED, IDENTIFIER_FAILS } IdentifierReuse;
+// (IDENTIFIER_RENAMED_UNKNOWN: an import of nothing, tsc's unknownSymbol, named by an alias of nothing where it's printed)
+typedef enum IdentifierReuse {
+    IDENTIFIER_REUSED, IDENTIFIER_RENAMED, IDENTIFIER_RENAMED_UNKNOWN, IDENTIFIER_MAPPED, IDENTIFIER_FAILS
+} IdentifierReuse;
 static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     bool qualified = identifier_type_namespace_count(identifier) > 0;
@@ -1717,6 +1726,9 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped) return IDENTIFIER_MAPPED;
     if (name_accessible(me, d, symbol, span_sv(first), qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
+    // (tsc's serializeTypeName resolves the whole name to unknownSymbol, a qualified one too, accessible through an
+    // alias of it)
+    if (symbol_alias_of_unknown(symbol)) return d.enclosing && scope_unknown_alias(d.enclosing) ? IDENTIFIER_RENAMED_UNKNOWN : IDENTIFIER_FAILS;
     Symbol const* target = identifier->target;
     if (target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
         symbol_type_accessible_at(d.enclosing, target)
@@ -1904,6 +1916,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         if (reuse == IDENTIFIER_RENAMED) {
             if (d.tracker) d.tracker->track_symbol(d.tracker, target, SYMBOL_TYPE); // (lookupSymbolChain tracks it)
             out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
+            display_node_args(me, d, &identifier->generic_params);
+        } else if (reuse == IDENTIFIER_RENAMED_UNKNOWN) {
+            Symbol const* alias = scope_unknown_alias(d.enclosing);
+            if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_TYPE);
+            out(reused_if(d, false), alias->name);
             display_node_args(me, d, &identifier->generic_params);
         } else {
             display_node_fallback(me, d, node);

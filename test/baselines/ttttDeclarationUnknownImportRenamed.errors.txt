@@ -1,0 +1,24 @@
+a.ts(1,27): error TS2307: Cannot find module 'missing-mod' or its corresponding type declarations.
+a.ts(2,30): error TS2307: Cannot find module 'missing-mod/adapter' or its corresponding type declarations.
+b.ts(1,29): error TS2307: Cannot find module 'missing-mod' or its corresponding type declarations.
+
+
+==== a.ts (2 errors) ====
+    import type { Opts } from "missing-mod";
+                              ~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-mod' or its corresponding type declarations.
+    import type { Adapter } from "missing-mod/adapter";
+                                 ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-mod/adapter' or its corresponding type declarations.
+    export const make = (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts }) => void) => fn;
+==== b.ts (1 errors) ====
+    import type { Plugin } from "missing-mod";
+                                ~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-mod' or its corresponding type declarations.
+    import { make } from "./a";
+    export const suite = make((h) => {});
+    export const g = (x: Parameters<Parameters<typeof make>[0]>[0]) => x;
+==== c.ts (0 errors) ====
+    import { make } from "./a";
+    export const suite2 = make((h) => {});
+    

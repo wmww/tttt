@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeclarationUnknownImportRenamed.ts] ////
+
+=== a.ts ===
+import type { Opts } from "missing-mod";
+>Opts : any
+
+import type { Adapter } from "missing-mod/adapter";
+>Adapter : any
+
+export const make = (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts }) => void) => fn;
+>make : (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void) => (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>(fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts }) => void) => fn : (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void) => (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>fn : (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>h : { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }
+>adapter : () => Promise<Adapter<Opts>>
+>get : () => Opts
+>fn : (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+
+=== b.ts ===
+import type { Plugin } from "missing-mod";
+>Plugin : any
+
+import { make } from "./a";
+>make : (fn: (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void) => (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+
+export const suite = make((h) => {});
+>suite : (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+>make((h) => {}) : (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+>make : (fn: (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void) => (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+>(h) => {} : (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+>h : { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }
+
+export const g = (x: Parameters<Parameters<typeof make>[0]>[0]) => x;
+>g : (x: Parameters<Parameters<typeof make>[0]>[0]) => { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }
+>(x: Parameters<Parameters<typeof make>[0]>[0]) => x : (x: Parameters<Parameters<typeof make>[0]>[0]) => { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }
+>x : { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }
+>make : (fn: (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void) => (h: { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }) => void
+>x : { adapter: () => Promise<Plugin<Plugin>>; get: () => Plugin; }
+
+=== c.ts ===
+import { make } from "./a";
+>make : (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void) => (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+
+export const suite2 = make((h) => {});
+>suite2 : (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>make((h) => {}) : (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>make : (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void) => (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>(h) => {} : (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }) => void
+>h : { adapter: () => Promise<Adapter<Opts>>; get: () => Opts; }
+

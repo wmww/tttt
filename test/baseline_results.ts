@@ -345,6 +345,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnknownImportRenamed': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,

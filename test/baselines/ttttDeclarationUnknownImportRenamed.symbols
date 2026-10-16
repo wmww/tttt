@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeclarationUnknownImportRenamed.ts] ////
+
+=== a.ts ===
+import type { Opts } from "missing-mod";
+>Opts : Symbol(Opts, Decl(a.ts, 0, 13))
+
+import type { Adapter } from "missing-mod/adapter";
+>Adapter : Symbol(Adapter, Decl(a.ts, 1, 13))
+
+export const make = (fn: (h: { adapter: () => Promise<Adapter<Opts>>; get: () => Opts }) => void) => fn;
+>make : Symbol(make, Decl(a.ts, 2, 12))
+>fn : Symbol(fn, Decl(a.ts, 2, 21))
+>h : Symbol(h, Decl(a.ts, 2, 26))
+>adapter : Symbol(adapter, Decl(a.ts, 2, 30))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Adapter : Symbol(Adapter, Decl(a.ts, 1, 13))
+>Opts : Symbol(Opts, Decl(a.ts, 0, 13))
+>get : Symbol(get, Decl(a.ts, 2, 69))
+>Opts : Symbol(Opts, Decl(a.ts, 0, 13))
+>fn : Symbol(fn, Decl(a.ts, 2, 21))
+
+=== b.ts ===
+import type { Plugin } from "missing-mod";
+>Plugin : Symbol(Plugin, Decl(b.ts, 0, 13))
+
+import { make } from "./a";
+>make : Symbol(make, Decl(b.ts, 1, 8))
+
+export const suite = make((h) => {});
+>suite : Symbol(suite, Decl(b.ts, 2, 12))
+>make : Symbol(make, Decl(b.ts, 1, 8))
+>h : Symbol(h, Decl(b.ts, 2, 27))
+
+export const g = (x: Parameters<Parameters<typeof make>[0]>[0]) => x;
+>g : Symbol(g, Decl(b.ts, 3, 12))
+>x : Symbol(x, Decl(b.ts, 3, 18))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>make : Symbol(make, Decl(b.ts, 1, 8))
+>x : Symbol(x, Decl(b.ts, 3, 18))
+
+=== c.ts ===
+import { make } from "./a";
+>make : Symbol(make, Decl(c.ts, 0, 8))
+
+export const suite2 = make((h) => {});
+>suite2 : Symbol(suite2, Decl(c.ts, 1, 12))
+>make : Symbol(make, Decl(c.ts, 0, 8))
+>h : Symbol(h, Decl(c.ts, 1, 28))
+

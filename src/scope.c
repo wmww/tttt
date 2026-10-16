@@ -5192,6 +5192,26 @@ csview symbol_default_export_local_name(Symbol const* me) {
     return (csview){0};
 }
 
+bool symbol_alias_of_unknown(Symbol const* symbol) {
+    return symbol && (symbol->flags & SYMBOL_ALIAS) && symbol->alias && symbol->alias->state == ALIAS_DONE &&
+        (!symbol->alias->target || symbol->alias->target->is_placeholder);
+}
+
+Symbol const* scope_unknown_alias(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        SymbolTable const* tables[2] = { scope_locals(scope), nullptr };
+        if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
+        if (scope->kind == SCOPE_GLOBAL) tables[1] = &scope->binder->globals;
+        for (u32 t = 0; t < 2; t++) {
+            for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
+                Symbol const* entry = tables[t]->entries[i].symbol;
+                if (symbol_alias_of_unknown(entry)) return entry;
+            }
+        }
+    }
+    return nullptr;
+}
+
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
     bool from_parameters = false, from_return_type = false;

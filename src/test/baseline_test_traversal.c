@@ -171,28 +171,15 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     add_symbol_override(ctx, property_key_span(left->property), member);
 }
 
-// Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
 static bool alias_of_unknown(Symbol const* symbol) {
-    return symbol && (symbol->flags & SYMBOL_ALIAS) && symbol->alias && symbol->alias->state == ALIAS_DONE &&
-        (!symbol->alias->target || symbol->alias->target->is_placeholder);
+    return symbol_alias_of_unknown(symbol);
 }
 
-// How tsc's symbolToString names its unknownSymbol (what a name after an unresolved import resolves to) from here:
-// by the first alias of it in the innermost symbol table that has one (getAccessibleSymbolChain matches aliases by
-// what they resolve to; a namespace's table is its exports; the globals last), else not at all
+// How tsc's symbolToString names its unknownSymbol (what a name after an unresolved import resolves to) from here,
+// else not at all
 static cstr unknown_symbol_text(BaselineTestCase const* ctx) {
-    for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
-        SymbolTable const* tables[2] = { scope_locals(scope), nullptr };
-        if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
-        if (scope->kind == SCOPE_GLOBAL) tables[1] = &scope->binder->globals;
-        for (u32 t = 0; t < 2; t++) {
-            for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
-                Symbol const* entry = tables[t]->entries[i].symbol;
-                if (alias_of_unknown(entry)) return cstr_from_sv(entry->name);
-            }
-        }
-    }
-    return cstr_init();
+    Symbol const* alias = scope_unknown_alias(ctx->enclosing);
+    return alias ? cstr_from_sv(alias->name) : cstr_init();
 }
 
 // `A.B.C` as spans
