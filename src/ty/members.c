@@ -3912,10 +3912,11 @@ static Ty const* peek_cond_branch(TyCondBranch const* branch) {
 
 // Whether an `as` clause only filters the keys (tsc's getMappedTypeNameTypeKind: Filtering when the clause is assignable
 // to the key parameter), told by its shape: each union member and conditional branch is the key, never, or an
-// intersection with the key. (Relating it as tsc does can reach the members of the mapped type being resolved:
+// intersection with the key (or its distributed twin). (Relating it as tsc does can reach the members of the mapped type being resolved:
 // `as `${K}.${keyof Self<T[K]>}``)
 static bool name_type_filters(Checker* me, Ty const* name, Ty const* key, u32 depth) {
-    if (name == key || (name->flags & TYF_NEVER)) return true;
+    // (A distributive conditional's branches have the key's distributed twin, constrained to the key: assignable)
+    if (name == key || ty_non_distributed(name) == key || (name->flags & TYF_NEVER)) return true;
     if (depth > 8) return false;
     switch ((TyKind)name->kind) {
         case TY_UNION:

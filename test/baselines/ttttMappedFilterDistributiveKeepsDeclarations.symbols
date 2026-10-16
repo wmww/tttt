@@ -1,0 +1,73 @@
+//// [test/cases/ttttMappedFilterDistributiveKeepsDeclarations.ts] ////
+
+=== ttttMappedFilterDistributiveKeepsDeclarations.ts ===
+// A mapped type whose `as` clause is a distributive conditional filtering its keys (`k extends X ? never : k`) only
+// filters (tsc's getMappedTypeNameTypeKind: the clause is assignable to the key, its branch being the key's
+// distributed twin), so its properties are declared where the source's are and keep their order (compareSymbols by
+// declaration), not sorted by name (arktype's `type({ name, age })`)
+type show<t> = { [k in keyof t]: t[k] } & unknown;
+>show : Symbol(show, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 0, 0))
+>t : Symbol(t, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 10))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 18))
+>t : Symbol(t, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 10))
+>t : Symbol(t, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 10))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 18))
+
+declare function f1<const def>(d: def): show<{ [k in keyof def as k extends `${infer n}?` ? never : k]: def[k] }>;
+>f1 : Symbol(f1, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 50))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 20))
+>d : Symbol(d, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 31))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 20))
+>show : Symbol(show, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 0, 0))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 48))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 48))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 84))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 48))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 48))
+
+declare function f2<const def>(d: def): { [k in keyof def as k extends `${infer n}?` ? never : k]: def[k] };
+>f2 : Symbol(f2, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 114))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 20))
+>d : Symbol(d, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 31))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 43))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 43))
+>n : Symbol(n, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 79))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 43))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 43))
+
+declare function f3<const def>(d: def): { [k in keyof def as k extends "zz" ? never : k]: def[k] };
+>f3 : Symbol(f3, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 108))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 20))
+>d : Symbol(d, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 31))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 43))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 43))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 43))
+>def : Symbol(def, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 20))
+>k : Symbol(k, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 7, 43))
+
+export const a1 = f1({ name: "s", age: 1 });
+>a1 : Symbol(a1, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 8, 12))
+>f1 : Symbol(f1, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 4, 50))
+>name : Symbol(name, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 8, 22))
+>age : Symbol(age, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 8, 33))
+
+export const a2 = f2({ name: "s", age: 1 });
+>a2 : Symbol(a2, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 9, 12))
+>f2 : Symbol(f2, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 5, 114))
+>name : Symbol(name, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 9, 22))
+>age : Symbol(age, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 9, 33))
+
+export const a3 = f3({ name: "s", age: 1, zz: 2 });
+>a3 : Symbol(a3, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 12))
+>f3 : Symbol(f3, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 6, 108))
+>name : Symbol(name, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 22))
+>age : Symbol(age, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 33))
+>zz : Symbol(zz, Decl(ttttMappedFilterDistributiveKeepsDeclarations.ts, 10, 41))
+

@@ -731,6 +731,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedFilterDistributiveKeepsDeclarations': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMappedIntersectionMemberOrder': {
         errors: true,
         symbols: true,
