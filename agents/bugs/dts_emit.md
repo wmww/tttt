@@ -1,7 +1,7 @@
 # Declaration emit: what still differs from tsgo (plan 64)
 
-State 2026-10-15 (after todo entry 6's fan-out): suite dts component in the headline; `scripts/dtsdiff.py` **1077 / 1233
-projects, 95611 / 96726 files** byte-identical (77 of the remaining projects / ~800 files are JS sources, stage 6).
+State 2026-10-16 (after todo entry 3's fan-out): suite dts component in the headline; `scripts/dtsdiff.py` **1116 / 1233
+projects, 95824 / 96726 files** byte-identical (77 of the remaining projects / ~800 files are JS sources, stage 6).
 `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 

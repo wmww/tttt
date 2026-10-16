@@ -103,12 +103,6 @@ default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the 
   namespace (TS2709) and pixijs's const conflicts with the namespace (TS2451; lookupOrIssueError keeps the first
   diagnostic at a node). tttt's binder merges declaration by declaration (declare_symbol): the interface merges into
   the lib symbol, only the var is rejected. Architectural (the binder's cross-file merge unit); rare (conflicts only).
-- **tiptap** demos +TS2345 x9 `VueNodeViewRenderer.test.ts:58,69,122...`: `ReturnType<typeof defineComponent>`
-  (vue's overloaded defineComponent). tsc: `typeof defineComponent extends (...args: any) => infer R ? R : 2` is 2
-  (definitely false), tttt defers it; underneath, tttt finds `DefineSetupFnComponent<any, any, any, any, PublicProps>`
-  assignable to `DefineComponent<unknown, ...>` (an intersection of a constructor type, ComponentOptionsBase and
-  PublicProps) where tsc doesn't. Probe: /tmp-style project importing `defineComponent, DefineSetupFnComponent,
-  PublicProps` from tiptap's vue `dist/vue.d.mts` by absolute path; a hand-written two-overload copy doesn't reproduce.
 - For agent D (mermaid is theirs now): mermaid's `renderHelpers.ts:150` +TS18048 (`insertNode`'s inferred return type
   keeps `undefined`) only reproduces in the full project with one checker: a probe with only renderHelpers.ts, or a
   file importing insertNode, matches tsc, and the files before it in program order don't reproduce it alone either.
@@ -149,9 +143,6 @@ string config options), tsx cache.ts (no flow narrowing of a non-variable module
   const u = async () => {}; if (ns) { u.unregister = u; } return u; }` with `NU = (() => Promise<void>) & {
   unregister: () => Promise<void> }`. Not found which evaluation is circular (TTTT_DEBUG_CYCLE prints nothing: a
   member type cycle).
-- **tiptap/demos `VueNodeViewRenderer.test.ts` +TS2345 x9**: `ReturnType<typeof defineComponent>` (overloaded,
-  generic) prints as `DefineComponent<unknown, unknown, ...>` in tttt's message and isn't a Component<NodeViewProps>;
-  not reduced.
 - pixijs/feathers "flakiness" (2026-10-12, agent C): not reproduced. Both are byte-identical over 5 runs at
   `--checkers` 1 and 4 and over repeated `sourcesweep.py -f` runs; the runs that matched were probably of other
   commits. feathers' mismatch (+TS6196/+TS2339/+TS2353 in docs/vite.config.ts: `import type { Plugin } from "vite"`
@@ -322,10 +313,9 @@ read types). Left:
 - better-auth,
   es-toolkit, knip, pixijs: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
-- The tiptap/demos +TS2345 x9 (VueNodeViewRenderer.test.ts, entries above) is unchanged.
 
 ## Source sweep fan-out 2026-10-16 (agent A)
-Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui (see git log). 7 projects left in the
+Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui, and tiptap/demos' +TS2345 x9 along the way (see git log). 7 projects left in the
 full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entries above), and:
 - **arktype this.test.ts:190 +TS2322** (`type({ name: "string", "child?": ["this", "=>", child => child] })`):
   reproduces in a probe project extending arktype's tsconfig (imports by absolute path). Both sides type the callback
