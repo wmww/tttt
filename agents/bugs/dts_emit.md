@@ -4,11 +4,11 @@
 (the writer prints text from the source AST and `Ty`s, documentation.md "Declaration emit"); one walk with two sinks
 (`declaration_emit.c`'s diagnostics walk, the writer a second pass in the checker that checked the file); tttt emits
 only where the options emit declarations alone (`emitDeclarationOnly`), never JavaScript; no `.tsbuildinfo` (plan 76
-decides incremental). Validation met: suite dts in the headline (1824 / 1849, JavaScript tests included since this
-entry: 346 / 347), dtsdiff >= 90% of projects (94.6%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
+decides incremental). Validation met: suite dts in the headline (1834 / 1859, JavaScript tests included since this
+entry: 351 / 352), dtsdiff >= 90% of projects (96.8%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
 of a quarter sample by tsgo's own per-checker undefinedProperties history (below, "Member order").
 
-State 2026-10-16: `scripts/dtsdiff.py` **1166 / 1233 projects, 96588 / 96726 files** byte-identical.
+State 2026-10-16: `scripts/dtsdiff.py` **1193 / 1233 projects, 96627 / 96726 files** byte-identical.
 `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 
@@ -17,10 +17,8 @@ size on real code, each with an example:
   local; TS has it too). Guesses from one or two tests each are in hacks.md ("JavaScript declaration emit guesses").
   JavaScript declaration diagnostics are reported like TypeScript's since this entry (no file written then); left
   on real code: query's `root.tsdown.config.d.ts.map` (17 projects, a JSDoc type literal member's mapped end) and
-  create-t3-app's `prettier.config.d.mts.map` (a type on a JSDoc continuation line), which todo entry 5's agent took.
-- **Missing TypeScript files** (6 projects: mermaid's `rendering-util/fastdom.d.ts`, sequelize's `model-typescript.d.ts`
-  and `sequelize-typescript.d.ts`, zigbee2mqtt/test's mocks): tttt writes nothing, uninvestigated (a spurious
-  declaration diagnostic is the likely cause).
+  create-t3-app's `prettier.config.d.mts.map` were fixed by todo entry 5's agent, as were the missing TypeScript files
+  (mermaid, sequelize, zigbee2mqtt: none left).
 - **Import specifier choice** (agent A 2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
   in the enclosing location's mode, no container cap, no package copies as containers, existing imports only through
   their realpath, program-wide dependency links by package directory, exports conditions by the target's format;

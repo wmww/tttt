@@ -77,6 +77,14 @@ Instructions (callgrind, `--noEmit`; JS emit only runs when emitting) flat again
 23.523, valibot 3.596, react 1.494, nest 1.146, webpack 10.022, zod 5.434, xstate 2.754, drizzle 6.830, vue 6.628,
 effect 10.356, vscode 95.798, excalidraw 7.931, tanstack-router 5.422 G.
 
+## Plan 64 stage 6 finished (2026-10-16, todo entry 5)
+Main + one agent. `scripts/oracles.py`: suite **13756 / 13798** (dts 1834 / 1859 with JavaScript tests folded in, those
+351 / 352), corpora all 0/0 but vue 0/2, DT 8595, `$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep sample 818 /
+822 (full 3356 / 3363 mid-session), perfsweep median 0.22, worst types ratio 1.62; **dtsdiff 1193 / 1233 projects,
+96627 / 96726 files** (from 1166 / 96584; no file tsgo writes that tttt doesn't). Instructions (callgrind, `--noEmit`):
+tsc 4.648, type-fest 23.519, valibot 3.595, react 1.494, nest 1.145, webpack 10.020, zod 5.435, xstate 2.754, drizzle
+6.829, vue 6.630, effect 10.358, vscode 95.800, excalidraw 7.933, tanstack-router 5.419 G: flat against entry 3.
+
 ## Real-code fan-out 2 (2026-10-16, todo entry 3)
 Three agents (A source sweep diagnostics, B dtsdiff "type text", C dtsdiff's emitter buckets: import, member order,
 comments, maps), ~55 picks, 0 lost at every merge, 0 conflicts, 0 duplicates. `scripts/oracles.py`: suite **13745 /

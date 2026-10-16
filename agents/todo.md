@@ -36,7 +36,9 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
    (apart), headline 13746 / 13787 (+1 own test), dtsdiff 1116 -> 1166 / 1233 projects (96584 / 96726 files), clidiff
    `--emit` 309 -> 369 / 396, every other oracle unchanged. Left: plan 64's status (JS declaration diagnostics, the
    last 26 JS tests, folding them into the headline).
-5. **Plan 64 stage 6** continued, or its leftovers by fan-out; then plan 64 is closed into bugs/dts_emit.md.
+5. Done 2026-10-16: plan 64 stage 6 finished and plan 64 closed into bugs/dts_emit.md (main + one agent).
+   JavaScript declaration diagnostics reported for real (also under --noEmit), the suite's JS dts folded into the
+   headline (351 / 352), suite 13756 / 13798; dtsdiff 1166 -> 1193 / 1233 projects (96627 / 96726 files, no missing file left), every other oracle unchanged; instructions flat (callgrind, vscode 95.80 G).
 6. **Plan 63 stage 2** (execution): per-file parse arenas (its 2a audit may stop it; say why in the plan).
 7. **Plan 75** (planning with a prototype): the per-checker policy first (12-core numbers are in; implement if small),
    then the compact AST prototype and its go/no-go.
