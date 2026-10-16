@@ -1,0 +1,59 @@
+//// [test/cases/ttttContextualIntersectionUnionOfIntersections.ts] ////
+
+=== ttttContextualIntersectionUnionOfIntersections.ts ===
+// A contextual type `C & Check<C>` whose type parameter's constraint is a union of intersections: distributing over the
+// union, each alternative intersection is flattened into the members, so its properties still say something (a
+// regression of the distribution: react-navigation's static config callbacks lost their parameter types)
+interface Opts { cb?: (o: { placement: 'regular' | 'inline' }) => void; n?: number }
+>Opts : Symbol(Opts, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 0, 0))
+>cb : Symbol(Opts.cb, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 16))
+>o : Symbol(o, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 23))
+>placement : Symbol(placement, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 27))
+>n : Symbol(Opts.n, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 71))
+
+type Strict<C> = string extends keyof C ? {} : Record<Exclude<keyof C, keyof Opts | 'a' | 'b'>, never>;
+>Strict : Symbol(Strict, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 84))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 4, 12))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 4, 12))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 4, 12))
+>Opts : Symbol(Opts, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 0, 0))
+
+type Either = ({ a: 1 } & Opts) | ({ b: 2 } & Opts);
+>Either : Symbol(Either, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 4, 103))
+>a : Symbol(a, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 5, 16))
+>Opts : Symbol(Opts, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 0, 0))
+>b : Symbol(b, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 5, 36))
+>Opts : Symbol(Opts, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 0, 0))
+
+type Check<C> = C extends { n: infer N } ? { n: N } : unknown;
+>Check : Symbol(Check, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 5, 52))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 11))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 11))
+>n : Symbol(n, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 27))
+>N : Symbol(N, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 36))
+>n : Symbol(n, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 44))
+>N : Symbol(N, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 36))
+
+declare function make<const C extends Either & Strict<C>>(config: C & Check<C>): C;
+>make : Symbol(make, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 62))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 22))
+>Either : Symbol(Either, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 4, 103))
+>Strict : Symbol(Strict, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 3, 84))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 22))
+>config : Symbol(config, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 58))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 22))
+>Check : Symbol(Check, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 5, 52))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 22))
+>C : Symbol(C, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 7, 22))
+
+export const made = make({ a: 1, cb: ({ placement }) => { const p: 'regular' | 'inline' = placement; } });
+>made : Symbol(made, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 12))
+>make : Symbol(make, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 6, 62))
+>a : Symbol(a, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 26))
+>cb : Symbol(cb, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 32))
+>placement : Symbol(placement, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 39))
+>p : Symbol(p, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 63))
+>placement : Symbol(placement, Decl(ttttContextualIntersectionUnionOfIntersections.ts, 8, 39))
+

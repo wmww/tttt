@@ -93,6 +93,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttContextualIntersectionUnionOfIntersections': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttContravariantInferenceAliasedIntersection': {
         errors: true,
         symbols: true,

@@ -1,0 +1,42 @@
+//// [test/cases/ttttContextualIntersectionUnionOfIntersections.ts] ////
+
+=== ttttContextualIntersectionUnionOfIntersections.ts ===
+// A contextual type `C & Check<C>` whose type parameter's constraint is a union of intersections: distributing over the
+// union, each alternative intersection is flattened into the members, so its properties still say something (a
+// regression of the distribution: react-navigation's static config callbacks lost their parameter types)
+interface Opts { cb?: (o: { placement: 'regular' | 'inline' }) => void; n?: number }
+>cb : ((o: { placement: 'regular' | 'inline'; }) => void) | undefined
+>o : { placement: 'regular' | 'inline'; }
+>placement : "inline" | "regular"
+>n : number | undefined
+
+type Strict<C> = string extends keyof C ? {} : Record<Exclude<keyof C, keyof Opts | 'a' | 'b'>, never>;
+>Strict : Strict<C>
+
+type Either = ({ a: 1 } & Opts) | ({ b: 2 } & Opts);
+>Either : Either
+>a : 1
+>b : 2
+
+type Check<C> = C extends { n: infer N } ? { n: N } : unknown;
+>Check : Check<C>
+>n : N
+>n : N
+
+declare function make<const C extends Either & Strict<C>>(config: C & Check<C>): C;
+>make : <const C extends Either & Strict<C>>(config: C & Check<C>) => C
+>config : C & Check<C>
+
+export const made = make({ a: 1, cb: ({ placement }) => { const p: 'regular' | 'inline' = placement; } });
+>made : { readonly a: 1; readonly cb: ({ placement }: { placement: 'regular' | 'inline'; }) => void; }
+>make({ a: 1, cb: ({ placement }) => { const p: 'regular' | 'inline' = placement; } }) : { readonly a: 1; readonly cb: ({ placement }: { placement: 'regular' | 'inline'; }) => void; }
+>make : <const C extends Either & Strict<C>>(config: C & Check<C>) => C
+>{ a: 1, cb: ({ placement }) => { const p: 'regular' | 'inline' = placement; } } : { a: 1; cb: ({ placement }: { placement: 'regular' | 'inline'; }) => void; }
+>a : 1
+>1 : 1
+>cb : ({ placement }: { placement: 'regular' | 'inline'; }) => void
+>({ placement }) => { const p: 'regular' | 'inline' = placement; } : ({ placement }: { placement: 'regular' | 'inline'; }) => void
+>placement : "inline" | "regular"
+>p : "inline" | "regular"
+>placement : "inline" | "regular"
+

@@ -671,11 +671,14 @@ static Ty const* intersection_members_prop_context(Checker* me, Ty const* object
     // A type variable member as its constraint (tsc's getApparentTypeOfIntersectionType: getTypeWithThisArgument with
     // needApparentType, which makes a new intersection): one that is a union distributes the intersection over it,
     // each alternative what its members say (`T & (IsAny<T> extends true ? {} : M)` is `(C & {}) | (C & M)`), one that
-    // is an intersection adds its members
-    for (u32 i = 0; i < len && depth < 4; i++) {
-        if (!is_contextual_type_variable(members[i])) continue;
-        Ty const* apparent = ty_apparent_type(me, members[i]);
+    // is an intersection adds its members. An alternative that is an intersection itself is flattened in too. (Bounded:
+    // 8 levels, unions of at most 8 members; past that, below, a union says what its members say, as one part)
+    for (u32 i = 0; i < len && depth < 8; i++) {
+        bool variable = is_contextual_type_variable(members[i]);
+        if (!variable && members[i]->kind != TY_INTERSECTION) continue;
+        Ty const* apparent = variable ? ty_apparent_type(me, members[i]) : members[i];
         if (apparent->kind != TY_UNION && apparent->kind != TY_INTERSECTION) continue;
+        if (apparent->kind == TY_UNION && apparent->composite.types.len > 8) continue;
         TyList inner = apparent->composite.types;
         u32 width = apparent->kind == TY_INTERSECTION ? inner.len : 1;
         Ty const** list = malloc(sizeof(Ty const*) * (len - 1 + width));
@@ -707,6 +710,11 @@ static Ty const* intersection_members_prop_context(Checker* me, Ty const* object
     for (u32 i = 0; i < len; i++) {
         Ty const* member = members[i];
         if (is_contextual_type_variable(member)) member = ty_apparent_type(me, member);
+        if (member->kind == TY_UNION || member->kind == TY_INTERSECTION) {
+            PropContextKey member_key = { name, key };
+            push_prop_context_part(me, &parts, context_map(me, member, get_prop_context, &member_key));
+            continue;
+        }
         if (!(member->flags & TYF_OBJECT)) continue;
         if (is_generic_mapped_context(me, member)) {
             push_prop_context_part(me, &parts, ty_generic_mapped_prop_context(me, member, key));
