@@ -1,0 +1,93 @@
+//// [test/cases/ttttConditionalManyBoundTypeParams.ts] ////
+
+=== ttttConditionalManyBoundTypeParams.ts ===
+// A conditional type whose check type is an object type mentioning no free type variable resolves, however many type
+// parameters its members bind on the way: a call signature with 17 type parameters (in an instance of a type literal
+// whose free type parameters aren't known syntactically: `typeof a`) made the walk looking for free ones give up, and
+// the conditional type stayed deferred (arktype's `{ ...type }` through entryOf<o>: its callback parameters stayed
+// `entryOf<...>[0]`, TS2769; and that project checked 4x slower)
+type MergeParser<$> = {
+>MergeParser : Symbol(MergeParser, Decl(ttttConditionalManyBoundTypeParams.ts, 0, 0))
+>$ : Symbol($, Decl(ttttConditionalManyBoundTypeParams.ts, 5, 17))
+
+    <A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>(a: A, q: Q): [typeof a, $];
+>A : Symbol(A, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 5))
+>B : Symbol(B, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 7))
+>C : Symbol(C, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 10))
+>D : Symbol(D, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 13))
+>E : Symbol(E, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 16))
+>F : Symbol(F, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 19))
+>G : Symbol(G, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 22))
+>H : Symbol(H, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 25))
+>I : Symbol(I, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 28))
+>J : Symbol(J, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 31))
+>K : Symbol(K, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 34))
+>L : Symbol(L, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 37))
+>M : Symbol(M, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 40))
+>N : Symbol(N, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 43))
+>O : Symbol(O, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 46))
+>P : Symbol(P, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 49))
+>Q : Symbol(Q, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 52))
+>a : Symbol(a, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 56))
+>A : Symbol(A, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 5))
+>q : Symbol(q, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 61))
+>Q : Symbol(Q, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 52))
+>a : Symbol(a, Decl(ttttConditionalManyBoundTypeParams.ts, 6, 56))
+>$ : Symbol($, Decl(ttttConditionalManyBoundTypeParams.ts, 5, 17))
+
+};
+interface Parser<$ = {}> {
+>Parser : Symbol(Parser, Decl(ttttConditionalManyBoundTypeParams.ts, 7, 2))
+>$ : Symbol($, Decl(ttttConditionalManyBoundTypeParams.ts, 8, 17))
+
+    merge: MergeParser<$>;
+>merge : Symbol(Parser.merge, Decl(ttttConditionalManyBoundTypeParams.ts, 8, 26))
+>MergeParser : Symbol(MergeParser, Decl(ttttConditionalManyBoundTypeParams.ts, 0, 0))
+>$ : Symbol($, Decl(ttttConditionalManyBoundTypeParams.ts, 8, 17))
+
+    raw(def: unknown): $;
+>raw : Symbol(Parser.raw, Decl(ttttConditionalManyBoundTypeParams.ts, 9, 26))
+>def : Symbol(def, Decl(ttttConditionalManyBoundTypeParams.ts, 10, 8))
+>$ : Symbol($, Decl(ttttConditionalManyBoundTypeParams.ts, 8, 17))
+}
+declare const parser: Parser<{}>;
+>parser : Symbol(parser, Decl(ttttConditionalManyBoundTypeParams.ts, 12, 13))
+>Parser : Symbol(Parser, Decl(ttttConditionalManyBoundTypeParams.ts, 7, 2))
+
+const spread = { ...parser };
+>spread : Symbol(spread, Decl(ttttConditionalManyBoundTypeParams.ts, 13, 5))
+>parser : Symbol(parser, Decl(ttttConditionalManyBoundTypeParams.ts, 12, 13))
+
+type IsArray<O> = O extends readonly unknown[] ? 1 : 2;
+>IsArray : Symbol(IsArray, Decl(ttttConditionalManyBoundTypeParams.ts, 13, 29))
+>O : Symbol(O, Decl(ttttConditionalManyBoundTypeParams.ts, 14, 13))
+>O : Symbol(O, Decl(ttttConditionalManyBoundTypeParams.ts, 14, 13))
+
+const a: IsArray<typeof spread> = 3;
+>a : Symbol(a, Decl(ttttConditionalManyBoundTypeParams.ts, 15, 5))
+>IsArray : Symbol(IsArray, Decl(ttttConditionalManyBoundTypeParams.ts, 13, 29))
+>spread : Symbol(spread, Decl(ttttConditionalManyBoundTypeParams.ts, 13, 5))
+
+type entryOf<o> = { [k in keyof o]-?: [k, o[k]] }[o extends readonly unknown[] ? keyof o & number : keyof o];
+>entryOf : Symbol(entryOf, Decl(ttttConditionalManyBoundTypeParams.ts, 15, 36))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+>k : Symbol(k, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 21))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+>k : Symbol(k, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 21))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+>k : Symbol(k, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 21))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+>o : Symbol(o, Decl(ttttConditionalManyBoundTypeParams.ts, 16, 13))
+
+declare const e: entryOf<typeof spread>;
+>e : Symbol(e, Decl(ttttConditionalManyBoundTypeParams.ts, 17, 13))
+>entryOf : Symbol(entryOf, Decl(ttttConditionalManyBoundTypeParams.ts, 15, 36))
+>spread : Symbol(spread, Decl(ttttConditionalManyBoundTypeParams.ts, 13, 5))
+
+const k: { a: 1 } = e[0];
+>k : Symbol(k, Decl(ttttConditionalManyBoundTypeParams.ts, 18, 5))
+>a : Symbol(a, Decl(ttttConditionalManyBoundTypeParams.ts, 18, 10))
+>e : Symbol(e, Decl(ttttConditionalManyBoundTypeParams.ts, 17, 13))
+>0 : Symbol(0)
+

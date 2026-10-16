@@ -5,8 +5,7 @@
 // where the check type parameter gets its union.
 
 typedef struct MentionWalk {
-    Ty const* bound[16]; // Type parameters of the signatures on the way: not free
-    u32 bound_len;
+    TyBuf bound; // Type parameters of the signatures, mapped types and conditional types on the way: not free
     // Types already walked (a type seen again is either being walked or mentions nothing: either way nothing new).
     // Open addressing on ids, 0 is empty
     u32* visited;
@@ -19,6 +18,11 @@ typedef struct MentionWalk {
 
 #define MENTION_MAX_VISITED 8192
 #define MENTION_MAX_DEPTH 48
+
+static void mention_walk_drop(MentionWalk* walk) {
+    free(walk->visited);
+    ty_buf_drop(&walk->bound);
+}
 
 // Adds `id`; false if it was there already
 static bool mention_visit(MentionWalk* walk, u32 id) {
@@ -61,8 +65,8 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
     if (ty->kind == TY_TYPE_PARAM) {
         ty = ty_non_distributed(ty);
-        for (u32 i = 0; i < walk->bound_len; i++) {
-            if (walk->bound[i] == ty) return false;
+        for (u32 i = 0; i < walk->bound.len; i++) {
+            if (walk->bound.data[i] == ty) return false;
         }
         if (walk->collect) {
             for (u32 i = 0; i < walk->collect->len; i++) {
@@ -160,14 +164,13 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             if (members->mapped) {
                 // Its own type parameter is bound in it
                 MappedInfo const* mapped = members->mapped;
-                if (walk->bound_len >= c_arraylen(walk->bound)) return true;
-                u32 saved = walk->bound_len;
-                walk->bound[walk->bound_len++] = mapped->type_param;
+                u32 saved = walk->bound.len;
+                ty_buf_push(&walk->bound, mapped->type_param);
                 bool found = mentions_type_variables(me, mapped->constraint, walk, depth + 1) ||
                     (mapped->name_type && mentions_type_variables(me, mapped->name_type, walk, depth + 1)) ||
                     mentions_type_variables(me, ty_mapped_template(me, mapped), walk, depth + 1) ||
                     (mapped->modifiers_type && mentions_type_variables(me, mapped->modifiers_type, walk, depth + 1));
-                walk->bound_len = saved;
+                walk->bound.len = saved;
                 return found;
             }
             for (u32 i = 0; i < members->prop_count; i++) {
@@ -194,9 +197,8 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                     Signature const* sig = list[i];
                     signature_resolve(me, sig);
                     if (ty_signature_return_in_flight(me, sig)) return true;
-                    u32 saved = walk->bound_len;
-                    if (walk->bound_len + sig->type_params.len > c_arraylen(walk->bound)) return true;
-                    for (u32 j = 0; j < sig->type_params.len; j++) walk->bound[walk->bound_len++] = sig->type_params.data[j];
+                    u32 saved = walk->bound.len;
+                    for (u32 j = 0; j < sig->type_params.len; j++) ty_buf_push(&walk->bound, sig->type_params.data[j]);
                     bool found = sig->this_type && mentions_type_variables(me, sig->this_type, walk, depth + 1);
                     for (u32 j = 0; !found && j < sig->param_count; j++) {
                         found = mentions_type_variables(me, sig->params[j].type, walk, depth + 1);
@@ -209,7 +211,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                     // (A type predicate's type too: `(ast: AST): ast is Extract<AST, { _tag: T }>` mentions T)
                     TyPredicate const* predicate = found ? nullptr : signature_predicate(me, sig);
                     found = found || (predicate && predicate->type && mentions_type_variables(me, predicate->type, walk, depth + 1));
-                    walk->bound_len = saved;
+                    walk->bound.len = saved;
                     if (found) return true;
                 }
             }
@@ -240,24 +242,22 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                 for (u32 i = 0; i < mapper->len; i++) {
                     if (mentions_type_variables(me, mapper->targets[i], walk, depth + 1)) return true;
                 }
-                u32 saved = walk->bound_len;
-                if (walk->bound_len + mapper->len > c_arraylen(walk->bound)) return true;
-                for (u32 i = 0; i < mapper->len; i++) walk->bound[walk->bound_len++] = mapper->sources[i];
+                u32 saved = walk->bound.len;
+                for (u32 i = 0; i < mapper->len; i++) ty_buf_push(&walk->bound, mapper->sources[i]);
                 bool found = mentions_type_variables(me, ty->conditional.root, walk, depth + 1);
-                walk->bound_len = saved;
+                walk->bound.len = saved;
                 return found;
             }
             // Its own `infer` type parameters are bound in it
             Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
             TyList infers = ty_conditional_own_infers(me, root);
-            u32 saved = walk->bound_len;
-            if (walk->bound_len + infers.len > c_arraylen(walk->bound)) return true;
-            for (u32 j = 0; j < infers.len; j++) walk->bound[walk->bound_len++] = infers.data[j];
+            u32 saved = walk->bound.len;
+            for (u32 j = 0; j < infers.len; j++) ty_buf_push(&walk->bound, infers.data[j]);
             bool found = mentions_type_variables(me, ty->conditional.check, walk, depth + 1) ||
                 mentions_type_variables(me, ty->conditional.extends, walk, depth + 1) ||
                 mentions_type_variables(me, ty_conditional_branch(me, ty, true), walk, depth + 1) ||
                 mentions_type_variables(me, ty_conditional_branch(me, ty, false), walk, depth + 1);
-            walk->bound_len = saved;
+            walk->bound.len = saved;
             return found;
         }
         default:
@@ -281,7 +281,7 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     MentionWalk walk = { .only = ty_non_distributed(root->conditional.check) };
     bool ret = mentions_type_variables(me, ty_conditional_branch(me, root, true), &walk, 0) ||
         mentions_type_variables(me, ty_conditional_branch(me, root, false), &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     *intern_slot(me, &my links, key, 2) = (void const*)(uintptr_t)(1 + ret);
     return ret;
 }
@@ -293,7 +293,7 @@ bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 cou
     TyBuf found = {0};
     MentionWalk walk = { .collect = &found };
     bool ret = mentions_type_variables(me, ty, &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     for (u32 i = 0; !ret && i < found.len; i++) {
         for (u32 j = 0; !ret && j < count; j++) ret = found.data[i] == params[j];
     }
@@ -339,7 +339,7 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
     TyBuf found = {0};
     MentionWalk walk = { .collect = &found, .self = ty };
     bool unsure = mentions_type_variables(me, ty, &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     computed->in_flight = false;
     computed->known = !unsure;
     if (!unsure) computed->params = ty_list_copy(me, found.data, found.len);
@@ -378,7 +378,7 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     TyBuf found = {0};
     MentionWalk walk = { .collect = &found, .self = ty };
     bool unsure = mentions_type_variables(me, ty, &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     computed->in_flight = false;
     computed->known = !unsure;
     if (!unsure) computed->params = ty_list_copy(me, found.data, found.len);
@@ -463,7 +463,7 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
     TyBuf params = {0};
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     *mentions = unsure || params.len;
     bool ret;
     if (unsure || !params.len) {
@@ -565,7 +565,7 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
     TyBuf params = {0};
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
-    free(walk.visited);
+    mention_walk_drop(&walk);
     bool ret = false;
     if (!unsure) {
         Ty const** wildcards = malloc(sizeof(Ty const*) * (params.len ? params.len : 1));

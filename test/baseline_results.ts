@@ -77,6 +77,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConditionalManyBoundTypeParams': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConditionalTypeResolving': {
         errors: true,
         symbols: true,
