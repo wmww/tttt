@@ -1434,6 +1434,18 @@ static bool class_item_is_late(ClassItem const* item) {
     return key && computed_key_may_name(key) && !computed_key_early_name(key, nullptr);
 }
 
+// Whether `other` declares the same method as `item`: by the written name (a computed literal by its value), and for a
+// late-bound `item` by its symbol (ty_class_member_symbols(): `[a]` and `[b]` are one method when b is `typeof a`)
+static bool class_methods_same_symbol(Checker* me, ClassDecl const* class_decl, ClassItem const* other, ClassItem const* item) {
+    if (!class_item_is_late(item)) return !class_item_is_late(other) && class_methods_same_name(other, item);
+    if (!class_item_is_late(other)) return false;
+    // (The same text is the same symbol: the table types every key, which a key naming its own class can't wait for)
+    if (other == item || class_methods_same_name(other, item)) return true;
+    ClassMemberSymbols const* symbols = ty_class_member_symbols(me, class_decl);
+    i32 entry = symbols->item_entry[item - class_decl->items.data];
+    return entry >= 0 && symbols->item_entry[other - class_decl->items.data] == entry;
+}
+
 // The meanings of a member's symbol, as tsc's binder flags them: 1 property, 2 method, 4 get, 8 set
 static u32 class_item_meanings(ClassItem const* item) {
     if (item->tag == CLASS_ITEM_FIELD) return item->field.is_auto_accessor ? 4 | 8 : 1;
@@ -1826,7 +1838,7 @@ static void builder_add_class_items(
                 for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
                     ClassItem const* other = it.item;
                     if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
-                        !class_methods_same_name(other, i)
+                        !class_methods_same_symbol(me, class_decl, other, i)
                     ) {
                         continue;
                     }
@@ -1840,7 +1852,7 @@ static void builder_add_class_items(
                         ClassItem const* other = it.item;
                         ClassItem const* before = it.index ? other - 1 : nullptr; // The class item before `other`
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
-                            !class_methods_same_name(other, i)
+                            !class_methods_same_symbol(me, class_decl, other, i)
                         ) {
                             continue;
                         }
@@ -1849,7 +1861,7 @@ static void builder_add_class_items(
                         // static `m` between `m(x: string);` and `m(x) {}`) is a signature of its own
                         if (count && other->method.func.has_body && before && before->tag == CLASS_ITEM_METHOD &&
                             !before->method.accessor && before->method.is_static == static_side &&
-                            class_methods_same_name(before, i) &&
+                            class_methods_same_symbol(me, class_decl, before, i) &&
                             adjacent_methods(before, other)
                         ) {
                             continue;
@@ -1869,7 +1881,7 @@ static void builder_add_class_items(
                     for (ClassNamesakes it = class_namesakes(class_decl, i, false); class_namesakes_next(&it);) {
                         ClassItem const* other = it.item;
                         if (other != i && other->tag == CLASS_ITEM_METHOD && !other->method.accessor &&
-                            other->method.is_static == static_side && class_methods_same_name(other, i)
+                            other->method.is_static == static_side && class_methods_same_symbol(me, class_decl, other, i)
                         ) {
                             spans[span_count++] = other->span;
                         }

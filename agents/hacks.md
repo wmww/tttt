@@ -232,10 +232,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (bind_member_symbols, symbol_first/accessor_first: syntactic like tsc's). Left on top: the builder's rules for a member
   whose namesake comes from *another* declaration (an interface merged with the class: `builder_add_class_prop_joined`'s
   interface joins and the late pass's meanings test; `builder_add_interface_member`'s own member_kinds, and check.c's
-  class + interface table `check_class_interface_members` is separate), and the builder's method signatures, grouped by
-  source text (`class_methods_same_name`): `[a]() {}` and `[b]() {}` with b of `typeof a` are one member (joined spans)
-  but the second's signature isn't an overload of it. A late-bound accessor merged into an early accessor's symbol
-  isn't paired with it (tsc types the merged symbol by both).
+  class + interface table `check_class_interface_members` is separate). The builder's method overloads go by the table
+  for late-bound names (`class_methods_same_symbol`, by text first: a key naming its own class can't be typed while
+  its members are built). A late-bound accessor merged into an early accessor's symbol isn't paired with it
+  (bugs/type_core.md "Classes and declarations").
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a mentioned type parameter is unmapped or mapped
   to something generic (tsc: any reference with a node). Needed by conditional.c's "infer constraint stays generic"
   (react-relay); drizzle -24% types.

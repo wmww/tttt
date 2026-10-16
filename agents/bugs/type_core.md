@@ -180,6 +180,16 @@ passing tests).
   }`), tttt by the last alone. Two early `mm()`s are separate symbols to tsgo (last wins, tttt agrees). Needs a method
   function type built from several FunctionImpls: `ObjectLiteralProp.methods`/`method_count` (check_object_literal) are
   filled but never read, and `KEY_LITERAL_METHOD_OVERLOADS` is declared but unused: the natural home for it.
+- (triage 2026-10-16) **An accessor pair split between a written and a late-bound name**: `get x(): number` with
+  `set [k](v: string)` (k of type `"x"`, not a literal key) is one symbol under tsc (the late setter merges into the
+  early `x`: read `number`, write `string`, `c.x = 1` is TS2322). tttt types `c.x` as `any` and reports TS2540 (no
+  setter); `get [k]` with `set x` reads the setter's type. ty_class_member_symbols() pairs accessors only among the
+  late-bound ones (`accessor_late()`), the binder only among written names. Fix: pair across both in the table (early
+  declarations first, mergeSymbol's order) and set `late_accessor_class` on every accessor of a class with a
+  late-bound one, but the early pass would then type late keys (the circularity classDeclarationShouldBeOutOfScopeIn
+  ComputedNames guards): only look the table up when a late-bound accessor's key could name the written one. Rare in
+  real code (no oracle shows it).
+
 ## Narrowing and flow
 - **Destructured references and widening** (ex plan 49; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
   a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*

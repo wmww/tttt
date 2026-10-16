@@ -73,6 +73,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttComputedAccessorPairChecks': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttComputedDestructuringNarrowing': {
         errors: true,
         symbols: true,
@@ -932,6 +937,11 @@ const baselines = {
         types: true,
     },
     'ttttLateBoundMemberMerge': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLateBoundMethodOverloadsBySymbol': {
         errors: true,
         symbols: true,
         types: true,

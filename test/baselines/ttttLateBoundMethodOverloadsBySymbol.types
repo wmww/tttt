@@ -1,0 +1,83 @@
+//// [test/cases/ttttLateBoundMethodOverloadsBySymbol.ts] ////
+
+=== ttttLateBoundMethodOverloadsBySymbol.ts ===
+// Late-bound method declarations are one method by their symbol, not their text: [a] and [b] with b of typeof a
+// overload each other, the implementation after [b] is [a]'s
+declare const a: unique symbol;
+>a : unique symbol
+
+declare const b: typeof a;
+>b : unique symbol
+>a : unique symbol
+
+class C {
+>C : C
+
+    [a](x: number): void;
+>[a] : { (x: number): void; (x: string): void; }
+>a : unique symbol
+>x : number
+
+    [b](x: string): void;
+>[b] : { (x: number): void; (x: string): void; }
+>b : unique symbol
+>x : string
+
+    [a](x: any) {}
+>[a] : { (x: number): void; (x: string): void; }
+>a : unique symbol
+>x : any
+}
+const c = new C();
+>c : C
+>new C() : C
+>C : typeof C
+
+const r1 = c[a](1);
+>r1 : void
+>c[a](1) : void
+>c[a] : { (x: number): void; (x: string): void; }
+>c : C
+>a : unique symbol
+>1 : 1
+
+const r2 = c[a]("s");
+>r2 : void
+>c[a]("s") : void
+>c[a] : { (x: number): void; (x: string): void; }
+>c : C
+>a : unique symbol
+>"s" : "s"
+
+type M = C[typeof a];
+>M : { (x: number): void; (x: string): void; }
+>a : unique symbol
+
+class D {
+>D : D
+
+    get [a](): number { return 1; }
+>[a] : number
+>a : unique symbol
+>1 : 1
+
+    set [b](v: string) {}
+>[b] : number
+>b : unique symbol
+>v : string
+}
+const g = new D()[a];
+>g : number
+>new D()[a] : number
+>new D() : D
+>D : typeof D
+>a : unique symbol
+
+new D()[a] = "x";
+>new D()[a] = "x" : "x"
+>new D()[a] : string
+>new D() : D
+>D : typeof D
+>a : unique symbol
+>"x" : "x"
+

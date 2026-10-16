@@ -96,7 +96,9 @@ Stages, if wanted:
 - **Mixed use is safe today** (tested): tsgo `-b` after tttt `-b` finds no buildinfo and rebuilds everything. One
   wrinkle: tttt rewrites every `.d.ts` even when unchanged (new mtimes), and tsgo then "updates output timestamps".
   If tttt's `.d.ts` differs from tsgo's (dtsdiff 1193 / 1233 projects identical), a later tsgo `-b` on an incremental
-  project keeps tttt's file. Skipping unchanged writes is a cheap improvement (triage).
+  project keeps tttt's file. tsgo itself skips an unchanged `.d.ts` only through its buildinfo (emitfileshandler.go's
+  skipDtsOutputOfComposite(): composite projects whose emit signature is the stored one), never by comparing bytes:
+  without B1 tttt's always-write is tsgo's behaviour; with B1, skip it the same way (triage 2026-10-16).
 - **B1, a buildinfo for `-b` up-to-date checks**: `version`, `root`, `fileNames`, `fileInfos` (xxh3 of non-lib files),
   `options`, `latestChangedDtsFile`, and erroring files as pending. 400-600 lines + a vendored xxhash, 1-2 days. It
   would let `tttt -b` skip up-to-date projects (today it rechecks every project every time; tsgo `-b` on an

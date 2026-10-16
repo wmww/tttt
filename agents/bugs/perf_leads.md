@@ -8,6 +8,16 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## tttt at its defaults (triage 2026-10-16, `scripts/perfsweep.py --defaults`, 4 cores)
+The first run at the default threads and checkers over the source sweep's 1786 checked projects (under load: only the
+quiet rerun of the worst 14 is trustworthy). Quiet: nothing worse than 1.25x its own K1 wall; the mid-size ones gain
+1.4-2x at 4 checkers. Leads: **dokploy/apps/dokploy** gains nothing at K4 (3.08 -> 2.89 s) for twice the memory (766 ->
+1453 MB) and still recycles 11 times: its ~150 MB warm trpc/drizzle state is re-derived per checker and per recycle,
+so the defaults should give it fewer checkers (a checker count from the warm state's size, not the source bytes) or
+keep it at K1. **rxjs/packages/rxjs** (0.54 -> 0.68 s, one recycle) and qwik-cli-e2e (1.11x): small programs where K4
+costs more than it parallelises. A full quiet run (`--defaults -j 1`, ~10 min) is still to do: the cheap check after
+any change to `check_share()` or the checker-count heuristics.
+
 ## Perf + real code session (2026-10-16, todo entry 9)
 Fixed: keyof of an object type rebuilt per instantiation (folo's i18next keys: one 10-line file 3.5 G), tuple
 element names printf'd per instance (26% of type-fest), qsort's indirect comparator in builder_finish(), a quadratic

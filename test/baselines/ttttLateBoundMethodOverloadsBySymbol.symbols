@@ -1,0 +1,70 @@
+//// [test/cases/ttttLateBoundMethodOverloadsBySymbol.ts] ////
+
+=== ttttLateBoundMethodOverloadsBySymbol.ts ===
+// Late-bound method declarations are one method by their symbol, not their text: [a] and [b] with b of typeof a
+// overload each other, the implementation after [b] is [a]'s
+declare const a: unique symbol;
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+declare const b: typeof a;
+>b : Symbol(b, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 13))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+class C {
+>C : Symbol(C, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 26))
+
+    [a](x: number): void;
+>[a] : Symbol(C[a], Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 4, 9), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 5, 25), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 6, 25))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+>x : Symbol(x, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 5, 8))
+
+    [b](x: string): void;
+>[b] : Symbol(C[a], Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 4, 9), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 5, 25), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 6, 25))
+>b : Symbol(b, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 13))
+>x : Symbol(x, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 6, 8))
+
+    [a](x: any) {}
+>[a] : Symbol(C[a], Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 4, 9), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 5, 25), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 6, 25))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+>x : Symbol(x, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 7, 8))
+}
+const c = new C();
+>c : Symbol(c, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 9, 5))
+>C : Symbol(C, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 26))
+
+const r1 = c[a](1);
+>r1 : Symbol(r1, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 10, 5))
+>c : Symbol(c, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 9, 5))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+const r2 = c[a]("s");
+>r2 : Symbol(r2, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 11, 5))
+>c : Symbol(c, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 9, 5))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+type M = C[typeof a];
+>M : Symbol(M, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 11, 21))
+>C : Symbol(C, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 26))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+class D {
+>D : Symbol(D, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 12, 21))
+
+    get [a](): number { return 1; }
+>[a] : Symbol(D[a], Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 13, 9), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 14, 35))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+    set [b](v: string) {}
+>[b] : Symbol(D[a], Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 13, 9), Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 14, 35))
+>b : Symbol(b, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 3, 13))
+>v : Symbol(v, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 15, 12))
+}
+const g = new D()[a];
+>g : Symbol(g, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 17, 5))
+>D : Symbol(D, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 12, 21))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+
+new D()[a] = "x";
+>D : Symbol(D, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 12, 21))
+>a : Symbol(a, Decl(ttttLateBoundMethodOverloadsBySymbol.ts, 2, 13))
+

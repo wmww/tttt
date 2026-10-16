@@ -1,0 +1,75 @@
+//// [test/cases/ttttComputedAccessorPairChecks.ts] ////
+
+=== ttttComputedAccessorPairChecks.ts ===
+// A getter and setter pair with a computed (literal or late-bound) name agree on abstract (TS2676) and the getter
+// is at least as accessible as the setter (TS2808); non-bindable names aren't paired
+const k = "y";
+>k : Symbol(k, Decl(ttttComputedAccessorPairChecks.ts, 2, 5))
+
+declare const s: unique symbol;
+>s : Symbol(s, Decl(ttttComputedAccessorPairChecks.ts, 3, 13))
+
+declare const d: string;
+>d : Symbol(d, Decl(ttttComputedAccessorPairChecks.ts, 4, 13))
+
+abstract class A {
+>A : Symbol(A, Decl(ttttComputedAccessorPairChecks.ts, 4, 24))
+
+    get ["x"](): number { return 1; }
+>["x"] : Symbol(A["x"], Decl(ttttComputedAccessorPairChecks.ts, 5, 18), Decl(ttttComputedAccessorPairChecks.ts, 6, 37))
+>"x" : Symbol(A["x"], Decl(ttttComputedAccessorPairChecks.ts, 5, 18), Decl(ttttComputedAccessorPairChecks.ts, 6, 37))
+
+    abstract set ["x"](v: number);
+>["x"] : Symbol(A["x"], Decl(ttttComputedAccessorPairChecks.ts, 5, 18), Decl(ttttComputedAccessorPairChecks.ts, 6, 37))
+>"x" : Symbol(A["x"], Decl(ttttComputedAccessorPairChecks.ts, 5, 18), Decl(ttttComputedAccessorPairChecks.ts, 6, 37))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 7, 23))
+
+    get [k](): number { return 1; }
+>[k] : Symbol(A[k], Decl(ttttComputedAccessorPairChecks.ts, 7, 34), Decl(ttttComputedAccessorPairChecks.ts, 8, 35))
+>k : Symbol(k, Decl(ttttComputedAccessorPairChecks.ts, 2, 5))
+
+    abstract set [k](v: number);
+>[k] : Symbol(A[k], Decl(ttttComputedAccessorPairChecks.ts, 7, 34), Decl(ttttComputedAccessorPairChecks.ts, 8, 35))
+>k : Symbol(k, Decl(ttttComputedAccessorPairChecks.ts, 2, 5))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 9, 21))
+
+    protected get [s](): number { return 1; }
+>[s] : Symbol(A[s], Decl(ttttComputedAccessorPairChecks.ts, 9, 32), Decl(ttttComputedAccessorPairChecks.ts, 10, 45))
+>s : Symbol(s, Decl(ttttComputedAccessorPairChecks.ts, 3, 13))
+
+    set [s](v: number) {}
+>[s] : Symbol(A[s], Decl(ttttComputedAccessorPairChecks.ts, 9, 32), Decl(ttttComputedAccessorPairChecks.ts, 10, 45))
+>s : Symbol(s, Decl(ttttComputedAccessorPairChecks.ts, 3, 13))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 11, 12))
+
+    private get [d](): number { return 1; }
+>[d] : Symbol(A[d], Decl(ttttComputedAccessorPairChecks.ts, 11, 25))
+>d : Symbol(d, Decl(ttttComputedAccessorPairChecks.ts, 4, 13))
+
+    set [d](v: number) {}
+>[d] : Symbol(A[d], Decl(ttttComputedAccessorPairChecks.ts, 12, 43))
+>d : Symbol(d, Decl(ttttComputedAccessorPairChecks.ts, 4, 13))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 13, 12))
+}
+class B {
+>B : Symbol(B, Decl(ttttComputedAccessorPairChecks.ts, 14, 1))
+
+    get ["x"](): number { return 1; }
+>["x"] : Symbol(B["x"], Decl(ttttComputedAccessorPairChecks.ts, 15, 9), Decl(ttttComputedAccessorPairChecks.ts, 16, 37))
+>"x" : Symbol(B["x"], Decl(ttttComputedAccessorPairChecks.ts, 15, 9), Decl(ttttComputedAccessorPairChecks.ts, 16, 37))
+
+    private set ["x"](v: number) {}
+>["x"] : Symbol(B["x"], Decl(ttttComputedAccessorPairChecks.ts, 15, 9), Decl(ttttComputedAccessorPairChecks.ts, 16, 37))
+>"x" : Symbol(B["x"], Decl(ttttComputedAccessorPairChecks.ts, 15, 9), Decl(ttttComputedAccessorPairChecks.ts, 16, 37))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 17, 22))
+
+    private get [k](): number { return 1; }
+>[k] : Symbol(B[k], Decl(ttttComputedAccessorPairChecks.ts, 17, 35), Decl(ttttComputedAccessorPairChecks.ts, 18, 43))
+>k : Symbol(k, Decl(ttttComputedAccessorPairChecks.ts, 2, 5))
+
+    protected set [k](v: number) {}
+>[k] : Symbol(B[k], Decl(ttttComputedAccessorPairChecks.ts, 17, 35), Decl(ttttComputedAccessorPairChecks.ts, 18, 43))
+>k : Symbol(k, Decl(ttttComputedAccessorPairChecks.ts, 2, 5))
+>v : Symbol(v, Decl(ttttComputedAccessorPairChecks.ts, 19, 22))
+}
+

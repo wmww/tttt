@@ -1,0 +1,49 @@
+ttttComputedAccessorPairChecks.ts(7,9): error TS2676: Accessors must both be abstract or non-abstract.
+ttttComputedAccessorPairChecks.ts(8,18): error TS2676: Accessors must both be abstract or non-abstract.
+ttttComputedAccessorPairChecks.ts(9,9): error TS2676: Accessors must both be abstract or non-abstract.
+ttttComputedAccessorPairChecks.ts(10,18): error TS2676: Accessors must both be abstract or non-abstract.
+ttttComputedAccessorPairChecks.ts(11,19): error TS2808: A get accessor must be at least as accessible as the setter
+ttttComputedAccessorPairChecks.ts(12,9): error TS2808: A get accessor must be at least as accessible as the setter
+ttttComputedAccessorPairChecks.ts(19,17): error TS2808: A get accessor must be at least as accessible as the setter
+ttttComputedAccessorPairChecks.ts(20,19): error TS2808: A get accessor must be at least as accessible as the setter
+
+
+==== ttttComputedAccessorPairChecks.ts (8 errors) ====
+    // A getter and setter pair with a computed (literal or late-bound) name agree on abstract (TS2676) and the getter
+    // is at least as accessible as the setter (TS2808); non-bindable names aren't paired
+    const k = "y";
+    declare const s: unique symbol;
+    declare const d: string;
+    abstract class A {
+        get ["x"](): number { return 1; }
+            ~~~~~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+        abstract set ["x"](v: number);
+                     ~~~~~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+        get [k](): number { return 1; }
+            ~~~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+        abstract set [k](v: number);
+                     ~~~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+        protected get [s](): number { return 1; }
+                      ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+        set [s](v: number) {}
+            ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+        private get [d](): number { return 1; }
+        set [d](v: number) {}
+    }
+    class B {
+        get ["x"](): number { return 1; }
+        private set ["x"](v: number) {}
+        private get [k](): number { return 1; }
+                    ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+        protected set [k](v: number) {}
+                      ~~~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+    }
+    

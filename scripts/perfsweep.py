@@ -21,6 +21,13 @@ gets a build info file of its own in /tmp each run (a cold check, nothing writte
   scripts/perfsweep.py --corpora          # the -p corpora (scripts/realworld.py's) instead
   scripts/perfsweep.py --last             # reprint the last run's tables
   scripts/perfsweep.py --tsgo [-f ...]    # remeasure tsgo's side (after a machine or pin change)
+  scripts/perfsweep.py --defaults         # also tttt at its default threads and checkers, against its own K1 run
+
+--defaults is the only oracle timing tttt as users run it: the K1 run never recycles a checker nor splits the program,
+and a project can be fast at K1 and thrash at the defaults (dokploy took 55 s at the defaults, 2.9 s at K1: each
+checker's warm state was over its recycle budget, fixed by check_share()). Ranked by the defaults' wall over K1's (on
+a machine with N cores, ~1 / N is the best case; above 1 is a regression) and by recycles. That pass runs one project
+at a time whatever -j (each uses every core), on a quiet machine: ~10 min for the whole source sweep.
 """
 import argparse, concurrent.futures, gzip, json, os, re, resource, signal, socket, statistics, subprocess, sys, tempfile, time, zlib
 
@@ -94,16 +101,18 @@ def run_tsgo(project, timeout, mem_gb, jobs):
             'rss_kb': rss, 'machine': MACHINE, 'jobs': jobs}
 
 
-def run_tttt(project, timeout, mem_gb):
+def run_tttt(project, timeout, mem_gb, defaults=False):
     cwd, p = project_args(project)
-    text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', '--checkers', '1',
-                                   '--threads', '1', '--time'], cwd, timeout, mem_gb)
+    single = [] if defaults else ['--checkers', '1', '--threads', '1']
+    text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', *single,
+                                   '--time'], cwd, timeout, mem_gb)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status),
             'check_s': phases.get('typecheck', 0) / 1000, 'total_s': sum(phases.values()) / 1000, 'wall_s': wall,
             'types': int(checker.group(3)) if checker else 0, 'arena_mb': int(checker.group(2)) if checker else 0,
-            'rss_kb': rss}
+            'rss_kb': rss, 'recycles': sum(int(m) for m in re.findall(r'^time: checker \d+ recycled (\d+) times', text, re.M)),
+            'checkers': int(m.group(1)) if (m := re.search(r'^time: checkers: (\d+)', text, re.M)) else 0}
 
 
 def load_cache():
@@ -178,6 +187,26 @@ def report(rows, n, cache):
     table('slowest in tttt', lambda r: -r[1]['check_s'])
 
 
+def report_defaults(rows, n):
+    """rows: (project, K1 result, defaults result)"""
+    if not rows:
+        return
+    walls = sorted(ratio(d['wall_s'], t['wall_s']) for _, t, d in rows)
+    q = lambda xs, f: xs[min(len(xs) - 1, int(f * len(xs)))]
+    tw, dw = sum(t['wall_s'] for _, t, _ in rows), sum(d['wall_s'] for _, _, d in rows)
+    print(f'\ntttt at its defaults ({os.cpu_count()} cores) against K1, {len(rows)} projects, wall ratios defaults / K1:')
+    print(f'  median {statistics.median(walls):5.2f}  p90 {q(walls, .9):5.2f}  worst {walls[-1]:6.2f}  '
+          f'(> 1: {sum(1 for x in walls if x > 1)}); total {dw:.0f}s vs {tw:.0f}s; '
+          f'{sum(1 for _, _, d in rows if d["recycles"])} projects recycled a checker, '
+          f'{sum(d["recycles"] for _, _, d in rows)} recycles')
+    print(f'  {"project":52} {"ratio":>6} {"K1 s":>7} {"dflt s":>7} {"chk":>4} {"recyc":>6} {"K1 MB":>6} {"dflt MB":>7}')
+    # (Projects under 0.3 s at K1 are startup noise)
+    worst = sorted((r for r in rows if r[1]['wall_s'] > 0.3 or r[2]['recycles']), key=lambda r: -ratio(r[2]['wall_s'], r[1]['wall_s']))
+    for p, t, d in worst[:n]:
+        print(f'  {p[:52]:52} {ratio(d["wall_s"], t["wall_s"]):6.2f} {t["wall_s"]:7.2f} {d["wall_s"]:7.2f} '
+              f'{d["checkers"]:4} {d["recycles"]:6} {t["rss_kb"] >> 10:6} {d["rss_kb"] >> 10:7}')
+
+
 def summary_line(rows):
     """One line for scripts/oracles.py"""
     if not rows:
@@ -201,6 +230,7 @@ def main():
     ap.add_argument('--timeout', type=int, default=300)
     ap.add_argument('--mem-gb', type=int, default=16)
     ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--defaults', action='store_true', help='also tttt at its default threads and checkers')
     ap.add_argument('--summary', action='store_true', help='only the one line scripts/oracles.py prints')
     args = ap.parse_args()
     global LAST
@@ -250,6 +280,18 @@ def main():
                                                       args.jobs, 'tttt')}
         with open(LAST, 'w') as f:
             json.dump(list(results.values()), f)
+    defaults = {}
+    if args.defaults:
+        last_defaults = LAST.replace('.json', '-defaults.json')
+        if args.last:
+            defaults = {r['project']: r for r in json.load(open(last_defaults))}
+        else:
+            order = sorted(checked, key=lambda p: -(cache[p]['check_s'] or 0))
+            # (One project at a time whatever -j: each uses every core)
+            defaults = {r['project']: r for r in parallel(lambda p: run_tttt(p, args.timeout, args.mem_gb, True), order,
+                                                           1, 'tttt defaults')}
+            with open(last_defaults, 'w') as f:
+                json.dump(list(defaults.values()), f)
 
     failed = [p for p in checked if p in results and results[p]['status'] not in (0, 1, 2)]
     rows = [(p, results[p], cache[p]) for p in checked if p in results and p not in failed and results[p]['types']]
@@ -263,6 +305,10 @@ def main():
         if p in results and p not in failed and not results[p]['types']:
             print(f'  tttt checked nothing: {p} (tsgo {cache[p]["types"]} types)')
     report(rows, args.n, cache)
+    report_defaults([(p, t, defaults[p]) for p, t, _ in rows if p in defaults and defaults[p]['status'] in (0, 1, 2)], args.n)
+    for p in defaults:
+        if defaults[p]['status'] not in (0, 1, 2):
+            print(f'  tttt FAILED at its defaults {p}: {defaults[p]["status"]}')
     if not args.last:
         print(f'\n{sourcesweep.sweep.load_note()} at the end of the run')
     print(f'\nresults saved for --last in {LAST}')

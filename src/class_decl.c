@@ -2288,10 +2288,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
         // tsc's checkAccessorDeclaration: a getter and setter pair agree on abstract (TS2676), and the getter is at least
         // as accessible as the setter (TS2808), reported at both names
-        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter &&
-            !i->method.computed_key
-        ) {
-            ClassItem const* getter = i->method.accessor_getter;
+        // (computed names too: ty_class_accessor_getter() pairs the late-bound ones)
+        ClassItem const* getter = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET ?
+            ty_class_accessor_getter(current_checker, i) : nullptr;
+        if (getter) {
             Span names[2] = { getter->method.name_span, i->method.name_span };
             if (getter->method.is_abstract != i->method.is_abstract) {
                 for (u32 n = 0; n < 2; n++) {
