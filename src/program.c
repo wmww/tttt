@@ -132,6 +132,7 @@ typedef struct Program {
     u32* file_shares; // malloc'd: the checker of each file of check_files (see share_of())
     u32 requested_checkers; // program_set_checkers()
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
+    u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
     u64 checker_budget; // While typechecking: what each checker may hold (checker_memory split between them)
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
@@ -206,6 +207,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .options = compiler_options_init(),
         .symlinks = symlink_cache_new(),
         .checker_memory = UINT64_MAX,
+        .checker_memory_cap = UINT64_MAX,
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
@@ -3493,6 +3495,11 @@ void program_set_checker_memory(Program* me, u64 bytes) {
     my checker_memory = bytes;
 }
 
+void program_set_checker_memory_cap(Program* me, u64 bytes) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my checker_memory_cap = bytes;
+}
+
 void program_set_emit_declarations(Program* me, bool emit) { my emit_declarations = emit; }
 
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
@@ -3696,6 +3703,9 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // segment's first file held doesn't: those are the default library's declarations), so the budget alone decides.
 // Where the cuts fall depends only on the checker's own work on its own files, not on the threads
 #define CHECKER_MEMORY_FLOOR ((u64)128 << 20)
+// What program_set_checker_memory_cap() still leaves each checker: below it the warm-ups dominate (vscode at one
+// checker of 64 MB +4% wall; at 24 checkers of 64 MB +2.4% against 128, 1.75 GB less, measurements.md)
+#define CHECKER_MEMORY_CAP_FLOOR ((u64)64 << 20)
 
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
@@ -3852,6 +3862,10 @@ void program_typecheck(Program* me) {
     // warm-ups cost more than the memory saves below it, vscode at 4 checkers of 64 MB +6% wall, of 128 +3%)
     u64 floor = my checker_memory < CHECKER_MEMORY_FLOOR ? my checker_memory : CHECKER_MEMORY_FLOOR;
     my checker_budget = my checker_memory == UINT64_MAX ? UINT64_MAX : (my checker_memory / count > floor ? my checker_memory / count : floor);
+    if (my checker_budget != UINT64_MAX && my checker_memory_cap != UINT64_MAX) {
+        u64 capped = my checker_memory_cap / count > CHECKER_MEMORY_CAP_FLOOR ? my checker_memory_cap / count : CHECKER_MEMORY_CAP_FLOOR;
+        if (capped < my checker_budget) my checker_budget = capped;
+    }
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     my binder->frozen = true;
     my errs->frozen = true;

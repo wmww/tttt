@@ -34,6 +34,9 @@
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default (plan 67 stage 1)
 #define DEFAULT_CHECKER_MEMORY_MB 256
+// Unless --checker-memory is given: what the checkers hold together at most, each at least 64 MB (plan 75: 128 MB
+// each up to 12 checkers, 64 MB each at 24)
+#define CHECKER_MEMORY_CAP_MB 1536
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -52,6 +55,7 @@ typedef struct Options {
     bool stop_build_on_errors; // --stopBuildOnErrors
     u32 checkers; // --checkers
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
+    bool checker_memory_given; // Else CHECKER_MEMORY_CAP_MB caps it
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
@@ -551,6 +555,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_set_checkers(program, opts->checkers);
     // (--expect-types reads each file's types in the checker that checked it)
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
+    if (!opts->expect_types && !opts->checker_memory_given) program_set_checker_memory_cap(program, (u64)CHECKER_MEMORY_CAP_MB << 20);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -1093,7 +1098,8 @@ static void print_help(void) {
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
         "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
-        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) "; 0: a fresh checker per file, off: never).\n"
+        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 128, together at most\n"
+        "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; 0: a fresh checker per file, off: never).\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
         "                most K of them)\n"
@@ -1191,6 +1197,7 @@ static int run(int argc, const char** argv) {
         ) {
             i++;
             opts.checker_memory = streq(argv[i], "off") ? UINT64_MAX : (u64)atoll(argv[i]) << 20;
+            opts.checker_memory_given = true;
         } else if (streq(argv[i], "--threads") && count_value(argc, argv, i)) {
             opts.threads = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--builders") && count_value(argc, argv, i)) {

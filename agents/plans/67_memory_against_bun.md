@@ -158,4 +158,9 @@ floor; 64 MB cost vscode +6% wall in stage 1). Recycling's warm-up isn't a lever
 ## Not doing
 - Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer
   return types from bodies anywhere, in any later checker.
-- The compact AST and the shared lib layer, until insights decides on stage 2's numbers (above).
+- The compact AST (plan 75, closed 2026-10-16, measurements.md "Plan 75"): exact-size variants reach ~165 MB of
+  vscode's 1.37 GB AST at best (the union padding of non-identifier Exprs), under the 400 MB gate; the rest of the
+  557 MB of zero words is sparse optional fields spread over every node kind. Only a bun-style index-based rewrite
+  would move this axis, and that is not on the table.
+- The shared frozen lib layer: a fresh checker is 7 MB of arena (12-core machine); the K-proportional memory is the
+  recycle budget, which the CLI's 1.5 GB cap now bounds (plan 75).

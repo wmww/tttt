@@ -230,6 +230,13 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by
     later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
     stack and copied out exact would remove the churn, not much memory.
+  - **Expr 72 -> 40** (plan 75's census, vscode after names: 8.19M Exprs = 590 MB; 2.59M identifiers, 1.14M
+    literals, 0.31M implicit any, 4.46M boxed variants using 8 of the union's 40 bytes): box IdentifierExpr and Value
+    (146 `.identifier` and 78 `.literal` sites) and the union is a pointer. -262 MB of Expr slots, but each identifier
+    box needs its name span too (identifier_expr_name() reads the Expr around it; Exprs move while vectors grow, so no
+    back pointer): +56 B x 2.59M, literals +~16 B: **net ~-100 MB** (~-140 MB if the box drops the rare union, 21k
+    users, to a side table). Plus one pointer chase per identifier in the checker: measure instructions first. A
+    session of its own if memory against bun becomes the priority again.
   - Struct diet leftovers (plan 63 stage 1b, < 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
     because of IdentifierExpr: `symbol` into the union when it differs from `target`, with a 2-bit kind and a per-file
     side table for the union's other users; 54 `identifier_symbol()` readers, every union writer through a migrating

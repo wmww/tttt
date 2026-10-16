@@ -24,7 +24,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   vscode 4.2 -> 2.6 GB; what remains is the program (the AST: 1.74 GB of vscode's 2.19 GB, 38% zero words) and each
   checker's 128 MB floor plus its own copy of the libraries' types, which grows with the core count. On the
   human's 12-core machine (2026-10-16): vscode 2.50 s vs bun 2.92 vs tsgo 7.95, but 6.5 GB vs 2.1; checkers past 12
-  buy 0-11% for ~170 MB each, and a 64 MB recycle budget at K24 saves 1.75 GB for +2.4% (plan 75 question 1).
+  buy 0-11% for ~170 MB each; the CLI's checkers now hold at most 1.5 GB together (64 MB each at K24: -1.75 GB for
+  +2.4%; unchanged at K <= 12, plan 75).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow (return mappers included) and
@@ -53,11 +54,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Memory decision: go for the program's memory, staged with a prototype gate.** Plan 63 stage 2 (per-file parse
   arenas) is done (2026-10-16: the AST in `ast_alloc.h` arenas, any size without malloc's classes; it also showed
   that `MADV_HUGEPAGE` past the system's free 2 MB blocks costs vscode a third of its wall time in compaction stalls:
-  the glibc re-exec is gone, arenas take huge pages within a `/proc/buddyinfo` budget and prefault). Then plan 75 *prototypes* the compact AST on the one node family that dominates the zero words and measures
-  vscode's heap and the instruction counts before anyone commits to churn under ~2300 AST sites. The prototype may say
-  no; if it says yes, the compact AST is the next window's centrepiece. Plan 75 also owns the per-checker floor at
-  many cores (12 checkers x 128 MB is 1.5 GB of budget where bun's per-thread state is small): a budget policy that
-  doesn't scale with K is cheaper than any AST work, and the shared-lib-layer "no" (plan 67) gets re-asked at K=12.
+  the glibc re-exec is gone, arenas take huge pages within a `/proc/buddyinfo` budget and prefault). Plan 75 (closed 2026-10-16) said **no to the compact AST**: of vscode's 1.37 GB AST
+  after names, 557 MB is zero words but only ~165 MB of it is union padding exact-size variants remove; the rest is
+  sparse optional fields over every node kind. The one cheap item left is Expr 72 -> 40 (~-100 MB, bugs/perf_leads.md).
+  Memory against bun at the program level now needs a bun-style index-based AST rewrite, which isn't worth it while
+  tttt is 1.2-2.5x faster than bun. The per-checker floor was the cheaper lever: a 1.5 GB cap on all checkers together.
 - **CLI completeness is the other gap (plan 76, planning).** `--watch` and `--incremental` are how most people run
   tsc locally; a 2-6x faster full check may or may not beat tsgo's incremental rebuild on a one-line edit. Planning
   measures that and recommends; building watch/incremental is a scope decision the report raises with the human.
@@ -76,7 +77,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   most one per 64 KB of checked source (a small project's second checker saves milliseconds and copies the lib
   types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
   which tsgo shares). On 12 cores / 24 threads (2026-10-16): K4 -> K12
-  1.2-2.0x faster, K12 -> K24 0-11%, at ~170 MB per checker on vscode: the budget or a K cap should follow (plan 75).
+  1.2-2.0x faster, K12 -> K24 0-11%, at ~170 MB per checker on vscode: the CLI caps the checkers' budget at 1.5 GB together (plan 75).
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -185,7 +186,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 17. ~~Checker recycling (67 stage 1), the CLI writing `.d.ts` with maps (64 stages 4-5), the hacks audit (71),
    binder and struct diets, core scaling planned (72), a real-code fan-out, emit scale probes~~ done.
 18. **Now**: the loader's serial work (72 stage 1), plans 73-74, `.d.ts` for JS (64 stage 6), per-file parse arenas
-   (63 stage 2), the memory endgame's prototype gate (75), CLI modes (76). Plan 58 (7.1.0 stable re-pin, then plan
+   (63 stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes (76). Plan 58 (7.1.0 stable re-pin, then plan
    66 stage 5's fan-out) once it's on npm, whenever that falls.
-19. Then: the compact AST if plan 75 says yes, what plan 76 and the human decide (watch / incremental), checker
+19. Then: what plan 76 and the human decide (watch / incremental), checker
    balance, parallel declare/link only for webpack-like serial declare (12 cores: 5% on vscode, 15% webpack).

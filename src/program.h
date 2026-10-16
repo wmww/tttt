@@ -103,6 +103,9 @@ void program_set_checkers(Program* me, u32 count);
 // diagnostics don't depend on it. A recycled checker is gone: program_checker_of() needs the default. Call it while
 // loading
 void program_set_checker_memory(Program* me, u64 bytes);
+// However many checkers there are, together they hold at most `bytes` (each at least 64 MB): the CLI's default, so a
+// machine with many cores doesn't hold K x the per-checker budget (plan 75). Call it while loading
+void program_set_checker_memory_cap(Program* me, u64 bytes);
 // The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
 u64 program_checked_source_bytes(Program const* me);
 

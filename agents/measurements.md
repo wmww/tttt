@@ -68,6 +68,24 @@ effect, vscode 2 under tttt and tsgo).
   16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
   `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
+## Plan 75, the memory endgame (2026-10-16, todo entry 7)
+**Checker budget policy** (this box, 4 vCPU; best wall s / peak MB): one checker at 128 MB instead of 256 is free on
+vscode (12.3 s, -146 MB) and type-fest (+2%, -120 MB) but drizzle +12% (0.81 -> 0.90 s), so a lone checker keeps 256.
+At 64 MB vscode K1 is +4%. Policy shipped: the CLI's default (no `--checker-memory`) caps the checkers at 1.5 GB
+together, each at least 64 MB (`program_set_checker_memory_cap()`): 128 MB each up to K12 as before, 96 at K16, 64 at
+K24. vscode `--checkers 24` on 4 threads: 6.13 s / 4897 MB (uncapped) -> 6.21 / 3561, output byte-identical; K4
+unchanged (6.15 / 2791). The 12-core section's K24 B64 row is what the cap gives there (-1.75 GB, +2.4%).
+**Compact AST census** (vscode after names, `scripts/memtrack.sh`, one checker): AST 1366.9 MB with 557.0 MB zero
+words, diffuse: the top site (CallExpr-sized boxes from parse_expr, 1.1M) holds 48.5 MB of zeros, PropertyExpr dots
+38, InitializedBinding vectors 25, BinaryOpExpr 22, TypeNode 15, call arguments 15; no site past 50 MB. Exprs (ast
+walk, not counting those inside types): 8.19M x 72 B = 590 MB: identifiers 2.59M (877k with symbol != target, 21k
+using the rare union), literals 1.14M (number 251k, string 644k), implicit any 310k, the boxed variants 4.46M using 8
+of the union's 40 bytes. Exact-size variants remove ~165 MB at most (4.46M x 32 + the empty and literal slots); boxing
+identifiers to get Expr to 40 B costs back ~60-100 MB. **No-go** under the gate (>= 400 MB): the zero words are
+mostly sparse optional fields and empty vectors over every node kind, not union padding. Estimates of the separate
+items: 12-byte spans ~60 MB (alignment eats most of the 4 bytes), 8-byte spans ~120 MB but need the file from context
+at ~570 `.buf` sites, 32-bit node references ~40 MB. No prototype branch was built (the census answered the gate).
+
 ## Plan 63 stage 2, per-file AST arenas and huge pages (2026-10-16, todo entry 6)
 **Audit (2a)**: nothing stopped it. One parser entry (`parse_file()`); later phases do mutate the AST (resolve's rare
 structs and `AccessSite`s, module resolution's ModuleRef rares, JSDoc moves), so instead of forbidding that the arena
