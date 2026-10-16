@@ -1,0 +1,36 @@
+//// [test/cases/ttttJsDeclarationReusedImportTypeAlias.ts] ////
+
+=== types.ts ===
+export interface S<T> { a: T }
+>a : T
+
+export type SVG = S<string>;
+>SVG : SVG
+
+=== a.js ===
+/**
+ * @param {import('./types.js').SVG} el
+ * @param {string} s
+ */
+export const f = function (el, s) {};
+>f : (el: import('./types.js').SVG, s: string) => void
+>function (el, s) {} : (el: import('./types.js').SVG, s: string) => void
+>el : import("./types.js").SVG
+>s : string
+
+/**
+ * @param {import('./types.js').SVG} el
+ */
+export const g = (el) => {};
+>g : (el: import('./types.js').SVG) => void
+>(el) => {} : (el: import('./types.js').SVG) => void
+>el : import("./types.js").SVG
+
+/**
+ * @param {import('./types.js').S} el
+ */
+export const h = (el) => {};
+>h : (el: import('./types.js').S) => void
+>(el) => {} : (el: import('./types.js').S) => void
+>el : import("./types.js").S<any>
+
