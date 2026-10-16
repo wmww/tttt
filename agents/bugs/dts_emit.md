@@ -1,14 +1,23 @@
-# Declaration emit: what still differs from tsgo (plan 64)
+# Declaration emit: what still differs from tsgo (plan 64, closed)
 
-State 2026-10-16 (after todo entry 4, JavaScript declaration emit): suite dts component in the headline (JS tests apart:
-320 / 346, plan 64's status lists what's left); `scripts/dtsdiff.py` **1166 / 1233 projects, 96584 / 96726 files**
-byte-identical.
+**Plan 64 closed 2026-10-16** (todo entry 5 of the eighteenth window). Its decisions that still hold: no synthetic AST
+(the writer prints text from the source AST and `Ty`s, documentation.md "Declaration emit"); one walk with two sinks
+(`declaration_emit.c`'s diagnostics walk, the writer a second pass in the checker that checked the file); tttt emits
+only where the options emit declarations alone (`emitDeclarationOnly`), never JavaScript; no `.tsbuildinfo` (plan 76
+decides incremental). Validation met: suite dts in the headline (1824 / 1849, JavaScript tests included since this
+entry: 346 / 347), dtsdiff >= 90% of projects (94.6%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
+of a quarter sample by tsgo's own per-checker undefinedProperties history (below, "Member order").
+
+State 2026-10-16: `scripts/dtsdiff.py` **1166 / 1233 projects, 96588 / 96726 files** byte-identical.
 `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 
-- **JavaScript sources** (plan 64 stage 6, first session done): left on real code are query's
-  `root.tsdown.config.d.ts.map` (17 projects, a JSDoc type literal member's mapped end: trivia trimmed before the next
-  tag) and create-t3-app's `prettier.config.d.mts.map` (a type on a JSDoc continuation line starts at its `*` in tsgo).
+- **JavaScript sources**: the suite's last one is jsDeclarationsTypeReferences4 (`export { thing }` inside a
+  namespace, TS1194: the specifier's `source_symbol` is never resolved, `collect_exported_locals()` can't paint the
+  local; TS has it too). Guesses from one or two tests each are in hacks.md ("JavaScript declaration emit guesses").
+  JavaScript declaration diagnostics are reported like TypeScript's since this entry (no file written then); left
+  on real code: query's `root.tsdown.config.d.ts.map` (17 projects, a JSDoc type literal member's mapped end) and
+  create-t3-app's `prettier.config.d.mts.map` (a type on a JSDoc continuation line), which todo entry 5's agent took.
 - **Missing TypeScript files** (6 projects: mermaid's `rendering-util/fastdom.d.ts`, sequelize's `model-typescript.d.ts`
   and `sequelize-typescript.d.ts`, zigbee2mqtt/test's mocks): tttt writes nothing, uninvestigated (a spurious
   declaration diagnostic is the likely cause).
