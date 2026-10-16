@@ -1,0 +1,58 @@
+//// [test/cases/ttttTypeParamDefaultOuterAutoVariable.ts] ////
+
+=== ttttTypeParamDefaultOuterAutoVariable.ts ===
+// A function's type parameters are in its flow container (tsc's binder): `<T = typeof x>` of an outer auto-typed
+// `let x` reads it from the function's start, implicitly any (TS7034, TS7005), like a parameter's type does. A type
+// alias's are in the flow around it (mutation of contextualTypesNegatedTypeLikeConstraintInGenericMappedType1)
+let D = undefined;
+>D : Symbol(D, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 3, 3))
+>undefined : Symbol(undefined)
+
+type A<T extends "a" | "b" = typeof D> = T;
+>A : Symbol(A, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 3, 18))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 4, 7))
+>D : Symbol(D, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 3, 3))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 4, 7))
+
+interface I { <T extends "a" | "b" = typeof D>(): null }
+>I : Symbol(I, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 4, 43))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 5, 15))
+>D : Symbol(D, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 3, 3))
+
+let F = undefined;
+>F : Symbol(F, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 6, 3))
+>undefined : Symbol(undefined)
+
+function f<T = typeof F>() {}
+>f : Symbol(f, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 6, 18))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 7, 11))
+>F : Symbol(F, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 6, 3))
+
+let H = undefined;
+>H : Symbol(H, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 8, 3))
+>undefined : Symbol(undefined)
+
+declare function h<T = typeof H>(): void;
+>h : Symbol(h, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 8, 18))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 9, 19))
+>H : Symbol(H, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 8, 3))
+
+let K = undefined;
+>K : Symbol(K, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 10, 3))
+>undefined : Symbol(undefined)
+
+const k = <T = typeof K>() => {};
+>k : Symbol(k, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 11, 5))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 11, 11))
+>K : Symbol(K, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 10, 3))
+
+let M = undefined;
+>M : Symbol(M, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 12, 3))
+>undefined : Symbol(undefined)
+
+class C { m<T extends typeof M>() {} }
+>C : Symbol(C, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 12, 18))
+>m : Symbol(C.m, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 13, 9))
+>T : Symbol(T, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 13, 12))
+>M : Symbol(M, Decl(ttttTypeParamDefaultOuterAutoVariable.ts, 12, 3))
+

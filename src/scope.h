@@ -824,7 +824,9 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 // tsc's checkStrictModeFunctionDeclaration: below ES2015, no function declarations in the blocks of strict mode code
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
-Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, ErrorCtx* errs);
+// `flow`: the flow container the type parameters' constraints and defaults are in (a function's own: tsc binds them
+// inside it, `<T = typeof x>` reads an outer `let x` from the function's start), null for the parent's
+Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, FlowBuilder* flow, ErrorCtx* errs);
 // Of a declaration (`node`) of a class or interface `owner`: a type parameter named like one of an earlier declaration
 // of it is the same symbol (tsc declares them in the merged symbol's members)
 Scope* scope_new_generic_merged(

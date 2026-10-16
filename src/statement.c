@@ -1864,7 +1864,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             unused_register(self_scope, UNUSED_TYPE_ALIAS, my decl.type);
             my decl.type->outer_generics = names->generics;
             my decl.type->local |= names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
-            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type->generic, my decl.type->name, span_null, errs);
+            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type->generic, my decl.type->name, span_null, nullptr, errs);
             TypeNode* body = &my decl.type->type;
             if (body->tag == TYPE_IDENTIFIER && !body->parenthesized && !body->identifier->keyword &&
                 span_equals(body->identifier->name, "intrinsic") && !identifier_type_namespace_count(body->identifier) &&

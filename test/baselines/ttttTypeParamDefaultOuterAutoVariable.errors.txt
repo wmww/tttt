@@ -1,0 +1,51 @@
+ttttTypeParamDefaultOuterAutoVariable.ts(4,5): error TS7034: Variable 'D' implicitly has type 'any' in some locations where its type cannot be determined.
+ttttTypeParamDefaultOuterAutoVariable.ts(5,30): error TS2344: Type 'undefined' does not satisfy the constraint '"a" | "b"'.
+ttttTypeParamDefaultOuterAutoVariable.ts(6,45): error TS7005: Variable 'D' implicitly has an 'any' type.
+ttttTypeParamDefaultOuterAutoVariable.ts(7,5): error TS7034: Variable 'F' implicitly has type 'any' in some locations where its type cannot be determined.
+ttttTypeParamDefaultOuterAutoVariable.ts(8,23): error TS7005: Variable 'F' implicitly has an 'any' type.
+ttttTypeParamDefaultOuterAutoVariable.ts(9,5): error TS7034: Variable 'H' implicitly has type 'any' in some locations where its type cannot be determined.
+ttttTypeParamDefaultOuterAutoVariable.ts(10,31): error TS7005: Variable 'H' implicitly has an 'any' type.
+ttttTypeParamDefaultOuterAutoVariable.ts(11,5): error TS7034: Variable 'K' implicitly has type 'any' in some locations where its type cannot be determined.
+ttttTypeParamDefaultOuterAutoVariable.ts(12,23): error TS7005: Variable 'K' implicitly has an 'any' type.
+ttttTypeParamDefaultOuterAutoVariable.ts(13,5): error TS7034: Variable 'M' implicitly has type 'any' in some locations where its type cannot be determined.
+ttttTypeParamDefaultOuterAutoVariable.ts(14,30): error TS7005: Variable 'M' implicitly has an 'any' type.
+
+
+==== ttttTypeParamDefaultOuterAutoVariable.ts (11 errors) ====
+    // A function's type parameters are in its flow container (tsc's binder): `<T = typeof x>` of an outer auto-typed
+    // `let x` reads it from the function's start, implicitly any (TS7034, TS7005), like a parameter's type does. A type
+    // alias's are in the flow around it (mutation of contextualTypesNegatedTypeLikeConstraintInGenericMappedType1)
+    let D = undefined;
+        ~
+!!! error TS7034: Variable 'D' implicitly has type 'any' in some locations where its type cannot be determined.
+    type A<T extends "a" | "b" = typeof D> = T;
+                                 ~~~~~~~~
+!!! error TS2344: Type 'undefined' does not satisfy the constraint '"a" | "b"'.
+    interface I { <T extends "a" | "b" = typeof D>(): null }
+                                                ~
+!!! error TS7005: Variable 'D' implicitly has an 'any' type.
+    let F = undefined;
+        ~
+!!! error TS7034: Variable 'F' implicitly has type 'any' in some locations where its type cannot be determined.
+    function f<T = typeof F>() {}
+                          ~
+!!! error TS7005: Variable 'F' implicitly has an 'any' type.
+    let H = undefined;
+        ~
+!!! error TS7034: Variable 'H' implicitly has type 'any' in some locations where its type cannot be determined.
+    declare function h<T = typeof H>(): void;
+                                  ~
+!!! error TS7005: Variable 'H' implicitly has an 'any' type.
+    let K = undefined;
+        ~
+!!! error TS7034: Variable 'K' implicitly has type 'any' in some locations where its type cannot be determined.
+    const k = <T = typeof K>() => {};
+                          ~
+!!! error TS7005: Variable 'K' implicitly has an 'any' type.
+    let M = undefined;
+        ~
+!!! error TS7034: Variable 'M' implicitly has type 'any' in some locations where its type cannot be determined.
+    class C { m<T extends typeof M>() {} }
+                                 ~
+!!! error TS7005: Variable 'M' implicitly has an 'any' type.
+    

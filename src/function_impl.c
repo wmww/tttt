@@ -309,7 +309,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             sv_make_span(c_sv("(Anonymous function)"));
         // (A class method is named through its class, an object literal's isn't)
         ClassDecl const* method_of = span_valid(function_impl_member_name(me)) && !my is_expression ? scope_enclosing_class(names) : nullptr;
-        names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, errs);
+        names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, &flow, errs);
         type_params_scope = names;
     }
 

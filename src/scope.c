@@ -720,9 +720,10 @@ static OuterGenerics* push_generics(Scope* me, Generic const* generic, Span owne
     return outer;
 }
 
-Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, ErrorCtx* errs) {
+Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, FlowBuilder* flow, ErrorCtx* errs) {
     if (generic_empty(generic)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
+    if (flow) ret->flow = flow;
     push_generics(ret, generic, owner)->owner_class = owner_class;
     generic_add_names(generic, ret);
     generic_lookup_names(generic, ret, errs);

@@ -1,0 +1,51 @@
+//// [test/cases/ttttTypeParamDefaultOuterAutoVariable.ts] ////
+
+=== ttttTypeParamDefaultOuterAutoVariable.ts ===
+// A function's type parameters are in its flow container (tsc's binder): `<T = typeof x>` of an outer auto-typed
+// `let x` reads it from the function's start, implicitly any (TS7034, TS7005), like a parameter's type does. A type
+// alias's are in the flow around it (mutation of contextualTypesNegatedTypeLikeConstraintInGenericMappedType1)
+let D = undefined;
+>D : any
+>undefined : undefined
+
+type A<T extends "a" | "b" = typeof D> = T;
+>A : T
+>D : undefined
+
+interface I { <T extends "a" | "b" = typeof D>(): null }
+>D : any
+
+let F = undefined;
+>F : any
+>undefined : undefined
+
+function f<T = typeof F>() {}
+>f : <T = any>() => void
+>F : any
+
+let H = undefined;
+>H : any
+>undefined : undefined
+
+declare function h<T = typeof H>(): void;
+>h : <T = any>() => void
+>H : any
+
+let K = undefined;
+>K : any
+>undefined : undefined
+
+const k = <T = typeof K>() => {};
+>k : <T = any>() => void
+><T = typeof K>() => {} : <T = any>() => void
+>K : any
+
+let M = undefined;
+>M : any
+>undefined : undefined
+
+class C { m<T extends typeof M>() {} }
+>C : C
+>m : <T extends unknown>() => void
+>M : any
+
