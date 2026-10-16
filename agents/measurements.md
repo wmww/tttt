@@ -11,6 +11,19 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Perf + real code (2026-10-16, todo entry 9)
+Instructions (`scripts/instrcount.sh`, callgrind, `--checkers 1`): window start (plan 71) -> session start (7f462498)
+-> end: tsc 4.723 -> 4.577 -> **4.546**, type-fest 23.420 -> 23.517 -> **14.099 (-40%)**, valibot 3.463 -> 3.563 ->
+**3.470**, react 1.512 -> 1.464 -> **1.424**, nest 1.189 -> 1.110 -> **1.098**, webpack 10.051 -> 9.873 -> **9.674**,
+zod 5.426 -> 5.406 -> **5.338**, xstate 2.771 -> 2.723 -> **2.690**, drizzle 6.917 -> 6.800 -> **6.627**, vue 6.635 ->
+6.556 -> **6.488**, effect 10.612 -> 10.225 -> **10.130**, vscode 96.780 -> 94.641 -> **92.390**, excalidraw 7.930 ->
+7.847 -> **7.658**, tanstack-router 5.412 -> 5.389 -> **5.300 G**. An empty esnext+dom project 460.7 -> 412.5 M. From:
+keyof of an object type remembered per type (every corpus -1..-4%; folo renderer's constants/copy.ts 3.53 -> 0.40 G,
+its worst file 11 -> 0.6 s), index atoms per checker and a typed member sort (type-fest 22.66 -> 15.36), intersection
+dedup by a set (type-fest -> 14.11). `scripts/oracles.py`: suite 13764 / 13803 (+8 own tests of the mutation agent),
+every other line unchanged, perfsweep median check ratio 0.21 (0.22 at the start), worst types ratio 1.62 (date-fns
+docs). Scaleprobe: every kind linear as on 2026-10-14. Mutation seed 81 (6000 mutants): 16 of 2909 differing -> 7.
+
 ## The 12-core machine: checkers per K, bun, tsgo (2026-10-16, f760ecdc)
 **Framework laptop**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, 62 GB, GCC 16.2, "balanced" power profile on
 AC, load < 0.3. `scripts/bench.sh --runs 3 --checkers "4 8 12 16" --bun` (bun 1.4.3); best wall s / peak RSS MB.

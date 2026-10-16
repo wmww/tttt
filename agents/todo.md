@@ -50,8 +50,10 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
    beats tsgo's incremental rebuild after an export edit almost everywhere, loses after a body edit on 12 of 19
    projects (1.2-2x, up to 7x); tsgo's incremental rebuild runs away on webpack (28 GB). Found on the way: dokploy at
    the default checkers 55 -> 3 s (recycle thrash, `check_share()`), `--listFilesOnly`'s library order.
-9. **Perf + real code**: instrcount against this window's start, perfsweep, scaleprobe, mutate.py for missing checks;
-   fix what is cheap, file the rest (bugs/perf_leads.md, bugs/missing_checks.md).
+9. Done 2026-10-16: perf + real code. Four perf fixes (keyof of an object remembered, index atoms, typed member sort,
+   intersection dedup): type-fest -38% instructions, every corpus -1..-4% (measurements.md "Perf + real code"), folo's
+   worst file 11 -> 0.6 s; scaleprobe all linear, perfsweep median 0.21. Mutation seed 81 (one agent): 16 -> 7, suite
+   13764 / 13803 (+8 own tests); leftovers in bugs/missing_checks.md, perf leftovers in bugs/perf_leads.md.
 10. **Triage.**
 11. **Insights.** report.md asks the human plan 76's question (local loop: none / watch + `-b` buildinfo / LSP).
 

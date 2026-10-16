@@ -8,6 +8,19 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Perf + real code session (2026-10-16, todo entry 9)
+Fixed: keyof of an object type rebuilt per instantiation (folo's i18next keys: one 10-line file 3.5 G), tuple
+element names printf'd per instance (26% of type-fest), qsort's indirect comparator in builder_finish(), a quadratic
+duplicate scan in intersection(). Left, measured:
+- **type-fest: tuple members per instance** (`resolve_tuple_members()` 16% after the fixes): 25.7k instances of ~213
+  elements each build and sort their members (elements, `length`, the array's ~40 inherited) from scratch;
+  builder_finish()'s sort is still ~0.7 G. A merge of three pre-sorted runs (index atoms sorted by address once per
+  checker, the array's props_by_name, `length`) would make it linear; or props_by_name built lazily.
+- **folo/apps/desktop/layer/renderer** (check ratio 0.67 before the keyof fix, the worst large project): rerun
+  `scripts/perfsweep.py -f folo` on a quiet machine. **arktype** (0.56): declared.test.ts is the first file to touch
+  arktype's types (148k types, 1.3 s alone); no pathology found.
+- effect, drizzle, webpack, vue self profiles: nothing above 6% (interning, instantiation, flow), no quadratic site.
+
 ## Immediate distributive constraints (plan 61 stage 2, 2026-10-13)
 tanstack-router 5.337 -> 5.401 G (+1.1%), xstate +0.3%: from base constraints and getSimplifiedTypeOrConstraint taking
 the check type's one-step constraint (tsc's) instead of its base constraint, so a conditional's constraint goes
