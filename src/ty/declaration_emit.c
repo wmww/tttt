@@ -2754,15 +2754,22 @@ static bool was_painted(Walk* me, Symbol const* symbol) {
 }
 
 // tsc's isImportRequiredByAugmentation: the imported file declares something this module exports (an augmentation of
-// it), so declaration emit keeps `import "m"` even when nothing it imports is used
+// it), so declaration emit keeps `import "m"` even when nothing it imports is used. Only this file's own symbol merged
+// with the target's augmentation counts (tsc's getMergedSymbol(s) != s): not one `export *` merely re-exports, merged
+// elsewhere or not (vue's index re-exports runtime-core's augmented ComponentCustomProperties, and doesn't keep an
+// unused import of runtime-core's component.ts)
 static bool import_required_by_augmentation(Walk* me, SourceFile const* target) {
     Symbol const* module = my file->scope ? my file->scope->container : nullptr;
     SymbolTable const* exports = module ? module->exports : nullptr;
     for (u32 i = 0; exports && i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
+        bool in_target = false, here = false;
         for (u32 j = 0; symbol && j < symbol->decl_count; j++) {
-            if (span_source(symbol->decls[j].name) == target) return true;
+            SourceFile const* file = span_source(symbol->decls[j].name);
+            if (file == target) in_target = true;
+            if (file == my file) here = true;
         }
+        if (in_target && here) return true;
     }
     return false;
 }
@@ -4715,7 +4722,10 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     u32 named = 0;
     for_each (i, vec_port_item, &port->items) named += i->tag != PORT_IMPORT_GATHER && KEPT(i->symbol);
     if (!default_kept && !gather_kept && !named) {
-        if (port->module_ref && port->module_ref->file && port->module_ref->file != my file &&
+        // (Only named imports, `import {} from`, are kept for an augmentation: transformImportDeclaration elides a
+        // default or namespace import whose name isn't visible)
+        bool named_imports = !gather && (port->main.tag == PORT_NOOP || vec_port_item_size(&port->items));
+        if (named_imports && port->module_ref && port->module_ref->file && port->module_ref->file != my file &&
             import_required_by_augmentation(me, port->module_ref->file)
         ) {
             w_indent(me);

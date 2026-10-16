@@ -1,0 +1,103 @@
+//// [test/cases/ttttDeclarationUnusedImportOfReexportedModule.ts] ////
+
+=== b.ts ===
+export interface Thing { a: number }
+>Thing : Symbol(Thing, Decl(b.ts, 0, 0))
+>a : Symbol(Thing.a, Decl(b.ts, 0, 24))
+
+export const thing = 1;
+>thing : Symbol(thing, Decl(b.ts, 1, 12))
+
+=== c.ts ===
+export interface Other { o: number }
+>Other : Symbol(Other, Decl(c.ts, 0, 0), Decl(aug.ts, 2, 22), Decl(aug2.ts, 2, 22))
+>o : Symbol(Other.o, Decl(c.ts, 0, 24))
+
+=== index.ts ===
+import * as b from './b';
+>b : Symbol(b, Decl(index.ts, 0, 6))
+
+import type { Thing } from './b';
+>Thing : Symbol(Thing, Decl(index.ts, 1, 13))
+
+export * from './b';
+const x = b.thing;
+>x : Symbol(x, Decl(index.ts, 3, 5))
+>b.thing : Symbol(b.thing, Decl(b.ts, 1, 12))
+>b : Symbol(b, Decl(index.ts, 0, 6))
+>thing : Symbol(b.thing, Decl(b.ts, 1, 12))
+
+export const y = 2;
+>y : Symbol(y, Decl(index.ts, 4, 12))
+
+=== aug.ts ===
+import { Other } from './c';
+>Other : Symbol(Other, Decl(aug.ts, 0, 8))
+
+export { Other };
+>Other : Symbol(Other, Decl(aug.ts, 1, 8))
+
+declare module './c' {
+>'./c' : Symbol("./c", Decl(c.ts, 0, 0), Decl(aug.ts, 1, 17), Decl(aug2.ts, 1, 20))
+
+    interface Other { extra: string }
+>Other : Symbol(Other, Decl(c.ts, 0, 0), Decl(aug.ts, 2, 22), Decl(aug2.ts, 2, 22))
+>extra : Symbol(Other.extra, Decl(aug.ts, 3, 21))
+}
+=== aug2.ts ===
+import * as c from './c';
+>c : Symbol(c, Decl(aug2.ts, 0, 6))
+
+export * from './c';
+declare module './c' {
+>'./c' : Symbol(c, Decl(c.ts, 0, 0), Decl(aug.ts, 1, 17), Decl(aug2.ts, 1, 20))
+
+    interface Other { more: string }
+>Other : Symbol(Other, Decl(c.ts, 0, 0), Decl(aug.ts, 2, 22), Decl(aug2.ts, 2, 22))
+>more : Symbol(Other.more, Decl(aug2.ts, 3, 21))
+}
+=== aug3.ts ===
+import * as d from './d';
+>d : Symbol(d, Decl(aug3.ts, 0, 6))
+
+import type { D } from './d';
+>D : Symbol(D, Decl(aug3.ts, 1, 13))
+
+export interface X { a: number }
+>X : Symbol(X, Decl(aug3.ts, 1, 29), Decl(d.ts, 1, 25))
+>a : Symbol(X.a, Decl(aug3.ts, 2, 20))
+
+=== d.ts ===
+import {} from './aug3';
+declare module './aug3' {
+>'./aug3' : Symbol("./aug3", Decl(aug3.ts, 0, 0), Decl(d.ts, 0, 24))
+
+    interface X { b: number }
+>X : Symbol(X, Decl(aug3.ts, 1, 29), Decl(d.ts, 1, 25))
+>b : Symbol(X.b, Decl(d.ts, 2, 17))
+}
+export interface D {}
+>D : Symbol(D, Decl(d.ts, 3, 1))
+
+=== e.ts ===
+export interface E { e: number }
+>E : Symbol(E, Decl(e.ts, 0, 0), Decl(f.ts, 1, 22))
+>e : Symbol(E.e, Decl(e.ts, 0, 20))
+
+=== f.ts ===
+export {};
+declare module './e' {
+>'./e' : Symbol("./e", Decl(e.ts, 0, 0), Decl(f.ts, 0, 10))
+
+    interface E { f: number }
+>E : Symbol(E, Decl(e.ts, 0, 0), Decl(f.ts, 1, 22))
+>f : Symbol(E.f, Decl(f.ts, 2, 17))
+}
+=== index2.ts ===
+import type { E } from './e';
+>E : Symbol(E, Decl(index2.ts, 0, 13))
+
+export * from './e';
+export const z = 1;
+>z : Symbol(z, Decl(index2.ts, 2, 12))
+

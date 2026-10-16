@@ -1,0 +1,96 @@
+//// [test/cases/ttttDeclarationUnusedImportOfReexportedModule.ts] ////
+
+=== b.ts ===
+export interface Thing { a: number }
+>a : number
+
+export const thing = 1;
+>thing : 1
+>1 : 1
+
+=== c.ts ===
+export interface Other { o: number }
+>o : number
+
+=== index.ts ===
+import * as b from './b';
+>b : typeof b
+
+import type { Thing } from './b';
+>Thing : Thing
+
+export * from './b';
+const x = b.thing;
+>x : 1
+>b.thing : 1
+>b : typeof b
+>thing : 1
+
+export const y = 2;
+>y : 2
+>2 : 2
+
+=== aug.ts ===
+import { Other } from './c';
+>Other : any
+
+export { Other };
+>Other : any
+
+declare module './c' {
+>'./c' : typeof import("./c")
+
+    interface Other { extra: string }
+>extra : string
+}
+=== aug2.ts ===
+import * as c from './c';
+>c : typeof c
+
+export * from './c';
+declare module './c' {
+>'./c' : typeof c
+
+    interface Other { more: string }
+>more : string
+}
+=== aug3.ts ===
+import * as d from './d';
+>d : typeof d
+
+import type { D } from './d';
+>D : D
+
+export interface X { a: number }
+>a : number
+
+=== d.ts ===
+import {} from './aug3';
+declare module './aug3' {
+>'./aug3' : typeof import("./aug3")
+
+    interface X { b: number }
+>b : number
+}
+export interface D {}
+=== e.ts ===
+export interface E { e: number }
+>e : number
+
+=== f.ts ===
+export {};
+declare module './e' {
+>'./e' : typeof import("./e")
+
+    interface E { f: number }
+>f : number
+}
+=== index2.ts ===
+import type { E } from './e';
+>E : E
+
+export * from './e';
+export const z = 1;
+>z : 1
+>1 : 1
+
