@@ -2996,7 +2996,11 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 builder.index_pass = 0;
             }
             builder_late_bound_last(&builder, 0);
+            u32 declared_props = builder.props_count;
             builder_add_assignment_members(me, &builder, decl);
+            // (A JavaScript class's `this.x = v` members go among the others by where they're declared: tsgo's
+            // getNamedMembers sorts a class's own members by compareSymbols, `this.x` in a method after the method)
+            if (builder.props_count > declared_props) builder_sort_stable(&builder);
             TyBuf bases = {0};
             TyBuf written_bases = {0}; // (Before the this-argument: bases[i] is written_bases[i] if it takes none)
             bool dynamic = false;

@@ -1,0 +1,53 @@
+//// [test/cases/ttttJsClassThisMembersInDeclarationOrder.ts] ////
+
+=== theme.js ===
+class Theme {
+>Theme : Symbol(Theme, Decl(theme.js, 0, 0))
+
+  constructor() {
+    this.background = '#fff';
+>this.background : Symbol(Theme.background, Decl(theme.js, 1, 17))
+>this : Symbol(Theme, Decl(theme.js, 0, 0))
+>background : Symbol(Theme.background, Decl(theme.js, 1, 17))
+
+    this.primary = 'a';
+>this.primary : Symbol(Theme.primary, Decl(theme.js, 2, 29))
+>this : Symbol(Theme, Decl(theme.js, 0, 0))
+>primary : Symbol(Theme.primary, Decl(theme.js, 2, 29))
+  }
+  updateColors() {
+>updateColors : Symbol(Theme.updateColors, Decl(theme.js, 4, 3))
+
+    this.cScale0 = 'x';
+>this.cScale0 : Symbol(Theme.cScale0, Decl(theme.js, 5, 18))
+>this : Symbol(Theme, Decl(theme.js, 0, 0))
+>cScale0 : Symbol(Theme.cScale0, Decl(theme.js, 5, 18))
+
+    this.cScale1 = 'y';
+>this.cScale1 : Symbol(Theme.cScale1, Decl(theme.js, 6, 23))
+>this : Symbol(Theme, Decl(theme.js, 0, 0))
+>cScale1 : Symbol(Theme.cScale1, Decl(theme.js, 6, 23))
+  }
+  calculate(overrides) {
+>calculate : Symbol(Theme.calculate, Decl(theme.js, 8, 3))
+>overrides : Symbol(overrides, Decl(theme.js, 9, 12))
+
+    this.updateColors();
+>this.updateColors : Symbol(Theme.updateColors, Decl(theme.js, 4, 3))
+>this : Symbol(Theme, Decl(theme.js, 0, 0))
+>updateColors : Symbol(Theme.updateColors, Decl(theme.js, 4, 3))
+  }
+}
+export const getThemeVariables = () => new Theme();
+>getThemeVariables : Symbol(getThemeVariables, Decl(theme.js, 13, 12))
+>Theme : Symbol(Theme, Decl(theme.js, 0, 0))
+
+=== a.ts ===
+import { getThemeVariables } from './theme.js';
+>getThemeVariables : Symbol(getThemeVariables, Decl(a.ts, 0, 8))
+
+export const build = () => ({ themeVariables: getThemeVariables() });
+>build : Symbol(build, Decl(a.ts, 1, 12))
+>themeVariables : Symbol(themeVariables, Decl(a.ts, 1, 29))
+>getThemeVariables : Symbol(getThemeVariables, Decl(a.ts, 0, 8))
+

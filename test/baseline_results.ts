@@ -658,6 +658,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsClassThisMembersInDeclarationOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsDefaultTypeArgumentAny': {
         errors: true,
         symbols: true,

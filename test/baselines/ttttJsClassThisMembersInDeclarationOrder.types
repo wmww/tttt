@@ -1,0 +1,68 @@
+//// [test/cases/ttttJsClassThisMembersInDeclarationOrder.ts] ////
+
+=== theme.js ===
+class Theme {
+>Theme : Theme
+
+  constructor() {
+    this.background = '#fff';
+>this.background = '#fff' : "#fff"
+>this.background : any
+>this : this
+>background : any
+>'#fff' : "#fff"
+
+    this.primary = 'a';
+>this.primary = 'a' : "a"
+>this.primary : any
+>this : this
+>primary : any
+>'a' : "a"
+  }
+  updateColors() {
+>updateColors : () => void
+
+    this.cScale0 = 'x';
+>this.cScale0 = 'x' : "x"
+>this.cScale0 : string | undefined
+>this : this
+>cScale0 : string | undefined
+>'x' : "x"
+
+    this.cScale1 = 'y';
+>this.cScale1 = 'y' : "y"
+>this.cScale1 : string | undefined
+>this : this
+>cScale1 : string | undefined
+>'y' : "y"
+  }
+  calculate(overrides) {
+>calculate : (overrides: any) => void
+>overrides : any
+
+    this.updateColors();
+>this.updateColors() : void
+>this.updateColors : () => void
+>this : this
+>updateColors : () => void
+  }
+}
+export const getThemeVariables = () => new Theme();
+>getThemeVariables : () => Theme
+>() => new Theme() : () => Theme
+>new Theme() : Theme
+>Theme : typeof Theme
+
+=== a.ts ===
+import { getThemeVariables } from './theme.js';
+>getThemeVariables : () => Theme
+
+export const build = () => ({ themeVariables: getThemeVariables() });
+>build : () => { themeVariables: Theme; }
+>() => ({ themeVariables: getThemeVariables() }) : () => { themeVariables: Theme; }
+>({ themeVariables: getThemeVariables() }) : { themeVariables: Theme; }
+>{ themeVariables: getThemeVariables() } : { themeVariables: Theme; }
+>themeVariables : Theme
+>getThemeVariables() : Theme
+>getThemeVariables : () => Theme
+
