@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "type.h"
 
 typedef struct vec_expr VecExpr;
@@ -30,6 +31,7 @@ void generic_item_drop(GenericItem* me);
 
 #define g_class_key GenericItem, generic_item
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct Generic {

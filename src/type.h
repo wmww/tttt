@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "interface.h"
 #include "value.h"
 #include "span.h"
@@ -323,6 +324,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_class_key TypeNode, type
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 #define g_key SymbolCPtr, symbol_cptr
@@ -338,6 +340,7 @@ static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
 
 #define g_class_key SpannedType, spanned_type
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 static inline TypeNode const* generic_param_at(VecSpannedType const* params, intptr_t i) {

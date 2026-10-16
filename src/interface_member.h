@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "type.h"
 
 // tsc parses an index signature's brackets as a parameter list and checks it in checkGrammarIndexSignatureParameters.
@@ -107,7 +108,7 @@ typedef struct InterfaceMember {
 // The accessor side of a member, made on demand (parser)
 static inline InterfaceAccessor* interface_member_accessor(InterfaceMember* me) {
     if (!my accessor) {
-        my accessor = c_new(InterfaceAccessor, {0});
+        my accessor = ast_new(InterfaceAccessor, {0});
     }
     return my accessor;
 }
@@ -158,6 +159,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
 #define g_class_key InterfaceMember, interface_member
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // tsc's binder over a type's members (declareSymbol with each kind's excludes): marks the declarations that conflict

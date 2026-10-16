@@ -141,6 +141,7 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my contents);
     free(my line_starts);
     block_drop(&my ast);
+    ast_arena_drop(&my arena);
     cstr_drop(&my decl_override);
     if (my declaration_output) cstr_drop(my declaration_output);
     free(my declaration_output);

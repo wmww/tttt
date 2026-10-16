@@ -12,7 +12,7 @@ void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
     if (my fallback) {
         type_drop(my fallback);
-        free(my fallback);
+        ast_delete(my fallback);
     }
 }
 

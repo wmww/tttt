@@ -313,7 +313,7 @@ void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
     if (my attributes) {
         type_drop(my attributes);
-        free(my attributes);
+        ast_delete(my attributes);
     }
 }
 
@@ -837,7 +837,7 @@ static bool for_in_accepts(Checker* checker, Ty const* ty) {
 void statement_drop(Statement* me) {
     if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
         vec_expr_drop(my decl.props.invalid_decorators);
-        free(my decl.props.invalid_decorators);
+        ast_delete(my decl.props.invalid_decorators);
         my decl.props.invalid_decorators = nullptr;
     }
     switch (my tag) {
@@ -848,7 +848,7 @@ void statement_drop(Statement* me) {
             cstr_drop(&my source_directive->not_found);
             cstr_drop(&my source_directive->unbuilt_output);
             cstr_drop(&my source_directive->unbuilt_source);
-            free(my source_directive);
+            ast_delete(my source_directive);
             break;
 
         case STATEMENT_BLOCK:
@@ -865,7 +865,7 @@ void statement_drop(Statement* me) {
             expr_drop(&my for_loop->condition);
             expr_drop(&my for_loop->afterthought);
             statement_drop(&my for_loop->body);
-            free(my for_loop);
+            ast_delete(my for_loop);
             break;
 
         case STATEMENT_FOR_EACH_LOOP:
@@ -876,13 +876,13 @@ void statement_drop(Statement* me) {
             lazy_type_drop(&my for_each_loop->var_type);
             expr_drop(&my for_each_loop->iterable);
             statement_drop(&my for_each_loop->body);
-            free(my for_each_loop);
+            ast_delete(my for_each_loop);
             break;
 
         case STATEMENT_SWITCH:
             expr_drop(&my switch_->needle);
             vec_switch_case_drop(&my switch_->cases);
-            free(my switch_);
+            ast_delete(my switch_);
             break;
 
         case STATEMENT_TRY_CATCH:
@@ -890,22 +890,22 @@ void statement_drop(Statement* me) {
             binding_drop(&my try_catch->catch_var);
             if (my try_catch->catch_initializer) {
                 expr_drop(my try_catch->catch_initializer);
-                free(my try_catch->catch_initializer);
+                ast_delete(my try_catch->catch_initializer);
             }
             block_drop(&my try_catch->catch_block);
             block_drop(&my try_catch->finally_block);
-            free(my try_catch);
+            ast_delete(my try_catch);
             break;
 
         case STATEMENT_LABELED:
             statement_drop(my labeled.body);
-            free(my labeled.body);
+            ast_delete(my labeled.body);
             break;
 
         case STATEMENT_WITH:
             expr_drop(&my with->object);
             statement_drop(&my with->body);
-            free(my with);
+            ast_delete(my with);
             break;
 
         case STATEMENT_BREAK: break;
@@ -918,13 +918,13 @@ void statement_drop(Statement* me) {
             expr_drop(&my expr);
             if (my expr_jsdoc_type) {
                 type_drop(my expr_jsdoc_type);
-                free(my expr_jsdoc_type);
+                ast_delete(my expr_jsdoc_type);
             }
             break;
 
         case STATEMENT_IMPORT_EXPORT:
             port_statement_drop(my import_export);
-            free(my import_export);
+            ast_delete(my import_export);
             break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -933,32 +933,32 @@ void statement_drop(Statement* me) {
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_drop(my decl.function.impl);
-            free(my decl.function.impl);
+            ast_delete(my decl.function.impl);
             break;
 
         case STATEMENT_DECL_ENUM:
             enum_decl_drop(my decl.enum_);
-            free(my decl.enum_);
+            ast_delete(my decl.enum_);
             break;
 
         case STATEMENT_DECL_CLASS:
             class_decl_drop(my decl.class);
-            free(my decl.class);
+            ast_delete(my decl.class);
             break;
 
         case STATEMENT_DECL_TYPE:
             type_decl_drop(my decl.type);
-            free(my decl.type);
+            ast_delete(my decl.type);
             break;
 
         case STATEMENT_DECL_INTERFACE:
             interface_decl_drop(my decl.interface);
-            free(my decl.interface);
+            ast_delete(my decl.interface);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
             namespace_decl_drop(my decl.namespace);
-            free(my decl.namespace);
+            ast_delete(my decl.namespace);
             break;
     }
 }

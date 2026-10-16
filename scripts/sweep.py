@@ -114,7 +114,7 @@ def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
     try:
         proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1',
                                '--noEmit', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
+                              stderr=subprocess.STDOUT, timeout=timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
         status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'  # (tsc 7.1's exit codes: 2 with diagnostics)

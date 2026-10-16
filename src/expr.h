@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "value.h"
 #include "span.h"
 #include "lazy_type.h"
@@ -411,6 +412,7 @@ void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx
 #define g_class_key Expr, expr
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 #define g_class_key Expr, expr
@@ -878,6 +880,7 @@ static inline bool object_item_is_private_name(ObjectExprItem const* me) {
 #define g_opt (c_no_atomic)
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // JSX (tsc's JsxElement, JsxSelfClosingElement, JsxFragment). Only in JSX files (SourceFile.is_jsx)
@@ -903,6 +906,7 @@ void jsx_attribute_drop(JsxAttribute* me);
 #define g_opt (c_no_atomic)
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct JsxChild {
@@ -926,6 +930,7 @@ void jsx_child_drop(JsxChild* me);
 #define g_opt (c_no_atomic)
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct JsxElement {

@@ -25,8 +25,7 @@ def mismatches(d):
         for a in asserts:
             f.write(f'{a[0]}\t{a[1]}\t{a[2]}\t{a[3]}\t{a[4]}\n')
     t = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--threads', '1', '--checkers', '1',
-                        '--noEmit', '--expect-types', f.name, '-p', d], capture_output=True, text=True, cwd='/',
-                       env={**os.environ, 'TTTT_NO_REEXEC': '1'}).stdout
+                        '--noEmit', '--expect-types', f.name, '-p', d], capture_output=True, text=True, cwd='/').stdout
     os.unlink(f.name)
     got = dict(line.split('\t', 1) for line in t.split('\n') if '\t' in line)
     lines = []

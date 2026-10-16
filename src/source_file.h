@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "block.h"
 #include "scope.h"
 #include "compiler_options.h"
@@ -129,6 +130,7 @@ typedef struct SourceFile {
     u32* line_starts;
     u32 line_count;
     Block ast;
+    AstArena arena; // What the parser allocated for `ast` (ast_alloc.h)
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
     // First loaded because an import (not a module augmentation, not a root or `/// <reference path>`) resolved to it

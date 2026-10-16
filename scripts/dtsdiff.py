@@ -193,7 +193,6 @@ def run_tttt(name, timeout, mem_gb, checkers=None):
         k = ['--checkers', str(checkers), '--threads', str(min(checkers, 4))] if checkers else ['--threads', '1']
         proc = subprocess.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', *k, *flags],
                               cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
-                              env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         code, out = proc.returncode, proc.stdout
         status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'

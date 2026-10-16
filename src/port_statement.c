@@ -23,7 +23,7 @@ void port_item_drop(PortItem* me) {
     if (my alias_) {
         vec_span_drop(&my alias_->path);
         vec_symbol_cptr_drop(&my alias_->path_symbols);
-        free(my alias_);
+        ast_delete(my alias_);
     }
 }
 
@@ -34,7 +34,7 @@ void import_attribute_drop(ImportAttribute* me) {
 const PortStatementRare port_statement_no_rare = {0};
 
 PortStatementRare* port_statement_rare_mut(PortStatement* me) {
-    if (!my rare) my rare = c_new(PortStatementRare, {0});
+    if (!my rare) my rare = ast_new(PortStatementRare, {0});
     return my rare;
 }
 
@@ -42,7 +42,7 @@ static void port_statement_rare_drop(PortStatementRare* me) {
     cstr_drop(&my target_path);
     if (my bad_specifier) {
         expr_drop(my bad_specifier);
-        free(my bad_specifier);
+        ast_delete(my bad_specifier);
     }
     vec_expr_drop(&my decorators);
 }
@@ -55,7 +55,7 @@ void port_statement_rare_trim(PortStatement* me) {
         return;
     }
     port_statement_rare_drop(my rare);
-    free(my rare);
+    ast_delete(my rare);
     my rare = nullptr;
 }
 
@@ -68,13 +68,13 @@ void port_statement_drop(PortStatement* me) {
     vec_port_item_drop(&my items);
     import_attributes_free(my attributes);
     if (my rare) port_statement_rare_drop(my rare);
-    free(my rare);
+    ast_delete(my rare);
 }
 
 void import_attributes_free(ImportAttributes* me) {
     if (!me) return;
     vec_import_attribute_drop(&my elements);
-    free(me);
+    ast_delete(me);
 }
 
 static bool is_string_literal(Expr const* expr) {

@@ -26,7 +26,7 @@ void class_item_drop(ClassItem* me) {
             cstr_drop(&my method.name_string);
             if (my method.computed_key) {
                 expr_drop(my method.computed_key);
-                free(my method.computed_key);
+                ast_delete(my method.computed_key);
             }
             function_impl_drop(&my method.func);
             lazy_type_drop(&my method.accessor_type);
@@ -36,7 +36,7 @@ void class_item_drop(ClassItem* me) {
             cstr_drop(&my field.name_string);
             if (my field.computed_key) {
                 expr_drop(my field.computed_key);
-                free(my field.computed_key);
+                ast_delete(my field.computed_key);
             }
             type_drop(&my field.explicit_type);
             expr_drop(&my field.value);
@@ -216,7 +216,7 @@ void class_decl_drop(ClassDecl* me) {
     drop_namesakes(me);
     if (my jsdoc_augments) {
         type_drop(my jsdoc_augments);
-        free(my jsdoc_augments);
+        ast_delete(my jsdoc_augments);
     }
 }
 

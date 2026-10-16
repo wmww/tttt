@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "type.h"
 #include "lazy_type.h"
 #include "import_attributes.h"
@@ -76,7 +77,7 @@ typedef struct IdentifierType {
 
 // The rare part, made on demand
 static inline IdentifierTypeRare* identifier_type_rare(IdentifierType* me) {
-    if (!my rare) my rare = c_new(IdentifierTypeRare, { .import_prop_start = -1 });
+    if (!my rare) my rare = ast_new(IdentifierTypeRare, { .import_prop_start = -1 });
     return my rare;
 }
 static inline VecSpan const* identifier_type_namespaces(IdentifierType const* me) {
@@ -192,6 +193,7 @@ static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }
 #define g_class_key TupleElement, tuple_element
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // Index

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "expr.h"
 
 typedef struct ErrorCtx ErrorCtx;
@@ -15,6 +16,7 @@ void import_attribute_drop(ImportAttribute* me);
 
 #define g_class_key ImportAttribute, import_attribute
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct ImportAttributes {

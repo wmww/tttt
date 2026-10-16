@@ -75,17 +75,17 @@ void type_drop(TypeNode* me) {
 
         case TYPE_IDENTIFIER:
             identifier_type_drop(my identifier);
-            free(my identifier);
+            ast_delete(my identifier);
             break;
 
         case TYPE_INFERRED:
             inferred_type_drop(my inferred);
-            free(my inferred);
+            ast_delete(my inferred);
             break;
 
         case TYPE_CALLABLE:
             callable_type_drop(my callable);
-            free(my callable);
+            ast_delete(my callable);
             break;
 
         case TYPE_INTERFACE:
@@ -94,7 +94,7 @@ void type_drop(TypeNode* me) {
 
         case TYPE_ARRAY:
             type_drop(my array.element);
-            free(my array.element);
+            ast_delete(my array.element);
             break;
 
         case TYPE_TUPLE:
@@ -103,22 +103,22 @@ void type_drop(TypeNode* me) {
 
         case TYPE_INDEXED:
             indexed_type_drop(my indexed);
-            free(my indexed);
+            ast_delete(my indexed);
             break;
 
         case TYPE_KEYOF:
             keyof_type_drop(my keyof);
-            free(my keyof);
+            ast_delete(my keyof);
             break;
 
         case TYPE_TYPEOF:
             typeof_type_drop(my typeof_);
-            free(my typeof_);
+            ast_delete(my typeof_);
             break;
 
         case TYPE_TERNARY:
             ternary_type_drop(my ternary);
-            free(my ternary);
+            ast_delete(my ternary);
             break;
 
         case TYPE_UNION:
@@ -128,17 +128,17 @@ void type_drop(TypeNode* me) {
 
         case TYPE_TEMPLATE:
             template_type_drop(my template_);
-            free(my template_);
+            ast_delete(my template_);
             break;
 
         case TYPE_JSDOC:
             type_drop(&my jsdoc->type);
-            free(my jsdoc);
+            ast_delete(my jsdoc);
             break;
 
         case TYPE_PREDICATE:
             if (my predicate->has_type) type_drop(&my predicate->type);
-            free(my predicate);
+            ast_delete(my predicate);
             break;
     }
     my tag = TYPE_ANY; // Makes repeated calls to drop safe

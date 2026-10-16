@@ -11,6 +11,7 @@
 #include "content_mapper.h"
 #include "type.h"
 #include "program.h"
+#include "ast_alloc.h"
 #include "engine.h"
 #include "error.h"
 #include "display.h"
@@ -1028,23 +1029,6 @@ static_failable build(Options const* opts, returns int) {
     return ok(ret);
 }
 
-// glibc's malloc can back its heap with transparent huge pages, which takes a tenth off the wall time of a big project
-// (the page faults of a few hundred MB of AST and types were ~18% of it), but only takes the setting from the
-// environment at startup: start over once with it set. Not when GLIBC_TUNABLES says something already (the user's,
-// or ours after the re-exec), under valgrind (the new process would run outside the tool), or with TTTT_NO_REEXEC
-static void reexec_with_huge_pages(char const* const* argv) {
-#ifdef __GLIBC__
-    if (getenv("GLIBC_TUNABLES") || getenv("TTTT_NO_REEXEC")) return;
-    char const* preload = getenv("LD_PRELOAD");
-    if (preload && strstr(preload, "vgpreload")) return;
-    if (setenv("GLIBC_TUNABLES", "glibc.malloc.hugetlb=1", 1) != 0) return;
-    execv("/proc/self/exe", (char* const*)argv);
-    unsetenv("GLIBC_TUNABLES"); // (Carry on as we are if that didn't work)
-#else
-    (void)argv;
-#endif
-}
-
 // The TypeScript version tttt checks like (what --version says)
 #define TTTT_TYPESCRIPT_VERSION "7.1.0-dev"
 
@@ -1301,6 +1285,7 @@ int main(int argc, const char** argv) {
     // (Tools that compare with tsgo's own harness run its test content mappers through this, plan 56)
     content_mapper_set_launcher(getenv("TTTT_CONTENT_MAPPER_LAUNCHER"));
     raise_stack_limit();
-    reexec_with_huge_pages(argv);
-    return run(argc, argv);
+    int ret = run(argc, argv);
+    ast_stats_print();
+    return ret;
 }

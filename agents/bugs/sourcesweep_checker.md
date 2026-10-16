@@ -1,6 +1,6 @@
 # Source sweep checker leftovers (plan 52 stage 2 onward)
 What the source sweep fan-outs left, by session. `scripts/sourcesweep.py -f '^REPO/'` re-checks one repo. For a +TS2589,
-a gdb breakpoint on `ty_instantiation_limit_reached` in `debug/tttt` (`TTTT_NO_REEXEC=1`, `--checkers 1 --threads 1`)
+a gdb breakpoint on `ty_instantiation_limit_reached` in `debug/tttt` (`--checkers 1 --threads 1`)
 prints `me->instantiation_depth` / `instantiation_count`: depth 100 is a runaway recursion, count 5M an exponential (or
 missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match now are gone: date-fns, styled-components,
 dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, astro, react-router, rxjs, angular-cli.)

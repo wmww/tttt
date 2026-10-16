@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "span.h"
 typedef struct ErrorCtx ErrorCtx;
 typedef struct vec_error VecError;
@@ -27,6 +28,7 @@ typedef struct SpannedModifier {
 } SpannedModifier;
 
 #define g_key SpannedModifier, spanned_modifier
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct ModifierList {

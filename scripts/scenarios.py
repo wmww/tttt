@@ -172,7 +172,7 @@ def run(name, scenario, tttt, keep, verbose):
         os.makedirs(root + cwd, exist_ok=True)
         args = translate(command, root)
         proc = subprocess.run([tttt] + args, cwd=root + cwd, capture_output=True, text=True,
-                              timeout=60, env=dict(os.environ, TTTT_NO_REEXEC="1",
+                              timeout=60, env=dict(os.environ,
                                   # (tsgo's harness serves its Go content mappers in process: test/oracle, plan 56)
                                   TTTT_CONTENT_MAPPER_LAUNCHER=os.path.join(ROOT, "thirdparty/typescript/built/tttt-test-mapper")))
         out = proc.stdout + proc.stderr

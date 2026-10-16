@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "expr.h"
 #include "scope.h"
 #include "lazy_type.h"
@@ -29,6 +30,7 @@ typedef struct EnumCase {
 void enum_case_drop(EnumCase* me);
 #define g_class_key EnumCase, enum_case
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 struct EnumDecl {

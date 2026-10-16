@@ -17,8 +17,19 @@ struct ArenaChunk {
     size_t used;
     size_t cap;
     size_t mapped; // Bytes mapped for the chunk, header included
+    size_t populated; // data's pages below this offset are faulted in (arena_populate())
     char data[];
 };
+
+// Faults the next MB of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
+// Chunks are bumped through in order, so those pages are about to be written anyway
+[[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
+    uintptr_t from = ((uintptr_t)chunk->data + chunk->populated) & ~(uintptr_t)4095;
+    size_t to = chunk->used + ((size_t)1 << 20) < chunk->cap ? chunk->used + ((size_t)1 << 20) : chunk->cap;
+    uintptr_t end = ((uintptr_t)chunk->data + to) & ~(uintptr_t)4095;
+    if (end > from) madvise((void*)from, end - from, MADV_POPULATE_WRITE);
+    chunk->populated = to;
+}
 
 #ifdef TTTT_ARENA_SITES
 // Arena bytes and types by the code that allocates them, for scripts/arenasites.sh (a build with -DTTTT_ARENA_SITES; one
@@ -79,9 +90,8 @@ static void* arena_alloc_inner(Arena* me, size_t size) {
         size_t mapped = sizeof(ArenaChunk) + cap;
         void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         panic_if(memory == MAP_FAILED, "out of memory");
-        // Transparent huge pages where the system allows them: a few hundred MB of types page faulted 4 KB at a time
-        // is a tenth of a big project's time (see main.c's reexec_with_huge_pages() for malloc's part)
-        madvise(memory, mapped, MADV_HUGEPAGE);
+        // Transparent huge pages only if asked: see DebugEnv.huge_pages
+        if (debug_env.huge_pages) madvise(memory, mapped, MADV_HUGEPAGE);
         ArenaChunk* chunk = memory;
         chunk->cap = cap;
         chunk->mapped = mapped;
@@ -94,10 +104,12 @@ static void* arena_alloc_inner(Arena* me, size_t size) {
             my head = chunk;
         }
         chunk->used = size;
+        if (chunk == my head) arena_populate(chunk);
         return chunk->data;
     }
     void* ret = my head->data + my head->used;
     my head->used += size;
+    if (my head->used > my head->populated) arena_populate(my head);
     return ret;
 }
 

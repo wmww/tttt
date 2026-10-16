@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "expr.h"
 #include "type.h"
 #include "block.h"
@@ -70,6 +71,7 @@ static inline VecExpr const* function_arg_decorators(FunctionArg const* me) {
 
 #define g_class_key FunctionArg, function_arg
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // `x is T`, `this is T`, `asserts x`, `asserts x is T` in the place of a return type (`ret` is boolean / void then)

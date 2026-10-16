@@ -2458,7 +2458,7 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         .extends = extends,
         .extends_span = extends_span,
         .fallback_explicit = fallback_explicit,
-        .fallback = fallback_explicit ? c_new(TypeNode, fallback) : nullptr,
+        .fallback = fallback_explicit ? ast_new(TypeNode, fallback) : nullptr,
         .fallback_span = fallback_span,
     };
     return parse_success(&p);
@@ -2609,7 +2609,7 @@ static bool parse_ternary_type(Parser* parent, char const* left_start, TypeNode*
 
     parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_false);
 
-    *left_and_ret = type_ternary(c_new(TernaryType, {
+    *left_and_ret = type_ternary(ast_new(TernaryType, {
         .maybe_sub = *left_and_ret,
         .maybe_super = maybe_super,
         .if_true = if_true,
@@ -2766,7 +2766,7 @@ static void jsdoc_type_outside_jsdoc(Parser* p, char const* start, TypeNode* ret
     *ret = (TypeNode){
         .tag = TYPE_JSDOC,
         .parsed = true,
-        .jsdoc = c_new(JsdocType, { .type = meaning, .span = span, .non_null = non_null, .postfix = postfix }),
+        .jsdoc = ast_new(JsdocType, { .type = meaning, .span = span, .non_null = non_null, .postfix = postfix }),
     };
 }
 
@@ -2913,7 +2913,7 @@ static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_prece
             Span index_span = span_from(index_anchor);
             hop_whitespace(&p);
             expect_char(&p, ']');
-            *left_and_ret = type_indexed(c_new(IndexedType, {
+            *left_and_ret = type_indexed(ast_new(IndexedType, {
                 .interface = *left_and_ret,
                 .index = type,
                 .index_span = index_span,
@@ -2922,7 +2922,7 @@ static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_prece
             return parse_success(&p);
         } else {
             expect_char(&p, ']');
-            *left_and_ret = type_array(c_new(TypeNode, *left_and_ret), false);
+            *left_and_ret = type_array(ast_new(TypeNode, *left_and_ret), false);
             left_and_ret->array.span = span_make(p.shared->source, left_start, p.pos);
             return parse_success(&p);
         }
@@ -3115,7 +3115,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         // Any type goes, the checker says TS1141 (tsc's parseImportType, checkImportType)
         TypeNode argument;
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &argument)) {
-            rare.import_argument = c_new(TypeNode, argument);
+            rare.import_argument = ast_new(TypeNode, argument);
             rare.import_argument_span = span_from(path_anchor);
         } else if (*p.pos == '.') {
             // `import.defer(...)`: tsc's parseType makes an entity name with a missing first identifier of `.defer`
@@ -3136,7 +3136,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
                 missing.name = name;
             }
             identifier_type_rare(&missing)->namespaces = namespaces;
-            rare.import_argument = c_new(TypeNode, type_identifier(c_new(IdentifierType, missing)));
+            rare.import_argument = ast_new(TypeNode, type_identifier(ast_new(IdentifierType, missing)));
             rare.import_argument_span = span_from(path_anchor);
         } else {
             parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
@@ -3156,7 +3156,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
             parse_error(&p, span_from(keyword), 2880, "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
         }
         if (!is_assert && !hop_start_if_ends_on_word_break(&p, "with")) expected_token_error(&p, "with");
-        ImportAttributes* attributes = c_new(ImportAttributes, {
+        ImportAttributes* attributes = ast_new(ImportAttributes, {
             .keyword = span_from(keyword), .is_assert = is_assert, .elements = vec_import_attribute_init(),
         });
         hop_whitespace(&p);
@@ -3210,8 +3210,8 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     rare.import_span = span_from(a);
     identifier.jsdoc = p.shared->in_jsdoc;
     identifier.jsdoc_unchecked = p.shared->in_jsdoc && p.shared->jsdoc_unchecked;
-    identifier.rare = c_new(IdentifierTypeRare, rare);
-    *ret = type_identifier(c_new(IdentifierType, identifier));
+    identifier.rare = ast_new(IdentifierTypeRare, rare);
+    *ret = type_identifier(ast_new(IdentifierType, identifier));
     return parse_success(&p);
 }
 
@@ -3448,19 +3448,19 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     } else if ((c == 't' || c == 'a') && parse_misplaced_type_predicate(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         p.shared->this_count++;
-        *ret = type_identifier(c_new(IdentifierType, {
+        *ret = type_identifier(ast_new(IdentifierType, {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_THIS,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
         // (A type reference to tsc, which finds no type called super: TS2304)
-        *ret = type_identifier(c_new(IdentifierType, { .name = span_from(a) }));
+        *ret = type_identifier(ast_new(IdentifierType, { .name = span_from(a) }));
     } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &parsed.type);
-        *ret = type_keyof(c_new(KeyofType, {
+        *ret = type_keyof(ast_new(KeyofType, {
             .interface = parsed.type,
         }));
     } else if ((c == 't' || c == 'i') && parse_import_type(&p, ret)) {
@@ -3489,8 +3489,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
             expr = expr_implicit_any(span_from_pos(&p));
         }
-        *ret = type_typeof(c_new(TypeofType, {
-            .expr = c_new(Expr, expr),
+        *ret = type_typeof(ast_new(TypeofType, {
+            .expr = ast_new(Expr, expr),
             .owns_expr = true,
         }));
     } else if (c == '`' && parse_template_type(&p, ret)) {
@@ -3515,7 +3515,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         parsed.func.full_span = span_from(value_anchor);
         *ret = function_impl_into_type(parsed.func);
     } else if (c == 'i' && parse_inferred_type(&p, &parsed.inferred)) {
-        *ret = type_inferred(c_new(InferredType, parsed.inferred));
+        *ret = type_inferred(ast_new(InferredType, parsed.inferred));
     } else if (c == 'u' && parse_unique_symbol_type(&p)) {
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
         if (value_anchor.start == p.shared->unique_allowed_at) {
@@ -3537,7 +3537,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     } else if (word && parse_identifier_type(&p, &parsed.identifier)) {
         parsed.identifier.jsdoc = p.shared->in_jsdoc;
         parsed.identifier.jsdoc_unchecked = p.shared->in_jsdoc && p.shared->jsdoc_unchecked;
-        *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
+        *ret = type_identifier(ast_new(IdentifierType, parsed.identifier));
     } else if (c == '[' && parse_tuple(&p, &parsed.tuple_elements)) {
         *ret = type_tuple(parsed.tuple_elements, false);
         ret->tuple.span = span_from(value_anchor);
@@ -3672,7 +3672,7 @@ static void jsdoc_tag_drop(JsDocTag* me) {
     if (my has_default) type_drop(&my default_type);
     if (my predicate) {
         if (my predicate->has_type) type_drop(&my predicate->type);
-        free(my predicate);
+        ast_delete(my predicate);
     }
 }
 
@@ -3725,7 +3725,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         type = predicate.ret;
         if (tag->predicate) {
             if (tag->predicate->has_type) type_drop(&tag->predicate->type);
-            free(tag->predicate);
+            ast_delete(tag->predicate);
         }
         tag->predicate = predicate.predicate;
         tag->predicate->jsdoc = true;
@@ -4147,7 +4147,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 parse_fail(&e);
                 if (tag.kind == JSDOC_TAG_EXTENDS) {
                     tag.has_type = true;
-                    tag.type = type_identifier(c_new(IdentifierType, { .name = missing }));
+                    tag.type = type_identifier(ast_new(IdentifierType, { .name = missing }));
                     tag.type_span = missing;
                 }
             }
@@ -4649,7 +4649,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         if (binding->has_explicit_type || !from->initializer.binding.has_explicit_type || from->rest != i->rest) continue;
         binding_set_type(binding, binding_take_type(&from->initializer.binding));
         binding->explicit_type->from_jsdoc = true;
-        i->jsdoc_span = c_new(Span, from->span);
+        i->jsdoc_span = ast_new(Span, from->span);
         binding_set_explicit_type_span(binding, tag->type_span);
         binding->has_explicit_type = true;
         from->initializer.binding.has_explicit_type = false;
@@ -4803,7 +4803,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         TypeNode type;
         if (has_children && jsdoc_is_object_type(tag, &array)) {
             type = jsdoc_type_literal(props + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
-            if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+            if (array) type = type_array(ast_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
             type.from_jsdoc = false;
@@ -4880,7 +4880,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         class_decl->jsdoc_augments_tag = augments->tag_name;
         class_decl->jsdoc_extends_name = extends_name;
         if (augments->type.identifier->name.size) {
-            class_decl->jsdoc_augments = c_new(TypeNode, jsdoc_take_type(augments, nullptr));
+            class_decl->jsdoc_augments = ast_new(TypeNode, jsdoc_take_type(augments, nullptr));
             // (Its arity is checked, not its constraints: getTypeFromTypeNode, not checkSourceElement)
             class_decl->jsdoc_augments->identifier->jsdoc_unchecked = true;
         }
@@ -4907,7 +4907,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     for_each (i, vec_spanned_type, &params) i->type.from_jsdoc = true;
     Expr* base = &class_decl->extends;
     Span span = expr_outer_span(base);
-    *base = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = *base, .params = params }));
+    *base = expr_generic_params(span, ast_new(GenericParamsExpr, { .expr = *base, .params = params }));
 }
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
@@ -5031,7 +5031,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
                         TypeNode fallback;
                         isize errors = vec_error_size(&p->shared->jsdoc_errors);
                         if (parse_jsdoc_bare_type(p, &c, source_file_start(p->shared->source) + cstr_size(&p->shared->source->contents), &fallback)) {
-                            item.fallback = c_new(TypeNode, fallback);
+                            item.fallback = ast_new(TypeNode, fallback);
                             item.fallback_explicit = true;
                         }
                         while (vec_error_size(&p->shared->jsdoc_errors) > errors) {
@@ -5147,7 +5147,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         if (direct && jsdoc_is_object_type(tag, &array)) {
             Span type_span = tag->type_span;
             TypeNode literal = jsdoc_type_literal(tag + 1, children, span_sv(tag->name), jsdoc_tag_decl_span(tag));
-            if (array) literal = type_array(c_new(TypeNode, literal), false), literal.parsed = true;
+            if (array) literal = type_array(ast_new(TypeNode, literal), false), literal.parsed = true;
             type_drop(&tag->type);
             tag->type = literal;
             tag->type_span = type_span;
@@ -5167,7 +5167,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
             else i->jsdoc_optional_initialized = true;
-            if (!i->jsdoc_question) i->jsdoc_question = c_new(Span, jsdoc_tag_node_span_with(tag, binding->explicit_type));
+            if (!i->jsdoc_question) i->jsdoc_question = ast_new(Span, jsdoc_tag_node_span_with(tag, binding->explicit_type));
         }
         // `{...T=}` on a rest parameter makes it optional, which it can't be (tsgo's reparser gives it a question
         // token: checkGrammarParameterList's TS1047 at the whole tag)
@@ -5186,7 +5186,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             variadic_type = vec_type_at_mut(&variadic_type->composite, 0);
         }
         if (variadic) {
-            *variadic_type = type_array(c_new(TypeNode, *variadic_type), false);
+            *variadic_type = type_array(ast_new(TypeNode, *variadic_type), false);
             variadic_type->parsed = true;
         }
         binding->explicit_type->from_jsdoc = true;
@@ -5209,7 +5209,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         !function_impl_rare(function)->jsdoc_signature_type
     ) {
         function_impl_rare_mut(function)->jsdoc_signature_span = type_tag->type_span;
-        function_impl_rare_mut(function)->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
+        function_impl_rare_mut(function)->jsdoc_signature_type = ast_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
     if (!function->ret_explicit && !function->is_constructor && !type_wins) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
@@ -5277,7 +5277,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
         }
         if (has_children && jsdoc_is_object_type(tag, &array)) {
             type = jsdoc_type_literal(children + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
-            if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+            if (array) type = type_array(ast_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
             type.from_jsdoc = false;
@@ -5288,7 +5288,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
         if (span_end_ptr(arg.span) > sig_end) sig_end = span_end_ptr(arg.span);
         if (type.jsdoc_optional || tag->bracketed) {
             arg.explicit_optional = true;
-            arg.jsdoc_question = c_new(Span, jsdoc_tag_node_span(tag)); // (tsgo's reparser: the tag is its question token)
+            arg.jsdoc_question = ast_new(Span, jsdoc_tag_node_span(tag)); // (tsgo's reparser: the tag is its question token)
         }
         // (`{...T}` makes a rest parameter of type T: tsgo's reparser, which TS2370 complains about unless T is an array)
         if (tag->variadic) {
@@ -5299,7 +5299,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             .tag = BINDING_IDENTIFIER,
             .content_span = tag->name,
             .has_explicit_type = true,
-            .explicit_type = c_new(TypeNode, type),
+            .explicit_type = ast_new(TypeNode, type),
         };
         list_push(vec_function_arg, &function.args, arg);
     }
@@ -5342,7 +5342,7 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
             item.extends_explicit = true;
         }
         if (i->has_default) {
-            item.fallback = c_new(TypeNode, i->default_type);
+            item.fallback = ast_new(TypeNode, i->default_type);
             item.fallback_explicit = true;
             i->has_default = false;
         } else if (i->bracketed) {
@@ -5507,7 +5507,7 @@ static Statement jsdoc_wrap_in_namespaces(Statement alias, Span full_name, Span 
             .name = span_make_in(full_name, start, end), .contents = contents, .jsdoc = true,
             .full_span = span_make_in(full_name, start, span_end_ptr(span)),
         };
-        alias = (Statement){ .tag = STATEMENT_DECL_NAMESPACE, .decl.namespace = c_new(NamespaceDecl, inner), .span = span };
+        alias = (Statement){ .tag = STATEMENT_DECL_NAMESPACE, .decl.namespace = ast_new(NamespaceDecl, inner), .span = span };
         end = start - 1;
     }
     return alias;
@@ -5615,7 +5615,7 @@ static void jsdoc_bind_comments(
                     type.from_jsdoc = false;
                 } else if (has_properties && jsdoc_is_object_type(i, &array)) {
                     type = jsdoc_type_literal(i + 1, children, (csview){0}, tag_span);
-                    if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+                    if (array) type = type_array(ast_new(TypeNode, type), false), type.parsed = true;
                 } else if (i->has_type) {
                     type = jsdoc_take_type(i, nullptr);
                     type.from_jsdoc = false;
@@ -5627,7 +5627,7 @@ static void jsdoc_bind_comments(
             Span span = tag_span;
             vec_statement_push(out, (Statement){
                 .tag = STATEMENT_DECL_TYPE,
-                .decl.type = c_new(TypeDecl, {
+                .decl.type = ast_new(TypeDecl, {
                     .name = i->name,
                     .full_span = span,
                     .generic = jsdoc_template_generic(&tags),
@@ -5759,18 +5759,18 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         sides->setter_param = setter_param;
                         sides->setter_pattern = setter_pattern;
                         if (keep_setter) {
-                            FunctionImpl* setter = c_new(FunctionImpl, item.method.func);
+                            FunctionImpl* setter = ast_new(FunctionImpl, item.method.func);
                             function_impl_set_member_name(setter, item.method.name_span);
                             setter->accessor = (uint8_t)item.method.accessor;
-                            sides->setter_function = c_new(Expr, expr_function(setter->full_span, setter));
+                            sides->setter_function = ast_new(Expr, expr_function(setter->full_span, setter));
                             item.method.func = (FunctionImpl){0};
                         }
                         if (is_getter && item.method.func.has_body) {
                             // (Kept, TS1183: tsc binds and checks the body, and infers the getter's type from it)
-                            FunctionImpl* body = c_new(FunctionImpl, item.method.func);
+                            FunctionImpl* body = ast_new(FunctionImpl, item.method.func);
                             bool explicit_ret = body->ret_explicit;
                             body->ret_explicit = false;
-                            sides->getter_body = c_new(Expr, expr_function(body->full_span, body));
+                            sides->getter_body = ast_new(Expr, expr_function(body->full_span, body));
                             sides->getter_body_infers = !explicit_ret;
                             item.method.func = (FunctionImpl){0};
                         }
@@ -5813,7 +5813,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         } else {
                             grammar_error(&p, expr_outer_span(&item.field.value), 1247, "A type literal property cannot have an initializer.");
                         }
-                        interface_member_accessor(vec_interface_member_back_mut(&members))->initializer = c_new(Expr, item.field.value);
+                        interface_member_accessor(vec_interface_member_back_mut(&members))->initializer = ast_new(Expr, item.field.value);
                         item.field.value = expr_implicit_any(span_null);
                     }
                     break;
@@ -5966,7 +5966,7 @@ static void parse_heritage_expr(Parser* p, Expr* ret) {
             Span args = span_between(vec_spanned_type_front(&params)->span, vec_spanned_type_back(&params)->span);
             js_syntax_error(p, args, 8011, "Type arguments can only be used in TypeScript files.");
         }
-        *ret = expr_generic_params(span_from(a), c_new(GenericParamsExpr, { .expr = *ret, .params = params }));
+        *ret = expr_generic_params(span_from(a), ast_new(GenericParamsExpr, { .expr = *ret, .params = params }));
     } else {
         parse_fail(&gp);
     }
@@ -6270,7 +6270,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 if (key.tag == EXPR_LITERAL && (key.literal.tag == VALUE_STRING || key.literal.tag == VALUE_NUMBER)) literal = true;
                 if (literal) cstr_append_value_js(&enum_case.canonical_name, &key.literal);
                 if (literal) expr_drop(&key);
-                else kept_key = c_new(Expr, key);
+                else kept_key = ast_new(Expr, key);
             }
             Span key_span = span_from(key_anchor);
             hop_whitespace(&p);
@@ -6377,7 +6377,7 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     while (predicate.span.size && is_js_ascii_space(predicate.span.buf[predicate.span.size - 1])) {
         predicate.span.size--;
     }
-    ret->predicate = c_new(TypePredicateNode, predicate);
+    ret->predicate = ast_new(TypePredicateNode, predicate);
     return parse_success(&p);
 }
 
@@ -6620,7 +6620,7 @@ static bool parse_function_args_inner(
                 // `(a {`)
                 while (arg_span.size && strchr(" \t\r\n", arg_span.buf[arg_span.size - 1])) arg_span.size--;
                 VecExpr* boxed_decorators = nullptr;
-                if (vec_expr_size(&decorators)) boxed_decorators = c_new(VecExpr, decorators);
+                if (vec_expr_size(&decorators)) boxed_decorators = ast_new(VecExpr, decorators);
                 else vec_expr_drop(&decorators);
                 list_push(vec_function_arg, &ret->args, (FunctionArg){
                     .span = arg_span,
@@ -7392,7 +7392,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
         // (tsc's parseComputedPropertyName: `{ [s: symbol]: 1 }` is missing its `]`)
         expect_char(&p, ']');
-        item.computed_key = c_new(Expr, key);
+        item.computed_key = ast_new(Expr, key);
         item.name_span = span_from(key_anchor);
     } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
         // A private name (tsc's parsePropertyName), the checker reports it (not a shorthand: `{ #x }` misses a `:`)
@@ -7461,7 +7461,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // missing body is at)
         if (!func.has_body && !func.body_missing && *p.pos == ';') p.pos++;
         func.full_span = span_from(a);
-        item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
+        item.value = expr_function(span_from(a), ast_new(FunctionImpl, func));
     } else if (must_be_method && (flags.is_generator || item.tag != OBJECT_ITEM_PROPERTY)) {
         // `*` and `get`/`set` commit to a method (tsc's parseMethodDeclaration/parseAccessorDeclaration): the
         // parameter list is missing, a body may follow
@@ -7486,7 +7486,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         else if (!tok_can_parse_semicolon(tok_peek(&p))) func.body_missing = true;
         if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
-        item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
+        item.value = expr_function(span_from(a), ast_new(FunctionImpl, func));
     } else if (must_be_method) {
         object_expr_item_drop(&item);
         return parse_fail(&p);
@@ -7512,7 +7512,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
                 mark_named_evaluation(&default_value, false);
-                object_item_rare_mut(&item)->shorthand_default = c_new(Expr, default_value);
+                object_item_rare_mut(&item)->shorthand_default = ast_new(Expr, default_value);
             } else {
                 expr_drop(&default_value);
             }
@@ -7551,7 +7551,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             // a property's is its declared type only, which a function value is contextually typed by)
             bool method = item.tag == OBJECT_ITEM_METHOD;
             if (tag && (!(function && signature) || item.tag == OBJECT_ITEM_PROPERTY) && !accessor && !method) {
-                object_item_rare_mut(&item)->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                object_item_rare_mut(&item)->jsdoc_type = ast_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
             // (A method's `@type` is its FullSignature, like a declaration's: its signature, not moved into it)
@@ -7629,7 +7629,7 @@ static bool parse_expr_or_spread(Parser* parent, Expr* ret) {
     if (!expect_expr(&p, expr_ctx_null, &operand)) {
         return parse_fail(&p);
     }
-    *ret = expr_spread(span_from(a), c_new(Expr, operand));
+    *ret = expr_spread(span_from(a), ast_new(Expr, operand));
     return parse_success(&p);
 }
 
@@ -7769,7 +7769,7 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         ret->type.parsed = false;
     }
 
-    ret->key.mapped = c_new(InterfaceMappedKey, m);
+    ret->key.mapped = ast_new(InterfaceMappedKey, m);
     return parse_success(&p);
 }
 
@@ -7799,7 +7799,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     if (!is_index_signature_start(parent)) return false;
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_INDEX, .key.index = c_new(InterfaceIndexKey, {0}) };
+    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_INDEX, .key.index = ast_new(InterfaceIndexKey, {0}) };
     p.pos++;
     hop_whitespace(&p);
 
@@ -7851,7 +7851,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
             has_type = true;
             hop_whitespace(&p);
         } else if (span_valid(rest)) {
-            type = type_array(c_new(TypeNode, type_any), false);
+            type = type_array(ast_new(TypeNode, type_any), false);
         }
         Expr initializer;
         bool has_initializer = parse_initialization(&p, expr_ctx_null, &initializer);
@@ -7859,7 +7859,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
             isize n = vec_span_size(&ret->key.index->initialized);
             ret->key.index->initializer_values = realloc(ret->key.index->initializer_values, sizeof(Expr*) * (size_t)(n + 1));
             panic_if(!ret->key.index->initializer_values, "out of memory");
-            ret->key.index->initializer_values[n] = c_new(Expr, initializer);
+            ret->key.index->initializer_values[n] = ast_new(Expr, initializer);
             vec_span_push(&ret->key.index->initialized, span_from(param_start));
             hop_whitespace(&p);
         }
@@ -7959,7 +7959,7 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     if (!parse_expr(&p, expr_ctx_null, &expr)) {
         return parse_fail(&p);
     }
-    ret->key.expr = c_new(Expr, expr);
+    ret->key.expr = ast_new(Expr, expr);
     hop_whitespace(&p);
 
     expect_char(&p, ']');
@@ -8022,7 +8022,7 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
         expr_drop(&key);
         return parse_fail(&p);
     }
-    *ret = c_new(Expr, key);
+    *ret = ast_new(Expr, key);
     return parse_success(&p);
 }
 
@@ -9045,7 +9045,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     expr_mark_binary_operand(&right);
     // (A missing right operand ends the expression where its token's trivia starts, see expect_expr())
     Span right_end = right.missing ? span_from_pos(&p) : expr_outer_span(&right);
-    *left_and_ret = expr_binary_op(span_between(expr_outer_span(left_and_ret), right_end), c_new(BinaryOpExpr, {
+    *left_and_ret = expr_binary_op(span_between(expr_outer_span(left_and_ret), right_end), ast_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
         .right = right,
@@ -9193,7 +9193,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     *ret = expr_unary_op(
         op_span,
-        c_new(UnaryOpExpr, {
+        ast_new(UnaryOpExpr, {
             .op = op,
             .await_place = (uint8_t)await_place,
             .outside_generator = (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR) && !p.shared->in_generator,
@@ -9594,7 +9594,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     }
 
     template.span = span_from(template_a);
-    *ret = (TypeNode){ .tag = TYPE_TEMPLATE, .template_ = c_new(TemplateType, template) };
+    *ret = (TypeNode){ .tag = TYPE_TEMPLATE, .template_ = ast_new(TemplateType, template) };
     return parse_success(&p);
 }
 
@@ -9700,7 +9700,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 !tok_is(next, "+") && !tok_is(next, "-") && (q.whitespace == WHITESPACE_NEWLINE ||
                 tok_is_binary_operator(next) || !tok_is_start_of_expression(&q, next)));
             if (can_follow && *q.pos != '`') {
-                *left_and_ret = expr_generic_params(span_from(args_a), c_new(GenericParamsExpr, {
+                *left_and_ret = expr_generic_params(span_from(args_a), ast_new(GenericParamsExpr, {
                     .expr = *left_and_ret,
                     .params = params,
                 }));
@@ -9725,7 +9725,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         mark_chain_continues(left_and_ret, true);
         *left_and_ret = expr_call(
             span_from(a),
-            c_new(CallExpr, {
+            ast_new(CallExpr, {
                 .uses_new = false,
                 .optional_chain = optional_chain,
                 .callable = *left_and_ret,
@@ -9796,8 +9796,8 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
         *left_and_ret = expr_template(
             span_from(a),
-            c_new(TemplateExpr, {
-                .tag = c_new(Expr, *left_and_ret),
+            ast_new(TemplateExpr, {
+                .tag = ast_new(Expr, *left_and_ret),
                 .template_span = span_from(template_a),
                 .substitutions = parsed.args,
                 .plain_string = plain_string,
@@ -9838,7 +9838,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         mark_chain_continues(left_and_ret, false);
         *left_and_ret = expr_property(
             span_from(a),
-            c_new(PropertyExpr, {
+            ast_new(PropertyExpr, {
                 .expr = *left_and_ret,
                 .index = parsed.expr_a,
                 .form = PROPERTY_EXPR_BRACKET,
@@ -9865,7 +9865,7 @@ binary_rest:
     ) {
         *left_and_ret = expr_as_type(
             span_from(a),
-            c_new(AsTypeExpr, {
+            ast_new(AsTypeExpr, {
                 .expr = *left_and_ret,
                 .type = parsed.type,
                 .keyword_span = as_type_span,
@@ -9884,7 +9884,7 @@ binary_rest:
         if (parse_arrow_function(&sub_p, ctx, function_flags_null, false, &parsed.function)) {
             parse_success(&sub_p);
             expr_drop(left_and_ret);
-            *left_and_ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+            *left_and_ret = expr_function(span_from(a), ast_new(FunctionImpl, parsed.function));
             if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, left_and_ret);
             return parse_success(&p);
         } else {
@@ -9941,7 +9941,7 @@ binary_rest:
             if (vec_spanned_type_size(&parsed.generic_params) || import_keyword || instantiation) {
                 *left_and_ret = expr_generic_params(
                     span_from(a),
-                    c_new(GenericParamsExpr, {
+                    ast_new(GenericParamsExpr, {
                         .expr = *left_and_ret,
                         .params = parsed.generic_params,
                     })
@@ -9977,7 +9977,7 @@ binary_rest:
             }
             *left_and_ret = expr_unary_op(
                 span_from(a),
-                c_new(UnaryOpExpr, {
+                ast_new(UnaryOpExpr, {
                     .op = parsed.unary,
                     .expr = *left_and_ret,
                 })
@@ -9994,7 +9994,7 @@ operators:
     if (!ctx.reject_operators && ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
         *left_and_ret = expr_ternary(
             span_from(a),
-            c_new(TernaryExpr, {
+            ast_new(TernaryExpr, {
                 .condition = *left_and_ret,
                 .yes = parsed.expr_a,
                 .no = parsed.expr_b,
@@ -10025,7 +10025,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
         expr_mark_binary_operand(&expr);
         *left_and_ret = expr_binary_op(
             span_from(a),
-            c_new(BinaryOpExpr, {
+            ast_new(BinaryOpExpr, {
                 .left = *left_and_ret,
                 .op = BINARY_OP_COMMA,
                 .right = expr,
@@ -10705,7 +10705,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     const char* name_full_start = p.pos;
     hop_whitespace(&p);
 
-    JsxElement* el = c_new(JsxElement, {
+    JsxElement* el = ast_new(JsxElement, {
         .tag_name = expr_implicit_any_no_span,
         .closing_name = expr_implicit_any_no_span,
     });
@@ -10867,7 +10867,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             parse_jsx_element(&p, true, nullptr, false, top, &invalid);
             parse_error(&p, span_make(p.shared->source, top, span_end_ptr(expr_outer_span(&invalid))), 2657,
                 "JSX expressions must have one parent element.");
-            *ret = expr_binary_op(span_from(a), c_new(BinaryOpExpr, {
+            *ret = expr_binary_op(span_from(a), ast_new(BinaryOpExpr, {
                 .op = BINARY_OP_COMMA,
                 .left = *ret,
                 .right = invalid,
@@ -10925,7 +10925,7 @@ static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, E
         // (The parentheses are the assertion's: tsc's ParenthesizedExpression has the asserted type)
         Expr inner = *ret;
         expr_clear_outer_span(&inner);
-        *ret = expr_as_type(span, c_new(AsTypeExpr, {
+        *ret = expr_as_type(span, ast_new(AsTypeExpr, {
             .expr = inner,
             // (Where tsc reports what's wrong with a JSDoc assertion: its type; a `@satisfies` its tag)
             .keyword_span = is_satisfies ? tag->tag_name : tag->type_span,
@@ -10963,7 +10963,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
     if (c == '`' && parse_template(&p, &substitutions, &texts)) {
-        *ret = expr_template(span_from(a), c_new(TemplateExpr, {
+        *ret = expr_template(span_from(a), ast_new(TemplateExpr, {
             .template_span = span_from(a),
             .substitutions = substitutions,
             .texts = texts,
@@ -10978,14 +10978,14 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         p.pos++;
         Span ignored;
         parse_identifier_or_keyword(&p, &ignored);
-        *ret = expr_private_name(span_from(a), c_new(PrivateNameExpr, {0}));
+        *ret = expr_private_name(span_from(a), ast_new(PrivateNameExpr, {0}));
     } else if (c == '{' && parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
     } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
         parsed.class_decl.is_expression = true;
-        *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
+        *ret = expr_class_decl(span_from(a), ast_new(ClassDecl, parsed.class_decl));
     } else if (c == '@') {
         // Decorators on anything but a class expression (tsc's parseDecoratedExpression): a missing declaration after
         // them, "Expression expected" where it would be
@@ -10994,7 +10994,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         unhop_trivia(&p);
         parse_error(&p, span_from_pos(&p), 1109, "Expression expected.");
         *ret = expr_implicit_any(span_from_pos(&p));
-        ret->missing_decorators = c_new(VecExpr, decorators); // (Not `missing`: no expression to the baselines)
+        ret->missing_decorators = ast_new(VecExpr, decorators); // (Not `missing`: no expression to the baselines)
         return parse_success(&p); // (Its span is where it's missing)
     } else if (c == 'n' && parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
@@ -11035,15 +11035,15 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             parse_fail(&args_p);
             call.args = vec_expr_init();
         }
-        *ret = expr_call(span_from(a), c_new(CallExpr, call));
+        *ret = expr_call(span_from(a), ast_new(CallExpr, call));
     } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v' || c == '\\') && !ctx.left_hand_side &&
         parse_left_unary_op_expr(&p, ctx, ret)
     ) {
     } else if (c == 'f' && parse_function_keyword_function(&p, false, false, &parsed.function)) {
-        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        *ret = expr_function(span_from(a), ast_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (c == 'a' && parse_async_function_expr(&p, ctx, &parsed.function)) {
-        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        *ret = expr_function(span_from(a), ast_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         p.shared->this_count++;
@@ -11095,7 +11095,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         // "ERROR RECOVERY TWEAK")
         (c == '=' && p.pos[1] == '>' && parse_arrow_function(&p, ctx, function_flags_null, true, &parsed.function))
     ) {
-        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        *ret = expr_function(span_from(a), ast_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_char(&p, '(')) {
         // Committed like tsc's parseParenthesizedExpression: `()` is missing its expression
@@ -11138,7 +11138,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         if (!expect_expr(&p, operand_ctx, &e) && expr_outer_span(&e).size == 0 && p.pos == span_start_ptr(expr_outer_span(&e))) {
             p.pos = after_gt; // A missing operand ends the assertion at its `>` (tsc's missing node)
         }
-        *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
+        *ret = expr_as_type(span_from(a), ast_new(AsTypeExpr, {
             .expr = e,
             .type = t,
             .angle_bracket_syntax = true,
@@ -11435,7 +11435,7 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
         if (is_directive) {
             list_push(vec_statement, ret, (Statement){
                 .tag = STATEMENT_SOURCE_DIRECTIVE,
-                .source_directive = c_new(SourceDirectiveStatement, directive),
+                .source_directive = ast_new(SourceDirectiveStatement, directive),
             });
         }
         parent->pos = comment_end;
@@ -11647,7 +11647,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     } else {
         parse_fail(&require_p);
         statement->main.tag = PORT_IMPORT_ALIAS;
-        statement->main.alias_ = c_new(PortItemAlias, {0});
+        statement->main.alias_ = ast_new(PortItemAlias, {0});
         while (true) {
             Span part;
             // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
@@ -11739,7 +11739,7 @@ static ImportAttributes* parse_import_attributes(Parser* parent, bool is_import)
         parse_fail(&p);
         return nullptr;
     }
-    ImportAttributes* ret = c_new(ImportAttributes, { .keyword = span_from(a), .is_assert = is_assert });
+    ImportAttributes* ret = ast_new(ImportAttributes, { .keyword = span_from(a), .is_assert = is_assert });
     ret->elements = vec_import_attribute_init();
     char const* keyword_end = p.pos;
     hop_whitespace(&p);
@@ -11986,7 +11986,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             // missing operand's binary expression `* }` included)
             port_statement_rare_mut(&statement)->non_string_specifier = path_expr.inner_span;
             if (path_expr.tag != EXPR_IDENTIFIER) {
-                port_statement_rare_mut(&statement)->bad_specifier = c_new(Expr, path_expr);
+                port_statement_rare_mut(&statement)->bad_specifier = ast_new(Expr, path_expr);
                 path_expr = expr_implicit_any(span_null);
             }
         }
@@ -12051,7 +12051,7 @@ done:
     }
     *ret = (Statement){
         .tag = STATEMENT_IMPORT_EXPORT,
-        .import_export = c_new(PortStatement, statement),
+        .import_export = ast_new(PortStatement, statement),
     };
     return parse_success(&p);
 }
@@ -12090,7 +12090,7 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
         expect_expr(&default_p, expr_ctx_null, &default_value);
         if (ret->tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&default_value, false);
         if (ret->tag == BINDING_IDENTIFIER) mark_assigned_name(&default_value, ret->content_span);
-        ret->default_value = c_new(Expr, default_value);
+        ret->default_value = ast_new(Expr, default_value);
         parse_success(&default_p);
     } else {
         parse_fail(&default_p);
@@ -12225,7 +12225,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 expect_expr(&p, expr_ctx_null, &key_expr);
                 hop_whitespace(&p);
                 expect_char(&p, ']');
-                computed_key = c_new(Expr, key_expr);
+                computed_key = ast_new(Expr, key_expr);
                 key = value_undefined;
                 name = span_from(key_anchor);
             } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER || key.tag == VALUE_BIGINT)) {
@@ -12285,7 +12285,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         mark_named_evaluation(&default_value, false);
                         mark_assigned_name(&default_value, name);
                     }
-                    binding.default_value = c_new(Expr, default_value);
+                    binding.default_value = ast_new(Expr, default_value);
                 }
             }
             vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
@@ -12375,7 +12375,7 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js, 
     }
     ret->has_explicit_type = true;
     if (into) *into = type;
-    else ret->explicit_type = c_new(TypeNode, type);
+    else ret->explicit_type = ast_new(TypeNode, type);
     binding_set_explicit_type_span(ret, span_from(a));
     if (report_js) {
         js_syntax_skip_since(parent, mark);
@@ -12424,7 +12424,7 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
 // An initializer (owned), null if there's no `=`
 static Expr* parse_initialization_boxed(Parser* parent, ExprCtx ctx) {
     Expr value;
-    return parse_initialization(parent, ctx, &value) ? c_new(Expr, value) : nullptr;
+    return parse_initialization(parent, ctx, &value) ? ast_new(Expr, value) : nullptr;
 }
 
 // ECMAScript's reserved words: never a binding identifier (strict mode ones are, with a grammar error)
@@ -12496,7 +12496,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
     if (binding->tag != BINDING_IDENTIFIER && (binding->tag != BINDING_OBJECT || !vec_object_binding_item_size(&binding->object))) return;
     ((Expr*)value)->call->callable.identifier.require_call = 2;
     if (binding->tag == BINDING_IDENTIFIER) {
-        initialized_binding_rare_mut(initializer)->require_ports = c_new(PortItem, {
+        initialized_binding_rare_mut(initializer)->require_ports = ast_new(PortItem, {
             .tag = PORT_IMPORT_GATHER,
             .decl_name = binding->content_span,
             .full_span = binding->content_span,
@@ -12508,7 +12508,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
         return;
     }
     u32 count = (u32)vec_object_binding_item_size(&binding->object);
-    initialized_binding_rare_mut(initializer)->require_ports = calloc(count, sizeof(PortItem));
+    initialized_binding_rare_mut(initializer)->require_ports = ast_calloc(count, c_sizeof(PortItem));
     initializer->rare->require_port_count = count;
     for_each (i, vec_object_binding_item, &binding->object) {
         Span name = i->target.content_span;
@@ -12886,7 +12886,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     if (is_for_each) {
         *ret = (Statement){
             .tag = STATEMENT_FOR_EACH_LOOP,
-            .for_each_loop = c_new(ForEachLoopStatement, {
+            .for_each_loop = ast_new(ForEachLoopStatement, {
                 .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
                 .is_await = is_await && !keyword_is_in,
                 .await_place = (uint8_t)(is_await && !keyword_is_in ? parser_await_place(&p) : AWAIT_ALLOWED),
@@ -12912,7 +12912,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     } else {
         *ret = (Statement){
             .tag = STATEMENT_FOR_LOOP,
-            .for_loop = c_new(ForLoopStatement, {
+            .for_loop = ast_new(ForLoopStatement, {
                 .initialization = statement,
                 .condition = left_expr,
                 .afterthought = right_expr,
@@ -12952,7 +12952,7 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
 
     *ret = (Statement){
         .tag = STATEMENT_FOR_LOOP,
-        .for_loop = c_new(ForLoopStatement, {
+        .for_loop = ast_new(ForLoopStatement, {
             .initialization = statement_noop,
             .condition = condition,
             .afterthought = expr_undefined(span_from_pos(&p)),
@@ -12995,7 +12995,7 @@ static bool parse_with_statement(Parser* parent, Statement* ret) {
 
     *ret = (Statement){
         .tag = STATEMENT_WITH,
-        .with = c_new(WithStatement, {
+        .with = ast_new(WithStatement, {
             .object = object,
             .body = body,
             .header = header,
@@ -13043,7 +13043,7 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
 
     *ret = (Statement){
         .tag = STATEMENT_FOR_LOOP,
-        .for_loop = c_new(ForLoopStatement, {
+        .for_loop = ast_new(ForLoopStatement, {
             .initialization = statement_noop,
             .condition = condition,
             .afterthought = expr_undefined(span_from_pos(&p)),
@@ -13465,7 +13465,7 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
 
     *ret = (Statement){
         .tag = STATEMENT_SWITCH,
-        .switch_ = c_new(SwitchStatement, switch_),
+        .switch_ = ast_new(SwitchStatement, switch_),
     };
     return parse_success(&p);
 }
@@ -13525,7 +13525,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                     if (expect_expr(&p, expr_ctx_null, &initializer)) {
                         grammar_error(&p, expr_outer_span(&initializer), 1197, "Catch clause variable cannot have an initializer.");
                     }
-                    try_catch.catch_initializer = c_new(Expr, initializer);
+                    try_catch.catch_initializer = ast_new(Expr, initializer);
                     hop_whitespace(&p);
                 }
 
@@ -13561,7 +13561,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     try_catch.has_finally = has_finally;
     *ret = (Statement){
         .tag = STATEMENT_TRY_CATCH,
-        .try_catch = c_new(TryCatchStatement, try_catch),
+        .try_catch = ast_new(TryCatchStatement, try_catch),
     };
     return parse_success(&p);
 }
@@ -13680,7 +13680,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                     if (*p.pos == '{' && parse_interface(&p, false, &attributes.interface)) {
                         attributes.tag = TYPE_INTERFACE;
                         attributes.parsed = true;
-                        ret->attributes = c_new(TypeNode, attributes);
+                        ret->attributes = ast_new(TypeNode, attributes);
                     } else {
                         expected_token_error(&p, "{");
                     }
@@ -13737,7 +13737,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = { .exported = DECL_EXPORTED_YES },
-                .namespace = c_new(NamespaceDecl, inner),
+                .namespace = ast_new(NamespaceDecl, inner),
             },
         });
     }
@@ -13944,7 +13944,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .decl = {
                 .props = decl_props,
                 .function = {
-                    .impl = c_new(FunctionImpl, parsed.function),
+                    .impl = ast_new(FunctionImpl, parsed.function),
                 },
             },
         };
@@ -13961,7 +13961,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_CLASS,
             .decl = {
                 .props = decl_props,
-                .class = c_new(ClassDecl, parsed.class),
+                .class = ast_new(ClassDecl, parsed.class),
             },
         };
     } else if (parse_type_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) &&
@@ -13973,7 +13973,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_TYPE,
             .decl = {
                 .props = decl_props,
-                .type = c_new(TypeDecl, parsed.type_decl),
+                .type = ast_new(TypeDecl, parsed.type_decl),
             },
         };
     } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
@@ -13983,7 +13983,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_INTERFACE,
             .decl = {
                 .props = decl_props,
-                .interface = c_new(InterfaceDecl, parsed.interface_decl),
+                .interface = ast_new(InterfaceDecl, parsed.interface_decl),
             },
         };
     } else if (parse_enum_decl(&p, &parsed.enum_decl)) {
@@ -13993,7 +13993,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_ENUM,
             .decl = {
                 .props = decl_props,
-                .enum_ = c_new(EnumDecl, parsed.enum_decl),
+                .enum_ = ast_new(EnumDecl, parsed.enum_decl),
             },
         };
     } else if (parse_global_block(&p, &parsed.namespace_decl)) {
@@ -14010,7 +14010,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = decl_props,
-                .namespace = c_new(NamespaceDecl, parsed.namespace_decl),
+                .namespace = ast_new(NamespaceDecl, parsed.namespace_decl),
             },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && (parse_expr(&p, expr_ctx_null, &parsed.expr) ||
@@ -14031,7 +14031,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = decl_props,
-                .namespace = c_new(NamespaceDecl, parsed.namespace_decl),
+                .namespace = ast_new(NamespaceDecl, parsed.namespace_decl),
             },
         };
     } else if ((!vec_spanned_modifier_is_empty(&modifiers.spanned) || !vec_expr_is_empty(&decorators)) &&
@@ -14131,7 +14131,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (statement_declares_name(ret->tag) && !ret->decl.props.invalid_decorators) {
-                ret->decl.props.invalid_decorators = c_new(VecExpr, decorators);
+                ret->decl.props.invalid_decorators = ast_new(VecExpr, decorators);
             } else {
                 vec_expr_drop(&decorators);
             }
@@ -14155,7 +14155,7 @@ static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBind
     if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY) return;
     Expr* value = initialized_binding_value(initializer);
     Expr inner = *value;
-    *value = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
+    *value = expr_as_type(expr_outer_span(&inner), ast_new(AsTypeExpr, {
         .expr = inner,
         .keyword_span = tag->tag_name,
         .type = jsdoc_take_type(tag, nullptr),
@@ -14204,7 +14204,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 // (tsc's bindVariableDeclarationOrBindingElement: isVariableDeclarationInitializedToBareOrAccessedRequire
                 // doesn't apply with a type tag)
                 for (u32 i = 0; i < initializer->rare->require_port_count; i++) port_item_drop(&initializer->rare->require_ports[i]);
-                free(initializer->rare->require_ports);
+                ast_free(initializer->rare->require_ports, initializer->rare->require_port_count * c_sizeof(PortItem));
                 initializer->rare->require_ports = nullptr;
                 initializer->rare->require_port_count = 0;
             }
@@ -14256,7 +14256,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (satisfies && assignment->right.tag != EXPR_IMPLICIT_ANY) {
                     // An assignment declaration's `@satisfies` casts what it assigns (tsgo's reparser)
                     Expr inner = assignment->right;
-                    assignment->right = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
+                    assignment->right = expr_as_type(expr_outer_span(&inner), ast_new(AsTypeExpr, {
                         .expr = inner,
                         .keyword_span = satisfies->tag_name,
                         .type = jsdoc_take_type(satisfies, nullptr),
@@ -14268,7 +14268,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function && declares) {
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                    if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                    if (tag) assignment->jsdoc_type = ast_new(TypeNode, jsdoc_take_type(tag, nullptr));
                 }
                 if (function) {
                     // (The statement's comment isn't the function's for checkUnmatchedJSDocParameters: tsgo's
@@ -14280,7 +14280,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 } else if (declares) {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                    if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                    if (tag) assignment->jsdoc_type = ast_new(TypeNode, jsdoc_take_type(tag, nullptr));
                     // (and of the assignments it assigns: `this.a = this.b = v`)
                     for (Expr* e = &assignment->right; assignment->jsdoc_type && e->tag == EXPR_BINARY_OP &&
                         e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e) && !e->binary_op->jsdoc_type;
@@ -14309,7 +14309,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 Expr* e = &statement->expr;
                 if (tag && e->tag != EXPR_IMPLICIT_ANY && !(e->tag == EXPR_AS_TYPE && e->as_type->is_jsdoc)) {
                     Expr inner = *e;
-                    *e = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
+                    *e = expr_as_type(expr_outer_span(&inner), ast_new(AsTypeExpr, {
                         .expr = inner,
                         .keyword_span = tag->type_span,
                         .type = jsdoc_take_type(tag, nullptr),
@@ -14326,7 +14326,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 // checkExportAssignment, getEffectiveTypeAnnotationNode). Not a cast of a parenthesized e: tsgo's
                 // JSDoc is the statement's (`export default ([])` is `never[]` itself)
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                if (tag) statement->expr_jsdoc_type = ast_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
         }   break;
         default:
@@ -14359,7 +14359,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
             .tag = STATEMENT_LABELED,
             .labeled = {
                 .name = label,
-                .body = c_new(Statement, body),
+                .body = ast_new(Statement, body),
             },
         };
         label = span_null;
@@ -14399,7 +14399,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_EXPR;
         ret->expr_jsdoc_type = nullptr;
         ret->expr = expr_implicit_any(span_from_pos(&p));
-        ret->expr.missing_decorators = c_new(VecExpr, decorators);
+        ret->expr.missing_decorators = ast_new(VecExpr, decorators);
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         ret->expr_jsdoc_type = nullptr;
@@ -14627,9 +14627,11 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
+    ast_arena_begin(&source->arena);
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
     }
+    ast_arena_end();
     free(await_statements);
 }
 

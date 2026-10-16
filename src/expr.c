@@ -32,21 +32,22 @@ const CallRare call_no_rare = {0};
 const PropertyRare property_no_rare = {0};
 
 PropertyRare* property_rare_mut(PropertyExpr* me) {
-    if (!my rare) my rare = c_new(PropertyRare, {0});
+    if (!my rare) my rare = ast_new(PropertyRare, {0});
     return my rare;
 }
 
 CallRare* call_rare_mut(CallExpr* me) {
-    if (!my rare) my rare = c_new(CallRare, {0});
+    if (!my rare) my rare = ast_new(CallRare, {0});
     return my rare;
 }
 
+// A dot access is allocated only up to its name
+static const isize property_dot_size = offsetof(PropertyExpr, name_) + sizeof(Span);
+
 PropertyExpr* property_dot_new(PropertyExpr const* fields) {
     check(fields->form == PROPERTY_EXPR_DOT);
-    size_t size = offsetof(PropertyExpr, name_) + sizeof(Span);
-    void* raw = malloc(size);
-    check(raw);
-    memcpy(raw, fields, size);
+    void* raw = ast_malloc(property_dot_size);
+    memcpy(raw, fields, property_dot_size);
     return raw;
 }
 
@@ -1063,7 +1064,7 @@ void expr_drop(Expr* me) {
         case EXPR_IMPLICIT_ANY:
             if (my missing_decorators) {
                 vec_expr_drop(my missing_decorators);
-                free(my missing_decorators);
+                ast_delete(my missing_decorators);
                 my missing_decorators = nullptr;
             }
             break;
@@ -1079,56 +1080,56 @@ void expr_drop(Expr* me) {
         case EXPR_BINARY_OP:
             expr_drop(&my binary_op->left);
             expr_drop(&my binary_op->right);
-            free(my binary_op->access_site);
+            ast_delete(my binary_op->access_site);
             if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) {
                 type_drop(my binary_op->jsdoc_type);
-                free(my binary_op->jsdoc_type);
+                ast_delete(my binary_op->jsdoc_type);
             }
-            free(my binary_op);
+            ast_delete(my binary_op);
             break;
 
         case EXPR_UNARY_OP:
             expr_drop(&my unary_op->expr);
-            free(my unary_op);
+            ast_delete(my unary_op);
             break;
 
         case EXPR_PROPERTY:
             expr_drop(&my property->expr);
             if (my property->form == PROPERTY_EXPR_BRACKET) expr_drop(&my property->index);
-            free(my property->rare);
-            free(my property);
+            ast_delete(my property->rare);
+            ast_free(my property, my property->form == PROPERTY_EXPR_DOT ? property_dot_size : c_sizeof(PropertyExpr));
             break;
 
         case EXPR_GENERIC_PARAMS:
             expr_drop(&my generic_params->expr);
             vec_spanned_type_drop(&my generic_params->params);
-            free(my generic_params);
+            ast_delete(my generic_params);
             break;
 
         case EXPR_AS_TYPE:
             expr_drop(&my as_type->expr);
             type_drop(&my as_type->type);
-            free(my as_type);
+            ast_delete(my as_type);
             break;
 
         case EXPR_TERNARY:
             expr_drop(&my ternary->condition);
             expr_drop(&my ternary->yes);
             expr_drop(&my ternary->no);
-            free(my ternary);
+            ast_delete(my ternary);
             break;
 
         case EXPR_CALL:
             expr_drop(&my call->callable);
             vec_expr_drop(&my call->args);
-            if (my call->rare) free(my call->rare->unique_symbol);
-            free(my call->rare);
-            free(my call);
+            if (my call->rare) ast_delete(my call->rare->unique_symbol);
+            ast_delete(my call->rare);
+            ast_delete(my call);
             break;
 
         case EXPR_FUNCTION:
             function_impl_drop(my function);
-            free(my function);
+            ast_delete(my function);
             break;
 
         case EXPR_OBJECT:
@@ -1141,36 +1142,36 @@ void expr_drop(Expr* me) {
 
         case EXPR_CLASS_DECL:
             class_decl_drop(my class_decl);
-            free(my class_decl);
+            ast_delete(my class_decl);
             break;
 
         case EXPR_SPREAD:
             expr_drop(my spread);
-            free(my spread);
+            ast_delete(my spread);
             break;
 
         case EXPR_REGEX:
             break;
 
         case EXPR_PRIVATE_NAME:
-            free(my private_name);
+            ast_delete(my private_name);
             break;
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
                 expr_drop(my template_->tag);
-                free(my template_->tag);
+                ast_delete(my template_->tag);
             }
             vec_expr_drop(&my template_->substitutions);
             cstr_drop(&my template_->plain_string);
             vec_cstr_drop(&my template_->texts);
-            free(my template_);
+            ast_delete(my template_);
             break;
 
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
             jsx_element_drop(my jsx);
-            free(my jsx);
+            ast_delete(my jsx);
             break;
 
         case EXPR_JSX_ATTRIBUTES:
@@ -4988,7 +4989,7 @@ zsview unary_op_get_zv(UnaryOp op) {
 const ObjectExprItemRare object_item_no_rare = {0};
 
 ObjectExprItemRare* object_item_rare_mut(ObjectExprItem* me) {
-    if (!my rare) my rare = c_new(ObjectExprItemRare, {0});
+    if (!my rare) my rare = ast_new(ObjectExprItemRare, {0});
     return my rare;
 }
 
@@ -4996,17 +4997,17 @@ void object_expr_item_drop(ObjectExprItem* me) {
     cstr_drop(&my name_string);
     if (my computed_key) {
         expr_drop(my computed_key);
-        free(my computed_key);
+        ast_delete(my computed_key);
     }
     if (my rare && my rare->shorthand_default) {
         expr_drop(my rare->shorthand_default);
-        free(my rare->shorthand_default);
+        ast_delete(my rare->shorthand_default);
     }
     if (my rare && my rare->jsdoc_type) {
         type_drop(my rare->jsdoc_type);
-        free(my rare->jsdoc_type);
+        ast_delete(my rare->jsdoc_type);
     }
-    free(my rare);
+    ast_delete(my rare);
     expr_drop(&my value);
 }
 

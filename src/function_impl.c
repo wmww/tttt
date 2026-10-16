@@ -15,10 +15,10 @@ const VecExpr function_arg_no_decorators = {0};
 void function_arg_drop(FunctionArg* me) {
     if (my decorators) {
         vec_expr_drop(my decorators);
-        free(my decorators);
+        ast_delete(my decorators);
     }
-    free(my jsdoc_span);
-    free(my jsdoc_question);
+    ast_delete(my jsdoc_span);
+    ast_delete(my jsdoc_question);
     initialized_binding_drop(&my initializer);
 }
 
@@ -28,22 +28,22 @@ void function_impl_drop(FunctionImpl* me) {
     type_drop(&my ret);
     if (my predicate) {
         type_drop(&my predicate->type);
-        free(my predicate);
+        ast_delete(my predicate);
     }
     block_drop(&my body);
     FunctionImplRare* rare = my rare;
     if (!rare) return;
-    free(rare->yields);
+    ast_delete(rare->yields);
     if (rare->jsdoc_signature_type) {
         type_drop(rare->jsdoc_signature_type);
-        free(rare->jsdoc_signature_type);
+        ast_delete(rare->jsdoc_signature_type);
     }
     for (u32 i = 0; i < rare->jsdoc_overload_count; i++) type_drop(&rare->jsdoc_overloads[i]);
-    free(rare->jsdoc_overloads);
-    free(rare->jsdoc_param_issues);
+    ast_delete(rare->jsdoc_overloads);
+    ast_delete(rare->jsdoc_param_issues);
     for (u32 i = 0; i < rare->jsdoc_unmatched_count; i++) type_drop(&rare->jsdoc_unmatched[i].type);
-    free(rare->jsdoc_unmatched);
-    free(rare);
+    ast_delete(rare->jsdoc_unmatched);
+    ast_delete(rare);
 }
 
 const FunctionImplRare function_impl_no_rare = {0};
@@ -64,7 +64,7 @@ void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span) {
 }
 
 FunctionImplRare* function_impl_rare_mut(FunctionImpl* me) {
-    if (!my rare) my rare = c_new(FunctionImplRare, {0});
+    if (!my rare) my rare = ast_new(FunctionImplRare, {0});
     return my rare;
 }
 
@@ -440,7 +440,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 TypeNode function_impl_into_type(FunctionImpl me) {
     me.is_type = true;
     // (One block, which type_drop() frees with the CallableType)
-    struct { CallableType callable; FunctionImpl function; }* block = c_new(typeof(*block), { .function = me });
+    struct { CallableType callable; FunctionImpl function; }* block = ast_new(typeof(*block), { .function = me });
     block->callable.function = &block->function;
     return type_callable(&block->callable);
 }

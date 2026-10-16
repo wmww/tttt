@@ -12,7 +12,7 @@ void enum_case_drop(EnumCase* me) {
     cstr_drop(&my canonical_name);
     if (my computed_key) {
         expr_drop(my computed_key);
-        free(my computed_key);
+        ast_delete(my computed_key);
     }
 }
 

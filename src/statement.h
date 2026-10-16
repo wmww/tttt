@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "block.h"
 #include "expr.h"
 #include "type.h"
@@ -267,6 +268,7 @@ void statements_typecheck(VecStatement* list, BlockTypecheckCtx ctx, ErrorCtx* e
 #define g_class_key Statement, statement
 #define g_declared
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr const*));
@@ -352,6 +354,7 @@ void switch_case_drop(SwitchCase* me);
 
 #define g_class_key SwitchCase, switch_case
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct SwitchStatement {

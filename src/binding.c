@@ -43,16 +43,16 @@ const TypeNode type_node_none = {0};
 void binding_set_type(Binding* me, TypeNode type) {
     if (my explicit_type) {
         type_drop(my explicit_type);
-        free(my explicit_type);
+        ast_delete(my explicit_type);
         my explicit_type = nullptr;
     }
-    my explicit_type = c_new(TypeNode, type);
+    my explicit_type = ast_new(TypeNode, type);
 }
 
 TypeNode binding_take_type(Binding* me) {
     if (!my explicit_type) return (TypeNode){0};
     TypeNode ret = *my explicit_type;
-    free(my explicit_type);
+    ast_delete(my explicit_type);
     my explicit_type = nullptr;
     return ret;
 }
@@ -64,12 +64,12 @@ void binding_drop(Binding* me) {
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
-    free(my access_site);
+    ast_delete(my access_site);
     if (my explicit_type) type_drop(my explicit_type);
-    free(my explicit_type);
+    ast_delete(my explicit_type);
     if (my default_value) {
         expr_drop(my default_value);
-        free(my default_value);
+        ast_delete(my default_value);
     }
 }
 
@@ -710,7 +710,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
 void object_binding_item_drop(ObjectBindingItem* me) {
     if (my computed_key) {
         expr_drop(my computed_key);
-        free(my computed_key);
+        ast_delete(my computed_key);
     }
     value_drop(&my source);
     binding_drop(&my target);
@@ -721,20 +721,20 @@ const Expr initialized_binding_no_value = { .tag = EXPR_IMPLICIT_ANY, .lazy_type
 const InitializedBindingRare initialized_binding_no_rare = {0};
 
 InitializedBindingRare* initialized_binding_rare_mut(InitializedBinding* me) {
-    if (!my rare) my rare = c_new(InitializedBindingRare, {0});
+    if (!my rare) my rare = ast_new(InitializedBindingRare, {0});
     return my rare;
 }
 
 void initialized_binding_drop(InitializedBinding* me) {
     if (my rare) {
         for (u32 i = 0; i < my rare->require_port_count; i++) port_item_drop(&my rare->require_ports[i]);
-        free(my rare->require_ports);
-        free(my rare);
+        ast_free(my rare->require_ports, my rare->require_port_count * c_sizeof(PortItem));
+        ast_delete(my rare);
     }
     binding_drop(&my binding);
     if (my value) {
         expr_drop(my value);
-        free(my value);
+        ast_delete(my value);
     }
     lazy_type_drop(&my lazy_type);
 }
@@ -745,7 +745,7 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
     // `export const x = require("m")` is a variable (tsgo's isVariableDeclarationInitializedToRequire: not exported)
     if (initialized_binding_rare(me)->require_port_count && props.exported) {
         for (u32 i = 0; i < my rare->require_port_count; i++) port_item_drop(&my rare->require_ports[i]);
-        free(my rare->require_ports);
+        ast_free(my rare->require_ports, my rare->require_port_count * c_sizeof(PortItem));
         my rare->require_ports = nullptr;
         my rare->require_port_count = 0;
         Expr* call = initialized_binding_value(me);

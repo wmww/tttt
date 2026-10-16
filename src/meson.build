@@ -1,5 +1,6 @@
 core_files = files(
     'prelude.c',
+    'ast_alloc.c',
     'span.c',
     'interface.c',
     'type.c',

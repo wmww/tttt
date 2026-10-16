@@ -355,7 +355,7 @@ The AST is now in it's finished state, so we can traverse it looking for type er
 initializeTypeChecker creates (Array, Object, Function, String, ..., RegExp) in tsc's order: type ids break the stable
 type order's last ties, so creation order is still (a little) part of the output.
 
-**Thread safety** is checked, not proven: `scripts/threadcheck.sh` (corpus output at `--threads 1` vs 4, byte for byte), `scripts/checkerdiff.py` (`--checkers K` vs 1), `baseline_tests --checkers 4 --threads 1/4 --dump DIR` (identical), and a TSan build, `meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, run with `TTTT_NO_REEXEC=1` on the corpora at `--threads 4` and on `TTTT_PARALLEL_RESOLVE=1 baseline_tests --threads 4` (`ulimit -s 4000000`): it was clean on every corpus when checking, loading and the resolve walk went parallel. The frozen guards (`log_error` on a report into the program's ErrorCtx, a new binder symbol or a first alias resolution while checking) catch the common mistakes on the suite. Per-checker caches assumed pure in the type ids, as tsc's: `ty_union` of two types (`KEY_UNION_PAIR`), `ty_intersection` without an alias (`KEY_INTERSECTION_OF`), flow's `assignment_reduced_type` (`KEY_ASSIGNMENT_REDUCED`); a result computed while something it reads is in flight (constraints in `remove_constrained_type_variables`, members for empty-object checks) is pinned. Disable these first when a union or narrowing depends on order.
+**Thread safety** is checked, not proven: `scripts/threadcheck.sh` (corpus output at `--threads 1` vs 4, byte for byte), `scripts/checkerdiff.py` (`--checkers K` vs 1), `baseline_tests --checkers 4 --threads 1/4 --dump DIR` (identical), and a TSan build, `meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, run on the corpora at `--threads 4` and on `TTTT_PARALLEL_RESOLVE=1 baseline_tests --threads 4` (`ulimit -s 4000000`): it was clean on every corpus when checking, loading and the resolve walk went parallel. The frozen guards (`log_error` on a report into the program's ErrorCtx, a new binder symbol or a first alias resolution while checking) catch the common mistakes on the suite. Per-checker caches assumed pure in the type ids, as tsc's: `ty_union` of two types (`KEY_UNION_PAIR`), `ty_intersection` without an alias (`KEY_INTERSECTION_OF`), flow's `assignment_reduced_type` (`KEY_ASSIGNMENT_REDUCED`); a result computed while something it reads is in flight (constraints in `remove_constrained_type_variables`, members for empty-object checks) is pinned. Disable these first when a union or narrowing depends on order.
 
 File-less diagnostics (`error_ctx_global_error_s()`) have a null span and sort first; `error_ctx_error_s()` drops invalid spans and reports from unchecked lib files.
 
@@ -467,8 +467,22 @@ allocates on first write (only from the parser or the single-threaded resolve wa
 null pointers rather than empty inline nodes; spans that must lie in the node's own file are packed as u32 offsets
 (`expr_outer_span()`, `FunctionSpan`, `Binding`'s type and element spans), and an `IdentifierExpr`'s name is its `Expr`'s
 `inner_span`. A `Ty` is allocated with only its kind's variant (`ty_size_of_kind()`). Parser lists are built with
-`list_push()` and finished at their exact size by `shrink_list()`. `scripts/memtrack.sh` and `scripts/arenasites.sh` show where the
-bytes go. Invariants of the compact layout:
+`list_push()` and finished at their exact size by `shrink_list()`.
+
+**The AST lives in per-file arenas** (`ast_alloc.h`, plan 63): while `parse_file()` runs, its thread's `ast_malloc()`
+family bumps out of the file's `AstArena` (`SourceFile.arena`); elsewhere it is plain malloc. Every AST list type is
+declared with `#define g_allocator ast`, node boxes are made with `ast_new()` and freed with `ast_delete()`/`ast_free()`
+(with the allocated size: a dot `PropertyExpr` is short). Arena memory lies in 256 MB address segments marked in
+`ast_segment_map`, so `ast_owns()` is one load and frees and reallocs take either kind at any time: arena memory is
+never passed to free() (glibc aborts if it is), a later phase's realloc of an arena list copies it out to malloc, and
+the drop functions still walk the AST to free its malloc'd parts (cstrs, what resolve attached), the arena parts being
+no-ops. During the parse freed blocks are reused (exact size classes up to 1 KB, best fit with splitting above:
+speculation's dead nodes and outgrown lists); the blocks still free when the file ends are lost (~3% on vscode).
+Threads bump files end to end through 64 MB slabs, prefaulting a MB ahead (`MADV_POPULATE_WRITE`: a trap per page was a
+tenth of the parse); `ast_arena_drop()` gives a file's whole pages back (`TTTT_AST_POISON=1` makes them fault instead,
+to find readers of a dropped AST) and its addresses are never reused. `TTTT_AST_STATS=1` prints the arena's churn at
+exit. `scripts/memtrack.sh` (malloc) and `scripts/arenasites.sh` (the binder and checker arenas) show where the
+other bytes go. Invariants of the compact layout:
 - The shared all-null statics are const (`initialized_binding_no_value` is in rodata: a stray write segfaults). Absent
   parts are shared all-zero stand-ins too (`type_node_none` from `binding_type()`, `symbol_table_empty` from
   `scope_locals()`): write only through `binding_set_type()`/`scope_locals_mut()`, and check the pointer, not just

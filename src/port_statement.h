@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "statement.h"
 #include "lazy_type.h"
 #include "scope.h"
@@ -126,6 +127,7 @@ static inline csview port_item_name(Span name) {
 
 #define g_class_key PortItem, port_item
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct PortStatement {

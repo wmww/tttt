@@ -23,9 +23,9 @@ void identifier_type_drop(IdentifierType* me) {
     import_attributes_free(rare->import_attributes);
     if (rare->import_argument) {
         type_drop(rare->import_argument);
-        free(rare->import_argument);
+        ast_delete(rare->import_argument);
     }
-    free(rare);
+    ast_delete(rare);
 }
 
 // Member of a namespace by meaning, TS2694 if there is none (TS2724 with a close enough name, when `suggest`: not in
@@ -900,7 +900,7 @@ void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
 void typeof_type_drop(TypeofType* me) {
     if (my owns_expr) {
         expr_drop(my expr);
-        free(my expr);
+        ast_delete(my expr);
     }
 }
 

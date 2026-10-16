@@ -21,24 +21,24 @@ void interface_member_drop(InterfaceMember* me) {
             vec_span_drop(&my key.index->more_decls);
             for (isize i = 0; i < vec_span_size(&my key.index->initialized); i++) {
                 expr_drop(my key.index->initializer_values[i]);
-                free(my key.index->initializer_values[i]);
+                ast_delete(my key.index->initializer_values[i]);
             }
-            free(my key.index->initializer_values);
+            ast_delete(my key.index->initializer_values);
             vec_span_drop(&my key.index->initialized);
             vec_type_drop(&my key.index->more_types);
-            free(my key.index);
+            ast_delete(my key.index);
             break;
         case INTERFACE_KEY_EXPR:
             if (my key.expr) {
                 expr_drop(my key.expr);
-                free(my key.expr);
+                ast_delete(my key.expr);
             }
             break;
         case INTERFACE_KEY_MAPPED:
             if (!my key.mapped) break;
             type_drop(&my key.mapped->in_type);
             type_drop(&my key.mapped->as_type);
-            free(my key.mapped);
+            ast_delete(my key.mapped);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -46,17 +46,17 @@ void interface_member_drop(InterfaceMember* me) {
     if (my accessor) {
         if (my accessor->setter_function) {
             expr_drop(my accessor->setter_function);
-            free(my accessor->setter_function);
+            ast_delete(my accessor->setter_function);
         }
         if (my accessor->initializer) {
             expr_drop(my accessor->initializer);
-            free(my accessor->initializer);
+            ast_delete(my accessor->initializer);
         }
         if (my accessor->getter_body) {
             expr_drop(my accessor->getter_body);
-            free(my accessor->getter_body);
+            ast_delete(my accessor->getter_body);
         }
-        free(my accessor);
+        ast_delete(my accessor);
     }
 }
 

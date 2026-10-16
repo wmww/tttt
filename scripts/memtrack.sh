@@ -30,7 +30,7 @@ gcc -O2 -shared -fPIC bench/memtrack/memtrack.c -o $B/memtrack.so
 export MEMTRACK_DIR=${MEMTRACK_DIR:-$B/out}
 mkdir -p "$MEMTRACK_DIR"
 SF=$(gdb -batch -ex 'print sizeof(struct SourceFile)' $B/tttt 2>/dev/null | awk '{ print $3 }')
-MEMTRACK=1 MEMTRACK_SOURCE_FILE_SIZE=${SF:-440} TTTT_NO_REEXEC=1 LD_PRELOAD=$B/memtrack.so \
+MEMTRACK=1 MEMTRACK_SOURCE_FILE_SIZE=${SF:-440} LD_PRELOAD=$B/memtrack.so \
     $B/tttt --checkers 1 --threads 1 -q --keep-going --no-write "${ARGS[@]}" 2>&1 > /dev/null | grep -E "^[a-z_]+: (cumulative|mallinfo)" || true
 export MEMTRACK_BIN=$B/tttt
 echo "== $PHASE: live blocks by $BY"

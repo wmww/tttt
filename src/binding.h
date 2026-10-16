@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "type.h"
 #include "expr.h"
 #include "value.h"
@@ -119,11 +120,13 @@ void object_binding_item_drop(ObjectBindingItem* me);
 #define g_class_key Binding, binding
 #define g_declared
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 #define g_class_key ObjectBindingItem, object_binding_item
 #define g_declared
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 typedef struct InitializedBinding {
@@ -185,6 +188,7 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
 #define g_class_key InitializedBinding, initialized_binding
 #define g_no_clone
 #define g_declared
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // The getter whose return type an unannotated setter parameter has (InitializedBinding.getter), if they pair

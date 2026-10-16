@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_alloc.h"
 #include "function_impl.h"
 #include "interface_member.h"
 #include "lazy_type.h"
@@ -119,6 +120,7 @@ Ty const* class_item_get_type(ClassItem* me);
 
 #define g_class_key ClassItem, class_item
 #define g_no_clone
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 // The declarations of the member symbol `me` is part of, in order (see ClassItem.symbol_first). Its own count 1 if it

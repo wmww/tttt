@@ -27,5 +27,8 @@ static void read_debug_env() {
         .file_times = getenv("TTTT_FILE_TIMES") != nullptr,
         .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
+        .huge_pages = getenv("TTTT_HUGEPAGES") != nullptr,
+        .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
+        .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
     };
 }
