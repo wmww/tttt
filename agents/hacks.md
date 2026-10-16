@@ -4,6 +4,16 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 `bugs/*.md`, triage.md or a plan. `grep -rn HACK src` finds the code-side markers.
 
 ## Global state, memory, parallelism
+- `ast_free()` / `ast_delete()` (ast_alloc.c): the AST arenas trust the size they're given, and a too-big one hands
+  the next allocation of that size someone else's bytes. `ast_delete()` takes `sizeof(*p)`, so a box allocated short
+  (`property_dot_new()`, `require_ports` arrays) needs its real size at every free; nothing checks it. Correct: a
+  size-checked debug build (a header word per block). Oracle: the suite under a build that poisons and verifies.
+  Also: dropped arenas' addresses are never reused (virtual space grows by every AST a process ever parsed: the test
+  harness, `-b`), `ast_owns()` assumes 47-bit user addresses, and free blocks left when a file ends are lost (3%).
+- `huge_pages_take()` (prelude.c): whether an arena chunk is madvised for huge pages is decided by a budget of the free
+  2 MB blocks `/proc/buddyinfo` listed at the first call, a guess at what the kernel can give without compacting
+  synchronously. Correct: whatever the kernel would tell us (nothing does, short of watching `compact_stall` in
+  `/proc/vmstat`). Oracle: `compact_stall` and `thp_fault_alloc` around a vscode run (measurements.md "Plan 63").
 - `check_share()` / `checker_memory()` (program.c, ty/checker.c): checker recycling assumes no diagnostic depends on a
   checker's history; false in a few places (undefinedProperties member order: 4 vscode `.d.ts`; bugs/sourcesweep_checker.md
   "History dependences recycling exposes"). `checker_memory()` leaves out LazyMemo pages (real memory the budget doesn't

@@ -1,7 +1,7 @@
 # Plan 75: the memory endgame (planning, with a prototype gate)
 Written by the insights of 2026-10-16. A planning session: measure, prototype, decide, and either write the compact
-AST plan proper (into this file) or close it with the numbers. Runs after plan 63 stage 2 (per-file parse arenas),
-which variable-size nodes need anyway. Context: plan 67 ("Where it stands", stage 2 item 3) and measurements.md.
+AST plan proper (into this file) or close it with the numbers. Plan 63 (per-file parse arenas, `ast_alloc.h`), which
+variable-size nodes need, is done: `ast_malloc(size)` serves any size, without malloc's size classes. Context: plan 67 ("Where it stands", stage 2 item 3) and measurements.md.
 
 ## Why
 Memory is the one axis where tttt loses to bun (1.6-2.3x at the defaults, vscode 1.75x single-threaded). Two parts:

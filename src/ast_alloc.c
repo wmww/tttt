@@ -11,9 +11,10 @@
 #define AST_SEGMENT ((size_t)1 << AST_SEGMENT_SHIFT)
 #define AST_SLAB ((size_t)64 << 20)
 #define AST_PAGE ((uintptr_t)4096)
-#define AST_POPULATE ((size_t)1 << 20)
-// Freed blocks up to this size are reused by the next allocation of their size during the parse
+#define AST_POPULATE ((size_t)2 << 20)
+// Freed blocks up to this size are kept by size class (bigger ones by power of two)
 #define AST_FREE_MAX 1024
+static_assert(AST_FREE_MAX / 8 + 1 <= 3 * 64);
 
 uint8_t ast_segment_map[(size_t)1 << (47 - AST_SEGMENT_SHIFT)];
 
@@ -46,7 +47,7 @@ typedef struct AstThread {
     char* range_start; // Where the arena's latest range starts in the slab
     char* populated; // The slab's pages below this are faulted in
     void* free_lists[AST_FREE_MAX / 8 + 1];
-    u64 small_mask[(AST_FREE_MAX / 8 + 1 + 63) / 64]; // Which free_lists aren't empty
+    u64 small_mask[3]; // Which free_lists aren't empty (AST_FREE_MAX / 8 + 1 bits)
     // Bigger freed blocks (outgrown lists, mostly) by floor(log2(size)), split to serve any allocation
     LargeBlock* large[64];
     u64 large_mask;
@@ -61,6 +62,7 @@ static inline size_t round8(isize size) {
 
 // A slab of at least `size` bytes (the caller holds nothing)
 static char* take_slab(size_t size, char** end) {
+    size = (size + AST_POPULATE - 1) & ~(AST_POPULATE - 1); // (Slabs stay 2 MB aligned)
     pthread_mutex_lock(&segment_lock);
     if ((size_t)(segment_end - segment_pos) < size) {
         size_t segment = size > AST_SEGMENT ? (size + AST_SEGMENT - 1) & ~(AST_SEGMENT - 1) : AST_SEGMENT;
@@ -74,7 +76,6 @@ static char* take_slab(size_t size, char** end) {
             check(i < sizeof(ast_segment_map));
             ast_segment_map[i] = 1;
         }
-        if (debug_env.huge_pages) madvise(start, segment, MADV_HUGEPAGE);
         // (The rest of the previous segment, less than a slab, is lost)
         segment_pos = start;
         segment_end = start + segment;
@@ -102,6 +103,7 @@ static void add_range(AstArena* arena, char* start, char* end) {
 
 void ast_arena_begin(AstArena* arena) {
     AstThread* t = &ast_thread;
+    if (debug_env.ast_malloc) return;
     check(!t->arena);
     t->arena = arena;
     t->range_start = t->pos;
@@ -109,6 +111,7 @@ void ast_arena_begin(AstArena* arena) {
 
 void ast_arena_end(void) {
     AstThread* t = &ast_thread;
+    if (debug_env.ast_malloc) return;
     check(t->arena);
     add_range(t->arena, t->range_start, t->pos);
     // (What is still on the free lists is lost: the next file mustn't get blocks of this one)
@@ -120,7 +123,7 @@ void ast_arena_end(void) {
             for (LargeBlock* b = t->large[i]; b; b = b->next) t->stats.lost_large += b->size;
         }
         pthread_mutex_lock(&stats_lock);
-        all_stats.bumped += t->stats.bumped;
+        all_stats.bumped += t->arena->total;
         all_stats.reused += t->stats.reused;
         all_stats.lost_small += t->stats.lost_small;
         all_stats.lost_large += t->stats.lost_large;
@@ -146,23 +149,27 @@ void ast_arena_drop(AstArena* arena) {
     *arena = (AstArena){0};
 }
 
-// Moves the slab's end of the arena to pos
-static inline void advance(AstThread* t, char* pos) {
-    t->stats.bumped += (size_t)(pos - t->pos);
-    t->arena->total += (size_t)(pos - t->pos);
-    t->pos = pos;
-    if (pos > t->populated) {
-        // Fault the next MB in with one call rather than a trap per page: a tenth of vscode's parse
-        char* from = (char*)((uintptr_t)t->populated & ~(AST_PAGE - 1));
-        char* to = (size_t)(t->end - pos) > AST_POPULATE ? pos + AST_POPULATE : t->end;
-        to = (char*)((uintptr_t)to & ~(AST_PAGE - 1));
-        if (to > from) madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
-        t->populated = to > pos ? to : pos;
+// Faults the slab's pages in up to past pos, 2 MB at a time with one call rather than a trap per page (a tenth of
+// vscode's parse), as huge pages while the system has them free (slabs are 2 MB aligned)
+[[gnu::noinline]] static void populate(AstThread* t, char* pos) {
+    while (t->populated < pos && t->populated < t->end) {
+        char* from = t->populated;
+        char* to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
+        if (to - from == AST_POPULATE && huge_pages_take(AST_POPULATE)) madvise(from, AST_POPULATE, MADV_HUGEPAGE);
+        madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
+        t->populated = to;
     }
 }
 
-static void* bump(AstThread* t, size_t size) {
-    if ((size_t)(t->end - t->pos) < size) {
+// Moves the slab's end of the arena to pos
+static inline void advance(AstThread* t, char* pos) {
+    t->arena->total += (size_t)(pos - t->pos);
+    t->pos = pos;
+    if (__builtin_expect(pos > t->populated, 0)) populate(t, pos);
+}
+
+static inline void* bump(AstThread* t, size_t size) {
+    if (__builtin_expect((size_t)(t->end - t->pos) < size, 0)) {
         add_range(t->arena, t->range_start, t->pos);
         t->pos = take_slab(size > AST_SLAB / 4 ? size : AST_SLAB, &t->end);
         t->range_start = t->pos;
@@ -206,16 +213,10 @@ static void* take_large(AstThread* t, u32 bin, size_t n) {
     return split(t, block, n);
 }
 
-void* ast_malloc(isize size) {
-    AstThread* t = &ast_thread;
-    if (!t->arena) {
-        void* ret = malloc((size_t)size);
-        check(ret || !size);
-        return ret;
-    }
-    size_t n = round8(size);
+// A free block of at least n bytes split, else a bump
+[[gnu::noinline]] static void* reuse_or_bump(AstThread* t, size_t n) {
     if (n <= AST_FREE_MAX) {
-        // Its own size, else the smallest bigger free block, split
+        // The smallest bigger free block
         u32 cls = (u32)(n / 8);
         for (u32 w = cls / 64; w < sizeof(t->small_mask) / 8; w++) {
             u64 bits = t->small_mask[w] & (w == cls / 64 ? ~(u64)0 << (cls % 64) : ~(u64)0);
@@ -223,9 +224,7 @@ void* ast_malloc(isize size) {
             u32 found = w * 64 + (u32)__builtin_ctzll(bits);
             char* ret = small_pop(t, found);
             t->stats.reused += n;
-            if (found > cls) {
-                give_back(t, ret + n, (found - cls) * 8);
-            }
+            if (found > cls) give_back(t, ret + n, (found - cls) * 8);
             return ret;
         }
         if (t->large_mask) return take_large(t, (u32)__builtin_ctzll(t->large_mask), n);
@@ -246,6 +245,22 @@ void* ast_malloc(isize size) {
     return bump(t, n);
 }
 
+void* ast_malloc(isize size) {
+    AstThread* t = &ast_thread;
+    if (!t->arena) {
+        void* ret = malloc((size_t)size);
+        check(ret || !size);
+        return ret;
+    }
+    size_t n = round8(size);
+    if (n <= AST_FREE_MAX && t->free_lists[n / 8]) {
+        t->stats.reused += n;
+        return small_pop(t, (u32)(n / 8));
+    }
+    if (t->small_mask[0] | t->small_mask[1] | t->small_mask[2] | t->large_mask) return reuse_or_bump(t, n);
+    return bump(t, n);
+}
+
 void* ast_calloc(isize count, isize size) {
     void* ret = ast_malloc(count * size);
     if (ret) memset(ret, 0, (size_t)(count * size));
@@ -255,7 +270,6 @@ void* ast_calloc(isize count, isize size) {
 // Gives back n bytes (a multiple of 8) at p, of the current arena
 static void give_back(AstThread* t, char* p, size_t n) {
     if (p + n == t->pos && p >= t->range_start) {
-        t->stats.bumped -= n;
         t->arena->total -= n;
         t->pos = p;
     } else if (n <= AST_FREE_MAX) {

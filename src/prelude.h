@@ -34,14 +34,23 @@ typedef struct DebugEnv {
     bool file_times;           // TTTT_FILE_TIMES: each checked file's check time (with its deferred checks) on stderr
     bool debug_containers;     // TTTT_DEBUG_CONTAINERS: getSymbolChain's sorted candidate containers and their specifiers
     bool resolve_times;        // TTTT_RESOLVE_TIMES: name resolution's steps (declare, link, the walk...) timed on stderr
-    // TTTT_HUGEPAGES: madvise(MADV_HUGEPAGE) the checker and AST arenas. Off by default: under the common THP setting
-    // (defrag=madvise) a madvised fault compacts memory synchronously, and on a machine whose memory is fragmented
-    // (a long uptime, a big page cache) that cost vscode 18% of its wall time for 565 huge pages (plan 63 stage 2)
-    bool huge_pages;
+    // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages, 0 none; unset, as many as the system has free
+    // (huge_pages_take())
+    int8_t huge_pages;
     bool ast_poison;           // TTTT_AST_POISON: a dropped file's AST pages fault on access instead of reading as zeroes
     bool ast_stats;            // TTTT_AST_STATS: the AST arenas' churn at exit (ast_alloc.h)
+    bool ast_malloc;           // TTTT_AST_MALLOC: no AST arenas, the AST in malloc (for scripts/memtrack.sh)
 } DebugEnv;
 extern DebugEnv debug_env;
+
+// Whether an arena chunk of `bytes` may be madvise(MADV_HUGEPAGE)d. Huge pages take ~5-10% off a mid-size project's
+// wall time, but under the common THP setting (defrag=madvise) a madvised fault that finds no free 2 MB block compacts
+// memory synchronously: on a machine with fragmented memory (a long uptime, a big page cache) madvising all of vscode's
+// arenas took it from 5.9 to 9.4 s (14k compaction stalls a run). So chunks are madvised only while the free blocks of
+// order >= 9 that /proc/buddyinfo listed at the first call cover them (TTTT_HUGEPAGES overrides)
+bool huge_pages_take(size_t bytes);
+// A madvised chunk of `bytes` that huge_pages_take() allowed is unmapped: its blocks are free again
+void huge_pages_give(size_t bytes);
 
 // calloc() for tables that are probed (read) before they are written: fresh pages calloc() gets from the kernel are
 // mapped to the shared zero page on the first read, and the first write then copies it, which flushes the TLB of every

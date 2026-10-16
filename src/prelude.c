@@ -1,4 +1,6 @@
 #include "prelude.h"
+#include <pthread.h>
+#include <stdatomic.h>
 
 #ifdef DEBUG_ALLOCATOR_ACTIVE
 _Atomic intptr_t debug_allocation_count = 0;
@@ -27,8 +29,49 @@ static void read_debug_env() {
         .file_times = getenv("TTTT_FILE_TIMES") != nullptr,
         .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
-        .huge_pages = getenv("TTTT_HUGEPAGES") != nullptr,
+        .huge_pages = getenv("TTTT_HUGEPAGES") ? (int8_t)(strcmp(getenv("TTTT_HUGEPAGES"), "0") != 0) : -1,
         .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
+        .ast_malloc = getenv("TTTT_AST_MALLOC") != nullptr,
     };
+}
+
+static atomic_llong huge_page_budget;
+static pthread_once_t huge_page_budget_once = PTHREAD_ONCE_INIT;
+
+// The free memory in blocks of 2 MB and more
+static void read_huge_page_budget(void) {
+    FILE* file = fopen("/proc/buddyinfo", "r");
+    if (!file) return;
+    long long bytes = 0;
+    char line[512];
+    while (fgets(line, sizeof(line), file)) {
+        // "Node 0, zone   Normal 104016 78420 ..." : the count of free blocks of each order, from 4 KB up
+        char const* counts = strstr(line, "zone");
+        if (!counts) continue;
+        counts += 4;
+        while (*counts == ' ') counts++;
+        while (*counts && *counts != ' ') counts++;
+        for (int order = 0; order <= 20; order++) {
+            char* end;
+            long long count = strtoll(counts, &end, 10);
+            if (end == counts) break;
+            counts = end;
+            if (order >= 9) bytes += count << (order + 12);
+        }
+    }
+    fclose(file);
+    atomic_store(&huge_page_budget, bytes);
+}
+
+bool huge_pages_take(size_t bytes) {
+    if (debug_env.huge_pages >= 0) return debug_env.huge_pages;
+    pthread_once(&huge_page_budget_once, read_huge_page_budget);
+    if (atomic_fetch_sub(&huge_page_budget, (long long)bytes) >= (long long)bytes) return true;
+    atomic_fetch_add(&huge_page_budget, (long long)bytes);
+    return false;
+}
+
+void huge_pages_give(size_t bytes) {
+    if (debug_env.huge_pages < 0) atomic_fetch_add(&huge_page_budget, (long long)bytes);
 }

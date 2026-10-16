@@ -51,8 +51,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   `tsc` still can't do with tttt (watch, incremental). None of them is test-chasing, and all three decide whether tttt
   is *the faster tsc* or a faster checker for CI only.
 - **Memory decision: go for the program's memory, staged with a prototype gate.** Plan 63 stage 2 (per-file parse
-  arenas) is done in any case (a time lever, malloc's ~110 MB of headers, and the prerequisite of variable-size
-  nodes). Then plan 75 *prototypes* the compact AST on the one node family that dominates the zero words and measures
+  arenas) is done (2026-10-16: the AST in `ast_alloc.h` arenas, any size without malloc's classes; it also showed
+  that `MADV_HUGEPAGE` past the system's free 2 MB blocks costs vscode a third of its wall time in compaction stalls:
+  the glibc re-exec is gone, arenas take huge pages within a `/proc/buddyinfo` budget and prefault). Then plan 75 *prototypes* the compact AST on the one node family that dominates the zero words and measures
   vscode's heap and the instruction counts before anyone commits to churn under ~2300 AST sites. The prototype may say
   no; if it says yes, the compact AST is the next window's centrepiece. Plan 75 also owns the per-checker floor at
   many cores (12 checkers x 128 MB is 1.5 GB of budget where bun's per-thread state is small): a budget policy that

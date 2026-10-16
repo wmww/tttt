@@ -68,6 +68,31 @@ effect, vscode 2 under tttt and tsgo).
   16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
   `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
+## Plan 63 stage 2, per-file AST arenas and huge pages (2026-10-16, todo entry 6)
+**Audit (2a)**: nothing stopped it. One parser entry (`parse_file()`); later phases do mutate the AST (resolve's rare
+structs and `AccessSite`s, module resolution's ModuleRef rares, JSDoc moves), so instead of forbidding that the arena
+is told apart by address (`ast_owns()`, one load): a free of arena memory is a no-op after the parse, a realloc copies
+out to malloc. Speculation needs no rewind: freed blocks are reused during the parse (vscode: 1.32 GB bumped, 331 MB
+of freed blocks reused, 42 MB still free at the files' ends). Strings (`cstr`) stay malloc, so the drop is still a
+walk (bugs/perf_leads.md "Memory").
+**Huge pages** (this machine: 11 days up, 17 GB page cache, ~600 MB free in order >= 9 blocks): madvising every arena
+chunk made vscode **9.39 s, 13.9k compaction stalls a run**; none 6.17 s; the old glibc re-exec cost the same way
+(base 8.1-8.4 s vs 7.4 with `TTTT_NO_REEXEC`). Mid-size corpora gain 3-8% from them, without stalls. Now: chunks are
+madvised while a `/proc/buddyinfo` budget lasts (`huge_pages_take()`), and arenas prefault ahead with
+`MADV_POPULATE_WRITE` (vscode K1 parse -14%, names -4%, check -2.5%).
+Base 9459b02c (as shipped: re-exec) -> now, default threads, best of 3, wall s / peak MB: tsc 0.29 / 273 -> 0.28 /
+274, type-fest 0.82 / 609 -> 0.82 / 616, webpack 0.68 / 631 -> 0.64 / 634, zod 0.36 / 521 -> 0.35 / 526, drizzle
+0.50 / 587 -> 0.49 / 592, effect 0.70 / 719 -> 0.69 / 719, **vscode 8.14 / 2779 -> 5.91 / 2727**. vscode K1 phases
+(load+parse / names / check ms, resident after parse): base 3030 / 1979 / 13638, 1665 MB (without the re-exec 1950 /
+1370 / 11900) -> 1603 / 1349 / 10675, 1615 MB. `-b` tsc-src: 1.13 s / 460 MB -> 1.12 / 390 (dropped projects give
+their pages back), its 13 drops 166 -> 119 ms. Callgrind `parse_file` on webpack 2.106 -> 1.946 G (-7.5%, target was
+-10%: the allocator went from ~280 M to ~100 M instructions, the rest is parsing). Instructions (callgrind, K1): tsc
+4.648 -> 4.574, webpack 10.019 -> 9.868, vue 6.629 -> 6.552, effect 10.363 -> 10.209, vscode 95.76 -> 94.58 G (-1.2..
+-1.6%); at the end, every corpus: tsc 4.577, type-fest 23.515, valibot 3.563, react 1.464, nest 1.110, webpack 9.873,
+zod 5.406, xstate 2.723, drizzle 6.800, vue 6.557, effect 10.224, vscode 94.640, excalidraw 7.845, tanstack-router
+5.389 G. Suite, every oracle, threadcheck and checkerdiff unchanged; suite and both `-b` corpora pass under
+`TTTT_AST_POISON=1`.
+
 ## Plan 64 stage 6, JavaScript declaration emit (2026-10-16, todo entry 4)
 Suite **13746 / 13787** (+1 own test, 0 lost; TS dts 1478 / 1502 unchanged, **JS dts 0 -> 320 / 346** apart),
 **dtsdiff 1116 -> 1166 / 1233 projects, 95824 -> 96584 / 96726 files** (0 written that tsgo doesn't), clidiff `--emit`

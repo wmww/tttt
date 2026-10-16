@@ -478,11 +478,13 @@ never passed to free() (glibc aborts if it is), a later phase's realloc of an ar
 the drop functions still walk the AST to free its malloc'd parts (cstrs, what resolve attached), the arena parts being
 no-ops. During the parse freed blocks are reused (exact size classes up to 1 KB, best fit with splitting above:
 speculation's dead nodes and outgrown lists); the blocks still free when the file ends are lost (~3% on vscode).
-Threads bump files end to end through 64 MB slabs, prefaulting a MB ahead (`MADV_POPULATE_WRITE`: a trap per page was a
-tenth of the parse); `ast_arena_drop()` gives a file's whole pages back (`TTTT_AST_POISON=1` makes them fault instead,
-to find readers of a dropped AST) and its addresses are never reused. `TTTT_AST_STATS=1` prints the arena's churn at
-exit. `scripts/memtrack.sh` (malloc) and `scripts/arenasites.sh` (the binder and checker arenas) show where the
-other bytes go. Invariants of the compact layout:
+Threads bump files end to end through 64 MB slabs, prefaulting 2 MB ahead (`MADV_POPULATE_WRITE`: a trap per page was
+a tenth of the parse; the checker and binder arenas prefault a MB ahead too), each 2 MB as a huge page while
+`huge_pages_take()`'s budget (the free blocks of order >= 9 in `/proc/buddyinfo`) lasts: past it, a madvised fault
+compacts memory synchronously, which cost vscode a third of its wall time on a machine with fragmented memory; `ast_arena_drop()` gives a file's whole pages back (`TTTT_AST_POISON=1` makes them fault instead,
+to find readers of a dropped AST) and its addresses are never reused. `TTTT_AST_STATS=1` prints the arenas' churn at
+exit; `TTTT_AST_MALLOC=1` turns them off (the AST in malloc, which `scripts/memtrack.sh` sees: it sets it).
+`scripts/arenasites.sh` shows the binder and checker arenas. Invariants of the compact layout:
 - The shared all-null statics are const (`initialized_binding_no_value` is in rodata: a stray write segfaults). Absent
   parts are shared all-zero stand-ins too (`type_node_none` from `binding_type()`, `symbol_table_empty` from
   `scope_locals()`): write only through `binding_set_type()`/`scope_locals_mut()`, and check the pointer, not just

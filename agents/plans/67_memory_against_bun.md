@@ -54,7 +54,7 @@ Bun's whole vscode run (program included) is 1.44 GB.
   blocks that declare something. An audit of which scopes are kept but never declare anything may be worth ~-100 MB.
   Stage 2.
 - **Plan 63 stage 2, per-file parse arenas**: a time lever (~11% of parse instructions, the huge-page re-exec), ~-5%
-  RSS at most (malloc's headers). Stays plan 63's, after this plan's stage 2.
+  RSS at most (malloc's headers). Done 2026-10-16 (plan 63, closed: bugs/perf_leads.md "Memory").
 - **A compact AST** (exact-size node variants in per-file arenas, 32-bit references, 8-byte spans): the zero words
   bound it at ~-650 MB; realistically -400..-500 MB (vscode K1 with recycling ~2.5 -> ~2.0 GB). It is a rewrite of
   the AST's representation under ~1700 `EXPR_*` sites, ~600 statement-kind sites and every walk: several sessions,

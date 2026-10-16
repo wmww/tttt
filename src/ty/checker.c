@@ -18,7 +18,8 @@ struct ArenaChunk {
     size_t cap;
     size_t mapped; // Bytes mapped for the chunk, header included
     size_t populated; // data's pages below this offset are faulted in (arena_populate())
-    char data[];
+    bool huge; // madvised for huge pages (huge_pages_take())
+    alignas(16) char data[];
 };
 
 // Faults the next MB of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
@@ -90,9 +91,12 @@ static void* arena_alloc_inner(Arena* me, size_t size) {
         size_t mapped = sizeof(ArenaChunk) + cap;
         void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         panic_if(memory == MAP_FAILED, "out of memory");
-        // Transparent huge pages only if asked: see DebugEnv.huge_pages
-        if (debug_env.huge_pages) madvise(memory, mapped, MADV_HUGEPAGE);
+        // Transparent huge pages while the system has them free: a few hundred MB of types page faulted 4 KB at a
+        // time is a tenth of a big project's time
+        bool huge = huge_pages_take(mapped);
+        if (huge) madvise(memory, mapped, MADV_HUGEPAGE);
         ArenaChunk* chunk = memory;
+        chunk->huge = huge;
         chunk->cap = cap;
         chunk->mapped = mapped;
         if (my head && size > ARENA_CHUNK_SIZE) {
@@ -135,6 +139,7 @@ void arena_drop(Arena* me) {
     ArenaChunk* i = my head;
     while (i) {
         ArenaChunk* next = i->next;
+        if (i->huge) huge_pages_give(i->mapped);
         munmap(i, i->mapped);
         i = next;
     }

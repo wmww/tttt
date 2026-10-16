@@ -219,7 +219,30 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/63_ast_allocation.md has the AST and binder; measurements.md "Memory breakdown" the corpus table)
+## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/75_memory_endgame.md the compact AST; measurements.md "Memory breakdown" the corpus table)
+- **The AST's allocation** (plan 63, closed 2026-10-16; its measurements are in measurements.md "Plan 63"): the AST is
+  in per-file arenas (`ast_alloc.h`). What is left of it:
+  - **The drop is still a walk**: `block_drop()` frees the AST's malloc'd parts (cooked string literals and template
+    texts in `cstr`s, `Value` strings, what resolve attaches: `AccessSite`s, rare structs made after the parse,
+    ModuleRef rares written by module resolution) and is a no-op for the rest. An O(ranges) drop (-b frees 13
+    programs in 119 ms on tsc-src, the test harness one per test) needs those in the arena too (`csview`s into it) or
+    tracked per file; then `drop_source_files()` is `ast_arena_drop()` per file.
+  - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by
+    later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
+    stack and copied out exact would remove the churn, not much memory.
+  - Struct diet leftovers (plan 63 stage 1b, < 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
+    because of IdentifierExpr: `symbol` into the union when it differs from `target`, with a 2-bit kind and a per-file
+    side table for the union's other users; 54 `identifier_symbol()` readers, every union writer through a migrating
+    setter; a session of its own), **Binding element-only fields** behind a `BindingElement*` (37k of 700k bindings,
+    ~-18 MB, ~110 readers), **Symbol** 152 -> 144 (bit fields; `is_assigned*` are written by resolve threads and must
+    stay bytes), the **ResolvedModule** cache's failure hints behind a pointer (~-10 MB). PropertyExpr 128 -> 112
+    needs its name span derived from the source text (lower.c's synthesized accesses name keys from elsewhere). Not
+    worth it (measured): BinaryOpExpr, Statement, ClassItem. With the arena, sizes no longer round to malloc classes:
+    every 8 bytes saved now counts.
+  - Huge pages come from a budget read once from `/proc/buddyinfo` (`huge_pages_take()`): other processes taking
+    blocks meanwhile, or the kernel's background compaction freeing more, aren't seen. The malloc heap (source text,
+    checker intern tables and LazyMemo pages) gets none since the glibc re-exec went: the intern tables could move to
+    mmapped, madvised memory if a profile shows their faults.
 - Checker-side levers left by plan 60 stage 1 (2026-10-12, vscode numbers; the plan was deleted when plan 63 took over
   its AST and binder stages):
   - Where the checker's memory was at plan 60's start (e043e9e2; LazyMemo, CallResolution, PropDecl, Members and the
