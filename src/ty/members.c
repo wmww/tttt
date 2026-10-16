@@ -5779,6 +5779,9 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .decl_spans = first->decl->decl_spans,
             .decl_span_count = first->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
+            // (Declared by the first property's declaration, which declaration emit prints it from where that still
+            // says its type: `b?: {}` next to `b: {}`, tsgo's serializeTypeForDeclaration of the valueDeclaration)
+            .item = first->decl->item,
         };
     }
     IndexInfo index[8] = {0};

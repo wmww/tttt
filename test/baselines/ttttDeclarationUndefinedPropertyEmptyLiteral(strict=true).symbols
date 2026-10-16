@@ -1,0 +1,26 @@
+//// [test/cases/ttttDeclarationUndefinedPropertyEmptyLiteral.ts] ////
+
+=== ttttDeclarationUndefinedPropertyEmptyLiteral.ts ===
+// The `?: undefined` property a union of object literals gets next to a sibling's `b: {}` is declared by that
+// property (tsc's getUndefinedProperty), and an empty object literal says any type without properties (tsgo's
+// pseudoTypeEquivalentToType compares getPropertiesOfType, empty for undefined): declaration emit prints `b?: {}`
+// (slate's test/interfaces/Element/isElementList/not-full-element)
+export const input = [
+>input : Symbol(input, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 4, 12))
+
+  { children: [] },
+>children : Symbol(children, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 5, 3))
+
+  { type: 'set_node', path: [0], properties: {}, newProperties: {} },
+>type : Symbol(type, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 6, 3))
+>path : Symbol(path, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 6, 21))
+>properties : Symbol(properties, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 6, 32))
+>newProperties : Symbol(newProperties, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 6, 48))
+
+];
+export const other = [{ a: 1 }, { b: { c: 1 } }];
+>other : Symbol(other, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 8, 12))
+>a : Symbol(a, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 8, 23))
+>b : Symbol(b, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 8, 33))
+>c : Symbol(c, Decl(ttttDeclarationUndefinedPropertyEmptyLiteral.ts, 8, 38))
+

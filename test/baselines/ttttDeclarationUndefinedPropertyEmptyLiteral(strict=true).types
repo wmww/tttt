@@ -1,0 +1,41 @@
+//// [test/cases/ttttDeclarationUndefinedPropertyEmptyLiteral.ts] ////
+
+=== ttttDeclarationUndefinedPropertyEmptyLiteral.ts ===
+// The `?: undefined` property a union of object literals gets next to a sibling's `b: {}` is declared by that
+// property (tsc's getUndefinedProperty), and an empty object literal says any type without properties (tsgo's
+// pseudoTypeEquivalentToType compares getPropertiesOfType, empty for undefined): declaration emit prints `b?: {}`
+// (slate's test/interfaces/Element/isElementList/not-full-element)
+export const input = [
+>input : ({ children: never[]; type?: undefined; path?: undefined; properties?: {}; newProperties?: {}; } | { children?: undefined; type: string; path: number[]; properties: {}; newProperties: {}; })[]
+>[  { children: [] },  { type: 'set_node', path: [0], properties: {}, newProperties: {} },] : ({ children: never[]; } | { type: string; path: number[]; properties: {}; newProperties: {}; })[]
+
+  { children: [] },
+>{ children: [] } : { children: never[]; }
+>children : never[]
+>[] : never[]
+
+  { type: 'set_node', path: [0], properties: {}, newProperties: {} },
+>{ type: 'set_node', path: [0], properties: {}, newProperties: {} } : { type: string; path: number[]; properties: {}; newProperties: {}; }
+>type : string
+>'set_node' : "set_node"
+>path : number[]
+>[0] : number[]
+>0 : 0
+>properties : {}
+>{} : {}
+>newProperties : {}
+>{} : {}
+
+];
+export const other = [{ a: 1 }, { b: { c: 1 } }];
+>other : ({ a: number; b?: undefined; } | { a?: undefined; b: { c: number; }; })[]
+>[{ a: 1 }, { b: { c: 1 } }] : ({ a: number; } | { b: { c: number; }; })[]
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ b: { c: 1 } } : { b: { c: number; }; }
+>b : { c: number; }
+>{ c: 1 } : { c: number; }
+>c : number
+>1 : 1
+

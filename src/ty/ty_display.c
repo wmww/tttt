@@ -4346,7 +4346,12 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             pseudo_report(rep, pseudo_no_result_node(pseudo));
             return false;
         case PSEUDO_OBJECT: {
-            if (!(stripped->flags & TYF_OBJECT)) return false;
+            // (Compared by properties: an empty object literal says any type without properties, `undefined`, `never`,
+            // `any`, tsc's getPropertiesOfType being empty for them; the `?: undefined` member a union of object literals
+            // adds next to a `p: {}` is declared by it, and prints `p?: {}`)
+            if (!(stripped->flags & TYF_OBJECT)) {
+                return !pseudo->count && (stripped->flags & (TYF_UNDEFINED | TYF_NULL | TYF_NEVER | TYF_VOID | TYF_ANY | TYF_UNKNOWN));
+            }
             Members const* members = ty_members(me, stripped);
             u32 declarations = 0;
             for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(members->props[i]);
