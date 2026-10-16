@@ -68,6 +68,21 @@ effect, vscode 2 under tttt and tsgo).
   16% of vscode's wall here; declare+link is under plan 72's 10% bar on vscode, above it on webpack (its serial
   `declare`, plan 72 says look at that first). Load discovery (the pre-scan) stays unjustified: 6-8 ms waited.
 
+## Real-code fan-out 2 (2026-10-16, todo entry 3)
+Three agents (A source sweep diagnostics, B dtsdiff "type text", C dtsdiff's emitter buckets: import, member order,
+comments, maps), ~55 picks, 0 lost at every merge, 0 conflicts, 0 duplicates. `scripts/oracles.py`: suite **13745 /
+13783** (dts 1478 / 1502; +45 full passes, ~40 of them own tests), corpora all 0/0 but vue 0/2, DT 8595 / 8595,
+`$ExpectType` 68639, flagflip 18 / 6 / 3, source sweep **3356 / 3363** full (from 3352: arktype x3, tanstack-table,
+nextra, base-ui; tiptap/demos' 9 spurious TS2345 gone too; sample 818 / 822), perfsweep median 0.22, worst types ratio
+1.62 (date-fns docs, as at the start), **dtsdiff 1116 / 1233 projects, 95824 / 96726 files** (from 1077 / 95611; import
+22 -> 7, comment 3 -> 0, most map buckets), kdiff 1 / 3363, recycle 3 / 3363 (sequelize's TS7022 shown to be tsgo's own
+checker-count dependence). Instructions (callgrind, `--noEmit`) against the session start: tsc 4.648 (+0.1%), type-fest 23.517 (+0.4%), valibot 3.597 (+1.4%), react 1.495,
+nest 1.145, webpack 10.015, zod 5.433, xstate 2.755, drizzle 6.830 (+0.3%), vue 6.630 (+0.5%), effect 10.357, vscode
+95.804 (+0.1%), excalidraw 7.933 (+0.4%), tanstack-router 5.420 G (+0.4%). Mid-session bisects:
++1.2% tanstack-router (contextual intersection distribution recomputed per property lookup, cached), +1.1% valibot
+(9e42832a, tsgo's isDeclarationContainedBy offset quirk in inherited member order: kept, the cost is relations
+visiting properties in tsgo's order, not the check; a cheaper check measured the same).
+
 ## Plan 72 stage 1, the loader's serial work (2026-10-16, todo entry 1)
 vscode `load+parse files` (`--listFilesOnly`, 3 runs, HEAD f760ecdc against stage 1): T1 2525 -> 2310 ms, T4 940 ->
 805; effect T4 76 -> 45, webpack T4 100 -> 95. The loader's own work at T4 (`TTTT_LOAD_POOL_STATS=1`) 630 -> ~385 ms,

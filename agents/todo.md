@@ -28,8 +28,9 @@ users run tsc in (watch, incremental). Two small debt plans. The suite's last 12
    table (ty_class_member_symbols()): TS2300, the builder's joins, overload groups and computed accessor pairs (by key
    type: computed_symbol_first deleted). Suite 13699 / 13741 (+1 own test), every oracle and dtsdiff unchanged,
    instructions flat. Leftovers in hacks.md ("Reporting runs", "Member symbols").
-3. **Real-code fan-out** (execution, sub-agents in worktrees): the source sweep's leftovers (bugs/sourcesweep_checker.md)
-   and dtsdiff's non-JS buckets (bugs/dts_emit.md: type text 42 projects, import 22, maps 16).
+3. Done 2026-10-16: real-code fan-out (3 agents, ~55 picks). Source sweep 3352 -> 3356 / 3363, dtsdiff 1077 -> 1116 /
+   1233 projects (95611 -> 95824 files), suite 13745 / 13783, every other oracle unchanged; leftovers in
+   bugs/sourcesweep_checker.md and bugs/dts_emit.md. Instructions: measurements.md "Real-code fan-out 2".
 4. **Plan 64 stage 6** (execution): `.d.ts` for JavaScript sources, first session (77 dtsdiff projects).
 5. **Plan 64 stage 6** continued, or its leftovers by fan-out; then plan 64 is closed into bugs/dts_emit.md.
 6. **Plan 63 stage 2** (execution): per-file parse arenas (its 2a audit may stop it; say why in the plan).
