@@ -104,6 +104,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationAbstractInstantiationExpressionParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationAugmentedModuleName': {
         errors: true,
         symbols: true,

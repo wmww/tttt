@@ -5341,7 +5341,11 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     if (display_over(d) || anonymous_elided(d, ty)) return false; // (The placeholder is a keyword)
     Members const* members = ty_members(me, ty);
     // (A class's `prototype` counts, even where it isn't written: `{ new (): C; }`, tsc's createTypeNodeFromObjectType)
-    return !members->prop_count && !members->index_count && !members->mapped &&
+    // (Not for an abstract construct signature, which is written alone where `prototype` isn't: an instantiation
+    // expression of an abstract class, `(abstract new () => C<string>) & typeof M`)
+    bool abstract_alone = members->construct_count == 1 && !members->call_count &&
+        (members->construct[0]->flags & SIGNATURE_ABSTRACT) && !written_prop_count(d, members);
+    return (!members->prop_count || abstract_alone) && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
 }
 
@@ -5598,7 +5602,8 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     // (A conditional type printed as the elided information placeholder is `any`)
     bool conditional = (ty->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, ty)) || mapped_as_conditional(me, d, ty);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || ty->kind == TY_KEYOF ||
-        type_query || readonly || unique_symbol || is_function_like(me, d, ty) || anonymous_prints_type_query(d, ty);
+        type_query || readonly || unique_symbol || is_function_like(me, d, ty) || anonymous_prints_type_query(d, ty) ||
+        displays_as_intersection(me, d, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {

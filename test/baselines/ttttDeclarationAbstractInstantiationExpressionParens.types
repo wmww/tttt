@@ -1,0 +1,45 @@
+//// [test/cases/ttttDeclarationAbstractInstantiationExpressionParens.ts] ////
+
+=== ttttDeclarationAbstractInstantiationExpressionParens.ts ===
+// An instantiation expression of an abstract class prints as its abstract construct signature alone (the class's
+// `prototype` isn't written), a constructor type: parenthesized in an intersection or array like any function type
+// (discord.js' builders' ts-mixer bases printed `abstract new () => Base<X> & typeof Mixin`)
+export abstract class Base<T> { t!: T }
+>Base : Base<T>
+>t : T
+
+export class Mix { m!: number }
+>Mix : Mix
+>m : number
+
+declare function both<S1, S2>(a: S1, b: S2): S1 & S2;
+>both : <S1, S2>(a: S1, b: S2) => S1 & S2
+>a : S1
+>b : S2
+
+export const intersected = both(Base<string>, Mix);
+>intersected : ((abstract new () => Base<string>) & { prototype: Base<any>; }) & typeof Mix
+>both(Base<string>, Mix) : ((abstract new () => Base<string>) & { prototype: Base<any>; }) & typeof Mix
+>both : <S1, S2>(a: S1, b: S2) => S1 & S2
+>Base<string> : (abstract new () => Base<string>) & { prototype: Base<any>; }
+>Base : typeof Base
+>Mix : typeof Mix
+
+export const listed = [Base<number>];
+>listed : ((abstract new () => Base<number>) & { prototype: Base<any>; })[]
+>[Base<number>] : ((abstract new () => Base<number>) & { prototype: Base<any>; })[]
+>Base<number> : (abstract new () => Base<number>) & { prototype: Base<any>; }
+>Base : typeof Base
+
+export class Plain<T> { t!: T }
+>Plain : Plain<T>
+>t : T
+
+export const plain = both(Plain<string>, Mix);
+>plain : { new (): Plain<string>; prototype: Plain<any>; } & typeof Mix
+>both(Plain<string>, Mix) : { new (): Plain<string>; prototype: Plain<any>; } & typeof Mix
+>both : <S1, S2>(a: S1, b: S2) => S1 & S2
+>Plain<string> : { new (): Plain<string>; prototype: Plain<any>; }
+>Plain : typeof Plain
+>Mix : typeof Mix
+
