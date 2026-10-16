@@ -4787,9 +4787,7 @@ static Span jsdoc_tag_node_span_with(JsDocTag const* tag, TypeNode const* type) 
 
 // The type literal the `@property`/`@param` tags named `prefix.x` among `props` make (`x` when prefix is empty; tsc's
 // JSDocTypeLiteral, nested through `o.a` names under an `{Object}` one)
-// `described`: its members keep their tags' descriptions as comments in declaration emit (a `@typedef`'s or
-// `@callback`'s: tsgo's transformer visits those types, Interface.jsdoc_described)
-static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, Span span, bool described) {
+static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, Span span) {
     VecInterfaceMember members = {0};
     for (isize i = 0; i < count; i++) {
         JsDocTag* tag = &props[i];
@@ -4804,7 +4802,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         bool array;
         TypeNode type;
         if (has_children && jsdoc_is_object_type(tag, &array)) {
-            type = jsdoc_type_literal(props + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag), described);
+            type = jsdoc_type_literal(props + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
@@ -4821,7 +4819,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         ));
     }
     TypeNode ret = type_interface((Interface){
-        .members = members, .parsed = true, .jsdoc_literal = true, .jsdoc_described = described, .span = span,
+        .members = members, .parsed = true, .jsdoc_literal = true, .span = span,
     });
     ret.parsed = true;
     return ret;
@@ -5148,7 +5146,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         bool array;
         if (direct && jsdoc_is_object_type(tag, &array)) {
             Span type_span = tag->type_span;
-            TypeNode literal = jsdoc_type_literal(tag + 1, children, span_sv(tag->name), jsdoc_tag_decl_span(tag), false);
+            TypeNode literal = jsdoc_type_literal(tag + 1, children, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) literal = type_array(c_new(TypeNode, literal), false), literal.parsed = true;
             type_drop(&tag->type);
             tag->type = literal;
@@ -5278,7 +5276,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
                 jsdoc_name_is_under(span_sv(children[j].name), span_sv(tag->name));
         }
         if (has_children && jsdoc_is_object_type(tag, &array)) {
-            type = jsdoc_type_literal(children + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag), true);
+            type = jsdoc_type_literal(children + i + 1, count - i - 1, span_sv(tag->name), jsdoc_tag_decl_span(tag));
             if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
         } else if (tag->has_type) {
             type = jsdoc_take_type(tag, nullptr);
@@ -5616,7 +5614,7 @@ static void jsdoc_bind_comments(
                     type = jsdoc_take_type(type_child, nullptr);
                     type.from_jsdoc = false;
                 } else if (has_properties && jsdoc_is_object_type(i, &array)) {
-                    type = jsdoc_type_literal(i + 1, children, (csview){0}, tag_span, true);
+                    type = jsdoc_type_literal(i + 1, children, (csview){0}, tag_span);
                     if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
                 } else if (i->has_type) {
                     type = jsdoc_take_type(i, nullptr);

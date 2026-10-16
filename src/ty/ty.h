@@ -2651,6 +2651,10 @@ typedef struct TyDisplay {
     // writes a declaration's trailing comments itself sets the end to its annotation's
     char const* comments_container_start;
     char const* comments_container_end;
+    // Declaration emit: a `@typedef`'s type literal (made of `@property` tags), whose members are written with their
+    // tags' descriptions as JSDoc comments (tsgo's preservePartialJsDoc of the transformer's property signatures; not
+    // in the literals deeper down, which the node builder reuses)
+    struct Interface const* jsdoc_described;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

@@ -17,8 +17,6 @@ typedef struct Interface {
     // A JSDoc type literal made of `@param`/`@property` tags: tsc's printer reprints it on several lines (which the
     // types baseline flattens), see display_node_interface()
     bool jsdoc_literal : 1;
-    // Of a `@typedef`/`@callback`: declaration emit gives its members their tags' descriptions (preservePartialJsDoc)
-    bool jsdoc_described : 1;
     bool type_literal : 1; // A type literal's members, not an interface declaration's body
     Span span; // From `{` to `}`
 } Interface;

@@ -183,94 +183,6 @@ static void member_end_node(TyDisplay d, Span declaration, char const* separator
     member_end_node_mapped(d, declaration, separators, false);
 }
 
-// Declaration emit: a JSDoc `@property {T} name description` member's description as a comment of its own (tsgo's
-// preservePartialJsDoc: the transformer visits the reparsed property signature, GetTextOfJSDocComment of the tag).
-// `tag` is the member's span (from the `@` to the next tag), `name` its name. Continuation lines lose their leading
-// `*` and the whitespace before the column the description started at (parseTagComments' margin)
-static void out_jsdoc_property_description(TyDisplay d, Span tag, Span name) {
-    char const* c = span_end_ptr(name);
-    char const* end = span_end_ptr(tag);
-    // (The name may be the last part of a dotted one, `[person.age]`: the bracket is before its first)
-    char const* before = name.buf;
-    while (before > tag.buf && before[-1] != ' ' && before[-1] != '\t' && before[-1] != '\n' && before[-1] != '}') before--;
-    while (*before == ' ' || *before == '\t') before++;
-    if (*before == '[') {
-        // (`[name=default]`)
-        int depth = 0;
-        for (; c < end && !(depth == 0 && *c == ']'); c++) {
-            if (*c == '[' || *c == '{' || *c == '(') depth++;
-            else if (*c == ']' || *c == '}' || *c == ')') depth--;
-        }
-        if (c < end) c++;
-    }
-    while (c < end && (*c == ' ' || *c == '\t')) c++;
-    if (c < end && *c == '{') {
-        // (`@property name {T}`: the type after the name)
-        int depth = 0;
-        for (; c < end; c++) {
-            if (*c == '{') depth++;
-            else if (*c == '}' && !--depth) break;
-        }
-        if (c < end) c++;
-        while (c < end && (*c == ' ' || *c == '\t')) c++;
-    }
-    if (c >= end) return;
-    // (The margin: the column the description starts at, or the tag's where it starts on a later line)
-    char const* line_start = c;
-    while (line_start > tag.buf && line_start[-1] != '\n') line_start--;
-    isize margin = c - line_start;
-    if (*c == '\n' || *c == '\r') {
-        char const* tag_line = tag.buf;
-        char const* file_start = cstr_str(&span_source(tag)->contents);
-        while (tag_line > file_start && tag_line[-1] != '\n') tag_line--;
-        margin = tag.buf - tag_line;
-    }
-    cstr text = cstr_init();
-    bool first = true;
-    while (c < end) {
-        char const* eol = c;
-        while (eol < end && *eol != '\n') eol++;
-        char const* text_end = eol;
-        if (text_end > c && text_end[-1] == '\r') text_end--;
-        if (!first) {
-            // (The line's leading whitespace and `*`, then what's left of the margin)
-            char const* l = c;
-            while (l < text_end && (*l == ' ' || *l == '\t')) l++;
-            if (l < text_end && *l == '*') l++;
-            char const* ws = l;
-            while (l < text_end && (*l == ' ' || *l == '\t')) l++;
-            char const* keep = c + margin;
-            c = l == text_end ? text_end : keep > l ? l : keep < ws ? ws : keep;
-            cstr_append_n(&text, "\n", 1);
-        }
-        cstr_append_n(&text, c, text_end - c);
-        first = false;
-        c = eol < end ? eol + 1 : end;
-    }
-    // (removeLeadingNewlines, removeTrailingWhitespace)
-    char const* t = cstr_str(&text);
-    isize n = cstr_size(&text);
-    isize from = 0;
-    while (from < n && (t[from] == '\n' || t[from] == '\r')) from++;
-    while (n > from && (t[n - 1] == '\n' || t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\r')) n--;
-    if (n > from) {
-        out_lit(d, "/**\n");
-        for (isize i = from; i < n;) {
-            isize j = i;
-            while (j < n && t[j] != '\n') j++;
-            out_indent(d);
-            out_lit(d, " * ");
-            out(d, (csview){ t + i, j - i });
-            out_lit(d, "\n");
-            i = j + 1;
-        }
-        out_indent(d);
-        out_lit(d, " */\n");
-        out_indent(d);
-    }
-    cstr_drop(&text);
-}
-
 // (With the TyDisplay brace_open() was given)
 static void brace_close(TyDisplay d) {
     if (d.multiline) out_indent(d);
@@ -2474,8 +2386,145 @@ static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* memb
 
 static void param_comments_begin_at(TyDisplay d, Span span);
 
+// A `@property` tag's description, the way tsgo's parseTagComments collects it (the lines after the first lose their
+// `*` and their indentation up to the description's margin), right trimmed: empty if none. `tag` is the tag's node
+// span (from its `@`), `name` its name
+static cstr jsdoc_tag_description(Span tag, Span name) {
+    cstr ret = cstr_init();
+    if (!span_valid(tag) || !span_valid(name)) return ret;
+    char const* end = span_end_ptr(tag);
+    // (The `@`'s column: only blanks and a `*` (or the comment's `/**`) are before it on its line)
+    char const* l = tag.buf;
+    while (l[-1] == ' ' || l[-1] == '\t' || l[-1] == '*' || l[-1] == '/') l--;
+    int tag_indent = (int)(tag.buf - l);
+    char const* c = span_end_ptr(name);
+    // (Past a bracketed name's `]`)
+    char const* before = name.buf;
+    while (before[-1] == ' ' || before[-1] == '\t') before--;
+    bool bracketed = before[-1] == '[';
+    if (bracketed) {
+        while (c < end && *c != ']' && *c != '\n') c++;
+        if (c < end && *c == ']') c++;
+    }
+    int margin;
+    char const* text = c;
+    while (text < end && (*text == ' ' || *text == '\t')) text++;
+    int indent;
+    if (text < end && *text != '\n' && *text != '\r') {
+        // (On the tag's line: the description's column is the margin)
+        margin = tag_indent + (int)(text - tag.buf);
+        indent = margin;
+        c = text;
+    } else {
+        // (On a later line: the leading blanks, `*` and blanks of the last line before it, past the tag's column, start it)
+        char const* p = text;
+        char const* last_line = nullptr;
+        while (p < end) {
+            if (*p == '\r' || *p == '\n') {
+                if (*p == '\r' && p + 1 < end && p[1] == '\n') p++;
+                p++;
+                last_line = p;
+                while (p < end && (*p == ' ' || *p == '\t')) p++;
+                if (p < end && *p == '*' && !(p + 1 < end && p[1] == '/')) p++;
+                while (p < end && (*p == ' ' || *p == '\t')) p++;
+                continue;
+            }
+            break;
+        }
+        if (!last_line || p >= end || *p == '@') return ret;
+        if (bracketed) {
+            // (The regular scanner read the `]` and skipped the line break: no line break seen, so no indentation
+            // kept, the margin is the text's offset from the tag)
+            margin = tag_indent + (int)(p - tag.buf);
+            indent = margin;
+            c = p;
+            goto lines;
+        }
+        margin = tag_indent;
+        int indent_text = (int)(p - last_line);
+        if (margin < indent_text) cstr_append_n(&ret, last_line + margin, indent_text - margin);
+        indent = indent_text;
+        c = p;
+    }
+    // The first line's text, then each line's past its margin
+lines:
+    for (;;) {
+        char const* eol = c;
+        while (eol < end && *eol != '\n' && *eol != '\r') eol++;
+        cstr_append_n(&ret, c, eol - c);
+        if (eol >= end) break;
+        c = eol;
+        if (*c == '\r' && c + 1 < end && c[1] == '\n') c++;
+        c++;
+        cstr_append(&ret, "\n");
+        indent = 0;
+        char const* ws = c;
+        while (c < end && (*c == ' ' || *c == '\t')) c++;
+        if (c < end && *c == '*' && !(c + 1 < end && c[1] == '/')) {
+            int n = (int)(c - ws);
+            if (n > margin) cstr_append_n(&ret, ws + margin, n - margin);
+            indent = n + 1;
+            c++;
+            ws = c;
+            while (c < end && (*c == ' ' || *c == '\t')) c++;
+        }
+        // (A tag on its own line ends it: the next one's, a nested `@property`)
+        if (c < end && *c == '@') break;
+        int n = (int)(c - ws);
+        if (indent + n > margin) {
+            int skip = margin - indent < 0 ? 0 : margin - indent;
+            cstr_append_n(&ret, ws + skip, n - skip);
+        }
+        indent += n;
+        (void)indent;
+    }
+    // (Leading line breaks and trailing whitespace dropped: removeLeadingNewlines, GetTextOfJSDocComment's trim)
+    isize_t start = 0;
+    while (start < cstr_size(&ret) && (cstr_str(&ret)[start] == '\n')) start++;
+    isize_t size = cstr_size(&ret);
+    while (size > start && (cstr_str(&ret)[size - 1] == ' ' || cstr_str(&ret)[size - 1] == '\t' ||
+        cstr_str(&ret)[size - 1] == '\n' || cstr_str(&ret)[size - 1] == '\r')) {
+        size--;
+    }
+    cstr out = cstr_init();
+    cstr_append_n(&out, cstr_str(&ret) + start, size - start);
+    cstr_drop(&ret);
+    return out;
+}
+
+// tsgo's preservePartialJsDoc: `/**`, ` * ` before each of the description's lines, ` */`, each line indented
+static void out_jsdoc_description(TyDisplay d, InterfaceMember const* member) {
+    cstr text = jsdoc_tag_description(member->declaration, member->key.span);
+    if (cstr_size(&text)) {
+        out_indent(d);
+        out_lit(d, "/**\n");
+        csview rest = cstr_sv(&text);
+        for (;;) {
+            isize_t at = csview_find_sv(rest, c_sv("\n"));
+            csview line = at == c_NPOS ? rest : csview_slice(rest, 0, at);
+            out_indent(d);
+            // (An empty line is ` *`: the writer leaves no trailing space)
+            if (line.size) {
+                out_lit(d, " * ");
+                out(d, line);
+            } else {
+                out_lit(d, " *");
+            }
+            out_lit(d, "\n");
+            if (at == c_NPOS) break;
+            rest = csview_slice(rest, at + 1, rest.size);
+        }
+        out_indent(d);
+        out_lit(d, " */\n");
+    }
+    cstr_drop(&text);
+}
+
+
 // `types_multiline`: how the member types print (a reused mapped type is single line itself, not the types in it)
 static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface, bool types_multiline) {
+    bool described = d.jsdoc_described == interface && d.multiline;
+    d.jsdoc_described = nullptr;
     bool empty = true;
     for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, d, i);
     if (empty) {
@@ -2525,12 +2574,8 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         }
         // (A mapped type isn't a member list: no comments, tsc's emitMappedType)
         Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
+        if (described && i->key.tag == INTERFACE_KEY_NAME) out_jsdoc_description(d, i);
         member_begin_node(d, comment_span);
-        if (interface->jsdoc_described && d.transformer_node && !d.builder_part && d.multiline && d.comments && i->key.tag == INTERFACE_KEY_NAME &&
-            span_valid(i->declaration)
-        ) {
-            out_jsdoc_property_description(d, i->declaration, i->key.span);
-        }
         map_span(d, comment_span, false);
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {

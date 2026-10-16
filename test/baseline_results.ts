@@ -170,6 +170,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationCyclicMappedAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationDeferredIterableTypeArgs': {
         errors: true,
         symbols: true,
@@ -398,7 +404,25 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMappedOverSubstitution': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMaps': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationMapsComputedBindingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationMapsMappedTypeParam': {
         errors: true,
         symbols: true,
         types: true,
@@ -411,6 +435,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationNestedParenthesizedTypes': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationNodeModulesResolutionMode': {
         errors: true,
         symbols: true,
         types: true,
@@ -784,6 +814,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsCommonJsReassignedFunctionExport': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDeclarationEmitCommonJs': {
         errors: true,
         symbols: true,
@@ -791,6 +827,30 @@ const baselines = {
         dts: true,
     },
     'ttttJsDeclarationEmitJsDoc': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttJsDeclarationMapsContinuationLine': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttJsDeclarationMapsJsDoc': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttJsDeclarationPropertyDescriptions': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttJsDeclarationReusedImportTypeAlias': {
         errors: true,
         symbols: true,
         types: true,

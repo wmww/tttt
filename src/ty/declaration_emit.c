@@ -3436,7 +3436,7 @@ static bool w_unless_written(Walk* me, isize_t start, isize_t written_from, char
 
 // `visited`: a node tsgo's transformer visits in JavaScript too (a type alias's type, heritage type arguments, an
 // interface's members), not an annotation, which goes through the node builder there (TryJSTypeNodeToTypeNode)
-static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration, bool visited) {
+static void w_node_described(Walk* me, TypeNode const* node, bool ends_declaration, bool visited, Interface const* described) {
     SINKS_OFF;
     TyParamNames names = walk_param_names(me);
     // (JavaScript's annotations go through the node builder, tsgo's TryJSTypeNodeToTypeNode)
@@ -3444,11 +3444,16 @@ static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration, boo
     TyDisplay d = emit_display(me, my out);
     d.param_names = &names;
     d.builder_part = my file->is_js && !visited;
+    d.jsdoc_described = described;
     // (The declaration ends with it: its trailing comments are the declaration's, which the caller writes)
     if (ends_declaration) d.comments_container_end = decl_map_type_end(node, my file);
     ty_display_node(my checker, d, node);
     ty_param_names_drop(&names);
     SINKS_ON;
+}
+
+static void w_node_in(Walk* me, TypeNode const* node, bool ends_declaration, bool visited) {
+    w_node_described(me, node, ends_declaration, visited, nullptr);
 }
 
 static void w_node(Walk* me, TypeNode const* node) { w_node_in(me, node, false, false); }
@@ -4925,7 +4930,11 @@ static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* sta
     w_name(me, decl->name);
     w_type_params(me, &decl->generic);
     w_lit(me, " = ");
-    w_node_visited(me, &decl->type);
+    // (A `@typedef`'s `@property` literal, or an array of one: the transformer visits it, its members keep their tags'
+    // descriptions)
+    TypeNode const* literal = decl->type.tag == TYPE_ARRAY && decl->type.array.element ? decl->type.array.element : &decl->type;
+    bool described = decl->jsdoc && literal->tag == TYPE_INTERFACE && literal->interface.jsdoc_literal;
+    w_node_described(me, &decl->type, false, true, described ? &literal->interface : nullptr);
     w_lit(me, ";");
     m(me, decl->jsdoc && decl->jsdoc_end ? decl->jsdoc_end : statement_end(statement));
     w_lit(me, "\n");
