@@ -116,6 +116,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationDeferredIterableTypeArgs': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationDependencyLinkUnbuilt': {
         errors: true,
         symbols: true,

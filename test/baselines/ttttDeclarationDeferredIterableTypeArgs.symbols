@@ -1,0 +1,56 @@
+//// [test/cases/ttttDeclarationDeferredIterableTypeArgs.ts] ////
+
+=== ttttDeclarationDeferredIterableTypeArgs.ts ===
+// `AsyncIterable<string, void, any>` prints without its trailing default arguments (tsc does that for four lib types)
+// unless it's a deferred reference whose node writes them all, here one in a type alias's conditional type: tsgo's
+// typeReferenceToTypeNode looks at the reference's node (trpc's subscription output printed `AsyncIterable<string, void>`)
+type Inf<T> = T extends AsyncIterable<infer Y, infer R, infer N> ? { y: Y; r: R; n: N } : never;
+>Inf : Symbol(Inf, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 9))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 9))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Y : Symbol(Y, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 43))
+>R : Symbol(R, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 52))
+>N : Symbol(N, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 61))
+>y : Symbol(y, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 68))
+>Y : Symbol(Y, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 43))
+>r : Symbol(r, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 74))
+>R : Symbol(R, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 52))
+>n : Symbol(n, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 80))
+>N : Symbol(N, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 61))
+
+type Out<T> = T extends AsyncIterable<any> ? AsyncIterable<Inf<T>['y'], Inf<T>['r'], Inf<T>['n']> : never;
+>Out : Symbol(Out, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 96))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 9))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 9))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Inf : Symbol(Inf, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 9))
+>Inf : Symbol(Inf, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 9))
+>Inf : Symbol(Inf, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 9))
+
+declare function sub<O extends AsyncIterable<any, void, any>>(f: () => O): { output: Out<O> };
+>sub : Symbol(sub, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 106))
+>O : Symbol(O, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 5, 21))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>f : Symbol(f, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 5, 62))
+>O : Symbol(O, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 5, 21))
+>output : Symbol(output, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 5, 76))
+>Out : Symbol(Out, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 3, 96))
+>O : Symbol(O, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 5, 21))
+
+export const generator = sub(async function* () { yield 'data'; });
+>generator : Symbol(generator, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 6, 12))
+>sub : Symbol(sub, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 4, 106))
+
+declare const g: AsyncIterable<string, void, any>;
+>g : Symbol(g, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 7, 13))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+
+export const plain = g;
+>plain : Symbol(plain, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 8, 12))
+>g : Symbol(g, Decl(ttttDeclarationDeferredIterableTypeArgs.ts, 7, 13))
+

@@ -6054,7 +6054,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_parenthesized_if(me, d, args.data[0], infer_here || needs_parens_in_array(me, d, args.data[0]));
                 out_lit(d, "[]");
             } else {
-                if (ty_elides_default_type_args(me, target)) {
+                // (Not a deferred reference whose node writes them all, `AsyncIterable<A, B, C>` in an alias's body:
+                // tsgo's typeReferenceToTypeNode looks at the reference's node)
+                TyDeferredRef const* deferred = ty->reference.deferred;
+                bool written = deferred && deferred->node->tag == TYPE_IDENTIFIER &&
+                    vec_spanned_type_size(&deferred->node->identifier->generic_params) >= args.len;
+                if (!written && ty_elides_default_type_args(me, target)) {
                     // `Iterable<T>` for `Iterable<T, any, any>` (tsc does this for four lib types only)
                     while (args.len) {
                         Ty const* fallback = ty_param_default(me, target->declared.type_params.data[args.len - 1]);
