@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeclarationSingleLineMappedNestedLiteral.ts] ////
+
+=== ttttDeclarationSingleLineMappedNestedLiteral.ts ===
+// A mapped type prints on one line in declaration emit (the node builder's EmitFlags.SingleLine), but only the mapped
+// type node itself: a type literal inside it prints on several lines, at the mapped type's indentation (feathers'
+// queryProperties printed `{ [K in keyof T]?: { [key: string]: JSONSchema; }; }`)
+export const reused = <T extends { [key: string]: number }, X extends { [K in keyof T]?: { [key: string]: string } }>(d: T, e?: X) =>
+>reused : <T extends { [key: string]: number; }, X extends { [K in keyof T]?: { [key: string]: string; }; }>(d: T, e?: X) => { [K in keyof T]: { a: X[K]; b: 1; }; }
+><T extends { [key: string]: number }, X extends { [K in keyof T]?: { [key: string]: string } }>(d: T, e?: X) =>  d as any as { [K in keyof T]: { a: X[K]; b: 1 } } : <T extends { [key: string]: number; }, X extends { [K in keyof T]?: { [key: string]: string; }; }>(d: T, e?: X) => { [K in keyof T]: { a: X[K]; b: 1; }; }
+>key : string
+>key : string
+>d : T
+>e : X | undefined
+
+  d as any as { [K in keyof T]: { a: X[K]; b: 1 } };
+>d as any as { [K in keyof T]: { a: X[K]; b: 1 } } : { [K in keyof T]: { a: X[K]; b: 1; }; }
+>d as any : any
+>d : T
+>a : X[K]
+>b : 1
+
+declare function m<T>(t: T): { [K in keyof T]: { a: T[K]; b: { c: 1 } } };
+>m : <T>(t: T) => { [K in keyof T]: { a: T[K]; b: { c: 1; }; }; }
+>t : T
+>a : T[K]
+>b : { c: 1; }
+>c : 1
+
+export const instantiated = <U,>(u: U) => m(u);
+>instantiated : <U>(u: U) => { [K in keyof U]: { a: U[K]; b: { c: 1; }; }; }
+><U,>(u: U) => m(u) : <U>(u: U) => { [K in keyof U]: { a: U[K]; b: { c: 1; }; }; }
+>u : U
+>m(u) : { [K in keyof U]: { a: U[K]; b: { c: 1; }; }; }
+>m : <T>(t: T) => { [K in keyof T]: { a: T[K]; b: { c: 1; }; }; }
+>u : U
+
+export function nested<T>(t: T) {
+>nested : <T>(t: T) => { inner: { deep: { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }; }; }
+>t : T
+
+  return { inner: { deep: null! as { [K in keyof T as `x${K & string}`]: { a: T[K] } } } };
+>{ inner: { deep: null! as { [K in keyof T as `x${K & string}`]: { a: T[K] } } } } : { inner: { deep: { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }; }; }
+>inner : { deep: { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }; }
+>{ deep: null! as { [K in keyof T as `x${K & string}`]: { a: T[K] } } } : { deep: { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }; }
+>deep : { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }
+>null! as { [K in keyof T as `x${K & string}`]: { a: T[K] } } : { [K in keyof T as `x${K & string}`]: { a: T[K]; }; }
+>null! : never
+>a : T[K]
+}
+

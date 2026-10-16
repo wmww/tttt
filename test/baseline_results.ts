@@ -350,6 +350,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationSingleLineMappedNestedLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationSynthesizedLiterals': {
         errors: true,
         symbols: true,

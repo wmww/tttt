@@ -1,0 +1,66 @@
+//// [test/cases/ttttDeclarationSingleLineMappedNestedLiteral.ts] ////
+
+=== ttttDeclarationSingleLineMappedNestedLiteral.ts ===
+// A mapped type prints on one line in declaration emit (the node builder's EmitFlags.SingleLine), but only the mapped
+// type node itself: a type literal inside it prints on several lines, at the mapped type's indentation (feathers'
+// queryProperties printed `{ [K in keyof T]?: { [key: string]: JSONSchema; }; }`)
+export const reused = <T extends { [key: string]: number }, X extends { [K in keyof T]?: { [key: string]: string } }>(d: T, e?: X) =>
+>reused : Symbol(reused, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 12))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 23))
+>key : Symbol(key, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 36))
+>X : Symbol(X, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 59))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 73))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 23))
+>key : Symbol(key, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 92))
+>d : Symbol(d, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 118))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 23))
+>e : Symbol(e, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 123))
+>X : Symbol(X, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 59))
+
+  d as any as { [K in keyof T]: { a: X[K]; b: 1 } };
+>d : Symbol(d, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 118))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 17))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 23))
+>a : Symbol(a, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 33))
+>X : Symbol(X, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 3, 59))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 17))
+>b : Symbol(b, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 42))
+
+declare function m<T>(t: T): { [K in keyof T]: { a: T[K]; b: { c: 1 } } };
+>m : Symbol(m, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 52))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 19))
+>t : Symbol(t, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 22))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 19))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 32))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 19))
+>a : Symbol(a, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 48))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 19))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 32))
+>b : Symbol(b, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 57))
+>c : Symbol(c, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 5, 62))
+
+export const instantiated = <U,>(u: U) => m(u);
+>instantiated : Symbol(instantiated, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 12))
+>U : Symbol(U, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 29))
+>u : Symbol(u, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 33))
+>U : Symbol(U, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 29))
+>m : Symbol(m, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 4, 52))
+>u : Symbol(u, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 33))
+
+export function nested<T>(t: T) {
+>nested : Symbol(nested, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 6, 47))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 7, 23))
+>t : Symbol(t, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 7, 26))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 7, 23))
+
+  return { inner: { deep: null! as { [K in keyof T as `x${K & string}`]: { a: T[K] } } } };
+>inner : Symbol(inner, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 10))
+>deep : Symbol(deep, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 19))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 38))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 7, 23))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 38))
+>a : Symbol(a, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 74))
+>T : Symbol(T, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 7, 23))
+>K : Symbol(K, Decl(ttttDeclarationSingleLineMappedNestedLiteral.ts, 8, 38))
+}
+

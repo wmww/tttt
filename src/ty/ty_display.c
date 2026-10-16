@@ -2286,7 +2286,8 @@ static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* memb
 
 static void param_comments_begin_at(TyDisplay d, Span span);
 
-static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
+// `types_multiline`: how the member types print (a reused mapped type is single line itself, not the types in it)
+static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface, bool types_multiline) {
     bool empty = true;
     for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, d, i);
     if (empty) {
@@ -2376,11 +2377,15 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 map_span(d, i->key.mapped->type_name, true);
                 out_lit(d, " in ");
-                display_node(me, d, &i->key.mapped->in_type);
+                // (The types in it print as they would where the mapped type is: EmitFlags.SingleLine is the node's)
+                TyDisplay type_d = d;
+                type_d.multiline = types_multiline;
+                if (!d.multiline) type_d.indent = outer.indent; // (A single line one doesn't indent)
+                display_node(me, type_d, &i->key.mapped->in_type);
                 map_at(d, decl_map_type_end(&i->key.mapped->in_type, D_MAP(d)));
                 if (i->key.mapped->has_as_type) {
                     out_lit(d, " as ");
-                    display_node(me, d, &i->key.mapped->as_type);
+                    display_node(me, type_d, &i->key.mapped->as_type);
                 }
                 out_lit(d, "]");
                 if (i->key.mapped->optional) {
@@ -2401,7 +2406,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     }
                 }
                 out_lit(d, ": ");
-                if (i->type.parsed) display_node(me, d, &i->type);
+                if (i->type.parsed) display_node(me, type_d, &i->type);
                 else out(reused_if(d, false), c_sv("any"));
                 param_names_leave(d, saved);
             }   break;
@@ -2750,7 +2755,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             ) {
                 interface_d.multiline = false;
             }
-            display_node_interface(me, interface_d, &node->interface);
+            display_node_interface(me, interface_d, &node->interface, d.multiline);
             break;
         }
         case TYPE_ARRAY: {
@@ -3914,7 +3919,10 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         }
     }
     u32 saved = param_names_enter(d);
-    d.multiline = false; // (The node builder's mapped type nodes are single line: EmitFlags.SingleLine)
+    // (The node builder's mapped type nodes are single line, EmitFlags.SingleLine: the node itself, not the types in
+    // it, which print as they would at its indentation)
+    TyDisplay inner_d = d;
+    d.multiline = false;
     TyDisplay outer = d;
     d = brace_open(d);
     member_begin(d);
@@ -3927,7 +3935,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     append_printed(d, &constraint_text);
     if (mapped->name_type) {
         out_lit(d, " as ");
-        ty_display(me, d, fresh_mapper ? ty_instantiate(me, mapped->name_type, fresh_mapper) : mapped->name_type);
+        ty_display(me, inner_d, fresh_mapper ? ty_instantiate(me, mapped->name_type, fresh_mapper) : mapped->name_type);
     }
     out_lit(d, "]");
     if (mapped->optional) out(d, mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
@@ -3950,7 +3958,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
         template = ty_union(me, parts, 2, nullptr, (TyList){0});
     }
-    ty_display(me, d, template);
+    ty_display(me, inner_d, template);
     member_end(d);
     brace_close(outer);
     approx_add(d, 10); // (tsc's createMappedTypeNodeFromType, after its parts)
