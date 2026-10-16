@@ -905,7 +905,13 @@ static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol
         out[0] = class_expression->commonjs_module;
         return 1;
     }
-    // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`)
+    // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`).
+    // Not a variable's: tsc's candidates are declarations whose parent is the source file (or a module block), and a
+    // variable declaration's parent is its declaration list, so `const f = () => 1; export = f` can't be named
+    // `typeof import("./m")` (redux-toolkit's lazy(() => import("./PostsList.js")) prints the function's type)
+    bool direct = false;
+    for (u32 i = 0; i < symbol->decl_count && !direct; i++) direct = symbol->decls[i].kind != SYMBOL_DECL_VARIABLE;
+    if (!direct) return 0;
     Symbol const* module = declaring_module(symbol);
     if (module && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
     return 0;

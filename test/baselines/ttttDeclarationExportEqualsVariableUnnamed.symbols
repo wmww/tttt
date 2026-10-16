@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationExportEqualsVariableUnnamed.ts] ////
+
+=== /a.ts ===
+const PostsList = () => 1;
+>PostsList : Symbol(PostsList, Decl(a.ts, 0, 5))
+
+export = PostsList;
+>PostsList : Symbol(PostsList, Decl(a.ts, 0, 5))
+
+=== /f.ts ===
+function Post() { return 1; }
+>Post : Symbol(Post, Decl(f.ts, 0, 0))
+
+export = Post;
+>Post : Symbol(Post, Decl(f.ts, 0, 0))
+
+=== /b.ts ===
+declare function lazy<T>(load: () => Promise<{ default: T }>): { t: T };
+>lazy : Symbol(lazy, Decl(b.ts, 0, 0))
+>T : Symbol(T, Decl(b.ts, 0, 22))
+>load : Symbol(load, Decl(b.ts, 0, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>default : Symbol(default, Decl(b.ts, 0, 46))
+>T : Symbol(T, Decl(b.ts, 0, 22))
+>t : Symbol(t, Decl(b.ts, 0, 64))
+>T : Symbol(T, Decl(b.ts, 0, 22))
+
+export const L = lazy(() => import('./a'));
+>L : Symbol(L, Decl(b.ts, 1, 12))
+>lazy : Symbol(lazy, Decl(b.ts, 0, 0))
+>'./a' : Symbol("./a", Decl(a.ts, 0, 0))
+
+export const F = lazy(() => import('./f'));
+>F : Symbol(F, Decl(b.ts, 2, 12))
+>lazy : Symbol(lazy, Decl(b.ts, 0, 0))
+>'./f' : Symbol("./f", Decl(f.ts, 0, 0))
+

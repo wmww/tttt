@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationExportEqualsVariableUnnamed.ts] ////
+
+=== /a.ts ===
+const PostsList = () => 1;
+>PostsList : () => number
+>() => 1 : () => number
+>1 : 1
+
+export = PostsList;
+>PostsList : () => number
+
+=== /f.ts ===
+function Post() { return 1; }
+>Post : () => number
+>1 : 1
+
+export = Post;
+>Post : () => number
+
+=== /b.ts ===
+declare function lazy<T>(load: () => Promise<{ default: T }>): { t: T };
+>lazy : <T>(load: () => Promise<{ default: T; }>) => { t: T; }
+>load : () => Promise<{ default: T; }>
+>default : T
+>t : T
+
+export const L = lazy(() => import('./a'));
+>L : { t: () => number; }
+>lazy(() => import('./a')) : { t: () => number; }
+>lazy : <T>(load: () => Promise<{ default: T; }>) => { t: T; }
+>() => import('./a') : () => Promise<{ default: () => number; }>
+>import('./a') : Promise<{ default: () => number; }>
+>'./a' : "./a"
+
+export const F = lazy(() => import('./f'));
+>F : { t: () => number; }
+>lazy(() => import('./f')) : { t: () => number; }
+>lazy : <T>(load: () => Promise<{ default: T; }>) => { t: T; }
+>() => import('./f') : () => Promise<{ default: () => number; }>
+>import('./f') : Promise<{ default: () => number; }>
+>'./f' : "./f"
+
