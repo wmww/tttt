@@ -224,6 +224,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationInferImpliedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationInferredPredicatePaintsImport': {
         errors: true,
         symbols: true,

@@ -1,0 +1,48 @@
+//// [test/cases/ttttDeclarationInferImpliedConstraint.ts] ////
+
+=== /a.ts ===
+export type Config = { page: string; meta: number };
+>Config : Config
+>page : string
+>meta : number
+
+type Src<C extends Config = Config> = { c: C } | { d: C };
+>Src : Src<C>
+>c : C
+>d : C
+
+type Gen<T> = T extends Src<infer D> ? D['meta'] : never;
+>Gen : Gen<T>
+
+type Gen2<T> = T extends Record<infer K extends string, Src> ? { [k in K]: T[k] extends Src<infer D> ? D['page'] : never }[K] : never;
+>Gen2 : Gen2<T>
+
+type T3<T> = T extends `a${infer S extends string}` ? S : T extends [...infer R extends unknown[]] ? R : T extends `b${infer N extends number}` ? N : never;
+>T3 : T3<T>
+
+type Box<X extends string> = { x: X };
+>Box : Box<X>
+>x : X
+
+type T4<T> = T extends Box<infer S extends 'a' | 'b'> ? S : T extends Box<infer Q extends string> ? Q : never;
+>T4 : T4<T>
+
+export declare function f<I>(i: I): { a: Gen<I>; b: Gen2<I>; c: T3<I>; d: T4<I> };
+>f : <I>(i: I) => { a: Gen<I>; b: Gen2<I>; c: T3<I>; d: T4<I>; }
+>i : I
+>a : Gen<I>
+>b : Gen2<I>
+>c : T3<I>
+>d : T4<I>
+
+=== /b.ts ===
+import { f } from './a';
+>f : <I>(i: I) => { a: I extends { c: infer D extends import("./a").Config; } | { d: infer D extends import("./a").Config; } ? D["meta"] : never; b: I extends Record<infer K extends string, { c: import("./a").Config; } | { d: import("./a").Config; }> ? { [k in K]: I[k] extends { c: infer D_1 extends import("./a").Config; } | { d: infer D_1 extends import("./a").Config; } ? D_1["page"] : never; }[K] : never; c: I extends `a${infer S}` ? S : I extends [...infer R] ? R : I extends `b${infer N extends number}` ? N : never; d: I extends { x: infer S_1 extends "a" | "b"; } ? S_1 : I extends { x: infer Q extends string; } ? Q : never; }
+
+export function g<J>(j: J) { return f(j); }
+>g : <J>(j: J) => { a: J extends { c: infer D extends import("./a").Config; } | { d: infer D extends import("./a").Config; } ? D["meta"] : never; b: J extends Record<infer K extends string, { c: import("./a").Config; } | { d: import("./a").Config; }> ? { [k in K]: J[k] extends { c: infer D_1 extends import("./a").Config; } | { d: infer D_1 extends import("./a").Config; } ? D_1["page"] : never; }[K] : never; c: J extends `a${infer S}` ? S : J extends [...infer R] ? R : J extends `b${infer N extends number}` ? N : never; d: J extends { x: infer S_1 extends "a" | "b"; } ? S_1 : J extends { x: infer Q extends string; } ? Q : never; }
+>j : J
+>f(j) : { a: J extends { c: infer D extends import("./a").Config; } | { d: infer D extends import("./a").Config; } ? D["meta"] : never; b: J extends Record<infer K extends string, { c: import("./a").Config; } | { d: import("./a").Config; }> ? { [k in K]: J[k] extends { c: infer D_1 extends import("./a").Config; } | { d: infer D_1 extends import("./a").Config; } ? D_1["page"] : never; }[K] : never; c: J extends `a${infer S}` ? S : J extends [...infer R] ? R : J extends `b${infer N extends number}` ? N : never; d: J extends { x: infer S_1 extends "a" | "b"; } ? S_1 : J extends { x: infer Q extends string; } ? Q : never; }
+>f : <I>(i: I) => { a: I extends { c: infer D extends import("./a").Config; } | { d: infer D extends import("./a").Config; } ? D["meta"] : never; b: I extends Record<infer K extends string, { c: import("./a").Config; } | { d: import("./a").Config; }> ? { [k in K]: I[k] extends { c: infer D_1 extends import("./a").Config; } | { d: infer D_1 extends import("./a").Config; } ? D_1["page"] : never; }[K] : never; c: I extends `a${infer S}` ? S : I extends [...infer R] ? R : I extends `b${infer N extends number}` ? N : never; d: I extends { x: infer S_1 extends "a" | "b"; } ? S_1 : I extends { x: infer Q extends string; } ? Q : never; }
+>j : J
+

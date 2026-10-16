@@ -773,7 +773,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
 
 // tsc's getInferredTypeParameterConstraint: an `infer X` without `extends` is constrained by where it is written. With
 // several declarations (`A<infer X> | B<infer X>`), by all of them
-Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
+Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param, bool omit_type_args) {
     Symbol const* symbol = param->param.symbol;
     Ty const* found[8];
     u32 len = 0;
@@ -803,6 +803,7 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
                     (TyList){ .data = &key_constraint, .len = 1 }));
             }   break;
             case INFER_POSITION_TYPE_ARG: {
+                if (omit_type_args) break;
                 IdentifierType const* reference = inferred->reference;
                 Symbol const* decl = canonical(me, reference->target);
                 if (!decl || span_valid(identifier_type_import_span(reference)) || reference->keyword) break;

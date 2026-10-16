@@ -5967,7 +5967,7 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
         if (state->constraint == ty_intrinsic(me, TY_ANY) && node != state->constraint_node) {
             state->constraint = ty_intrinsic(me, TY_UNKNOWN_);
         }
-        if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param);
+        if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param, false);
         state->constraint_state = LAZY_STATE_DONE;
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one

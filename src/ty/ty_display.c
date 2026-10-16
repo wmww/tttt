@@ -5958,12 +5958,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             u32 name_length = (u32)(cstr_size(d.target) - name_start);
             approx_add(d, ty->param.state->is_this ? 4 : declared_here ? name_length + 6 : d.types_baseline ? name_length :
                 2 * (name_length + 1));
-            if (declared_here && ty->param.state->constraint_node) {
+            // (Its constraint, written or implied by a type argument's position, unless the position implies it
+            // otherwise, `${infer S extends string}`: tsc's typeToTypeNodeHelper, omitTypeReferences as those may be
+            // elided)
+            Ty const* constraint = declared_here ? ty_param_constraint(me, ty) : nullptr;
+            Ty const* implied = constraint ? ty_implied_infer_constraint(me, ty, true) : nullptr;
+            if (constraint && !(implied && (implied == constraint || ty_is_related(me, constraint, implied, TY_RELATION_IDENTITY)))) {
                 approx_add(d, 9);
                 out_lit(d, " extends ");
                 TyDisplay inner = d;
                 inner.infer_params = (TyList){0};
-                ty_display(me, inner, ty_param_constraint(me, ty));
+                ty_display(me, inner, constraint);
             }
         }   break;
 
