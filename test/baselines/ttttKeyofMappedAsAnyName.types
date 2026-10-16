@@ -1,0 +1,68 @@
+//// [test/cases/ttttKeyofMappedAsAnyName.ts] ////
+
+=== ttttKeyofMappedAsAnyName.ts ===
+// `keyof` a mapped type with an `as` clause is the union of the names its keys map to (tsc's
+// getIndexTypeForMappedType), not the keys of its expanded members: a name that comes out the error type
+// (`T[k] extends X ? never : k` with `T[k]` the type of an unresolved import) makes the whole union any, where the
+// members only have a string index signature for it. zod v4's input type of a shape with a schema imported from an
+// unresolved module, through expect-type's toEqualTypeOf (nextra, TS2344)
+import { thing } from "nowhere";
+>thing : any
+
+type Shape = { a: typeof thing; b: string; c: number; d: any; u: Unresolved };
+>Shape : Shape
+>a : any
+>thing : any
+>b : string
+>c : number
+>d : any
+>u : Unresolved
+
+type Required_<T> = { [k in keyof T as T[k] extends number ? never : k]: T[k] };
+>Required_ : Required_<T>
+
+type Optional_<T> = { [k in keyof T as T[k] extends number ? k : never]?: T[k] };
+>Optional_ : Optional_<T>
+
+const k1: { zz: 1 } = null! as [keyof Required_<Shape>];
+>k1 : { zz: 1; }
+>zz : 1
+>null! as [keyof Required_<Shape>] : [any]
+>null! : never
+
+const k2: { zz: 1 } = null! as [keyof Optional_<Shape>];
+>k2 : { zz: 1; }
+>zz : 1
+>null! as [keyof Optional_<Shape>] : [any]
+>null! : never
+
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+>Prettify : { [K in keyof T]: T[K]; }
+
+type Input = Prettify<Required_<Shape> & Optional_<Shape>>;
+>Input : { [x: string]: any; b: string; c?: number | undefined; d: any; u: Unresolved; }
+
+const k3: { zz: 1 } = null! as [keyof Input];
+>k3 : { zz: 1; }
+>zz : 1
+>null! as [keyof Input] : [any]
+>null! : never
+
+type Strings = { [k in "x" | "y" as `get${Capitalize<k>}`]: k } & { [k in keyof Shape as string]: 1 };
+>Strings : Strings
+
+const k4: { zz: 1 } = null! as [keyof Strings];
+>k4 : { zz: 1; }
+>zz : 1
+>null! as [keyof Strings] : [string | number]
+>null! : never
+
+type Getters = { [k in keyof Shape as `get${Capitalize<k>}`]: 1 };
+>Getters : Getters
+
+const k5: { zz: 1 } = null! as [keyof Getters];
+>k5 : { zz: 1; }
+>zz : 1
+>null! as [keyof Getters] : ["getA" | "getB" | "getC" | "getD" | "getU"]
+>null! : never
+

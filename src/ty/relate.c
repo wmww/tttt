@@ -4182,6 +4182,47 @@ static Ty const* apparent_mapped_type_keys(Checker* me, MappedInfo const* mapped
     return ret;
 }
 
+// `keyof` a mapped type with an `as` clause over `keyof X` (tsc's getIndexTypeForMappedType): the `as` type of each
+// of X's property keys and index signature keys, where a `string` name stands for `string | number`. Not read off the
+// expanded members: a name that is `any` (`T[k] extends X ? never : k` with `T[k]` any) is a string index signature
+// there, but keeps the whole union `any` here. Null for another constraint
+Ty const* ty_mapped_type_name_keys(Checker* me, MappedInfo const* mapped) {
+    if (!mapped->name_type || !mapped->keyof_constraint || !mapped->modifiers_type) return nullptr;
+    Ty const* modifiers = mapped->modifiers_type;
+    TyList parts = modifiers->kind == TY_INTERSECTION ? modifiers->composite.types : (TyList){ .data = &modifiers, .len = 1 };
+    TyBuf keys = {0};
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = apparent_type(me, parts.data[p]);
+        TyBuf part_keys = {0};
+        if (part->flags & TYF_ANY) {
+            ty_buf_push(&part_keys, ty_intrinsic(me, TY_STRING));
+        } else if (part->flags & TYF_OBJECT) {
+            Members const* members = ty_members(me, part);
+            if (members->mapped) {
+                ty_buf_drop(&part_keys);
+                ty_buf_drop(&keys);
+                return nullptr;
+            }
+            for (u32 i = 0; i < members->prop_count; i++) {
+                if (!ty_prop_is_key(me, members->props[i])) continue;
+                ty_buf_push(&part_keys, ty_prop_key_literal(me, members->props[i]));
+            }
+            for (u32 i = 0; i < members->index_count; i++) ty_buf_push(&part_keys, members->index[i].key);
+        }
+        for (u32 i = 0; i < part_keys.len; i++) {
+            Ty const* key = part_keys.data[i];
+            TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 });
+            Ty const* name = ty_instantiate(me, mapped->name_type, mapper);
+            ty_buf_push(&keys, name);
+            if (name == ty_intrinsic(me, TY_STRING)) ty_buf_push(&keys, ty_intrinsic(me, TY_NUMBER));
+        }
+        ty_buf_drop(&part_keys);
+    }
+    Ty const* ret = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
+    ty_buf_drop(&keys);
+    return ret;
+}
+
 // A mapped type whose keys aren't known yet as the target (tsc's isGenericMappedType branch of
 // structuredTypeRelatedTo): S is related to `{ [P in Q]: T }` if Q is related to keyof S and S[Q] to T, to
 // `{ [P in Q]: X[P] }` if S is related to X. With `?`, the keys S has in common with Q are enough

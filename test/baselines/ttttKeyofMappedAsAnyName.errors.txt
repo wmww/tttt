@@ -1,0 +1,48 @@
+ttttKeyofMappedAsAnyName.ts(6,23): error TS2307: Cannot find module 'nowhere' or its corresponding type declarations.
+ttttKeyofMappedAsAnyName.ts(7,66): error TS2304: Cannot find name 'Unresolved'.
+ttttKeyofMappedAsAnyName.ts(10,7): error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+ttttKeyofMappedAsAnyName.ts(11,7): error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+ttttKeyofMappedAsAnyName.ts(14,7): error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+ttttKeyofMappedAsAnyName.ts(16,7): error TS2741: Property 'zz' is missing in type '[string | number]' but required in type '{ zz: 1; }'.
+ttttKeyofMappedAsAnyName.ts(18,7): error TS2741: Property 'zz' is missing in type '["getA" | "getB" | "getC" | "getD" | "getU"]' but required in type '{ zz: 1; }'.
+
+
+==== ttttKeyofMappedAsAnyName.ts (7 errors) ====
+    // `keyof` a mapped type with an `as` clause is the union of the names its keys map to (tsc's
+    // getIndexTypeForMappedType), not the keys of its expanded members: a name that comes out the error type
+    // (`T[k] extends X ? never : k` with `T[k]` the type of an unresolved import) makes the whole union any, where the
+    // members only have a string index signature for it. zod v4's input type of a shape with a schema imported from an
+    // unresolved module, through expect-type's toEqualTypeOf (nextra, TS2344)
+    import { thing } from "nowhere";
+                          ~~~~~~~~~
+!!! error TS2307: Cannot find module 'nowhere' or its corresponding type declarations.
+    type Shape = { a: typeof thing; b: string; c: number; d: any; u: Unresolved };
+                                                                     ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'Unresolved'.
+    type Required_<T> = { [k in keyof T as T[k] extends number ? never : k]: T[k] };
+    type Optional_<T> = { [k in keyof T as T[k] extends number ? k : never]?: T[k] };
+    const k1: { zz: 1 } = null! as [keyof Required_<Shape>];
+          ~~
+!!! error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+!!! related TS2728 ttttKeyofMappedAsAnyName.ts:10:13: 'zz' is declared here.
+    const k2: { zz: 1 } = null! as [keyof Optional_<Shape>];
+          ~~
+!!! error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+!!! related TS2728 ttttKeyofMappedAsAnyName.ts:11:13: 'zz' is declared here.
+    type Prettify<T> = { [K in keyof T]: T[K] } & {};
+    type Input = Prettify<Required_<Shape> & Optional_<Shape>>;
+    const k3: { zz: 1 } = null! as [keyof Input];
+          ~~
+!!! error TS2741: Property 'zz' is missing in type '[any]' but required in type '{ zz: 1; }'.
+!!! related TS2728 ttttKeyofMappedAsAnyName.ts:14:13: 'zz' is declared here.
+    type Strings = { [k in "x" | "y" as `get${Capitalize<k>}`]: k } & { [k in keyof Shape as string]: 1 };
+    const k4: { zz: 1 } = null! as [keyof Strings];
+          ~~
+!!! error TS2741: Property 'zz' is missing in type '[string | number]' but required in type '{ zz: 1; }'.
+!!! related TS2728 ttttKeyofMappedAsAnyName.ts:16:13: 'zz' is declared here.
+    type Getters = { [k in keyof Shape as `get${Capitalize<k>}`]: 1 };
+    const k5: { zz: 1 } = null! as [keyof Getters];
+          ~~
+!!! error TS2741: Property 'zz' is missing in type '["getA" | "getB" | "getC" | "getD" | "getU"]' but required in type '{ zz: 1; }'.
+!!! related TS2728 ttttKeyofMappedAsAnyName.ts:18:13: 'zz' is declared here.
+    

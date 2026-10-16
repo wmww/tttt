@@ -1,0 +1,102 @@
+//// [test/cases/ttttKeyofMappedAsAnyName.ts] ////
+
+=== ttttKeyofMappedAsAnyName.ts ===
+// `keyof` a mapped type with an `as` clause is the union of the names its keys map to (tsc's
+// getIndexTypeForMappedType), not the keys of its expanded members: a name that comes out the error type
+// (`T[k] extends X ? never : k` with `T[k]` the type of an unresolved import) makes the whole union any, where the
+// members only have a string index signature for it. zod v4's input type of a shape with a schema imported from an
+// unresolved module, through expect-type's toEqualTypeOf (nextra, TS2344)
+import { thing } from "nowhere";
+>thing : Symbol(thing, Decl(ttttKeyofMappedAsAnyName.ts, 5, 8))
+
+type Shape = { a: typeof thing; b: string; c: number; d: any; u: Unresolved };
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+>a : Symbol(a, Decl(ttttKeyofMappedAsAnyName.ts, 6, 14))
+>thing : Symbol(thing, Decl(ttttKeyofMappedAsAnyName.ts, 5, 8))
+>b : Symbol(b, Decl(ttttKeyofMappedAsAnyName.ts, 6, 31))
+>c : Symbol(c, Decl(ttttKeyofMappedAsAnyName.ts, 6, 42))
+>d : Symbol(d, Decl(ttttKeyofMappedAsAnyName.ts, 6, 53))
+>u : Symbol(u, Decl(ttttKeyofMappedAsAnyName.ts, 6, 61))
+>Unresolved : Symbol(Unresolved)
+
+type Required_<T> = { [k in keyof T as T[k] extends number ? never : k]: T[k] };
+>Required_ : Symbol(Required_, Decl(ttttKeyofMappedAsAnyName.ts, 6, 78))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 7, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 7, 23))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 7, 15))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 7, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 7, 23))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 7, 23))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 7, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 7, 23))
+
+type Optional_<T> = { [k in keyof T as T[k] extends number ? k : never]?: T[k] };
+>Optional_ : Symbol(Optional_, Decl(ttttKeyofMappedAsAnyName.ts, 7, 80))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 8, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 8, 23))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 8, 15))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 8, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 8, 23))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 8, 23))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 8, 15))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 8, 23))
+
+const k1: { zz: 1 } = null! as [keyof Required_<Shape>];
+>k1 : Symbol(k1, Decl(ttttKeyofMappedAsAnyName.ts, 9, 5))
+>zz : Symbol(zz, Decl(ttttKeyofMappedAsAnyName.ts, 9, 11))
+>Required_ : Symbol(Required_, Decl(ttttKeyofMappedAsAnyName.ts, 6, 78))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+
+const k2: { zz: 1 } = null! as [keyof Optional_<Shape>];
+>k2 : Symbol(k2, Decl(ttttKeyofMappedAsAnyName.ts, 10, 5))
+>zz : Symbol(zz, Decl(ttttKeyofMappedAsAnyName.ts, 10, 11))
+>Optional_ : Symbol(Optional_, Decl(ttttKeyofMappedAsAnyName.ts, 7, 80))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+>Prettify : Symbol(Prettify, Decl(ttttKeyofMappedAsAnyName.ts, 10, 56))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 11, 14))
+>K : Symbol(K, Decl(ttttKeyofMappedAsAnyName.ts, 11, 22))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 11, 14))
+>T : Symbol(T, Decl(ttttKeyofMappedAsAnyName.ts, 11, 14))
+>K : Symbol(K, Decl(ttttKeyofMappedAsAnyName.ts, 11, 22))
+
+type Input = Prettify<Required_<Shape> & Optional_<Shape>>;
+>Input : Symbol(Input, Decl(ttttKeyofMappedAsAnyName.ts, 11, 49))
+>Prettify : Symbol(Prettify, Decl(ttttKeyofMappedAsAnyName.ts, 10, 56))
+>Required_ : Symbol(Required_, Decl(ttttKeyofMappedAsAnyName.ts, 6, 78))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+>Optional_ : Symbol(Optional_, Decl(ttttKeyofMappedAsAnyName.ts, 7, 80))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+
+const k3: { zz: 1 } = null! as [keyof Input];
+>k3 : Symbol(k3, Decl(ttttKeyofMappedAsAnyName.ts, 13, 5))
+>zz : Symbol(zz, Decl(ttttKeyofMappedAsAnyName.ts, 13, 11))
+>Input : Symbol(Input, Decl(ttttKeyofMappedAsAnyName.ts, 11, 49))
+
+type Strings = { [k in "x" | "y" as `get${Capitalize<k>}`]: k } & { [k in keyof Shape as string]: 1 };
+>Strings : Symbol(Strings, Decl(ttttKeyofMappedAsAnyName.ts, 13, 45))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 14, 18))
+>Capitalize : Symbol(Capitalize, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 14, 18))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 14, 18))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 14, 69))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+
+const k4: { zz: 1 } = null! as [keyof Strings];
+>k4 : Symbol(k4, Decl(ttttKeyofMappedAsAnyName.ts, 15, 5))
+>zz : Symbol(zz, Decl(ttttKeyofMappedAsAnyName.ts, 15, 11))
+>Strings : Symbol(Strings, Decl(ttttKeyofMappedAsAnyName.ts, 13, 45))
+
+type Getters = { [k in keyof Shape as `get${Capitalize<k>}`]: 1 };
+>Getters : Symbol(Getters, Decl(ttttKeyofMappedAsAnyName.ts, 15, 47))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 16, 18))
+>Shape : Symbol(Shape, Decl(ttttKeyofMappedAsAnyName.ts, 5, 32))
+>Capitalize : Symbol(Capitalize, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(ttttKeyofMappedAsAnyName.ts, 16, 18))
+
+const k5: { zz: 1 } = null! as [keyof Getters];
+>k5 : Symbol(k5, Decl(ttttKeyofMappedAsAnyName.ts, 17, 5))
+>zz : Symbol(zz, Decl(ttttKeyofMappedAsAnyName.ts, 17, 11))
+>Getters : Symbol(Getters, Decl(ttttKeyofMappedAsAnyName.ts, 15, 47))
+

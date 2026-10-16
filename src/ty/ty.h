@@ -754,6 +754,8 @@ typedef struct MappedInfo {
     signed char optional;
 } MappedInfo;
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped);
+// `keyof` a mapped type with an `as` clause over `keyof X` (tsc's getIndexTypeForMappedType), null for another constraint
+Ty const* ty_mapped_type_name_keys(Checker* me, MappedInfo const* mapped);
 
 // The T for which `{ [K in keyof operand]: template }` (`mapped`) would be `source` (tsc's ReverseMappedType)
 typedef struct ReverseMapped {

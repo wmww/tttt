@@ -46,8 +46,7 @@ dependencies in package ids, landed by agent D). Left:
   vitest 5.0.2 pnpm copy whose package id (peers included) equals the first's: tttt dedups the file but still loads
   the duplicate's own imports (tsgo's redirect doesn't parse them). Probably unrelated to the error.
 - **arktype** (this.test.ts:190), **redux-toolkit** (module.ts:656, react/module.ts:216:
-  see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx,
-  **nextra-theme-docs** layout-props.test-d.ts:18: not looked at this round.
+  see agent A 2026-10-12 above), **monkeytype** SearchableAutoSetting.tsx: not looked at this round.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
   origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
   never_reduced_prop() type-variable member gap of the redux-toolkit entry).
@@ -92,9 +91,6 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
   the common supertype of its candidates, only `{ requestParserResult }`. Reduced to one file (17 lines, the two
   overloads, `declare function parse(): Promise<P | Response> | P | Response`). How tsc combines the candidates there
   (priority, return-type inference of the nested call) not found yet.
-- **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: `expectTypeOf<Actual>().toEqualTypeOf<Expected>` (an
-  instantiation expression; tsc reports TS2344 there too when it fails). tttt's `z.input<typeof z.strictObject({
-  ...LayoutPropsSchema.shape, ... })>` has a top-level `[x: string]: any` index signature (zod v4); not reduced.
 - **monkeytype frontend `SearchableAutoSetting.tsx:56/59`**: tanstack-form `<form.Field name={props.key} validators=...>`
   over a zod Config type: tsc's error is at `name` (the @ts-expect-error), tttt's at `validators`. Not reduced.
   storybook `theming/index.d.ts:12687` TS2344 (`ForwardedProps` vs `keyof LibraryManagedAttributes<...>`): not looked at.
@@ -327,8 +323,6 @@ read types). Left:
   `NodeTypes { selector; root; pseudo; tag }`, `Node = NodeTypes[keyof NodeTypes]`, Base/Container/_Selector/Root/
   Pseudo/Tag, 20 lines, `export {}`). Matching it means making the second round's error type land where tsc's does:
   plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
-- **nextra-theme-docs `layout-props.test-d.ts:18` +TS2344**: still the zod v4 `[x: string]: any` index signature of
-  the agent D 2026-10-12 entry; not reduced (zod v4's strictObject/shape types, big).
 - arktype (this.test.ts:190 +TS2322), better-auth,
   es-toolkit, knip, monkeytype, pixijs, base-ui, redux-toolkit: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).

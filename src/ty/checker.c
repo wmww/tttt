@@ -2923,6 +2923,23 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         if (members->mapped && (members->mapped->constraint->flags & TYF_NEVER)) return my intrinsics[TY_NEVER];
         // (A generic mapped type with an `as` clause stays `keyof` it: tsc 6.0's shouldDeferIndexType, see ty_simplified())
         if (!members->mapped) {
+            // Of a mapped type with an `as` clause over `keyof X`, the names X's keys map to (tsc's
+            // getIndexTypeForMappedType), not the expanded members' keys: a name that is any makes it any, where the
+            // members have a string index signature. Its constraint if that has the same members
+            MappedInfo const* expanded = members_rare(members)->expanded_from;
+            Ty const* names = expanded && expanded->name_type ? ty_mapped_type_name_keys(me, expanded) : nullptr;
+            if (names) {
+                if (names->kind == TY_UNION && expanded->constraint->kind == TY_UNION &&
+                    names->composite.types.len == expanded->constraint->composite.types.len
+                ) {
+                    bool same = true;
+                    for (u32 i = 0; i < names->composite.types.len && same; i++) {
+                        same = names->composite.types.data[i] == expanded->constraint->composite.types.data[i];
+                    }
+                    if (same) return expanded->constraint;
+                }
+                return names;
+            }
             TyBuf parts = {0};
             u32 entries = 0; // (tsc's list of one type per property and per index info: getUnionType returns one alone as it is)
             for (u32 i = 0; i < members->prop_count; i++) {

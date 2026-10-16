@@ -708,6 +708,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttKeyofMappedAsAnyName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttKnownTruthyBodySearchContextualParameter': {
         errors: true,
         symbols: true,
