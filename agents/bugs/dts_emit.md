@@ -91,10 +91,11 @@ size on real code, each with an example:
     `unknown[]` looks like its own quirk, uninvestigated.
   - feathers generators `language: "js" | "ts"` (tsgo prints, no comments, an intersection member repeated) after a
     long `.then()` chain of prompts: checker-side identity, uninvestigated.
-  - react-navigation `useNavigationBuilder`/`useNavigationHelpers` (`Readonly<{...}>` expanded vs `NavigationAction`),
-    react-scan `Component<P>` vs `Component<Attributes, {}>` (an inferred `this` type), react-redux, mockoon
-    `Observable<any>`, redux-toolkit `LazyExoticComponent<typeof import(...)>` (tsgo: the module's default's
-    signature), react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures, effect's 5 and
+  - react-navigation `useNavigationBuilder`/`useNavigationHelpers` (`Readonly<{...}>` expanded vs `NavigationAction`
+    in the function member of `NavigationAction | ((state) => NavigationAction)`; a two-file probe matches),
+    react-scan `Component<P>` vs `Component<Attributes, {}>` (an inferred `this` type), react-redux (tsgo reuses
+    `import("redux").Dispatch` as written without type arguments, tttt prints `Dispatch<UnknownAction>`; a three-file
+    probe matches), mockoon `Observable<any>`, react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures, effect's 5 and
     excalidraw's 3 (see "Checker types, uninvestigated"): one file each, not looked at.
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
