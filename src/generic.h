@@ -13,6 +13,8 @@ typedef struct GenericItem {
     bool extends_explicit : 1;
     bool fallback_explicit : 1; // fallback is set
     bool jsdoc : 1; // A JSDoc `@template`: not part of the baselines' walk
+    // `@template [T]`: bracketed without a default, tsgo's missing type node (declaration emit prints `T = `)
+    bool jsdoc_default_missing : 1;
     TypeNode extends;
     Span extends_span; // Null for a JSDoc `@template`
     TypeNode* fallback; // Owned, the default (`= T`); null without one

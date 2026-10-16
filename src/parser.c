@@ -5288,6 +5288,8 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
             item.fallback = c_new(TypeNode, i->default_type);
             item.fallback_explicit = true;
             i->has_default = false;
+        } else if (i->bracketed) {
+            item.jsdoc_default_missing = true;
         }
         list_push(vec_generic_item, &ret.items, item);
     }

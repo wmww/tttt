@@ -2190,6 +2190,8 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         if (i->fallback_explicit) {
             out_lit(d, " = ");
             display_node(me, param_d, i->fallback);
+        } else if (i->jsdoc_default_missing && d.multiline) {
+            out_lit(d, " = ");
         }
         if (D_MAP(param_d) && span_valid(i->full_span)) map_at(param_d, decl_map_back_trivia(span_end_ptr(i->full_span), i->full_span.buf));
         if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, d.indent, span_end_ptr(i->full_span));
@@ -3415,6 +3417,7 @@ void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate
 
 // `(a: A, b?: B, ...rest: C[])` followed by `separator` and the return type
 static void append_binding_pattern(cstr* out, Binding const* binding);
+static void track_pattern_keys(Checker* me, TyDisplay d, Binding const* pattern);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 
 // (A message's signature counts tsc's approximateLength like a type, one count per signatureToString, so what comes
@@ -3732,6 +3735,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // (Counted after its type: tsc's symbolToParameterDeclaration makes the type first)
         u32 name_length = (pattern_name ? 3 : (u32)atom_sv(param->name).size) + 3;
         if (name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT)) {
+            // (Its computed keys are tracked: the node builder's cloneBindingName, trackComputedName)
+            track_pattern_keys(me, d, name_binding);
             cstr pattern = cstr_init();
             append_binding_pattern(&pattern, name_binding);
             out(reused_if(d, true), cstr_sv(&pattern));
