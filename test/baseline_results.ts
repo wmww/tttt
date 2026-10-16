@@ -128,6 +128,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationAmbientClassMethodMergedInterface': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationAugmentedModuleName': {
         errors: true,
         symbols: true,
