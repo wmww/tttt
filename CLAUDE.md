@@ -57,6 +57,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 - If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.
 - When you are unable to move forward or the project is 100% complete and as performant as its reasonably going to get, create a file `claude-stop` in the project loop to end the dev cycle
 - You may edit this file (CLAUDE.md; AGENTS.md is a symlink to it), but keep it compact and meaningful. Favor other files which can be read as-needed for all but the most important content.
+- Pull --rebase and push at the end of each session
 
 ## Development Scripts
 You will use scripts to help you run tests, but some scripts and options are more useful to AI agents than others. All scripts live in `scripts/` (run them from the repo root: they `cd` there themselves), automatically compile the code in src before running tttt, and abort if there are any compile errors. The main scripts you will use are:

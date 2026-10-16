@@ -287,3 +287,22 @@ type checker cut VS Code's peak memory by about 40% with identical output, and i
 that, `tsc --emitDeclarationOnly`-style output with declaration maps, then trimming the syntax tree's memory. One
 session will audit and pay down the hacks the last test push added, and one will plan how to use 12+ cores well.
 Still open for you: the 12-core benchmark in `agents/triage.md`.
+
+## 2026-10-16 — insights (after the seventeenth window)
+Both half-built things shipped. tttt now periodically discards and restarts its type checker, which cut VS Code's
+peak memory by 40% with identical output. As a drop-in `tsc` it writes `.d.ts` files and their source maps: 1077 of
+1233 real projects are byte-identical to TypeScript's, and most of the rest have JavaScript sources, which come
+next. One session halved the hack list by deleting hacks rather than documenting them. 3352 of 3363 real projects
+and every DefinitelyTyped package now match TypeScript exactly. Thanks for restarting the loop; `claude-stop` stays
+out of git.
+
+The checker is essentially correct on real code, so the open questions are about the product. tttt is 2-6x faster
+than single-threaded TypeScript 7 and 1.3-3x faster than Bun's checker. It still uses 1.6-2.3x Bun's memory. Most
+of that is how the syntax tree is stored. Each extra core also adds its own checker memory. This window builds
+cheaper per-file allocation, then prototypes a compact syntax tree before we commit to a multi-session rewrite.
+Separately, tttt refuses `--watch` and `--incremental`, which is how many people run tsc day to day. A planning
+session will measure whether our full re-check already beats TypeScript's incremental rebuild. It will then bring
+you a scope question, like the one you answered on JS emit.
+
+Still open for you: the 12-core benchmark in `agents/triage.md`. Scaling past 4 cores is the one perf claim this
+machine can't check.
