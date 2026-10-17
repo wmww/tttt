@@ -2160,14 +2160,8 @@ static bool return_typecheck(
     }
     Ty const* source = ty_expr_type(checker, expr);
     if (awaited) {
-        // (HACK: see ty_awaited_returned(). An error names the awaited type as tsc's checkAwaitedType makes it,
-        // `Awaited<T>` and all)
-        Ty const* unwrapped = ty_awaited_returned(checker, source);
-        if (unwrapped == source || ty_is_related(checker, unwrapped, target, TY_RELATION_ASSIGNABLE)) {
-            source = unwrapped;
-        } else {
-            source = ty_awaited(checker, source);
-        }
+        // (tsc's checkReturnExpression: checkAwaitedType without the alias)
+        source = ty_awaited_no_alias(checker, source);
     }
     return ty_check_assignable_expr(checker, source, target, span, effective, errs);
 }

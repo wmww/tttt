@@ -2475,7 +2475,7 @@ Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_async_return_expressions_context(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty const* type); // Promise<type>, for an async function (function.c)
-Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
+Ty const* ty_unwrap_awaited(Checker* me, Ty const* ty); // tsc's unwrapAwaitedType (call.c)
 
 // ty_display.c
 typedef struct TyDisplayVisit {

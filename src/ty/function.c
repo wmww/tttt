@@ -292,7 +292,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             // getReturnTypeFromBody reporting widening then)
             if (self != CONTEXT_OTHER) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
             if (function->is_async) {
-                for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited_returned(me, returned.data[i]);
+                for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_unwrap_awaited(me, ty_awaited_no_alias(me, returned.data[i]));
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
             }
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {

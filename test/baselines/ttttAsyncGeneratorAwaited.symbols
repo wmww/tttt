@@ -1,0 +1,313 @@
+//// [test/cases/ttttAsyncGeneratorAwaited.ts] ////
+
+=== ttttAsyncGeneratorAwaited.ts ===
+// Async generators and iteration await generic types to `Awaited<T>` (tsc's getAwaitedType in createGeneratorType and
+// the async iteration resolver, also for an iterator's own next()); returns of async functions and generators await
+// without the alias (checkAwaitedType withAlias false, unwrapAwaitedType), and Awaited<T> relates to T
+export async function* a<T>(x: AsyncIterator<T, T>) { const r = yield* { [Symbol.asyncIterator]: () => x }; return r; }
+>a : Symbol(a, Decl(ttttAsyncGeneratorAwaited.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 3, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 3, 28))
+>AsyncIterator : Symbol(AsyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 3, 25))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 3, 25))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 3, 59))
+>[Symbol.asyncIterator] : Symbol([Symbol.asyncIterator], Decl(ttttAsyncGeneratorAwaited.ts, 3, 72))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 3, 28))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 3, 59))
+
+export async function* b<T>(x: AsyncIterableIterator<T, T>) { const r = yield* x; return r; }
+>b : Symbol(b, Decl(ttttAsyncGeneratorAwaited.ts, 3, 119))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 4, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 4, 28))
+>AsyncIterableIterator : Symbol(AsyncIterableIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 4, 25))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 4, 25))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 4, 67))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 4, 28))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 4, 67))
+
+export async function* c<T>(x: { next(): Promise<IteratorResult<T, T>> }) { const r = yield* { [Symbol.asyncIterator]: () => x }; return r; }
+>c : Symbol(c, Decl(ttttAsyncGeneratorAwaited.ts, 4, 93))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 5, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 5, 28))
+>next : Symbol(next, Decl(ttttAsyncGeneratorAwaited.ts, 5, 32))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>IteratorResult : Symbol(IteratorResult, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 5, 25))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 5, 25))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 5, 81))
+>[Symbol.asyncIterator] : Symbol([Symbol.asyncIterator], Decl(ttttAsyncGeneratorAwaited.ts, 5, 94))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 5, 28))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 5, 81))
+
+export async function* d<T>(x: Iterable<T>) { const r = yield* x; return r; }
+>d : Symbol(d, Decl(ttttAsyncGeneratorAwaited.ts, 5, 141))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 6, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 6, 28))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 6, 25))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 6, 51))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 6, 28))
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 6, 51))
+
+export async function* e<T>(x: T[]) { yield* x; }
+>e : Symbol(e, Decl(ttttAsyncGeneratorAwaited.ts, 6, 77))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 7, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 7, 28))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 7, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 7, 28))
+
+export async function* f<T>(x: Promise<T>) { yield x; }
+>f : Symbol(f, Decl(ttttAsyncGeneratorAwaited.ts, 7, 49))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 8, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 8, 28))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 8, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 8, 28))
+
+export async function* g<T extends object>(x: T) { return x; }
+>g : Symbol(g, Decl(ttttAsyncGeneratorAwaited.ts, 8, 55))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 9, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 9, 43))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 9, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 9, 43))
+
+export async function* h<T extends string>(x: T) { yield x; return x; }
+>h : Symbol(h, Decl(ttttAsyncGeneratorAwaited.ts, 9, 62))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 10, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 10, 43))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 10, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 10, 43))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 10, 43))
+
+export async function* i<T>(x: T | Promise<T>) { yield x; return x; }
+>i : Symbol(i, Decl(ttttAsyncGeneratorAwaited.ts, 10, 71))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 11, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 11, 28))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 11, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 11, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 11, 28))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 11, 28))
+
+export async function j<T>(x: AsyncIterable<T>) { for await (const v of x) return v; }
+>j : Symbol(j, Decl(ttttAsyncGeneratorAwaited.ts, 11, 69))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 12, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 12, 27))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 12, 24))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 12, 66))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 12, 27))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 12, 66))
+
+export async function k<T>(x: Iterable<T | Promise<T>>) { for await (const v of x) return v; }
+>k : Symbol(k, Decl(ttttAsyncGeneratorAwaited.ts, 12, 86))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 13, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 13, 27))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 13, 24))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 13, 24))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 13, 74))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 13, 27))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 13, 74))
+
+export async function l<T>(x: { [Symbol.asyncIterator](): { next(): Promise<{ done: false, value: T }> } }) { for await (const v of x) return v; }
+>l : Symbol(l, Decl(ttttAsyncGeneratorAwaited.ts, 13, 94))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 14, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 14, 27))
+>[Symbol.asyncIterator] : Symbol([Symbol.asyncIterator], Decl(ttttAsyncGeneratorAwaited.ts, 14, 31))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttAsyncGeneratorAwaited.ts, 14, 59))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>done : Symbol(done, Decl(ttttAsyncGeneratorAwaited.ts, 14, 77))
+>value : Symbol(value, Decl(ttttAsyncGeneratorAwaited.ts, 14, 90))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 14, 24))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 14, 126))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 14, 27))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 14, 126))
+
+export async function m<T>(x: { [Symbol.asyncIterator](): { next(): { done: false, value: T } } }) { for await (const v of x) return v; }
+>m : Symbol(m, Decl(ttttAsyncGeneratorAwaited.ts, 14, 146))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 15, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 15, 27))
+>[Symbol.asyncIterator] : Symbol([Symbol.asyncIterator], Decl(ttttAsyncGeneratorAwaited.ts, 15, 31))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttAsyncGeneratorAwaited.ts, 15, 59))
+>done : Symbol(done, Decl(ttttAsyncGeneratorAwaited.ts, 15, 69))
+>value : Symbol(value, Decl(ttttAsyncGeneratorAwaited.ts, 15, 82))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 15, 24))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 15, 117))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 15, 27))
+>v : Symbol(v, Decl(ttttAsyncGeneratorAwaited.ts, 15, 117))
+
+export function n<T>(x: AsyncGenerator<T, T>) { return x.next(); }
+>n : Symbol(n, Decl(ttttAsyncGeneratorAwaited.ts, 15, 137))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 16, 18))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 16, 21))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 16, 18))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 16, 18))
+>x.next : Symbol(AsyncGenerator.next, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 16, 21))
+>next : Symbol(AsyncGenerator.next, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+
+export async function* o<T>(x: T) { yield x; return x; }
+>o : Symbol(o, Decl(ttttAsyncGeneratorAwaited.ts, 16, 66))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 17, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 17, 28))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 17, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 17, 28))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 17, 28))
+
+export async function* p<T>(x: T) { return x; }
+>p : Symbol(p, Decl(ttttAsyncGeneratorAwaited.ts, 17, 56))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 18, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 18, 28))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 18, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 18, 28))
+
+export async function* q<T>(x: Promise<T>) { return x; }
+>q : Symbol(q, Decl(ttttAsyncGeneratorAwaited.ts, 18, 47))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 19, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 19, 28))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 19, 25))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 19, 28))
+
+export async function r<T>(x: T) { return x; }
+>r : Symbol(r, Decl(ttttAsyncGeneratorAwaited.ts, 19, 56))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 20, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 20, 27))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 20, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 20, 27))
+
+export async function s<T>(x: T) { return await x; }
+>s : Symbol(s, Decl(ttttAsyncGeneratorAwaited.ts, 20, 46))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 21, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 21, 27))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 21, 24))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 21, 27))
+
+declare function aw<T>(x: T): Awaited<T>;
+>aw : Symbol(aw, Decl(ttttAsyncGeneratorAwaited.ts, 21, 52))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 22, 20))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 22, 23))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 22, 20))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 22, 20))
+
+function t1<T>(x: T): T { return aw(x); }
+>t1 : Symbol(t1, Decl(ttttAsyncGeneratorAwaited.ts, 22, 41))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 23, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 23, 15))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 23, 12))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 23, 12))
+>aw : Symbol(aw, Decl(ttttAsyncGeneratorAwaited.ts, 21, 52))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 23, 15))
+
+function t2<T extends object>(x: T): T { return aw(x); }
+>t2 : Symbol(t2, Decl(ttttAsyncGeneratorAwaited.ts, 23, 41))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 24, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 24, 30))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 24, 12))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 24, 12))
+>aw : Symbol(aw, Decl(ttttAsyncGeneratorAwaited.ts, 21, 52))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 24, 30))
+
+function t3<T extends Promise<number>>(x: T): T { return aw(x); }
+>t3 : Symbol(t3, Decl(ttttAsyncGeneratorAwaited.ts, 24, 56))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 25, 12))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 25, 39))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 25, 12))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 25, 12))
+>aw : Symbol(aw, Decl(ttttAsyncGeneratorAwaited.ts, 21, 52))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 25, 39))
+
+function t4<T, U>(x: T | U): T { return aw(x); }
+>t4 : Symbol(t4, Decl(ttttAsyncGeneratorAwaited.ts, 25, 65))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 26, 12))
+>U : Symbol(U, Decl(ttttAsyncGeneratorAwaited.ts, 26, 14))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 26, 18))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 26, 12))
+>U : Symbol(U, Decl(ttttAsyncGeneratorAwaited.ts, 26, 14))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 26, 12))
+>aw : Symbol(aw, Decl(ttttAsyncGeneratorAwaited.ts, 21, 52))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 26, 18))
+
+function t5<T>(x: Awaited<T>): number { return x; }
+>t5 : Symbol(t5, Decl(ttttAsyncGeneratorAwaited.ts, 26, 48))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 27, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 27, 15))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 27, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 27, 15))
+
+function t6<T extends number>(x: Awaited<T>): number { return x; }
+>t6 : Symbol(t6, Decl(ttttAsyncGeneratorAwaited.ts, 27, 51))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 28, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 28, 30))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 28, 12))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 28, 30))
+
+async function u1<T>(x: T): Promise<T> { return await x; }
+>u1 : Symbol(u1, Decl(ttttAsyncGeneratorAwaited.ts, 28, 66))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 29, 18))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 29, 21))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 29, 18))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 29, 18))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 29, 21))
+
+async function u2<T extends object>(x: T): Promise<T> { const y = await x; return y; }
+>u2 : Symbol(u2, Decl(ttttAsyncGeneratorAwaited.ts, 29, 58))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 30, 18))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 30, 36))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 30, 18))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 30, 18))
+>y : Symbol(y, Decl(ttttAsyncGeneratorAwaited.ts, 30, 61))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 30, 36))
+>y : Symbol(y, Decl(ttttAsyncGeneratorAwaited.ts, 30, 61))
+
+async function u3<T>(x: T): Promise<string> { return await x; }
+>u3 : Symbol(u3, Decl(ttttAsyncGeneratorAwaited.ts, 30, 86))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 31, 18))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 31, 21))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 31, 18))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 31, 21))
+
+async function* u4<T>(x: T): AsyncGenerator<T, T> { yield await x; return await x; }
+>u4 : Symbol(u4, Decl(ttttAsyncGeneratorAwaited.ts, 31, 63))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 32, 19))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 32, 22))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 32, 19))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 32, 19))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 32, 19))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 32, 22))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 32, 22))
+
+async function* u5<T>(x: T): AsyncGenerator<T, string> { return await x; }
+>u5 : Symbol(u5, Decl(ttttAsyncGeneratorAwaited.ts, 32, 84))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 33, 19))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 33, 22))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 33, 19))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAsyncGeneratorAwaited.ts, 33, 19))
+>x : Symbol(x, Decl(ttttAsyncGeneratorAwaited.ts, 33, 22))
+

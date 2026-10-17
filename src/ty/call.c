@@ -3820,17 +3820,10 @@ Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty) {
 // The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
 // (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
 // A cycle is TS1062 at the current node (tsc reports it at the error node its callers pass, the `await` expression)
-static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFrame const* stack) {
+static Ty const* awaited_type_in(Checker* me, Ty const* ty, AwaitedFrame const* stack) {
+    if (ty->flags & TYF_ANY) return ty;
     Symbol const* awaited = awaited_alias(me);
     if (awaited && ty->alias == awaited) return ty;
-    if (wrap && awaited_type_needed(me, ty, awaited)) {
-        if (awaited) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
-        // (Needed but missing: reported once, without a position, tsc's tryCreateAwaitedType)
-        if (!my awaited_reported) {
-            my awaited_reported = true;
-            error_ctx_global_error_d(my errs, 2318, "Cannot find global type 'Awaited'.");
-        }
-    }
     if (ty->kind == TY_UNION) {
         // `type T = string | Promise<T>` awaits T again (a deferred reference makes it an infinite structure)
         if (awaited_in_progress(stack, ty)) return awaited_cycle(me);
@@ -3839,7 +3832,7 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         bool changed = false;
         u32 len = 0;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            Ty const* part = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
+            Ty const* part = awaited_type_in(me, ty->composite.types.data[i], &frame);
             changed |= part != ty->composite.types.data[i];
             if (part) parts[len++] = part;
         }
@@ -3848,6 +3841,8 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         free(parts);
         return ret;
     }
+    // A generic type that could be a promise stays itself (getAwaitedType makes it `Awaited<T>`)
+    if (awaited_type_needed(me, ty, awaited)) return ty;
     if (ty->kind == TY_REFERENCE && ty->reference.target->declared.symbol &&
         !ty->reference.target->declared.symbol->parent
     ) {
@@ -3856,14 +3851,14 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         if (args.len == 1 && (csview_equals(name, "Promise") || csview_equals(name, "PromiseLike"))) {
             if (args.data[0] == ty || awaited_in_progress(stack, args.data[0])) return awaited_cycle(me);
             AwaitedFrame frame = { ty, stack };
-            return awaited_type_in(me, args.data[0], wrap, &frame);
+            return awaited_type_in(me, args.data[0], &frame);
         }
     }
     Ty const* promised = promised_type_of(me, ty);
     if (promised) {
         if (promised == ty || awaited_in_progress(stack, promised)) return awaited_cycle(me);
         AwaitedFrame frame = { ty, stack };
-        return awaited_type_in(me, promised, wrap, &frame);
+        return awaited_type_in(me, promised, &frame);
     }
     // A `then` that isn't a promise's: no awaited type (the callers say TS1320 and friends, see ty_awaits_thenable())
     if (ty_is_thenable(me, ty)) return ty_intrinsic(me, TY_ERROR);
@@ -3893,8 +3888,25 @@ static bool awaits_thenable(Checker* me, Ty const* ty, u32 depth) {
 bool ty_awaits_thenable(Checker* me, Ty const* ty) { return awaits_thenable(me, ty, 0); }
 
 static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) {
-    Ty const* ret = awaited_type_in(me, ty, wrap, nullptr);
-    return ret ? ret : ty_intrinsic(me, TY_ERROR);
+    Ty const* ret = awaited_type_in(me, ty, nullptr);
+    if (!ret) return ty_intrinsic(me, TY_ERROR);
+    if (wrap) {
+        // tsc's createAwaitedTypeIfNeeded
+        Symbol const* awaited = awaited_alias(me);
+        if (awaited_type_needed(me, ret, awaited)) {
+            if (awaited) {
+                // (A union's `Awaited<T>` members unwrapped: `Awaited<T | U>`, not `Awaited<Awaited<T> | U>`)
+                Ty const* arg = ty_unwrap_awaited(me, ret);
+                return ty_alias_instance(me, awaited, (TyList){ .data = &arg, .len = 1 });
+            }
+            // (Needed but missing: reported once, without a position, tsc's tryCreateAwaitedType)
+            if (!my awaited_reported) {
+                my awaited_reported = true;
+                error_ctx_global_error_d(my errs, 2318, "Cannot find global type 'Awaited'.");
+            }
+        }
+    }
+    return ret;
 }
 
 Ty const* ty_awaited(Checker* me, Ty const* ty) { return awaited_type(me, ty, true); }
@@ -3908,10 +3920,8 @@ Ty const* ty_promise_like_of(Checker* me, Ty const* ty) {
     return ty_reference(me, like, (TyList){ .data = &ty, .len = 1 });
 }
 
-// HACK: tsc's unwrapAwaitedType, applied to what a return of an async function returns. tsc relates `Awaited<X>` to X
-// through the default constraint of the conditional type, which tttt can't
-Ty const* ty_awaited_returned(Checker* me, Ty const* ty) {
-    ty = awaited_type(me, ty, true);
+// tsc's unwrapAwaitedType: `Awaited<T>` (a union's members too) is T
+Ty const* ty_unwrap_awaited(Checker* me, Ty const* ty) {
     Symbol const* awaited = awaited_alias(me);
     if (!awaited) return ty;
     if (ty->alias == awaited && ty->alias_args.len == 1) return ty->alias_args.data[0];
@@ -3927,7 +3937,8 @@ Ty const* ty_awaited_returned(Checker* me, Ty const* ty) {
     free(parts);
     return ret;
 }
-// HACK: iteration and generator types use this where tsc has Awaited<T> too, which tttt can't relate to T yet
+
+// tsc's getAwaitedTypeNoAlias: a generic type that could be a promise stays itself
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty) { return awaited_type(me, ty, false); }
 
 // Decorators checked as calls (tsc's checkDecorator)

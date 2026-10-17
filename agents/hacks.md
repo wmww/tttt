@@ -247,8 +247,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `missing_property_type`: errorType for a failed access under conditions approximating check.c's reporting (object
   type, not `typeof globalThis`, no unresolved base, not JS). tsc: errorType exactly when it reports. Correct: one
   decision shared with the reporter. Oracle: suite `.types` showing `any` vs error.
-- Async: generators (`ty_awaited_no_alias()`) and async returns (`ty_awaited_returned()`) avoid `Awaited<T>`: tttt can't
-  relate it to T through the conditional's default constraint (8 suite tests, asyncImportedPromise_es6). Fix that first.
 - Contextual `this` (`ty_contextual_this_type`): through the anchor once the call is resolved, else the literal's last
   context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is plan 51 stage 3 item 3);
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.

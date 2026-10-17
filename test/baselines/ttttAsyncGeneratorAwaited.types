@@ -1,0 +1,239 @@
+//// [test/cases/ttttAsyncGeneratorAwaited.ts] ////
+
+=== ttttAsyncGeneratorAwaited.ts ===
+// Async generators and iteration await generic types to `Awaited<T>` (tsc's getAwaitedType in createGeneratorType and
+// the async iteration resolver, also for an iterator's own next()); returns of async functions and generators await
+// without the alias (checkAwaitedType withAlias false, unwrapAwaitedType), and Awaited<T> relates to T
+export async function* a<T>(x: AsyncIterator<T, T>) { const r = yield* { [Symbol.asyncIterator]: () => x }; return r; }
+>a : <T>(x: AsyncIterator<T, T>) => AsyncGenerator<Awaited<T>, Awaited<T>, any>
+>x : AsyncIterator<T, T, any>
+>r : Awaited<T>
+>yield* { [Symbol.asyncIterator]: () => x } : Awaited<T>
+>{ [Symbol.asyncIterator]: () => x } : { [Symbol.asyncIterator]: () => AsyncIterator<T, T, any>; }
+>[Symbol.asyncIterator] : () => AsyncIterator<T, T, any>
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+>() => x : () => AsyncIterator<T, T, any>
+>x : AsyncIterator<T, T, any>
+>r : Awaited<T>
+
+export async function* b<T>(x: AsyncIterableIterator<T, T>) { const r = yield* x; return r; }
+>b : <T>(x: AsyncIterableIterator<T, T>) => AsyncGenerator<Awaited<T>, Awaited<T>, any>
+>x : AsyncIterableIterator<T, T>
+>r : Awaited<T>
+>yield* x : Awaited<T>
+>x : AsyncIterableIterator<T, T>
+>r : Awaited<T>
+
+export async function* c<T>(x: { next(): Promise<IteratorResult<T, T>> }) { const r = yield* { [Symbol.asyncIterator]: () => x }; return r; }
+>c : <T>(x: { next(): Promise<IteratorResult<T, T>>; }) => AsyncGenerator<Awaited<T>, Awaited<T>, unknown>
+>x : { next(): Promise<IteratorResult<T, T>>; }
+>next : () => Promise<IteratorResult<T, T>>
+>r : T
+>yield* { [Symbol.asyncIterator]: () => x } : T
+>{ [Symbol.asyncIterator]: () => x } : { [Symbol.asyncIterator]: () => { next(): Promise<IteratorResult<T, T>>; }; }
+>[Symbol.asyncIterator] : () => { next(): Promise<IteratorResult<T, T>>; }
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+>() => x : () => { next(): Promise<IteratorResult<T, T>>; }
+>x : { next(): Promise<IteratorResult<T, T>>; }
+>r : T
+
+export async function* d<T>(x: Iterable<T>) { const r = yield* x; return r; }
+>d : <T>(x: Iterable<T>) => AsyncGenerator<Awaited<T>, any, any>
+>x : Iterable<T>
+>r : any
+>yield* x : any
+>x : Iterable<T>
+>r : any
+
+export async function* e<T>(x: T[]) { yield* x; }
+>e : <T>(x: T[]) => AsyncGenerator<Awaited<T>, void, unknown>
+>x : T[]
+>yield* x : undefined
+>x : T[]
+
+export async function* f<T>(x: Promise<T>) { yield x; }
+>f : <T>(x: Promise<T>) => AsyncGenerator<Awaited<T>, void, unknown>
+>x : Promise<T>
+>yield x : any
+>x : Promise<T>
+
+export async function* g<T extends object>(x: T) { return x; }
+>g : <T extends object>(x: T) => AsyncGenerator<never, Awaited<T>, unknown>
+>x : T
+>x : T
+
+export async function* h<T extends string>(x: T) { yield x; return x; }
+>h : <T extends string>(x: T) => AsyncGenerator<T, T, unknown>
+>x : T
+>yield x : any
+>x : T
+>x : T
+
+export async function* i<T>(x: T | Promise<T>) { yield x; return x; }
+>i : <T>(x: T | Promise<T>) => AsyncGenerator<Awaited<T>, Awaited<T>, unknown>
+>x : T | Promise<T>
+>yield x : any
+>x : T | Promise<T>
+>x : T | Promise<T>
+
+export async function j<T>(x: AsyncIterable<T>) { for await (const v of x) return v; }
+>j : <T>(x: AsyncIterable<T>) => Promise<T | undefined>
+>x : AsyncIterable<T>
+>v : Awaited<T>
+>x : AsyncIterable<T>
+>v : Awaited<T>
+
+export async function k<T>(x: Iterable<T | Promise<T>>) { for await (const v of x) return v; }
+>k : <T>(x: Iterable<T | Promise<T>>) => Promise<T | undefined>
+>x : Iterable<T | Promise<T>>
+>v : Awaited<T>
+>x : Iterable<T | Promise<T>>
+>v : Awaited<T>
+
+export async function l<T>(x: { [Symbol.asyncIterator](): { next(): Promise<{ done: false, value: T }> } }) { for await (const v of x) return v; }
+>l : <T>(x: { [Symbol.asyncIterator](): { next(): Promise<{ done: false; value: T; }>; }; }) => Promise<T | undefined>
+>x : { [Symbol.asyncIterator](): { next(): Promise<{ done: false; value: T; }>; }; }
+>[Symbol.asyncIterator] : () => { next(): Promise<{ done: false; value: T; }>; }
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+>next : () => Promise<{ done: false; value: T; }>
+>done : false
+>false : false
+>value : T
+>v : T
+>x : { [Symbol.asyncIterator](): { next(): Promise<{ done: false; value: T; }>; }; }
+>v : T
+
+export async function m<T>(x: { [Symbol.asyncIterator](): { next(): { done: false, value: T } } }) { for await (const v of x) return v; }
+>m : <T>(x: { [Symbol.asyncIterator](): { next(): { done: false; value: T; }; }; }) => Promise<T | undefined>
+>x : { [Symbol.asyncIterator](): { next(): { done: false; value: T; }; }; }
+>[Symbol.asyncIterator] : () => { next(): { done: false; value: T; }; }
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+>next : () => { done: false; value: T; }
+>done : false
+>false : false
+>value : T
+>v : T
+>x : { [Symbol.asyncIterator](): { next(): { done: false; value: T; }; }; }
+>v : T
+
+export function n<T>(x: AsyncGenerator<T, T>) { return x.next(); }
+>n : <T>(x: AsyncGenerator<T, T>) => Promise<IteratorResult<T, T>>
+>x : AsyncGenerator<T, T, any>
+>x.next() : Promise<IteratorResult<T, T>>
+>x.next : (...[value]: [] | [any]) => Promise<IteratorResult<T, T>>
+>x : AsyncGenerator<T, T, any>
+>next : (...[value]: [] | [any]) => Promise<IteratorResult<T, T>>
+
+export async function* o<T>(x: T) { yield x; return x; }
+>o : <T>(x: T) => AsyncGenerator<Awaited<T>, Awaited<T>, unknown>
+>x : T
+>yield x : any
+>x : T
+>x : T
+
+export async function* p<T>(x: T) { return x; }
+>p : <T>(x: T) => AsyncGenerator<never, Awaited<T>, unknown>
+>x : T
+>x : T
+
+export async function* q<T>(x: Promise<T>) { return x; }
+>q : <T>(x: Promise<T>) => AsyncGenerator<never, Awaited<T>, unknown>
+>x : Promise<T>
+>x : Promise<T>
+
+export async function r<T>(x: T) { return x; }
+>r : <T>(x: T) => Promise<T>
+>x : T
+>x : T
+
+export async function s<T>(x: T) { return await x; }
+>s : <T>(x: T) => Promise<T>
+>x : T
+>await x : Awaited<T>
+>x : T
+
+declare function aw<T>(x: T): Awaited<T>;
+>aw : <T>(x: T) => Awaited<T>
+>x : T
+
+function t1<T>(x: T): T { return aw(x); }
+>t1 : <T>(x: T) => T
+>x : T
+>aw(x) : Awaited<T>
+>aw : <T_1>(x: T_1) => Awaited<T_1>
+>x : T
+
+function t2<T extends object>(x: T): T { return aw(x); }
+>t2 : <T extends object>(x: T) => T
+>x : T
+>aw(x) : Awaited<T>
+>aw : <T_1>(x: T_1) => Awaited<T_1>
+>x : T
+
+function t3<T extends Promise<number>>(x: T): T { return aw(x); }
+>t3 : <T extends Promise<number>>(x: T) => T
+>x : T
+>aw(x) : Awaited<T>
+>aw : <T_1>(x: T_1) => Awaited<T_1>
+>x : T
+
+function t4<T, U>(x: T | U): T { return aw(x); }
+>t4 : <T, U>(x: T | U) => T
+>x : T | U
+>aw(x) : Awaited<T> | Awaited<U>
+>aw : <T_1>(x: T_1) => Awaited<T_1>
+>x : T | U
+
+function t5<T>(x: Awaited<T>): number { return x; }
+>t5 : <T>(x: Awaited<T>) => number
+>x : Awaited<T>
+>x : Awaited<T>
+
+function t6<T extends number>(x: Awaited<T>): number { return x; }
+>t6 : <T extends number>(x: Awaited<T>) => number
+>x : Awaited<T>
+>x : Awaited<T>
+
+async function u1<T>(x: T): Promise<T> { return await x; }
+>u1 : <T>(x: T) => Promise<T>
+>x : T
+>await x : Awaited<T>
+>x : T
+
+async function u2<T extends object>(x: T): Promise<T> { const y = await x; return y; }
+>u2 : <T extends object>(x: T) => Promise<T>
+>x : T
+>y : Awaited<T>
+>await x : Awaited<T>
+>x : T
+>y : Awaited<T>
+
+async function u3<T>(x: T): Promise<string> { return await x; }
+>u3 : <T>(x: T) => Promise<string>
+>x : T
+>await x : Awaited<T>
+>x : T
+
+async function* u4<T>(x: T): AsyncGenerator<T, T> { yield await x; return await x; }
+>u4 : <T>(x: T) => AsyncGenerator<T, T>
+>x : T
+>yield await x : any
+>await x : Awaited<T>
+>x : T
+>await x : Awaited<T>
+>x : T
+
+async function* u5<T>(x: T): AsyncGenerator<T, string> { return await x; }
+>u5 : <T>(x: T) => AsyncGenerator<T, string>
+>x : T
+>await x : Awaited<T>
+>x : T
+

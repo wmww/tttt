@@ -325,11 +325,11 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
         if (which == METHOD_NEXT) {
             next_type = param;
         } else {
-            ty_buf_push(&return_types, async ? ty_awaited_no_alias(me, param) : param);
+            ty_buf_push(&return_types, async ? ty_awaited(me, param) : param);
         }
     }
     Ty const* result = ty_intersection(me, return_parts.data, return_parts.len, nullptr, (TyList){0});
-    if (async) result = ty_awaited_no_alias(me, result);
+    if (async) result = ty_awaited(me, result);
     TyIterationTypes const* from_result = iteration_types_of_result(me, result);
     Ty const* yield_type;
     if (from_result == &no_iteration_types) {
@@ -346,6 +346,14 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
     return ret;
 }
 
+// (tsc's asyncIterationTypesResolver.resolveIterationType and getAsyncFromSyncIterationTypes: getAwaitedType, which
+// makes Awaited<T> of a generic T)
+static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
+    if (!async) return types;
+    Ty const* yield = ty_awaited(me, types->yield_type);
+    return make_types(me, yield, ty_awaited(me, types->return_type), types->next_type);
+}
+
 // tsc's getIterationTypesOfIterator: null if it isn't one
 TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty, bool async) {
     if (ty->flags & TYF_ANY) return any_types(me);
@@ -359,13 +367,14 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
             is_reference_to(state, ty, async ? IG_ASYNC_GENERATOR : IG_GENERATOR)
         ) {
             TyList args = ty_reference_args(me, ty);
-            found = make_types(me, args.data[0], args.data[1], args.data[2]);
+            found = resolve_types(me, make_types(me, args.data[0], args.data[1], args.data[2]), async);
         } else if (!async && (is_reference_to(state, ty, IG_ARRAY_ITERATOR) || is_reference_to(state, ty, IG_MAP_ITERATOR) ||
             is_reference_to(state, ty, IG_SET_ITERATOR) || is_reference_to(state, ty, IG_STRING_ITERATOR))
         ) {
             found = make_types(me, ty_reference_args(me, ty).data[0], builtin_iterator_return(me), ty_intrinsic(me, TY_UNKNOWN_));
         } else if (async && is_reference_to(state, ty, IG_READABLE_STREAM_ASYNC_ITERATOR)) {
             found = make_types(me, ty_reference_args(me, ty).data[0], builtin_iterator_return(me), ty_intrinsic(me, TY_UNKNOWN_));
+            found = resolve_types(me, found, true);
         } else {
             TyIterationTypes const* methods[3] = {
                 iteration_types_of_method(me, ty, async, METHOD_NEXT),
@@ -380,14 +389,6 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 }
 
 // Iterables
-
-// (tsc's asyncIterationTypesResolver.resolveIterationType and getAsyncFromSyncIterationTypes: getAwaitedType, which
-// makes Awaited<T> of a generic T)
-static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
-    if (!async) return types;
-    Ty const* yield = ty_awaited(me, types->yield_type);
-    return make_types(me, yield, ty_awaited(me, types->return_type), types->next_type);
-}
 
 // tsc's getIterationTypesOfIterableFast + Slow for one of the resolvers
 static TyIterationTypes const* iterable_types_with(Checker* me, Ty const* ty, bool async) {
@@ -656,7 +657,7 @@ static void report_iterator_methods(Checker* me, Ty const* iterable, bool async,
                 "contain a callable 'then' member.");
             continue;
         }
-        if (async) result = ty_awaited_no_alias(me, result);
+        if (async) result = ty_awaited(me, result);
         if (iteration_types_of_result(me, result) != &no_iteration_types) continue;
         if (async) {
             error_ctx_error_d(errs, span, 2547, "The type returned by the '", names[which], "()' method of an async iterator "
@@ -827,7 +828,7 @@ Ty const* ty_unwrap_return_type(Checker* me, FunctionImpl const* function, Ty co
         TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, function->is_async);
         if (!types || !types->return_type) return nullptr;
         // (tsc's getAwaitedTypeNoAlias(unwrapAwaitedType(...)): an async generator's return type is Awaited<T>)
-        return function->is_async ? ty_awaited_returned(me, types->return_type) : types->return_type;
+        return function->is_async ? ty_awaited_no_alias(me, ty_unwrap_awaited(me, types->return_type)) : types->return_type;
     }
     return ty_awaited_no_alias(me, ret);
 }
@@ -882,8 +883,8 @@ Ty const* ty_generator_yield_context(Checker* me, FunctionImpl const* generator)
 Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type) {
     IterationState const* state = iteration_state(me);
     if (async) {
-        yield_type = ty_awaited_no_alias(me, yield_type);
-        return_type = ty_awaited_no_alias(me, return_type);
+        yield_type = ty_awaited(me, yield_type);
+        return_type = ty_awaited(me, return_type);
     }
     Ty const* args[3] = { yield_type, return_type, next_type };
     Ty const* target = state->globals[async ? IG_ASYNC_GENERATOR : IG_GENERATOR];
