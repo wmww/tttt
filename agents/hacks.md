@@ -509,9 +509,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   symbol, printing `typeof Base`); `Checker.display_of`/`display_as` patch the messages. HACK: adds `& K` to the source
   because `ty_static_type_of` doesn't make `X & K` bases' static side `typeof C & K`. Fix: a synthetic anonymous type
   remembering the symbol it prints as.
-- `check_access` (TS2339) HACKs: lets through generic mapped types `expand_mapped()` found no members for (`Mutable<T>`
-  with `T extends A | B`, `Pick<T, K>` with generic K); bracket access never reports; fires on
-  modules too (TS2339 next to TS2307). `ty_check_element_implicit_any` (TS7053) skips the same. flagflip/sweep show it.
+- `check_access` (TS2339): bracket access never reports there (`ty_check_element_implicit_any`, TS7053, mirrors
+  getPropertyTypeForIndexType's errors separately); said to fire on modules too (TS2339 next to TS2307: not
+  reproduced with namespace/default imports of a missing module, 2026-10-17).
 - `ty_check_index_constraints` on type literals only when syntactically needed (`type_literal_has_index_constraints()`):
   the others aren't lowered at their check, and an alias's literal body must be made as the alias's type first.
 - Syntactic stand-ins: overload grouping (`statements_check_overloads`, `class_check_overloads`); TS2729

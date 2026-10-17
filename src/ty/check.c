@@ -2112,19 +2112,6 @@ static void check_access(
     }
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
     if (ty_is_js_literal_type(me, object)) return;
-    if (object->flags & TYF_OBJECT) {
-        // HACK: a generic mapped type whose members expand_mapped() couldn't find yet (the key type's lower bound or
-        // the modifiers type's apparent properties: a union constraint, `Pick<T, K>`) isn't checked. tsc reports what
-        // its resolveMappedTypeMembers doesn't find; the expanded ones (`Omit<this, K>`, `Mutable<T>`) are checked
-        Members const* members = ty_members(me, object);
-        // (Keys that are a type parameter, `Pick<T, K>`, `Record<K, V>`, are their own lower bound: no members at all
-        // in tsc's resolveMappedTypeMembers either)
-        if (members->mapped && !members->prop_count && !members->index_count && !members_rare(members)->generic_keys_known &&
-            (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && members->mapped->constraint->kind != TY_TYPE_PARAM
-        ) {
-            return;
-        }
-    }
     if (object->flags & TYF_NULLABLE) {
         // A destructured property of null or undefined doesn't exist (a property access is TS18050 in tsc: TODO)
         if (!span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
@@ -2583,11 +2570,6 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             }
         }
         if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
-        if (object->flags & TYF_OBJECT) {
-            // HACK: as in check_access(): mapped types over something generic
-            Members const* members = ty_members(me, object);
-            if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-        }
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
             (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
         ) {

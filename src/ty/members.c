@@ -3667,6 +3667,12 @@ static bool generic_object_reference(Checker* me, Ty const* ty) {
     return ty->kind == TY_REFERENCE && !ty_is_array(me, ty) && !ty_is_tuple(ty);
 }
 
+// A generic mapped type's members say what it has: what expand_generic_homomorphic() found (properties or index
+// signatures), or that it knows there are none
+static bool mapped_members_known(Members const* members) {
+    return members->mapped && (members->prop_count || members->index_count || members_rare(members)->generic_keys_known);
+}
+
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
@@ -3695,13 +3701,18 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     }
     // (A generic class or interface reference whose bases resolve has its properties whatever its type arguments,
     // `T extends Ctx<P>` has Ctx's, and none if it has none: `Partial<T>` with `T extends RData<H>` has no `open`)
+    // (A constraint that is a generic mapped type whose members are known, `T extends Partial<{ [K in keyof D]: X }>`
+    // with `D extends Record<string, Y>`, has those: tsc's getPropertiesOfType and getIndexInfosOfType of the apparent
+    // modifiers type, resolveMappedTypeMembers in turn)
+    bool known_mapped = apparent != mapped->modifiers_type && apparent->kind == TY_ANONYMOUS &&
+        mapped_members_known(ty_members(me, apparent));
     if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-        !only_this_arg_generic(me, apparent) && !generic_object_reference(me, apparent))) {
+        !only_this_arg_generic(me, apparent) && !generic_object_reference(me, apparent) && !known_mapped)) {
         return members;
     }
     if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;
     Members const* source = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
-    if (source && source->mapped) return members;
+    if (source && source->mapped && !known_mapped) return members;
     if (!source || (!source->prop_count && !source->index_count)) {
         // (No constraint or one without members, `P extends {}`: none, and that's known, `Readonly<P>` has no `foo`)
         MembersBuilder empty = { .mapped = mapped };
