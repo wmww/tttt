@@ -4520,14 +4520,31 @@ static u32 const* name_order(Checker* me, u64 const* key, u32 key_len, Atom cons
 static Prop** tuple_props_by_name(Checker* me, Prop* elements, u32 fixed, Prop* const* inherited, u32 inherited_count,
     Ty const* array_target, Prop* length
 ) {
+    if (fixed > 4096) return nullptr; // (ty_index_atom() remembers no more)
     u64 index_key[2] = { KEY_INDEX_NAME_ORDER, fixed };
     u32 const* by_index = intern_get(&my links, index_key, 2);
     if (!by_index) {
-        Atom const** names = malloc(sizeof(Atom const*) * (fixed ? fixed : 1));
-        panic_if(!names, "out of memory");
-        for (u32 i = 0; i < fixed; i++) names[i] = elements[i].name;
-        by_index = name_order(me, index_key, 2, names, fixed);
-        free(names);
+        // (Filtered from the order of every index atom so far, sorted again when it grows: one sort per doubling)
+        if (my index_atoms_by_name_len < fixed) {
+            u32 len = my index_atoms_by_name_len * 2 > fixed ? my index_atoms_by_name_len * 2 : fixed;
+            if (len > 4096) len = 4096;
+            NameIndexPair* pairs = malloc(sizeof(NameIndexPair) * len);
+            panic_if(!pairs, "out of memory");
+            for (u32 i = 0; i < len; i++) pairs[i] = (NameIndexPair){ (uintptr_t)ty_index_atom(me, i), i };
+            qsort(pairs, len, sizeof(NameIndexPair), name_index_pair_cmp);
+            my index_atoms_by_name = realloc(my index_atoms_by_name, sizeof(u32) * len);
+            panic_if(!my index_atoms_by_name, "out of memory");
+            for (u32 i = 0; i < len; i++) my index_atoms_by_name[i] = pairs[i].index;
+            my index_atoms_by_name_len = len;
+            free(pairs);
+        }
+        u32* order = arena_new_n(&my arena, u32, fixed);
+        u32 at = 0;
+        for (u32 i = 0; i < my index_atoms_by_name_len && at < fixed; i++) {
+            if (my index_atoms_by_name[i] < fixed) order[at++] = my index_atoms_by_name[i];
+        }
+        *intern_slot(me, &my links, index_key, 2) = order;
+        by_index = order;
     }
     u64 inherited_key[3] = { KEY_TUPLE_NAME_ORDER, (u64)(uintptr_t)array_target, inherited_count };
     u32 const* by_inherited = intern_get(&my links, inherited_key, 3);

@@ -1051,6 +1051,8 @@ struct Checker {
     struct Atom const* atom_bind;
     struct Atom const** index_atoms; // ty_index_atom(): "0", "1"... by index
     u32 index_atoms_len;
+    u32* index_atoms_by_name; // 0..index_atoms_by_name_len-1 in the order of their atoms' addresses (members.c)
+    u32 index_atoms_by_name_len;
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()

@@ -618,6 +618,7 @@ void checker_drop(Checker* me) {
     free(my cross_files);
     lazy_slots_drop(&my lazy);
     free(my index_atoms);
+    free(my index_atoms_by_name);
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
@@ -2473,6 +2474,17 @@ typedef struct TupleBuilder {
     i32 last_required, first_rest, last_optional_or_rest;
 } TupleBuilder;
 
+// Room for `cap` elements in all
+static void tuple_builder_reserve(TupleBuilder* b, u32 cap) {
+    if (cap <= b->cap) return;
+    b->cap = cap;
+    b->types = realloc(b->types, sizeof(Ty const*) * b->cap);
+    b->flags = realloc(b->flags, b->cap);
+    b->names = realloc(b->names, sizeof(Atom const*) * b->cap);
+    if (b->labels) b->labels = realloc(b->labels, sizeof(void const*) * b->cap);
+    panic_if(!b->types || !b->flags || !b->names || (b->len && b->labels_any && !b->labels), "out of memory");
+}
+
 static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsigned char flags, Atom const* name, void const* label) {
     if (b->len == b->cap) {
         b->cap = b->cap ? b->cap * 2 : 8;
@@ -2497,6 +2509,48 @@ static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsi
     if (b->labels) b->labels[b->len] = label;
     b->names[b->len++] = name;
     b->any_name |= name != nullptr;
+}
+
+// tuple_builder_add() of each element of a tuple: copied whole unless it has a rest element or labels a builder without
+// any doesn't have room for (type-fest builds tuples of hundreds of elements one spread at a time)
+static void tuple_builder_splice(Checker* me, TupleBuilder* b, Ty const* const* types, TupleShape const* inner) {
+    u32 n = inner->arity;
+    tuple_builder_reserve(b, b->len + n);
+    bool simple = true;
+    for (u32 j = 0; j < n && simple; j++) simple = !(inner->flags[j] & TUPLE_ELEMENT_REST);
+    for (u32 j = 0; simple && !b->labels && inner->labels && j < n; j++) simple = !inner->labels[j];
+    if (!simple) {
+        for (u32 j = 0; j < n; j++) {
+            tuple_builder_add(me, b, types[j], inner->flags[j], inner->names ? inner->names[j] : nullptr,
+                inner->labels ? inner->labels[j] : nullptr);
+        }
+        return;
+    }
+    memcpy(b->types + b->len, types, sizeof(Ty const*) * n);
+    memcpy(b->flags + b->len, inner->flags, n);
+    if (inner->names) {
+        memcpy(b->names + b->len, inner->names, sizeof(Atom const*) * n);
+        for (u32 j = 0; j < n && !b->any_name; j++) b->any_name = inner->names[j] != nullptr;
+    } else {
+        memset(b->names + b->len, 0, sizeof(Atom const*) * n);
+    }
+    if (b->labels) {
+        if (inner->labels) memcpy(b->labels + b->len, inner->labels, sizeof(void const*) * n);
+        else memset(b->labels + b->len, 0, sizeof(void const*) * n);
+    }
+    for (u32 j = n; j-- > 0;) {
+        if (!(inner->flags[j] & TUPLE_ELEMENT_OPTIONAL)) {
+            b->last_required = (i32)(b->len + j);
+            break;
+        }
+    }
+    for (u32 j = n; j-- > 0;) {
+        if (inner->flags[j] & TUPLE_ELEMENT_OPTIONAL) {
+            b->last_optional_or_rest = (i32)(b->len + j);
+            break;
+        }
+    }
+    b->len += n;
 }
 
 // tsc's createNormalizedTupleType: spreads of tuples are spliced in, a spread of a union is a union of tuples, and
@@ -2568,6 +2622,7 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         return ret;
     }
     TupleBuilder b = { .last_required = -1, .first_rest = -1, .last_optional_or_rest = -1 };
+    tuple_builder_reserve(&b, shape->arity);
     for (u32 i = 0; i < shape->arity; i++) {
         Ty const* arg = args.data[i];
         Atom const* name = shape->names ? shape->names[i] : nullptr;
@@ -2590,10 +2645,7 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
                 return ty_intrinsic(me, TY_ERROR);
             }
             TyList elements = ty_reference_args(me, arg);
-            for (u32 j = 0; j < inner->arity; j++) {
-                tuple_builder_add(me, &b, elements.data[j], inner->flags[j], inner->names ? inner->names[j] : nullptr,
-                    inner->labels ? inner->labels[j] : nullptr);
-            }
+            tuple_builder_splice(me, &b, elements.data, inner);
         } else if (is_readonly_array(me, arg)) {
             tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name, label);
         } else if (arg->flags & (TYF_ANY | TYF_UNKNOWN)) {
@@ -2748,17 +2800,21 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
     u64 stack_key[64];
     bool labels = false;
     for (u32 i = 0; shape->labels && shape->names && i < shape->arity && !labels; i++) labels = shape->labels[i] && shape->names[i];
-    u32 per = labels ? 3 : 2;
-    u32 count = 3 + shape->arity * per;
+    bool named = false;
+    for (u32 i = 0; shape->names && i < shape->arity && !named; i++) named = shape->names[i] != nullptr;
+    // (The flags 8 to a word, then the names and labels if there are any: type-fest's tuples have hundreds of elements)
+    u32 flag_words = (shape->arity + 7) / 8;
+    u32 count = 3 + flag_words + (named ? shape->arity : 0) + (labels ? shape->arity : 0);
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = KEY_TUPLE_TARGET;
-    key[1] = shape->arity | (u64)labels << 32;
+    key[1] = shape->arity | (u64)labels << 32 | (u64)named << 33;
     key[2] = shape->readonly;
-    for (u32 i = 0; i < shape->arity; i++) {
-        key[3 + i * per] = shape->flags[i];
-        key[4 + i * per] = (u64)(uintptr_t)(shape->names ? shape->names[i] : nullptr);
-        if (labels) key[5 + i * per] = (u64)(uintptr_t)(shape->names[i] ? shape->labels[i] : nullptr);
-    }
+    u64* at = key + 3;
+    memset(at, 0, sizeof(u64) * flag_words);
+    for (u32 i = 0; i < shape->arity; i++) at[i / 8] |= (u64)shape->flags[i] << (i % 8 * 8);
+    at += flag_words;
+    for (u32 i = 0; named && i < shape->arity; i++) *at++ = (u64)(uintptr_t)shape->names[i];
+    for (u32 i = 0; labels && i < shape->arity; i++) *at++ = (u64)(uintptr_t)(shape->names[i] ? shape->labels[i] : nullptr);
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
