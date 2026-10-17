@@ -262,8 +262,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   expression checks get interned and then reached from declared types' lazy members (old -> young through the intern
   tables needs a promotion, i.e. a copy), and an old generation grows to the share's whole declared world where
   recycling bounds it. Where copying would pay is drizzle/zod-like shared graphs (recycles +10-18% wall at 64 MB):
-  if that becomes the blocker, measure what their fresh checkers re-derive first (`TTTT_FILE_TIMES=1` around a
-  recycle), it may be one memo kind. `scripts/survivors.sh` (`-DTTTT_SURVIVORS`, `ty/survivors.c`) stays as the tool.
+  measured 2026-10-17 (measurements.md "The checkers' budget"): not one memo kind but the schema graph, rebuilt
+  across many files (db.ts, session.ts, select.ts: +20-27 MB each in a fresh checker); dokploy rebuilds ~70 MB in its
+  first file. A guard on the largest single-file growth only moved along the same frontier. `scripts/survivors.sh` (`-DTTTT_SURVIVORS`, `ty/survivors.c`) stays as the tool.
 - (2026-10-16) Recycling only pays past the warm-up: `check_share()` recycles once a checker holds more than its
   budget *and* twice what it held after its segment's first file (dokploy 55 -> 3 s at K4; elsewhere unchanged). A
   program whose warm state exceeds the budget now holds ~2x its warm state per checker instead of thrashing.

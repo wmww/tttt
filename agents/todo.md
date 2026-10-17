@@ -55,13 +55,12 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    below). The defaults' lever is the per-checker budget: vscode at 4 checkers 5.80 s / 1747 MB at 128 MB each, 5.87
    / **1537** at 96, 6.04 / 1362 at 64; drizzle and zod pay (+10-18% at 64), effect, type-fest, webpack don't.
    `scripts/survivors.sh` is the tool.
-7. **The checkers' budget at the defaults** (replaces plan 79's execution): pick the default per-checker budget
-   (today `--checker-memory 256` split, 128 MB floor, `CHECKER_MEMORY_FLOOR` in program.c) from a table of every
-   corpus and perfsweep `--defaults` at 128 / 96 / 64 each, within the window's ~3% (vscode 96 is +1%, -210 MB).
-   Then why drizzle and zod pay: what their fresh checkers re-derive after a recycle (`TTTT_FILE_TIMES=1`, the first
-   files of each segment against the same files warm), and whether `check_share()`'s warm-up guard (`2 *
-   segment_base`) should measure time rather than bytes. Redo `program_set_checker_memory_cap()` for 12 cores (the
-   cap's 64 MB floor) from the same table; `scripts/checkerdiff.py -k 1 -m 0` and the recycle oracle after.
+7. Done 2026-10-17: the checkers' budget floor 128 -> **96 MB** (measurements.md "The checkers' budget"): at 4
+   checkers the 15 corpora +1.4% wall / -6.5% peak (vscode 1690 -> **1492 MB**, effect 705 -> 613, zod-root 609 ->
+   506), the sweep's 169 biggest +3% / -3%; 80 and 64 cost the sweep +5% / +9%. drizzle and dokploy pay because a
+   fresh checker rebuilds their schema graph (dokploy ~70 MB in one file, drizzle +20-27 MB in each of several); a
+   largest-growth warm-up guard only moved along the same frontier (and let type-fest grow to 767 MB): dropped. The
+   12-core cap left as is (binds past 16 checkers), unmeasured. Every oracle unchanged; K1 untouched.
 8. **Expr/Span leftovers of plan 80** (perf_leads.md "Memory": ClassItem's inline FunctionImpl, ~-17..40 MB) or the
    LazyType slots fallback, whichever the K1 peak table says is bigger; or a second session of entry 7 if drizzle's
    re-derivation is one memo kind worth keeping across a recycle.

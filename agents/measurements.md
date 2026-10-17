@@ -11,6 +11,35 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## The checkers' budget at the defaults (2026-10-17, todo entry 7; floor 128 -> 96 MB)
+The 4-vCPU box, 4 threads, 4 checkers (`--checker-memory MB` = MB each below 128). Wall s / peak MB / recycles,
+best of 2, `scripts/perfsweep.py --corpora --defaults-only --defaults-args "--checker-memory MB"`:
+| corpus | 128 (before) | 96 (now) | 80 | 64 |
+|---|---|---|---|---|
+| vscode | 5.80 / 1690 / 18 | 5.90 / **1492** / 28 | 5.97 / 1444 / 34 | 6.01 / 1333 / 45 |
+| type-fest | 0.55 / 621 / 3 | 0.55 / 631 / 5 | 0.56 / 552 / 5 | 0.56 / 521 / 6 |
+| effect | 0.69 / 705 / 2 | 0.69 / **613** / 3 | 0.69 / 550 / 5 | 0.69 / 483 / 6 |
+| zod-root | 0.45 / 609 / 1 | 0.46 / 506 / 2 | 0.47 / 479 / 4 | 0.49 / 408 / 6 |
+| webpack | 0.65 / 630 / 0 | 0.65 / 630 / 0 | 0.66 / 601 / 1 | 0.65 / 526 / 3 |
+| zod | 0.37 / 534 / 0 | 0.39 / 491 / 2 | 0.40 / 438 / 3 | 0.40 / 388 / 5 |
+| drizzle | 0.51 / 599 / 2 | 0.56 / 511 / 4 | 0.55 / 468 / 4 | 0.59 / 401 / 8 |
+| excalidraw | 0.47 / 467 / 0 | 0.48 / 469 / 0 | 0.47 / 470 / 0 | 0.49 / 458 / 2 |
+| tanstack-router | 0.35 / 403 / 0 | 0.34 / 400 / 0 | 0.34 / 399 / 0 | 0.35 / 380 / 1 |
+| all 15 -p corpora | 11.24 s / 7855 | 11.40 / 7343 (+1.4% / -6.5%) | 11.50 / 6997 (+2.3 / -11) | 11.61 / 6496 (+3.3 / -17) |
+vue, valibot, tsc, xstate, react, nest: unchanged at every budget (no recycle above 64). The source sweep's 169
+projects whose K1 arena is over 64 MB (`--defaults-only --min-arena 64`, one run each; two runs at 128 agree within
+0.1 s): total wall / summed peak 73.2 s / 64.1 GB at 128, 75.5 / 62.2 at 96 (+3% / -3%, p90 project +14%), 76.6 /
+60.5 at 80, 79.7 / 59.3 at 64 (+9% / -7.5%, p90 +34%, monkeytype/frontend 1.9x). The tail is dokploy-like: one
+file grows a fresh checker by ~70 MB (a drizzle schema behind tRPC) in ~100 ms, so a recycle frees ~25 MB for
+~100 ms. drizzle (`TTTT_FILE_TIMES=1`, which now prints each checker's holding and its recycles) re-derives its
+graph spread over many files (db.ts, session.ts, select.ts, count.ts: +20-27 MB, 20-30 ms each in a fresh
+checker), ~365 ms of K1's ~1 s at 64 MB. **A warm-up guard on the largest single-file growth** (recycle only past
+2x or 3x it, instead of 2x the first file's holding) moved along the same wall/memory frontier on the sweep (2x at
+64 MB = 80 MB today's guard: 76.8 s / 60.5 GB) and let type-fest's checkers grow to 767 MB (its big file blocks
+every recycle): dropped. A time-based guard would see the same thing and make the cuts depend on timing. 96 is
+the floor (vscode +1.7% for -200 MB, inside the window's 3%; 80 costs the sweep +5%). `program_set_checker_memory_cap()`
+(1536 MB together, 64 each at least) now binds only past 16 checkers (12-core K24: 64 each), unmeasured here.
+
 ## Plan 79, a copying checker recycle: survivors and the budget (2026-10-17, todo entry 6; closed, declined)
 The 4-vCPU box. **Survivors** (`scripts/survivors.sh -m MB -p P`: at every recycle of one checker at `--threads 1`,
 a conservative mark of the arena from the declaration-level roots: links of symbols that aren't function locals,
