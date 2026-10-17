@@ -40,7 +40,11 @@ typedef struct Block {
     VecStatement statements;
     // The scope of a function body or block whose declarations the resolve walk added (block_add_names()), null for
     // a file's or namespace's statements and blocks that declare nothing: where the types baseline names types from
-    struct Scope* scope;
+    // A FunctionImpl's whose body is deferred (FunctionImpl.deferred, plan 78): the DeferredBody instead
+    union {
+        struct Scope* scope;
+        struct DeferredBody* deferred;
+    };
 } Block;
 
 void block_drop(Block* me);

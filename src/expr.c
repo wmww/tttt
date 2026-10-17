@@ -4252,7 +4252,7 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
 }
 
 // The callee of the call being checked, while it is (`import.x(...)`: tsc's checkGrammarMetaProperty's isCallee)
-static Expr const* checked_callee;
+static thread_local Expr const* checked_callee;
 
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {

@@ -1163,11 +1163,11 @@ static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearK
     }
     if (!fn->has_body || fn->body_missing) return false;
     if (fn->expression_body) {
-        Statement const* ret = vec_statement_at(&fn->body.statements, 0);
+        Statement const* ret = vec_statement_at(&function_impl_body(fn)->statements, 0);
         return ret && ret->tag == STATEMENT_RETURN_EXPR && search_expr(me, &ret->expr, near, false);
     }
     // (A `return` directly in the body: the function is the nearest declaration of what it returns)
-    for_each (i, vec_statement, &fn->body.statements) {
+    for_each (i, vec_statement, &function_impl_body(fn)->statements) {
         if (i->tag != STATEMENT_RETURN_EXPR || statement_is_bare_return(i)) continue;
         if (search_expr(me, &i->expr, (Near){ .kind = kind, .span = function_error_span(fn) }, false)) return true;
     }

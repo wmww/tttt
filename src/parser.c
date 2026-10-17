@@ -102,6 +102,9 @@ typedef struct ParserShared {
     VecJsDocRange jsdoc_comments;
     // Where declarations are emitted: every comment is recorded (SourceFile.comments)
     bool record_comments;
+    // Parsing a deferred function body (plan 78, parse_deferred_body()): its comments were recorded when it was skipped,
+    // and nothing in it is deferred
+    bool materializing;
     // Parsing a type inside a JSDoc comment: a line's leading `*` is whitespace, `*/` ends everything, the JSDoc-only
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
@@ -167,6 +170,8 @@ typedef struct FunctionFlags {
     // A body that isn't there and can't be left out is '{' expected (object literal methods and accessors, tsc's
     // parseFunctionBlockOrSemicolon without a message), not TS1144
     bool brace_expected;
+    // A function expression or object literal method (or `export default function`): see skip_body()
+    bool expression;
 } FunctionFlags;
 
 static const FunctionFlags function_flags_null = {0};
@@ -423,7 +428,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
-static bool skip_typed_body(Parser* parent, FunctionImpl* func);
+static bool skip_body(Parser* parent, FunctionImpl* func, bool expression);
 static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret);
 
 // The first push reserves room for 4, and these elements are big (a parameter is ~570 bytes): lists of one or two were
@@ -967,11 +972,11 @@ static inline bool is_js_ascii_space(char c) {
 
 // `at` is the `@` a comment directive would start with (tsc's commentDirectiveRegExSingleLine/MultiLine matched up to
 // there): records a `@ts-expect-error`/`@ts-ignore` (no word boundary after it in tsc either)
-static void note_comment_directive(Parser* parent, const char* start, const char* at, const char* end) {
+static void note_comment_directive(ParserShared* shared, const char* start, const char* at, const char* end) {
     csview rest = csview_from_range(at + 1, end);
     bool expect_error = csview_starts_with(rest, "ts-expect-error");
     if (!expect_error && !csview_starts_with(rest, "ts-ignore")) return;
-    source_file_add_comment_directive((SourceFile*)parent->shared->source, start, end, expect_error);
+    source_file_add_comment_directive((SourceFile*)shared->source, start, end, expect_error);
 }
 
 // Backtracking hops comments repeatedly: only what is past the last one recorded is new
@@ -983,14 +988,14 @@ static void note_jsdoc_comment(Parser* parent, const char* start, const char* en
 
 // A JSDoc comment's `@deprecated` tag, for TS6385 (tsc's NodeFlags.Deprecated from parseJSDocComment): only the
 // harness asks (capture_suggestions)
-static void note_deprecated_jsdoc(Parser* parent, const char* start, const char* end) {
+static void note_deprecated_jsdoc(ParserShared* shared, const char* start, const char* end) {
     for (const char* at = start; (at = memchr(at, '@', (size_t)(end - at))); at++) {
         if (end - at < 11 || memcmp(at, "@deprecated", 11) != 0) continue;
         char before = at > start ? at[-1] : ' ';
         char after = at + 11 < end ? at[11] : ' ';
         // (A tag: past blanks or the comment's `*`s, and a whole word)
         if ((before == ' ' || before == '\t' || before == '*' || before == '\n') && !is_identifier_char(after)) {
-            source_file_add_deprecated_jsdoc((SourceFile*)parent->shared->source, end);
+            source_file_add_deprecated_jsdoc((SourceFile*)shared->source, end);
             return;
         }
     }
@@ -1007,6 +1012,32 @@ static char const* find_char_in_file(Parser const* p, char const* from, char c) 
     }
 }
 
+// What a `//` comment from start to end (its line's end) records: a comment directive, the comment where declarations
+// are emitted. hop_comment() and the body skipper (skip_balanced_braces())
+static void note_line_comment(ParserShared* shared, const char* start, const char* end) {
+    // A materialized body's comments were recorded when it was skipped (plan 78)
+    if (shared->materializing) return;
+    // /^\/\/\/?\s*@(ts-expect-error|ts-ignore)/
+    const char* c = start + 2;
+    if (*c == '/') c++;
+    while (c < end && is_js_ascii_space(*c)) c++;
+    if (*c == '@' && c < end) note_comment_directive(shared, start, c, end);
+    if (shared->record_comments && !shared->in_jsdoc) source_file_add_comment((SourceFile*)shared->source, start, end);
+}
+
+// The same for a `/* */` comment (end past the `*/`), whose last line starts at last_line_start (start if it has one)
+static void note_block_comment(ParserShared* shared, const char* start, const char* last_line_start, const char* end) {
+    if (shared->materializing) return;
+    if (shared->record_comments && !shared->in_jsdoc) source_file_add_comment((SourceFile*)shared->source, start, end);
+    if (start[2] == '*' && start[3] != '/' && compiler_options()->capture_suggestions) note_deprecated_jsdoc(shared, start, end);
+    // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
+    const char* c = last_line_start;
+    while (is_js_ascii_space(*c)) c++;
+    while (*c == '/' || *c == '*') c++;
+    while (c < end && is_js_ascii_space(*c)) c++;
+    if (*c == '@' && c < end) note_comment_directive(shared, last_line_start, c, end);
+}
+
 static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
         return false;
@@ -1021,12 +1052,7 @@ static inline bool hop_comment(Parser* parent) {
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
-            // /^\/\/\/?\s*@(ts-expect-error|ts-ignore)/
-            const char* c = start + 2;
-            if (*c == '/') c++;
-            while (c < parent->pos && is_js_ascii_space(*c)) c++;
-            if (*c == '@' && c < parent->pos) note_comment_directive(parent, start, c, parent->pos);
-            if (parent->shared->record_comments && !parent->shared->in_jsdoc) source_file_add_comment((SourceFile*)parent->shared->source, start, parent->pos);
+            note_line_comment(parent->shared, start, parent->pos);
         }   break;
 
         case '*': {
@@ -1057,15 +1083,8 @@ static inline bool hop_comment(Parser* parent) {
                 while (last_line_start[-1] != '\n') last_line_start--;
             }
             parent->pos = pos;
-            if (parent->shared->record_comments && !parent->shared->in_jsdoc) source_file_add_comment((SourceFile*)parent->shared->source, start, pos);
             if (start[2] == '*' && start[3] != '/' && parent->shared->source->is_js) note_jsdoc_comment(parent, start, pos);
-            if (start[2] == '*' && start[3] != '/' && compiler_options()->capture_suggestions) note_deprecated_jsdoc(parent, start, pos);
-            // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
-            const char* c = last_line_start;
-            while (is_js_ascii_space(*c)) c++;
-            while (*c == '/' || *c == '*') c++;
-            while (c < pos && is_js_ascii_space(*c)) c++;
-            if (*c == '@' && c < pos) note_comment_directive(parent, last_line_start, c, pos);
+            note_block_comment(parent->shared, start, last_line_start, pos);
         }   break;
 
         default: return false;
@@ -6920,8 +6939,8 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
         Expr expr = expr_implicit_any(span_from_pos(&p));
         p.pos = span_end_ptr(function_impl_arrow_span(ret));
-        ret->body = (Block){0};
-        vec_statement_push(&ret->body.statements, (Statement){ .tag = STATEMENT_RETURN_EXPR, .expr = expr });
+        ret->body_ = (Block){0};
+        vec_statement_push(&ret->body_.statements, (Statement){ .tag = STATEMENT_RETURN_EXPR, .expr = expr });
         ret->expression_body = true;
     } else if (*p.pos != '{' && !tok_is(body_start, ";") && !tok_is(body_start, "function") && !tok_is(body_start, "class") &&
         tok_is_start_of_statement(&p, body_start) && !tok_is_start_of_expression(&p, body_start)
@@ -6929,23 +6948,23 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         // A statement that is no expression: a block missing its `{` (tsc's parseArrowFunctionExpressionBody,
         // `() => var k = 10; }`)
         expected_token_error(&p, "{");
-        ret->body = (Block){0};
+        ret->body_ = (Block){0};
         const char* list_start = p.pos;
-        parse_append_statement_sequence(&p, false, PARSING_BLOCK_STATEMENTS, list_start, &ret->body.statements);
+        parse_append_statement_sequence(&p, false, PARSING_BLOCK_STATEMENTS, list_start, &ret->body_.statements);
         hop_whitespace(&p);
         expect_char(&p, '}');
-    } else if (!skip_typed_body(&p, ret) && !parse_block(&p, false, &ret->body)) {
+    } else if (!skip_body(&p, ret, true) && !parse_block(&p, false, &ret->body_)) {
         Expr expr;
         const char* body_pos = p.pos;
         if (!expect_expr(&p, ctx, &expr) && p.pos == body_pos) {
             p.pos = span_end_ptr(function_impl_arrow_span(ret));
         }
-        ret->body = (Block){0};
-        list_push(vec_statement, &ret->body.statements, (Statement){
+        ret->body_ = (Block){0};
+        list_push(vec_statement, &ret->body_.statements, (Statement){
             .tag = STATEMENT_RETURN_EXPR,
             .expr = expr,
         });
-        shrink_list(vec_statement, &ret->body.statements);
+        shrink_list(vec_statement, &ret->body_.statements);
         ret->expression_body = true;
     }
 
@@ -7017,7 +7036,7 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
     }
     Parser body = parser(&p);
     hop_whitespace(&body);
-    if (*body.pos == '{' && parse_block(&body, false, &ret->body)) {
+    if (*body.pos == '{' && parse_block(&body, false, &ret->body_)) {
         ret->has_body = true;
         parse_success(&body);
     } else {
@@ -7056,13 +7075,17 @@ static bool skip_template_part(char const** s) {
 // Where the code from the `{` at s ends: just past its `}`, or null where that isn't certain. Strings, comments,
 // templates (with their `${}`s) and regular expressions are stepped over. A `/` is a regular expression after an
 // operator, `(`, `[`, `,`... or an expression keyword, and a division after a name, a number, a string or `]`; after
-// `)` or `}` (`if (a) /x/`, a block before a statement) or `++`/`--` it could be either, which gives up. So does
-// `import` or `require` anywhere: they would add to the file's module names
-static char const* skip_balanced_braces(char const* s) {
-    enum { MAX_DEPTH = 128 };
+// `)` a division, unless the parentheses are an `if`/`while`/`for`/`with` head (`if (a) /x/.test(b)`); after `}` (a
+// block before a statement, or an object literal) or `++`/`--` it could be either, which gives up. So does `import` or
+// `require` anywhere: they would add to the file's module names. The comments stepped over are recorded as the parser
+// would have (note_line_comment()): a skipped body keeps its comment directives
+static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
+    enum { MAX_DEPTH = 128, MAX_PARENS = 256 };
     bool template[MAX_DEPTH]; // Per open brace: whether it's a template's `${`
-    int depth = 0;
-    enum { LAST_PUNCTUATOR, LAST_WORD, LAST_VALUE, LAST_CLOSE } last = LAST_PUNCTUATOR;
+    bool paren_head[MAX_PARENS]; // Per open parenthesis: whether it's an `if`/`while`/`for`/`with` head
+    int depth = 0, paren_depth = 0;
+    enum { LAST_PUNCTUATOR, LAST_WORD, LAST_VALUE, LAST_CLOSE_PAREN, LAST_CLOSE_BRACE } last = LAST_PUNCTUATOR;
+    bool closed_head = false; // The `)` last is closes a head
     csview word = {0}; // The last word, when last is LAST_WORD
     char last_char = 0, before_last_char = 0; // The last two punctuators
     static char const* const regex_after[] = {
@@ -7075,10 +7098,20 @@ static char const* skip_balanced_braces(char const* s) {
         if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
             s++;
         } else if (c == '/' && s[1] == '/') {
-            while (*s && *s != '\n') s++;
+            char const* start = s;
+            s += 2 + strcspn(s + 2, "\n\r");
+            note_line_comment(shared, start, s);
         } else if (c == '/' && s[1] == '*') {
-            char const* end = strstr(s + 2, "*/");
-            s = end ? end + 2 : nullptr;
+            char const* close = strstr(s + 2, "*/");
+            if (!close) return nullptr;
+            char const* start = s;
+            s = close + 2;
+            char const* last_line_start = start;
+            if (memchr(start, '\n', (size_t)(s - start))) {
+                last_line_start = s;
+                while (last_line_start[-1] != '\n') last_line_start--;
+            }
+            note_block_comment(shared, start, last_line_start, s);
         } else if (c == '{' || c == '`' || c == '}') {
             bool template_continues;
             if (c == '{') {
@@ -7094,7 +7127,7 @@ static char const* skip_balanced_braces(char const* s) {
                 s++;
                 if (!template[--depth]) {
                     if (!depth) return s;
-                    last = LAST_CLOSE;
+                    last = LAST_CLOSE_BRACE;
                     continue;
                 }
                 template_continues = skip_template_part(&s);
@@ -7118,9 +7151,11 @@ static char const* skip_balanced_braces(char const* s) {
             s++;
             last = LAST_VALUE;
         } else if (c == '/') {
-            if (last == LAST_CLOSE) return nullptr;
-            bool regex = last == LAST_PUNCTUATOR;
-            if (regex && (last_char == '+' || last_char == '-') && before_last_char == last_char) return nullptr;
+            if (last == LAST_CLOSE_BRACE) return nullptr;
+            bool regex = last == LAST_PUNCTUATOR || (last == LAST_CLOSE_PAREN && closed_head);
+            if (regex && last == LAST_PUNCTUATOR && (last_char == '+' || last_char == '-') && before_last_char == last_char) {
+                return nullptr;
+            }
             for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
                 if (csview_equals(word, regex_after[i])) regex = true;
             }
@@ -7150,7 +7185,16 @@ static char const* skip_balanced_braces(char const* s) {
             if (csview_equals(word, "import") || csview_equals(word, "require")) return nullptr;
             last = LAST_WORD;
         } else {
-            last = c == ']' ? LAST_VALUE : c == ')' ? LAST_CLOSE : LAST_PUNCTUATOR;
+            if (c == '(') {
+                if (paren_depth == MAX_PARENS) return nullptr;
+                paren_head[paren_depth++] = last == LAST_WORD && (csview_equals(word, "if") || csview_equals(word, "while") ||
+                    csview_equals(word, "for") || csview_equals(word, "with"));
+            } else if (c == ')') {
+                // (An unbalanced one: it can't be told)
+                if (!paren_depth) return nullptr;
+                closed_head = paren_head[--paren_depth];
+            }
+            last = c == ']' ? LAST_VALUE : c == ')' ? LAST_CLOSE_PAREN : LAST_PUNCTUATOR;
             before_last_char = last_char;
             last_char = c;
             s++;
@@ -7159,20 +7203,116 @@ static char const* skip_balanced_braces(char const* s) {
     return nullptr;
 }
 
-// tsc -b reads a referenced project's `.d.ts`, which has no function bodies: in a referenced project's TypeScript
-// source the body of a function with a written return type isn't parsed (nor resolved: function_impl_lookup_names_as)
-// when its end is certain (skip_balanced_braces()). The function keeps an empty body
-static bool skip_typed_body(Parser* parent, FunctionImpl* func) {
-    if (!parent->shared->source->skip_typed_bodies || !func->ret_explicit || *parent->pos != '{') return false;
-    char const* end = skip_balanced_braces(parent->pos);
+// Whether a parameter has an expression in it (a default value, a computed name in its pattern): its walk sees the body's
+// names (parameters_see_body(), block_add_names() before the parameters), so the body isn't deferred
+static bool binding_has_expressions(Binding const* me) {
+    if (me->default_value) return true;
+    switch (me->tag) {
+        case BINDING_NOOP:
+        case BINDING_IDENTIFIER:
+            return false;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &me->array) {
+                if (binding_has_expressions(i)) return true;
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &me->object) {
+                if (i->computed_key || binding_has_expressions(&i->target)) return true;
+            }
+            return false;
+    }
+    return false;
+}
+
+// Whether the body at `{` starts with a string (a directive prologue: `"use strict"` makes the function's scope strict
+// before its parameters are walked, block_has_use_strict())
+static bool body_starts_with_string(char const* open) {
+    char const* s = open + 1;
+    while (true) {
+        while (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r') s++;
+        if (s[0] == '/' && s[1] == '/') {
+            s += 2 + strcspn(s + 2, "\n\r");
+        } else if (s[0] == '/' && s[1] == '*') {
+            char const* close = strstr(s + 2, "*/");
+            if (!close) return true;
+            s = close + 2;
+        } else {
+            return *s == '"' || *s == '\'' || *s == '`';
+        }
+    }
+}
+
+// The body at `{` isn't parsed when that's safe (its end is certain: skip_balanced_braces()), the function keeps an
+// empty body:
+// - tsc -b reads a referenced project's `.d.ts`, which has no function bodies: in a referenced project's TypeScript
+//   source the body of a function with a written return type is skipped and never resolved (function_impl_lookup_names_as())
+// - plan 78: an outermost function's body in a file that defers them (SourceFile.defer_bodies) is a DeferredBody, parsed
+//   and walked when a checker first needs it. Not where the walk of the function's parameters would see the body's
+//   names (an expression in a parameter), not in a `with` statement or an ambient context (errors), not an IIFE's (part
+//   of the flow around it: undefer_body() when the call shows) nor a constructor's the class's walk looks into
+//   (parse_class_decl()). Nor an expression's (`expression`) with a function in its signature (a parenthesis after
+//   the parameter list's own): the walk of that function asks whether this one is context sensitive
+//   (function_impl_lookup_names_as()'s contextual_ancestor), which may take its body
+static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
+    ParserShared* shared = parent->shared;
+    SourceFile const* source = shared->source;
+    if (*parent->pos != '{') return false;
+    bool referenced = source->skip_typed_bodies && func->ret_explicit;
+    bool defer = !referenced && source->defer_bodies && !shared->materializing && shared->function_depth == 1 &&
+        !shared->in_ambient && !shared->with_body_depth;
+    for (isize i = 0; defer && i < vec_function_arg_size(&func->args); i++) {
+        FunctionArg const* arg = vec_function_arg_at(&func->args, i);
+        defer = !arg->initializer.value && !binding_has_expressions(&arg->initializer.binding);
+    }
+    if (defer && body_starts_with_string(parent->pos)) defer = false;
+    if (defer && expression) {
+        Span args = function_impl_args_span(func);
+        char const* from = span_valid(args) ? span_start_ptr(args) : parent->pos;
+        if (*from == '(') from++;
+        defer = !memchr(from, '(', (size_t)(parent->pos - from));
+    }
+    if (!referenced && !defer) return false;
+    char const* end = skip_balanced_braces(shared, parent->pos);
     if (!end) return false;
     Parser p = parser(parent);
     char const* open = p.pos;
     p.pos = end - 1;
     expect_closing(&p, '}', open);
-    func->body = (Block){0};
+    func->body_ = (Block){0};
     func->has_body = true;
+    if (defer) {
+        char const* text = source_file_start(source);
+        ((SourceFile*)source)->has_deferred_bodies = true;
+        defer_stat_add(DEFER_STAT_SKIPPED, 1);
+        defer_stat_add(DEFER_STAT_SKIPPED_BYTES, end - open);
+        func->deferred = true;
+        func->body_.deferred = ast_new(DeferredBody, { .open = (u32)(open - text), .end = (u32)(end - text) });
+    }
     return parse_success(&p);
+}
+
+// A deferred body parsed after all (a function the parser learns is an IIFE, a constructor the class's walk looks into):
+// at its recorded `{`, in the function's context, with what follows the function parsed already
+static void undefer_body(Parser* parent, FunctionImpl* func) {
+    if (!func->deferred) return;
+    defer_stat_add(DEFER_STAT_UNDEFERRED, 1);
+    DeferredBody* deferred = func->body_.deferred;
+    Parser saved = *parent;
+    FunctionCtx ctx = function_ctx_enter(parent, (FunctionFlags){ .is_async = func->is_async, .is_generator = func->is_generator });
+    Parser p = parser(parent);
+    p.pos = source_file_start(parent->shared->source) + deferred->open;
+    p.whitespace = WHITESPACE_NONE;
+    p.whitespace_end = nullptr;
+    func->deferred = false;
+    func->body_ = (Block){0};
+    parse_block(&p, false, &func->body_);
+    parse_success(&p);
+    function_ctx_leave(parent, ctx);
+    parent->pos = saved.pos;
+    parent->whitespace = saved.whitespace;
+    parent->whitespace_end = saved.whitespace_end;
+    ast_delete(deferred);
 }
 
 static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
@@ -7210,15 +7350,15 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
     }
     hop_whitespace(&p);
 
-    if (skip_typed_body(&p, ret) || parse_block(&p, false, &ret->body)) {
+    if (skip_body(&p, ret, flags.expression) || parse_block(&p, false, &ret->body_)) {
         ret->has_body = true;
     } else if (*p.pos == ';' || *p.pos == '}' || at_eof(&p, p.pos) || p.whitespace == WHITESPACE_NEWLINE) {
-        ret->body = (Block){0};
+        ret->body_ = (Block){0};
     } else {
         // tsc's parseFunctionBlock: a body whose `{` is missing, empty
         if (flags.brace_expected) expected_token_error(&p, "{");
         else parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
-        ret->body = (Block){0};
+        ret->body_ = (Block){0};
         ret->body_missing = true;
     }
 
@@ -7236,7 +7376,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     }
     hop_whitespace(&p);
 
-    FunctionFlags flags = { .is_async = is_async, .committed = true };
+    FunctionFlags flags = { .is_async = is_async, .committed = true, .expression = !name_required };
     if (hop_char(&p, '*')) {
         flags.is_generator = true;
         flags.asterisk = span_from_previous_char(&p);
@@ -7333,7 +7473,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     ObjectExprItem item = { .tag = OBJECT_ITEM_PROPERTY };
     bool must_be_method = false;
-    FunctionFlags flags = { .brace_expected = true };
+    FunctionFlags flags = { .brace_expected = true, .expression = true };
     // tsc parses modifiers in front of any member and reports them from the checker (a grammar error)
     ModifierList modifiers;
     parse_modifier_list_ex(&p, true, false, &modifiers);
@@ -7480,7 +7620,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             }
             hop_whitespace(&p);
         }
-        if (parse_block(&p, false, &func.body)) func.has_body = true;
+        if (parse_block(&p, false, &func.body_)) func.has_body = true;
         else if (*p.pos == ';') p.pos++; // (parseFunctionBlockOrSemicolon)
         // (Where no `;` can go, tsc's parseFunctionBlock makes a missing, empty block: a getter's type comes from it)
         else if (!tok_can_parse_semicolon(tok_peek(&p))) func.body_missing = true;
@@ -8676,6 +8816,19 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     list_leave(&p, saved_context);
     expect_char(&p, '}');
     shrink_list(vec_class_item, &ret->items);
+    // The class's walk looks at the names its constructor declares when instance fields are initialized in it
+    // (constructor_locals() in class_decl.c), and the type of a field without a type or initializer is what the
+    // constructor's walk finds assigned to it (field_type_from_assignments()): its body isn't deferred then (plan 78)
+    CompilerOptions const* options = compiler_options();
+    bool standard_fields = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
+    bool constructor_eager = false;
+    for_each (i, vec_class_item, &ret->items) {
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static) continue;
+        constructor_eager |= !standard_fields || (!i->field.has_explicit_type && i->field.value.tag == EXPR_IMPLICIT_ANY);
+    }
+    for_each (i, vec_class_item, &ret->items) {
+        if (constructor_eager && i->tag == CLASS_ITEM_CONSTRUCTOR) undefer_body(&p, &i->constructor.func);
+    }
 
     ret->full_span = span_from(a);
     return parse_success(&p);
@@ -9732,6 +9885,10 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .args = parsed.args,
             })
         );
+        // (An immediately invoked function is part of the flow around it: its body isn't deferred, plan 78)
+        Expr* callee = &left_and_ret->call->callable;
+        while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+        if (callee->tag == EXPR_FUNCTION) undefer_body(&p, callee->function);
         // (`import("m", options)`: its attributes, binder_find_module())
         if (left_and_ret->call->callable.tag == EXPR_IDENTIFIER && left_and_ret->call->callable.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
             identifier_module_ref(&left_and_ret->call->callable.identifier)
@@ -14633,6 +14790,42 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     }
     ast_arena_end();
     free(await_statements);
+}
+
+// Plan 78: parses a deferred body (the file's AST arena begun) into its DeferredBody. False, with nothing reported, if
+// the parse can be told from the eager one: a syntax error (or one that isn't a grammar error), or an end other than the
+// skipper's. Grammar errors go to errs, unless the file has parse errors (parse_file())
+bool parse_deferred_body(SourceFile* source, FunctionImpl* func, ErrorCtx* errs) {
+    DeferredBody* deferred = func->body_.deferred;
+    char const* text = source_file_start(source);
+    ParserShared shared = {
+        .source = source,
+        .text = !source->is_declaration && !source->is_stdlib && (compiler_options()->declaration || compiler_options()->composite) ?
+            text : nullptr,
+        .fail_cache_start = text,
+        .errors = vec_error_init(),
+        .materializing = true,
+        .in_async = func->is_async,
+        .in_generator = func->is_generator,
+        .function_depth = 1,
+    };
+    Parser p = { .shared = &shared, .parent = nullptr, .pos = text + deferred->open };
+    deferred->block = (Block){0};
+    bool same = parse_block(&p, false, &deferred->block) && p.pos == text + deferred->end && !shared.unterminated_comment;
+    for_each (i, vec_error, &shared.errors) {
+        if (!(i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code))) same = false;
+    }
+    same = same && !shared.jsdoc_errors.size && !shared.binary_marker;
+    for_each (i, vec_error, &shared.errors) {
+        if (!same || (source->has_parse_errors && i->grammar)) {
+            error_drop(i);
+        } else {
+            error_ctx_append_error(errs, *i);
+        }
+        *i = (Error){0};
+    }
+    parser_shared_drop(&shared);
+    return same;
 }
 
 // False if the file has to be parsed again with top_level_await (nothing of this pass is kept then, but the

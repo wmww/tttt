@@ -30,7 +30,12 @@ void function_impl_drop(FunctionImpl* me) {
         type_drop(&my predicate->type);
         ast_delete(my predicate);
     }
-    block_drop(&my body);
+    if (my deferred) {
+        // (A deferred body's block is in its DeferredBody, in the arena with it: empty unless materialized)
+        if (my body_.deferred) block_drop(&my body_.deferred->block);
+    } else {
+        block_drop(&my body_);
+    }
     FunctionImplRare* rare = my rare;
     if (!rare) return;
     ast_delete(rare->yields);
@@ -225,6 +230,10 @@ bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class
         !(index == 0 && is_this_parameter(vec_function_arg_at(&my args, 0)));
 }
 
+static DeferredBodies* deferred_bodies_of(SourceFile* file);
+static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow_, FlowBuilder* outer, Scope* function_scope,
+    bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs);
+
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     // (a declaration or method too: what it returns is in the same context)
     if (names->flow && names->flow->contextual_depth) my syntactically_contextual = true;
@@ -317,7 +326,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     function_scope->flow = &flow;
     if (type_params_scope) scope_rare_mut(type_params_scope)->type_params_function = function_scope;
     function_scope->function = me;
-    function_scope->strict |= my has_body && block_has_use_strict(&my body);
+    // (A deferred body doesn't start with a string: parser.c's skip_body())
+    function_scope->strict |= my has_body && !my deferred && block_has_use_strict(&my body_);
 
     if (this_is_any) scope_rare_mut(function_scope)->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me, .type_boundary = true };
 
@@ -347,7 +357,14 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
 
     // The toplevel of the function body is the same scope as the arguments
-    if (!skip_body) block_add_names(&my body, function_scope);
+    if (!skip_body && !my deferred) block_add_names(&my body_, function_scope);
+    // (A deferred body's names aren't there yet: what the signature's walk looks up through the function's scope is
+    // recorded, so the materialization can tell whether one of them would have been found, scope_resolve())
+    DeferredBody* deferred = my deferred ? my body_.deferred : nullptr;
+    if (deferred) {
+        if (my is_iife) log_error("A deferred body is an IIFE's");
+        function_scope->deferred_body = true;
+    }
 
     function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
     ScopePendingMark pending_mark = scope_pending_mark(function_scope->binder);
@@ -411,8 +428,58 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             if (found && !found->is_placeholder) predicate->symbol = found;
         }
     }
-    saved_flow = type_flow_enter_statements();
-    if (!skip_body) block_lookup_names_as(&my body, function_scope, errs);
+    if (deferred) {
+        // The rest waits for the body (function_impl_lookup_deferred_body())
+        function_scope->deferred_body = false;
+        DeferredBodies* list = deferred_bodies_of(names->file);
+        if (list->last) list->last->next = deferred;
+        else list->first = deferred;
+        list->last = deferred;
+        list->count++;
+        deferred->function = me;
+        deferred->function_scope = function_scope;
+        deferred->start = flow.start;
+        deferred->container_start = flow.container_start;
+        deferred->current = flow.current;
+        deferred->return_target = flow.return_target;
+        deferred->constructor_of = flow.constructor_of;
+        deferred->property_context = flow.property_context;
+        deferred->depth = flow.depth;
+        deferred->contextual_depth = flow.contextual_depth;
+        deferred->dead = flow.dead;
+        deferred->has_flow_effects = flow.has_flow_effects;
+        deferred->within_unreachable = flow.within_unreachable;
+        deferred->ambient = flow.ambient;
+        if (flow.yields || flow.yield_count || flow.true_target || flow.false_target || flow.active_labels ||
+            flow.break_target || flow.continue_target || flow.exception_target || flow.initializing ||
+            flow.parameter_initializing || flow.statement_list || flow.lookup_statements || flow.object_literal_depth ||
+            flow.initializer_context || flow.in_type_query || flow.member_name || flow.method_name || flow.const_context
+        ) {
+            log_error("A deferred body's flow builder holds more than DeferredBody keeps");
+        }
+        return;
+    }
+    function_impl_lookup_body(me, &flow, outer, function_scope, is_iife, js_constructor_candidate, skip_body, errs);
+}
+
+// The deferred function's file's list of them (made by its first)
+static DeferredBodies* deferred_bodies_of(SourceFile* file) {
+    if (!file->deferred_bodies) {
+        DeferredBodies* list = c_new(DeferredBodies, { .errs = { .phase = ERROR_PHASE_RESOLVE_NAMES } });
+        pthread_mutex_init(&list->lock, nullptr);
+        file->deferred_bodies = list;
+    }
+    return file->deferred_bodies;
+}
+
+// The end of function_impl_lookup_names_as(): the body's walk and what it leaves on the function. `outer` is null for a
+// deferred body
+static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow_, FlowBuilder* outer, Scope* function_scope,
+    bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs
+) {
+    #define flow (*flow_)
+    TypeFlow const* saved_flow = type_flow_enter_statements();
+    if (!skip_body) block_lookup_names_as(function_impl_body(me), function_scope, errs);
     type_flow_restore(saved_flow);
 
     my end_flow = nullptr;
@@ -435,6 +502,46 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         outer->current = flow.current;
         outer->has_flow_effects |= flow.has_flow_effects;
     }
+    #undef flow
+}
+
+bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
+    FunctionImpl* me = body->function;
+    Scope* function_scope = body->function_scope;
+    // What flow_builder_init() and function_impl_lookup_names_as() made of the builder, up to the body
+    FlowBuilder flow = {
+        .arena = binder_arena(function_scope->binder),
+        .errs = errs,
+        .function = me,
+        .container = me,
+        .ambient = body->ambient,
+        .depth = body->depth,
+        .contextual_depth = body->contextual_depth,
+        .container_start = body->container_start,
+        .within_unreachable = body->within_unreachable,
+        .constructor_of = body->constructor_of,
+        .start = body->start,
+        .current = body->current,
+        .dead = body->dead,
+        .has_flow_effects = body->has_flow_effects,
+        .return_target = body->return_target,
+        .property_context = body->property_context,
+    };
+    // (Flow node ids are for dumps only: a materialization's count on from where no file's do)
+    flow.id_counter = 1u << 30;
+    flow.next_id = &flow.id_counter;
+    function_scope->flow = &flow;
+    u32 before = scope_locals(function_scope)->count;
+    block_add_names(&body->block, function_scope);
+    // Had the body's names been there, would the signature's walk have found one of them (or suggested one)?
+    bool collides = body->signature_not_found && scope_locals(function_scope)->count > before;
+    for (u32 i = 0; i < body->signature_name_count && !collides; i++) {
+        Symbol const* found = symbol_table_get(scope_locals(function_scope), body->signature_names[i]);
+        collides = found && !found->is_parameter;
+    }
+    function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
+    function_scope->flow = nullptr;
+    return !collides;
 }
 
 TypeNode function_impl_into_type(FunctionImpl me) {
@@ -733,7 +840,7 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
 static void function_impl_check_use_strict_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     if (compiler_options()->target < SCRIPT_TARGET_ES2016 || !my has_body || my expression_body) return;
     Statement const* directive = nullptr;
-    for_each (i, vec_statement, &my body.statements) {
+    for_each (i, vec_statement, &function_impl_body(me)->statements) {
         if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
             expr_is_perenthisized(&i->expr) || *i->expr.inner_span.buf == '`'
         ) {
@@ -1346,7 +1453,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     bool was_within_unreachable = current_checker->within_unreachable;
     if (my is_expression) current_checker->within_unreachable = false;
     bool flow_disabled = current_checker->flow_analysis_disabled;
-    block_typecheck(&my body, ctx, errs);
+    block_typecheck(function_impl_body_mut(me), ctx, errs);
     current_checker->flow_analysis_disabled = flow_disabled;
     current_checker->within_unreachable = was_within_unreachable;
     current_checker->return_context = outer_context;

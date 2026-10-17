@@ -303,7 +303,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             log_error("Structured binding function arguments not yet supported in engine");
         }
     }
-    Result res = engine_run_block(me, &func->impl->body);
+    Result res = engine_run_block(me, (Block*)function_impl_body(func->impl));
     vec_stack_frame_pop(&my stack);
     return res;
 }

@@ -595,7 +595,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
     Ty const* target_ret = ty_union(me, rets.data, rets.len, nullptr, (TyList){0});
     ty_buf_drop(&rets);
     if (ty_is_related(me, source_ret, target_ret, TY_RELATION_ASSIGNABLE)) return false;
-    Expr const* body = &vec_statement_at(&function->body.statements, 0)->expr;
+    Expr const* body = &vec_statement_at(&function_impl_body(function)->statements, 0)->expr;
     if (elaborate_error(me, HEAD_TYPE, body, source_ret, target_ret, errs)) return true;
     Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, expr_outer_span(body), errs);
     if (!error) return true;

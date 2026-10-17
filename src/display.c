@@ -672,7 +672,7 @@ static void display_function_impl(Display d, FunctionImpl const* me, bool includ
     }
     if (my has_body) {
         if (include_arrow) display_lit(d, " => "); else display_lit(d, " ");
-        display_block(d, &my body);
+        display_block(d, function_impl_body(me));
     } else {
         display_lit(d, ";");
     }

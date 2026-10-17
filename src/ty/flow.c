@@ -103,7 +103,7 @@ FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow) {
 }
 
 FlowReachability ty_function_end_reachability(Checker* me, FunctionImpl const* function) {
-    return ty_flow_reachability(me, function->end_flow);
+    return ty_flow_reachability(me, function_impl_walked(function)->end_flow);
 }
 
 // Narrowing: the type of a reference at a flow node (tsc's getFlowTypeOfReference(), whose structure this follows
@@ -3401,7 +3401,7 @@ static void report_flow_control_error(Checker* me, Expr const* reference, FlowNo
     FunctionImpl const* function = flow && (flow->flags & FLOW_START) ? flow->node : nullptr;
     VecStatement const* statements = nullptr;
     if (function && function->has_body) {
-        statements = &function->body.statements;
+        statements = &function_impl_body(function)->statements;
     } else if (reference && span_source(expr_outer_span(reference))) {
         statements = &span_source(expr_outer_span(reference))->ast.statements;
     }
@@ -3721,7 +3721,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
         return nullptr;
     }
     Statement const* single = nullptr;
-    if (!find_single_return_in(&function->body.statements, &single) || !single) return nullptr;
+    if (!find_single_return_in(&function_impl_body(function)->statements, &single) || !single) return nullptr;
     if (ty_function_end_reachability(me, function) != FLOW_REACH_NO) return nullptr;
     Expr const* expr = &single->expr;
     FlowIsolation isolation = ty_flow_isolate(me);

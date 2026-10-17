@@ -33,6 +33,7 @@ static void read_debug_env() {
         .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
         .ast_malloc = getenv("TTTT_AST_MALLOC") != nullptr,
+        .defer_stats = getenv("TTTT_DEFER_STATS") != nullptr,
     };
 }
 

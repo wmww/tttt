@@ -191,7 +191,9 @@ typedef struct FunctionImpl {
     TypePredicateNode* predicate; // Usually null
     FunctionImplRare* rare; // Owned, null if none of its fields is set
     Symbol* symbol;
-    Block body; // Initialized to empty block if has_body is false
+    // Initialized to empty block if has_body is false. Read through function_impl_body(): a deferred body (plan 78) is
+    // elsewhere, `body_.deferred` says where
+    Block body_;
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
     FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
@@ -221,9 +223,6 @@ typedef struct FunctionImpl {
     bool jsdoc_type_tagged : 1;
     // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
     bool uses_arguments : 1;
-    // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included
-    // (tsc's NodeFlags.ContainsThis, set by the resolve walk): without it, it isn't context sensitive for its `this`
-    bool contains_this : 1;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow : 1;
     bool has_body : 1;
@@ -249,8 +248,6 @@ typedef struct FunctionImpl {
     // A method or accessor of a class expression: narrowing continues into it like into a function expression (tsc's
     // isObjectLiteralOrClassExpressionMethodOrAccessor), it has an outer_flow
     bool in_class_expression : 1;
-    bool has_explicit_return : 1; // A reachable `return`
-    bool has_bare_return : 1; // A reachable `return;`
     bool jsdoc_params_checked : 1;
     bool is_expression : 1; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
     // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
@@ -259,7 +256,70 @@ typedef struct FunctionImpl {
     // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
     // baseline doesn't type its single returned expression syntactically
     bool syntactically_contextual : 1;
+    // The parser skipped the body (plan 78): it is parsed and walked when a checker first needs it
+    // (function_impl_body()). Set by the parser only, never cleared: `body_.deferred` is the body's state
+    bool deferred : 1;
+    // What the resolve walk of the body sets, apart from the bit-fields above (a memory location of their own: a deferred
+    // body's materialization writes these while other checkers read those, plan 78). Read through function_impl_walked()
+    bool has_explicit_return; // A reachable `return`
+    bool has_bare_return; // A reachable `return;`
+    // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included
+    // (tsc's NodeFlags.ContainsThis, set by the resolve walk): without it, it isn't context sensitive for its `this`
+    bool contains_this;
 } FunctionImpl;
+
+// A function body the parser skipped (plan 78, "Deferred bodies" in documentation.md): it is parsed, and its resolve walk
+// run, when a checker first needs it (program_materialize_file(), for all of a file's at once). Made by the parser in the
+// file's AST arena; the resolve walk (function_impl_lookup_names_as()) records where the walk of the body starts
+typedef struct DeferredBody {
+    Block block; // The body, once materialized
+    u32 open; // Offset of the `{` in the file
+    u32 end; // Offset just past the `}`
+    // Set by the resolve walk: the function, the next deferred body of the file in walk order, the function's scope and
+    // what its flow builder held where the body's walk starts (the rest of the builder is as flow_builder_init() makes it)
+    struct FunctionImpl* function;
+    struct DeferredBody* next;
+    Scope* function_scope;
+    FlowNode* start;
+    FlowNode* container_start;
+    FlowNode* current;
+    FlowNode* return_target;
+    Symbol const* constructor_of;
+    struct PropertyContext const* property_context;
+    u32 depth;
+    u32 contextual_depth;
+    bool dead : 1;
+    bool has_flow_effects : 1;
+    bool within_unreachable : 1;
+    bool ambient : 1;
+    // The signature's walk reported a name it didn't find: its suggestion may have been one the body declares
+    bool signature_not_found : 1;
+    // The names the signature's walk looked up through the function's scope (in the binder's arena): had the body's
+    // declarations been there, one of them could have been found (program_materialize_file() checks)
+    u32 signature_name_count;
+    u32 signature_name_cap;
+    csview* signature_names;
+} DeferredBody;
+
+// program.c: materializes the file of a deferred function, returns its body
+Block* function_impl_deferred_body(FunctionImpl const* me);
+// The function's body: materialized first if the parser deferred it
+static inline Block const* function_impl_body(FunctionImpl const* me) {
+    return me->deferred ? function_impl_deferred_body(me) : &me->body_;
+}
+static inline Block* function_impl_body_mut(FunctionImpl* me) {
+    return me->deferred ? function_impl_deferred_body(me) : &me->body_;
+}
+// The function once the resolve walk has been through its body (end_flow, has_explicit_return, contains_this, the rare
+// yields, return_flow, first_super_call... are set): materialized first if deferred
+static inline FunctionImpl const* function_impl_walked(FunctionImpl const* me) {
+    if (me->deferred) function_impl_deferred_body(me);
+    return me;
+}
+// The resolve walk of a deferred body (program_materialize_file(), after the parser): the end of
+// function_impl_lookup_names_as() from where it stopped. False if the walk of the signature could have found a name the
+// body declares (or suggested one, for a name it didn't find): the eager walk might have resolved differently
+bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs);
 
 Span function_impl_span_get(FunctionImpl const* me, FunctionSpan span);
 void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span);

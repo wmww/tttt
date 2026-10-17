@@ -77,6 +77,7 @@ Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* typ
 // tsc's getReturnTypeFromBody for a generator: Generator<yielded, returned, what the context sends>
 static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function, TyBuf* returned) {
     bool async = function->is_async;
+    function_impl_walked(function);
     TyIterationTypes const* context = ty_generator_context(me, function);
     TyBuf yields = {0};
     TyBuf nexts = {0};
@@ -247,7 +248,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     bool outer_skipped = my return_inference_skipped;
     my return_inference_of = function;
     my return_inference_skipped = false;
-    block_collect_return_types(&function->body, &returned);
+    block_collect_return_types(function_impl_body(function), &returned);
     bool skipped = my return_inference_skipped;
     my return_inference_of = outer_inference_of;
     my return_inference_skipped = outer_skipped;

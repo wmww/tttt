@@ -210,7 +210,7 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
     // The returned expressions are collected first: checking them can get here for a nested function
     collected_returns.len = 0;
     collected_returns.overflow = false;
-    statements_any_return(&function->body.statements, collect_return);
+    statements_any_return(&function_impl_body(function)->statements, collect_return);
     if (collected_returns.overflow || !collected_returns.len) return ty_any_function_type(me);
     u32 count = collected_returns.len;
     Expr const* returned[c_arraylen(collected_returns.data)];
@@ -1564,7 +1564,7 @@ static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const
             ty_link_set(me, KEY_FUNCTION_ANCHOR, function, anchor);
             // (A generator's return expressions are about its TReturn: ty_generator_context())
             if (function->ret_explicit || function->is_generator) return;
-            record_anchors_in_block(me, &function->body, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_RETURN, .function = function }), depth);
+            record_anchors_in_block(me, function_impl_body(function), new_anchor(me, (ContextAnchor){ .kind = ANCHOR_RETURN, .function = function }), depth);
             return;
         }
         case EXPR_OBJECT: {
@@ -1863,7 +1863,7 @@ static bool has_context_sensitive_params(FunctionImpl const* function) {
         if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this"))
         ) {
-            return function->contains_this;
+            return function_impl_walked(function)->contains_this;
         }
     }
     return false;
@@ -1874,14 +1874,14 @@ bool ty_function_is_context_sensitive(FunctionImpl const* function) {
     if (has_context_sensitive_params(function)) return true;
     // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
     if (!function->ret_explicit && function->has_body &&
-        statements_any_return(&function->body.statements, ty_expr_is_context_sensitive)
+        statements_any_return(&function_impl_body(function)->statements, ty_expr_is_context_sensitive)
     ) {
         return true;
     }
     // Or a generator one of whose yielded expressions is (tsc 6's hasContextSensitiveYieldExpression, whatever the
     // return type annotation): `function* () { yield x => x.length }`
     if (function->is_generator && function->has_body) {
-        FunctionImplRare const* rare = function_impl_rare(function);
+        FunctionImplRare const* rare = function_impl_rare(function_impl_walked(function));
         for (u32 i = 0; i < rare->yield_count; i++) {
             if (ty_expr_is_context_sensitive(&rare->yields[i]->unary_op->expr)) return true;
         }
@@ -2559,7 +2559,8 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* objec
 // The second case of tsc's assumeUninitialized: a JavaScript assignment declaration (`d.q = v`) read in the control
 // flow container that declares it (tsc's getControlFlowContainer), where it's undefined until assigned
 static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* access) {
-    if (!my binder->has_assignment_flow_containers) return false;
+    // (Atomic: a deferred body's materialization may set it meanwhile, plan 78; only reads in its body, checked after it, care)
+    if (!__atomic_load_n(&my binder->has_assignment_flow_containers, __ATOMIC_RELAXED)) return false;
     if (access->form != PROPERTY_EXPR_DOT || !span_valid(property_name(access)) || property_private_class(access)) return false;
     Ty const* object = ty_expr_type(me, &access->expr);
     if (object->kind == TY_UNION || (object->flags & (TYF_ANY | TYF_ERROR))) return false;

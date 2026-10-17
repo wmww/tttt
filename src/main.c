@@ -49,6 +49,7 @@ typedef struct Options {
     bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
+    bool no_defer_bodies; // --no-defer-bodies: parse and resolve every function body up front (plan 78)
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char* project; // -p: a tsconfig.json or the directory of one
     bool build; // -b: paths are projects, each checked with everything it references, in build order
@@ -545,11 +546,22 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
 // program are printed as TypeScript diagnostics and reflected in that exit code; only failures that stop us checking
 // at all (an unreadable standard library or entry point) come back as errors. redirects: what the config references
 // (null without a config), the caller's to free after the program. last: nothing is checked after it
+// Whether the diagnostics so far gate the checking (syntactic or options ones, tsc's emitFilesAndReportErrors)
+static bool count_gating_diagnostics(ErrorCtx* errs, Options const* opts) {
+    if (opts->keep_going) return false;
+    intptr_t kinds[DIAGNOSTIC_KIND_COUNT];
+    count_diagnostic_kinds(errs, kinds);
+    return kinds[DIAGNOSTIC_SYNTACTIC] || kinds[DIAGNOSTIC_OPTIONS];
+}
+
+// `defer`: deferred function bodies (plan 78); an output that tells them from the eager parse and walk runs again
+// without (program_defer_failed())
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
-    ProjectRedirects const* redirects, bool last, CheckCounts* counts, returns int
+    ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     Program* program = program_new(errs, fs);
+    program_set_defer_bodies(program, defer);
     program_set_realpath(program, real_path_of, nullptr);
     program_set_file_size(program, file_size_of, nullptr);
     program_set_checkers(program, opts->checkers);
@@ -669,6 +681,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     str_list_drop(&root_files);
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);
+    // (The syntax errors of deferred bodies are only found when they're parsed: an output that has to have them all
+    // without checking runs again without deferral)
+    if (defer && program_has_deferred_bodies(program) && (opts->list_files_only || count_gating_diagnostics(errs, opts))) {
+        destroy_program(program, errs, false);
+        defer_stat_add(DEFER_STAT_RESTARTS, 1);
+        return check_files(opts, out, config, projects, project, redirects, last, counts, false, _OUTPUT_PARAM);
+    }
     if (opts->list_files_only) {
         // (tsc's listFilesOnly: the options and syntactic diagnostics, nothing checked)
         drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
@@ -726,6 +745,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
         if (opts->dts_dump || (options->emit_declaration_only && emit_declarations)) program_set_emit_declarations(program, true);
         if (typecheck) program_typecheck(program);
+        if (defer && (program_defer_failed(program) || (gated && program_has_deferred_bodies(program)))) {
+            error_ctx_drop(&names);
+            vec_error_drop(&shown);
+            destroy_program(program, errs, false);
+            defer_stat_add(DEFER_STAT_RESTARTS, 1);
+            return check_files(opts, out, config, projects, project, redirects, last, counts, false, _OUTPUT_PARAM);
+        }
         if (opts->dts_dump && typecheck) dump_declarations(opts->dts_dump, program);
         // (Global diagnostics the checking itself finds, `using`'s TS2318 for a missing Disposable, hide nothing:
         // tsgo's GetDiagnosticsOfAnyProgram gates on those before checking and sweeps these up after)
@@ -837,7 +863,7 @@ static_failable check_command_line(Options const* opts, returns int) {
     ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project) : nullptr;
     Output out = {0};
     FailableResult result =
-        check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, _OUTPUT_PARAM);
+        check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, !opts->no_defer_bodies, _OUTPUT_PARAM);
     print_summary(&out, out.pretty, true);
     // (The program may not have been freed: a release build leaves that to the exit)
 #ifdef DEBUG_BUILD
@@ -892,7 +918,7 @@ static void build_run(Build* me, u32 i) {
     }
     // (The project set is complete and only read from here on: build() listed every root file up front)
     job->result = check_files(&my project_opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
-        my order[i], job->redirects, i + 1 == my count, &job->counts, &job->ret);
+        my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
 
 static void* build_thread(void* arg) {
@@ -1113,7 +1139,8 @@ static void print_help(void) {
         "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
         "  --dts-dump DIR  write each file's declaration emit to DIR + the file's absolute path (.d.ts)\n"
         "  --no-write    emit like tsc but write nothing (tools on shared checkouts: -b emits)\n"
-        "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)"
+        "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)\n"
+        "  --no-defer-bodies  parse and resolve every function body up front, not when a checker needs it"
     );
 }
 
@@ -1165,6 +1192,8 @@ static int run(int argc, const char** argv) {
             opts.time = true;
         } else if (streq(argv[i], "--keep-going")) {
             opts.keep_going = true;
+        } else if (streq(argv[i], "--no-defer-bodies")) {
+            opts.no_defer_bodies = true;
         } else if (streq(argv[i], "--ignoreConfig")) {
             opts.ignore_config = true;
         } else if (streq(argv[i], "--listFiles")) {

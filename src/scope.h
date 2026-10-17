@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pthread.h>
+
 #include "type.h"
 #include "expr.h"
 #include "arena.h"
@@ -564,6 +566,9 @@ typedef struct Scope {
     bool decorated_static_field : 1;
     // An unbraced branch of an `if` (which declares a function in it): no block scope container to tsc's binder
     bool binder_transparent : 1;
+    // The function scope of a deferred body (plan 78) while its signature is walked: the names looked up through it are
+    // recorded (DeferredBody.signature_names)
+    bool deferred_body : 1;
 } Scope;
 
 extern ScopeRare const scope_rare_none;
@@ -662,6 +667,11 @@ typedef struct Binder {
     // and its scope arena
     Arena* thread_arenas; // malloc'd
     u32 thread_arena_count;
+    // The arenas deferred bodies' materializations (plan 78) allocate in, a pair per thread that materialized any:
+    // binder_materialize_arenas(). Owned, malloc'd each
+    struct MaterializeArenas* materialize_arenas;
+    pthread_mutex_t materialize_arenas_lock;
+    u64 id; // Process-wide, never reused: what threads remember their materialize arenas by
 } Binder;
 
 // A TypeScript file's resolve walk on a thread of its own (plan 45, program_resolve_names()): what the walk would write
@@ -688,6 +698,9 @@ typedef struct ResolveShard {
     struct DeferredEvent* deferred; // malloc'd
     u32 deferred_count;
     u32 deferred_cap;
+    // A deferred body's materialization (plan 78): a TypeScript function's expandos are of its own locals (tsgo's
+    // lookupName stops at the container), which no other walk sees, so they aren't deferred
+    bool materialization;
 } ResolveShard;
 extern thread_local ResolveShard* resolve_shard;
 // Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
@@ -710,9 +723,15 @@ bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* fil
 // An arena for resolve thread `t` (> 0; 0 is the main thread's, Binder.arena), kept until the binder dies
 Arena* binder_thread_arena(Binder* me, u32 t);
 Arena* binder_thread_scope_arena(Binder* me, u32 t);
+// The calling thread's arena and scope arena for deferred bodies' materializations (plan 78), kept until the binder dies
+void binder_materialize_arenas(Binder* me, Arena** arena, Arena** scope_arena);
 // The shard's deferred events replayed (on the calling thread, no shard set), then its symbols, pending reports and
 // errors merged into the binder and the program's errors; frees the shard's lists. Call in program order
 void resolve_shard_merge(ResolveShard* me);
+// A deferred body's materialization (plan 78), whose shard has the walks of a file's bodies: its deferred events and
+// pending reports reported now (in the current checker), into `into` with the shard's errors; nothing reaches the binder
+// (its symbols are the bodies' own). Frees the shard's lists
+void resolve_shard_finish_materialized(ResolveShard* me, ErrorCtx* into);
 
 Binder* binder_new(ErrorCtx* errs);
 // An ErrorCtx that lives as long as the binder and whose errors nobody reports: names resolved only for the

@@ -397,12 +397,12 @@ static Pseudo const* type_from_single_return_expression(Build* me, FunctionImpl 
         // (getFunctionFlags & FunctionFlags.AsyncGenerator: either flag)
         if (function->is_async || function->is_generator) return inferred_return(me, function);
         if (function->expression_body) {
-            Statement const* ret = vec_statement_at(&function->body.statements, 0);
+            Statement const* ret = vec_statement_at(&function_impl_body(function)->statements, 0);
             if (ret && ret->tag == STATEMENT_RETURN_EXPR) candidate = &ret->expr;
         } else {
             // (forEachReturnStatement in source order: a `return` that isn't directly in the body, or a second one,
             // means none; a first bare `return;` leaves the candidate for the next)
-            for_each (i, vec_statement, &function->body.statements) {
+            for_each (i, vec_statement, &function_impl_body(function)->statements) {
                 if (i->tag == STATEMENT_RETURN_EXPR) {
                     Expr const* expr = statement_is_bare_return(i) ? nullptr : &i->expr;
                     if (candidate) {

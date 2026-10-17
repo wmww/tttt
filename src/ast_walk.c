@@ -43,7 +43,7 @@ static bool walk_function(FunctionImpl const* me, AstExprVisit visit, void* arg)
     for_each (i, vec_function_arg, &my args) {
         if (walk_exprs(function_arg_decorators(i), visit, arg) || walk_initialized_binding(&i->initializer, visit, arg)) return true;
     }
-    return walk_block(&my body, visit, arg);
+    return walk_block(function_impl_body(me), visit, arg);
 }
 
 static bool walk_class(ClassDecl const* me, AstExprVisit visit, void* arg) {

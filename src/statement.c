@@ -1167,7 +1167,7 @@ void statement_collect_var_names(Statement const* me, VecSpan* out) {
 
 void function_collect_local_value_names(FunctionImpl const* function, VecSpan* out) {
     for_each (i, vec_function_arg, &function->args) binding_collect_names(&i->initializer.binding, out);
-    for_each (i, vec_statement, &function->body.statements) {
+    for_each (i, vec_statement, &function_impl_body(function)->statements) {
         switch (i->tag) {
             case STATEMENT_DECL_VARIABLE:
                 variable_statement_collect_names(&i->decl.variable, out);

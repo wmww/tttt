@@ -1090,6 +1090,16 @@ static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, Baseline
 u32 baseline_test_checkers = 0;
 csview baseline_test_lib_dir = {0};
 u32 baseline_test_threads = 0;
+bool baseline_test_defer_bodies = false;
+
+static BaselineTestCase run_baseline_test_case_with(
+    BaselineTestCache* cache,
+    csview source_path,
+    csview config,
+    bool noisy,
+    bool show_logs,
+    bool defer_bodies
+);
 
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
@@ -1097,6 +1107,24 @@ BaselineTestCase run_baseline_test_case(
     csview config,
     bool noisy,
     bool show_logs
+) {
+    BaselineTestCase ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, baseline_test_defer_bodies);
+    // (A deferred body's materialization that tells it from the eager parse and walk: again without, like the CLI)
+    if (baseline_test_defer_bodies && ret.program && program_defer_failed(ret.program)) {
+        baseline_test_case_drop(&ret);
+        defer_stat_add(DEFER_STAT_RESTARTS, 1);
+        ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, false);
+    }
+    return ret;
+}
+
+static BaselineTestCase run_baseline_test_case_with(
+    BaselineTestCache* cache,
+    csview source_path,
+    csview config,
+    bool noisy,
+    bool show_logs,
+    bool defer_bodies
 ) {
     // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
     LogLevel prev_threshold = logger_config.threshold;
@@ -1110,6 +1138,7 @@ BaselineTestCase run_baseline_test_case(
     program_set_realpath(program, mock_fs_realpath, fs);
     program_set_checkers(program, baseline_test_checkers);
     program_set_threads(program, baseline_test_threads);
+    program_set_defer_bodies(program, defer_bodies);
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -1271,6 +1300,10 @@ BaselineTestCase run_baseline_test_case(
     program_set_emit_declarations(program, !program_options(program)->no_emit);
     if (!program_options(program)->new_line) program_options(program)->new_line = 1; // (the harness's default)
     program_typecheck(program);
+    if (program_defer_failed(program)) {
+        logger_config.threshold = prev_threshold;
+        return ret;
+    }
 
     set_compiler_options(program_options(program));
     ret.pretty = program_options(program)->pretty;

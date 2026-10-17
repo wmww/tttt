@@ -137,6 +137,8 @@ typedef struct Program {
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
     bool emit_declarations; // program_set_emit_declarations()
+    bool defer_bodies; // program_set_defer_bodies()
+    _Atomic bool defer_failed; // program_defer_failed()
     // Output paths TS5055/TS5056 were reported for (relative to the working directory): tsc's hasEmitBlockingDiagnostics,
     // nothing is written there
     hmap_source_file_ptr emit_blocked;
@@ -1555,6 +1557,10 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         cstr_drop(&format.package_json);
     }
 
+    // (Plan 78: not in a file that isn't checked, whose bodies' syntax errors no checker would find)
+    source_file->defer_bodies = my defer_bodies && !source_file->is_jsx && !source_file->is_json &&
+        !source_file->is_declaration && !is_stdlib && !source_file->skip_typed_bodies && !source_file->unchecked &&
+        !source_file->content_mapped && !source_file->from_reference;
     parse_file(source_file, errs);
     cstr_drop(&virtual_path);
     return source_file;
@@ -3521,6 +3527,22 @@ void program_set_threads(Program* me, u32 count) {
     my threads = count;
 }
 
+void program_set_defer_bodies(Program* me, bool defer) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my defer_bodies = defer;
+}
+
+bool program_has_deferred_bodies(Program const* me) {
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if ((*i)->has_deferred_bodies) return true;
+    }
+    return false;
+}
+
+bool program_defer_failed(Program const* me) {
+    return atomic_load(&my defer_failed);
+}
+
 Binder const* program_get_binder(Program const* me) {
     return my binder;
 }
@@ -3641,6 +3663,96 @@ static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
     }
 }
 
+// Plan 78: deferred function bodies
+
+// The file whose deferred bodies the thread is parsing and walking: their readers there take them as they are
+static thread_local SourceFile const* materializing_file;
+
+// Parses and walks every deferred body of the file, once: the first checker that needs one does it, the others wait.
+// Then the walk's pending reports (they ask the checker for types: not under the lock, a type may need another file's
+// bodies) go to the file's DeferredBodies.errs, which program_typecheck() merges into the program's
+static void program_materialize_file(Program* me, SourceFile* file) {
+    DeferredBodies* list = file->deferred_bodies;
+    if (!list || atomic_load_explicit(&list->state, memory_order_acquire) != DEFERRED_BODIES_PENDING) return;
+    pthread_mutex_lock(&list->lock);
+    if (atomic_load_explicit(&list->state, memory_order_relaxed) != DEFERRED_BODIES_PENDING) {
+        pthread_mutex_unlock(&list->lock);
+        return;
+    }
+    SourceFile const* outer = materializing_file;
+    materializing_file = file;
+    list->errs.parent = my errs;
+    bool same = true;
+    ast_arena_begin(&file->arena);
+    for (DeferredBody* i = list->first; i; i = i->next) {
+        bool parsed = parse_deferred_body(file, i->function, &list->errs);
+        if (!parsed) defer_stat_add(DEFER_STAT_PARSE_FAILED, 1);
+        same &= parsed;
+    }
+    ast_arena_end();
+    defer_stat_add(DEFER_STAT_FILES, 1);
+    defer_stat_add(DEFER_STAT_BODIES, list->count);
+    Arena* arena;
+    Arena* scope_arena;
+    binder_materialize_arenas(my binder, &arena, &scope_arena);
+    ResolveShard shard = {
+        .binder = my binder, .arena = arena, .scope_arena = scope_arena,
+        .errs = { .phase = ERROR_PHASE_RESOLVE_NAMES, .parent = my errs },
+        .discarded = { .phase = ERROR_PHASE_RESOLVE_NAMES },
+        .materialization = true,
+    };
+    ResolveShard* outer_shard = resolve_shard;
+    u32 suppressed = unused_marking_suppressed;
+    unused_marking_suppressed = 0;
+    resolve_shard = &shard;
+    for (DeferredBody* i = list->first; i; i = i->next) {
+        bool walked = function_impl_lookup_deferred_body(i, &shard.errs);
+        if (!walked) defer_stat_add(DEFER_STAT_COLLIDED, 1);
+        same &= walked;
+    }
+    resolve_shard = outer_shard;
+    unused_marking_suppressed = suppressed;
+    materializing_file = outer;
+    if (!same) atomic_store(&my defer_failed, true);
+    atomic_store_explicit(&list->state, same ? DEFERRED_BODIES_READY : DEFERRED_BODIES_FAILED, memory_order_release);
+    pthread_mutex_unlock(&list->lock);
+    resolve_shard_finish_materialized(&shard, &list->errs);
+}
+
+Block* function_impl_deferred_body(FunctionImpl const* me) {
+    DeferredBody* body = me->body_.deferred;
+    SourceFile* file = (SourceFile*)span_source(me->full_span);
+    if (file == materializing_file) return &body->block;
+    DeferredBodies* list = file ? file->deferred_bodies : nullptr;
+    if (list && atomic_load_explicit(&list->state, memory_order_acquire) == DEFERRED_BODIES_PENDING) {
+        Checker* checker = current_checker;
+        if (checker && checker->checking_file != file) defer_stat_add(DEFER_STAT_CROSS, 1);
+        if (checker) program_materialize_file(checker->program, file);
+        else log_error("A deferred function body needed outside a checker");
+    }
+    if (!body->function) log_error("A deferred function body the resolve walk never reached");
+    return &body->block;
+}
+
+// The end of program_typecheck(): the deferred bodies no checker needed (files not checked: TTTT_CHECK_ONLY) are
+// materialized, for their diagnostics, and every file's materialization diagnostics join the program's, the comment
+// directives applying to them as to the resolve walk's
+static void program_finish_deferred_bodies(Program* me) {
+    bool any = false;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* file = *i;
+        if (!file->deferred_bodies) continue;
+        any = true;
+        if (!program_defer_failed(me)) program_materialize_file(me, file);
+        error_ctx_merge(my errs, &file->deferred_bodies->errs);
+        error_ctx_drop(&file->deferred_bodies->errs);
+        file->deferred_bodies->errs = (ErrorCtx){ .phase = ERROR_PHASE_RESOLVE_NAMES };
+    }
+    if (!any) return;
+    error_ctx_remove_unchecked(my errs);
+    program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
+}
+
 // TTTT_FILE_TIMES
 static void print_file_time(char const* what, struct timespec start, SourceFile const* source) {
     struct timespec end;
@@ -3728,8 +3840,11 @@ static void check_share(Program* me, u32 c, u32 count) {
     for (u32 at = 0; at < total; at++) {
         if (share_of(me, at) != c) continue;
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        // (A failed materialization means a run without deferral: what's left needn't be checked, plan 78)
+        if (atomic_load_explicit(&my defer_failed, memory_order_relaxed)) continue;
         checker->file_order = at;
         checker->flow_analysis_disabled = false;
+        program_materialize_file(me, source);
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
@@ -3919,6 +4034,7 @@ void program_typecheck(Program* me) {
     // (Recycled: the first share's last checker)
     my checker = my checkers[0];
     checker_make_current(my checker);
+    program_finish_deferred_bodies(me);
 
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);

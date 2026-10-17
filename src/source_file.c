@@ -132,6 +132,23 @@ ModuleRefRare* module_ref_rare_mut(ModuleRef* me) {
     return me->rare;
 }
 
+static _Atomic i64 defer_stats[DEFER_STAT_COUNT];
+
+static void defer_stats_print(void) {
+    static char const* const names[DEFER_STAT_COUNT] = {
+        "skipped", "undeferred", "skipped bytes", "files materialized", "bodies materialized", "cross-file materializations",
+        "parse failed", "signature collided", "restarts",
+    };
+    for (u32 i = 0; i < DEFER_STAT_COUNT; i++) fprintf(stderr, "defer: %s %lld\n", names[i], (long long)defer_stats[i]);
+}
+
+void defer_stat_add(DeferStat stat, i64 n) {
+    static _Atomic bool registered;
+    if (!debug_env.defer_stats) return;
+    if (!atomic_exchange(&registered, true)) atexit(defer_stats_print);
+    defer_stats[stat] += n;
+}
+
 void source_file_drop(SourceFile* me) {
     names_unregister_source(me);
     source_file_unregister(me);
@@ -167,6 +184,11 @@ void source_file_drop(SourceFile* me) {
     free(my unused);
     free(my parse_error_starts);
     if (my content_mapped) content_mapped_free(my content_mapped);
+    if (my deferred_bodies) {
+        error_ctx_drop(&my deferred_bodies->errs);
+        pthread_mutex_destroy(&my deferred_bodies->lock);
+        free(my deferred_bodies);
+    }
 }
 
 // tsc's containsParseError: whether a parse error starts in the node's text or right after it (a missing `,` or `}` is

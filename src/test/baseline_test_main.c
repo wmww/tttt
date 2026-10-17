@@ -113,6 +113,8 @@ static_failable parse_args(int argc, const char** argv) {
             try (const char* count, next_arg_value(argc, argv, &i, &count)) bubble;
             if (atoi(count) < 1) return err_d("--threads takes a positive number, not ", count);
             baseline_test_threads = (u32)atoi(count);
+        } else if (streq(argv[i], "--defer-bodies")) {
+            baseline_test_defer_bodies = true;
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {

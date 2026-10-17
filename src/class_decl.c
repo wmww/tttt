@@ -123,7 +123,7 @@ static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* 
             if (ret) return ret;
         }
         if (!my field.is_static && i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
-            FlowNode const* end = function_impl_rare(&i->constructor.func)->return_flow;
+            FlowNode const* end = function_impl_rare(function_impl_walked(&i->constructor.func))->return_flow;
             return end ? field_flow_type(checker, my field.ts_assigned, end) : nullptr;
         }
     }
@@ -398,13 +398,13 @@ static Span const* constructor_locals(ClassDecl const* me, Arena* arena, u32* co
     CompilerOptions const* options = compiler_options();
     if (options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022) return nullptr;
     FunctionImpl const* constructor = nullptr;
+    bool instance_fields = false;
     for_each (i, vec_class_item, &my items) {
-        if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
-            constructor = &i->constructor.func;
-            break;
-        }
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body && !constructor) constructor = &i->constructor.func;
+        instance_fields |= i->tag == CLASS_ITEM_FIELD && !i->field.is_static;
     }
-    if (!constructor) return nullptr;
+    // (Only instance fields look at them: without one the constructor's body may be deferred, plan 78)
+    if (!constructor || !instance_fields) return nullptr;
     VecSpan names = {0};
     function_collect_local_value_names(constructor, &names);
     Span* ret = nullptr;
@@ -859,7 +859,7 @@ static bool contains_undefined(Ty const* ty) {
 static bool field_initialized_in_constructor(
     Checker* checker, ClassDecl const* me, ClassItem const* field, Ty const* type, ClassItem const* constructor
 ) {
-    FlowNode const* end = function_impl_rare(&constructor->constructor.func)->return_flow;
+    FlowNode const* end = function_impl_rare(function_impl_walked(&constructor->constructor.func))->return_flow;
     if (!end || flow_is_unreachable(end)) return true;
     Expr const* reference = field->field.ts_assigned;
     if (!reference && my computed_this_assignments.size) {
@@ -1538,7 +1538,7 @@ static bool class_super_call_should_be_root(ClassDecl const* me, FunctionImpl co
 // `super` (tsc's nodeImmediatelyReferencesSuperOrThis: not in a nested function or arrow function)
 static void check_super_call_root(Span name, FunctionImpl const* func, Expr const* super_call, ErrorCtx* errs) {
     Statement const* statement = nullptr;
-    for_each (i, vec_statement, &func->body.statements) {
+    for_each (i, vec_statement, &function_impl_body(func)->statements) {
         if (i->tag == STATEMENT_EXPR && &i->expr == super_call) { // (Parentheses are the same Expr)
             statement = i;
             break;
@@ -1550,8 +1550,8 @@ static void check_super_call_root(Span name, FunctionImpl const* func, Expr cons
             "identifiers.");
         return;
     }
-    Span first = function_impl_rare(func)->first_this_or_super;
-    Span body = block_span(&func->body);
+    Span first = function_impl_rare(function_impl_walked(func))->first_this_or_super;
+    Span body = block_span(function_impl_body(func));
     if (span_valid(first) && span_valid(body) && span_start_ptr(first) >= span_start_ptr(body) &&
         span_start_ptr(first) < span_start_ptr(statement->span)
     ) {
@@ -2470,7 +2470,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 function_impl_typecheck(&i->constructor.func, errs);
                 // tsc's checkConstructorDeclaration
                 if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
-                    Expr const* super_call = function_impl_rare(&i->constructor.func)->first_super_call;
+                    Expr const* super_call = function_impl_rare(function_impl_walked(&i->constructor.func))->first_super_call;
                     bool extends_null = my extends.tag == EXPR_LITERAL && my extends.literal.tag == VALUE_NULL;
                     if (super_call && extends_null) {
                         error_ctx_error_d(errs, super_call->inner_span, 17005,

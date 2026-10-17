@@ -1380,7 +1380,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         TypeNode missing = { .tag = TYPE_ANY, .any.unkown_symbol_span = function_impl_rare(me)->constructor_missing_type };
         type_compile_test_info(&missing, ctx);
     }
-    block_compile_test_info(&my body, ctx);
+    block_compile_test_info(function_impl_body(me), ctx);
     baseline_test_case_leave_generic(ctx, saved);
     ctx->parameter_property_class = outer_parameter_property_class;
 }

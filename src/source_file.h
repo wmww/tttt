@@ -4,6 +4,8 @@
 #include "block.h"
 #include "scope.h"
 #include "compiler_options.h"
+#include "error.h"
+#include <pthread.h>
 
 typedef struct SourceFile SourceFile;
 
@@ -212,6 +214,12 @@ typedef struct SourceFile {
     // A referenced project's TypeScript (not TSX) file: the bodies of functions with a written return type are skipped
     // rather than parsed where that's safe (parser.c's skip_typed_body()), and never resolved
     bool skip_typed_bodies;
+    // A TypeScript file (not TSX, not a declaration file) whose outermost function bodies the parser skips where that is
+    // safe, to parse and walk when a checker first needs them (plan 78, program_set_defer_bodies())
+    bool defer_bodies;
+    // What the file's resolve walk deferred, null if nothing (program_materialize_file()). Owned
+    struct DeferredBodies* deferred_bodies;
+    bool has_deferred_bodies; // The parser deferred some (perhaps parsing it later all the same: an IIFE's)
     // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
     // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
     bool reference_const_enums_ambient;
@@ -293,6 +301,42 @@ typedef struct SourceFile {
     // A content-mapped file's original text (ContentMapped.original), not a file of the program
     bool content_original;
 } SourceFile;
+
+// The deferred function bodies of a file (plan 78), in the resolve walk's order, and their materialization: all of them
+// at once, the first time a checker needs one (program_materialize_file())
+typedef enum DeferredBodiesState : uint8_t {
+    DEFERRED_BODIES_PENDING,
+    DEFERRED_BODIES_READY,
+    // Something tells the materialization from what the eager parse and walk would have made (a syntax error in a body,
+    // a signature that would have seen the body's names): the program is run again without deferral
+    DEFERRED_BODIES_FAILED,
+} DeferredBodiesState;
+
+typedef struct DeferredBodies {
+    struct DeferredBody* first;
+    struct DeferredBody* last;
+    u32 count;
+    _Atomic(uint8_t) state; // DeferredBodiesState
+    pthread_mutex_t lock;
+    // What parsing and walking the bodies reported (parse errors, grammar errors, resolve errors), merged into the
+    // program's at the end of program_typecheck()
+    struct ErrorCtx errs;
+} DeferredBodies;
+
+// TTTT_DEFER_STATS (debug_env.defer_stats): counts printed at exit
+typedef enum DeferStat {
+    DEFER_STAT_SKIPPED, // Bodies the parser deferred
+    DEFER_STAT_UNDEFERRED, // ...and parsed after all (IIFEs, constructors)
+    DEFER_STAT_SKIPPED_BYTES,
+    DEFER_STAT_FILES, // Files materialized
+    DEFER_STAT_BODIES, // Their bodies
+    DEFER_STAT_CROSS, // Materializations a checker of another file asked for
+    DEFER_STAT_PARSE_FAILED, // Bodies whose parse could be told from the eager one
+    DEFER_STAT_COLLIDED, // Bodies whose signature could have seen their names
+    DEFER_STAT_RESTARTS, // Programs run again without deferral
+    DEFER_STAT_COUNT,
+} DeferStat;
+void defer_stat_add(DeferStat stat, i64 n);
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);
 // The module format the file is emitted in (tsc's getEmitModuleFormatOfFile): with node16/nodenext its implied format,

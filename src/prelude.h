@@ -40,6 +40,7 @@ typedef struct DebugEnv {
     bool ast_poison;           // TTTT_AST_POISON: a dropped file's AST pages fault on access instead of reading as zeroes
     bool ast_stats;            // TTTT_AST_STATS: the AST arenas' churn at exit (ast_alloc.h)
     bool ast_malloc;           // TTTT_AST_MALLOC: no AST arenas, the AST in malloc (for scripts/memtrack.sh)
+    bool defer_stats;          // TTTT_DEFER_STATS: deferred function bodies' counts at exit (plan 78, source_file.h)
 } DebugEnv;
 extern DebugEnv debug_env;
 

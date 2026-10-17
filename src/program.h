@@ -153,6 +153,16 @@ SpecifierMode program_default_resolution_mode(Program const* me, SourceFile cons
 // How many threads run those checkers (0 is the default, 1: the calling thread alone). The output doesn't depend on
 // it. Call it while loading
 void program_set_threads(Program* me, u32 count);
+// Plan 78: the parser skips the outermost function bodies of TypeScript files where that's safe, and the checker that
+// first needs one parses and walks all of its file's (program_typecheck(), function_impl_body()). Off by default.
+// Call it before loading anything
+void program_set_defer_bodies(Program* me, bool defer);
+// Whether some file had bodies deferred: an output that needs them all before checking (syntax errors that gate the
+// checking) has to run again without deferral
+bool program_has_deferred_bodies(Program const* me);
+// After program_typecheck(): a deferred body's materialization could be told from the eager parse and walk (a syntax
+// error in a body, a signature that would have seen the body's names): the output is wrong, run again without deferral
+bool program_defer_failed(Program const* me);
 
 // Makes this program's checker (created on first use) the one that types get evaluated in, until another program is
 // made current or this one is destroyed. program_typecheck() does this, call it yourself to look at types of a program

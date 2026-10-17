@@ -1520,12 +1520,12 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     if (!symbol && meaning == SYMBOL_VALUE && span_valid(d.at)) {
         for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
             FunctionImpl const* function = i->function;
-            if (!function || !function->has_body || !function->body.scope || !span_valid(function->full_span) ||
+            if (!function || !function->has_body || !function_impl_body(function)->scope || !span_valid(function->full_span) ||
                 span_source(function->full_span) != span_source(d.at) || !span_contains_span(function->full_span, d.at)
             ) {
                 continue;
             }
-            Symbol const* local = scope_resolve(function->body.scope, first, meaning);
+            Symbol const* local = scope_resolve(function_impl_body(function)->scope, first, meaning);
             if (local && local->decl_count && local->decls[0].block && local->decls[0].block->function == function) return false;
         }
     }
@@ -6765,7 +6765,7 @@ static Scope const* statement_scope_at(Block const* block, Scope const* scope, S
                 break;
             case STATEMENT_DECL_FUNCTION:
                 if (!i->decl.function.impl) return scope;
-                inner = &i->decl.function.impl->body;
+                inner = function_impl_body(i->decl.function.impl);
                 inner_scope = inner->scope;
                 break;
             case STATEMENT_BLOCK:

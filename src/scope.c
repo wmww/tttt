@@ -119,8 +119,16 @@ SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count) {
 
 // Binder
 
+typedef struct MaterializeArenas {
+    Arena arena;
+    Arena scope_arena;
+    struct MaterializeArenas* next;
+} MaterializeArenas;
+
 Binder* binder_new(ErrorCtx* errs) {
-    Binder* me = c_new(Binder, { .errs = errs });
+    static _Atomic u64 next_id = 1;
+    Binder* me = c_new(Binder, { .errs = errs, .id = next_id++ });
+    pthread_mutex_init(&my materialize_arenas_lock, nullptr);
     my global_scope = arena_new(&my arena, Scope);
     *my global_scope = (Scope){ .kind = SCOPE_GLOBAL, .binder = me };
     return me;
@@ -144,6 +152,34 @@ static ResolveShard* binder_shard(Binder const* me) {
     return resolve_shard && resolve_shard->binder == me ? resolve_shard : nullptr;
 }
 
+// A name the signature of a deferred body (plan 78) looks up through its function's scope
+[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name) {
+    DeferredBody* body = function_scope->function->body_.deferred;
+    for (u32 i = 0; i < body->signature_name_count; i++) {
+        if (csview_equals_sv(body->signature_names[i], name)) return;
+    }
+    if (body->signature_name_count == body->signature_name_cap) {
+        u32 cap = body->signature_name_cap ? body->signature_name_cap * 2 : 4;
+        csview* grown = arena_new_n(binder_arena(function_scope->binder), csview, cap);
+        if (body->signature_name_count) memcpy(grown, body->signature_names, sizeof(csview) * body->signature_name_count);
+        body->signature_names = grown;
+        body->signature_name_cap = cap;
+    }
+    body->signature_names[body->signature_name_count++] = name;
+}
+
+// A name the walk didn't find: in the signature of a deferred body (plan 78), its suggestion could have been one the
+// body declares
+static void note_deferred_signature_not_found(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope->deferred_body) {
+            scope->function->body_.deferred->signature_not_found = true;
+            return;
+        }
+    }
+}
+
+
 Arena* binder_thread_arena(Binder* me, u32 t) {
     if (t > my thread_arena_count) {
         my thread_arenas = realloc(my thread_arenas, sizeof(Arena) * 2 * t);
@@ -156,6 +192,21 @@ Arena* binder_thread_arena(Binder* me, u32 t) {
 
 Arena* binder_thread_scope_arena(Binder* me, u32 t) {
     return binder_thread_arena(me, t) + 1;
+}
+
+void binder_materialize_arenas(Binder* me, Arena** arena, Arena** scope_arena) {
+    static thread_local u64 binder_id;
+    static thread_local MaterializeArenas* arenas;
+    if (binder_id != my id) {
+        arenas = c_new(MaterializeArenas, {0});
+        pthread_mutex_lock(&my materialize_arenas_lock);
+        arenas->next = my materialize_arenas;
+        my materialize_arenas = arenas;
+        pthread_mutex_unlock(&my materialize_arenas_lock);
+        binder_id = my id;
+    }
+    *arena = &arenas->arena;
+    *scope_arena = &arenas->scope_arena;
 }
 
 ErrorCtx* binder_discarded_errs(Binder* me) {
@@ -182,6 +233,14 @@ void binder_destroy(Binder* me) {
     free(my overlays.values);
     for (u32 i = 0; i < 2 * my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
     free(my thread_arenas);
+    for (MaterializeArenas* i = my materialize_arenas; i;) {
+        MaterializeArenas* next = i->next;
+        arena_drop(&i->arena);
+        arena_drop(&i->scope_arena);
+        free(i);
+        i = next;
+    }
+    pthread_mutex_destroy(&my materialize_arenas_lock);
     arena_drop(&my arena);
     arena_drop(&my scope_arena);
     free(me);
@@ -231,7 +290,8 @@ Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol) {
 }
 
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
-    if (my frozen) log_error("Symbol '", name, "' made while typechecking: the checkers share the binder");
+    // (A deferred body's materialization makes the symbols of its own declarations: plan 78)
+    if (my frozen && !binder_shard(me)) log_error("Symbol '", name, "' made while typechecking: the checkers share the binder");
     Symbol* ret = arena_new(binder_arena(me), Symbol);
     binder_made++;
     ret->name = name;
@@ -259,7 +319,7 @@ Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
 SymbolRare const symbol_rare_none;
 
 SymbolRare* symbol_rare_new(Symbol* me) {
-    if (my binder->frozen) log_error("Symbol '", my name, "' given rare fields while typechecking: the checkers share it");
+    if (my binder->frozen && !binder_shard(my binder)) log_error("Symbol '", my name, "' given rare fields while typechecking: the checkers share it");
     return my rare = arena_new(binder_arena(my binder), SymbolRare);
 }
 
@@ -4986,6 +5046,7 @@ static bool walk_unvisited(Expr const* left) {
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
+    note_deferred_signature_not_found(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
@@ -5009,6 +5070,7 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
+    note_deferred_signature_not_found(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);
@@ -5062,6 +5124,7 @@ typedef struct PendingNotFound {
 } PendingNotFound;
 
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs) {
+    note_deferred_signature_not_found(me);
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
@@ -5218,6 +5281,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (__builtin_expect(scope->deferred_body, 0)) note_deferred_signature_name(scope, name);
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : scope_locals(scope);
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
@@ -5702,7 +5766,7 @@ static void add_expando_member(
     Symbol* host = expando_host(me, object, &init);
     if (!host) return;
     ResolveShard* shard = binder_shard(my binder);
-    if (shard && !expando_host_is_private(host, my file)) {
+    if (shard && !shard->materialization && !expando_host_is_private(host, my file)) {
         // Other files may read it meanwhile: in program order instead (plan 45)
         DeferredEvent* event = defer_event(shard, DEFERRED_EXPANDO, me, nullptr);
         event->object = object;
@@ -5792,7 +5856,7 @@ static void declare_function_export(Scope* me, Expr* expr, bool export_equals) {
         (expr == first || is_unparenthesized_entity_name(expr));
     if (alias && !scope_resolve(me, span_sv(first->inner_span), SYMBOL_VALUE)) return;
     ResolveShard* shard = binder_shard(my binder);
-    if (shard && !expando_host_is_private(host, my file)) {
+    if (shard && !shard->materialization && !expando_host_is_private(host, my file)) {
         // (Other files may read the function's members meanwhile: in program order, like an expando)
         DeferredEvent* event = defer_event(shard, DEFERRED_FUNCTION_EXPORT, me, nullptr);
         event->right = expr;
@@ -5979,6 +6043,65 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
 }
 
 // Plan 45
+
+void resolve_shard_finish_materialized(ResolveShard* me, ErrorCtx* into) {
+    check(resolve_shard == nullptr);
+    ErrorCtx discarded = error_ctx_scratch(into);
+    #define MATERIALIZED_ERRS(e) ((e) == &my errs ? into : (e) == &my discarded ? &discarded : (e))
+    for (u32 i = 0; i < my deferred_count; i++) {
+        DeferredEvent const* event = &my deferred[i];
+        ErrorCtx* event_errs = MATERIALIZED_ERRS(event->errs);
+        switch (event->kind) {
+            case DEFERRED_NOT_FOUND:
+                report_not_found(event->scope, event->at, event->meaning, event->shorthand, event_errs);
+                break;
+            case DEFERRED_MISSPELLED:
+                if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace, event_errs)) {
+                    report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
+                }
+                break;
+            default:
+                // (Expandos aren't deferred in a materialization, JavaScript isn't deferred)
+                log_error("A deferred body's walk deferred an event of kind ", (i32)event->kind);
+                break;
+        }
+    }
+    for (u32 i = 0; i < my pending_type_as_value_count; i++) {
+        PendingTypeAsValue const* pending = &my pending_type_as_value[i];
+        ErrorCtx* errs = MATERIALIZED_ERRS(pending->errs);
+        Span name = pending->name;
+        if (maybe_mapped_type(pending->type)) {
+            bool k = csview_equals(span_sv(name), "K");
+            error_ctx_error_d(errs, name, 2690, "'", name, "' only refers to a type, but is being used as a value "
+                "here. Did you mean to use '", k ? "P" : "K", " in ", name, "'?");
+        } else {
+            error_ctx_error_d(errs, name, 2693, "'", name, "' only refers to a type, but is being used as a value here.");
+        }
+    }
+    for (u32 i = 0; i < my pending_not_found_count; i++) {
+        PendingNotFound const* pending = &my pending_not_found[i];
+        ErrorCtx* errs = MATERIALIZED_ERRS(pending->errs);
+        if (report_missing_prefix(pending->scope, pending->name, errs)) continue;
+        ClassItem const* field = scope_invalid_initializer_field(pending->scope, span_sv(pending->name), nullptr);
+        if (field) {
+            scope_report_invalid_initializer_reference(field, pending->name, errs);
+        } else {
+            report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, errs);
+        }
+    }
+    if (my pending_export_merge_count) log_error("A deferred body's walk left export merges");
+    #undef MATERIALIZED_ERRS
+    error_ctx_merge(into, &my errs);
+    error_ctx_drop(&my errs);
+    error_ctx_drop(&my discarded);
+    error_ctx_drop(&discarded);
+    free(my deferred);
+    free(my symbols);
+    free(my pending_not_found);
+    free(my pending_type_as_value);
+    free(my pending_export_merges);
+    *me = (ResolveShard){0};
+}
 
 void resolve_shard_merge(ResolveShard* me) {
     check(resolve_shard == nullptr);
