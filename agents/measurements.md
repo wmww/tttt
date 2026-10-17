@@ -11,6 +11,22 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 77, fresh repositories (2026-10-17, todo entry 1)
+28 repositories by a second rule (repos.txt's "Plan 77" comment: GitHub topics game, webgl, electron, discord-bot, cli,
+angular, nestjs, data-visualization, monorepo, vscode-extension; 300-3000 stars; the first 3 per topic with a root
+lockfile; 30 picked, 2 dropped for their installs: everroom's pnpm git dependency, thorium-reader's npm >= 12), 203
+projects. **Day one (abef93ee, before any fix): 195 / 203 projects match (96.1%), 26 / 28 repos**, 0 crashes, 0
+timeouts, 8 spurious, 0 missing. Two root causes, both checker, no config-level (TS5xxx/TS6xxx, module resolution)
+mismatch at all: +TS2503 (5 ethereumjs projects: `import type { debug } from "debug"`, an `export =` property, then
+`debug.Debugger`: tsc's lookup goes past the import to the UMD global) and +TS2344 x ~800 (3 hop-protocol projects,
+@aws-sdk's `extends $Command<I, O, C>`: an expression's type arguments were checked without the missing ones'
+defaults). **After: 203 / 203**; the whole sweep 3559 / 3566 (the old 7, unchanged). By plan 77's scale (>= 90%) the
+checker generalizes: the next refresh is cheap and needs no fan-out. Perf on them (perfsweep, 59 projects tsgo checks
+with >= 1000 types): check median 0.37, worst types ratio 1.49 (rpg-js vue-gui, 1886 vs 1262 types, tiny), RSS median
+0.64. The sweep's "slower than tsc" rows there were load (8.6 on 4 cpus) and webcmd's committed `.tsbuildinfo` (tsc
+skips checking: triage.md). Instructions (instrcount) unchanged from entry 9 to 0.01 G on every corpus (vscode
+94.346 G); every oracle unchanged.
+
 ## Perf session paying for the window (2026-10-17, todo entry 9)
 The 4-vCPU box. **Instructions** (`scripts/instrcount.sh`, callgrind, K1 T1) at the window's start (83923e4d) -> entry 8
 (5a01c278) -> now: tsc 4.546 -> 4.624 -> **4.606**, type-fest 14.099 -> 14.086 -> **10.939 (-22%)**, valibot 3.470 ->

@@ -19,8 +19,8 @@ bench against bun and tsgo); instructions: measurements.md "Perf session paying 
 The memory rule of the last window stands (vision.md "Memory target"): a memory change costs at most ~3% wall at K1
 and the defaults, output byte-identical at every K and budget.
 
-1. **Plan 77**: fresh repositories. The day-one match rate is the deliverable, recorded before any fix; then fixes by
-   root cause. Its "What the number means" decides whether entry 7 is a fan-out on them.
+1. Done (ab6a8674 + the commit after): plan 77, 28 fresh repos, day one 195 / 203 projects (96.1%), after 203 / 203;
+   whole sweep 3559 / 3566; every oracle unchanged. Entry 7 is therefore checker balance.
 2. **Plan 81 planning**: the checker's density census against tsgo (and bun's totals), with its gate. Rewrites plan 81
    into stages or closes it.
 3. **Plan 81 stage 1** (or, if declined, a planning session reopening plan 67's rejected shared frozen declared layer

@@ -252,3 +252,12 @@ full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entri
   `Res<ED & { type: "query"; }> | undefined` for `c: Api<Record<string, ED>>` where tttt prints `Res<never>`; without
   the `util` wrapper and the `| undefined`, both print `Res<never>`. Possibly the same eager never-reduction the
   entry above suspects.
+
+## Plan 77 leftovers (2026-10-17, fresh repositories)
+- **An import of a missing `export =` property used as a namespace (+TS2503)**: `import type { nope } from "m"` where
+  `m` is `export = v` and `v`'s type has no `nope`, then `nope.X`: tsc reports only TS2305 at the import (the alias is
+  unknownSymbol, every meaning, silent from there), tttt also TS2503 at `nope`. The existing-property case (skip the
+  import, find the UMD global: ethereumjs's `debug.Debugger`) is fixed in symbol_has_meaning(); telling the two apart
+  needs the property's existence, which the scope pass doesn't know (lower.c export_equals_property_type() decides it
+  later). Only in programs that already have an error at the import. Repro: test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts
+  with the `{ dbg: ... }` intersection dropped and the import renamed.

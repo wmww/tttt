@@ -61,8 +61,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   fix the hacks entry names (the walk's outputs behind accessors, so the compiler finds readers) belongs in a debt
   session before the next feature touches the binder. The debt sessions skipped this window (two promised) are in the
   next one.
-- **Plan 77 goes first**: every oracle is still saturated, and the memory work could not have exposed a
-  generalization gap. Its day-one match rate on fresh repositories decides how much of the next windows is breadth.
+- **Plan 77's answer (2026-10-17): the checker generalizes.** 28 fresh repositories chosen by another rule matched
+  195 / 203 projects on day one (96.1%), two checker root causes and nothing config-level, 203 / 203 after one
+  session (measurements.md "Plan 77"). Breadth isn't where the window's risk is; the refresh stays a cheap periodic
+  check, not a fan-out.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
@@ -74,7 +76,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   window's perf session pays it back. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
   corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
-  chosen by a different rule and report the day-one match rate (plan 77).
+  chosen by a different rule and report the day-one match rate (done once, 2026-10-17: 96.1%; the recipe is
+  repos.txt's "Plan 77" comment, the steps measurements.md "Plan 77": append rows, `thirdparty/ensure-sources.sh
+  NAMES`, `scripts/sourcesweep.py --tsc-new`, then `-f '^(names)(/|$)'` before fixing anything).
 - **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).

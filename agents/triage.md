@@ -9,3 +9,8 @@ harness now runs them and renders nothing there. instanceofOperator is UTF-16: t
 reading its `@target` variations. All three pass; passcount.py counts undefined components as failing and a filtered
 run's "total" is the filtered count. The 24-thread machine note was already in measurements.md ("Machine and
 caveats", the 12-core sections); this session ran on the 4-vCPU box again (`nproc` 4).
+
+- sourcesweep.py's "slower than tsc" list trusts tsc's cached time, which is wrong for a project with a committed
+  `.tsbuildinfo` (`incremental: true`, outDir checked in): webcmd's `dist/tsconfig.tsbuildinfo` makes tsc skip checking
+  (85 types, check 0.000 s; 0.95 s with `--incremental false`, tttt 0.34 s). perfsweep measures cold; the sweep's
+  oracle (tttt-oracle) should too, or the list should drop projects whose tsc side built < 1000 types.
