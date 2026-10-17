@@ -2412,11 +2412,16 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args);
 
 Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg) {
     check(target->kind == TY_DECLARED);
-    if (!target->declared.this_param) this_arg = nullptr;
+    // (A tuple's target has a this-type in tsc too: a tuple in an intersection sees the intersection as its `this`)
+    bool tuple = target->declared.kind == TY_DECLARED_TUPLE_TARGET;
+    if (!target->declared.this_param && !tuple) this_arg = nullptr;
     if (!target->declared.type_params.len && !this_arg) return target;
     check(args.len == target->declared.type_params.len);
-    if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+    if (tuple) {
         Ty const* normalized = normalized_tuple(me, target, args);
+        if (normalized && this_arg && normalized->kind == TY_REFERENCE && ty_is_tuple(normalized)) {
+            return ty_reference_with_this(me, normalized->reference.target, ty_reference_args(me, normalized), this_arg);
+        }
         if (normalized) return normalized;
     }
     u64 stack_key[32];
@@ -2728,8 +2733,9 @@ Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg) {
         return ty_reference_with_this(me, ty->reference.target, ty_reference_args(me, ty), this_arg);
     }
     // (A tuple's target has a this-type in tsc too: the reference it makes has no alias, `[string, number]`)
-    if (ty->kind == TY_REFERENCE && ty->alias && ty->reference.target->declared.tuple) {
-        return ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
+    if (ty->kind == TY_REFERENCE && ty->reference.target->declared.tuple) {
+        if (ty->reference.this_arg == this_arg && !ty->alias) return ty;
+        return ty_reference_with_this(me, ty->reference.target, ty_reference_args(me, ty), this_arg);
     }
     return ty;
 }

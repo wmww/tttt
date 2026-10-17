@@ -1,0 +1,69 @@
+//// [test/cases/ttttIntersectionTupleThis.ts] ////
+
+=== ttttIntersectionTupleThis.ts ===
+// A tuple in an intersection sees the intersection as its `this`, like any reference (tsc's tuple target has a
+// this-type): `sort()` of `[1, 2] & { tag: string }` returns the intersection. Relating such intersections compares
+// the target's combined properties with that `this` on both sides (vueuse's makeDestructurable cast)
+
+type X = [1, 2] & { tag: string };
+>X : Symbol(X, Decl(ttttIntersectionTupleThis.ts, 0, 0))
+>tag : Symbol(tag, Decl(ttttIntersectionTupleThis.ts, 4, 19))
+
+declare let x: X;
+>x : Symbol(x, Decl(ttttIntersectionTupleThis.ts, 5, 11))
+>X : Symbol(X, Decl(ttttIntersectionTupleThis.ts, 0, 0))
+
+const sorted = x.sort();
+>sorted : Symbol(sorted, Decl(ttttIntersectionTupleThis.ts, 6, 5))
+>x.sort : Symbol(Array.sort, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttIntersectionTupleThis.ts, 5, 11))
+>sort : Symbol(Array.sort, Decl(lib.es5.d.ts, --, --))
+
+declare function pair<T extends Record<string, unknown>, A extends readonly any[]>(obj: T, arr: A): T & A;
+>pair : Symbol(pair, Decl(ttttIntersectionTupleThis.ts, 6, 24))
+>T : Symbol(T, Decl(ttttIntersectionTupleThis.ts, 8, 22))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttIntersectionTupleThis.ts, 8, 56))
+>obj : Symbol(obj, Decl(ttttIntersectionTupleThis.ts, 8, 83))
+>T : Symbol(T, Decl(ttttIntersectionTupleThis.ts, 8, 22))
+>arr : Symbol(arr, Decl(ttttIntersectionTupleThis.ts, 8, 90))
+>A : Symbol(A, Decl(ttttIntersectionTupleThis.ts, 8, 56))
+>T : Symbol(T, Decl(ttttIntersectionTupleThis.ts, 8, 22))
+>A : Symbol(A, Decl(ttttIntersectionTupleThis.ts, 8, 56))
+
+type D = { d: string };
+>D : Symbol(D, Decl(ttttIntersectionTupleThis.ts, 8, 106))
+>d : Symbol(d, Decl(ttttIntersectionTupleThis.ts, 9, 10))
+
+type R = { r: number };
+>R : Symbol(R, Decl(ttttIntersectionTupleThis.ts, 9, 23))
+>r : Symbol(r, Decl(ttttIntersectionTupleThis.ts, 10, 10))
+
+type Pair = [D, R] & { define: D; reuse: R };
+>Pair : Symbol(Pair, Decl(ttttIntersectionTupleThis.ts, 10, 23))
+>D : Symbol(D, Decl(ttttIntersectionTupleThis.ts, 8, 106))
+>R : Symbol(R, Decl(ttttIntersectionTupleThis.ts, 9, 23))
+>define : Symbol(define, Decl(ttttIntersectionTupleThis.ts, 11, 22))
+>D : Symbol(D, Decl(ttttIntersectionTupleThis.ts, 8, 106))
+>reuse : Symbol(reuse, Decl(ttttIntersectionTupleThis.ts, 11, 33))
+>R : Symbol(R, Decl(ttttIntersectionTupleThis.ts, 9, 23))
+
+declare const d: D;
+>d : Symbol(d, Decl(ttttIntersectionTupleThis.ts, 12, 13))
+>D : Symbol(D, Decl(ttttIntersectionTupleThis.ts, 8, 106))
+
+declare const r: R;
+>r : Symbol(r, Decl(ttttIntersectionTupleThis.ts, 13, 13))
+>R : Symbol(R, Decl(ttttIntersectionTupleThis.ts, 9, 23))
+
+const p = pair({ define: d, reuse: r }, [d, r]) as Pair;
+>p : Symbol(p, Decl(ttttIntersectionTupleThis.ts, 14, 5))
+>pair : Symbol(pair, Decl(ttttIntersectionTupleThis.ts, 6, 24))
+>define : Symbol(define, Decl(ttttIntersectionTupleThis.ts, 14, 16))
+>d : Symbol(d, Decl(ttttIntersectionTupleThis.ts, 12, 13))
+>reuse : Symbol(reuse, Decl(ttttIntersectionTupleThis.ts, 14, 27))
+>r : Symbol(r, Decl(ttttIntersectionTupleThis.ts, 13, 13))
+>d : Symbol(d, Decl(ttttIntersectionTupleThis.ts, 12, 13))
+>r : Symbol(r, Decl(ttttIntersectionTupleThis.ts, 13, 13))
+>Pair : Symbol(Pair, Decl(ttttIntersectionTupleThis.ts, 10, 23))
+

@@ -4700,7 +4700,10 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
             builder_add_inherited(me, &builder, array);
         }
         // (The empty tuple too, which is its own target: `[]`'s `sort()` returns `[]`)
-        if (tuple->kind == TY_REFERENCE || !shape->arity) retarget_this_props(me, &builder, first, array, tuple);
+        if (tuple->kind == TY_REFERENCE || !shape->arity) {
+            Ty const* this_arg = tuple->kind == TY_REFERENCE && tuple->reference.this_arg ? tuple->reference.this_arg : tuple;
+            retarget_this_props(me, &builder, first, array, this_arg);
+        }
     }
     // A tuple has no symbol, so tsc 6's getNamedMembers sorts all of its properties: the array's by declaration (the
     // order they are in already), then the element properties and `length`, which have no declaration, by name
