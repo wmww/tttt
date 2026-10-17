@@ -28,10 +28,10 @@ static Ty const* reference_from_type_node(Checker* me, Ty const* target, TyList 
 
 static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
 
-// tsc's isLocalTypeAlias: a type alias declared in a function body (here: in any block or function body, TypeDecl.local)
+// tsc's isLocalTypeAlias: a type alias declared inside a function
 static bool alias_is_local(Symbol const* symbol) {
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
-        if (symbol->decls[i].kind == SYMBOL_DECL_TYPE_ALIAS) return ((TypeDecl const*)symbol->decls[i].node)->local;
+        if (symbol->decls[i].kind == SYMBOL_DECL_TYPE_ALIAS) return ((TypeDecl const*)symbol->decls[i].node)->in_function;
     }
     return false;
 }

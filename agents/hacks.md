@@ -292,8 +292,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `contains_spread` (ObjectFlags.ContainsSpread) is read off the properties, so `{ ...{} }` doesn't count.
 - `x satisfies T`: on failure prints T and discards the text, for the printing's side effects (tsc builds TS1360 there:
   `const f = () => 1 satisfies typeof f` is TS7023). Correct: report where checked (checkSatisfiesExpression).
-- `alias_is_local()`: TypeDecl.local (any block) vs tsc's isLocalTypeAlias (inside a function): a type alias in a
-  top-level block counts. Oracle: types baseline alias printing.
 - `definitely_unrelated()`'s `mentions_type_variables()` walk resolves signatures' return types when
   `ty_function_free_params()` can't tell syntactically (unannotated non-literal parameter defaults, unannotated returns
   with bodies); tsc's getPermissiveInstantiation is lazy, so tttt can leave a conditional deferred for good when that

@@ -1,0 +1,72 @@
+//// [test/cases/ttttLocalAliasOutsideFunction.ts] ////
+
+=== ttttLocalAliasOutsideFunction.ts ===
+// A type alias in a top-level block or class static block isn't local (tsc's isLocalTypeAlias: inside a function), so
+// it renames an instantiation of an outer alias (and then prints structurally, not being accessible); inside a function
+// it keeps the outer alias's name
+type Top<T> = { a: T } | { b: T };
+>Top : Symbol(Top, Decl(ttttLocalAliasOutsideFunction.ts, 0, 0))
+>T : Symbol(T, Decl(ttttLocalAliasOutsideFunction.ts, 3, 9))
+>a : Symbol(a, Decl(ttttLocalAliasOutsideFunction.ts, 3, 15))
+>T : Symbol(T, Decl(ttttLocalAliasOutsideFunction.ts, 3, 9))
+>b : Symbol(b, Decl(ttttLocalAliasOutsideFunction.ts, 3, 26))
+>T : Symbol(T, Decl(ttttLocalAliasOutsideFunction.ts, 3, 9))
+{
+    type L = Top<string>;
+>L : Symbol(L, Decl(ttttLocalAliasOutsideFunction.ts, 4, 1))
+>Top : Symbol(Top, Decl(ttttLocalAliasOutsideFunction.ts, 0, 0))
+
+    var x: L = null!;
+>x : Symbol(x, Decl(ttttLocalAliasOutsideFunction.ts, 6, 7))
+>L : Symbol(L, Decl(ttttLocalAliasOutsideFunction.ts, 4, 1))
+}
+x;
+>x : Symbol(x, Decl(ttttLocalAliasOutsideFunction.ts, 6, 7))
+
+class C {
+>C : Symbol(C, Decl(ttttLocalAliasOutsideFunction.ts, 8, 2))
+
+    static {
+        type S = Top<number>;
+>S : Symbol(S, Decl(ttttLocalAliasOutsideFunction.ts, 10, 12))
+>Top : Symbol(Top, Decl(ttttLocalAliasOutsideFunction.ts, 0, 0))
+
+        var y: S = null!;
+>y : Symbol(y, Decl(ttttLocalAliasOutsideFunction.ts, 12, 11))
+>S : Symbol(S, Decl(ttttLocalAliasOutsideFunction.ts, 10, 12))
+
+        y;
+>y : Symbol(y, Decl(ttttLocalAliasOutsideFunction.ts, 12, 11))
+    }
+}
+function f() {
+>f : Symbol(f, Decl(ttttLocalAliasOutsideFunction.ts, 15, 1))
+
+    type F = Top<boolean>;
+>F : Symbol(F, Decl(ttttLocalAliasOutsideFunction.ts, 16, 14))
+>Top : Symbol(Top, Decl(ttttLocalAliasOutsideFunction.ts, 0, 0))
+
+    var z: F = null!;
+>z : Symbol(z, Decl(ttttLocalAliasOutsideFunction.ts, 18, 7))
+>F : Symbol(F, Decl(ttttLocalAliasOutsideFunction.ts, 16, 14))
+
+    class D {
+>D : Symbol(D, Decl(ttttLocalAliasOutsideFunction.ts, 18, 21))
+
+        static {
+            type G = Top<1>;
+>G : Symbol(G, Decl(ttttLocalAliasOutsideFunction.ts, 20, 16))
+>Top : Symbol(Top, Decl(ttttLocalAliasOutsideFunction.ts, 0, 0))
+
+            var w: G = null!;
+>w : Symbol(w, Decl(ttttLocalAliasOutsideFunction.ts, 22, 15))
+>G : Symbol(G, Decl(ttttLocalAliasOutsideFunction.ts, 20, 16))
+
+            w;
+>w : Symbol(w, Decl(ttttLocalAliasOutsideFunction.ts, 22, 15))
+        }
+    }
+    return z;
+>z : Symbol(z, Decl(ttttLocalAliasOutsideFunction.ts, 18, 7))
+}
+

@@ -1,0 +1,65 @@
+//// [test/cases/ttttLocalAliasOutsideFunction.ts] ////
+
+=== ttttLocalAliasOutsideFunction.ts ===
+// A type alias in a top-level block or class static block isn't local (tsc's isLocalTypeAlias: inside a function), so
+// it renames an instantiation of an outer alias (and then prints structurally, not being accessible); inside a function
+// it keeps the outer alias's name
+type Top<T> = { a: T } | { b: T };
+>Top : Top<T>
+>a : T
+>b : T
+{
+    type L = Top<string>;
+>L : { a: string; } | { b: string; }
+
+    var x: L = null!;
+>x : { a: string; } | { b: string; }
+>null! : never
+}
+x;
+>x : never
+
+class C {
+>C : C
+
+    static {
+        type S = Top<number>;
+>S : { a: number; } | { b: number; }
+
+        var y: S = null!;
+>y : { a: number; } | { b: number; }
+>null! : never
+
+        y;
+>y : never
+    }
+}
+function f() {
+>f : () => never
+
+    type F = Top<boolean>;
+>F : Top<boolean>
+
+    var z: F = null!;
+>z : Top<boolean>
+>null! : never
+
+    class D {
+>D : D
+
+        static {
+            type G = Top<1>;
+>G : Top<1>
+
+            var w: G = null!;
+>w : Top<1>
+>null! : never
+
+            w;
+>w : never
+        }
+    }
+    return z;
+>z : never
+}
+

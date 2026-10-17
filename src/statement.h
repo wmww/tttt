@@ -73,6 +73,9 @@ typedef struct TypeDecl {
     // Declared in a block or function body (set by the resolve walk): the types baseline can't name it (tsc's
     // isTypeSymbolAccessible, a declaration there isn't visible) and prints its structure instead
     bool local;
+    // Declared inside a function (set by the resolve walk; tsc's isLocalTypeAlias, getContainingFunction): its body's
+    // instantiation of an outer alias keeps that alias's name (a block's or a static block's outside one does not count)
+    bool in_function;
     // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;
