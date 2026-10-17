@@ -808,6 +808,9 @@ typedef struct MembersRare {
     // A generic mapped type whose members are those of the lower bound of its keys (expand_mapped()), maybe none: they
     // are all it has as far as property access goes
     bool generic_keys_known;
+    // HACK: a generic mapped type whose expansion left out index signatures tsc's would have (the non-homomorphic parts'
+    // of an intersection, expand_generic_intersection_homomorphic()): what it seems to lack isn't reported missing
+    bool index_signatures_incomplete;
     // A mapped type (expanded_from) one of whose properties' types needed itself (TS2615, tsc's containsError): it
     // prints in mapped syntax
     bool contains_error;
@@ -2374,6 +2377,7 @@ typedef enum JsxComponentCheck {
     JSX_COMPONENT_TYPE, // The tag's type against JSX.ElementType
 } JsxComponentCheck;
 bool ty_is_generic_object(Checker* me, Ty const* ty); // tsc's isGenericObjectType, roughly (check.c)
+bool ty_mapped_members_incomplete(Checker* me, Ty const* ty); // HACK: see MembersRare.index_signatures_incomplete
 bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr.c)
 // A function expression without a contextual signature, or one with a generic return type (TS7010/TS7011 from widening)
 void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* right, Span left_span, Span right_span, ErrorCtx* errs);

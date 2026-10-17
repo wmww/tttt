@@ -1,0 +1,24 @@
+//// [test/cases/ttttMappedOverAnyConstraint.ts] ////
+
+=== ttttMappedOverAnyConstraint.ts ===
+// A homomorphic mapped type over a type parameter whose constraint is unresolved (the error type, any) has a string
+// index signature of the template at string (tsgo's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType): no
+// TS2339/TS7053, `T[string] | undefined`
+function f<T extends Unresolved>(d: T) { return (d as Partial<T>).value; }
+>f : <T extends Unresolved>(d: T) => T[string] | undefined
+>d : T
+>(d as Partial<T>).value : T[string] | undefined
+>(d as Partial<T>) : Partial<T>
+>d as Partial<T> : Partial<T>
+>d : T
+>value : T[string] | undefined
+
+function h<T extends Unresolved>(d: Partial<T>, k: string) { return d[k]; }
+>h : <T extends Unresolved>(d: Partial<T>, k: string) => T[string] | undefined
+>d : Partial<T>
+>k : string
+>d[k] : T[string] | undefined
+>d : Partial<T>
+>k : string
+
+

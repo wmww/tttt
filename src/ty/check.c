@@ -1866,7 +1866,7 @@ static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
             if (apparent->composite.types.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED)) return nullptr;
         }
     }
-    if (ty_is_js_literal_type(me, apparent)) return nullptr;
+    if (ty_is_js_literal_type(me, apparent) || ty_mapped_members_incomplete(me, apparent)) return nullptr;
     return apparent;
 }
 
@@ -2108,6 +2108,7 @@ static void check_access(
     }
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
     if (ty_is_js_literal_type(me, object)) return;
+    if (ty_mapped_members_incomplete(me, object)) return; // HACK: see MembersRare.index_signatures_incomplete
     if (object->flags & TYF_NULLABLE) {
         // A destructured property of null or undefined doesn't exist (a property access is TS18050 in tsc: TODO)
         if (!span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
@@ -2566,6 +2567,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             }
         }
         if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
+        if (ty_mapped_members_incomplete(me, object)) return; // HACK: see MembersRare.index_signatures_incomplete
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
             (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
         ) {

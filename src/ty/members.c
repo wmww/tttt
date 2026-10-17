@@ -3667,6 +3667,12 @@ static bool generic_object_reference(Checker* me, Ty const* ty) {
     return ty->kind == TY_REFERENCE && !ty_is_array(me, ty) && !ty_is_tuple(ty);
 }
 
+bool ty_mapped_members_incomplete(Checker* me, Ty const* ty) {
+    if (!(ty->flags & TYF_OBJECT) || ty->kind != TY_ANONYMOUS) return false;
+    Members const* members = ty_members(me, ty);
+    return members->mapped && members_rare(members)->index_signatures_incomplete;
+}
+
 // A generic mapped type's members say what it has: what expand_generic_homomorphic() found (properties or index
 // signatures), or that it knows there are none
 static bool mapped_members_known(Members const* members) {
@@ -3710,9 +3716,19 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         !only_this_arg_generic(me, apparent) && !generic_object_reference(me, apparent) && !known_mapped)) {
         return members;
     }
-    if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;
+    // (Of an any constraint, the error type of an unresolved one included: a string index signature, tsc's
+    // forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType)
+    if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN | TYF_ANY))) return members;
     Members const* source = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
     if (source && source->mapped && !known_mapped) return members;
+    if (apparent->flags & TYF_ANY) {
+        IndexInfo* string_index = arena_new(&my arena, IndexInfo);
+        *string_index = (IndexInfo){ .key = ty_intrinsic(me, TY_STRING) };
+        Members* any_source = arena_new(&my arena, Members);
+        any_source->index = string_index;
+        any_source->index_count = 1;
+        source = any_source;
+    }
     if (!source || (!source->prop_count && !source->index_count)) {
         // (No constraint or one without members, `P extends {}`: none, and that's known, `Readonly<P>` has no `foo`)
         MembersBuilder empty = { .mapped = mapped };
@@ -3774,7 +3790,9 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         };
         builder_push(&builder, index, info);
     }
-    return builder_finish(me, &builder);
+    Members* ret = (Members*)builder_finish(me, &builder);
+    if (members_rare(source)->index_signatures_incomplete) members_rare_mut(me, ret)->index_signatures_incomplete = true;
+    return ret;
 }
 
 // The same over a generic intersection (`flatten<A<T> & B<T>>`): a property per property some part is known to have (a
@@ -3803,6 +3821,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
     MappedInfo const* mapped = members->mapped;
     Prop* template = nullptr;
     MembersBuilder builder = { .mapped = mapped };
+    bool incomplete = false;
     for (u32 p = 0; p < parts.len; p++) {
         Ty const* part = parts.data[p];
         if (!(part->flags & TYF_OBJECT)) part = ty_apparent_type(me, part);
@@ -3872,6 +3891,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
         // index signature of `Vals<K>[string] | null`. (Only those: the other parts' would be tsc's too, but inferring
         // from them changes localTypeParameterInferencePriority's candidates, unexplained)
         bool homomorphic_part = source->mapped && source->mapped->keyof_constraint && !source->mapped->name_type;
+        incomplete |= (source->index_count && (whole || !homomorphic_part)) || members_rare(source)->index_signatures_incomplete;
         for (u32 j = 0; !whole && homomorphic_part && j < source->index_count; j++) {
             IndexInfo const* from = &source->index[j];
             bool seen = false;
@@ -3894,7 +3914,10 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             builder_push(&builder, index, info);
         }
     }
-    return builder.props_count || builder.index_count ? builder_finish(me, &builder) : members;
+    if (!builder.props_count && !builder.index_count && !incomplete) return members;
+    Members* ret = (Members*)builder_finish(me, &builder);
+    if (incomplete) members_rare_mut(me, ret)->index_signatures_incomplete = true;
+    return ret;
 }
 
 bool ty_is_valid_index_key(Ty const* ty) {

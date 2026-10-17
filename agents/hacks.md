@@ -488,7 +488,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `ty_prop_decl_value_name` (`prop_decl_shared()` guards writes).
 - `expand_generic_intersection_homomorphic` (members.c): index signatures come only from a part that is itself a
   generic homomorphic mapped type; tsc's resolveMappedTypeMembers takes every part's, but that added an inference
-  candidate in localTypeParameterInferencePriority. Shown by: that test when generalized.
+  candidate in localTypeParameterInferencePriority. Shown by: that test when generalized. Such an expansion is marked
+  `index_signatures_incomplete` (MembersRare) and check_access/TS7053 don't report what it seems to lack (react-
+  navigation's `Partial<{ [E in keyof (EventMap & Core)]: X }>[string]`, better-auth); its accesses are still the
+  error type where tsc has `X[string] | undefined`. Fixing the inference removes both.
 - `never_index_read` (checker.c): an anonymous object indexed by never is never, except a mapped type whose keys its
   declaration tells (`Record<string, T>[never]` is T); tsc reads index signatures everywhere, but resolving xstate's
   keyless mapped types tipped TS5115 (flagflip nosnc/sloppy +7). Correct: instantiation accounting that doesn't
