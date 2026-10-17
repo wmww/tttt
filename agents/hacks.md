@@ -242,7 +242,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `signature_resolve`: a function expression takes its generic contextual signature's type parameters only if its
   signature is resolved after the context was assigned (memoised otherwise).
 - `missing_property_type`: errorType for a failed access under conditions approximating check.c's reporting (object
-  type, not `typeof globalThis`, no unresolved base, not JS). tsc: errorType exactly when it reports. Correct: one
+  type, not `typeof globalThis`, not JS). tsc: errorType exactly when it reports. Correct: one
   decision shared with the reporter. Oracle: suite `.types` showing `any` vs error.
 - Contextual `this` (`ty_contextual_this_type`): through the anchor once the call is resolved, else the literal's last
   context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is plan 51 stage 3 item 3);
@@ -444,8 +444,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   signatures (valibot +3.6% because `T[string]`'s constraint comes out unknown). Fix: `T[string]` of a union of
   index-signature objects is the union of their values.
 - `class_base()` HACK: class names found syntactically; other expressions take the first fitting construct signature
-  (TS2510 by `ty_class_base_constructors_differ()`); a base constructing `any` is no base and
-  `ty_has_unresolved_base()` gates TS2339/TS7053 (tsc: `[x: string]: any`); type-parameter bases take the constraint's
+  (TS2510 by `ty_class_base_constructors_differ()`); a base constructing `any` is no base (its sides get tsc's
+  anyBaseTypeIndexInfo, `class_base_is_any()`); type-parameter bases take the constraint's
   members at declaration; `ty_non_augmenting_base()` is syntactic. A bare `C`/`this` inside generic `C` isn't its
   own instantiation (lower.c TODO).
 - `never_reduced_prop` (permanent, perf: zod +4.1%, drizzle +0.9%): `ty_reduced()` skips members flagged
@@ -510,7 +510,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   because `ty_static_type_of` doesn't make `X & K` bases' static side `typeof C & K`. Fix: a synthetic anonymous type
   remembering the symbol it prints as.
 - `check_access` (TS2339) HACKs: lets through generic mapped types `expand_mapped()` found no members for (`Mutable<T>`
-  with `T extends A | B`, `Pick<T, K>` with generic K) and unresolved bases; bracket access never reports; fires on
+  with `T extends A | B`, `Pick<T, K>` with generic K); bracket access never reports; fires on
   modules too (TS2339 next to TS2307). `ty_check_element_implicit_any` (TS7053) skips the same. flagflip/sweep show it.
 - `ty_check_index_constraints` on type literals only when syntactically needed (`type_literal_has_index_constraints()`):
   the others aren't lowered at their check, and an alias's literal body must be made as the alias's type first.

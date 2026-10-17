@@ -2038,6 +2038,17 @@ static Signature* class_construct_signature(Checker* me, ClassDecl const* class_
     return sig;
 }
 
+static bool class_base_is_any(Checker* me, ClassDecl const* class_decl, LowerCtx ctx);
+
+static void builder_push_any_base_index(Checker* me, MembersBuilder* builder) {
+    Ty const* string = ty_intrinsic(me, TY_STRING);
+    for (u32 i = 0; i < builder->index_count; i++) {
+        if (builder->index[i].key == string) return;
+    }
+    builder_push(builder, index, ((IndexInfo){ .key = string, .value = ty_intrinsic(me, TY_ANY),
+        .param_name = checker_atom(me, c_sv("x")) }));
+}
+
 static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, Ty const* ty, ClassDecl const* class_decl) {
     Symbol const* instance_decl = class_decl->symbol;
     Ty const* instance = instance_decl ? ty_declared_type_of(me, instance_decl) : nullptr;
@@ -2219,6 +2230,14 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
                 builder_push(builder, props, base_members->props[i]);
             }
         }
+    }
+    // (A base constructor of any, not one that constructs any: tsc's resolveAnonymousTypeMembers' baseConstructorIndexInfo,
+    // anyBaseTypeIndexInfo when getBaseConstructorTypeOfClass is anyType)
+    if (!has_base && class_decl->extends.tag != EXPR_IMPLICIT_ANY && class_decl_base_arity_fits(class_decl)) {
+        Expr const* extends = &class_decl->extends;
+        if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+        Ty const* constructor = ty_expr_type(me, extends);
+        if ((constructor->flags & TYF_ANY) && !(constructor->flags & TYF_ERROR)) builder_push_any_base_index(me, builder);
     }
 }
 
@@ -2759,42 +2778,24 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
 // Whether a class (instance or static side) has a base that class_base() can't see: an `extends` expression it can't
 // resolve or that constructs `any` (tsc: the class gets anyBaseTypeIndexInfo, `[x: string]: any`). Members can be
 // missing from such a class
-static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
-    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
-    if (depth > 32 || ty->kind != TY_DECLARED) return false;
-    if (ty->declared.kind != TY_DECLARED_CLASS_INSTANCE && ty->declared.kind != TY_DECLARED_CLASS_STATIC) return false;
-    Symbol const* decl = ty->declared.symbol;
-    if (!decl) return false;
-    LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
-    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
-        if (node->kind != SYMBOL_DECL_CLASS) continue;
-        ClassDecl const* class_decl = node->node;
-        if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) continue;
-        if (!class_decl_base_arity_fits(class_decl)) continue; // (errorType: no base at all, not an unknown one)
-        Ty const* base = nullptr;
-        Symbol const* base_decl = nullptr;
-        if (!class_base(me, class_decl, ctx, &base, &base_decl)) {
-            // (Only a base that constructs a real any: an unresolved name or import is the error type, a base without
-            // members, tsc's isErrorType in getBaseConstructorTypeOfClass)
-            Expr const* extends = &class_decl->extends;
-            if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
-            if (ty_expr_type(me, extends)->flags & TYF_ERROR) continue;
-            // (A constructor without construct signatures, TS2507, or none that take the written type arguments,
-            // TS2508, is errorType, and one that constructs something that can't be a base, TS2509, no base: tsc's
-            // getBaseConstructorTypeOfClass, resolveBaseTypesOfClass). A constructor of the error type (`new () =>
-            // Unresolved.T`) is no base either (resolveBaseTypesOfClass's isErrorType(baseType))
-            if ((base ? !(base->flags & TYF_ANY) || (base->flags & TYF_ERROR) : ty_class_base_constructor_unfit(me, class_decl))) {
-                continue;
-            }
-            return true;
-        }
-        if (base != ty && has_unresolved_base(me, base, depth + 1)) return true;
-    }
-    return false;
-}
-
-bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
-    return has_unresolved_base(me, ty, 0);
+// A class whose base constructor is any (not the error type): its instance and static sides have tsc's
+// anyBaseTypeIndexInfo, a string index signature of any (resolveObjectTypeMembers, resolveAnonymousTypeMembers)
+static bool class_base_is_any(Checker* me, ClassDecl const* class_decl, LowerCtx ctx) {
+    if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) return false;
+    if (!class_decl_base_arity_fits(class_decl)) return false; // (errorType: no base at all, not an unknown one)
+    Ty const* base = nullptr;
+    Symbol const* base_decl = nullptr;
+    if (class_base(me, class_decl, ctx, &base, &base_decl)) return false;
+    // (Only a base that constructs a real any: an unresolved name or import is the error type, a base without
+    // members, tsc's isErrorType in getBaseConstructorTypeOfClass)
+    Expr const* extends = &class_decl->extends;
+    if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+    if (ty_expr_type(me, extends)->flags & TYF_ERROR) return false;
+    // (A constructor without construct signatures, TS2507, or none that take the written type arguments, TS2508, is
+    // errorType, and one that constructs something that can't be a base, TS2509, no base: tsc's
+    // getBaseConstructorTypeOfClass, resolveBaseTypesOfClass). A constructor of the error type (`new () =>
+    // Unresolved.T`) is no base either (resolveBaseTypesOfClass's isErrorType(baseType))
+    return base ? (base->flags & TYF_ANY) && !(base->flags & TYF_ERROR) : !ty_class_base_constructor_unfit(me, class_decl);
 }
 
 Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {
@@ -3132,6 +3133,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         ty_buf_push(&written_bases, base);
                         dynamic |= base_is_dynamic(me, base, 0);
                     }
+                    // (A base constructor of any: tsc's anyBaseTypeIndexInfo)
+                    else if (class_base_is_any(me, node->node, ctx)) any_base = true;
                 } else if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
@@ -3155,15 +3158,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     }
                 }
             }
-            if (any_base) {
-                Ty const* string = ty_intrinsic(me, TY_STRING);
-                bool has_string = false;
-                for (u32 i = 0; i < builder.index_count; i++) has_string |= builder.index[i].key == string;
-                if (!has_string) {
-                    builder_push(&builder, index, ((IndexInfo){ .key = string, .value = ty_intrinsic(me, TY_ANY),
-                        .param_name = checker_atom(me, c_sv("x")) }));
-                }
-            }
+            if (any_base) builder_push_any_base_index(me, &builder);
             my bases_frames = frame.outer;
             if (ty_resolving_pop(me)) {
                 // Its members were asked for while its bases were lowered: TS2310 at its declarations (tsc's
@@ -3701,7 +3696,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     // (A generic class or interface reference whose bases resolve has its properties whatever its type arguments,
     // `T extends Ctx<P>` has Ctx's, and none if it has none: `Partial<T>` with `T extends RData<H>` has no `open`)
     if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-        !only_this_arg_generic(me, apparent) && !(generic_object_reference(me, apparent) && !ty_has_unresolved_base(me, apparent)))) {
+        !only_this_arg_generic(me, apparent) && !generic_object_reference(me, apparent))) {
         return members;
     }
     if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;

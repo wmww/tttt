@@ -1521,7 +1521,6 @@ Ty const* prop_write_type(Checker* me, Prop const* prop);
 bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); // tsc's isPropertyIdenticalTo
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none
 Span ty_prop_decl_span(Prop const* prop);
-bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
 bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl);
 // The base a class or interface without members of its own is equivalent to (tsc's
 // getSingleBaseForNonAugmentingSubtype: relations see it instead). Null if there's none

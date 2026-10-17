@@ -1853,7 +1853,7 @@ static bool is_union_of_fixed_tuples(Ty const* ty) {
 }
 
 // What a type parameter's property access looks into: its apparent type, unless that can't say a property is missing
-// (null: any, other type variables, a generic mapped type, a base class nobody can see into)
+// (null: any, other type variables, a generic mapped type)
 static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
     Ty const* apparent = ty_apparent_type(me, param);
     // (An apparent type that reduces to never has no properties either: `never[keyof T]`)
@@ -1870,7 +1870,6 @@ static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
     if (apparent->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, apparent);
         if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
-        if (ty_has_unresolved_base(me, apparent)) return nullptr;
     }
     return apparent;
 }
@@ -2125,7 +2124,6 @@ static void check_access(
         ) {
             return;
         }
-        if (ty_has_unresolved_base(me, object)) return;
     }
     if (object->flags & TYF_NULLABLE) {
         // A destructured property of null or undefined doesn't exist (a property access is TS18050 in tsc: TODO)
@@ -2586,10 +2584,9 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         }
         if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
         if (object->flags & TYF_OBJECT) {
-            // HACK: as in check_access(): mapped types over something generic, unresolved bases
+            // HACK: as in check_access(): mapped types over something generic
             Members const* members = ty_members(me, object);
             if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-            if (ty_has_unresolved_base(me, object)) return;
         }
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
             (object->declared.symbol->flags & SYMBOL_CONST_ENUM)

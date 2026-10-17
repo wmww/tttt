@@ -1,0 +1,28 @@
+ttttClassAnyBaseIndex.ts(17,11): error TS2322: Type '{ new (...args: any[]): M; prototype: mixin.M; } & T' is not assignable to type 'Record<string, number>'.
+  Index signature for type 'string' is missing in type '{ new (...args: any[]): M; prototype: mixin.M; } & (new (...args: any[]) => any)'.
+
+
+==== ttttClassAnyBaseIndex.ts (1 errors) ====
+    // A class whose base constructor is any has a string index signature of any on both sides (tsgo's
+    // anyBaseTypeIndexInfo): assignable to a Record, `keyof` includes string, a missing member is any. A base constructor
+    // that only constructs any (a mixin's type parameter) gives the instance side one, not the static side
+    declare const B: any;
+    class C extends B { x = 1; }
+    class D extends C { }
+    const r: Record<string, number> = new C();
+    const r2: Record<string, number> = new D();
+    const s: Record<string, number> = C;
+    const k: keyof D = "anything";
+    const a = new D().missing;
+    const t = C.missingStatic;
+    
+    function mixin<T extends new (...args: any[]) => any>(base: T) {
+        class M extends base { m = 1; }
+        const i: Record<string, number> = new M();
+        const st: Record<string, number> = M;
+              ~~
+!!! error TS2322: Type '{ new (...args: any[]): M; prototype: mixin.M; } & T' is not assignable to type 'Record<string, number>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{ new (...args: any[]): M; prototype: mixin.M; } & (new (...args: any[]) => any)'.
+        return M;
+    }
+    

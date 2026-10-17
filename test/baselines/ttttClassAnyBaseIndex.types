@@ -1,0 +1,74 @@
+//// [test/cases/ttttClassAnyBaseIndex.ts] ////
+
+=== ttttClassAnyBaseIndex.ts ===
+// A class whose base constructor is any has a string index signature of any on both sides (tsgo's
+// anyBaseTypeIndexInfo): assignable to a Record, `keyof` includes string, a missing member is any. A base constructor
+// that only constructs any (a mixin's type parameter) gives the instance side one, not the static side
+declare const B: any;
+>B : any
+
+class C extends B { x = 1; }
+>C : C
+>B : any
+>x : number
+>1 : 1
+
+class D extends C { }
+>D : D
+>C : C
+
+const r: Record<string, number> = new C();
+>r : Record<string, number>
+>new C() : C
+>C : typeof C
+
+const r2: Record<string, number> = new D();
+>r2 : Record<string, number>
+>new D() : D
+>D : typeof D
+
+const s: Record<string, number> = C;
+>s : Record<string, number>
+>C : typeof C
+
+const k: keyof D = "anything";
+>k : keyof D
+>"anything" : "anything"
+
+const a = new D().missing;
+>a : any
+>new D().missing : any
+>new D() : D
+>D : typeof D
+>missing : any
+
+const t = C.missingStatic;
+>t : any
+>C.missingStatic : any
+>C : typeof C
+>missingStatic : any
+
+function mixin<T extends new (...args: any[]) => any>(base: T) {
+>mixin : <T extends new (...args: any[]) => any>(base: T) => { new (...args: any[]): M; prototype: mixin.M; } & T
+>args : any[]
+>base : T
+
+    class M extends base { m = 1; }
+>M : M
+>base : T
+>m : number
+>1 : 1
+
+    const i: Record<string, number> = new M();
+>i : Record<string, number>
+>new M() : any
+>M : { new (...args: any[]): M; prototype: mixin.M; } & T
+
+    const st: Record<string, number> = M;
+>st : Record<string, number>
+>M : { new (...args: any[]): M; prototype: mixin.M; } & T
+
+    return M;
+>M : { new (...args: any[]): M; prototype: mixin.M; } & T
+}
+

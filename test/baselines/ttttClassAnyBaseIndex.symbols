@@ -1,0 +1,71 @@
+//// [test/cases/ttttClassAnyBaseIndex.ts] ////
+
+=== ttttClassAnyBaseIndex.ts ===
+// A class whose base constructor is any has a string index signature of any on both sides (tsgo's
+// anyBaseTypeIndexInfo): assignable to a Record, `keyof` includes string, a missing member is any. A base constructor
+// that only constructs any (a mixin's type parameter) gives the instance side one, not the static side
+declare const B: any;
+>B : Symbol(B, Decl(ttttClassAnyBaseIndex.ts, 3, 13))
+
+class C extends B { x = 1; }
+>C : Symbol(C, Decl(ttttClassAnyBaseIndex.ts, 3, 21))
+>B : Symbol(B, Decl(ttttClassAnyBaseIndex.ts, 3, 13))
+>x : Symbol(C.x, Decl(ttttClassAnyBaseIndex.ts, 4, 19))
+
+class D extends C { }
+>D : Symbol(D, Decl(ttttClassAnyBaseIndex.ts, 4, 28))
+>C : Symbol(C, Decl(ttttClassAnyBaseIndex.ts, 3, 21))
+
+const r: Record<string, number> = new C();
+>r : Symbol(r, Decl(ttttClassAnyBaseIndex.ts, 6, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttClassAnyBaseIndex.ts, 3, 21))
+
+const r2: Record<string, number> = new D();
+>r2 : Symbol(r2, Decl(ttttClassAnyBaseIndex.ts, 7, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttClassAnyBaseIndex.ts, 4, 28))
+
+const s: Record<string, number> = C;
+>s : Symbol(s, Decl(ttttClassAnyBaseIndex.ts, 8, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttClassAnyBaseIndex.ts, 3, 21))
+
+const k: keyof D = "anything";
+>k : Symbol(k, Decl(ttttClassAnyBaseIndex.ts, 9, 5))
+>D : Symbol(D, Decl(ttttClassAnyBaseIndex.ts, 4, 28))
+
+const a = new D().missing;
+>a : Symbol(a, Decl(ttttClassAnyBaseIndex.ts, 10, 5))
+>D : Symbol(D, Decl(ttttClassAnyBaseIndex.ts, 4, 28))
+
+const t = C.missingStatic;
+>t : Symbol(t, Decl(ttttClassAnyBaseIndex.ts, 11, 5))
+>C : Symbol(C, Decl(ttttClassAnyBaseIndex.ts, 3, 21))
+
+function mixin<T extends new (...args: any[]) => any>(base: T) {
+>mixin : Symbol(mixin, Decl(ttttClassAnyBaseIndex.ts, 11, 26))
+>T : Symbol(T, Decl(ttttClassAnyBaseIndex.ts, 13, 15))
+>args : Symbol(args, Decl(ttttClassAnyBaseIndex.ts, 13, 30))
+>base : Symbol(base, Decl(ttttClassAnyBaseIndex.ts, 13, 54))
+>T : Symbol(T, Decl(ttttClassAnyBaseIndex.ts, 13, 15))
+
+    class M extends base { m = 1; }
+>M : Symbol(M, Decl(ttttClassAnyBaseIndex.ts, 13, 64))
+>base : Symbol(base, Decl(ttttClassAnyBaseIndex.ts, 13, 54))
+>m : Symbol(M.m, Decl(ttttClassAnyBaseIndex.ts, 14, 26))
+
+    const i: Record<string, number> = new M();
+>i : Symbol(i, Decl(ttttClassAnyBaseIndex.ts, 15, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttClassAnyBaseIndex.ts, 13, 64))
+
+    const st: Record<string, number> = M;
+>st : Symbol(st, Decl(ttttClassAnyBaseIndex.ts, 16, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttClassAnyBaseIndex.ts, 13, 64))
+
+    return M;
+>M : Symbol(M, Decl(ttttClassAnyBaseIndex.ts, 13, 64))
+}
+

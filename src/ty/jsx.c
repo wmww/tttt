@@ -192,7 +192,9 @@ Ty const* ty_jsx_signature_props(Checker* me, JsxElement const* element, Signatu
                     break;
                 }
                 Ty const* apparent = ty_apparent_type(me, member);
-                Ty const* part = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_access(me, apparent, ty_prop_name_literal(me, location)) : nullptr;
+                // (A property, not an index signature's: tsc's getTypeOfPropertyOfType)
+                FoundProp found = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION) ? ty_find_prop(me, apparent, location) : (FoundProp){0};
+                Ty const* part = found.found ? ty_access(me, apparent, ty_prop_name_literal(me, location)) : nullptr;
                 if (!part) props = nullptr;
                 else ty_buf_push(&parts, part);
             }
@@ -400,8 +402,9 @@ static void check_class_component_props(Checker* me, JsxElement const* element, 
     if (!location || !atom_sv(location).size) return;
     Ty const* instance = ty_instantiate(me, signature_return_type(me, resolution->sig), resolution->mapper);
     if (instance->flags & TYF_ANY) return;
+    // (A property, not an index signature's: tsc's getTypeOfPropertyOfType, an any base's `[x: string]: any` isn't one)
     Ty const* apparent = ty_apparent_type(me, instance);
-    if (ty_access(me, apparent, ty_prop_name_literal(me, location))) return;
+    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION)) && ty_find_prop(me, apparent, location).found) return;
     error_ctx_error_d(errs, element->opening_span, 2607, "JSX element class does not support attributes because it does not have a '",
         atom_sv(location), "' property.");
 }

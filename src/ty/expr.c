@@ -55,8 +55,8 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx);
 static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 
 // A property access that found nothing: tsc's errorType where it reports the missing property (an object type that
-// isn't `typeof globalThis`), else any. HACK: approximates the reporting conditions of ty/check.c (JS files, unresolved
-// bases and whatever else tttt doesn't know the members of stay any)
+// isn't `typeof globalThis`), else any. HACK: approximates the reporting conditions of ty/check.c (JS files and
+// whatever else tttt doesn't know the members of stay any)
 static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* object) {
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
     // Nothing but null and undefined: an error of its own and the error type (tsc's checkNonNullType)
@@ -72,7 +72,7 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     }
     bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
         object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
-    if ((object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) return any_type(me);
+    if ((object->flags & TYF_ANY) || global_this) return any_type(me);
     // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
     // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
     SourceFile const* file = span_source(expr_outer_span(expr));
