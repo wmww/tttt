@@ -7,6 +7,8 @@
 #include "lazy_type.h"
 #include "program.h"
 #include "scope.h"
+#include "ast_alloc.h"
+#include "source_file.h"
 
 // Arena
 
@@ -70,6 +72,20 @@ void arena_sites_print(void) {
 static void* arena_alloc_inner(Arena* me, size_t size);
 #endif
 
+// An Arena.ast_backed's allocation, out of the thread's current materialization (plan 78 stage 2). A chunked one's
+// chunks are 1 KB, then twice the last one up to 16 KB (the scope arena: what a body keeps of its scopes is small),
+// never mapped or populated of their own
+[[gnu::noinline]] static void* arena_alloc_materialized(Arena* me, size_t size) {
+    if (my ast_backed == ARENA_AST_DIRECT) return ast_materialize_alloc(size, false);
+    size_t cap = my head ? my head->cap * 2 : 1024 - sizeof(ArenaChunk);
+    if (cap > ((size_t)16 << 10)) cap = (size_t)16 << 10;
+    if (cap < size) cap = size;
+    ArenaChunk* chunk = ast_materialize_alloc(sizeof(ArenaChunk) + cap, true);
+    *chunk = (ArenaChunk){ .next = my head, .used = size, .cap = cap, .populated = cap };
+    my head = chunk;
+    return chunk->data;
+}
+
 void* arena_alloc(Arena* me, size_t size) {
     size = (size + 7) & ~(size_t)7;
 #ifdef TTTT_ARENA_SITES
@@ -85,6 +101,7 @@ void* arena_alloc(Arena* me, size_t size) {
 static void* arena_alloc_inner(Arena* me, size_t size) {
 #endif
     if (!my head || my head->used + size > my head->cap) {
+        if (my ast_backed) return arena_alloc_materialized(me, size);
         size_t cap = size > ARENA_CHUNK_SIZE ? size : ARENA_CHUNK_SIZE;
         // Straight from mmap: the kernel's pages are zero already (calloc() would memset them), and the ones the
         // arena never reaches are never touched
@@ -136,6 +153,9 @@ bool arena_pop_last(Arena* me, void* ptr, size_t size) {
 }
 
 void arena_drop(Arena* me) {
+    bool ast_backed = my ast_backed;
+    // (The materialization's memory: dropped with it)
+    if (ast_backed) my head = nullptr;
     ArenaChunk* i = my head;
     while (i) {
         ArenaChunk* next = i->next;
@@ -143,7 +163,7 @@ void arena_drop(Arena* me) {
         munmap(i, i->mapped);
         i = next;
     }
-    *me = (Arena){0};
+    *me = (Arena){ .ast_backed = ast_backed };
 }
 
 // Intern table
@@ -574,6 +594,11 @@ void checker_drop(Checker* me) {
     free(my painted_kept);
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
+    // (The materializations of deferred bodies it held may go now: nothing else of it points into them, plan 78)
+    deferred_bodies_release(my held, my held_count);
+    free(my held);
+    free(my held_files);
+    free(my cross_files);
     lazy_slots_drop(&my lazy);
     free(my index_atoms);
     free(my atoms.entries);

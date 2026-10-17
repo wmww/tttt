@@ -39,7 +39,9 @@ static void show_help(FILE* target) {
         "                            leave checker log output on (used by scripts/failstats.py)\n\n"
         "  --checkers [K]            check every test with K checkers (files dealt round robin; tsc's\n"
         "                            baselines are one checker's, the default)\n\n"
-        "  --threads [N]             run those checkers on N threads (default 1; the results must not change)\n\n"
+        "  --threads [N]             run those checkers on N threads (default 1; the results must not change)\n"
+        "  --defer-bodies            defer function bodies like the CLI (plan 78)\n"
+        "  --checker-memory [MB]     recycle checkers past MB (0: after every file; the results must not change)\n\n"
         "  -d, --diffs               if to show all diffs for failing tests\n\n"
         "  --err                     show errors diffs for failing tests\n\n"
         "  --sym                     show symbols diffs for failing tests\n\n"
@@ -115,6 +117,9 @@ static_failable parse_args(int argc, const char** argv) {
             baseline_test_threads = (u32)atoi(count);
         } else if (streq(argv[i], "--defer-bodies")) {
             baseline_test_defer_bodies = true;
+        } else if (streq(argv[i], "--checker-memory")) {
+            try (const char* mb, next_arg_value(argc, argv, &i, &mb)) bubble;
+            baseline_test_checker_memory = (i64)atoll(mb);
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {

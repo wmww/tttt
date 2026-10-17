@@ -21,6 +21,7 @@ typedef struct AstArena {
     u32 range_count;
     u32 range_cap;
     size_t total; // Bytes bumped
+    bool materialization; // ast_materialize_begin()'s: ranges start on a page of their own and end on one
 } AstArena;
 
 // The current thread allocates into `arena` until ast_arena_end(); not nested
@@ -28,6 +29,19 @@ void ast_arena_begin(AstArena* arena);
 void ast_arena_end(void);
 // Gives the arena's pages back to the system. Its address space isn't reused: nothing may point into it any more
 void ast_arena_drop(AstArena* arena);
+
+// Plan 78 stage 2: the memory of a materialization of a file's deferred function bodies (program.c) is an arena of its
+// own, dropped when no checker holds it (no walk: ast_arena_drop() alone). Between ast_materialize_begin() and
+// ast_materialize_end() the thread's AST allocations go to it like a parsed file's (the bodies' parse, then what their
+// resolve walk attaches to them) and so do the binder's (an Arena.ast_backed: ast_materialize_alloc()). Whatever the
+// walk attaches to a node outside the bodies is undone before the drop (program.c's deferred_bodies_undo()), and a
+// list outside them it grows is copied out to malloc. A thread takes materializations out of slabs of their own, never
+// madvised for huge pages, each starting on a page of its own so that dropping one gives all its pages back; addresses
+// are never handed out twice, so nothing keyed by a dropped node's address can meet another node
+void ast_materialize_begin(AstArena* arena);
+void ast_materialize_end(void);
+// Zeroed, 8 (or 16) byte aligned, in the thread's current materialization (an Arena.ast_backed's allocation or chunk)
+void* ast_materialize_alloc(size_t size, bool align16);
 
 // Arenas take their addresses out of segments of 1 << AST_SEGMENT_SHIFT bytes (256 MB)
 #define AST_SEGMENT_SHIFT 28

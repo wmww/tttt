@@ -370,8 +370,25 @@ the file's AST arena) and walks them in walk order (`function_impl_lookup_deferr
 the thread's arenas (`binder_materialize_arenas()`); a check materializes its file before it starts. The walk's
 pending reports that ask for types (`resolve_shard_finish_materialized()`) run after the lock is released, into the
 file's `DeferredBodies.errs`, which `program_typecheck()` merges into the program's (`program_finish_deferred_bodies()`,
-with the resolve phase's comment directives). Nothing is dropped yet (stage 2: an arena per materialization, released
-with the last checker incarnation that used it).
+with the resolve phase's comment directives).
+
+**Memory and drops** (stage 2): a materialization's memory is an arena of its own (`DeferredBodies.memory`,
+`ast_materialize_begin()`): the bodies' AST and everything their walk makes (the binder's arenas are `Arena.ast_backed`
+while it runs: symbols, scopes, tables, flow nodes). It is held by the checker incarnations that read it
+(`deferred_bodies_acquire()`: `Checker.held`, a bit per file id for the fast path) and dropped by the last one's
+`checker_drop()` (`deferred_bodies_release()`): types, links and memos point into the bodies a checker walked, so a body
+can only go with them. A drop gives the pages back (`ast_arena_drop()`, no walk; addresses are never handed out
+again, so nothing keyed by a node's address meets another node), puts back what the walk wrote outside the bodies
+(the function scopes' locals as the signature's walk left them, `DeferredBodies.snapshots`; the `deferred_bodies_undo()`
+log: the functions' walk fields, the outer flow nodes' reference counts and labels, fields' `ts_assigned`, a class's
+`computed_this_assignments`, the file's expando containers and unused registrations) and makes the bodies pending again;
+the next reader materializes them again (the same parse and walk; its diagnostics are dropped, the first's stand).
+A body declaration merged into a parameter pins the file (never dropped). At a recycle the new incarnation keeps what
+the old one read for other files (`Checker.cross_files`: modules many files import), so it isn't materialized again at
+once. The materialize-ahead helpers hold what they made until a checker takes it, at most `AHEAD_LIMIT_KB` of body
+source ahead (`TTTT_AHEAD_KB`), then wait until the checkers took most of it. `TTTT_AST_POISON=1` makes a dropped
+materialization's pages fault: a reader that doesn't hold it crashes; the suite runs drops with `baseline_tests
+--defer-bodies --checker-memory 0` (diagnostics only: recycled checkers take the expression types with them).
 
 **Exactness**: a materialization that can be told from the eager parse and walk sets `program_defer_failed()` and the
 program runs again without deferral (`check_files()`, the harness's `run_baseline_test_case()`): a parse error in a

@@ -50,6 +50,20 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     field without type and initializer: `constructor_locals()`, `field_type_from_assignments()`). Each is a reader of the
     body during the names phase. Correct: those readers lazy, or answered from the parse. Cost: vscode undefers 5.3k of
     96k bodies (`TTTT_DEFER_STATS=1`).
+  - Drops (stage 2, `deferred_bodies_drop_locked()`): what a body's walk writes outside the materialization's memory must
+    be put back or the next materialization finds the last one's (dangling into dropped pages). Handled: the function
+    scope's locals and the outer flow nodes' flags and return label (`DeferredScopeSnapshot`), the function's walk
+    fields (reset at the start of each walk in `function_impl_lookup_deferred_body()`, a rare struct the walk made
+    undone), fields' `ts_assigned`, `computed_this_assignments`, expando containers (`deferred_bodies_undo()`), the
+    file's unused registrations (`unused_before`). Monotonic writes are left (assignment marks, `referenced`,
+    `contains_this`). A body declaration merged into a parameter pins the file instead. A new write outside the bodies
+    needs one of those. Oracles: `TTTT_AST_POISON=1` with `--checker-memory 0` on the corpora (a dangling read faults),
+    the suite's `--defer-bodies --checker-memory 0` line in `scripts/oracles.py`, `kdiff.py -k 1 -m 0`.
+  - A dropped materialization leaks what its AST malloc'd outside the arena (the parser's cooked strings and `Value`
+    strings: ~8 MB per round of all of vscode's bodies; a drop doesn't walk the AST, `block_drop()` cost 0.4 s there).
+    Correct: those strings in the AST arena (plan 80's spans and text).
+  - Re-materialization is per file (vscode K1 ~740 files again, ~2% of its instructions with the carry-over of
+    cross-demanded files at a recycle): plan 78 stage 3's cross-demand policy.
   - Signature/body name collisions and syntax errors in bodies rerun the whole program without deferral
     (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. Correct
     for the collision: walk the signature again after the body's names (its errors held back). Oracle: `defer: restarts`

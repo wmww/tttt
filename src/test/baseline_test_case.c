@@ -1091,6 +1091,7 @@ u32 baseline_test_checkers = 0;
 csview baseline_test_lib_dir = {0};
 u32 baseline_test_threads = 0;
 bool baseline_test_defer_bodies = false;
+i64 baseline_test_checker_memory = -1;
 
 static BaselineTestCase run_baseline_test_case_with(
     BaselineTestCache* cache,
@@ -1139,6 +1140,7 @@ static BaselineTestCase run_baseline_test_case_with(
     program_set_checkers(program, baseline_test_checkers);
     program_set_threads(program, baseline_test_threads);
     program_set_defer_bodies(program, defer_bodies);
+    if (baseline_test_checker_memory >= 0) program_set_checker_memory(program, (u64)baseline_test_checker_memory << 20);
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -1325,8 +1327,9 @@ static BaselineTestCase run_baseline_test_case_with(
     symbol_chain_set_kept_painted(kept, kept_count);
     // (@noTypesAndSymbols: there are no .types and .symbols to compare with, and printing every type in full can take
     // long: tsgo's declarationEmitOversizedCachedType has one of 3^13 properties)
+    // (Recycled checkers took the expression types with them: --checker-memory compares diagnostics only)
     for_each (i, vec_baseline_test_file, &ret.files) {
-        if (!i->source || ret.no_types_and_symbols) continue;
+        if (!i->source || ret.no_types_and_symbols || baseline_test_checker_memory >= 0) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         ret.enclosing = i->source->scope;
         // (Types as the checker that checked the file knows them, whatever the checker count)

@@ -40,12 +40,20 @@ typedef struct AstStats {
 static AstStats all_stats;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct AstSlab {
+    char* pos;
+    char* end;
+    char* populated; // The slab's pages below this are faulted in
+} AstSlab;
+
 typedef struct AstThread {
-    AstArena* arena; // The file being parsed, or null
+    AstArena* arena; // The file being parsed or the bodies being materialized, or null
     char* pos; // The thread's slab
     char* end;
     char* range_start; // Where the arena's latest range starts in the slab
     char* populated; // The slab's pages below this are faulted in
+    AstSlab other; // The slab not in use: materializations' while parsing files, files' while materializing
+    bool no_huge; // Materializing: no huge pages (a dropped materialization's pages would split them)
     void* free_lists[AST_FREE_MAX / 8 + 1];
     u64 small_mask[3]; // Which free_lists aren't empty (AST_FREE_MAX / 8 + 1 bits)
     // Bigger freed blocks (outgrown lists, mostly) by floor(log2(size)), split to serve any allocation
@@ -109,6 +117,60 @@ void ast_arena_begin(AstArena* arena) {
     t->range_start = t->pos;
 }
 
+// (The free lists of a file or a materialization's parse are its own blocks)
+static void clear_free_lists(AstThread* t) {
+    if (debug_env.ast_stats) {
+        for (u32 i = 0; i <= AST_FREE_MAX / 8; i++) {
+            for (void* b = t->free_lists[i]; b; b = *(void**)b) t->stats.lost_small += i * 8;
+        }
+        for (u32 i = 0; i < 64; i++) {
+            for (LargeBlock* b = t->large[i]; b; b = b->next) t->stats.lost_large += b->size;
+        }
+    }
+    memset(t->free_lists, 0, sizeof(t->free_lists));
+    memset(t->small_mask, 0, sizeof(t->small_mask));
+    memset(t->large, 0, sizeof(t->large));
+    t->large_mask = 0;
+}
+
+static void swap_slabs(AstThread* t) {
+    AstSlab current = { t->pos, t->end, t->populated };
+    t->pos = t->other.pos;
+    t->end = t->other.end;
+    t->populated = t->other.populated;
+    t->other = current;
+}
+
+void ast_materialize_begin(AstArena* arena) {
+    AstThread* t = &ast_thread;
+    if (debug_env.ast_malloc) return;
+    check(!t->arena);
+    swap_slabs(t);
+    t->no_huge = true;
+    arena->materialization = true;
+    // (A page of its own: ast_arena_drop() gives back every page it touched)
+    char* aligned = (char*)(((uintptr_t)t->pos + AST_PAGE - 1) & ~(AST_PAGE - 1));
+    t->pos = aligned <= t->end ? aligned : t->end;
+    t->arena = arena;
+    t->range_start = t->pos;
+}
+
+void ast_materialize_end(void) {
+    AstThread* t = &ast_thread;
+    if (debug_env.ast_malloc) return;
+    check(t->arena && t->arena->materialization);
+    add_range(t->arena, t->range_start, t->pos);
+    clear_free_lists(t);
+    if (debug_env.ast_stats) {
+        pthread_mutex_lock(&stats_lock);
+        all_stats.bumped += t->arena->total;
+        pthread_mutex_unlock(&stats_lock);
+    }
+    t->arena = nullptr;
+    t->no_huge = false;
+    swap_slabs(t);
+}
+
 void ast_arena_end(void) {
     AstThread* t = &ast_thread;
     if (debug_env.ast_malloc) return;
@@ -140,7 +202,8 @@ void ast_arena_end(void) {
 void ast_arena_drop(AstArena* arena) {
     for (u32 i = 0; i < arena->range_count; i++) {
         uintptr_t start = ((uintptr_t)arena->ranges[i].start + AST_PAGE - 1) & ~(AST_PAGE - 1);
-        uintptr_t end = (uintptr_t)arena->ranges[i].end & ~(AST_PAGE - 1);
+        // (A materialization's last page is its own too)
+        uintptr_t end = ((uintptr_t)arena->ranges[i].end + (arena->materialization ? AST_PAGE - 1 : 0)) & ~(AST_PAGE - 1);
         if (end <= start) continue;
         if (debug_env.ast_poison) mprotect((void*)start, end - start, PROT_NONE);
         else madvise((void*)start, end - start, MADV_DONTNEED);
@@ -155,7 +218,7 @@ void ast_arena_drop(AstArena* arena) {
     while (t->populated < pos && t->populated < t->end) {
         char* from = t->populated;
         char* to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
-        if (to - from == AST_POPULATE && huge_pages_take(AST_POPULATE)) madvise(from, AST_POPULATE, MADV_HUGEPAGE);
+        if (to - from == AST_POPULATE && !t->no_huge && huge_pages_take(AST_POPULATE)) madvise(from, AST_POPULATE, MADV_HUGEPAGE);
         madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
         t->populated = to;
     }
@@ -315,7 +378,9 @@ void* ast_realloc(void* p, isize old_size, isize size) {
         if (own && n < old_n) give_back(t, (char*)p + n, old_n - n);
         return p;
     }
-    void* ret = ast_malloc(size);
+    // (Another arena's: copied out to malloc, also by a materialization, whose memory goes before the node's)
+    void* ret = own ? ast_malloc(size) : malloc((size_t)size);
+    check(ret || !size);
     memcpy(ret, p, (size_t)old_size);
     ast_free(p, old_size);
     return ret;
@@ -326,4 +391,21 @@ void ast_stats_print(void) {
     AstStats s = all_stats;
     eprintln("ast arenas: ", s.bumped >> 20, " MB bumped, ", s.reused >> 20, " MB of freed blocks reused, still free at the files' ends ",
         s.lost_small >> 20, " MB small and ", s.lost_large >> 20, " MB large");
+}
+
+void* ast_materialize_alloc(size_t size, bool align16) {
+    AstThread* t = &ast_thread;
+    size_t n = round8((isize)size);
+    if (debug_env.ast_malloc) {
+        // (Never freed: a debugging mode)
+        void* ret = calloc(1, n);
+        check(ret);
+        return ret;
+    }
+    check(t->arena && t->arena->materialization);
+    if (align16 && (uintptr_t)t->pos & 15 && t->end - t->pos >= 8) advance(t, t->pos + 8);
+    void* ret = bump(t, n);
+    // (Bumped memory is fresh but where ast_materialize_pop() or the parse gave some back)
+    memset(ret, 0, n);
+    return ret;
 }

@@ -7,7 +7,12 @@ typedef struct ArenaChunk ArenaChunk;
 typedef struct Arena {
     ArenaChunk* head;
     size_t total; // bytes handed out, for measurements
+    // Allocates in the thread's current materialization of deferred bodies (ast_materialize_alloc(), plan 78), which
+    // owns the memory: arena_drop() only forgets it. ARENA_AST_DIRECT: each allocation (no chunk tails, no
+    // arena_pop_last()), ARENA_AST_CHUNKED: in small chunks of it
+    uint8_t ast_backed;
 } Arena;
+enum { ARENA_AST_DIRECT = 1, ARENA_AST_CHUNKED = 2 };
 
 void* arena_alloc(Arena* me, size_t size); // zeroed, 8 byte aligned
 void arena_drop(Arena* me);

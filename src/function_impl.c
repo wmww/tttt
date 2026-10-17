@@ -436,6 +436,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         else list->first = deferred;
         list->last = deferred;
         list->count++;
+        list->source_bytes += deferred->end - deferred->open;
         deferred->function = me;
         deferred->function_scope = function_scope;
         deferred->start = flow.start;
@@ -503,6 +504,12 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
     }
 }
 
+// A rare struct a deferred body's walk made (what of it the walk can have made)
+static void walk_rare_drop(void* rare) {
+    free(((FunctionImplRare*)rare)->yields);
+    ast_free(rare, sizeof(FunctionImplRare));
+}
+
 bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     FunctionImpl* me = body->function;
     Scope* function_scope = body->function_scope;
@@ -529,6 +536,20 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     flow.id_counter = 1u << 30;
     flow.next_id = &flow.id_counter;
     function_scope->flow = &flow;
+    // What the walk sets on the function, as before the first walk (plan 78 stage 2: a materialization after a drop
+    // finds the last one's; some are only set if unset). The rare struct the walk makes goes with the materialization
+    me->end_flow = nullptr;
+    me->has_explicit_return = false;
+    me->has_bare_return = false;
+    FunctionImplRare* rare = me->rare;
+    if (rare) {
+        free(rare->yields);
+        rare->yields = nullptr;
+        rare->yield_count = 0;
+        rare->return_flow = nullptr;
+        rare->first_super_call = nullptr;
+        rare->first_this_or_super = span_null;
+    }
     u32 before = scope_locals(function_scope)->count;
     block_add_names(&body->block, function_scope);
     // Had the body's names been there, would the signature's walk have found one of them (or suggested one)?
@@ -539,6 +560,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     }
     function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
     function_scope->flow = nullptr;
+    if (!rare && me->rare) deferred_bodies_undo_made((void**)&me->rare, nullptr, walk_rare_drop);
     return !collides;
 }
 

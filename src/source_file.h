@@ -316,8 +316,28 @@ typedef struct DeferredBodies {
     struct DeferredBody* first;
     struct DeferredBody* last;
     u32 count;
+    u32 source_bytes; // Of the bodies
     _Atomic(uint8_t) state; // DeferredBodiesState
+    // Some materialization has been through: its diagnostics are in errs (a later one's are the same, and dropped), a
+    // local's assignment marks are all set (the walk only ever sets them)
+    _Atomic(bool) materialized;
     pthread_mutex_t lock;
+    // Plan 78 stage 2: the materialization's memory (the bodies' AST, what their walk made in the binder's arenas), held
+    // by the checker incarnations that read it (Checker.held) and by a materialize-ahead helper until a checker takes
+    // its ref (`ahead`), dropped by the last (deferred_bodies_release()). The bodies are then pending again, as parsed
+    AstArena memory;
+    u32 refs;
+    bool ahead;
+    // Never dropped: the first walk changed something outside the bodies a drop doesn't undo (a body's declaration
+    // merged into a parameter)
+    bool pinned;
+    u32 unused_before; // SourceFile.unused_count before the bodies' walk registered theirs
+    // What a drop restores: each body's function scope's locals as the signature's walk left them (in list order, made
+    // by the first materialization) and the walk's writes to outer nodes (deferred_bodies_undo()). malloc'd
+    struct DeferredScopeSnapshot* snapshots;
+    struct DeferredUndo* undo;
+    u32 undo_count;
+    u32 undo_cap;
     // Materialized by a thread without a checker (program.c's materialize-ahead): the walk's shard whose pending reports
     // (they ask for types) the first checker to need the file makes. Owned
     struct ResolveShard* _Atomic unfinished;
@@ -326,8 +346,16 @@ typedef struct DeferredBodies {
     struct ErrorCtx errs;
 } DeferredBodies;
 
-// program.c: materializes the file's deferred bodies in the current checker's program, unless they are already
+// program.c: materializes the file's deferred bodies for the current checker, unless some materialization has been
+// through (its walk set what symbol_assignments() reads for good)
 void deferred_bodies_materialize(SourceFile const* file);
+// Logs a write of `size` bytes at `at` the current materialization's walk is about to make outside its bodies (plan 78
+// stage 2): a drop puts the old bytes back. Nothing outside a materialization
+void deferred_bodies_undo(void* at, u32 size);
+// The same for a pointer to something it owns the walk set (it was `old`): the undo drops what it set
+void deferred_bodies_undo_made(void** at, void* old, void (*drop)(void*));
+// A checker incarnation is dropped: its materializations are released, the last holder of one drops it
+void deferred_bodies_release(struct DeferredBodies** held, u32 count);
 // Readers of a local's assignment marks (Symbol.is_assigned, is_definitely_assigned, is_assigned_in_closure,
 // last_assignment_end) go through this: the walks of its file's deferred bodies set them (plan 78), and code walked
 // up front (an arrow function's expression body, the top level) reads them from other files' checks
@@ -335,7 +363,7 @@ static inline Symbol const* symbol_assignments(Symbol const* me) {
     if (me->is_local && me->decl_count) {
         SourceFile const* file = span_source(me->decls[0].full);
         if (file && file->deferred_bodies &&
-            atomic_load_explicit(&file->deferred_bodies->state, memory_order_acquire) == DEFERRED_BODIES_PENDING
+            !atomic_load_explicit(&file->deferred_bodies->materialized, memory_order_acquire)
         ) {
             deferred_bodies_materialize(file);
         }
@@ -354,6 +382,13 @@ typedef enum DeferStat {
     DEFER_STAT_PARSE_FAILED, // Bodies whose parse could be told from the eager one
     DEFER_STAT_COLLIDED, // Bodies whose signature could have seen their names
     DEFER_STAT_RESTARTS, // Programs run again without deferral
+    DEFER_STAT_REMATERIALIZED, // Files materialized again after a drop
+    DEFER_STAT_DROPPED, // Materializations dropped
+    DEFER_STAT_PINNED, // Files whose materialization is never dropped
+    DEFER_STAT_AHEAD_WAITS, // Times a materialize-ahead helper waited for the checkers
+    DEFER_STAT_MATERIALIZE_US, // Time spent materializing (first materializations), microseconds
+    DEFER_STAT_REMATERIALIZE_US, // ...materializing again
+    DEFER_STAT_DROP_US, // ...dropping
     DEFER_STAT_COUNT,
 } DeferStat;
 void defer_stat_add(DeferStat stat, i64 n);

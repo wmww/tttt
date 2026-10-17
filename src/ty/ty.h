@@ -1027,6 +1027,16 @@ struct Checker {
     // everything around them settled, which decides cycles and the order types are made in (union order)
     bool defer_checks;
     struct SourceFile const* checking_file; // The file whose statements are being checked (defer_checks)
+    // The materializations of deferred function bodies this incarnation reads (plan 78 stage 2: program.c's
+    // deferred_bodies_acquire()), released when it is dropped. A bit per SourceFile.id of theirs, and the list
+    u64* held_files; // malloc'd
+    // Which of them it read while checking another file (cross demand): kept for its successor at a recycle (malloc'd,
+    // as many words)
+    u64* cross_files;
+    u32 held_files_words;
+    struct DeferredBodies** held; // malloc'd
+    u32 held_count;
+    u32 held_cap;
     DeferredCheck* deferred;
     u32 deferred_count;
     u32 deferred_cap;

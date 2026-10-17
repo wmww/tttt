@@ -94,6 +94,14 @@ static void symbol_table_insert(SymbolTable* me, Arena* arena, csview name, u64 
     }
 }
 
+void symbol_table_restore(SymbolTable* me, SymbolTable const* copy) {
+    *me = *copy;
+    if (!my index) return;
+    // (Inserts since wrote into the same index)
+    memset(my index, 0, sizeof(u32) * my index_cap);
+    for (u32 i = 0; i < my count; i++) symbol_table_index_insert(me, i);
+}
+
 // An overlaid table replaces a symbol of its parent by a clone, see clone_parent_symbol()
 static void symbol_table_collect_into(SymbolTable const* me, SymbolTable const* top, SymbolEntry* out, u32* count) {
     if (!me) return;
@@ -119,16 +127,8 @@ SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count) {
 
 // Binder
 
-typedef struct MaterializeArenas {
-    Arena arena;
-    Arena scope_arena;
-    struct MaterializeArenas* next;
-} MaterializeArenas;
-
 Binder* binder_new(ErrorCtx* errs) {
-    static _Atomic u64 next_id = 1;
-    Binder* me = c_new(Binder, { .errs = errs, .id = next_id++ });
-    pthread_mutex_init(&my materialize_arenas_lock, nullptr);
+    Binder* me = c_new(Binder, { .errs = errs });
     my global_scope = arena_new(&my arena, Scope);
     *my global_scope = (Scope){ .kind = SCOPE_GLOBAL, .binder = me };
     return me;
@@ -194,21 +194,6 @@ Arena* binder_thread_scope_arena(Binder* me, u32 t) {
     return binder_thread_arena(me, t) + 1;
 }
 
-void binder_materialize_arenas(Binder* me, Arena** arena, Arena** scope_arena) {
-    static thread_local u64 binder_id;
-    static thread_local MaterializeArenas* arenas;
-    if (binder_id != my id) {
-        arenas = c_new(MaterializeArenas, {0});
-        pthread_mutex_lock(&my materialize_arenas_lock);
-        arenas->next = my materialize_arenas;
-        my materialize_arenas = arenas;
-        pthread_mutex_unlock(&my materialize_arenas_lock);
-        binder_id = my id;
-    }
-    *arena = &arenas->arena;
-    *scope_arena = &arenas->scope_arena;
-}
-
 ErrorCtx* binder_discarded_errs(Binder* me) {
     if (resolve_shard && resolve_shard->binder == me) return &resolve_shard->discarded;
     if (!my discarded_errs) my discarded_errs = c_new(ErrorCtx, error_ctx_init());
@@ -233,14 +218,6 @@ void binder_destroy(Binder* me) {
     free(my overlays.values);
     for (u32 i = 0; i < 2 * my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
     free(my thread_arenas);
-    for (MaterializeArenas* i = my materialize_arenas; i;) {
-        MaterializeArenas* next = i->next;
-        arena_drop(&i->arena);
-        arena_drop(&i->scope_arena);
-        free(i);
-        i = next;
-    }
-    pthread_mutex_destroy(&my materialize_arenas_lock);
     arena_drop(&my arena);
     arena_drop(&my scope_arena);
     free(me);
@@ -5647,6 +5624,7 @@ static void set_expando_initializer_host(Expr* init, Symbol* host) {
                 return;
             }
         }
+        deferred_bodies_undo(&file->expando_container_count, sizeof(file->expando_container_count));
         file->expando_containers = realloc(file->expando_containers, sizeof(*file->expando_containers) * (file->expando_container_count + 1));
         panic_if(!file->expando_containers, "out of memory");
         file->expando_containers[file->expando_container_count++] = (struct ExpandoContainer){ init, host };
@@ -5960,9 +5938,13 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     if (!field && !is_static && prop &&
         (prop->tag == EXPR_IDENTIFIER || prop->tag == EXPR_PROPERTY)
     ) {
-        vec_expr_cptr_push(&((ClassDecl*)class_decl)->computed_this_assignments, left);
+        VecExprCPtr* assignments = &((ClassDecl*)class_decl)->computed_this_assignments;
+        deferred_bodies_undo(assignments, sizeof(*assignments));
+        vec_expr_cptr_push(assignments, left);
     }
     if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned) {
+        deferred_bodies_undo(&field->field.ts_assigned, sizeof(field->field.ts_assigned));
+        deferred_bodies_undo(&field->field.ts_assigned_class, sizeof(field->field.ts_assigned_class));
         field->field.ts_assigned = left;
         field->field.ts_assigned_class = class_decl;
     }
@@ -6095,6 +6077,17 @@ void resolve_shard_finish_materialized(ResolveShard* me, ErrorCtx* into) {
     error_ctx_drop(&my errs);
     error_ctx_drop(&my discarded);
     error_ctx_drop(&discarded);
+    free(my deferred);
+    free(my symbols);
+    free(my pending_not_found);
+    free(my pending_type_as_value);
+    free(my pending_export_merges);
+    *me = (ResolveShard){0};
+}
+
+void resolve_shard_discard(ResolveShard* me) {
+    error_ctx_drop(&my errs);
+    error_ctx_drop(&my discarded);
     free(my deferred);
     free(my symbols);
     free(my pending_not_found);

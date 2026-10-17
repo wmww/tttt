@@ -4,7 +4,8 @@ the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the 
 every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
 (scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
 (scripts/kdiff.py, the suite's --dump at 1 and 16 checkers) and of the checker's history (a fresh checker per file,
---checker-memory 0, plan 67).
+--checker-memory 0, plan 67; the suite's too with deferred bodies, whose materializations are then dropped and made
+again, plan 78).
 
   scripts/oracles.py                  # everything (~15 min)
   scripts/oracles.py --quick          # suite and corpora only (~1 min)
@@ -39,6 +40,20 @@ def suite():
     lost = re.findall(r'^ (?:ERR|SYM|TYP|DTS| - ).*?\s(\S+)\s+\(', out, re.M)
     print(f'suite --defer-bodies: {m.group(1) if m else "?"} passed, {len(lost)} newly failing', flush=True)
     for n in lost[:20]: print('   ', n)
+    # Their materializations dropped and made again (plan 78 stage 2): a fresh checker per file, whose diagnostics and
+    # declarations must be the same (its expression types go with the checkers: not compared)
+    import tempfile, filecmp
+    with tempfile.TemporaryDirectory(prefix='oracles-defer-') as tmp:
+        dirs = [os.path.join(tmp, d) for d in ('kept', 'dropped')]
+        for d, extra in zip(dirs, ([], ['--checker-memory', '0'])):
+            os.mkdir(d)
+            run(['release/baseline_tests', '--defer-bodies', '--dump', d] + extra)
+        names = sorted(f for f in os.listdir(dirs[0]) if f.endswith(('.errors.txt', '.d.ts')))
+        differing = [f for f in names if not os.path.exists(os.path.join(dirs[1], f)) or
+                     not filecmp.cmp(os.path.join(dirs[0], f), os.path.join(dirs[1], f), shallow=False)]
+        print(f'suite --defer-bodies --checker-memory 0: {len(differing)} of {len(names)} diagnostics/declaration '
+              f'outputs differ', flush=True)
+        for n in differing[:20]: print('   ', n)
 
 def corpora():
     rows = []

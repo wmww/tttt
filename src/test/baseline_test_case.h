@@ -185,6 +185,9 @@ extern u32 baseline_test_threads; // baseline_tests --threads, program_set_threa
 // baseline_tests --defer-bodies: function bodies parsed and walked when a checker needs them (plan 78,
 // program_set_defer_bodies())
 extern bool baseline_test_defer_bodies;
+// --checker-memory MB: a checker recycle budget (plan 67), -1 (the default) none; 0 recycles after every file, which
+// drops deferred bodies' materializations as early as can be (plan 78 stage 2)
+extern i64 baseline_test_checker_memory;
 
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
