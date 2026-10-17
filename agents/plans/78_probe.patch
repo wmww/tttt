@@ -1,0 +1,665 @@
+diff --git a/src/ast_walk.c b/src/ast_walk.c
+index 81b0c3ca..d50b870e 100644
+--- a/src/ast_walk.c
++++ b/src/ast_walk.c
+@@ -43,6 +43,7 @@ static bool walk_function(FunctionImpl const* me, AstExprVisit visit, void* arg)
+     for_each (i, vec_function_arg, &my args) {
+         if (walk_exprs(function_arg_decorators(i), visit, arg) || walk_initialized_binding(&i->initializer, visit, arg)) return true;
+     }
++    probe_body_read(me, BODY_READ_OTHER); // PROBE
+     return walk_block(&my body, visit, arg);
+ }
+ 
+diff --git a/src/class_decl.c b/src/class_decl.c
+index 1cec992b..23d4a050 100644
+--- a/src/class_decl.c
++++ b/src/class_decl.c
+@@ -1538,6 +1538,7 @@ static bool class_super_call_should_be_root(ClassDecl const* me, FunctionImpl co
+ // `super` (tsc's nodeImmediatelyReferencesSuperOrThis: not in a nested function or arrow function)
+ static void check_super_call_root(Span name, FunctionImpl const* func, Expr const* super_call, ErrorCtx* errs) {
+     Statement const* statement = nullptr;
++    probe_body_read(func, BODY_READ_SUPER); // PROBE
+     for_each (i, vec_statement, &func->body.statements) {
+         if (i->tag == STATEMENT_EXPR && &i->expr == super_call) { // (Parentheses are the same Expr)
+             statement = i;
+diff --git a/src/engine.c b/src/engine.c
+index 4be826d6..a1ebbcde 100644
+--- a/src/engine.c
++++ b/src/engine.c
+@@ -303,6 +303,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func,
+             log_error("Structured binding function arguments not yet supported in engine");
+         }
+     }
++    probe_body_read(func->impl, BODY_READ_ENGINE); // PROBE
+     Result res = engine_run_block(me, &func->impl->body);
+     vec_stack_frame_pop(&my stack);
+     return res;
+diff --git a/src/function_impl.c b/src/function_impl.c
+index 866cb7cd..bdbf21e1 100644
+--- a/src/function_impl.c
++++ b/src/function_impl.c
+@@ -733,6 +733,7 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
+ static void function_impl_check_use_strict_parameters(FunctionImpl const* me, ErrorCtx* errs) {
+     if (compiler_options()->target < SCRIPT_TARGET_ES2016 || !my has_body || my expression_body) return;
+     Statement const* directive = nullptr;
++    probe_body_read(me, BODY_READ_OTHER); // PROBE
+     for_each (i, vec_statement, &my body.statements) {
+         if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
+             expr_is_perenthisized(&i->expr) || *i->expr.inner_span.buf == '`'
+@@ -1346,6 +1347,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
+     bool was_within_unreachable = current_checker->within_unreachable;
+     if (my is_expression) current_checker->within_unreachable = false;
+     bool flow_disabled = current_checker->flow_analysis_disabled;
++    probe_body_read(me, BODY_READ_TYPECHECK); // PROBE
+     block_typecheck(&my body, ctx, errs);
+     current_checker->flow_analysis_disabled = flow_disabled;
+     current_checker->within_unreachable = was_within_unreachable;
+@@ -1357,3 +1359,206 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
+     if (my is_generator || !my is_expression) function_check_widened_return(me, errs);
+     function_check_circular_return(me, errs);
+ }
++
++// ---- PROBE (plan 78 planning): cross-file body demand, TTTT_BODY_PROBE=1 ----
++#include <pthread.h>
++thread_local SourceFile const* probe_current_file;
++thread_local u32 probe_checker_index;
++static pthread_mutex_t probe_lock = PTHREAD_MUTEX_INITIALIZER;
++typedef struct ProbeOuter { u32 file, start, end; } ProbeOuter;
++static ProbeOuter* probe_outers;
++static u32 probe_outer_count, probe_outer_cap;
++static bool probe_outers_sorted;
++static char const* const probe_kind_names[BODY_READ_COUNT] = {
++    "infer-return (function.c)", "collect-returns (expr.c)", "anchors (expr.c)", "context-sensitive (expr.c)",
++    "flow-control-error (flow.c)", "infer-predicate (flow.c)", "pseudo single return (pseudo.c)",
++    "decl-emit search_function", "display scope", "elaborate-arrow (check.c)", "super-call (class_decl.c)",
++    "typecheck-body", "engine", "other" };
++static i64 probe_reads[4][BODY_READ_COUNT]; // own file, cross TS, cross JS, no current file
++typedef struct ProbeTouch { u32 c, r; uint8_t owner_state; } ProbeTouch; // owner_state: 0 not started, 1 in progress (by whom), 2 done
++typedef struct ProbeBody { u64 key; u32 reads; u32 kinds; u32 bytes; u32 touch_count; ProbeTouch touches[16]; } ProbeBody;
++static ProbeBody* probe_bodies;
++static u32 probe_body_cap, probe_body_count;
++typedef struct ProbeFile { u32 c, r; uint8_t state; } ProbeFile; // state 0 none, 1 checking, 2 done
++static ProbeFile* probe_files;
++static u32 probe_file_cap;
++static i64 probe_nested_cross;
++static i64 probe_not_deferred_cross; // cross reads of functions in no deferred body (expression-bodied arrows at the top level...) // cross reads of functions nested in an outer body (counted to the outer)
++
++bool probe_enabled(void) {
++    static int on = -1;
++    if (on < 0) {
++        on = getenv("TTTT_BODY_PROBE") != nullptr;
++        if (on) atexit(probe_report);
++    }
++    return on;
++}
++
++void probe_record_outer_body(SourceFile const* file, u32 start, u32 end) {
++    pthread_mutex_lock(&probe_lock);
++    if (probe_outer_count == probe_outer_cap) {
++        probe_outer_cap = probe_outer_cap ? probe_outer_cap * 2 : 1024;
++        probe_outers = realloc(probe_outers, sizeof(ProbeOuter) * probe_outer_cap);
++    }
++    probe_outers[probe_outer_count++] = (ProbeOuter){ file->id, start, end };
++    probe_outers_sorted = false;
++    pthread_mutex_unlock(&probe_lock);
++}
++
++static int probe_outer_cmp(void const* a, void const* b) {
++    ProbeOuter const* x = a; ProbeOuter const* y = b;
++    if (x->file != y->file) return x->file < y->file ? -1 : 1;
++    if (x->start != y->start) return x->start < y->start ? -1 : 1;
++    return 0;
++}
++
++static ProbeFile* probe_file(u32 id) {
++    if (id >= probe_file_cap) {
++        u32 cap = probe_file_cap ? probe_file_cap : 1024;
++        while (cap <= id) cap *= 2;
++        probe_files = realloc(probe_files, sizeof(ProbeFile) * cap);
++        memset(probe_files + probe_file_cap, 0, sizeof(ProbeFile) * (cap - probe_file_cap));
++        probe_file_cap = cap;
++    }
++    return &probe_files[id];
++}
++
++void probe_file_state(SourceFile const* file, u32 c, u32 r, uint8_t state) {
++    if (!probe_enabled()) return;
++    pthread_mutex_lock(&probe_lock);
++    ProbeFile* f = probe_file(file->id);
++    f->c = c; f->r = r; f->state = state;
++    pthread_mutex_unlock(&probe_lock);
++}
++
++static ProbeBody* probe_body(u64 key) {
++    if (probe_body_count * 2 >= probe_body_cap) {
++        u32 old_cap = probe_body_cap;
++        ProbeBody* old = probe_bodies;
++        probe_body_cap = old_cap ? old_cap * 2 : 4096;
++        probe_bodies = calloc(probe_body_cap, sizeof(ProbeBody));
++        for (u32 i = 0; i < old_cap; i++) {
++            if (!old[i].key) continue;
++            u32 h = (u32)((old[i].key * 0x9E3779B97F4A7C15ull) >> 32) & (probe_body_cap - 1);
++            while (probe_bodies[h].key) h = (h + 1) & (probe_body_cap - 1);
++            probe_bodies[h] = old[i];
++        }
++        free(old);
++    }
++    u32 h = (u32)((key * 0x9E3779B97F4A7C15ull) >> 32) & (probe_body_cap - 1);
++    while (probe_bodies[h].key && probe_bodies[h].key != key) h = (h + 1) & (probe_body_cap - 1);
++    if (!probe_bodies[h].key) { probe_bodies[h].key = key; probe_body_count++; }
++    return &probe_bodies[h];
++}
++
++void probe_body_read(FunctionImpl const* f, int kind) {
++    if (!probe_enabled() || !f || !span_valid(f->full_span)) return;
++    SourceFile const* file = span_source(f->full_span);
++    if (!file) return;
++    int where = !probe_current_file ? 3 : file == probe_current_file ? 0 : file->is_js ? 2 : 1;
++    __atomic_fetch_add(&probe_reads[where][kind], 1, __ATOMIC_RELAXED);
++    if (where != 1 || !current_checker) return;
++    u32 start = (u32)(f->full_span.buf - cstr_str(&file->contents));
++    u32 at = start + (f->full_span.size ? (u32)f->full_span.size - 1 : 0); // Inside its own body, if it has a block
++    pthread_mutex_lock(&probe_lock);
++    if (!probe_outers_sorted) {
++        qsort(probe_outers, probe_outer_count, sizeof(ProbeOuter), probe_outer_cmp);
++        u32 w = 0;
++        for (u32 i = 0; i < probe_outer_count; i++) {
++            if (w && probe_outers[w - 1].file == probe_outers[i].file && probe_outers[w - 1].start == probe_outers[i].start) continue;
++            probe_outers[w++] = probe_outers[i];
++        }
++        probe_outer_count = w;
++        probe_outers_sorted = true;
++    }
++    // The outermost body containing the function's start: the last outer body starting at or before it, if it ends after
++    u32 lo = 0, hi = probe_outer_count;
++    while (lo < hi) {
++        u32 mid = (lo + hi) / 2;
++        ProbeOuter const* o = &probe_outers[mid];
++        if (o->file < file->id || (o->file == file->id && o->start <= at)) lo = mid + 1; else hi = mid;
++    }
++    u32 key_start = start, bytes = 0;
++    if (lo && probe_outers[lo - 1].file == file->id && probe_outers[lo - 1].end > at) {
++        key_start = probe_outers[lo - 1].start;
++        bytes = probe_outers[lo - 1].end - key_start;
++        if (key_start > start) probe_nested_cross--; // (its own body: not nested)
++        probe_nested_cross++;
++    }
++    if (!bytes) { probe_not_deferred_cross++; pthread_mutex_unlock(&probe_lock); return; }
++    ProbeBody* b = probe_body(((u64)file->id << 32 | key_start) + 1);
++    b->reads++;
++    b->kinds |= 1u << kind;
++    if (bytes) b->bytes = bytes;
++    u32 c = probe_checker_index, r = current_checker->recycles;
++    bool seen = false;
++    for (u32 i = 0; i < b->touch_count; i++) if (b->touches[i].c == c && b->touches[i].r == r) seen = true;
++    if (!seen && b->touch_count < 16) {
++        ProbeFile* pf = probe_file(file->id);
++        uint8_t owner_state = pf->state;
++        b->touches[b->touch_count++] = (ProbeTouch){ c, r, owner_state };
++    }
++    pthread_mutex_unlock(&probe_lock);
++}
++
++void probe_report(void) {
++    fprintf(stderr, "bodyprobe: reads by kind: own / cross-TS / cross-JS / no-file\n");
++    for (int k = 0; k < BODY_READ_COUNT; k++) {
++        fprintf(stderr, "bodyprobe:   %-36s %10lld %8lld %8lld %8lld\n", probe_kind_names[k], (long long)probe_reads[0][k],
++            (long long)probe_reads[1][k], (long long)probe_reads[2][k], (long long)probe_reads[3][k]);
++    }
++    u32 distinct = 0, multi_inc = 0, other_checker = 0, same_inc_after = 0, same_inc_before = 0, recycled_same_index = 0;
++    u64 bytes = 0, bytes_other = 0;
++    u32 hist[5] = {0};
++    u32 kinds_bodies[BODY_READ_COUNT] = {0};
++    for (u32 i = 0; i < probe_body_cap; i++) {
++        ProbeBody const* b = &probe_bodies[i];
++        if (!b->key) continue;
++        distinct++;
++        bytes += b->bytes;
++        for (int k = 0; k < BODY_READ_COUNT; k++) if (b->kinds >> k & 1) kinds_bodies[k]++;
++        ProbeFile const* owner = probe_file((u32)((b->key - 1) >> 32));
++        // Incarnations touching it: the owner's plus the demanders not equal to it
++        u32 incs = 1;
++        bool other = false, after = false, before = false, recycled = false;
++        for (u32 t = 0; t < b->touch_count; t++) {
++            ProbeTouch const* tc = &b->touches[t];
++            if (tc->c == owner->c && tc->r == owner->r) {
++                if (tc->owner_state == 2 || tc->owner_state == 1) after = true; else before = true;
++                continue;
++            }
++            incs++;
++            if (tc->c != owner->c) other = true; else recycled = true;
++        }
++        hist[incs < 4 ? incs : 4]++;
++        if (incs > 1) multi_inc++;
++        if (other) { other_checker++; bytes_other += b->bytes; }
++        if (recycled) recycled_same_index++;
++        if (after) same_inc_after++;
++        if (before) same_inc_before++;
++    }
++    fprintf(stderr, "bodyprobe: distinct cross-demanded outer bodies (TS) %u (%llu KB of source), nested-function cross reads %lld\n",
++        distinct, (unsigned long long)(bytes >> 10), (long long)probe_nested_cross);
++    fprintf(stderr, "bodyprobe: cross reads of functions in no deferred body: %lld\n", (long long)probe_not_deferred_cross);
++    {
++        // Whole-file materialization: the files cross-demanded bodies are in, and all their outer bodies' bytes
++        u32 files = 0;
++        u64 file_bytes = 0, all_bytes = 0;
++        uint8_t* demanded = calloc(probe_file_cap + 1, 1);
++        for (u32 i = 0; i < probe_body_cap; i++) if (probe_bodies[i].key) demanded[(u32)((probe_bodies[i].key - 1) >> 32)] = 1;
++        for (u32 i = 0; i < probe_outer_count; i++) {
++            all_bytes += probe_outers[i].end - probe_outers[i].start;
++            if (probe_outers[i].file < probe_file_cap && demanded[probe_outers[i].file]) file_bytes += probe_outers[i].end - probe_outers[i].start;
++        }
++        for (u32 i = 0; i < probe_file_cap; i++) files += demanded[i];
++        fprintf(stderr, "bodyprobe: outer bodies %u (%llu KB); cross-demanded files %u holding %llu KB of outer bodies\n",
++            probe_outer_count, (unsigned long long)(all_bytes >> 10), files, (unsigned long long)(file_bytes >> 10));
++        free(demanded);
++    }
++    fprintf(stderr, "bodyprobe: bodies by kind:");
++    for (int k = 0; k < BODY_READ_COUNT; k++) if (kinds_bodies[k]) fprintf(stderr, " [%s] %u", probe_kind_names[k], kinds_bodies[k]);
++    fprintf(stderr, "\nbodyprobe: in the owner's incarnation: after/while its file's check %u, before it %u\n", same_inc_after, same_inc_before);
++    fprintf(stderr, "bodyprobe: needed by another incarnation than the owner's: %u (another checker %u, %llu KB; the owner's checker after a recycle %u)\n",
++        multi_inc, other_checker, (unsigned long long)(bytes_other >> 10), recycled_same_index);
++    fprintf(stderr, "bodyprobe: incarnations touching a body: 1: %u, 2: %u, 3: %u, 4+: %u\n", hist[1], hist[2], hist[3], hist[4]);
++}
+diff --git a/src/function_impl.h b/src/function_impl.h
+index 8d78bfbe..4b2c4e17 100644
+--- a/src/function_impl.h
++++ b/src/function_impl.h
+@@ -333,3 +333,16 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
+ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
+ // The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)
+ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs);
++
++// PROBE (plan 78 planning): cross-file body demand, TTTT_BODY_PROBE=1 (function_impl.c)
++enum { BODY_READ_INFER_RETURN, BODY_READ_COLLECT_RETURNS, BODY_READ_ANCHORS, BODY_READ_CONTEXT_SENSITIVE,
++    BODY_READ_FLOW_ERROR, BODY_READ_PREDICATE, BODY_READ_PSEUDO, BODY_READ_DECL_EMIT, BODY_READ_DISPLAY,
++    BODY_READ_ELABORATE, BODY_READ_SUPER, BODY_READ_TYPECHECK, BODY_READ_ENGINE, BODY_READ_OTHER, BODY_READ_COUNT };
++extern thread_local struct SourceFile const* probe_current_file;
++extern thread_local u32 probe_checker_index;
++bool probe_enabled(void);
++void probe_report(void);
++void probe_record_outer_body(struct SourceFile const* file, u32 start, u32 end);
++void probe_file_state(struct SourceFile const* file, u32 c, u32 r, uint8_t state);
++void probe_body_read(FunctionImpl const* f, int kind);
++
+diff --git a/src/main.c b/src/main.c
+index 973b1721..98fd3123 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -7,6 +7,7 @@
+ #include <sys/stat.h>
+ #include <sys/resource.h>
+ 
++#include "parser.h"
+ #include "ty/ty.h"
+ #include "content_mapper.h"
+ #include "type.h"
+@@ -707,6 +708,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
+         names.errors = errs->errors;
+         errs->errors = (VecError){0};
+         phase_done(opts, out, "resolve names", &last_time);
++        parser_probe_report();
++        if (getenv("TTTT_PROBE_NO_CHECK")) typecheck = false; // PROBE (plan 78 planning)
+ 
+         if (opts->print_ast && source) {
+             out_println(out, color_good, "Parsed:", color_normal);
+diff --git a/src/parser.c b/src/parser.c
+index 38b8c96c..33e0bdba 100644
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -7058,8 +7058,38 @@ static bool skip_template_part(char const** s) {
+ // operator, `(`, `[`, `,`... or an expression keyword, and a division after a name, a number, a string or `]`; after
+ // `)` or `}` (`if (a) /x/`, a block before a statement) or `++`/`--` it could be either, which gives up. So does
+ // `import` or `require` anywhere: they would add to the file's module names
++// PROBE (plan 78 planning): TTTT_SKIP_ALL_BODIES=1 skips every TypeScript body the skipper is sure of
++enum { SKIP_GIVEUP_EOF, SKIP_GIVEUP_DEPTH, SKIP_GIVEUP_UNBALANCED, SKIP_GIVEUP_STRING_NEWLINE, SKIP_GIVEUP_REGEX_AFTER_PAREN,
++    SKIP_GIVEUP_REGEX_AFTER_BRACE, SKIP_GIVEUP_INCDEC, SKIP_GIVEUP_REGEX_NEWLINE, SKIP_GIVEUP_IMPORT, SKIP_GIVEUP_REQUIRE,
++    SKIP_GIVEUP_COMMENT, SKIP_INFO_PAREN_DIVISION, SKIP_ATTEMPTS, SKIP_SKIPPED, SKIP_BYTES, SKIP_NOT_BRACE,
++    SKIP_V_MATCH, SKIP_V_MISMATCH, SKIP_V_PARSE_FAILED, SKIP_V_BODY_ERRORS, SKIP_V_GIVEUP_PARSES, SKIP_COUNT };
++static char const* const skip_count_names[SKIP_COUNT] = { "eof", "depth", "unbalanced", "string-newline",
++    "regex-after-paren", "regex-after-brace", "incdec", "regex-newline", "import", "require", "comment",
++    "info:paren-division", "attempts", "skipped", "bytes-skipped", "not-brace(expr-arrow etc)",
++    "verify:match", "verify:MISMATCH", "verify:parse-failed", "verify:body-with-errors", "verify:giveup-parses" };
++static i64 skip_counts[SKIP_COUNT];
++static void skip_count(int what, i64 n) { __atomic_fetch_add(&skip_counts[what], n, __ATOMIC_RELAXED); }
++static int skip_all_bodies_mode() {
++    static int mode = -1;
++    if (mode < 0) {
++        char const* e = getenv("TTTT_SKIP_ALL_BODIES");
++        mode = e ? atoi(e) : 0;
++        if (mode == 3) atexit(parser_probe_report);
++    }
++    return mode;
++}
++void parser_probe_report(void) {
++    if (!getenv("TTTT_SKIP_ALL_BODIES")) return;
++    for (int i = 0; i < SKIP_COUNT; i++) fprintf(stderr, "skipprobe: %s %lld\n", skip_count_names[i], (long long)skip_counts[i]);
++}
++
+ static char const* skip_balanced_braces(char const* s) {
+     enum { MAX_DEPTH = 128 };
++    // PROBE: per open paren, whether it's an `if`/`while`/`for`/`with` head (a `/` after its `)` is a regex)
++    bool paren_head[256];
++    int paren_depth = 0;
++    bool track_parens = skip_all_bodies_mode() >= 2;
++    bool last_close_brace = false, closed_head = false;
+     bool template[MAX_DEPTH]; // Per open brace: whether it's a template's `${`
+     int depth = 0;
+     enum { LAST_PUNCTUATOR, LAST_WORD, LAST_VALUE, LAST_CLOSE } last = LAST_PUNCTUATOR;
+@@ -7071,18 +7101,19 @@ static char const* skip_balanced_braces(char const* s) {
+     };
+     while (s) {
+         char c = *s;
+-        if (!c) return nullptr;
++        if (!c) { skip_count(SKIP_GIVEUP_EOF, 1); return nullptr; }
+         if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+             s++;
+         } else if (c == '/' && s[1] == '/') {
+             while (*s && *s != '\n') s++;
+         } else if (c == '/' && s[1] == '*') {
+             char const* end = strstr(s + 2, "*/");
++            if (!end) skip_count(SKIP_GIVEUP_COMMENT, 1);
+             s = end ? end + 2 : nullptr;
+         } else if (c == '{' || c == '`' || c == '}') {
+             bool template_continues;
+             if (c == '{') {
+-                if (depth == MAX_DEPTH) return nullptr;
++                if (depth == MAX_DEPTH) { skip_count(SKIP_GIVEUP_DEPTH, 1); return nullptr; }
+                 template[depth++] = false;
+                 s++;
+                 last = LAST_PUNCTUATOR;
+@@ -7090,11 +7121,12 @@ static char const* skip_balanced_braces(char const* s) {
+                 last_char = '{';
+                 continue;
+             } else if (c == '}') {
+-                if (!depth) return nullptr;
++                if (!depth) { skip_count(SKIP_GIVEUP_UNBALANCED, 1); return nullptr; }
+                 s++;
+                 if (!template[--depth]) {
+                     if (!depth) return s;
+                     last = LAST_CLOSE;
++                    last_close_brace = true;
+                     continue;
+                 }
+                 template_continues = skip_template_part(&s);
+@@ -7103,7 +7135,7 @@ static char const* skip_balanced_braces(char const* s) {
+                 template_continues = skip_template_part(&s);
+             }
+             if (template_continues) {
+-                if (depth == MAX_DEPTH) return nullptr;
++                if (depth == MAX_DEPTH) { skip_count(SKIP_GIVEUP_DEPTH, 1); return nullptr; }
+                 template[depth++] = true;
+                 last = LAST_PUNCTUATOR;
+                 last_char = '{';
+@@ -7112,15 +7144,20 @@ static char const* skip_balanced_braces(char const* s) {
+             }
+         } else if (c == '"' || c == '\'') {
+             for (s++; *s != c; s++) {
+-                if (!*s || *s == '\n' || *s == '\r') return nullptr;
++                if (!*s || *s == '\n' || *s == '\r') { skip_count(SKIP_GIVEUP_STRING_NEWLINE, 1); return nullptr; }
+                 if (*s == '\\' && s[1]) s++;
+             }
+             s++;
+             last = LAST_VALUE;
+         } else if (c == '/') {
+-            if (last == LAST_CLOSE) return nullptr;
+             bool regex = last == LAST_PUNCTUATOR;
+-            if (regex && (last_char == '+' || last_char == '-') && before_last_char == last_char) return nullptr;
++            if (last == LAST_CLOSE) {
++                if (last_close_brace) { skip_count(SKIP_GIVEUP_REGEX_AFTER_BRACE, 1); return nullptr; }
++                if (!track_parens || closed_head) { skip_count(SKIP_GIVEUP_REGEX_AFTER_PAREN, 1); return nullptr; }
++                regex = false;
++                if (!regex) skip_count(SKIP_INFO_PAREN_DIVISION, 1);
++            }
++            if (regex && (last_char == '+' || last_char == '-') && before_last_char == last_char) { skip_count(SKIP_GIVEUP_INCDEC, 1); return nullptr; }
+             for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
+                 if (csview_equals(word, regex_after[i])) regex = true;
+             }
+@@ -7133,7 +7170,7 @@ static char const* skip_balanced_braces(char const* s) {
+             }
+             bool in_class = false;
+             for (s++; *s != '/' || in_class; s++) {
+-                if (!*s || *s == '\n' || *s == '\r') return nullptr;
++                if (!*s || *s == '\n' || *s == '\r') { skip_count(SKIP_GIVEUP_REGEX_NEWLINE, 1); return nullptr; }
+                 if (*s == '\\' && s[1]) s++;
+                 else if (*s == '[') in_class = true;
+                 else if (*s == ']') in_class = false;
+@@ -7147,9 +7184,18 @@ static char const* skip_balanced_braces(char const* s) {
+             char const* start = s;
+             while (skip_word_char(*s)) s++;
+             word = (csview){ start, s - start };
+-            if (csview_equals(word, "import") || csview_equals(word, "require")) return nullptr;
++            if (csview_equals(word, "import")) { skip_count(SKIP_GIVEUP_IMPORT, 1); return nullptr; }
++            if (csview_equals(word, "require")) { skip_count(SKIP_GIVEUP_REQUIRE, 1); return nullptr; }
+             last = LAST_WORD;
+         } else {
++            if (c == '(') {
++                if (paren_depth >= 255) { skip_count(SKIP_GIVEUP_DEPTH, 1); return nullptr; }
++                paren_head[++paren_depth] = last == LAST_WORD && (csview_equals(word, "if") || csview_equals(word, "while") ||
++                    csview_equals(word, "for") || csview_equals(word, "with"));
++            } else if (c == ')') {
++                closed_head = paren_depth > 0 ? paren_head[paren_depth--] : true;
++                last_close_brace = false;
++            }
+             last = c == ']' ? LAST_VALUE : c == ')' ? LAST_CLOSE : LAST_PUNCTUATOR;
+             before_last_char = last_char;
+             last_char = c;
+@@ -7163,9 +7209,50 @@ static char const* skip_balanced_braces(char const* s) {
+ // source the body of a function with a written return type isn't parsed (nor resolved: function_impl_lookup_names_as)
+ // when its end is certain (skip_balanced_braces()). The function keeps an empty body
+ static bool skip_typed_body(Parser* parent, FunctionImpl* func) {
+-    if (!parent->shared->source->skip_typed_bodies || !func->ret_explicit || *parent->pos != '{') return false;
++    SourceFile const* source = parent->shared->source;
++    if (probe_enabled() && parent->shared->function_depth == 1 && *parent->pos == '{' && !source->is_js) {
++        char const* probe_end = skip_balanced_braces(parent->pos);
++        char const* text = cstr_str(&source->contents);
++        if (probe_end) probe_record_outer_body(source, (u32)(parent->pos - text), (u32)(probe_end - text));
++    }
++    bool all = skip_all_bodies_mode() && !source->is_js && !source->is_jsx && !source->is_json;
++    if (all && *parent->pos != '{') skip_count(SKIP_NOT_BRACE, 1);
++    if (!all && (!source->skip_typed_bodies || !func->ret_explicit)) return false;
++    if (*parent->pos != '{') return false;
++    if (all) skip_count(SKIP_ATTEMPTS, 1);
++    if (all && skip_all_bodies_mode() == 5) {
++        // PROBE: eager where a parameter has a default value or the function has a parameter decorator
++        for_each (i, vec_function_arg, &func->args) {
++            if (i->initializer.value) { skip_count(SKIP_GIVEUP_EOF, 1); return false; }
++        }
++    }
+     char const* end = skip_balanced_braces(parent->pos);
++    if (all && skip_all_bodies_mode() == 3) {
++        // Verify: parse it as usual and compare where it ends
++        Parser q = parser(parent);
++        Block b = {0};
++        bool parsed = parse_block(&q, false, &b);
++        char const* qend = q.pos;
++        u32 errors = q.error_count;
++        parse_fail(&q);
++        if (!end) { skip_count(SKIP_V_GIVEUP_PARSES, parsed); return false; }
++        if (!parsed) skip_count(SKIP_V_PARSE_FAILED, 1);
++        else {
++            if (errors) skip_count(SKIP_V_BODY_ERRORS, 1);
++            char const* back = qend;
++            while (back > end && (back[-1] == ' ' || back[-1] == '\t' || back[-1] == '\n' || back[-1] == '\r')) back--;
++            if (back == end) skip_count(SKIP_V_MATCH, 1);
++            else {
++                skip_count(SKIP_V_MISMATCH, 1);
++                fprintf(stderr, "skipprobe MISMATCH %.*s at %ld: skip %ld parse %ld\n", (int)cstr_size(&parent->shared->source->canonical_path),
++                    cstr_str(&parent->shared->source->canonical_path), (long)(parent->pos - cstr_str(&parent->shared->source->contents)),
++                    (long)(end - parent->pos), (long)(qend - parent->pos));
++            }
++        }
++        return false;
++    }
+     if (!end) return false;
++    if (all) { skip_count(SKIP_SKIPPED, 1); skip_count(SKIP_BYTES, end - parent->pos); }
+     Parser p = parser(parent);
+     char const* open = p.pos;
+     p.pos = end - 1;
+diff --git a/src/parser.h b/src/parser.h
+index 0f896ef3..fa65eb68 100644
+--- a/src/parser.h
++++ b/src/parser.h
+@@ -4,3 +4,4 @@ typedef struct SourceFile SourceFile;
+ typedef struct ErrorCtx ErrorCtx;
+ 
+ void parse_file(SourceFile* source, ErrorCtx* errs);
++void parser_probe_report(void); // PROBE (plan 78 planning)
+diff --git a/src/program.c b/src/program.c
+index 44fbc763..3a4b62fd 100644
+--- a/src/program.c
++++ b/src/program.c
+@@ -3674,11 +3674,14 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from,
+         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+         struct timespec file_start;
+         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
++        probe_current_file = source; // PROBE
++        probe_checker_index = c;
+         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
+         if (my declaration_errs && !source->is_stdlib && !declaration_walk_moot(me)) {
+             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+         }
+         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
++        probe_current_file = nullptr; // PROBE
+     }
+ }
+ 
+@@ -3736,6 +3739,9 @@ static void check_share(Program* me, u32 c, u32 count) {
+         source_file_check_verbatim_exports(source, checker->errs);
+         checker->defer_checks = true;
+         checker->checking_file = source;
++        probe_current_file = source; // PROBE
++        probe_checker_index = c;
++        probe_file_state(source, c, checker->recycles, 1);
+         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
+         // (What a deferred check defers joins the end of the queue)
+         for (u32 d = 0; d < checker->deferred_count; d++) {
+@@ -3744,6 +3750,8 @@ static void check_share(Program* me, u32 c, u32 count) {
+         checker->deferred_count = 0;
+         checker->defer_checks = false;
+         checker->checking_file = nullptr;
++        probe_file_state(source, c, checker->recycles, 2); // PROBE
++        probe_current_file = nullptr;
+         if (debug_env.file_times) print_file_time("check", file_start, source);
+         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
+             if (!error_surely_reported(&checker->errs->errors.data[scanned])) continue;
+diff --git a/src/statement.c b/src/statement.c
+index f2d004a0..dd3938f4 100644
+--- a/src/statement.c
++++ b/src/statement.c
+@@ -1167,6 +1167,7 @@ void statement_collect_var_names(Statement const* me, VecSpan* out) {
+ 
+ void function_collect_local_value_names(FunctionImpl const* function, VecSpan* out) {
+     for_each (i, vec_function_arg, &function->args) binding_collect_names(&i->initializer.binding, out);
++    probe_body_read(function, BODY_READ_OTHER); // PROBE
+     for_each (i, vec_statement, &function->body.statements) {
+         switch (i->tag) {
+             case STATEMENT_DECL_VARIABLE:
+diff --git a/src/ty/check.c b/src/ty/check.c
+index 80d7c622..6d08f6bd 100644
+--- a/src/ty/check.c
++++ b/src/ty/check.c
+@@ -595,6 +595,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
+     Ty const* target_ret = ty_union(me, rets.data, rets.len, nullptr, (TyList){0});
+     ty_buf_drop(&rets);
+     if (ty_is_related(me, source_ret, target_ret, TY_RELATION_ASSIGNABLE)) return false;
++    probe_body_read(function, BODY_READ_ELABORATE); // PROBE
+     Expr const* body = &vec_statement_at(&function->body.statements, 0)->expr;
+     if (elaborate_error(me, HEAD_TYPE, body, source_ret, target_ret, errs)) return true;
+     Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, expr_outer_span(body), errs);
+diff --git a/src/ty/declaration_emit.c b/src/ty/declaration_emit.c
+index 9b1bacbb..000c8643 100644
+--- a/src/ty/declaration_emit.c
++++ b/src/ty/declaration_emit.c
+@@ -1162,6 +1162,7 @@ static bool search_function(Search* me, FunctionImpl const* fn, Near near, NearK
+         if (init->tag != EXPR_IMPLICIT_ANY && search_expr(me, init, parameter_near(i), true)) return true;
+     }
+     if (!fn->has_body || fn->body_missing) return false;
++    probe_body_read(fn, BODY_READ_DECL_EMIT); // PROBE
+     if (fn->expression_body) {
+         Statement const* ret = vec_statement_at(&fn->body.statements, 0);
+         return ret && ret->tag == STATEMENT_RETURN_EXPR && search_expr(me, &ret->expr, near, false);
+diff --git a/src/ty/expr.c b/src/ty/expr.c
+index 05bd34aa..6b4c7493 100644
+--- a/src/ty/expr.c
++++ b/src/ty/expr.c
+@@ -210,6 +210,7 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty
+     // The returned expressions are collected first: checking them can get here for a nested function
+     collected_returns.len = 0;
+     collected_returns.overflow = false;
++    probe_body_read(function, BODY_READ_COLLECT_RETURNS); // PROBE
+     statements_any_return(&function->body.statements, collect_return);
+     if (collected_returns.overflow || !collected_returns.len) return ty_any_function_type(me);
+     u32 count = collected_returns.len;
+@@ -1564,6 +1565,7 @@ static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const
+             ty_link_set(me, KEY_FUNCTION_ANCHOR, function, anchor);
+             // (A generator's return expressions are about its TReturn: ty_generator_context())
+             if (function->ret_explicit || function->is_generator) return;
++            probe_body_read(function, BODY_READ_ANCHORS); // PROBE
+             record_anchors_in_block(me, &function->body, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_RETURN, .function = function }), depth);
+             return;
+         }
+@@ -1873,6 +1875,7 @@ bool ty_function_is_context_sensitive(FunctionImpl const* function) {
+     if (vec_generic_item_size(&function->generic.items)) return false;
+     if (has_context_sensitive_params(function)) return true;
+     // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
++    if (!function->ret_explicit && function->has_body) probe_body_read(function, BODY_READ_CONTEXT_SENSITIVE); // PROBE
+     if (!function->ret_explicit && function->has_body &&
+         statements_any_return(&function->body.statements, ty_expr_is_context_sensitive)
+     ) {
+diff --git a/src/ty/flow.c b/src/ty/flow.c
+index f22c279e..4cfe4472 100644
+--- a/src/ty/flow.c
++++ b/src/ty/flow.c
+@@ -3401,6 +3401,7 @@ static void report_flow_control_error(Checker* me, Expr const* reference, FlowNo
+     FunctionImpl const* function = flow && (flow->flags & FLOW_START) ? flow->node : nullptr;
+     VecStatement const* statements = nullptr;
+     if (function && function->has_body) {
++        probe_body_read(function, BODY_READ_FLOW_ERROR); // PROBE
+         statements = &function->body.statements;
+     } else if (reference && span_source(expr_outer_span(reference))) {
+         statements = &span_source(expr_outer_span(reference))->ast.statements;
+@@ -3721,6 +3722,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
+         return nullptr;
+     }
+     Statement const* single = nullptr;
++    probe_body_read(function, BODY_READ_PREDICATE); // PROBE
+     if (!find_single_return_in(&function->body.statements, &single) || !single) return nullptr;
+     if (ty_function_end_reachability(me, function) != FLOW_REACH_NO) return nullptr;
+     Expr const* expr = &single->expr;
+diff --git a/src/ty/function.c b/src/ty/function.c
+index 21dd08fe..23de0bea 100644
+--- a/src/ty/function.c
++++ b/src/ty/function.c
+@@ -247,6 +247,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
+     bool outer_skipped = my return_inference_skipped;
+     my return_inference_of = function;
+     my return_inference_skipped = false;
++    probe_body_read(function, BODY_READ_INFER_RETURN); // PROBE
+     block_collect_return_types(&function->body, &returned);
+     bool skipped = my return_inference_skipped;
+     my return_inference_of = outer_inference_of;
+diff --git a/src/ty/pseudo.c b/src/ty/pseudo.c
+index 71eef82c..228f6549 100644
+--- a/src/ty/pseudo.c
++++ b/src/ty/pseudo.c
+@@ -396,6 +396,7 @@ static Pseudo const* type_from_single_return_expression(Build* me, FunctionImpl
+     if (function->has_body && !function->body_missing) {
+         // (getFunctionFlags & FunctionFlags.AsyncGenerator: either flag)
+         if (function->is_async || function->is_generator) return inferred_return(me, function);
++        probe_body_read(function, BODY_READ_PSEUDO); // PROBE
+         if (function->expression_body) {
+             Statement const* ret = vec_statement_at(&function->body.statements, 0);
+             if (ret && ret->tag == STATEMENT_RETURN_EXPR) candidate = &ret->expr;
+diff --git a/src/ty/ty_display.c b/src/ty/ty_display.c
+index aeda8dcf..4e9af8a4 100644
+--- a/src/ty/ty_display.c
++++ b/src/ty/ty_display.c
+@@ -6765,6 +6765,7 @@ static Scope const* statement_scope_at(Block const* block, Scope const* scope, S
+                 break;
+             case STATEMENT_DECL_FUNCTION:
+                 if (!i->decl.function.impl) return scope;
++                probe_body_read(i->decl.function.impl, BODY_READ_DISPLAY); // PROBE
+                 inner = &i->decl.function.impl->body;
+                 inner_scope = inner->scope;
+                 break;

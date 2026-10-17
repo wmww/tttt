@@ -24,15 +24,17 @@ the cheap CLI modes: plan 76) parked. The rule: a memory change may cost at most
 and the window's perf session pays it back; never trade at a worse rate than another item would give. Output stays
 byte-identical at every checker count and budget (kdiff, checkerdiff, recycle oracles).
 
-1. **Plan 78 planning + prototype gate** (deferred function bodies): the upper bound (every body skipped at parse:
-   RSS after parse/names on vscode, effect, webpack, drizzle), the skipper's give-up rate, cross-file body demand
-   counts, the per-body bind/resolve design, the stages. Gate: >= 600 MB off vscode's program. Rewrite plan 78 as
-   stages with validation, or close it with the numbers if the gate fails (then entries 2-4 go to plan 80's
-   leftovers and plan 79).
-2. **Plan 78 stage 1**: skip + materialize at check, whole-file semantics; byte-identical everywhere, instrcount.
-3. **Plan 78 stage 2**: drop after check, per-body LazyType slots and memo pages; the memory table.
-4. **Plan 78 stage 3**: cross-file demand policy (keep vs re-materialize, measured), JavaScript, `-b`, the harness,
-   kdiff/recycle, perfsweep; plan 78 closed into documentation.md ("Deferred bodies") and hacks.md.
+1. Done 2026-10-16: plan 78 planned, **go** (every body skipped: vscode after names 2161 -> 898 MB at T4, effect 266
+   -> 194, drizzle 143 -> 128; skipper 0.4% give-ups, 0 mismatches on real code; cross-file demand ~2k of 99k vscode
+   bodies, re-materialize; bodies drop only at checker recycle, since types point into them).
+2. **Plan 78 stage 1**: skip + materialize whole files at check (never dropped), split resolve walk, accessor,
+   misspelling budget at report time, syntax-error restart; byte-identical everywhere with deferral on and off,
+   instrcount, K1 T4 wall (materialize-ahead if past +3%).
+3. **Plan 78 stage 2**: one arena per materialization with an O(1) drop, refcounted by checker incarnations,
+   per-thread chunk pool, fixed LazyType slot ranges per file, the program-level node-key audit; the memory table.
+4. **Plan 78 stage 3**: cross-demand policy (file vs body granularity, measured), TSX skipper, `import()` in bodies,
+   `-b`, the harness default, kdiff/recycle, perfsweep, scaleprobe; plan 78 closed into documentation.md
+   ("Deferred bodies") and hacks.md.
 5. **Plan 80** (AST boxing, spans, mmapped text; main + Opus agents in worktrees for the mechanical parts): Expr
    72 -> 40, the other fat unions, Span 16 -> 8 for AST nodes if the saving is still >= 50 MB after boxing, source
    text mmapped. Gate per item in the plan. instrcount flat.

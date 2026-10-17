@@ -11,6 +11,21 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 78 planning, deferred bodies' gate (2026-10-16, todo entry 1, cb3c529b)
+On the 24-thread machine (`nproc` 24; a Blender build ran during part of it: RSS is what counts). Probe:
+`agents/plans/78_probe.patch`. **Upper bound** (every TypeScript body brace-skipped, stopped after names, `--threads 4`,
+RSS MB after parse / after names, eager -> skipped): vscode 1644 / 2161 -> 671 / **898 (-1263)**, effect 187 / 266 ->
+126 / 194 (-72), drizzle 101 / 143 -> 91 / 128 (-15), type-fest 49 / 74 -> 47 / 68, webpack (JavaScript, eager) 220 /
+309 unchanged. At the default 24 threads: vscode 1685 / 2236 -> 704 / 976. vscode parse 655 -> 345 ms (T4), single
+thread parse 1550 -> 800 ms and names 1220 -> 390 ms. Bodies with a parameter default kept eager: vscode 928, effect
+193, drizzle 134. **Skipper**: vscode 100.7k outermost attempts, 402 give-ups (`import` 384, `require` 18, 1 regex
+newline) with the paren-head rule (without it +467 `/` after `)`); verified against the parser on vscode (419k bodies
+incl. nested), effect, drizzle, tsc, vue, zod: 0 mismatches; suite 12, all in bodies with syntax errors.
+**Cross-file demand** (outermost bodies read by a checker not checking their file; reads are 4161 inferred returns,
+1706 context sensitivity, 695 anchors, 504 predicates on vscode K1): vscode K1 1856 bodies / 962 KB source in 591 files
+(9.5 MB of bodies), K4 1965 / 631 files, K24 2092; effect K1 87 (18 files), K4 147; drizzle K1 58 (36 files), K4 85;
+webpack 0 (JavaScript). Checker types point into the bodies they walked: drop only at the incarnation's recycle.
+
 ## Perf + real code (2026-10-16, todo entry 9)
 Instructions (`scripts/instrcount.sh`, callgrind, `--checkers 1`): window start (plan 71) -> session start (7f462498)
 -> end: tsc 4.723 -> 4.577 -> **4.546**, type-fest 23.420 -> 23.517 -> **14.099 (-40%)**, valibot 3.463 -> 3.563 ->

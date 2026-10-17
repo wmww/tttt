@@ -1,62 +1,190 @@
 # Plan 78: deferred function bodies (the memory lever)
-Brief by the insights of 2026-10-16 (after the eighteenth window), from the human's decision that memory comes first
-(vision.md "Memory target"). **Entry 1 of the window is a planning session that turns this brief into stages with a
-prototype gate; entries 2-4 execute them.** Numbers are vscode's at one checker (plan 67/75 census): AST ~1370 MB
-(8.2M Exprs alone 590 MB), binder arena ~505 (flow nodes ~110, scopes ~67, symbols 162), text ~170, program ~2.2 GB
-of a 2.55 GB peak; bun's whole run is ~1.4 GB.
+Planned 2026-10-16 (todo entry 1 of the nineteenth window) from the insights brief, measured at cb3c529b on the
+24-thread machine (a Blender build was running for part of it: RSS numbers are what count, walls are indicative).
+**Go**: the gate (>= 600 MB off vscode's program) passes with -1263 MB. Three execution stages = todo entries 2-4.
+The probe that measured all of this is `agents/plans/78_probe.patch` (`git apply` it on a scratch tree;
+`TTTT_SKIP_ALL_BODIES=1|2|3|5`, `TTTT_PROBE_NO_CHECK=1`, `TTTT_BODY_PROBE=1`, see "Probe" at the end). Tables are in
+measurements.md "Plan 78 planning".
 
 ## The idea
-Function bodies are most of the AST and most of the binder's flow nodes and scopes, and almost every body is needed
-by exactly one checker: the one checking its file. Parse a body to its brace span only, materialize it (parse, bind,
-resolve) when a checker needs it, drop it with the file when that checker is done. The parse-time peak becomes
-declarations + text + binder-without-bodies; the check-time peak adds the in-flight files' bodies per checker.
-Expected: vscode's program ~2.2 -> ~1.1-1.2 GB; K1 peak near bun's 1.4 GB; at K24 the checker budgets dominate
-(plan 79). It is also the restructuring a real watch mode would need (plan 76 W3: resolve scoped per body).
+Function bodies are most of the AST and of the binder's flow nodes and scopes, and nearly every body is needed only by
+the checker checking its file. The parser brace-skips a body; the checker *materializes* it (parse, bind, resolve)
+when it needs it; it is dropped when no checker incarnation that touched it is alive. It is also the restructuring a
+real watch mode needs (plan 76 W3: resolve scoped per body).
 
-## What exists
-- `skip_typed_body()` / `skip_balanced_braces()` (parser.c): `-b` brace-skips the bodies of annotated functions of
-  referenced projects' sources (`SourceFile.skip_typed_bodies`), never resolved. It must become: skip every body
-  when the skip is unambiguous, else parse (regex vs division, templates with nested braces, JSX text with braces,
-  `}` in comments and strings: the skipper must be exactly as right as the parser or give up).
-- Per-file AST arenas (`ast_alloc.h`, plan 63): a drop is O(1) per arena; a materialized body in an arena of its
-  own (owned by the materializing checker's thread) drops alone. Dropped addresses are never reused, so stale
-  `links`/memo entries keyed by node address can't alias; they must still be purged or they leak until recycle.
-- The resolve walk shards per file (plan 45); JavaScript files replay assignment declarations serially.
-- LazyType slots are a process-wide counter (`lazy_slot_new()`, hacks.md): per-body slot ranges released on drop
-  would free the memo pages too (the ~6% RSS of sparse pages, and the counter watch/-b would exhaust).
+## What the gate measured (TypeScript files; `--threads 4`, no check, RSS MB)
+| corpus | after parse eager -> skipped | after names eager -> skipped | delta after names |
+|---|---|---|---|
+| vscode | 1644 -> 671 | 2161 -> **898** | **-1263** |
+| effect | 187 -> 126 | 266 -> 194 | -72 |
+| drizzle | 101 -> 91 | 143 -> 128 | -15 |
+| type-fest | 49 -> 47 | 74 -> 68 | -6 (types only) |
+| webpack | 220 | 309 (unchanged) | 0 (JavaScript: eager) |
+- **Bodies are ~14 bytes of AST + binder per byte of body source** (vscode: 98.8k outermost bodies, 89.6 MB of their
+  source; the parse also gets 2x faster: 655 -> 345 ms at T4, single-thread parse 1550 -> 800 ms and names 1220 -> 390).
+- **The skipper is right**: verified against the parser (`=3`: skip, then parse and compare the end) on vscode (419k
+  bodies, nested ones included), effect, drizzle, tsc, vue, zod: **0 mismatches**, and on the suite 12 mismatches,
+  all in bodies with syntax errors (parser recovery tests, `class C { constructor() { static f = 3 } }`): see
+  "Syntax errors". Program file lists and syntax diagnostics identical skipped and eager.
+- **Give-ups** (vscode, outermost attempts, 100.7k): 402 (0.4%): `import` 384 (dynamic `import()`: it adds module
+  names), `require` 18, one regex scan that met a newline (a division taken for a regex: safe). The old skipper gave
+  up on `/` after `)` (467 more on vscode, 21 effect); tracking whether a `(` opens an `if`/`while`/`for`/`with` head
+  makes `) /` a division otherwise (485 resolved on vscode, the probe's mode 2). Effect: 39 `require`; drizzle 0.
+- **Parameters with default values** (`=5`, such a function's body stays eager, see stage 1): vscode 898 -> 928 (+30),
+  effect 194 -> 193, drizzle 128 -> 134: cheap enough for stage 1. Not decorators: vscode's constructor parameter
+  decorators are everywhere (a rule that included them kept 520 MB).
+- Projected peaks (stage 2): vscode K1 ~= program 0.9 GB + checker 256 MB + the live incarnation's bodies (~1/10 of
+  1.26 GB) + malloc'd tables ~= **1.4-1.5 GB** (today 2.55 GB, bun 1.4). T4: program 0.9 + 4 x (128 + ~55) ~= 1.7 GB
+  (today ~2.8).
 
-## Which bodies
-Every function body at any nesting, deferred as a unit from the outermost deferred one: declarations, methods,
-accessors, constructors, function expressions, block-bodied arrows. Not: class bodies (member signatures are
-declarations), module-level statements and initializers, expression-bodied arrows. JavaScript files stay eager at
-first (expandos and `this.x =` inside bodies are declarations). Whether a materialized body re-defers its nested
-functions is a measurement (a parent is checked whole, so probably not).
+## Cross-file demand (TTTT_BODY_PROBE: every read of a FunctionImpl's body by a checker not checking its file)
+Kinds (vscode K1 reads / outer bodies): inferred return type 4161 / 1765, contextual anchors 695 / 171, context
+sensitivity 1706 / 133, inferred type predicates 504 / 236; declaration emit, display scopes, pseudo types: ~0.
+| | distinct outer bodies | their source | files they are in (their bodies) | needed by >1 incarnation |
+|---|---|---|---|---|
+| vscode K1 | 1856 of 98.8k | 962 KB of 89.6 MB | 591 (9.5 MB) | 1781 (after a recycle) |
+| vscode K4 | 1965 | 1029 KB | 631 (10.2 MB) | 1893 (1604 another checker) |
+| vscode K24 | 2092 | 1121 KB | | 2031 |
+| effect K1 / K4 | 87 / 147 | 12 / 50 KB | 18 / 37 (243 / 389 KB of 4 MB) | 60 / 143 |
+| drizzle K1 / K4 | 58 / 85 | 30 / 44 KB | 36 / 52 (142 / 167 KB of 645 KB) | 45 / 81 |
+| webpack | 0 (JavaScript) | | | |
+About a tenth of cross demands come *before* the owning file is checked in the same incarnation (vscode K1: 136).
+**Decision: re-materialize**, never keep past the incarnations that touched it: cross demand is ~1% of body bytes
+per body, ~11% at whole-file granularity, and the incarnation boundary is the only safe drop point anyway (below).
 
-## What the planning session must answer (the prototype gate)
-1. **The upper bound**: skip every body at parse (no materialization, `--listFilesOnly`-style run) and measure RSS
-   after parse and after names on vscode, effect, webpack, drizzle; and how many bodies the skipper gives up on.
-   **Gate: the program drops >= 600 MB on vscode**, else stop and say so.
-2. **Cross-file demand**: instrument the checker to count bodies read while checking *another* file (unannotated
-   return types, `this` types, contextual signatures through inferred returns, declaration emit's pseudo types):
-   how many, which kinds, how often the same body from several checkers. Decides whether bodies demanded by other
-   files are kept after their file's check or re-materialized (first version: re-materialize, measure).
-3. **Per-body bind and resolve**: what the body-level walk needs from the file (the enclosing scope chain at the
-   function, `FunctionCtx` flags, strict mode, the flow container), what escapes a body in TypeScript (nothing
-   hoisted; `arguments`? labels? `suggestion_count_order()`'s "Did you mean" budget already models deferred bodies),
-   where body-local symbols/scopes/flow nodes go (a body-owned binder arena, dropped with it), how errors from a
-   checker thread reach the file's ErrorCtx (per-body lists merged, or a lock; output is sorted per file anyway)
-   and the once-per-file memos (`Error.once_key`).
-4. **The checker's entry points**: every reader of `FunctionImpl.body` goes through an accessor that materializes
-   (the compiler finds them once the field is renamed); the file's check materializes all its bodies up front
-   (simplest) or lazily per function (measure); the after-check pass (unused, declaration diagnostics, emit) runs
-   before the drop; `TTTT_CHECK_ONLY`, the suite harness (symbols/types traversal: materialize everything), `-b`'s
-   `skip_typed_bodies` folded in.
-5. **Stages** (three execution sessions): (1) skip + materialize-at-check with whole-file semantics, byte-identical
-   output everywhere, instrcount; (2) drop after check, per-body slots and memo pages, the memory table; (3)
-   cross-file demand policy, JavaScript, `-b`, the harness, kdiff/recycle oracles, perfsweep.
+## The finding that shapes stage 2: types point into bodies
+A checker's types, links and LazyMemos hold pointers into the bodies it walked (class expressions, object literal
+PropDecls, arrow functions' signatures, decl spans for related info and display), and later files' checks reach them
+(inferred returns). **A body can't be dropped when its file's check ends; only when every checker incarnation that
+touched it is gone** (recycled or destroyed). So a materialization is refcounted by incarnations: acquired on first
+use by an incarnation, released by `checker_recycled()`/`checker_drop()` after the segment's after-check pass. This
+also settles address reuse (the human's point 2): a checker never sees a materialization dropped while it lives, so
+nothing per-checker (links, node_links, LazySlots memo pages) needs purging. What does need an audit is
+program-level state keyed by node addresses (`Error.once_key`, anything in Program/Binder built during check).
 
-## Validation
-Every oracle byte-identical (`scripts/oracles.py`, `scripts/kdiff.py`, `scripts/checkerdiff.py`, `threadcheck.sh`,
-scenarios, dtsdiff), the suite 0 lost; `scripts/instrcount.sh` within +3% on every corpus (the perf session of the
-window pays it back); measurements.md "Plan 78": RSS after parse / after names / peak at K1 and T4 on vscode, effect,
-webpack, drizzle, type-fest before and after, next to bun's.
+## Design
+**Unit: the file's deferred bodies, materialized together** (stage 1 and 2; per-body is stage 3's question). The
+resolve walk writes cross-body state that checkers read (`Symbol.referenced` for unused, `is_assigned*` for
+narrowing, `flow_start`, the unused registrations, misspelling budget), so whole-file materialization gives exactly
+today's per-file state. Cost of cross demand at file granularity: vscode 591 files / 9.5 MB of body source per round.
+- **Parser** (`skip_typed_body()` -> `skip_body()`): every `{` body of a TypeScript (not .tsx, not JavaScript, not
+  JSON) function is skipped when `skip_balanced_braces()` is sure, except: a parameter has a default value (its
+  lookup sees the body's names: `parameters_see_body()`, `block_add_names(&body, function_scope)` before the
+  parameters), the function is an IIFE (the parser learns it at the `(` after it: parse the body then, from the
+  recorded span; its flow is the container's), give-ups (`import`, `require`, unsure `/`, too deep). The skipper must
+  also record `@ts-expect-error`/`@ts-ignore` comments it steps over (`source_file_add_comment_directive()`, same
+  rules as `hop_whitespace_slow()`), or directives inside bodies are lost (TS2578, suppression). Add the paren-head
+  rule from the probe. Nested functions are never deferred on their own (a materialized outer body is parsed whole).
+  The FunctionImpl keeps `has_body`, the brace span and a `deferred` bit; `Block body` stays empty.
+- **Resolve walk** (`function_impl_lookup_names_as()`): for a deferred function the outer walk does everything up to
+  the body (generic scope, function scope with the parameters, decorators, return type, flow start node) and stores
+  a `DeferredBody` in the binder arena (~64 B x 100k = 6 MB on vscode): the function scope (kept: not
+  `scope_release()`d), a snapshot of the FlowBuilder fields `flow_builder_init()` copies from the outer builder
+  (dead, has_flow_effects, initializing, parameter_initializing, parameter_function_scope, container_start, outer
+  reference), strict mode, `contextual_depth`, and **the outer walk's event sequence number** at that point. The tail
+  of the function (`block_add_names` + `block_lookup_names_as` of the body, end_flow, yields, return_flow,
+  `flow_builder_finish()`) becomes `function_impl_lookup_body()`, run at materialization.
+- **Materialization** (`program_materialize_file(file)`, under a per-file once-lock: deferred -> materializing ->
+  ready, with a refcount; a second demander waits like the load pool's in-flight parse): parse each deferred body
+  with a parser at its offset (the file's `ParserShared` flags rebuilt: function context async/generator from the
+  FunctionImpl), then run their body walks in source order as a `ResolveShard` of its own (thread-local
+  `resolve_shard`: `binder_arena()` and `binder_scope_arena()` are the materialization's arena, `binder_errs()` its
+  own ErrorCtx, new symbols listed, not-found and misspelling events deferred with their order key). It never
+  demands another file's materialization (JavaScript is eager, declarations are bound), so no lock cycle. The binder
+  stays `frozen` for everything else.
+- **Diagnostics of a materialization** (parse and resolve errors) belong to the file: the owner's check (the one
+  checking the file) moves them into its ErrorCtx exactly once; a copy materialized for a cross demand keeps them and
+  drops them with it (a later re-materialization produces the same ones). Output is sorted per file anyway.
+- **The misspelling budget** (tsc's first ten "Did you mean" suggestions, today replayed in program order by
+  `resolve_shard_merge()`): bodies are walked at check time, so the cut can't be made at names any more. Every
+  not-found event (names phase and materializations) computes its suggestion (only the first ten per file can ever
+  qualify: cap there), keyed by (file program order, outer walk sequence of the enclosing deferred function or of
+  the event, sequence inside the body walk): that is exactly today's walk order, because the eager walk visits a body
+  as a unit. `program_typecheck()`'s merge strips the suggestion from all but the first ten. Check what else the
+  deferred events carry (`DeferredKind`: NOT_FOUND, MISSPELLED, EXPANDO; JS ones don't apply).
+- **Syntax errors**: real code has none in bodies, but a body with one can't be told from its skip (the suite's 12
+  mismatches change what follows the body). Rule: if any materialization reports a syntactic diagnostic, or the
+  program is gated before checking (syntax or options errors elsewhere, where the bodies' syntax errors must still be
+  reported), **the run restarts with deferral off** (program-level: reparse everything eagerly). Real code pays
+  nothing; error runs pay a second parse. `has_parse_errors` (grammar errors suppressed per file) stays exact.
+- **Accessor**: `FunctionImpl.body` is renamed and read through `function_impl_body(f)` (20 readers outside the
+  parser, found by renaming: function.c infer_return_type, expr.c collect/anchors/context-sensitive, flow.c error
+  and predicate, pseudo.c, declaration_emit.c search_function, ty_display.c name_accessible/statement_scope_at,
+  check.c elaborate_arrow_function, class_decl.c check_super_call_root, engine.c, statement.c
+  function_collect_local_value_names, ast_walk.c walk_function, display.c, function_impl.c typecheck_body /
+  use-strict check / drop / the walk). For a deferred function it makes sure the current checker incarnation holds
+  the file's materialization (fast path: the checker's last file; else a small per-incarnation set) and returns the
+  body; nested functions inside a materialization need no check (reachable only through it). Outside a checker
+  (harness traversal, `--expect-types`, emit) it materializes into a program-held ref.
+- **Checks**: `check_share()` acquires the file's materialization before `block_typecheck()` (whole file up front:
+  simplest, and the walk needs it all anyway); the segment's after-check pass (unused, declaration diagnostics and
+  emit) runs before the recycle, so it sees the bodies; refs are released at `checker_recycled()`/`checker_drop()`.
+  The declaration-only loop after the share (unchecked files' declaration diagnostics) acquires on demand.
+- **K1 wall**: at `--checkers 1 --threads 4` the bodies' parse+resolve (vscode ~1.6 s single-threaded) moves from the
+  parallel phases into the one checker (+~5% net). Stage 1 measures it; the fix is a **materialize-ahead** helper:
+  idle threads materialize the next files of each share (a window bounded in bytes), like the load pool. At the
+  defaults (K = threads) the work spreads over the checkers and the parse/names phases halve: net faster.
+
+## Stages
+### Stage 1 (todo entry 2): skip + materialize at check, nothing dropped
+Behind `program_set_defer_bodies()` (CLI on; harness off by default, `baseline_tests --defer-bodies` forces it):
+parser skip rules above, `DeferredBody` and the split walk, `program_materialize_file()` with the once-lock and the
+shard, the accessor (rename the field: the compiler lists the readers), materialize-before-check, the error routing,
+the misspelling budget at report time, the syntax-error restart. Materializations live in the file's AST arena and
+the binder arenas (thread arenas: as today's walk) and are never dropped: memory unchanged at the end of a run (the
+parse peak drops), output byte-identical. The materialize-ahead helper if K1 T4 wall is past +3%.
+Validate: suite 0 lost both with and without `--defer-bodies` (the harness traverses every body: materialize all);
+`scripts/oracles.py`, kdiff, checkerdiff, threadcheck, `kdiff -k 1 -m 0` (recycle), scenarios, dtsdiff, clidiff
+`--emit` all byte-identical; instrcount within +3% (the skip scan plus cross-demand materialization at file
+granularity); vscode/effect/drizzle RSS after parse and names (the gate table) and K1/T4 walls.
+Risks: walk state the snapshot misses (run the suite with deferral forced: every test file through the split walk;
+`TTTT_POISON_SCOPES` for the kept function scopes); the shard's guards (`frozen`, `log_error` on a binder write)
+catching a resolve write to shared state at check time; TSan on the corpora at T4 (materialization is the first
+binder write during checking).
+### Stage 2 (todo entry 3): drop at the last incarnation, O(1)
+- **One arena per materialization** holding everything it makes: the bodies' AST (`ast_malloc` bumps it while
+  materializing, as parse_file()'s thread does for the file arena), scopes, flow nodes, symbols, `AccessSite`s, rare
+  structs made by the walk, the yields arrays; the malloc'd leftovers of plan 63 (cooked string and template cstrs,
+  `Value` strings) become arena `csview`s for bodies at least. Then the drop is an arena release, no `block_drop()`
+  walk; at drop, the outermost FunctionImpls' `body` and DeferredBody state are reset (no reader holds it).
+- **Per-thread chunk pool** (no mmap/munmap or fresh faults per body; no prefault or huge-page budget): dropped
+  chunks go back to the dropping thread's pool, sized from the file's body source (~14 B per source byte). Addresses
+  *are* reused: safe for per-checker state (above); audit program-level node-keyed state (`Error.once_key`, the
+  binder's pending lists, Program caches written during check) and purge or re-key it. Chunk reuse must not assume
+  zeroed memory (check `ast_new()`/arena users that rely on fresh zero pages; memset if so).
+- **LazyType slots**: a materialization's LazyTypes get a slot range fixed per file at its first materialization
+  and reused by every later one (same parse, same count), so the process-wide counter (hacks.md) stops growing with
+  re-materializations and memo pages for a dropped incarnation go with its checker.
+- **Churn on vscode** (to measure): ~1.26 GB of materialized body memory per run once, plus cross-demand rounds
+  (591 files / 9.5 MB of source per round, ~130 MB) per incarnation that demands them (K1: up to 10): ~1.3-1.6 GB of
+  arena traffic. Fresh pages would be ~400k faults (~0.2-0.4 s, 2-3% of K1); with the pool, faults only up to the
+  pool's high-water mark (K1 ~130 MB of live bodies, ~33k pages).
+Validate: stage 1's oracles again (byte-identical, `TTTT_AST_POISON=1` for dropped materializations: every reader
+must hold a ref), **the memory table** (measurements.md "Plan 78": RSS after parse / after names / peak at K1 and T4,
+`/usr/bin/time`, vscode, effect, webpack, drizzle, type-fest, before and after, next to bun's), instrcount +3%.
+### Stage 3 (todo entry 4): policy, breadth, closing
+- Cross demand: measure re-materialization cost at file granularity (count rounds per run); if it shows in
+  instructions, materialize single bodies when the demand is a return type (the 95% kind) and the resolve walk's
+  cross-body writes are proven not to matter for it (audit `is_assigned*`/`referenced`/`flow_start` readers), or keep
+  cross-demanded files alive across one recycle.
+- **TSX**: a JSX-aware skipper (JSX text with quotes and braces, `<` in expression position) or eager .tsx: measure on
+  excalidraw, bulletproof-react, tanstack-router (app corpora are mostly .tsx). JavaScript stays eager (expandos,
+  `this.x =` declarations inside bodies).
+- **Dynamic `import()`**: the skipper records the module name literal of `import("m")` (adds the ModuleRef) instead of
+  giving up, if vscode's 384 eager bodies are worth it.
+- `-b`: `skip_typed_bodies` folds into deferral (referenced projects' bodies are never materialized); `TTTT_CHECK_ONLY`;
+  `--expect-types`; the harness's default (deferral on once byte-identical?).
+- kdiff/recycle oracles, perfsweep types ratio unchanged, scaleprobe (one huge function body).
+- Close: documentation.md "Deferred bodies" (Parse, Resolve, Typecheck, Memory sections), hacks.md (whatever stayed
+  eager and why), delete this plan and the probe patch.
+
+## Validation (whole plan)
+Every oracle byte-identical at every stage; the suite 0 lost with deferral on and off; instrcount within +3% on every
+corpus; vscode K1 peak <= ~1.5 GB and T4 <= ~1.8 GB (`/usr/bin/time`), effect/drizzle/type-fest not worse, webpack
+unchanged.
+
+## Probe (`agents/plans/78_probe.patch`, applies to cb3c529b)
+`TTTT_SKIP_ALL_BODIES=1` every TypeScript body the old skipper is sure of, `=2` with the paren-head rule, `=3` verify
+(skip, parse, compare ends; counts at exit), `=5` as 2 but eager with parameter defaults; prints `skipprobe:` give-up
+counts after names. `TTTT_PROBE_NO_CHECK=1` stops after names. `TTTT_BODY_PROBE=1` counts body reads by kind (own
+file, cross TS, cross JS) and the cross-demanded outermost bodies by incarnation, at exit.
