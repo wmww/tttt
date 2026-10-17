@@ -133,7 +133,9 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
+    u64 checker_memory_shared; // program_set_checker_memory_shared(), bytes: UINT64_MAX none
     u64 checker_budget; // While typechecking: what each checker may hold (checker_memory split between them)
+    u64 checker_start_budget; // While typechecking: what each holds before its first recycle (check_share())
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
     bool emit_declarations; // program_set_emit_declarations()
@@ -211,6 +213,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .symlinks = symlink_cache_new(),
         .checker_memory = UINT64_MAX,
         .checker_memory_cap = UINT64_MAX,
+        .checker_memory_shared = UINT64_MAX,
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
@@ -3523,6 +3526,11 @@ void program_set_checker_memory_cap(Program* me, u64 bytes) {
     my checker_memory_cap = bytes;
 }
 
+void program_set_checker_memory_shared(Program* me, u64 bytes) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my checker_memory_shared = bytes;
+}
+
 void program_set_emit_declarations(Program* me, bool emit) { my emit_declarations = emit; }
 
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
@@ -4111,6 +4119,14 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // biggest projects at 4 checkers of 128 / 96 / 80 / 64 MB (measurements.md "The checkers' budget") put the corpora at
 // +1.4 / +2.3 / +3.3% wall for -6.5 / -11 / -17% peak, the sweep's at +3 / +5 / +9% for -3 / -6 / -7%
 #define CHECKER_MEMORY_FLOOR ((u64)96 << 20)
+// A segment shorter than this many files doubles its checker's next budget (program_set_checker_memory_shared(): the
+// CLI starts each of several checkers at 16 MB). Plan 81 stage 1 (measurements.md "Plan 81 stage 1") measured the
+// defaults at 4 checkers against bun's on the 15 corpora and the source sweep's 174 biggest: 96 MB each (before)
+// 4 / 14 bench corpora below bun's peak, 16 MB each without this 10 / 14 but the sweep's +28% wall (each recycle
+// rebuilds a shared graph the segment's first file doesn't show, react-select's tests ~100 ms each), with it at 16
+// files 9 / 14 and +13.5% (-22% peak), at 32 files 8 / 14 and +11%. Every corpus stays faster than bun, and 95% of
+// the sweep's projects
+#define CHECKER_MEMORY_BACKOFF_FILES 16
 // What program_set_checker_memory_cap() still leaves each checker: below it the warm-ups dominate (vscode at one
 // checker of 64 MB +4% wall; at 24 checkers of 64 MB +2.4% against 128, 1.75 GB less, measurements.md)
 #define CHECKER_MEMORY_CAP_FLOOR ((u64)64 << 20)
@@ -4131,6 +4147,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     // A recycle only pays when the checker has grown well past it (dokploy's trpc graph is ~150 MB, over a 128 MB
     // budget after any one file: recycled after nearly every file it was 20x slower)
     u64 segment_base = 0;
+    u64 budget = my checker_start_budget;
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
     bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
     for (u32 at = 0; at < total; at++) {
@@ -4168,7 +4185,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
         if (!segment_base) segment_base = held;
-        if (held <= my checker_budget || held <= 2 * segment_base) continue;
+        if (held <= budget || held <= 2 * segment_base) continue;
+        // (A segment this short rebuilt a shared warm state the first file didn't show: the next may hold twice as
+        // much, up to the full budget)
+        if (at + 1 - segment_start < CHECKER_MEMORY_BACKOFF_FILES) budget = 2 * budget < my checker_budget ? 2 * budget : my checker_budget;
         if (debug_env.file_times) {
             fprintf(stderr, "file time: recycle checker %u after %u files, held %llu MB, warm-up %llu MB\n", c,
                 at + 1 - segment_start, (unsigned long long)(held >> 20), (unsigned long long)(segment_base >> 20));
@@ -4325,6 +4345,7 @@ void program_typecheck(Program* me) {
         u64 capped = my checker_memory_cap / count > CHECKER_MEMORY_CAP_FLOOR ? my checker_memory_cap / count : CHECKER_MEMORY_CAP_FLOOR;
         if (capped < my checker_budget) my checker_budget = capped;
     }
+    my checker_start_budget = count > 1 && my checker_memory_shared < my checker_budget ? my checker_memory_shared : my checker_budget;
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     my binder->frozen = true;
     my errs->frozen = true;

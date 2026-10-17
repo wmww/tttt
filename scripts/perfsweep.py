@@ -22,6 +22,7 @@ gets a build info file of its own in /tmp each run (a cold check, nothing writte
   scripts/perfsweep.py --last             # reprint the last run's tables
   scripts/perfsweep.py --tsgo [-f ...]    # remeasure tsgo's side (after a machine or pin change)
   scripts/perfsweep.py --defaults         # also tttt at its default threads and checkers, against its own K1 run
+  scripts/perfsweep.py --defaults-only --bun PATH   # and bun's `bun check` at its defaults next to it (plan 81)
 
 --defaults is the only oracle timing tttt as users run it: the K1 run never recycles a checker nor splits the program,
 and a project can be fast at K1 and thrash at the defaults (dokploy took 55 s at the defaults, 2.9 s at K1: each
@@ -115,6 +116,17 @@ def run_tttt(project, timeout, mem_gb, defaults=False, extra=()):
             'checkers': int(m.group(1)) if (m := re.search(r'^time: checkers: (\d+)', text, re.M)) else 0}
 
 
+def run_bun(bun, project, timeout, mem_gb):
+    """bun's `bun check` (a Rust port of tsgo 7.0, plan 67) at its defaults: only its wall and peak RSS matter"""
+    cwd, p = project_args(project)
+    # (Run from an empty directory: in one whose package.json has a "check" script, `bun check` runs that instead)
+    with tempfile.TemporaryDirectory(prefix='perfsweep-') as tmp:
+        build_info = ['--tsBuildInfoFile', os.path.join(tmp, 'x.tsbuildinfo')] if incremental(cwd, p) else []
+        _, status, wall, rss = run([bun, 'check', '-p', os.path.join(cwd, p), '--noEmit', '--pretty', 'false', *build_info],
+                                   tmp, timeout, mem_gb)
+    return {'project': project, 'status': status if status in (0, 1, 2) else str(status), 'wall_s': wall, 'rss_kb': rss}
+
+
 def load_cache():
     return {r['project']: r for r in map(json.loads, gzip.open(CACHE, 'rt'))} if os.path.exists(CACHE) else {}
 
@@ -187,8 +199,8 @@ def report(rows, n, cache):
     table('slowest in tttt', lambda r: -r[1]['check_s'])
 
 
-def report_defaults(rows, n):
-    """rows: (project, K1 result, defaults result)"""
+def report_defaults(rows, n, bun=None):
+    """rows: (project, K1 result, defaults result); bun: project -> its run at its defaults"""
     if not rows:
         return
     walls = sorted(ratio(d['wall_s'], t['wall_s']) for _, t, d in rows)
@@ -205,6 +217,23 @@ def report_defaults(rows, n):
     for p, t, d in worst[:n]:
         print(f'  {p[:52]:52} {ratio(d["wall_s"], t["wall_s"]):6.2f} {t["wall_s"]:7.2f} {d["wall_s"]:7.2f} '
               f'{d["checkers"]:4} {d["recycles"]:6} {t["rss_kb"] >> 10:6} {d["rss_kb"] >> 10:7}')
+    both = [(p, d, bun[p]) for p, _, d in rows if bun and p in bun and bun[p]['status'] in (0, 1, 2)]
+    if not both:
+        return
+    walls = sorted(ratio(d['wall_s'], b['wall_s']) for _, d, b in both)
+    peaks = sorted(ratio(d['rss_kb'], b['rss_kb']) for _, d, b in both)
+    dw, bw = sum(d['wall_s'] for _, d, _ in both), sum(b['wall_s'] for _, _, b in both)
+    print(f'\ntttt at its defaults against bun at its defaults, {len(both)} projects, ratios tttt / bun:')
+    for name, xs in (('wall', walls), ('peak RSS', peaks)):
+        print(f'  {name:9} median {statistics.median(xs):5.2f}  p90 {q(xs, .9):5.2f}  worst {xs[-1]:6.2f}  '
+              f'best {xs[0]:5.2f}  (< 1: {sum(1 for x in xs if x < 1)} / {len(xs)})')
+    print(f'  total wall {dw:.0f}s vs {bw:.0f}s; peak RSS {sum(d["rss_kb"] for _, d, _ in both) >> 20:.0f} GB vs '
+          f'{sum(b["rss_kb"] for _, _, b in both) >> 20:.0f} GB summed')
+    print(f'  {"project":52} {"wall":>5} {"tttt s":>7} {"bun s":>7} {"peak":>5} {"tttt MB":>7} {"bun MB":>7} {"recyc":>6}')
+    worst = sorted(both, key=lambda r: -max(ratio(r[1]['wall_s'], r[2]['wall_s']), ratio(r[1]['rss_kb'], r[2]['rss_kb'])))
+    for p, d, b in worst[:n]:
+        print(f'  {p[:52]:52} {ratio(d["wall_s"], b["wall_s"]):5.2f} {d["wall_s"]:7.2f} {b["wall_s"]:7.2f} '
+              f'{ratio(d["rss_kb"], b["rss_kb"]):5.2f} {d["rss_kb"] >> 10:7} {b["rss_kb"] >> 10:7} {d["recycles"]:6}')
 
 
 def summary_line(rows):
@@ -234,6 +263,9 @@ def main():
     ap.add_argument('--defaults-args', default='', help="extra tttt arguments for the --defaults run ('--checker-memory 96'; its own --last file)")
     ap.add_argument('--defaults-only', action='store_true', help="reuse the last K1 run, rerun --defaults")
     ap.add_argument('--min-arena', type=int, help="--defaults only on the projects whose K1 arena was over this many MB")
+    ap.add_argument('--bun', metavar='PATH', help="with --defaults: also bun's `bun check` at its defaults (its runs kept "
+                    "in their own --last file, measured once per project; --bun-rerun remeasures)")
+    ap.add_argument('--bun-rerun', action='store_true')
     ap.add_argument('--summary', action='store_true', help='only the one line scripts/oracles.py prints')
     args = ap.parse_args()
     global LAST
@@ -301,6 +333,16 @@ def main():
             with open(last_defaults, 'w') as f:
                 json.dump(list(defaults.values()), f)
 
+    bun = {}
+    if args.bun and args.defaults:
+        last_bun = LAST.replace('.json', '-bun.json')
+        bun = {r['project']: r for r in json.load(open(last_bun))} if os.path.exists(last_bun) and not args.bun_rerun else {}
+        todo = [p for p in (defaults or checked) if p not in bun]
+        for r in parallel(lambda p: run_bun(args.bun, p, args.timeout, args.mem_gb), todo, 1, 'bun'):
+            bun[r['project']] = r
+        with open(last_bun, 'w') as f:
+            json.dump(list(bun.values()), f)
+
     failed = [p for p in checked if p in results and results[p]['status'] not in (0, 1, 2)]
     rows = [(p, results[p], cache[p]) for p in checked if p in results and p not in failed and results[p]['types']]
     if args.summary:
@@ -313,7 +355,7 @@ def main():
         if p in results and p not in failed and not results[p]['types']:
             print(f'  tttt checked nothing: {p} (tsgo {cache[p]["types"]} types)')
     report(rows, args.n, cache)
-    report_defaults([(p, t, defaults[p]) for p, t, _ in rows if p in defaults and defaults[p]['status'] in (0, 1, 2)], args.n)
+    report_defaults([(p, t, defaults[p]) for p, t, _ in rows if p in defaults and defaults[p]['status'] in (0, 1, 2)], args.n, bun)
     for p in defaults:
         if defaults[p]['status'] not in (0, 1, 2):
             print(f'  tttt FAILED at its defaults {p}: {defaults[p]["status"]}')
