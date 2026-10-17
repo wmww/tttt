@@ -180,9 +180,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   ReadonlyArray non-thisless and loses dependentDestructuredVariablesFromNestedPatterns' tuple inference.
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
-- Evolving arrays: only an `x.push(...)`/`x.unshift(...)` callee marks an operation target (`flow_array_mutation()`);
-  tsc's isEvolvingArrayOperationTarget also takes `f(x.push)`. Switch clauses narrow the final array, not the
-  `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array tests, flagflip noImplicitAny cells.
+- Evolving arrays: switch clauses narrow the final array, not the `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array
+  tests, flagflip noImplicitAny cells.
 - `expr_is_narrowable_reference()`: `a = b` counts whatever its left side; tsc wants a LeftHandSideExpression (differs
   only after parser recovery).
 - `narrowable_type`: element access narrows for literal indices only. A rest pattern's initializer is checked once

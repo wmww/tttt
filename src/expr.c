@@ -2201,6 +2201,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 callee->function->is_iife = true;
                 function_impl_rare_mut(callee->function)->iife_arg_count = (u32)vec_expr_size(&my call->args);
                 function_impl_rare_mut(callee->function)->iife_call = my call;
+                flow_call_argument_targets(my call);
                 expr_lookup_names(&my call->callable, names, errs);
                 flow->next_function_is_iife = false;
                 break;

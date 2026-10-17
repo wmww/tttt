@@ -1,0 +1,71 @@
+//// [test/cases/ttttEvolvingArrayPushArgument.ts] ////
+
+=== ttttEvolvingArrayPushArgument.ts ===
+// `x.push` and `x.unshift` passed to a call read x as an evolving array (tsc's isEvolvingArrayOperationTarget: the
+// access's parent is a call expression), without finalizing it nor adding to it
+declare function f(g: (...items: any[]) => number): void;
+>f : Symbol(f, Decl(ttttEvolvingArrayPushArgument.ts, 0, 0))
+>g : Symbol(g, Decl(ttttEvolvingArrayPushArgument.ts, 2, 19))
+>items : Symbol(items, Decl(ttttEvolvingArrayPushArgument.ts, 2, 23))
+
+function a() {
+>a : Symbol(a, Decl(ttttEvolvingArrayPushArgument.ts, 2, 57))
+
+    let x = [];
+>x : Symbol(x, Decl(ttttEvolvingArrayPushArgument.ts, 4, 7))
+
+    f(x.push);
+>f : Symbol(f, Decl(ttttEvolvingArrayPushArgument.ts, 0, 0))
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttEvolvingArrayPushArgument.ts, 4, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+    x.push(1);
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttEvolvingArrayPushArgument.ts, 4, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+    return x;
+>x : Symbol(x, Decl(ttttEvolvingArrayPushArgument.ts, 4, 7))
+}
+function b() {
+>b : Symbol(b, Decl(ttttEvolvingArrayPushArgument.ts, 8, 1))
+
+    let y = [];
+>y : Symbol(y, Decl(ttttEvolvingArrayPushArgument.ts, 10, 7))
+
+    y.push("s");
+>y.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(ttttEvolvingArrayPushArgument.ts, 10, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+    f(y.unshift);
+>f : Symbol(f, Decl(ttttEvolvingArrayPushArgument.ts, 0, 0))
+>y.unshift : Symbol(Array.unshift, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(ttttEvolvingArrayPushArgument.ts, 10, 7))
+>unshift : Symbol(Array.unshift, Decl(lib.es5.d.ts, --, --))
+
+    return y;
+>y : Symbol(y, Decl(ttttEvolvingArrayPushArgument.ts, 10, 7))
+}
+function c() {
+>c : Symbol(c, Decl(ttttEvolvingArrayPushArgument.ts, 14, 1))
+
+    let z = [];
+>z : Symbol(z, Decl(ttttEvolvingArrayPushArgument.ts, 16, 7))
+
+    (function (g: unknown) {})(z.push);
+>g : Symbol(g, Decl(ttttEvolvingArrayPushArgument.ts, 17, 15))
+>z.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>z : Symbol(z, Decl(ttttEvolvingArrayPushArgument.ts, 16, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+    z.push(true);
+>z.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>z : Symbol(z, Decl(ttttEvolvingArrayPushArgument.ts, 16, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+    return z;
+>z : Symbol(z, Decl(ttttEvolvingArrayPushArgument.ts, 16, 7))
+}
+

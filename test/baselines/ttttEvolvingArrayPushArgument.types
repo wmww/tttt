@@ -1,0 +1,85 @@
+//// [test/cases/ttttEvolvingArrayPushArgument.ts] ////
+
+=== ttttEvolvingArrayPushArgument.ts ===
+// `x.push` and `x.unshift` passed to a call read x as an evolving array (tsc's isEvolvingArrayOperationTarget: the
+// access's parent is a call expression), without finalizing it nor adding to it
+declare function f(g: (...items: any[]) => number): void;
+>f : (g: (...items: any[]) => number) => void
+>g : (...items: any[]) => number
+>items : any[]
+
+function a() {
+>a : () => number[]
+
+    let x = [];
+>x : any[]
+>[] : never[]
+
+    f(x.push);
+>f(x.push) : void
+>f : (g: (...items: any[]) => number) => void
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+
+    x.push(1);
+>x.push(1) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>1 : 1
+
+    return x;
+>x : number[]
+}
+function b() {
+>b : () => string[]
+
+    let y = [];
+>y : any[]
+>[] : never[]
+
+    y.push("s");
+>y.push("s") : number
+>y.push : (...items: any[]) => number
+>y : any[]
+>push : (...items: any[]) => number
+>"s" : "s"
+
+    f(y.unshift);
+>f(y.unshift) : void
+>f : (g: (...items: any[]) => number) => void
+>y.unshift : (...items: any[]) => number
+>y : any[]
+>unshift : (...items: any[]) => number
+
+    return y;
+>y : string[]
+}
+function c() {
+>c : () => boolean[]
+
+    let z = [];
+>z : any[]
+>[] : never[]
+
+    (function (g: unknown) {})(z.push);
+>(function (g: unknown) {})(z.push) : void
+>(function (g: unknown) {}) : (g: unknown) => void
+>function (g: unknown) {} : (g: unknown) => void
+>g : unknown
+>z.push : (...items: any[]) => number
+>z : any[]
+>push : (...items: any[]) => number
+
+    z.push(true);
+>z.push(true) : number
+>z.push : (...items: any[]) => number
+>z : any[]
+>push : (...items: any[]) => number
+>true : true
+
+    return z;
+>z : boolean[]
+}
+

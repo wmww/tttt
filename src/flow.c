@@ -349,9 +349,21 @@ static bool is_dot_name(Expr const* access, char const* name) {
     return property_is_dot_name(access->property, name);
 }
 
+// `x.push` and `x.unshift` as a call's arguments read x as an evolving array too (tsc's isEvolvingArrayOperationTarget:
+// the property access's parent is a call expression, whichever its place), without mutating it
+void flow_call_argument_targets(CallExpr* call) {
+    if (call->uses_new) return;
+    for_each (i, vec_expr, &call->args) {
+        if (!expr_is_perenthisized(i) && (is_dot_name(i, "push") || is_dot_name(i, "unshift"))) {
+            mark_evolving_array_target(&i->property->expr, EVOLVING_OP_ACCESS, nullptr);
+        }
+    }
+}
+
 void flow_array_mutation(FlowBuilder* me, Expr* expr) {
     Expr* object;
     if (expr->tag == EXPR_CALL) {
+        flow_call_argument_targets(expr->call);
         Expr* callee = &expr->call->callable;
         while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
         if (expr->call->uses_new || !(is_dot_name(callee, "push") || is_dot_name(callee, "unshift"))) return;

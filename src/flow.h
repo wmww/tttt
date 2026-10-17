@@ -10,6 +10,7 @@
 // binder's arena
 
 typedef struct Expr Expr;
+typedef struct CallExpr CallExpr;
 typedef struct Binding Binding;
 typedef struct Statement Statement;
 typedef struct FunctionImpl FunctionImpl;
@@ -294,6 +295,7 @@ bool expr_is_narrowable_reference(Expr const* me);
 // an evolving array operation target (IdentifierExpr.evolving_op), and get an array mutation node (tsc's
 // createFlowMutation) if x may be an auto-typed variable
 void flow_array_mutation(FlowBuilder* me, Expr* expr);
+void flow_call_argument_targets(CallExpr* call);
 // `x.length` (any property access): marks x as an evolving array operation target
 void flow_length_access(Expr* access);
 bool expr_is_dotted_name(Expr const* me);
