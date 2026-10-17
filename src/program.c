@@ -3488,6 +3488,9 @@ void program_resolve_names(Program* me) {
     program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
     resolve_step_done("comment directives", &last);
 
+    // (Nothing resolves module names any more)
+    module_resolver_forget_resolutions(my resolver);
+    for (u32 i = 0; i < my reference_count && my reference_resolvers; i++) module_resolver_forget_resolutions(my reference_resolvers[i]);
     source_texts_release();
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

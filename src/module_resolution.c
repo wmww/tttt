@@ -182,6 +182,12 @@ void module_resolver_destroy(ModuleResolver* me) {
     free(me);
 }
 
+void module_resolver_forget_resolutions(ModuleResolver* me) {
+    if (!me) return;
+    hmap_resolved_module_drop(&my resolutions);
+    my resolutions = (HMapResolvedModule){0};
+}
+
 // ---- Paths ----
 
 // Appends `path`'s segments to the absolute path in `out` (length `*len`) the way absolute_path_of() does

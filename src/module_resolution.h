@@ -62,6 +62,9 @@ ResolvedModule resolved_module_clone(ResolvedModule const* me);
 // fs and options must outlive the resolver. Options are read at resolution time, so they may still change after this
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options);
 void module_resolver_destroy(ModuleResolver* me);
+// Drops the cache of resolutions (once the program's files are loaded nothing asks again: 33 MB on vscode). Not while
+// another thread resolves
+void module_resolver_forget_resolutions(ModuleResolver* me);
 
 // Where a path leads once symlinks are followed (absolute in, absolute out). Without one paths are taken as they are.
 // Like tsc, only what is found in a node_modules is looked up (and not with `preserveSymlinks`), so that a linked

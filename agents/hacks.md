@@ -14,6 +14,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   2 MB blocks `/proc/buddyinfo` listed at the first call, a guess at what the kernel can give without compacting
   synchronously. Correct: whatever the kernel would tell us (nothing does, short of watching `compact_stall` in
   `/proc/vmstat`). Oracle: `compact_stall` and `thp_fault_alloc` around a vscode run (measurements.md "Plan 63").
+- `source_text_map()` (source_file.c): source text is a MAP_PRIVATE mapping of the file wrapped in a hand-built long
+  `cstr` (STC's private layout: `cstr_l_set_cap`), and `source_texts_release()` drops its pages at every recycle. A
+  file changed by another process mid-run is read changed, a truncated one is SIGBUS (clang's MemoryBuffer has the same
+  trade); only tttt's own declaration writes are guarded (`source_text_detach()`, a linear scan of every mapping per
+  written file). Anything that drops or mutates `SourceFile.contents` must check `text_mapping` first. Correct: a
+  `csview` text field. Oracle: the corpora and sweeps (the harness's mock fs never maps).
 - `check_share()` / `checker_memory()` (program.c, ty/checker.c): checker recycling assumes no diagnostic depends on a
   checker's history; false in a few places (undefinedProperties member order: 4 vscode `.d.ts`; bugs/sourcesweep_checker.md
   "History dependences recycling exposes"). `checker_memory()` leaves out LazyMemo pages (real memory the budget doesn't

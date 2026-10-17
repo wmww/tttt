@@ -266,19 +266,16 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by
     later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
     stack and copied out exact would remove the churn, not much memory.
-  - **Expr 72 -> 40** (plan 75's census, vscode after names: 8.19M Exprs = 590 MB; 2.59M identifiers, 1.14M
-    literals, 0.31M implicit any, 4.46M boxed variants using 8 of the union's 40 bytes): box IdentifierExpr and Value
-    (146 `.identifier` and 78 `.literal` sites) and the union is a pointer. -262 MB of Expr slots, but each identifier
-    box needs its name span too (identifier_expr_name() reads the Expr around it; Exprs move while vectors grow, so no
-    back pointer): +56 B x 2.59M, literals +~16 B: **net ~-100 MB** (~-140 MB if the box drops the rare union, 21k
-    users, to a side table). Plus one pointer chase per identifier in the checker: measure instructions first. A
-    session of its own if memory against bun becomes the priority again.
+  - **After plan 78 the AST diet is small change** (plan 80, closed 2026-10-17): vscode after names holds 1.32M Exprs
+    (95 MB) and ~470 MB of AST, diffuse. Leads, each under the 50 MB gate: ClassItem 448 B (an inline FunctionImpl
+    288; box it, 147 sites, ~-17 MB; box a field's value and type too, ~-25), FunctionArg 200, PortStatement 216 +
+    ModuleRef 112 per import (~67 MB of import/export after names), Expr boxing ~-15..20, 8-byte spans ~-35.
   - Struct diet leftovers (plan 63 stage 1b, < 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
     because of IdentifierExpr: `symbol` into the union when it differs from `target`, with a 2-bit kind and a per-file
     side table for the union's other users; 54 `identifier_symbol()` readers, every union writer through a migrating
     setter; a session of its own), **Binding element-only fields** behind a `BindingElement*` (37k of 700k bindings,
     ~-18 MB, ~110 readers), **Symbol** 152 -> 144 (bit fields; `is_assigned*` are written by resolve threads and must
-    stay bytes), the **ResolvedModule** cache's failure hints behind a pointer (~-10 MB). PropertyExpr 128 -> 112
+    stay bytes), the ResolvedModule cache is dropped after names now. PropertyExpr 128 -> 112
     needs its name span derived from the source text (lower.c's synthesized accesses name keys from elsewhere). Not
     worth it (measured): BinaryOpExpr, Statement, ClassItem. With the arena, sizes no longer round to malloc classes:
     every 8 bytes saved now counts.

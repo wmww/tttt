@@ -234,6 +234,17 @@ front; workers take the biggest queued file first (`program_set_file_size()`, `s
 (tsc's `checker.ts`, `lib.dom.d.ts`) isn't started last. The resolver is shared (its caches are under a lock) and so is
 the program's cwd (`program_cwd()`); `compiler_options()` is per thread. `program_load_ahead_from()`'s guesses are a simplified copy of `program_load_module_ref()`/`program_handle_statement()` (`TTTT_LOAD_POOL_STATS=1` shows the hits); sizes come from `stat()` in main.c, the harness queues FIFO.
 
+**Source text is mapped, not read** (plan 80): `program_make_source()` maps files read through the real `fs`
+(`source_text_map()`, MAP_PRIVATE, read-only) unless a content mapper reads them or they are UTF-16; `contents` is then
+a long `cstr` pointing at the mapping that must never be dropped or changed (`SourceFile.text_mapping`;
+`source_file_drop()` unmaps). Mappings lie end to end in reserved 256 MB segments (at most 16k files, then read()), so
+`source_texts_release()` drops every text's pages from the process with one madvise per segment: after names and at
+every checker recycle. They stay in the page cache and come back on the next read (a minor fault), so the process holds
+only the text read since (vscode K1 peak -100 MB, +1% wall). The terminator the parser reads is the zero tail of the
+mapping's last page: a file whose size is a page multiple is read() instead. Like clang's MemoryBuffer, a file another
+process changes during the run is read changed (SIGBUS if truncated); tttt's own writes (declaration emit) call
+`source_text_detach()` first, which moves a mapped file's text to a memfd at the same address.
+
 ### Parse
 The parser creates an AST from the source code string, see below.
 
