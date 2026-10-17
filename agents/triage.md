@@ -14,3 +14,12 @@ caveats", the 12-core sections); this session ran on the 4-vCPU box again (`npro
   `.tsbuildinfo` (`incremental: true`, outDir checked in): webcmd's `dist/tsconfig.tsbuildinfo` makes tsc skip checking
   (85 types, check 0.000 s; 0.95 s with `--incremental false`, tttt 0.34 s). perfsweep measures cold; the sweep's
   oracle (tttt-oracle) should too, or the list should drop projects whose tsc side built < 1000 types.
+- **A project reached through a symlinked directory loads files twice** (plan 81 planning, 2026-10-17): in a worktree
+  whose `thirdparty/corpora` is a symlink to the main checkout (CLAUDE.md's worktree recipe), `tttt --noEmit -p
+  thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json` lists 303 effect files under the symlink's target
+  (`/home/ai/tttt/...`) next to the same 950 under the worktree path: 3165 errors, 14 MB of checked source instead of 9
+  MB. tsc 7 run the same way gets 5 such files and 5 errors (its own). Some resolution (workspace package
+  self-reference, `paths`, or `node_modules/effect` -> realpath) realpaths where tsc keeps the symlink path or maps
+  it back onto the root file. A user with a symlinked project directory sees the same thing. Also check whether
+  sub-agents' worktree oracle runs (realworld.py on effect, the sweeps) were affected; running with absolute
+  main-checkout paths avoids it.

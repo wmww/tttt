@@ -11,6 +11,68 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 81 planning: the checker's density census, bun's thread scaling, the budget frontier (2026-10-17, todo entry 2)
+The 4-vCPU box, ad4e1701, no product code. **Census at one checker without recycling** (`scripts/arenasites.sh -p P
+--checker-memory 100000`; its site table is process-wide, so binder_new_symbol/scope_*/symbol_* lines are the
+program's, not the checker's). Arena MB at the end / types; the biggest checker sites, MB:
+| | valibot | webpack | zod | excalidraw | effect | vscode |
+|---|---|---|---|---|---|---|
+| arena / types | 137 / 224k | 182 / 320k | 276 / 369k | 140 / 151k | 359 / 533k | 1482 / 2.39M |
+| `ty_alloc` (types, ~108 B avg) | 22.6 | 35.9 | 40.7 | 16.8 | 57.3 | 277.5 |
+| instantiated Props (`instantiate_members`, 56 B) | 22.9 | 22.9 | 63.3 | 11.2 | 30.8 | 134.9 |
+| instantiated Signatures (160 B) | 2.9 | 5.5 | 14.3 | 2.4 | 13.4 | 27.9 |
+| `builder_finish` (Members 72 B, props_by_name, arrays) | 13.6 | 20.1 | 32.6 | 12.2 | 31.5 | 148.8 |
+| object literal Prop+PropDecl (152 B) | 8.3 | 12.9 | 3.7 | 27.6 | 5.8 | 183.5 |
+| namespace export Prop+PropDecl (152 B) | - | 3.6 | 7.4 | - | **42.1** | 18.2 |
+| mappers (24 B header + both lists copied) | ~8 | ~4 | ~16 | ~6 | **~60** | ~95 |
+| intern keys (`intern_slot`) | 18.1 | 23.1 | 24.6 | 20.6 | 32.7 | 173.4 |
+| PropDeclRare (160 B) | 5.5 | ~1 | 10.9 | 7.3 | 3.6 | 14.9 |
+| CallResolution (`call_return_type`) | 1.3 | 2.9 | ~1 | 2.7 | 5.0 | 54.5 |
+Mappers on effect (ty_list_copy and ty_mapper_new inlined in a scratch build to attribute them): ~990k mappers, 22.6
+MB of headers + 2 x 18.5 MB of copied lists; `inference_mapper_of` 27 MB of it. The checker's malloc on top (memtrack
+`--phase typecheck`, and a scratch `--time` line per checker): intern tables + node links + relation caches + LazyMemo
+pages are 5-17 MB per checker at the defaults (zeroed_table: 56 MB on effect at K1 without recycling), materialized
+bodies 10-15 MB per program.
+
+**Priced density items** (arena MB saved at K1, mid estimates): instantiated Prop 56 -> 40 B (drop `parent`/`decl`:
+valibot 6.5, webpack 6.6, zod 18, excalidraw 3.2, effect 8.9, vscode 39); instantiated Signature 160 -> ~64 B (1.7,
+3.3, 8.6, 1.4, 8, 17); object literal PropDecl compact (~-35%: 2.9, 4.5, 1.3, 9.7, 2, 64); namespace export props
+without a PropDecl (0, 2.2, 4.4, 0, 25-42, 11-18); mappers sharing stable lists, arrays inline (4, 2, 8, 2, 20, 30);
+instantiated members' props_by_name from the source's permutation (3.3, 5.4, 9.5, 3.5, 5.8, 30); intern keys -20%
+(3.6, 4.6, 5, 4, 6.5, 35); per-kind Ty layouts -15% (3.4, 5.4, 6, 2.5, 8.6, 42). **All eight: valibot 18%, webpack
+19%, zod 22%, excalidraw 19%, effect 24%, vscode 18% of the arena**, less of arena-plus-malloc, ~10-13% of the peak at
+the defaults; most of them touch hundreds of readers (`prop->name`, `prop->decl`, Signature fields). Under the 25% gate.
+
+**Per-type cost is bun's already at one thread** (`/usr/bin/time` peak MB, wall s, user s; tttt K1 = `--checkers 1`
+at its 256 MB budget):
+| | tttt K1 | bun T1 | bun T2 | bun T4 | tttt K4 (defaults) |
+|---|---|---|---|---|---|
+| valibot | 276 / 0.45 / 0.48 | 285 / 1.03 / 0.95 | **150** / 0.65 / 1.23 | 159 / 0.48 / 1.72 | 317 / 0.25 / 0.73 |
+| effect | 556 / 1.29 / 1.50 | 380 / 3.19 / 3.05 | **278** / 1.83 / 3.52 | 324 / 1.41 / 5.17 | 616 / 0.68 / 2.06 |
+| excalidraw | 392 / 0.77 / 0.95 | 369 / 1.51 / 1.39 | **263** / 1.12 / 2.06 | 282 / 0.83 / 2.87 | 483 / 0.52 / 1.50 |
+bun's memory *falls* from one thread to two while its CPU time rises 15-50% (T4: +70-110%): at more than one thread
+it re-derives instead of keeping (its T1 RSS climbs steadily through the check, its T4 RSS is flat). tttt's K4 holds 4
+budgets' worth. **Duplication across K** (sum of the 4 checkers' arenas at the defaults, no recycle, against K1's
+whole arena): valibot 174 vs 137 (+27%), webpack 239 vs 182 (+31%), excalidraw 209 vs 140 (+49%): a shared frozen
+declared layer saves at most that slice (37-69 MB), less than the budget does.
+
+**The budget frontier at the defaults** (4 checkers, `--checker-memory MB` each; wall s / peak MB, one or best of 2):
+| | 96 (now) | 48 | 32 | 24 | 16 | bun T4 |
+|---|---|---|---|---|---|---|
+| valibot | 0.24 / 318 | 0.25 / 281 | 0.27 / 214 | 0.26 / 186 | 0.28 / **151** | 0.48 / 159 |
+| effect | 0.68 / 622 | 0.68 / 436 | 0.67 / 373 | 0.71 / 357 | 0.70 / 351 | 1.41 / 324 |
+| excalidraw | 0.47 / 480 | 0.50 / 382 | 0.52 / 327 | 0.56 / 293 | 0.60 / **278** | 0.83 / 282 |
+| webpack | 0.65 / 629 | 0.65 / 484 | 0.68 / 430 | 0.68 / 407 | 0.70 / 381 | 1.09 / 365 |
+| drizzle | 0.57 / 527 | 0.61 / 359 | 0.69 / **312** | | 0.73 / 325 | 0.99 / 332 |
+| zod | 0.39 / 500 | 0.42 / 326 | 0.43 / **287** | | 0.49 / 220 | 0.69 / 322 |
+| type-fest | 0.50 / 513 | 0.49 / 435 | 0.50 / 500 | | 0.50 / 464 | 2.02 / 578 |
+| vscode | 6.07 / 1573 | 6.33 / **1270** | 6.49 / 1168 | | 7.17 / 1077 | 7.81 / 1552 |
+(bun T4 column: plan 67 "Where it stands" except valibot/effect/excalidraw, measured here.) At 32 MB tttt is at or
+below bun on 5 of these 8 and within 1.18x on the rest, every one still faster than bun (vscode 6.49 vs 7.81 s). Not
+measured here: the source sweep's 169 biggest, where entry 7 found 64 MB +9% wall (p90 +34%), and bun on them.
+A side finding (triage.md): in a worktree whose `thirdparty/corpora` is a symlink, tttt loads ~300 of effect's files
+twice (3165 errors; tsc 5).
+
 ## Plan 77, fresh repositories (2026-10-17, todo entry 1)
 28 repositories by a second rule (repos.txt's "Plan 77" comment: GitHub topics game, webgl, electron, discord-bot, cli,
 angular, nestjs, data-visualization, monorepo, vscode-extension; 300-3000 stars; the first 3 per topic with a root

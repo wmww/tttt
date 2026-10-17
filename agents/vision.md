@@ -49,12 +49,15 @@ types components) are the oracle, not the goal; real projects that are clean und
   most of the speed back (vscode +2.1% instructions over the window's start, every other corpus at or below; wall at
   the defaults ~+3%). Correctness untouched: every oracle unchanged at every merge, suite 13773 / 13812.
 - **The human's target is half met.** Single-threaded, "less than every competitor in most cases" holds (7 of 14 at
-  or below bun, the rest within 1.4x; tsgo everywhere). At the defaults it doesn't: 3 of 14. The mid-size programs'
-  gap is checker state: effect's checker holds ~740 bytes per type at K1 where bun's whole run is 377 MB for, likely,
-  tsgo's ~940k types. **The budget is the wrong knob** (entries 7-8 only moved along a speed/memory frontier); the
-  right one is density, bytes per unit of checking work, which buys fewer recycles and a lower budget at once. Plan
-  81 measures it first and has a gate; below the gate the gap is duplication across checkers and the shared frozen
-  layer plan 67 rejected comes back for a second look with numbers.
+  or below bun, the rest within 1.4x; tsgo everywhere). At the defaults it doesn't: 3 of 14. **Plan 81's planning
+  (2026-10-17) overturned this bullet's first diagnosis**, that density was the right knob and the budget the wrong
+  one. Per-type cost at one thread is already bun's (valibot 276 / 285 MB, excalidraw 392 / 369). Density's eight
+  priced items reach 18-24% of the arena, under the gate. Duplication across checkers is +27-49% of K1's arena,
+  too small for the shared layer. bun's peak *falls* from one thread to two because at more than one thread it pays
+  15-110% more CPU to re-derive types rather than keep them. tttt at 4 x 32 MB is at or below bun on 5 of 8
+  corpora and still faster everywhere. The defaults' gap is a speed/memory trade bun makes and tttt's ~3% rule
+  forbids: plan 81 stage 1 measures it against bun on the sweep's tail and proposes "faster than bun" as the
+  defaults' bound.
 - **Deferred bodies are a new invariant surface** (hacks.md "Deferred bodies": +54 lines, what a body's walk writes
   outside its memory must be undone at a drop, readers must go through `function_impl_walked()`). The oracles for it
   exist (`TTTT_AST_POISON`, `kdiff -m 0`, the suite against `--no-defer-bodies`) and are in `scripts/oracles.py`; the
@@ -72,8 +75,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   tsgo *artifacts* (a runaway's model, a cache collision) is special-casing in a respectable form: don't.
 - **Memory target** (2026-10-16, the human): less memory than every competitor (bun, tsgo) in most cases, as fast
   as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Met single-threaded,
-  not at the defaults (2026-10-17): the lever now is checker density (plan 81), not the budget; a memory change costs at most ~3% wall and the
-  window's perf session pays it back. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
+  not at the defaults (2026-10-17). A memory change costs at most ~3% wall at K1, and the window's perf session pays
+  it back. **Open question for the next insights**: at the defaults, plan 81 stage 1 trades wall for memory down to
+  "faster than bun on every corpus and 90% of the sweep's tail" (bun itself pays 70-110% CPU at four threads for its
+  memory). Confirm that bound or restore the 3% rule there. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
   corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
   chosen by a different rule and report the day-one match rate (done once, 2026-10-17: 96.1%; the recipe is
@@ -199,8 +204,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes measured (76, parked)~~ done.
 19. ~~Memory: deferred function bodies (78), mmapped source text (80), the copying recycle measured and declined
    (79), the budget floor, a perf session, the memory bench against bun and tsgo~~ done.
-20. **Now**: fresh repositories (77), checker density (81: planning with a gate, then its stages), two debt sessions
+20. **Now**: fresh repositories (77), the defaults' memory (81: density under its gate, so the budget policy against
+   bun, then two cheap density items), two debt sessions
    (deferred bodies' accessors, JS emit guesses), checker balance (72 "Lead"), a perf session. Plan 58 (7.1.0 stable
    re-pin, then plan 66 stage 5's fan-out) once it's on npm, expected after 2026-11-24.
-21. Then: the shared declared layer if plan 81 says the defaults' gap is duplication; plan 76 only if the human
-   reopens it.
+21. Then: plan 81 stage 3 if recycles still cost on the tail; plan 76 only if the human reopens it. (Plan 81 measured
+   the shared declared layer's ceiling, 37-69 MB on mid-size corpora: still rejected.)

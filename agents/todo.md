@@ -21,11 +21,15 @@ and the defaults, output byte-identical at every K and budget.
 
 1. Done (ab6a8674 + the commit after): plan 77, 28 fresh repos, day one 195 / 203 projects (96.1%), after 203 / 203;
    whole sweep 3559 / 3566; every oracle unchanged. Entry 7 is therefore checker balance.
-2. **Plan 81 planning**: the checker's density census against tsgo (and bun's totals), with its gate. Rewrites plan 81
-   into stages or closes it.
-3. **Plan 81 stage 1** (or, if declined, a planning session reopening plan 67's rejected shared frozen declared layer
-   with plan 81's duplication numbers).
-4. **Plan 81 stage 2** (or that layer's prototype gate).
+2. Done (this commit): plan 81 planning. Density came in under its gate (eight items, 18-24% of the K1 arena), and
+   per-type cost at one thread is already bun's. bun's defaults re-derive types rather than keep them (its peak falls
+   from 1 to 2 threads, its CPU rises 15-110%). At 4 x 32 MB tttt is at or below bun on 5 of 8 corpora, still faster
+   than bun. Plan 81 is rewritten around the budget policy; measurements.md "Plan 81 planning" has the numbers.
+3. **Plan 81 stage 1**: the budget policy at K>1 against bun (perfsweep gets a bun column; corpora + the sweep's tail at
+   96-24 MB). Its gate replaces the ~3% rule at the defaults (vision.md "Memory target" asks the next insights to
+   confirm).
+4. **Plan 81 stage 2**: namespace export props and mappers (effect's 42 + ~60 MB at K1), measured by recycles and wall
+   at stage 1's budget.
 5. **Debt: deferred bodies' invariants** (hacks.md "Deferred bodies"): the body walk's outputs (`end_flow`, returns,
    yields, `contains_this`, ...) behind accessors so the compiler finds every reader, as the entry's "Correct:" says;
    whatever else in that entry is a session's fix. Delete or shrink hacks.md entries as they go.
