@@ -238,8 +238,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `Inference.array_literals`, because interned tuples can't carry ObjectFlags.ArrayLiteral.
 - `ty_union_signatures` isn't cached. `resolve_call` falls back per member for `super`, decorators and JSX when a union
   member has no signatures; tsc errors (decorators), uses the union signatures (`super`) or its own JSX rule.
-- `super(...)` of a base whose type parameter has no default and no written argument (TS2314): inferred
-  (`super_filled_type_arguments()` returns null); tsc's getConstructorsForTypeArguments drops the constructor.
 - `tagged_template_call()`: a stand-in CallExpr with a shallow copy of the tag (`CallInfo.tagged_template`). Correct: an
   argument-list abstraction over CallExpr and TaggedTemplate.
 - `signature_resolve`: a function expression takes its generic contextual signature's type parameters only if its

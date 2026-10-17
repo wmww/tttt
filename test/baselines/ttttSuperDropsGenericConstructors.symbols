@@ -1,0 +1,91 @@
+//// [test/cases/ttttSuperDropsGenericConstructors.ts] ////
+
+=== ttttSuperDropsGenericConstructors.ts ===
+// `super(...)` takes the base's constructors that take as many type arguments as the base clause gives (tsc's
+// getConstructorsForTypeArguments): a clause without them drops a generic constructor without defaults, so the
+// arity error is about the constructor left; none left is a call checked against nothing
+interface Both {
+>Both : Symbol(Both, Decl(ttttSuperDropsGenericConstructors.ts, 0, 0))
+
+    new <T>(x: T, y: string): { a: T };
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 4, 9))
+>x : Symbol(x, Decl(ttttSuperDropsGenericConstructors.ts, 4, 12))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 4, 9))
+>y : Symbol(y, Decl(ttttSuperDropsGenericConstructors.ts, 4, 17))
+>a : Symbol(a, Decl(ttttSuperDropsGenericConstructors.ts, 4, 31))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 4, 9))
+
+    new (x: number): { a: number };
+>x : Symbol(x, Decl(ttttSuperDropsGenericConstructors.ts, 5, 9))
+>a : Symbol(a, Decl(ttttSuperDropsGenericConstructors.ts, 5, 22))
+}
+declare const Ctor: Both;
+>Ctor : Symbol(Ctor, Decl(ttttSuperDropsGenericConstructors.ts, 7, 13))
+>Both : Symbol(Both, Decl(ttttSuperDropsGenericConstructors.ts, 0, 0))
+
+class E extends Ctor {
+>E : Symbol(E, Decl(ttttSuperDropsGenericConstructors.ts, 7, 25))
+>Ctor : Symbol(Ctor, Decl(ttttSuperDropsGenericConstructors.ts, 7, 13))
+
+    constructor() {
+        super(1, 2);
+>super : Symbol(Both, Decl(ttttSuperDropsGenericConstructors.ts, 0, 0))
+    }
+}
+interface OnlyGeneric {
+>OnlyGeneric : Symbol(OnlyGeneric, Decl(ttttSuperDropsGenericConstructors.ts, 12, 1))
+
+    new <T>(x: T, y: string): { a: T };
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 14, 9))
+>x : Symbol(x, Decl(ttttSuperDropsGenericConstructors.ts, 14, 12))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 14, 9))
+>y : Symbol(y, Decl(ttttSuperDropsGenericConstructors.ts, 14, 17))
+>a : Symbol(a, Decl(ttttSuperDropsGenericConstructors.ts, 14, 31))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 14, 9))
+}
+declare const Generic: OnlyGeneric;
+>Generic : Symbol(Generic, Decl(ttttSuperDropsGenericConstructors.ts, 16, 13))
+>OnlyGeneric : Symbol(OnlyGeneric, Decl(ttttSuperDropsGenericConstructors.ts, 12, 1))
+
+class D extends Generic {
+>D : Symbol(D, Decl(ttttSuperDropsGenericConstructors.ts, 16, 35))
+>Generic : Symbol(Generic, Decl(ttttSuperDropsGenericConstructors.ts, 16, 13))
+
+    constructor() {
+        super(1, 2);
+    }
+}
+interface Counts {
+>Counts : Symbol(Counts, Decl(ttttSuperDropsGenericConstructors.ts, 21, 1))
+
+    new <T>(x: T): { a: T };
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 23, 9))
+>x : Symbol(x, Decl(ttttSuperDropsGenericConstructors.ts, 23, 12))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 23, 9))
+>a : Symbol(a, Decl(ttttSuperDropsGenericConstructors.ts, 23, 20))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 23, 9))
+
+    new <T, U>(x: T, y: U): { a: T };
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 24, 9))
+>U : Symbol(U, Decl(ttttSuperDropsGenericConstructors.ts, 24, 11))
+>x : Symbol(x, Decl(ttttSuperDropsGenericConstructors.ts, 24, 15))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 24, 9))
+>y : Symbol(y, Decl(ttttSuperDropsGenericConstructors.ts, 24, 20))
+>U : Symbol(U, Decl(ttttSuperDropsGenericConstructors.ts, 24, 11))
+>a : Symbol(a, Decl(ttttSuperDropsGenericConstructors.ts, 24, 29))
+>T : Symbol(T, Decl(ttttSuperDropsGenericConstructors.ts, 24, 9))
+}
+declare const Counted: Counts;
+>Counted : Symbol(Counted, Decl(ttttSuperDropsGenericConstructors.ts, 26, 13))
+>Counts : Symbol(Counts, Decl(ttttSuperDropsGenericConstructors.ts, 21, 1))
+
+class F extends Counted<number, string> {
+>F : Symbol(F, Decl(ttttSuperDropsGenericConstructors.ts, 26, 30))
+>Counted : Symbol(Counted, Decl(ttttSuperDropsGenericConstructors.ts, 26, 13))
+
+    constructor() {
+        super(1);
+>super : Symbol(Counts, Decl(ttttSuperDropsGenericConstructors.ts, 21, 1))
+    }
+}
+

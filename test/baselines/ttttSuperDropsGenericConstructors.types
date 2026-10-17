@@ -1,0 +1,77 @@
+//// [test/cases/ttttSuperDropsGenericConstructors.ts] ////
+
+=== ttttSuperDropsGenericConstructors.ts ===
+// `super(...)` takes the base's constructors that take as many type arguments as the base clause gives (tsc's
+// getConstructorsForTypeArguments): a clause without them drops a generic constructor without defaults, so the
+// arity error is about the constructor left; none left is a call checked against nothing
+interface Both {
+    new <T>(x: T, y: string): { a: T };
+>x : T
+>y : string
+>a : T
+
+    new (x: number): { a: number };
+>x : number
+>a : number
+}
+declare const Ctor: Both;
+>Ctor : Both
+
+class E extends Ctor {
+>E : E
+>Ctor : { a: number; }
+
+    constructor() {
+        super(1, 2);
+>super(1, 2) : void
+>super : Both
+>1 : 1
+>2 : 2
+    }
+}
+interface OnlyGeneric {
+    new <T>(x: T, y: string): { a: T };
+>x : T
+>y : string
+>a : T
+}
+declare const Generic: OnlyGeneric;
+>Generic : OnlyGeneric
+
+class D extends Generic {
+>D : D
+>Generic : OnlyGeneric
+
+    constructor() {
+        super(1, 2);
+>super(1, 2) : void
+>super : any
+>1 : 1
+>2 : 2
+    }
+}
+interface Counts {
+    new <T>(x: T): { a: T };
+>x : T
+>a : T
+
+    new <T, U>(x: T, y: U): { a: T };
+>x : T
+>y : U
+>a : T
+}
+declare const Counted: Counts;
+>Counted : Counts
+
+class F extends Counted<number, string> {
+>F : F
+>Counted : { a: number; }
+
+    constructor() {
+        super(1);
+>super(1) : void
+>super : Counts
+>1 : 1
+    }
+}
+

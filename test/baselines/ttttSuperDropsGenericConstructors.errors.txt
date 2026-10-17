@@ -1,0 +1,46 @@
+ttttSuperDropsGenericConstructors.ts(11,18): error TS2554: Expected 1 arguments, but got 2.
+ttttSuperDropsGenericConstructors.ts(18,17): error TS2508: No base constructor has the specified number of type arguments.
+ttttSuperDropsGenericConstructors.ts(30,9): error TS2554: Expected 2 arguments, but got 1.
+
+
+==== ttttSuperDropsGenericConstructors.ts (3 errors) ====
+    // `super(...)` takes the base's constructors that take as many type arguments as the base clause gives (tsc's
+    // getConstructorsForTypeArguments): a clause without them drops a generic constructor without defaults, so the
+    // arity error is about the constructor left; none left is a call checked against nothing
+    interface Both {
+        new <T>(x: T, y: string): { a: T };
+        new (x: number): { a: number };
+    }
+    declare const Ctor: Both;
+    class E extends Ctor {
+        constructor() {
+            super(1, 2);
+                     ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+        }
+    }
+    interface OnlyGeneric {
+        new <T>(x: T, y: string): { a: T };
+    }
+    declare const Generic: OnlyGeneric;
+    class D extends Generic {
+                    ~~~~~~~
+!!! error TS2508: No base constructor has the specified number of type arguments.
+        constructor() {
+            super(1, 2);
+        }
+    }
+    interface Counts {
+        new <T>(x: T): { a: T };
+        new <T, U>(x: T, y: U): { a: T };
+    }
+    declare const Counted: Counts;
+    class F extends Counted<number, string> {
+        constructor() {
+            super(1);
+            ~~~~~
+!!! error TS2554: Expected 2 arguments, but got 1.
+!!! related TS6210 ttttSuperDropsGenericConstructors.ts:25:22: An argument for 'y' was not provided.
+        }
+    }
+    

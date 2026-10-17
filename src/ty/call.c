@@ -2216,16 +2216,14 @@ static TyMapper const* failure_type_arguments(Checker* me, Signature const* sig,
 
 static bool is_super_call(CallExpr const* call);
 
-// The mapper of a `super(...)` signature whose base clause has no type arguments (CallInfo.super_fill): tsc's
-// fillMissingTypeArguments, each type parameter its default, else any in JavaScript (where a default of unknown or
-// `{}` is any too) and unknown in TypeScript. Null: inferred after all (TypeScript, where a type parameter without a
-// default makes the clause TS2314 and getConstructorsForTypeArguments drop the constructor)
+// The mapper of a `super(...)` signature whose base clause has no type arguments (CallInfo.super_fill, the signature
+// takes none: resolve_call_inner() drops the others like getConstructorsForTypeArguments): tsc's
+// fillMissingTypeArguments, each type parameter its default (any in JavaScript for a default of unknown or `{}`)
 static TyMapper const* super_filled_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
     TyList params = sig->type_params;
     if (!info->super_fill || !params.len) return nullptr;
     SourceFile const* file = span_source(info->call_span);
     bool js = file && file->is_js;
-    if (!js && min_type_arguments(me, sig)) return nullptr;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
     for (u32 i = 0; i < params.len; i++) results[i] = ty_intrinsic(me, TY_ERROR);
     TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
@@ -2344,25 +2342,6 @@ static Resolution resolve_with_signatures(
     CallExpr const* saved_call = my resolving_call;
     my inferential_depth = 0;
     my resolving_call = info->call;
-    // A `super(...)` whose base clause has no type arguments: the base's constructors that take none (tsgo's
-    // getConstructorsForTypeArguments), none of them is a call checked against nothing (no error: resolveCall's
-    // unknownSignature)
-    Signature* filtered[16];
-    if (info->super_fill && count <= c_arraylen(filtered)) {
-        u32 kept = 0;
-        for (u32 i = 0; i < count; i++) {
-            signature_resolve(me, signatures[i]);
-            if (!min_type_arguments(me, signatures[i])) filtered[kept++] = signatures[i];
-        }
-        if (!kept && count) {
-            my inferential_depth = saved;
-            my resolving_call = saved_call;
-            for (u32 i = 0; i < args->len; i++) if (args->data[i].expr) ty_expr_type(me, args->data[i].expr);
-            return (Resolution){ .ret = ty_intrinsic(me, TY_ANY) };
-        }
-        signatures = filtered;
-        count = kept;
-    }
     Resolution ret = resolve_with_signatures_inner(me, signatures, count, args, info, call_span, errs);
     my inferential_depth = saved;
     my resolving_call = saved_call;
@@ -3054,6 +3033,25 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         }
     }
 
+    // `super(...)`: the base's constructors that take as many type arguments as its base clause has (tsgo's
+    // getConstructorsForTypeArguments: none for a clause without them, then filled in by super_filled_type_arguments()),
+    // none of them is a call checked against nothing (no error: resolveCall's unknownSignature)
+    if (info->super_fill || (info->type_arg_nodes && call && is_super_call(call))) {
+        u32 kept = 0;
+        for (u32 i = 0; i < count; i++) {
+            signature_resolve(me, signatures[i]);
+            u32 len = signatures[i]->type_params.len;
+            if (info->type_args.len >= min_type_arguments(me, signatures[i]) && info->type_args.len <= len) {
+                signatures[kept++] = signatures[i];
+            }
+        }
+        if (!kept) {
+            free(signatures);
+            for_each (i, vec_expr, &call->args) ty_expr_type(me, i->tag == EXPR_SPREAD ? i->spread : i);
+            return any;
+        }
+        count = kept;
+    }
     CallInfo with_this = *info;
     // (tsc's getSignatureApplicabilityError doesn't check `this` of a new expression)
     if (!construct && !info->new_as_call) {
