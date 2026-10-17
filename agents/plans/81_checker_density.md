@@ -20,26 +20,17 @@ Planned 2026-10-17 (todo entry 2 of the twentieth window); the numbers are measu
   of the nineteenth window turned 64 MB down because of the source sweep's tail (+9% wall, p90 +34%), measured
   against tttt's own 128 MB, not against bun. Bun was never measured on that tail.
 
-## Stage 1: the budget policy at more than one checker (one session)
-K1's 256 MB stays as it is. The vision's "~3% wall per memory change" rule is what stops this. The human's target
-says memory first ("less memory than every competitor in most cases"), speed after ("as fast as possible"), so this
-stage proposes a different bound at the defaults: **faster than bun everywhere**, on top of byte-identical output.
-The next insights session confirms the trade or reverts it (vision.md "Memory target" records the question).
-1. Get bun (`npm pack @oven/bun-linux-x64@1.4.3` into its own /tmp directory; bench.sh's header). Add bun to
-   `scripts/perfsweep.py --defaults-only` (a `--bun PATH` column: wall, peak, exit code) so the tail can be compared
-   with it. bun's diagnostics don't matter here, only its wall and RSS.
-2. Measure the frontier at 96 / 64 / 48 / 32 / 24 MB: the 15 `-p` corpora (`--corpora --defaults-only
-   --defaults-args "--checker-memory MB"`, best of 2) and the sweep's 169 projects whose K1 arena is over 64 MB
-   (`--min-arena 64`, one run each), each next to bun at its defaults.
-3. Pick the policy. A constant per-checker budget is the simple version. The warm-up guard (`check_share()`: recycle
-   only past 2x the segment's first file) is what keeps dokploy-like shared graphs from thrashing, so it stays. If one
-   constant can't serve both the corpora and the tail, try the guard's multiple (2x -> 1.5x / 3x) before anything
-   new. Nothing that depends on timing (the output and the cuts must stay K- and timing-independent).
-4. **Gate**: at the defaults, below bun's peak on at least 10 of the 14 bench corpora; faster than bun on every
-   corpus and on at least 90% of the tail's projects; tail total wall within +10% of today. Wherever it lands, write
-   the frontier table into measurements.md and the chosen budget's reasoning into `CHECKER_MEMORY_FLOOR`'s comment
-   (program.c). Oracles: `scripts/kdiff.py` and the recycle oracle (`-k 1 -m 0`), `scripts/checkerdiff.py`,
-   `scripts/oracles.py`. Then `scripts/bench.sh --runs 3 --bun`, and refresh plan 67's "Where it stands" table.
+## Stage 1: done (2026-10-17, todo entry 3; measurements.md "Plan 81 stage 1")
+Several checkers now start at 16 MB each (`program_set_checker_memory_shared()`, the CLI's default unless
+`--checker-memory` is given), and a checker whose segment ends after fewer than `CHECKER_MEMORY_BACKOFF_FILES` (16)
+files doubles its budget up to the split default (96 MB at 4). K1 unchanged. Gate missed on both sides by a little,
+no policy met both: corpora 9 / 14 at or below bun's peak (was 4; valibot 158 vs 151, tsc 220 vs 215, effect, webpack,
+xstate above), every corpus faster than bun (+12% summed corpora wall); the tail +14% wall (gate +10%), 96% faster
+than bun, -22.5% summed peak. The insights decides whether that trade stands (vision.md "Memory target"); reverting
+is `SHARED_CHECKER_MEMORY_MB` (main.c) at 96. The tail's cost is recycles rebuilding a shared graph the segment's
+first file doesn't show (react-select's tests: 0.28 -> 0.81 s, bun 0.25): that is what stage 2 has to make cheaper,
+and its measure is the tail's wall at today's policy (`scripts/perfsweep.py --defaults-only --min-arena 64 --bun
+PATH`, against the stage's table).
 
 ## Stage 2: make a recycle cheaper to pay for (one session, after stage 1)
 At a low budget each recycle re-derives the warm state, so bytes per derived type now buy wall time. The two
@@ -52,7 +43,9 @@ items that are a session each and hit effect, the worst corpus:
    mapper. `sources` is nearly always a declaration's stable type-parameter list, and `targets` often an interned
    list. Copy only the lists that aren't stable (callers say which, or copy into a single allocation with the header
    when not), and look at `inference_mapper_of()`'s 27 MB on effect: a fresh mapper per changed result.
-Measure recycles and wall at stage 1's budget on effect, zod, drizzle and the tail's top 20. Items that move neither
+Measure recycles and wall at stage 1's budget on effect, zod, drizzle and the tail's top 20 (react-select's tests,
+mikro-orm, folo's renderer, hop-protocol, monkeytype: measurements.md "Plan 81 stage 1"); a recycle's fixed cost
+(the global and library types rebuilt, `check_segment_after()`) is a candidate too. Items that move neither
 don't merge.
 
 ## Stage 3 (only if stage 2 shows recycles still cost on the tail)

@@ -23,3 +23,13 @@ caveats", the 12-core sections); this session ran on the 4-vCPU box again (`npro
   it back onto the root file. A user with a symlinked project directory sees the same thing. Also check whether
   sub-agents' worktree oracle runs (realworld.py on effect, the sweeps) were affected; running with absolute
   main-checkout paths avoids it.
+- **inbox-zero (and its apps/web), webcmd, solid are slower than bun at the defaults** (2026-10-17, plan 81 stage 1):
+  inbox-zero 1.45 s vs bun 0.86 at 4 checkers, already before stage 1's budget (not recycles). Find where its K4
+  time goes (`TTTT_FILE_TIMES=1`, per-checker times in `--time`): checker balance (plan 72) or a per-checker warm-up.
+- **TS5115/TS2589 depend on the checker's history** (2026-10-17, plan 81 stage 1): the instantiation depth limit
+  reports where a checker first hits it, then the error type is cached (tsgo's `instantiateTypeWithAlias` does the
+  same). Each fresh checker reports it again: flagflip's xstate sloppy/nosnc cells show 1 at K1 (tsc's 1), 2 at the
+  old 96 MB defaults, 3 at stage 1's 16 MB (State.ts:395, graph/utils.ts:91, test/meta.test.ts:80; `--checker-memory
+  0`: 5). kdiff/recycle don't see it (default flags). A fix would make the first report program-wide (an atomic
+  "reported" per circular type set, kept across recycles), which still depends on which checker gets there first;
+  or accept it as tsgo's own K-dependence (tsgo at 4 checkers can do the same).

@@ -25,11 +25,11 @@ and the defaults, output byte-identical at every K and budget.
    per-type cost at one thread is already bun's. bun's defaults re-derive types rather than keep them (its peak falls
    from 1 to 2 threads, its CPU rises 15-110%). At 4 x 32 MB tttt is at or below bun on 5 of 8 corpora, still faster
    than bun. Plan 81 is rewritten around the budget policy; measurements.md "Plan 81 planning" has the numbers.
-3. **Plan 81 stage 1**: the budget policy at K>1 against bun (perfsweep gets a bun column; corpora + the sweep's tail at
-   96-24 MB). Its gate replaces the ~3% rule at the defaults (vision.md "Memory target" asks the next insights to
-   confirm).
-4. **Plan 81 stage 2**: namespace export props and mappers (effect's 42 + ~60 MB at K1), measured by recycles and wall
-   at stage 1's budget.
+3. Done (this commit): plan 81 stage 1. Several checkers start at 16 MB, doubling after segments under 16 files; gate
+   missed on both sides by a little (corpora 9 / 14 at or below bun's peak, was 4, +12% wall; tail +14% wall, 96%
+   faster than bun, -22.5% peak). measurements.md "Plan 81 stage 1"; the insights decides.
+4. **Plan 81 stage 2**: namespace export props and mappers (effect's 42 + ~60 MB at K1), and a recycle's fixed cost,
+   measured by recycles and the tail's wall at stage 1's policy (the tail's +14% is what it pays back).
 5. **Debt: deferred bodies' invariants** (hacks.md "Deferred bodies"): the body walk's outputs (`end_flow`, returns,
    yields, `contains_this`, ...) behind accessors so the compiler finds every reader, as the entry's "Correct:" says;
    whatever else in that entry is a session's fix. Delete or shrink hacks.md entries as they go.

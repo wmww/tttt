@@ -11,6 +11,60 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 81 stage 1, the budget at several checkers against bun (2026-10-17, todo entry 3)
+The 4-vCPU box, 4 checkers, bun 1.4.3 at its defaults (`scripts/perfsweep.py --defaults-only --bun PATH`, which now
+runs `bun check` from an empty directory: in a corpus whose package.json has a `check` script, `bun check` runs the
+script). Corpora best of 2, wall s / peak MB / recycles; "16 b16" = 16 MB each, a checker's budget doubling after a
+segment of fewer than 16 files (up to the split default, 96 MB); "g4" = the warm-up guard at 4x instead of 2x:
+| | 96 (before) | 32 | 24 | 16 | 16 b16 (**chosen**) | 16 g4 b32 | bun |
+|---|---|---|---|---|---|---|---|
+| drizzle | 0.55 / 511 | 0.68 / 301 | 0.71 / 321 | 0.73 / 321 | 0.67 / 313 | 0.61 / 476 | 1.00 / 329 |
+| effect | 0.68 / 604 | 0.69 / 363 | 0.69 / 346 | 0.71 / 336 | 0.69 / 339 | 0.69 / 422 | 1.37 / 311 |
+| excalidraw | 0.47 / 467 | 0.52 / 316 | 0.56 / 290 | 0.60 / 263 | 0.59 / 258 | 0.56 / 298 | 0.83 / 274 |
+| nest | 0.12 / 150 | 0.12 / 149 | 0.12 / 152 | 0.11 / 149 | 0.11 / 151 | 0.12 / 151 | 0.14 / 177 |
+| react | 0.12 / 175 | 0.12 / 174 | 0.13 / 167 | 0.15 / 157 | 0.15 / 158 | 0.12 / 169 | 0.37 / 292 |
+| tanstack-router | 0.34 / 391 | 0.34 / 266 | 0.37 / 254 | 0.38 / 262 | 0.38 / 261 | 0.36 / 257 | 0.74 / 330 |
+| tsc | 0.30 / 273 | 0.30 / 277 | 0.30 / 239 | 0.30 / 218 | 0.30 / 220 | 0.31 / 230 | 0.47 / 215 |
+| type-fest | 0.50 / 499 | 0.50 / 487 | 0.50 / 442 | 0.50 / 448 | 0.50 / 442 | 0.49 / 511 | 2.03 / 555 |
+| valibot | 0.25 / 310 | 0.26 / 210 | 0.26 / 181 | 0.28 / 150 | 0.27 / 158 | 0.27 / 186 | 0.47 / 151 |
+| vscode | 5.90 / 1527 | 6.40 / 1161 | 6.73 / 1072 | 7.17 / 1049 | 6.71 / 1134 | 6.59 / 1251 | 7.91 / 1531 |
+| vue | 0.41 / 390 | 0.42 / 274 | 0.41 / 233 | 0.43 / 203 | 0.43 / 217 | 0.43 / 210 | 0.57 / 217 |
+| webpack | 0.64 / 616 | 0.66 / 417 | 0.67 / 398 | 0.69 / 366 | 0.70 / 401 | 0.69 / 416 | 1.11 / 353 |
+| xstate | 0.19 / 271 | 0.20 / 233 | 0.22 / 202 | 0.24 / 193 | 0.24 / 195 | 0.21 / 253 | 0.29 / 164 |
+| zod | 0.39 / 490 | 0.43 / 272 | 0.47 / 251 | 0.48 / 210 | 0.44 / 274 | 0.45 / 264 | 0.70 / 311 |
+| **sum** | 11.3 / 7184 | 12.2 / 5191 | 12.7 / 4822 | 13.4 / 4624 | 12.7 / 4865 | 12.4 / 5448 | |
+| at or below bun (of 14) | 4 | 7 | 7 | 10 | 9 | 7 | |
+(zod-root aside: 0.45 / 510 -> 0.55 / 344, bun 0.78 / 340; 64 and 48 MB: sums 11.6 / 6441 and 11.8 / 5748.) The source
+sweep's tail (174 projects whose K1 arena is over 64 MB, one run each; the default rerun moved -0.6%):
+| | wall vs before | ratio median / p90 / worst | faster than bun | peak at or below bun | peak sum | recycles |
+|---|---|---|---|---|---|---|
+| 96 (before) | 79 s | 1.00 | 169 (97%) | 33 | 64.6 GB | 155 |
+| 32 | +17% | 1.09 / 1.30 / 2.47 | 167 | 53 | -16% | 1067 |
+| 16 | +28% | 1.14 / 1.52 / 4.43 | 163 (94%) | 87 | -25% | 2264 |
+| 16 g4 | +14% | 1.10 / 1.36 / 4.33 | 168 | 77 | -21% | 1647 |
+| 16 b8 | +17% | 1.13 / 1.42 / 2.84 | 166 | 83 | -24% | 1778 |
+| 16 b16 (**chosen**, as built) | +14% | 1.09 / 1.40 / 2.88 | 167 (96%) | 76 | -22.5% | 1525 |
+| 16 b32 | +11% | 1.08 / 1.35 / 2.33 | 167 | 71 | -21% | 1387 |
+| 16 g4 b32 | +8% | 1.07 / 1.27 / 2.35 | 167 | 65 | -19.5% | 1254 |
+| 24 b32 | +10% | 1.09 / 1.31 / 1.92 | 167 | 62 | -18% | 1042 |
+**The gate (10 / 14 corpora below bun, faster everywhere, tail within +10%) is missed by every policy**: the corpora
+want low budgets and the tail wants few recycles. What the tail pays for: the guard's "2x the segment's first file"
+protects almost nothing at 16 MB (the first file mostly holds under 1 MB: react-select's tests build their ~20 MB of
+React types over several files, then recycle after 2-5 files, ~100 ms per recycle, 0.28 -> 1.25 s at plain 16).
+Doubling a checker's budget after a short segment helps those (react-select 1.25 -> 0.81 s) but lets drizzle and
+type-fest grow back. Chosen: 16 b16 (corpora 9 / 14, valibot and tsc within 5%; tail +14%, 96% faster than bun),
+the Pareto middle; stage 2 (cheaper recycles) is what moves the tail. Not faster than bun at it (7): inbox-zero and
+its apps/web (1.45 s vs 0.9, as slow before: not the budget), webcmd and solid (likewise), react-select's tests (0.28
+-> 0.81 vs bun 0.25, the budget's worst), mikro-orm/packages/decorators and ethereumjs-monorepo (ties).
+K1 is unchanged (`program_set_checker_memory_shared()` only applies to several checkers, and only when
+`--checker-memory` isn't given: every oracle passing it explicitly runs as before).
+`scripts/bench.sh --runs 3 --bun` (`/usr/bin/time` peaks, no Python parent): plan 67 "Where it stands", 9 / 14 at or
+below bun at the defaults. Peak at the defaults before -> after: vscode 1560 -> 1161, effect 605 -> 350, webpack 621 ->
+406, drizzle 511 -> 321, type-fest 501 -> 445 MB; K1 and the phases before checking unchanged. Instructions
+(`scripts/instrcount.sh`, K1): tsc 4.608, type-fest 10.939, valibot 3.460, webpack 9.601, zod 5.352, drizzle 6.628,
+effect 10.121, vscode 94.348 G (K1 doesn't run the new code). Oracles unchanged but flagflip 18 / 6 / 3 -> 18 / 8 / 3:
+one more TS5115 in xstate's two non-strict cells, the depth-limit error reported once per fresh checker (triage.md).
+
 ## Plan 81 planning: the checker's density census, bun's thread scaling, the budget frontier (2026-10-17, todo entry 2)
 The 4-vCPU box, ad4e1701, no product code. **Census at one checker without recycling** (`scripts/arenasites.sh -p P
 --checker-memory 100000`; its site table is process-wide, so binder_new_symbol/scope_*/symbol_* lines are the
