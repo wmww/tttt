@@ -44,53 +44,24 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   once), so a TS2589 near the 5M limit, and circular variance measurements (which follow the files a checker saw), can
   depend on `--checkers`. Oracle: `scripts/kdiff.py`, `checkerdiff.py`.
 
-- Deferred bodies (plan 78, documentation.md "Deferred bodies"), what keeps them exact:
-  - What a body's walk writes outside the body has a trailing `_` and is read through accessors that materialize first
-    (`function_impl_end_flow()`, `_has_explicit_return()`, `_has_bare_return()`, `_contains_this()`, `_return_flow()`,
-    `_first_super_call()`, `_first_this_or_super()`, `_yields()`; `class_field_ts_assigned(field, constructor)`,
-    `class_decl_computed_this_assignments()`): only the walk and the drop reset touch the raw fields. Left raw: a field
-    without type or initializer reads `ts_assigned_` without its constructor (`class_untyped_field_ts_assigned()`,
-    `check`s the field's shape: the parser keeps that constructor eager), `outer_this_function` (written by a `this` in
-    the body, read only from that `this`), `uses_arguments` (JavaScript, eager). Oracle: the suite against
-    `--no-defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
-  - What isn't deferred, decided by syntax in the parser (`skip_body()`, `undefer_body()`): parameters with expressions,
-    bodies starting with a string, expressions with a `(` in their signature after the parameter list's own (a function
-    type's walk asks `ty_function_is_context_sensitive()` of the enclosing function, which may read its body), IIFEs,
-    constructors of classes with instance fields (unless useDefineForClassFields at ES2022+, then only those with a
-    field without type and initializer: `constructor_locals()`, `field_type_from_assignments()`). Each is a reader of the
-    body during the names phase. Correct: those readers lazy, or answered from the parse. Cost: vscode undefers 5.3k of
-    96k bodies (`TTTT_DEFER_STATS=1`). The skipper also gives up on `import` and `require` anywhere in a body (they
-    add module names: vscode 384 bodies; recording `import("m")`'s ModuleRef from the skipper would need the
-    materialization's parse to find it again rather than add one, and a call with options to keep its attributes), on
-    `/` after `}` and `++`/`--` (regex or division), and in .tsx on what doesn't look like an element (`<T,>` generic
-    arrows, comments between attributes). JavaScript stays eager (expandos and `this.x =` declarations are names the
-    names phase needs); so do `-b`'s referenced projects' bodies without a written return type (`skip_typed_bodies`
-    never parses those with one; tsc-src -b peaks at 418 MB, typescript-eslint 552).
-  - Drops (stage 2, `deferred_bodies_drop_locked()`): what a body's walk writes outside the materialization's memory must
-    be put back or the next materialization finds the last one's (dangling into dropped pages). Handled: the function
-    scope's locals and the outer flow nodes' flags and return label (`DeferredScopeSnapshot`), the function's walk
-    fields (reset at the start of each walk in `function_impl_lookup_deferred_body()`, a rare struct the walk made
-    undone), fields' `ts_assigned`, `computed_this_assignments`, expando containers (`deferred_bodies_undo()`), the
-    file's unused registrations (`unused_before`). Monotonic writes are left (assignment marks, `referenced`,
-    `contains_this`). A body declaration merged into a parameter pins the file instead. A new write outside the bodies
-    needs one of those. Oracles: `TTTT_AST_POISON=1` with `--checker-memory 0` on the corpora (a dangling read faults),
-    the suite's `--checker-memory 0` line in `scripts/oracles.py`, `kdiff.py -k 1 -m 0`.
-  - A dropped materialization leaks what its AST malloc'd outside the arena (the parser's cooked strings and `Value`
-    strings: ~8 MB per round of all of vscode's bodies; a drop doesn't walk the AST, `block_drop()` cost 0.4 s there).
-    Correct: those strings in the AST arena (plan 80's spans and text).
-  - Re-materialization is per file (vscode K1 ~740 files again, 0.23 s of 13.5 single-threaded, ~2% of its
-    instructions, with the carry-over of cross-demanded files at a recycle): bugs/perf_leads.md "Deferred bodies".
-  - Materialization chunks (`ast_alloc.c` `chunks_ref()`): a 2 MB chunk is given back only when every materialization
-    in it is dropped, so a materialization that outlives its segment keeps its chunk; only those made for another file
-    are carried across recycles, and they come from a small-page slab (`AstArena.lasting`). A new way of keeping a
-    materialization alive (pinning more, longer carry-overs) must allocate it as lasting or the peak grows (owner
-    materializations carried: vscode K1 +155 MB).
-  - Signature/body name collisions and syntax errors in bodies rerun the whole program without deferral
-    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. A run
-    gated by options or syntax errors (two fifths of the source sweep's projects) parses the bodies alone for their
-    syntax errors (`program_deferred_bodies_parse()`) and reruns only if one has one. Correct for the collision: walk
-    the signature again after the body's names (its errors held back). Oracle: `defer: restarts` on the sweeps (0 on
-    the corpora).
+- Deferred bodies (plan 78; how they work and what a drop puts back: documentation.md "Deferred bodies"). The
+  approximations:
+  - Body walk outputs are read through materializing accessors (`function_impl_walked()`, trailing `_` on the raw
+    fields); left raw: an untyped uninitialized field's `ts_assigned_` (`class_untyped_field_ts_assigned()`, the parser
+    keeps that constructor eager), `outer_this_function`, `uses_arguments` (JS, eager). A new raw reader of a body's
+    output is a silent order dependence. Oracle: the suite against `--no-defer-bodies`, kdiff/checkerdiff.
+  - What isn't deferred is decided by syntax (`skip_body()`, `undefer_body()`): each case is a names-phase reader of the
+    body (parameters with expressions, a `(` after the parameter list, IIFEs, constructors of classes with fields,
+    `import`/`require` in a body, regex-or-division ambiguity, non-element `<` in .tsx). Correct: those readers lazy, or
+    answered from the parse. Cost: vscode undefers 5.3k of 96k bodies (`TTTT_DEFER_STATS=1`).
+  - A new write outside the bodies from their walk must be undone at a drop (`deferred_bodies_undo()`) or a new way of
+    keeping a materialization alive must allocate it lasting (`AstArena.lasting`; owner materializations carried cost
+    vscode K1 +155 MB). Oracle: `TTTT_AST_POISON=1 --checker-memory 0` on the corpora, `kdiff.py -k 1 -m 0`.
+  - A dropped materialization leaks its parser's malloc'd strings (~8 MB per round of vscode's bodies). Correct: those
+    strings in the AST arena. Re-materialization costs ~2% of vscode's instructions (bugs/perf_leads.md).
+  - Signature/body name collisions and body syntax errors rerun the whole program without deferral
+    (`program_defer_failed()`). Correct for collisions: walk the signature again after the body's names. Oracle:
+    `defer: restarts` on the sweeps (0 on the corpora).
 
 ## Parser
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`
@@ -230,7 +201,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_merged_value_type`: a second `Ty` beside the unmerged one (`ty_static_type_of`, what static `this` sees). Correct:
   one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
 - Optional parameters are `T` in the signature, `| undefined` added at use (`value_entry_type()`,
-  `ty_optional_param_type()`); tsc's parameter type has it (addOptionality). Same root as optional properties below.
+  `ty_optional_param_type()`); tsc's parameter type has it (addOptionality). Same root as optional properties below (plan 82).
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
 
@@ -340,7 +311,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   readers add it; tsc's getTypeOfSymbol has it. All-optional intersection parts intersect read types only when one has
   undefined and all are one type (react-select), not under exactOptionalPropertyTypes; a non-member part (`typeof f &
   { m?: X }`) drops PROP_OPTIONAL (required as a target). Always intersecting read types (tsc) is clean except a spurious
-  TS2590 in tiptap/demos' NodeViewContent.tsx:19 (a part differing in identity). Correct: types that carry undefined.
+  TS2590 in tiptap/demos' NodeViewContent.tsx:19 (a part differing in identity). Correct: types that carry undefined (plan 82).
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
   Correct: lazier alias references, or the gate after the alias resolves. Its default-constraint step also pushes the
@@ -395,8 +366,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   first reads the shape (`name_type_filters()`), then relates (cached per declared mapped type, KEY_MAPPED_FILTERING)
   only when the clause's source text has no `keyof` token: relating `${K}.${keyof Self<T[K]>}` from inside member
   resolution resolves members of mapped types in flight, which tttt then keeps incomplete
-  (mappedTypeAsClauseRecursiveNoCrash1 loses keys). A keyof clause the shape can't read counts as remapping (no
-  declarations linked: member order by name). Fix: make member resolution re-entrant like tsc's empty-members-upfront.
+  (mappedTypeAsClauseRecursiveNoCrash1 loses keys). A keyof clause the shape can't read, or a pending lazy branch (`peek_cond_branch()`), counts as remapping (no
+  declarations linked: member order by name). Fix: make member resolution re-entrant like tsc's empty-members-upfront (plan 83).
 - **An indexed access type node's missing key prints its object to a dropped string** (`lower()` TYPE_INDEXED,
   lower.c): tsc reports the key inside getIndexedAccessType, and the typeToString of its message resolves an
   anonymous object's member types while the alias resolves (`type A = { a: A }["x"]` is TS2456). tttt reproduces
@@ -420,9 +391,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `declared_inside()` (`instantiate_anonymous()`) drops only parameters declared inside the node. An object literal
   with a getter has instances of both kinds (zod's recursive-types.test.ts depends on which meet). Right rule: key by
   outer parameters once contextual parameters stop carrying call type parameters; perfsweep types ratio and zod show it.
-- `name_type_filters()`/`peek_cond_branch()`: an `as` clause filters vs remaps by its shape, not by relating it to the
-  key (tsc's getMappedTypeNameTypeKind), since relating reaches members in flight
-  (mappedTypeAsClauseRecursiveNoCrash1); a pending lazy branch counts as remapping. Shows as member order/declarations.
 - Stable type ordering (`ty/order.c`) ties still broken by tttt ids: roots without `outer`, deferred references with no
   cheap node position (`type_node_start()`), two nodes at one token, position-less unique symbols, intrinsic variants,
   same-symbol anonymous types with equal mappers. Shows as union order (displaydiff, expecttypes "union order").
@@ -504,8 +472,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Instantiation limit: an exhausted budget's results are memoized like tsc's (`test/probes/instantiation_limit/`), but
   tttt instantiates more eagerly (variance measurement, eager members), so a tttt-only TS2589 poisons what tsc would
   still compute; a cut-short conditional instance is re-reported only within its epoch.
-- Deep nesting identity: ObjectFlags.FromTypeNode only for array/tuple nodes (`reference_from_type_node()`), not
-  generic interface references: a partial port of isDeeplyNestedType's recursion identity.
 - `item_is_literal()` (ty_display.c): an object literal property valued by an array/object literal isn't printed from
   syntax in the unwidened type, told syntactically because tttt's tuples/arrays have no fresh twin (tsgo:
   ContainsObjectOrArrayLiteral). A real rule, not an artifact (without it only
@@ -527,7 +493,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   declaration tells (`Record<string, T>[never]` is T); tsc reads index signatures everywhere, but resolving xstate's
   keyless mapped types tipped TS5115 (flagflip nosnc/sloppy +7). Correct: instantiation accounting that doesn't
   depend on member resolution, or a lazy template for keyless mapped types.
-
 - `rest_literal()` (ty/lower.c) / `object_symbol()` (ty/order.c): a destructuring rest's binding symbol, which orders
   it in unions (tsc's getRestType symbol), lives in the anonymous type's `literal_expr` union slot (`rest_binding`,
   flagged `rest_of_binding`), free for synthetic objects; it is also kept in KEY_REST_SYMBOL links. Readers of
@@ -556,7 +521,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_check_index_constraints` on type literals only when syntactically needed (`type_literal_has_index_constraints()`):
   the others aren't lowered at their check, and an alias's literal body must be made as the alias's type first.
 - Syntactic stand-ins: overload grouping (`statements_check_overloads`, `class_check_overloads`); TS2729
-  (`initialized_in_static_blocks`: top-level `this.x =`, not flow); member kinds in `class_check_member_overrides()`
+  (`initialized_in_static_blocks`: top-level `this.x =`/`C.x =`, not tsc's control flow at each block's end; mutate.py shows it); member kinds in `class_check_member_overrides()`
   (`class_instance_member()`, not symbol flags; TS2612 skips isPropertyInitializedInConstructor);
   `check_property_modifiers` (TS2687) skips methods and accessors.
 - `ty_check_class_duplicate_members()` HACK: a late-bound name (`[k]`, `[Symbol.x]`) conflicts with the member table
@@ -663,9 +628,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `raise_stack_limit` (main.c): conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops
   (1000 steps ~16 MB), so the soft RLIMIT_STACK is raised to 64 MB (`worker_stack_size`); a lower hard limit still
   overflows. Correct: a loop. Shown by: a crash on type-fest's IntRange under `ulimit -Hs 8192`.
-- `initialized_in_static_blocks` (check.c): looks for `this.x =`/`C.x =` statements syntactically where tsc's
-  isPropertyInitializedInStaticBlocks asks control flow at each block's end (any static block counts for any/unknown).
-  Shown by: mutate.py (conditional assignments in static blocks).
 
 ## Content mappers (`content_mapper.c`, documentation.md "Content mappers")
 - `alias_original_names()`: tsgo substitutes an alias segment's original text in the *arguments* of a diagnostic
