@@ -21,6 +21,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAsyncGeneratorAwaited': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttAsyncGenericPromiseReturn': {
         errors: true,
         symbols: true,
@@ -67,11 +73,21 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassAnyBaseIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassMembersContainedByOffsetQuirk': {
         errors: true,
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttCommonJsModuleObjectNoInferableIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttComputedAccessorPairChecks': {
         errors: true,
@@ -685,6 +701,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEmptySpreadContainsSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttEvolvingArrayPushArgument': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,
@@ -711,6 +737,11 @@ const baselines = {
         types: true,
     },
     'ttttForceTupleObjectLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFunctionDeclarationErrorSpan': {
         errors: true,
         symbols: true,
         types: true,
@@ -853,6 +884,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionSourceMemberProperties': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsClassThisMembersInDeclarationOrder': {
         errors: true,
         symbols: true,
@@ -991,6 +1027,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLocalAliasOutsideFunction': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLocalExpandoCyclicPrint': {
         errors: true,
         symbols: true,
@@ -1013,11 +1054,21 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedOverAnyConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverDeferredConstraintProps': {
         errors: true,
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttMappedOverMappedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttMethodLiteralDefaultFreeParams': {
         errors: true,
@@ -1225,6 +1276,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSuperDropsGenericConstructors': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSymbolConstructorSymbolProperty': {
         errors: true,
         symbols: true,
@@ -1262,6 +1318,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParamHoistedConstraintToUnion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeParamMappedConstraintAccess': {
         errors: true,
         symbols: true,
         types: true,
@@ -11171,7 +11232,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationsForIndirectTypeAliasReference': {
         errors: true,
@@ -40383,7 +40444,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'mixinAccessModifiers': {
         errors: true,
