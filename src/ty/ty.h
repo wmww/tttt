@@ -1494,7 +1494,23 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 }
 
 // members.c
-Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
+static inline TyObjectState* ty_object_state(Ty const* ty) {
+    switch (ty->kind) {
+        case TY_DECLARED: return ty->declared.state;
+        case TY_REFERENCE: return ty->reference.state;
+        case TY_ANONYMOUS: return ty->anonymous.state;
+        case TY_INTERSECTION: return ty->composite.state;
+        default: return nullptr;
+    }
+}
+// ty_members() of members not resolved yet (and of non-object types)
+Members const* ty_members_resolving(Checker* me, Ty const* ty);
+// Never null. Empty for non-object types. (Resolved ones inline: drizzle asks 17M times)
+static inline Members const* ty_members(Checker* me, Ty const* ty) {
+    TyObjectState const* state = ty_object_state(ty);
+    if (state && state->members_state == LAZY_STATE_DONE) return state->members;
+    return ty_members_resolving(me, ty);
+}
 bool ty_members_done(Ty const* ty); // Its members are resolved (not in flight: what ty_members() gives is final)
 uint16_t ty_merged_owner_index(Checker* me, Ty const* declared); // See LowerCtx.merged_owner
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
@@ -1648,7 +1664,14 @@ bool ty_param_has_default(Ty const* param); // Whether it declares a default (wi
 
 // instantiate.c
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
-Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
+// (What ty_instantiate() doesn't decide inline: half of its calls have nothing to instantiate, drizzle 9M calls)
+Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail);
+static inline Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    bool tail = my instantiating_tail;
+    my instantiating_tail = false;
+    if (!mapper || !mapper->len || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+    return ty_instantiate_mapped(me, ty, mapper, tail);
+}
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper); // A conditional type's branch
 void ty_active_mappers_drop(Checker* me);
 // tsc's currentNode: the statement, type node or expression being checked (checkSourceElement, checkExpression), where

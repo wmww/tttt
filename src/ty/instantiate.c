@@ -1194,10 +1194,7 @@ static Ty const** active_slot(ActiveMapper* am, u64 key, bool insert) {
     return &am->values[j];
 }
 
-Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
-    bool tail = my instantiating_tail;
-    my instantiating_tail = false;
-    if (!mapper || !mapper->len || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
     if (tail && ty->kind == TY_CONDITIONAL) {
         if (my instantiation_tail_count >= MAX_TAIL_COUNT || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
             ty_instantiation_limit_reached(me);

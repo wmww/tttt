@@ -5046,16 +5046,10 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
 }
 
 static TyObjectState* object_state(Ty const* ty) {
-    switch (ty->kind) {
-        case TY_DECLARED: return ty->declared.state;
-        case TY_REFERENCE: return ty->reference.state;
-        case TY_ANONYMOUS: return ty->anonymous.state;
-        case TY_INTERSECTION: return ty->composite.state;
-        default: return nullptr;
-    }
+    return ty_object_state(ty);
 }
 
-Members const* ty_members(Checker* me, Ty const* ty) {
+Members const* ty_members_resolving(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return &empty_members;
     switch (state->members_state) {
