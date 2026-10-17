@@ -142,6 +142,9 @@ enum {
     KEY_CIRCULAR_BINDING, // Binding (or an `export default` SymbolDecl) -> non-null if its type references it (TS2502, TS7022, see ty_binding_type())
     KEY_ELEMENT_WIDENED_ANY, // binding element -> its type before widening, when that widens to any
     KEY_ARRAY_THIS_PROPS, // Array/ReadonlyArray target -> ThisProps, its members that mention `this` (members.c)
+    KEY_TUPLE_NAME_ORDER, // (array type's target, prop count) -> u32 indices of a tuple's inherited props in name order (members.c)
+    KEY_INDEX_NAME_ORDER, // element count -> u32 indices in the order of their index atoms (members.c)
+    KEY_DECIMAL_ORDER, // element count -> u32 indices in the order of their decimal strings (members.c)
     KEY_YIELD_WIDENED_ANY, // generator FunctionImpl -> its yield type before widening, when that widens to any
     KEY_ITERATOR_REPORTED, // iterable Ty (+ async) -> non-null once its iterator's method problems were reported
     KEY_UNION_NODE,     // (union or generic reference TypeNode, ctx.generic) -> its lowered type, see lower()

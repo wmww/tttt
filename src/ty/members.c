@@ -114,6 +114,8 @@ typedef struct MembersBuilder {
     // Members whose props have the same names in the same order as these will (an instantiation's source): their
     // props_by_name gives the order without sorting
     Members const* same_names;
+    // `props` in name order already, if known (tuples, see tuple_props_by_name())
+    Prop** props_by_name;
     // Only the members a class names syntactically, not the computed (late-bound) ones: see early_static_members()
     bool skip_computed;
     // Only the late-bound members, after the early-bound ones of every declaration were added (tsc's
@@ -407,7 +409,9 @@ static MembersRare* members_rare_mut(Checker* me, Members* members) {
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     builder_unindex(builder);
     Members* ret = arena_new(&my arena, Members);
-    if (builder->props_count > 8) {
+    if (builder->props_count > 8 && builder->props_by_name) {
+        ret->props_by_name = builder->props_by_name;
+    } else if (builder->props_count > 8) {
         Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
         Members const* same = builder->same_names;
         bool placed = same && same->props_by_name && same->prop_count == builder->props_count;
@@ -4450,14 +4454,113 @@ static void retarget_this_props(Checker* me, MembersBuilder* builder, u32 first,
     }
 }
 
-static void push_decimal_order(Prop** out, u32* at, Prop* const* props, u32 index, u32 count) {
-    out[(*at)++] = props[index];
+static void push_decimal_order(u32* out, u32* at, u32 index, u32 count) {
+    out[(*at)++] = index;
     if (!index) return; // (No "01")
     for (u32 digit = 0; digit < 10; digit++) {
         u64 next = (u64)index * 10 + digit;
         if (next >= count) return;
-        push_decimal_order(out, at, props, (u32)next, count);
+        push_decimal_order(out, at, (u32)next, count);
     }
+}
+
+// 0..count-1 in the order of their decimal strings ("10" before "2": a preorder walk of the digit trie), remembered
+static u32 const* decimal_order(Checker* me, u32 count) {
+    u64 key[2] = { KEY_DECIMAL_ORDER, count };
+    u32 const* found = intern_get(&my links, key, 2);
+    if (found) return found;
+    u32* order = arena_new_n(&my arena, u32, count);
+    u32 at = 0;
+    for (u32 first = 0; first < 10 && first < count; first++) push_decimal_order(order, &at, first, count);
+    *intern_slot(me, &my links, key, 2) = order;
+    return order;
+}
+
+// Whether `name` is the decimal string of an index below `count` (an element property of a tuple with that many)
+static bool is_index_name_below(Atom const* name, u32 count) {
+    if (!name->len || name->len > 10 || (name->len > 1 && name->str[0] == '0')) return false;
+    u64 value = 0;
+    for (u32 i = 0; i < name->len; i++) {
+        if (name->str[i] < '0' || name->str[i] > '9') return false;
+        value = value * 10 + (u64)(name->str[i] - '0');
+    }
+    return value < count;
+}
+
+typedef struct NameIndexPair {
+    uintptr_t name;
+    u32 index;
+} NameIndexPair;
+
+static int name_index_pair_cmp(void const* a, void const* b) {
+    NameIndexPair const* x = a;
+    NameIndexPair const* y = b;
+    if (x->name != y->name) return x->name < y->name ? -1 : 1;
+    return x->index < y->index ? -1 : x->index > y->index;
+}
+
+// Indices 0..count-1 in the order their names are in (sorted by address, as props_by_name is), remembered by `key`
+static u32 const* name_order(Checker* me, u64 const* key, u32 key_len, Atom const* const* names, u32 count) {
+    u32 const* found = intern_get(&my links, key, key_len);
+    if (found) return found;
+    NameIndexPair* pairs = malloc(sizeof(NameIndexPair) * (count ? count : 1));
+    panic_if(!pairs, "out of memory");
+    for (u32 i = 0; i < count; i++) pairs[i] = (NameIndexPair){ (uintptr_t)names[i], i };
+    qsort(pairs, count, sizeof(NameIndexPair), name_index_pair_cmp);
+    u32* order = arena_new_n(&my arena, u32, count);
+    for (u32 i = 0; i < count; i++) order[i] = pairs[i].index;
+    free(pairs);
+    *intern_slot(me, &my links, key, key_len) = order;
+    return order;
+}
+
+// A tuple instance's props_by_name without sorting them (thousands of big tuples on type-fest, each its own target): a
+// merge of its elements' (in the order of the index atoms, remembered per count), its array's (whose names are the
+// same for every Array or ReadonlyArray, remembered per target) and `length`. Null when a name is there twice
+static Prop** tuple_props_by_name(Checker* me, Prop* elements, u32 fixed, Prop* const* inherited, u32 inherited_count,
+    Ty const* array_target, Prop* length
+) {
+    u64 index_key[2] = { KEY_INDEX_NAME_ORDER, fixed };
+    u32 const* by_index = intern_get(&my links, index_key, 2);
+    if (!by_index) {
+        Atom const** names = malloc(sizeof(Atom const*) * (fixed ? fixed : 1));
+        panic_if(!names, "out of memory");
+        for (u32 i = 0; i < fixed; i++) names[i] = elements[i].name;
+        by_index = name_order(me, index_key, 2, names, fixed);
+        free(names);
+    }
+    u64 inherited_key[3] = { KEY_TUPLE_NAME_ORDER, (u64)(uintptr_t)array_target, inherited_count };
+    u32 const* by_inherited = intern_get(&my links, inherited_key, 3);
+    if (!by_inherited) {
+        Atom const** names = malloc(sizeof(Atom const*) * (inherited_count ? inherited_count : 1));
+        panic_if(!names, "out of memory");
+        for (u32 i = 0; i < inherited_count; i++) names[i] = inherited[i]->name;
+        by_inherited = name_order(me, inherited_key, 3, names, inherited_count);
+        free(names);
+    }
+    u32 total = fixed + inherited_count + 1;
+    Prop** sorted = arena_new_n(&my arena, Prop*, total);
+    u32 i = 0, j = 0, at = 0;
+    bool length_placed = false;
+    while (at < total) {
+        Prop* next = nullptr;
+        Prop* a = i < fixed ? &elements[by_index[i]] : nullptr;
+        Prop* b = j < inherited_count ? inherited[by_inherited[j]] : nullptr;
+        if (a && (!b || (uintptr_t)a->name < (uintptr_t)b->name)) next = a;
+        else next = b;
+        if (!length_placed && (!next || (uintptr_t)length->name < (uintptr_t)next->name)) {
+            next = length;
+            length_placed = true;
+        } else if (next == a) {
+            i++;
+        } else {
+            j++;
+        }
+        // (A name twice, or the orders don't hold: sort them after all)
+        if (at && (uintptr_t)sorted[at - 1]->name >= (uintptr_t)next->name) return nullptr;
+        sorted[at++] = next;
+    }
+    return sorted;
 }
 
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
@@ -4466,21 +4569,25 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     TyList elements = tuple->kind == TY_REFERENCE ? ty_reference_args(me, tuple) : target->declared.type_params;
     MembersBuilder builder = {0};
     u32 min_length = 0;
-    bool variable = false;
-    for (u32 i = 0; i < shape->arity; i++) {
-        if (shape->flags[i] & TUPLE_ELEMENT_REST) {
-            variable = true;
-            break;
-        }
+    u32 fixed = 0;
+    while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    bool variable = fixed < shape->arity;
+    Prop* element_props = fixed ? arena_new_n(&my arena, Prop, fixed) : nullptr;
+    if (fixed) {
+        builder.props = malloc(sizeof(Prop*) * (fixed + 64));
+        panic_if(!builder.props, "out of memory");
+        builder.props_cap = fixed + 64;
+    }
+    for (u32 i = 0; i < fixed; i++) {
         bool optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0;
         if (!optional) min_length = i + 1;
-        Prop* prop = arena_new(&my arena, Prop);
+        Prop* prop = &element_props[i];
         prop->decl = (PropDecl*)&ty_prop_decl_value_name; // (Named by a number, nothing else to say: shared)
         prop->name = ty_index_atom(me, i);
         prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
         prop->type = elements.data[i];
         prop->type_state = LAZY_STATE_DONE;
-        builder_push(&builder, props, prop);
+        builder.props[builder.props_count++] = prop;
     }
     Ty const* length;
     if (variable) {
@@ -4496,7 +4603,6 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         length = ty_union(me, lengths, count, nullptr, (TyList){0});
         free(lengths);
     }
-    u32 fixed = builder.props_count;
     Prop* length_prop = prop_new(me);
     length_prop->name = checker_atom(me, c_sv("length"));
     length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
@@ -4506,7 +4612,20 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     Ty const* array = ty_tuple_as_array(me, tuple);
     if (array) {
         u32 first = builder.props_count;
-        builder_add_inherited(me, &builder, array);
+        if (array->kind == TY_REFERENCE && (array->flags & TYF_OBJECT)) {
+            // (builder_add_inherited(): the own names are `length` and the elements' indices)
+            Members const* members = ty_members(me, array);
+            for (u32 i = 0; i < members->prop_count; i++) {
+                Atom const* name = members->props[i]->name;
+                if (name == length_prop->name || is_index_name_below(name, fixed)) continue;
+                builder_push(&builder, props, members->props[i]);
+            }
+            for (u32 i = 0; i < members->call_count; i++) builder_push(&builder, call, members->call[i]);
+            for (u32 i = 0; i < members->construct_count; i++) builder_push(&builder, construct, members->construct[i]);
+            for (u32 i = 0; i < members->index_count; i++) builder_push(&builder, index, members->index[i]);
+        } else {
+            builder_add_inherited(me, &builder, array);
+        }
         // (The empty tuple too, which is its own target: `[]`'s `sort()` returns `[]`)
         if (tuple->kind == TY_REFERENCE || !shape->arity) retarget_this_props(me, &builder, first, array, tuple);
     }
@@ -4517,9 +4636,8 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         Prop** own = fixed + 1 <= c_arraylen(stack) ? stack : malloc(sizeof(Prop*) * (fixed + 1));
         panic_if(!own, "out of memory");
         if (fixed > 10) {
-            // ("10" before "2": the indices in the order of their decimal strings, a preorder walk of the digit trie)
-            u32 at = 0;
-            for (u32 first = 0; first < 10 && first < fixed; first++) push_decimal_order(own, &at, builder.props, first, fixed);
+            u32 const* order = decimal_order(me, fixed);
+            for (u32 i = 0; i < fixed; i++) own[i] = builder.props[order[i]];
             own[fixed] = builder.props[fixed]; // (`length` sorts after every digit)
         } else {
             memcpy(own, builder.props, sizeof(Prop*) * (fixed + 1));
@@ -4528,6 +4646,11 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         memmove(builder.props, builder.props + fixed + 1, sizeof(Prop*) * inherited);
         memcpy(builder.props + inherited, own, sizeof(Prop*) * (fixed + 1));
         if (own != stack) free(own);
+    }
+    if (array && array->kind == TY_REFERENCE && builder.props_count > 8 && builder.props_count > fixed + 1) {
+        u32 inherited = builder.props_count - (fixed + 1);
+        builder.props_by_name = tuple_props_by_name(me, element_props, fixed, builder.props, inherited,
+            array->reference.target, length_prop);
     }
     return builder_finish(me, &builder);
 }

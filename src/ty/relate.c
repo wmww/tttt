@@ -7314,7 +7314,8 @@ static bool is_weak_type(Checker* me, Ty const* ty) {
         }
         return true;
     }
-    if (!(ty->flags & TYF_OBJECT)) return false;
+    // (A tuple's `length` is required: no need to make its members)
+    if (!(ty->flags & TYF_OBJECT) || ty_tuple_shape(ty)) return false;
     Members const* members = ty_members(me, ty);
     if (members->mapped || members->call_count || members->construct_count || members->index_count || !members->prop_count) {
         return false;

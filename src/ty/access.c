@@ -244,7 +244,8 @@ static bool is_string_index_signature_only(Checker* me, Ty const* ty) {
         }
         return true;
     }
-    if (!(ty->flags & TYF_OBJECT)) return false;
+    // (A tuple has `length`: no need to make its members)
+    if (!(ty->flags & TYF_OBJECT) || ty_tuple_shape(ty)) return false;
     Members const* members = ty_members(me, ty);
     return !members->mapped && !members->prop_count && members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
 }
