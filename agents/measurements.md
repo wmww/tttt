@@ -11,6 +11,16 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Hacks audit (2026-10-17, todo entry 6)
+Eleven checker-side guesses replaced by tsc's rule (merged from four worktrees): statement errors at function/namespace
+names, `alias_is_local()`, `super(...)` constructor arity filtering, ContainsSpread as a literal flag, `f(x.push)`
+evolving arrays, `Awaited<T>` where tsgo has it, any-constructor bases' index signature (`ty_has_unresolved_base()`
+gone), check_access's generic mapped gates, `has_inferable_index` (CommonJS `module`), IntersectionState.Source into
+members. Suite 13773 / 13812 -> 13789 / 13826 (0 lost, 11 new tttt tests), every oracle unchanged (corpora, DT 8595,
+`$ExpectType` 68639, flagflip 18 / 8 / 3, source sweep 3559 / 3566). Instructions (callgrind, K1): tsc 4.609 G,
+type-fest 10.987, valibot 3.469, react 1.406, nest 1.079, webpack 9.576, zod 5.172, xstate 2.681, drizzle 9.772, vue
+6.522, effect 9.803, vscode 93.618 (93.954 at entry 5), excalidraw 7.683, tanstack-router 5.273.
+
 ## Gated runs without the restart (2026-10-17, todo entry 5)
 A run gated by options or syntax diagnostics (1397 of the source sweep's 3566 projects have TS1xxx/TS5xxx/TS6xxx under
 tsc) parsed and resolved everything twice (the restart without deferral); it now parses only the deferred bodies for
