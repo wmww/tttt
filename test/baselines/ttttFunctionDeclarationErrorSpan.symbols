@@ -1,0 +1,49 @@
+//// [test/cases/ttttFunctionDeclarationErrorSpan.ts] ////
+
+=== ttttFunctionDeclarationErrorSpan.ts ===
+// An error at a function declaration's current node (here an overload's compatibility with the implementation, checked
+// at the declaration) goes at its name, an anonymous default export's at its first token (tsc's getErrorRangeForNode)
+type Rec<T, N extends 1[] = []> = N["length"] extends 150 ? T : T extends string ? Rec<T, [...N, 1]> | 0 : 1;
+>Rec : Symbol(Rec, Decl(ttttFunctionDeclarationErrorSpan.ts, 0, 0))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 9))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 11))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 11))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 9))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 9))
+>Rec : Symbol(Rec, Decl(ttttFunctionDeclarationErrorSpan.ts, 0, 0))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 9))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 11))
+
+type Rec2<T, N extends 1[] = []> = N["length"] extends 150 ? T : T extends string ? Rec2<T, [...N, 1]> | 0 : 1;
+>Rec2 : Symbol(Rec2, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 109))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 10))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 12))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 12))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 10))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 10))
+>Rec2 : Symbol(Rec2, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 109))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 10))
+>N : Symbol(N, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 12))
+
+function f<T>(x: T): Rec<T>;
+>f : Symbol(f, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 111), Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 28))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 11))
+>x : Symbol(x, Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 14))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 11))
+>Rec : Symbol(Rec, Decl(ttttFunctionDeclarationErrorSpan.ts, 0, 0))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 11))
+
+function f(x: any): number { return 0; }
+>f : Symbol(f, Decl(ttttFunctionDeclarationErrorSpan.ts, 3, 111), Decl(ttttFunctionDeclarationErrorSpan.ts, 4, 28))
+>x : Symbol(x, Decl(ttttFunctionDeclarationErrorSpan.ts, 5, 11))
+
+export default function <T>(x: T): Rec2<T>;
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 6, 25))
+>x : Symbol(x, Decl(ttttFunctionDeclarationErrorSpan.ts, 6, 28))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 6, 25))
+>Rec2 : Symbol(Rec2, Decl(ttttFunctionDeclarationErrorSpan.ts, 2, 109))
+>T : Symbol(T, Decl(ttttFunctionDeclarationErrorSpan.ts, 6, 25))
+
+export default function (x: any): number { return 0; }
+>x : Symbol(x, Decl(ttttFunctionDeclarationErrorSpan.ts, 7, 25))
+

@@ -2552,11 +2552,14 @@ void statements_typecheck(VecStatement* list, BlockTypecheckCtx ctx, ErrorCtx* e
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
-    // (An error at a class, interface, type alias or enum declaration goes at its name: tsc's getErrorRangeForNode)
+    // (An error at a class, interface, type alias, enum, function or namespace declaration goes at its name: tsc's
+    // getErrorRangeForNode)
     if (my tag == STATEMENT_DECL_CLASS && span_valid(my decl.class->name)) current_checker->current_node.error_span = my decl.class->name;
     if (my tag == STATEMENT_DECL_INTERFACE) current_checker->current_node.error_span = my decl.interface->name;
     if (my tag == STATEMENT_DECL_TYPE) current_checker->current_node.error_span = my decl.type->name;
     if (my tag == STATEMENT_DECL_ENUM) current_checker->current_node.error_span = my decl.enum_->name;
+    if (my tag == STATEMENT_DECL_FUNCTION) current_checker->current_node.error_span = function_error_span(my decl.function.impl);
+    if (my tag == STATEMENT_DECL_NAMESPACE && span_valid(my decl.namespace->name)) current_checker->current_node.error_span = my decl.namespace->name;
     statement_typecheck_inner(me, ctx, errs);
     ty_leave_node(current_checker, saved);
 }

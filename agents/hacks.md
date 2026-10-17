@@ -377,9 +377,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   guard is "the resolving stack is unchanged since the re-entered members started", with `RESOLVING_MAPPED_CONSTRAINT`
   standing for tsc's key-parameter constraint entry; tsgo's poisoned caches after the runaway aren't modelled (vue's
   two TS7006, missing_checks.md). Right rule: none (tsgo artifact); the corpora (zod, vue, valibot) show drift.
-- Errors at a statement's current node go at its name for classes, interfaces, type aliases and enums
-  (`statement_typecheck()`, `CurrentNode.error_span`); functions and namespaces still use the whole statement (tsc's
-  getErrorSpanForNode: their name). Shows as wrong columns in the suite/sweeps.
 - `structured_related_impl()` TY_TYPE_PARAM: a type parameter source against a union takes its hoisted constraint
   (`constraint & T`) only on a definite True, because tttt relates a generic intersection member by member (meeting the
   outer T relation as Maybe). Right rule: tsc's whole-intersection comparison; flagflip/sweep would show misses.
