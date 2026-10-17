@@ -241,9 +241,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   argument-list abstraction over CallExpr and TaggedTemplate.
 - `signature_resolve`: a function expression takes its generic contextual signature's type parameters only if its
   signature is resolved after the context was assigned (memoised otherwise).
-- `missing_property_type`: errorType for a failed access under conditions approximating check.c's reporting (object
-  type, not `typeof globalThis`, not JS). tsc: errorType exactly when it reports. Correct: one
-  decision shared with the reporter. Oracle: suite `.types` showing `any` vs error.
+- `missing_property_type`: errorType for a failed access, decided apart from check.c's reporting (tsc's
+  checkPropertyAccessExpressionOrQualifiedName does both at once). What's left of the approximation: unchecked JS
+  (isUncheckedJSSuggestion) goes by the object identifier's declaration rather than leftType.symbol and ignores its
+  class exclusions, and a type parameter whose apparent type is any is the error type (tsc: isAnyLike, any). Both
+  print `any`, so no oracle sees it; the any-base and generic mapped gates are gone (2026-10-17).
 - Contextual `this` (`ty_contextual_this_type`): through the anchor once the call is resolved, else the literal's last
   context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is plan 51 stage 3 item 3);
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
@@ -350,8 +352,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `TY_INDEXED`'s include_undefined (noUncheckedIndexedAccess) is dropped where an indexed access is rebuilt from parts
   (`simplified_parts`, `ty_actual_type_variable`). Oracle: flagflip noUncheckedIndexedAccess.
 - `has_inferable_index`: every anonymous object type has an inferable index except `OBJECT_NO_INFERABLE_INDEX` and the
-  global empty object; tsc's isObjectTypeWithInferableIndex wants a symbol, so other symbolless synthetic types
-  (spreads? reverse mapped?) may wrongly relate to index signatures.
+  global empty objects (a blacklist of tsgo's symbolless or non-literal-symbol `newAnonymousType` sites: binding
+  patterns, string-literal inference, decorator contexts, CommonJS `module`), where tsc's isObjectTypeWithInferableIndex
+  reads the symbol's flags. Probed 2026-10-17 and matching: spreads (of interfaces, classes, unions with undefined,
+  functions, tuples, enums: getSpreadType gives the literal's symbol), object rests, reverse mapped, mapped types,
+  instantiation expressions, JSX attributes, JS literals/expandos/constructor functions, `export =` module clones.
+  A new synthetic anonymous type needs the flag if tsc makes it without an ObjectLiteral/TypeLiteral symbol.
 - Artifact models (each fitted to one real project or probe, kept because real code needs it until the underlying
   rule is found): `canonical_signature()` skips erasing (vue `toHandlerKey` TS2322), tuple number-index relation only under `Checker.base_constructors_in_flight`
   (effect TS2506), `ty_resolving_cycle_across_calls()` (tsc's second resolution round, RESOLVING_BASES), the mapped-type

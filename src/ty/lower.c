@@ -1379,7 +1379,8 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
         .decl_spans = file_span,
         .decl_span_count = 1,
     };
-    return ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
+    // (Its symbol is `module`'s, SymbolFlags.ModuleExports: no inferable index, tsc's isObjectTypeWithInferableIndex)
+    return ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX);
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
@@ -3055,11 +3056,12 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern,
         for (u32 i = 0; i < types.len; i++) {
             if (!(types.data[i]->flags & TYF_NULLABLE)) mapped[len++] = object_rest_type(me, types.data[i], pattern, symbol);
         }
-        Ty const* ret = len ? ty_union(me, mapped, len, nullptr, (TyList){0}) : ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
+        // (Nothing left is tsc's emptyObjectType, which has no symbol: no inferable index)
+        Ty const* ret = len ? ty_union(me, mapped, len, nullptr, (TyList){0}) : ty_empty_object_type(me);
         if (mapped != stack) free((void*)mapped);
         return ret;
     }
-    if (source->flags & TYF_NEVER) return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
+    if (source->flags & TYF_NEVER) return ty_empty_object_type(me);
     if (ty_is_generic_object(me, source) || pattern_has_generic_key(me, pattern)) return generic_rest_type(me, source, pattern);
     Ty const* apparent = ty_apparent_type(me, source);
     if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern, symbol);

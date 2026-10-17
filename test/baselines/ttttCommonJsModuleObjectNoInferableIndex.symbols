@@ -1,0 +1,15 @@
+//// [test/cases/ttttCommonJsModuleObjectNoInferableIndex.ts] ////
+
+=== j.js ===
+/** @type {Record<string, unknown>} */
+const r = module;
+>r : Symbol(r, Decl(j.js, 1, 5))
+>module : Symbol(module, Decl(j.js, 0, 0))
+
+module.exports.x = 1;
+>module.exports.x : Symbol(x, Decl(j.js, 1, 17))
+>module.exports : Symbol(exports, Decl(j.js, 0, 0))
+>module : Symbol(module, Decl(j.js, 0, 0))
+>exports : Symbol(exports, Decl(j.js, 0, 0))
+>x : Symbol(x, Decl(j.js, 1, 17))
+

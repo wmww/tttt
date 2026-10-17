@@ -1,0 +1,12 @@
+j.js(2,7): error TS2322: Type '{ exports: typeof import("j"); }' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{ exports: typeof import("j"); }'.
+
+
+==== j.js (1 errors) ====
+    /** @type {Record<string, unknown>} */
+    const r = module;
+          ~
+!!! error TS2322: Type '{ exports: typeof import("j"); }' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{ exports: typeof import("j"); }'.
+    module.exports.x = 1;
+    
