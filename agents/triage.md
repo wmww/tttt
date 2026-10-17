@@ -33,3 +33,10 @@ caveats", the 12-core sections); this session ran on the 4-vCPU box again (`npro
   0`: 5). kdiff/recycle don't see it (default flags). A fix would make the first report program-wide (an atomic
   "reported" per circular type set, kept across recycles), which still depends on which checker gets there first;
   or accept it as tsgo's own K-dependence (tsgo at 4 checkers can do the same).
+- **The harness's leak detector reports 157 tests since it defers bodies** (found in the hacks audit, 2026-10-17;
+  bisected to 26914074, "Harness defers function bodies by default"; 0 with `baseline_tests --no-defer-bodies`): a
+  materialized body's AST is in an arena dropped without a walk, so what its parse malloc'd outside the arena leaks
+  (valgrind on aliasBug: `parse_identifier_type`'s `vec_span` of a qualified type name, parser.c; also the cooked
+  strings hacks.md's deferred-bodies entry counts). Real cost is small, but the "N net allocations!" list now hides any
+  new leak. Fix the class (those vecs/strings from the AST arena, plan 80's direction) or, cheaper, free the bodies
+  with a walk at program teardown in debug-allocator builds only and keep the drop walk-free.
