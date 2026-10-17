@@ -391,6 +391,7 @@ struct Ty {
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
+            bool contains_spread : 1; // OBJECT_CONTAINS_SPREAD
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
             bool module_clone : 1;
@@ -1270,6 +1271,11 @@ static inline bool ty_is_fresh_object(Ty const* ty) {
 static inline bool ty_is_unwidened_object_literal(Ty const* ty) {
     return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT) && ty->anonymous.object_literal;
 }
+// ... with nothing spread into it (tsc's isObjectLiteralType && !ObjectFlags.ContainsSpread)
+static inline bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty) {
+    (void)me;
+    return ty_is_unwidened_object_literal(ty) && !ty->anonymous.contains_spread;
+}
 // tsc's getRegularTypeOfObjectLiteral: a fresh object literal (and those in its properties) no longer fresh, but still an
 // object literal that widens (ty_is_unwidened_object_literal()). Anything else is itself
 Ty const* ty_regular_object_literal(Checker* me, Ty const* ty);
@@ -2017,6 +2023,9 @@ typedef enum ObjectLiteralKind {
     // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral, binding patterns), which
     // has no inferable index (isObjectTypeWithInferableIndex)
     OBJECT_NO_INFERABLE_INDEX = 1 << 5,
+    // Or'ed with an object literal kind: something was spread into it (tsc's ObjectFlags.ContainsSpread, what its
+    // getSpreadType makes: `{ ...{} }` too, not `{ ...0 }`), kept by its regular version, not by its widened one
+    OBJECT_CONTAINS_SPREAD = 1 << 6,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

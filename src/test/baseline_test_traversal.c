@@ -317,8 +317,9 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             Ty const* key = members->index[i].key;
             indexed = (key->flags & TYF_STRING) || ((key->flags & TYF_NUMBER) && ty_is_numeric_name(name));
         }
-        // (An object literal's type without it too, unless widened: isObjectLiteralType, `(o || {}).a`)
-        if (ty_is_unwidened_object_literal(object)) indexed = true;
+        // (An object literal's type without it too, unless widened or spread into: isObjectLiteralType without
+        // ContainsSpread, `(o || {}).a`)
+        if (ty_is_object_literal_without_spread(checker, object)) indexed = true;
         if (!indexed) info->missing_in_member = true;
         return;
     }

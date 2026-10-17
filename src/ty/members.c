@@ -5756,7 +5756,8 @@ Ty const* ty_object_literal_alternative(
     Ty const* ret = intern_get(&my links, words.data, words.len);
     bool js = kind & OBJECT_JS;
     bool no_inferable_index = kind & OBJECT_NO_INFERABLE_INDEX;
-    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX);
+    bool contains_spread = kind & OBJECT_CONTAINS_SPREAD;
+    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_CONTAINS_SPREAD);
     if (!ret) {
         MembersBuilder builder = {0};
         bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
@@ -5815,6 +5816,7 @@ Ty const* ty_object_literal_alternative(
         fresh->anonymous.free_params_unknown = !(literal && literal->tag == EXPR_OBJECT && literal->no_enclosing_type_params);
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
         fresh->anonymous.no_inferable_index = no_inferable_index;
+        fresh->anonymous.contains_spread = contains_spread;
         fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;
         fresh->anonymous.spread_alternative = (uint16_t)alternative;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
@@ -5872,20 +5874,6 @@ static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
     return &ctx->siblings;
 }
 
-// HACK: tsc's ObjectFlags.ContainsSpread, as a property that was spread into the literal (`{ ...{} }` doesn't count)
-static bool contains_spread(Checker* me, Ty const* literal) {
-    Members const* members = ty_members(me, literal);
-    for (u32 i = 0; i < members->prop_count; i++) {
-        if (!members->props[i]->decl->literal_own) return true;
-    }
-    return false;
-}
-
-// (Only an unwidened one: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so a declared `let x = s ??
-// { b: 1 }` lacks `x.a`)
-bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty) {
-    return ty_is_unwidened_object_literal(ty) && !contains_spread(me, ty);
-}
 
 // tsc's getPropertiesOfContext
 static void context_props(Checker* me, WideningCtx* ctx) {
@@ -5893,7 +5881,7 @@ static void context_props(Checker* me, WideningCtx* ctx) {
     ctx->props_done = true;
     TyBuf const* siblings = context_siblings(me, ctx);
     for (u32 i = 0; i < siblings->len; i++) {
-        if (!is_object_literal_type(siblings->data[i]) || contains_spread(me, siblings->data[i])) continue;
+        if (!ty_is_object_literal_without_spread(me, siblings->data[i])) continue;
         Members const* members = ty_members(me, siblings->data[i]);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop const* prop = members->props[j];
@@ -6134,7 +6122,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
             ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
                 (ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
                 ty->anonymous.regular ? OBJECT_LITERAL_REGULAR : ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
-                (ty->anonymous.js_literal ? OBJECT_JS : 0),
+                (ty->anonymous.js_literal ? OBJECT_JS : 0) | (ty->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0),
                 ty->anonymous.literal_expr, ty->anonymous.spread_alternative);
         }
         free(props);
@@ -6205,7 +6193,8 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
     u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
     for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
     Ty const* ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
-        OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0), ty->anonymous.literal_expr,
+        OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0) |
+            (ty->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0), ty->anonymous.literal_expr,
         ty->anonymous.spread_alternative);
     free(props);
     *intern_slot(me, &my links, key, 2) = ret;

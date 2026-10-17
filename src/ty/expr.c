@@ -3774,6 +3774,7 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
         ret = ty_object_literal_of(me, own->props, own->count, own->index, own->index_count, kind, expr);
     } else {
         if (own->count || own->index_count) spread_acc_props(me, acc, own);
+        kind |= OBJECT_CONTAINS_SPREAD;
         TyBuf alts = {0};
         TyBuf parts = {0};
         for (u32 i = 0; i < acc->alt_count; i++) {
@@ -5170,7 +5171,7 @@ static Ty const* object_literal_as_tuples(Checker* me, Expr const* expr, Ty cons
         u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
         for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
         ObjectLiteralKind kind = (ty_is_fresh_object(ty) ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
-            (ty->anonymous.js_literal ? OBJECT_JS : 0);
+            (ty->anonymous.js_literal ? OBJECT_JS : 0) | (ty->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0);
         ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count, kind, nullptr, 0);
     }
     free(props);

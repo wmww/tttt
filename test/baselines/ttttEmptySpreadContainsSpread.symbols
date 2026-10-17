@@ -1,0 +1,26 @@
+//// [test/cases/ttttEmptySpreadContainsSpread.ts] ////
+
+=== ttttEmptySpreadContainsSpread.ts ===
+// Spreading an empty object still makes a spread literal (tsc's ObjectFlags.ContainsSpread from getSpreadType): its
+// properties don't widen its siblings in a union (getPropertiesOfContext), nor make a union's missing property
+// `undefined` (createUnionOrIntersectionProperty's WritePartial)
+declare const c: boolean;
+>c : Symbol(c, Decl(ttttEmptySpreadContainsSpread.ts, 3, 13))
+
+const o1 = c ? { a: 1 } : { b: 2, ...{} };
+>o1 : Symbol(o1, Decl(ttttEmptySpreadContainsSpread.ts, 4, 5))
+>c : Symbol(c, Decl(ttttEmptySpreadContainsSpread.ts, 3, 13))
+>a : Symbol(a, Decl(ttttEmptySpreadContainsSpread.ts, 4, 16))
+>b : Symbol(b, Decl(ttttEmptySpreadContainsSpread.ts, 4, 27))
+
+(c ? { a: 1 } : { ...{} }).a;
+>c : Symbol(c, Decl(ttttEmptySpreadContainsSpread.ts, 3, 13))
+>a : Symbol(a, Decl(ttttEmptySpreadContainsSpread.ts, 5, 6))
+
+(c ? { a: 1 } : { b: 2 }).a;
+>(c ? { a: 1 } : { b: 2 }).a : Symbol(a, Decl(ttttEmptySpreadContainsSpread.ts, 6, 6))
+>c : Symbol(c, Decl(ttttEmptySpreadContainsSpread.ts, 3, 13))
+>a : Symbol(a, Decl(ttttEmptySpreadContainsSpread.ts, 6, 6))
+>b : Symbol(b, Decl(ttttEmptySpreadContainsSpread.ts, 6, 17))
+>a : Symbol(a, Decl(ttttEmptySpreadContainsSpread.ts, 6, 6))
+

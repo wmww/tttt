@@ -287,7 +287,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   attribute types skip the regular object literal state.
 - `assignment_value_context`: `TYF_BINDING_PATTERN` is both tsc's object literal `pattern` and isFromBindingPattern, so
   an object assignment pattern only marks its context when the value isn't a call. Correct: a separate flag.
-- `contains_spread` (ObjectFlags.ContainsSpread) is read off the properties, so `{ ...{} }` doesn't count.
 - `x satisfies T`: on failure prints T and discards the text, for the printing's side effects (tsc builds TS1360 there:
   `const f = () => 1 satisfies typeof f` is TS7023). Correct: report where checked (checkSatisfiesExpression).
 - `definitely_unrelated()`'s `mentions_type_variables()` walk resolves signatures' return types when

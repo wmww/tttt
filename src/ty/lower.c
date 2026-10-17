@@ -3340,7 +3340,8 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
         if (!props) return type;
         Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count,
             (type->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
-            (type->kind == TY_ANONYMOUS && type->anonymous.js_literal ? OBJECT_JS : 0));
+            (type->kind == TY_ANONYMOUS && type->anonymous.js_literal ? OBJECT_JS : 0) |
+            (type->kind == TY_ANONYMOUS && type->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0));
         free(props);
         return ret;
     }

@@ -409,8 +409,6 @@ Ty const* ty_constructor_declared_flow_type(Checker* me, Symbol const* member, E
 bool ty_is_duplicated_commonjs_alias_export(Symbol const* symbol);
 Ty const* ty_named_union_of_reduced(Checker* me, Ty const* const* inputs, u32 len, Ty const* const* members, u32 count);
 bool ty_is_spreadable_prop(Checker* me, Prop const* prop); // expr.c, tsc's isSpreadableProperty
-// The type of an object literal expression, without spreads (tsc's isObjectLiteralType && !ContainsSpread)
-bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty);
 // A definitely non-nullable source against `T | undefined` (or `| null`, or both) is related to T, which errors name
 // too (tsc's isRelatedTo). Else `target`
 Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* target);

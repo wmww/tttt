@@ -1,0 +1,46 @@
+//// [test/cases/ttttEmptySpreadContainsSpread.ts] ////
+
+=== ttttEmptySpreadContainsSpread.ts ===
+// Spreading an empty object still makes a spread literal (tsc's ObjectFlags.ContainsSpread from getSpreadType): its
+// properties don't widen its siblings in a union (getPropertiesOfContext), nor make a union's missing property
+// `undefined` (createUnionOrIntersectionProperty's WritePartial)
+declare const c: boolean;
+>c : boolean
+
+const o1 = c ? { a: 1 } : { b: 2, ...{} };
+>o1 : { a: number; } | { a?: undefined; b: number; }
+>c ? { a: 1 } : { b: 2, ...{} } : { a: number; } | { b: number; }
+>c : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ b: 2, ...{} } : { b: number; }
+>b : number
+>2 : 2
+>{} : {}
+
+(c ? { a: 1 } : { ...{} }).a;
+>(c ? { a: 1 } : { ...{} }).a : any
+>(c ? { a: 1 } : { ...{} }) : { a: number; } | {}
+>c ? { a: 1 } : { ...{} } : { a: number; } | {}
+>c : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ ...{} } : {}
+>{} : {}
+>a : any
+
+(c ? { a: 1 } : { b: 2 }).a;
+>(c ? { a: 1 } : { b: 2 }).a : number | undefined
+>(c ? { a: 1 } : { b: 2 }) : { a: number; } | { b: number; }
+>c ? { a: 1 } : { b: 2 } : { a: number; } | { b: number; }
+>c : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ b: 2 } : { b: number; }
+>b : number
+>2 : 2
+>a : number | undefined
+
