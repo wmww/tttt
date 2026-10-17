@@ -87,12 +87,23 @@ Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper)
 }
 #define MAX_INSTANTIATION_COUNT 5000000
 
+// A copy of a list for a mapper to keep, the one made before for the same types while it is in the cache
+static Ty const* const* mapper_list(Checker* me, Ty const* const* data, u32 len) {
+    if (!len) return nullptr;
+    u64 hash = len;
+    for (u32 i = 0; i < len; i++) hash = (hash ^ (uintptr_t)data[i]) * 0x9e3779b97f4a7c15ull;
+    TyList* slot = &my mapper_lists[hash >> 54];
+    if (slot->len == len && !memcmp(slot->data, data, sizeof(*data) * len)) return slot->data;
+    *slot = ty_list_copy(me, data, len);
+    return slot->data;
+}
+
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets) {
     check(sources.len == targets.len);
     TyMapper* ret = arena_new(&my arena, TyMapper);
     ret->len = sources.len;
-    ret->sources = ty_list_copy(me, sources.data, sources.len).data;
-    ret->targets = ty_list_copy(me, targets.data, targets.len).data;
+    ret->sources = mapper_list(me, sources.data, sources.len);
+    ret->targets = mapper_list(me, targets.data, targets.len);
     return ret;
 }
 

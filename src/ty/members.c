@@ -3268,6 +3268,12 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             break;
 
         case TY_DECLARED_NAMESPACE:
+            // `import * as ns` (make_gather_target()): the module's members, shared by every such import of it (tsc's
+            // is the module's type itself; effect has hundreds of imports of each of its big modules)
+            Symbol const* gathered = symbol_rare(ty->declared.namespace_symbol)->gather_module;
+            if (gathered && gathered != ty->declared.namespace_symbol && !symbol_rare(ty->declared.namespace_symbol)->synthetic_default) {
+                return ty_members(me, ty_namespace_type(me, gathered));
+            }
             // The exported values, in declaration order
             u32 export_count;
             SymbolEntry* exports = symbol_collect_exports(ty->declared.namespace_symbol, &export_count);

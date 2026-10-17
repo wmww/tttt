@@ -1080,6 +1080,9 @@ struct Checker {
     u32 instantiation_tail_count;
     u32 instantiation_epoch; // Bumped whenever instantiation_count starts over
     bool instantiating_tail;
+    // The lists mappers recently kept, by their types (mapper_list()): most mappers map a declaration's type parameters,
+    // and inference makes the same results over and over
+    TyList mapper_lists[1024];
     // The root conditional type a distributive constraint is being instantiated from (tsc's forConstraint): a definitely
     // false check of it gives both branches
     Ty const* for_constraint_root;
