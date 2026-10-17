@@ -1275,6 +1275,8 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
                 break;
 
             default: {
+                // (Where the whitespace ends, mostly: no other ASCII byte is whitespace or U+FFFD)
+                if ((unsigned char)*parent->pos < 0x80) goto ws_end;
                 int size = unicode_whitespace_size(parent->pos);
                 if (!size && is_replacement_char(parent->pos)) {
                     // tsc's NonTextFileMarkerTrivia: the rest of the file is trivia
