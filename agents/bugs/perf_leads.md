@@ -253,6 +253,17 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   CommonJS, JSDoc), not one regression.
 
 ## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/75_memory_endgame.md the compact AST; measurements.md "Memory breakdown" the corpus table)
+- **A copying checker recycle (plan 79, declined 2026-10-17; measurements.md "Plan 79")**: what survives a recycle
+  from declaration-level roots is 35% of vscode's arena at 64 MB (10-27 MB a recycle) and 37-57% of dokploy's, over
+  the plan's 25% gate (drizzle 13%, type-fest 3%). On vscode a recycle's re-derivation costs ~15-35 ms, about what a
+  precise copy of ~20 MB would, and K1's peak is the program's already: copying buys no time there and needs a precise
+  tracer for every arena struct (Ty variants, Members, Prop, Signature, mappers, ~140 key kinds' values) plus pinning
+  the deferred bodies survivors point into (plan 78's drops). A generational arena is no cheaper: types made by
+  expression checks get interned and then reached from declared types' lazy members (old -> young through the intern
+  tables needs a promotion, i.e. a copy), and an old generation grows to the share's whole declared world where
+  recycling bounds it. Where copying would pay is drizzle/zod-like shared graphs (recycles +10-18% wall at 64 MB):
+  if that becomes the blocker, measure what their fresh checkers re-derive first (`TTTT_FILE_TIMES=1` around a
+  recycle), it may be one memo kind. `scripts/survivors.sh` (`-DTTTT_SURVIVORS`, `ty/survivors.c`) stays as the tool.
 - (2026-10-16) Recycling only pays past the warm-up: `check_share()` recycles once a checker holds more than its
   budget *and* twice what it held after its segment's first file (dokploy 55 -> 3 s at K4; elsewhere unchanged). A
   program whose warm state exceeds the budget now holds ~2x its warm state per checker instead of thrashing.

@@ -58,14 +58,14 @@ types components) are the oracle, not the goal; real projects that are clean und
   closed them; the small items left are plan 80's). The levers that are big enough: **deferred function bodies**
   (plan 78: bodies are most of the AST and of the binder's flow nodes and scopes, and nearly every body is needed by
   one checker; done 2026-10-17: vscode after names 2161 -> 1027 MB, K1 peak 2490 -> ~1570 MB (bun 1443), defaults
-  2643 -> ~1850, at +1-3% wall against eager) and **a copying checker recycle** (plan 79:
-  recycling re-derives the warm state today, which is why budgets are 64-128 MB per checker and the checkers dominate
-  at 24 of them; copying the declaration-level survivors would let budgets be tens of MB, bun's per-thread scale).
-  Both have prototype gates with numbers before stages are written. Plan 80 takes the mechanical items (Expr boxing,
+  2643 -> ~1850, at +1-3% wall against eager) and **a copying checker recycle** (plan 79, **declined 2026-10-17** at
+  its gate: a recycle's declaration-level survivors are 35% of vscode's arena at 64 MB and 37-57% of dokploy's, and
+  re-deriving them costs ~15-35 ms a recycle, what copying would; the defaults' lever is the per-checker budget
+  itself, vscode 1747 -> 1537 MB at +1% with 96 MB each, todo entry 7). Plan 80 takes the mechanical items (Expr boxing,
   8-byte spans by address lookup, mmapped text) with a 50 MB gate each.
 - **Speed buys memory, not the reverse**: a memory change may cost ~3% wall at most, the window's perf session pays
   it back from the single-thread leads, and no trade is made at a worse rate than another item offers. Output stays
-  byte-identical at every checker count and budget: the kdiff/checkerdiff/recycle oracles are the net for plan 79.
+  byte-identical at every checker count and budget: the kdiff/checkerdiff/recycle oracles are the net for budget changes.
 - **Hacks grew again: 573 -> 623 lines (+11 entries, -3)**. Three are JavaScript declaration emit "guesses from one or
   two suite tests" (comment margins, `@overload` comments), labelled as such; acceptable for an emitter whose oracle
   is byte equality, not for the checker. The per-window debt session is skipped this window (memory takes all ten);
@@ -77,7 +77,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   tsgo *artifacts* (a runaway's model, a cache collision) is special-casing in a respectable form: don't.
 - **Memory target** (2026-10-16, the human): less memory than every competitor (bun, tsgo) in most cases, as fast
   as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Structural levers only
-  (plans 78, 79), mechanical items with a 50 MB gate (plan 80); a memory change costs at most ~3% wall and the
+  (plan 78; plan 79 declined at its gate), mechanical items with a 50 MB gate (plan 80); a memory change costs at most ~3% wall and the
   window's perf session pays it back. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
   corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
@@ -202,7 +202,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes measured (76, parked)~~ done.
 19. **Now: memory** (the human's goal): deferred function bodies (78; stage 1 in, the CLI's default: vscode's program
    after names 2.16 -> 1.03 GB, peaks wait for stage 2's drop), AST boxing / spans / mmapped text (80), a
-   copying checker recycle (79, gated), a perf session that pays for it, the memory bench against bun and tsgo. Plan
+   copying checker recycle (79, declined at its gate: the per-checker budget instead), a perf session that pays for it, the memory bench against bun and tsgo. Plan
    58 (7.1.0 stable re-pin, then plan 66 stage 5's fan-out) once it's on npm, whenever that falls.
 20. Then: fresh repositories (77), checker balance (72 "Lead"), the second memory window if the target isn't met
-   (what plans 78/79 left), plan 76 only if the human reopens it.
+   (what plan 78 and the budget left), plan 76 only if the human reopens it.

@@ -21,5 +21,11 @@ bool arena_pop_last(Arena* me, void* ptr, size_t size);
 #ifdef TTTT_ARENA_SITES
 void arena_sites_print(void);
 #endif
+#ifdef TTTT_SURVIVORS
+// ty/survivors.c (plan 79's measurement): the allocations of one checker's arena
+void survivors_record(Arena* arena, void* ptr, size_t size, void* site);
+void survivors_unrecord(Arena* arena, void* ptr);
+void survivors_reset(Arena* arena);
+#endif
 #define arena_new(arena, T) ((T*)arena_alloc(arena, sizeof(T)))
 #define arena_new_n(arena, T, n) ((T*)arena_alloc(arena, sizeof(T) * (size_t)(n)))

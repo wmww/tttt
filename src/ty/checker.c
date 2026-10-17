@@ -71,6 +71,9 @@ void arena_sites_print(void) {
 }
 static void* arena_alloc_inner(Arena* me, size_t size);
 #endif
+#ifdef TTTT_SURVIVORS
+static void* arena_alloc_inner(Arena* me, size_t size);
+#endif
 
 // An Arena.ast_backed's allocation, out of the thread's current materialization (plan 78 stage 2). A chunked one's
 // chunks are 1 KB, then twice the last one up to 16 KB (the scope arena: what a body keeps of its scopes is small),
@@ -92,6 +95,14 @@ void* arena_alloc(Arena* me, size_t size) {
     arena_site_count(0, __builtin_return_address(0), size);
 #endif
     my total += size;
+#ifdef TTTT_SURVIVORS
+    void* ret = arena_alloc_inner(me, size);
+    survivors_record(me, ret, size, __builtin_return_address(0));
+    return ret;
+}
+
+static void* arena_alloc_inner(Arena* me, size_t size) {
+#endif
 #ifdef TTTT_ARENA_SITES
     void* ret = arena_alloc_inner(me, size);
     arena_recent[arena_recent_next++ % ARENA_RECENT] = (typeof(arena_recent[0])){ ret, __builtin_return_address(0) };
@@ -138,6 +149,9 @@ bool arena_pop_last(Arena* me, void* ptr, size_t size) {
     size = (size + 7) & ~(size_t)7;
     if (!my head || my head->used < size || (char*)ptr != my head->data + my head->used - size) return false;
     memset(ptr, 0, size);
+#ifdef TTTT_SURVIVORS
+    survivors_unrecord(me, ptr);
+#endif
 #ifdef TTTT_ARENA_SITES
     for (u32 i = 0; i < ARENA_RECENT; i++) {
         if (arena_recent[i].ptr == ptr) {
@@ -484,6 +498,9 @@ Checker* checker_new(Program* program) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my next_type_id = 1;
+#ifdef TTTT_SURVIVORS
+    survivors_reset(&my arena);
+#endif
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY | TYF_NON_INFERRABLE);
     my intrinsics[TY_WILDCARD] = make_intrinsic(me, "any", TYF_ANY);

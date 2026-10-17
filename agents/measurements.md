@@ -11,6 +11,38 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 79, a copying checker recycle: survivors and the budget (2026-10-17, todo entry 6; closed, declined)
+The 4-vCPU box. **Survivors** (`scripts/survivors.sh -m MB -p P`: at every recycle of one checker at `--threads 1`,
+a conservative mark of the arena from the declaration-level roots: links of symbols that aren't function locals,
+the checker's fields, identity entries (interned types, by-node types, signature instances) kept while their value
+is; `--lazy` roots every LazyType memo too): arena MB summed over the recycles, survivors' share without / with
+`--lazy`:
+| corpus | budget | recycles | arena | survivors | per recycle |
+|---|---|---|---|---|---|
+| vscode | 64 | 47 | 2640 | **35%** (921 MB) | 10-27 MB, 18-49% |
+| dokploy/apps/dokploy | 64 | 8 | 1157 | **37% / 57%** | 61-96 MB late |
+| drizzle | 64 | 9 | 548 | 13% / ~20% | 5-13 MB |
+| type-fest | 64 | 5 | 860 | 3% / 5% | |
+vscode's survivors are mostly the declared world a segment touched: anonymous types 78 MB (of 214 made), atoms 22
+(877k of 1.25M), literals 27, declared 24, references 13 (sum over 47 recycles). What dies: KEY_STRUCTURAL object
+literals (83 MB), conditional instances, flow calls, the `instantiate_members` lists of expression-level types.
+**Re-derivation per recycle** (vscode `--checkers 1 --threads 1`, s / peak MB): off 13.09 / 4178, 128 MB 13.81 /
+1152 (20 recycles: ~36 ms each), 64 MB 14.41 / 1062 (47: ~22 ms each over 128's), 32 MB 15.40 / 1062 (109: ~16
+ms), 16 MB 17.69 / 1062 (269: ~14 ms). A precise copy of ~20 MB (~1.5M objects, the intern tables rehashed) costs
+about as much as that, and at K1 the peak is already the program's (1062 MB at 64 MB and below).
+**The budget at the defaults** (4 checkers, `--checker-memory MB` = MB each below 128; s / peak MB, best of 2-3):
+| corpus | 256 (128 each, today) | 96 each | 64 each | 32 each |
+|---|---|---|---|---|
+| vscode | 5.80 / 1747 | 5.87 / **1537** | 6.04 / 1362 | 6.45 / 1207 |
+| effect | 0.68 / 722 | 0.68 / 620 | 0.67 / 495 | |
+| drizzle | 0.49 / 615 | 0.54 / 525 | 0.57 / 414 | |
+| type-fest | 0.55 / 636 | 0.54 / 646 | 0.55 / 537 | |
+| webpack | 0.64 / 648 | 0.64 / 649 | 0.65 / 540 | |
+| zod | 0.36 / 547 | 0.38 / 506 | 0.39 / 399 | |
+bun at the defaults (plan 67 "Where it stands", an older tttt): vscode 1572, effect 315, drizzle 342, type-fest 563,
+webpack 362, zod 321. The per-checker budget is the defaults' lever: vscode -210 MB at +1% (96) or -385 at +4% (64);
+drizzle and zod pay for it (+10-18% at 64), effect, type-fest and webpack don't.
+
 ## Plan 80, source text mapped and released, ResolvedModule cache dropped (2026-10-17, todo entry 5)
 The 4-vCPU box. `--time` RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s, best of 3, 8116490e
 against now (same session, alternating); K1 = `--checkers 1` (4 threads), K4 = the defaults:

@@ -50,6 +50,7 @@ core_files = files(
     'engine.c',
     'string_helpers.c',
     'ty/checker.c',
+    'ty/survivors.c',
     'ty/order.c',
     'ty/members.c',
     'ty/enums.c',

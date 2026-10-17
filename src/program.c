@@ -4067,7 +4067,14 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from, 
 }
 
 // A fresh checker for share c, reporting where the last one did
+#ifdef TTTT_SURVIVORS
+void survivors_report(Checker const* me);
+#endif
+
 static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
+#ifdef TTTT_SURVIVORS
+    survivors_report(old);
+#endif
     Checker* checker = checker_new(me);
     checker->errs = old->errs;
     checker->recycles = old->recycles + 1;

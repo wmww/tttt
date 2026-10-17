@@ -49,15 +49,24 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    dropped after names: vscode peak K1 1584 -> **1447 MB**, defaults 1852 -> **1706**, after names 1029 -> 843; wall
    +1.3% / +1.9%; other corpora's peaks flat. Expr boxing (~-15..20 MB now), the fat unions (ClassItem 448 B etc.,
    ~20 each) and 8-byte spans (~-35) declined, leads in perf_leads.md "Memory". Every oracle unchanged.
-6. **Plan 79 planning + prototype** (a copying checker recycle): survivors from declaration-level roots at a recycle
-   on vscode, dokploy, drizzle, type-fest (gate: < ~25% of the arena); a prototype copy's wall at B=64/32 (gate: < 3%
-   at a budget halving the checkers' share on vscode K24); else the generational-arena alternative. Rewrite plan 79
-   as stages or close it with the numbers.
-7. **Plan 79 execution** (one or two sessions): the copying recycle, the budget policy and the CLI's cap redone
-   (plan 75's `program_set_checker_memory_cap()`), plan 67 stage 1's K1/T4 table redone, `checkerdiff -k 1 -m 0`.
-8. (Plan 79's second session if needed; else **Expr/Span leftovers of plan 80** or the LazyType slots fallback.)
+6. Done 2026-10-17: plan 79 planned and **declined** (measurements.md "Plan 79", perf_leads.md "Memory"): survivors
+   from declaration-level roots are 35% of vscode's arena at 64 MB and 37-57% of dokploy's (gate 25%); a vscode
+   recycle re-derives in ~15-35 ms, what a copy would cost; K1's peak is the program's already (1062 MB at 64 MB and
+   below). The defaults' lever is the per-checker budget: vscode at 4 checkers 5.80 s / 1747 MB at 128 MB each, 5.87
+   / **1537** at 96, 6.04 / 1362 at 64; drizzle and zod pay (+10-18% at 64), effect, type-fest, webpack don't.
+   `scripts/survivors.sh` is the tool.
+7. **The checkers' budget at the defaults** (replaces plan 79's execution): pick the default per-checker budget
+   (today `--checker-memory 256` split, 128 MB floor, `CHECKER_MEMORY_FLOOR` in program.c) from a table of every
+   corpus and perfsweep `--defaults` at 128 / 96 / 64 each, within the window's ~3% (vscode 96 is +1%, -210 MB).
+   Then why drizzle and zod pay: what their fresh checkers re-derive after a recycle (`TTTT_FILE_TIMES=1`, the first
+   files of each segment against the same files warm), and whether `check_share()`'s warm-up guard (`2 *
+   segment_base`) should measure time rather than bytes. Redo `program_set_checker_memory_cap()` for 12 cores (the
+   cap's 64 MB floor) from the same table; `scripts/checkerdiff.py -k 1 -m 0` and the recycle oracle after.
+8. **Expr/Span leftovers of plan 80** (perf_leads.md "Memory": ClassItem's inline FunctionImpl, ~-17..40 MB) or the
+   LazyType slots fallback, whichever the K1 peak table says is bigger; or a second session of entry 7 if drizzle's
+   re-derivation is one memo kind worth keeping across a recycle.
 9. **Perf session, paying for the window**: `scripts/instrcount.sh` against the starting point on every corpus
-   (find what entries 2-7 cost: bisect with `--bin`), then the single-thread leads of bugs/perf_leads.md (type-fest's
+   (find what entries 2-8 cost: bisect with `--bin`), then the single-thread leads of bugs/perf_leads.md (type-fest's
    tuple members merge, lazy parameter types with a cheaper mapper composition, the Source-keyed Maybe cache then
    hacks.md "Relations"' intersection_source rule, the parser's per-attempt copies), perfsweep (types ratio),
    scaleprobe. Then **the memory bench**: `scripts/bench.sh --runs 3 --bun PATH` (measurements.md says how to get
