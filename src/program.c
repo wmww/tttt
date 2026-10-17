@@ -4106,7 +4106,10 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // ~100 ms where the files share one big type graph (type-fest, drizzle). Nothing cheap predicts that cost (what the
 // segment's first file held doesn't: those are the default library's declarations), so the budget alone decides.
 // Where the cuts fall depends only on the checker's own work on its own files, not on the threads
-#define CHECKER_MEMORY_FLOOR ((u64)128 << 20)
+// The floor each checker keeps (today's default at 4 checkers): a table of every corpus and the source sweep's 169
+// biggest projects at 4 checkers of 128 / 96 / 80 / 64 MB (measurements.md "The checkers' budget") put the corpora at
+// +1.4 / +2.3 / +3.3% wall for -6.5 / -11 / -17% peak, the sweep's at +3 / +5 / +9% for -3 / -6 / -7%
+#define CHECKER_MEMORY_FLOOR ((u64)96 << 20)
 // What program_set_checker_memory_cap() still leaves each checker: below it the warm-ups dominate (vscode at one
 // checker of 64 MB +4% wall; at 24 checkers of 64 MB +2.4% against 128, 1.75 GB less, measurements.md)
 #define CHECKER_MEMORY_CAP_FLOOR ((u64)64 << 20)
@@ -4151,7 +4154,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->deferred_count = 0;
         checker->defer_checks = false;
         checker->checking_file = nullptr;
-        if (debug_env.file_times) print_file_time("check", file_start, source);
+        if (debug_env.file_times) {
+            print_file_time("check", file_start, source);
+            fprintf(stderr, "file time: checker %u holds %.1f MB\n", c, (double)checker_memory(checker) / (1 << 20));
+        }
         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
             if (!error_surely_reported(&checker->errs->errors.data[scanned])) continue;
             atomic_store_explicit(&my declaration_diagnostics_moot, true, memory_order_relaxed);
@@ -4162,6 +4168,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (held > checker->peak_memory) checker->peak_memory = held;
         if (!segment_base) segment_base = held;
         if (held <= my checker_budget || held <= 2 * segment_base) continue;
+        if (debug_env.file_times) {
+            fprintf(stderr, "file time: recycle checker %u after %u files, held %llu MB, warm-up %llu MB\n", c,
+                at + 1 - segment_start, (unsigned long long)(held >> 20), (unsigned long long)(segment_base >> 20));
+        }
         check_segment_after(me, checker, c, segment_start, at + 1);
         checker = checker_recycled(me, checker, c);
         source_texts_release();
@@ -4307,7 +4317,7 @@ void program_typecheck(Program* me) {
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
     // (Split between the checkers, but at least CHECKER_MEMORY_FLOOR each when there's that much: a fresh checker's
-    // warm-ups cost more than the memory saves below it, vscode at 4 checkers of 64 MB +6% wall, of 128 +3%)
+    // warm-ups cost more than the memory saves below it, vscode at 4 checkers of 64 MB +3.6% wall, of 96 +1.7%)
     u64 floor = my checker_memory < CHECKER_MEMORY_FLOOR ? my checker_memory : CHECKER_MEMORY_FLOOR;
     my checker_budget = my checker_memory == UINT64_MAX ? UINT64_MAX : (my checker_memory / count > floor ? my checker_memory / count : floor);
     if (my checker_budget != UINT64_MAX && my checker_memory_cap != UINT64_MAX) {

@@ -1128,7 +1128,7 @@ static void print_help(void) {
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
         "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
-        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 128, together at most\n"
+        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 96, together at most\n"
         "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; 0: a fresh checker per file, off: never).\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"

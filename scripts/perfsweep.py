@@ -101,11 +101,11 @@ def run_tsgo(project, timeout, mem_gb, jobs):
             'rss_kb': rss, 'machine': MACHINE, 'jobs': jobs}
 
 
-def run_tttt(project, timeout, mem_gb, defaults=False):
+def run_tttt(project, timeout, mem_gb, defaults=False, extra=()):
     cwd, p = project_args(project)
     single = [] if defaults else ['--checkers', '1', '--threads', '1']
     text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', *single,
-                                   '--time'], cwd, timeout, mem_gb)
+                                   *extra, '--time'], cwd, timeout, mem_gb)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status),
@@ -231,6 +231,9 @@ def main():
     ap.add_argument('--mem-gb', type=int, default=16)
     ap.add_argument('--no-build', action='store_true')
     ap.add_argument('--defaults', action='store_true', help='also tttt at its default threads and checkers')
+    ap.add_argument('--defaults-args', default='', help="extra tttt arguments for the --defaults run ('--checker-memory 96'; its own --last file)")
+    ap.add_argument('--defaults-only', action='store_true', help="reuse the last K1 run, rerun --defaults")
+    ap.add_argument('--min-arena', type=int, help="--defaults only on the projects whose K1 arena was over this many MB")
     ap.add_argument('--summary', action='store_true', help='only the one line scripts/oracles.py prints')
     args = ap.parse_args()
     global LAST
@@ -270,6 +273,8 @@ def main():
             print(f'tsgo on {len(todo)} projects in {time.time() - start:.0f}s, cached in {CACHE}', file=sys.stderr)
 
     checked = [p for p in projects if (cache[p].get('types') or 0) >= args.min_types and cache[p]['status'] in (0, 1, 2)]
+    if args.defaults_only:
+        args.last = args.defaults = True
     if args.last:
         results = {r['project']: r for r in json.load(open(LAST))}
     else:
@@ -282,13 +287,16 @@ def main():
             json.dump(list(results.values()), f)
     defaults = {}
     if args.defaults:
-        last_defaults = LAST.replace('.json', '-defaults.json')
-        if args.last:
+        extra = args.defaults_args.split()
+        last_defaults = LAST.replace('.json', '-defaults' + ''.join(re.sub(r'\W', '', a) for a in extra) + '.json')
+        if args.last and not args.defaults_only:
             defaults = {r['project']: r for r in json.load(open(last_defaults))}
         else:
             order = sorted(checked, key=lambda p: -(cache[p]['check_s'] or 0))
+            if args.min_arena is not None:
+                order = [p for p in order if p in results and results[p]['arena_mb'] > args.min_arena]
             # (One project at a time whatever -j: each uses every core)
-            defaults = {r['project']: r for r in parallel(lambda p: run_tttt(p, args.timeout, args.mem_gb, True), order,
+            defaults = {r['project']: r for r in parallel(lambda p: run_tttt(p, args.timeout, args.mem_gb, True, extra), order,
                                                            1, 'tttt defaults')}
             with open(last_defaults, 'w') as f:
                 json.dump(list(defaults.values()), f)
