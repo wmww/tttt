@@ -27,9 +27,11 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
 1. Done 2026-10-16: plan 78 planned, **go** (every body skipped: vscode after names 2161 -> 898 MB at T4, effect 266
    -> 194, drizzle 143 -> 128; skipper 0.4% give-ups, 0 mismatches on real code; cross-file demand ~2k of 99k vscode
    bodies, re-materialize; bodies drop only at checker recycle, since types point into them).
-2. **Plan 78 stage 1**: skip + materialize whole files at check (never dropped), split resolve walk, accessor,
-   misspelling budget at report time, syntax-error restart; byte-identical everywhere with deferral on and off,
-   instrcount, K1 T4 wall (materialize-ahead if past +3%).
+2. Done 2026-10-17: plan 78 stage 1 (deferred bodies materialized at check, CLI default; vscode after names 2161 ->
+   1025 MB, peaks unchanged until stage 2 drops them; K1 T4 wall 11.6 -> 11.3 s with materialize-ahead helpers, the
+   defaults 5.6 -> 5.5; instructions +0..2% (tsc +2.0, vscode +1.7); every oracle unchanged, kdiff/recycle 1 / 3363;
+   0 restarts on the corpora; suite with `--defer-bodies` 0 lost). Stage 2 must bound the helpers without running them
+   next to the checker (a 32-file window cost +25%: plan 78 "Stage 1: done").
 3. **Plan 78 stage 2**: one arena per materialization with an O(1) drop, refcounted by checker incarnations,
    per-thread chunk pool, fixed LazyType slot ranges per file, the program-level node-key audit; the memory table.
 4. **Plan 78 stage 3**: cross-demand policy (file vs body granularity, measured), TSX skipper, `import()` in bodies,

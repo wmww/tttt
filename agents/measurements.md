@@ -11,6 +11,33 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 78 stage 1, deferred bodies materialized at check (2026-10-17, todo entry 2)
+The 4-vCPU EPYC machine (default threads 4). `/tmp/memtable.sh`-style runs, `--time` RSS MB after parse / after names /
+peak (`/usr/bin/time`) / wall s, deferral (the CLI's default now) against `--no-defer-bodies`:
+| corpus | K | deferred | eager |
+|---|---|---|---|
+| vscode | 1 | 764 / **1025** / 2482 / 11.30 | 1644 / 2161 / 2483 / 11.77 |
+| vscode | defaults (4) | 766 / 1026 / **2651** / 5.60 | 1647 / 2164 / 2730 / 5.65 |
+| effect | 1 | 136 / 198 / 544 / 1.25 | 189 / 270 / 541 / 1.27 |
+| effect | defaults | 138 / 203 / 707 / 0.68 | 191 / 271 / 719 / 0.68 |
+| webpack (JS) | 1 / defaults | 222 / 314 / 545 ; 220 / 308 / 629 | 222 / 311 / 541 ; 222 / 309 / 631 |
+| drizzle | 1 / defaults | 93 / 128 / 413 ; 93 / 129 / 607 | 99 / 135 / 401 ; 99 / 134 / 594 |
+| type-fest | 1 / defaults | 49 / 70 / 410 ; 49 / 69 / 634 | 47 / 70 / 397 ; 47 / 68 / 612 |
+Nothing is dropped yet (stage 2), so peaks barely move: the bodies come back during checking. Small programs pay ~10-20
+MB of per-thread materialization arenas and AST slabs (drizzle, type-fest). vscode (`TTTT_DEFER_STATS=1`): 95.9k bodies
+skipped (92 MB of source), 5.3k parsed after all (IIFEs, constructors of classes with fields), 90.6k materialized in 8165
+files, 10 cross-file materializations at K1 (202 at K4), 0 failures or restarts on every corpus. Walls (vscode, 3 runs):
+K1 T4 11.3 (eager 11.6; 12.6 before the materialize-ahead helpers, 14.2 with a 32-file window), K2 6.8 (7.1), K1 T1 13.0
+(13.1), defaults 5.5 (5.6); effect K1 1.25 (1.27). Suite with `--defer-bodies`: 21.6k bodies skipped, 92 tests rerun
+without deferral (syntax errors in bodies, 111 signature collisions: error tests), 0 components lost, also at
+`--threads 4 --checkers 4`. Oracles all unchanged, kdiff 1 / 3363 again after the assignment-marks fix (hono and
+linkwarden had differed), TSan clean on effect, drizzle, vue, tsc at K1 and K2 (it found a pre-existing race:
+expr.c's `checked_callee`).
+Instructions (`scripts/instrcount.sh`, callgrind, K1 T1) 83923e4d -> stage 1: tsc 4.546 -> 4.637 (+2.0%), type-fest
+14.099 -> 14.097, valibot 3.470 -> 3.502, react 1.424, nest 1.099 -> 1.103, webpack 9.677 -> 9.680, zod 5.339 -> 5.385,
+xstate 2.690 -> 2.712, drizzle 6.628 -> 6.641, vue 6.488 -> 6.545, effect 10.127 -> 10.216, vscode 92.440 -> 94.036
+(+1.7%), excalidraw 7.658 -> 7.685, tanstack-router 5.300 -> 5.304 G (the skip scan reads every body's text once more).
+
 ## Plan 78 planning, deferred bodies' gate (2026-10-16, todo entry 1, cb3c529b)
 On the 24-thread machine (`nproc` 24; a Blender build ran during part of it: RSS is what counts). Probe:
 `agents/plans/78_probe.patch`. **Upper bound** (every TypeScript body brace-skipped, stopped after names, `--threads 4`,

@@ -126,21 +126,29 @@ today's per-file state. Cost of cross demand at file granularity: vscode 591 fil
   defaults (K = threads) the work spreads over the checkers and the parse/names phases halve: net faster.
 
 ## Stages
-### Stage 1 (todo entry 2): skip + materialize at check, nothing dropped
-Behind `program_set_defer_bodies()` (CLI on; harness off by default, `baseline_tests --defer-bodies` forces it):
-parser skip rules above, `DeferredBody` and the split walk, `program_materialize_file()` with the once-lock and the
-shard, the accessor (rename the field: the compiler lists the readers), materialize-before-check, the error routing,
-the misspelling budget at report time, the syntax-error restart. Materializations live in the file's AST arena and
-the binder arenas (thread arenas: as today's walk) and are never dropped: memory unchanged at the end of a run (the
-parse peak drops), output byte-identical. The materialize-ahead helper if K1 T4 wall is past +3%.
-Validate: suite 0 lost both with and without `--defer-bodies` (the harness traverses every body: materialize all);
-`scripts/oracles.py`, kdiff, checkerdiff, threadcheck, `kdiff -k 1 -m 0` (recycle), scenarios, dtsdiff, clidiff
-`--emit` all byte-identical; instrcount within +3% (the skip scan plus cross-demand materialization at file
-granularity); vscode/effect/drizzle RSS after parse and names (the gate table) and K1/T4 walls.
-Risks: walk state the snapshot misses (run the suite with deferral forced: every test file through the split walk;
-`TTTT_POISON_SCOPES` for the kept function scopes); the shard's guards (`frozen`, `log_error` on a binder write)
-catching a resolve write to shared state at check time; TSan on the corpora at T4 (materialization is the first
-binder write during checking).
+### Stage 1: done (2026-10-17, todo entry 2)
+As designed, with these differences (documentation.md "Deferred bodies" has how it works now, hacks.md the debts):
+- **No misspelling budget**: tsgo has none (no maximumSuggestionCount), tttt never had one; the scope.h comment about
+  "tsc's first ten" was wrong. Not-found events of a materialization are reported at its end (all globals are final).
+- **Eager after all** (decided in the parser, each a body reader of the names phase): IIFEs (`undefer_body()` at the
+  call), constructors of classes with instance fields (`constructor_locals()`; under useDefineForClassFields at ES2022+
+  only with a field without type and initializer: `field_type_from_assignments()`), bodies starting with a string,
+  expressions with a `(` in the signature after the parameter list's own (a function type's walk asks
+  `ty_function_is_context_sensitive()` of its enclosing function: effect logged it). vscode: 5.3k of 96k.
+- **Signature collisions**: the names the signature's walk looks up through the function's scope are recorded; a body
+  declaring one (or any name, when the signature had a not-found name) reruns the program without deferral, like syntax
+  errors. 0 on the corpora, 111 bodies in the suite's error tests.
+- **Writes outside the body**: besides FunctionImpl's own fields (`function_impl_walked()`), a local's assignment marks
+  (`symbol_assignments()`: kdiff caught hono's module `let` assigned in a deferred body and read by an arrow function
+  walked up front from another file's check), a field's `ts_assigned`, `has_assignment_flow_containers` (atomic).
+  `has_explicit_return`, `has_bare_return` and `contains_this` moved out of FunctionImpl's bit-fields (TSan: a
+  materialization's writes next to other checkers' reads of other bits).
+- **Materialize-ahead**: threads the checkers leave idle materialize in check order, unbounded (vscode K1 T4 12.6 ->
+  11.3 s, eager 11.6). A 32-file window behind the slowest checker was 14.2 s: helpers running next to the checker the
+  whole time evict its caches. Stage 2 needs a bound that doesn't overlap that way (bursts? memory instead of files?).
+- Materializations allocate in per-thread arenas (`binder_materialize_arenas()`) and the file's AST arena; a helper's
+  pending reports (they need a checker) wait in `DeferredBodies.unfinished`. `DeferredBody` is 144 bytes (vscode ~14
+  MB): the block and the snapshot could shrink in stage 2.
 ### Stage 2 (todo entry 3): drop at the last incarnation, O(1)
 - **One arena per materialization** holding everything it makes: the bodies' AST (`ast_malloc` bumps it while
   materializing, as parse_file()'s thread does for the file arena), scopes, flow nodes, symbols, `AccessSite`s, rare

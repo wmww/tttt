@@ -600,6 +600,21 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeferredBodies': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeferredBodiesAssigned': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeferredBodiesRestart': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeferredCheckErrorLocation': {
         errors: true,
         symbols: true,
