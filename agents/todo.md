@@ -31,9 +31,10 @@ and the defaults, output byte-identical at every K and budget.
 4. Done (this commit): plan 81 stage 2. Namespace imports share the module's members, mapper lists a cache: effect's
    K1 arena -22%, the tail -0.4% wall. A recycle's fixed cost is ~1 ms; the tail pays for re-derivation, which only
    the policy moves (one more frontier point, measurements.md "Plan 81 stage 2"). Stage 3 dropped as a tail lever.
-5. **Debt: deferred bodies' invariants** (hacks.md "Deferred bodies"): the body walk's outputs (`end_flow`, returns,
-   yields, `contains_this`, ...) behind accessors so the compiler finds every reader, as the entry's "Correct:" says;
-   whatever else in that entry is a session's fix. Delete or shrink hacks.md entries as they go.
+5. Done (this commit): deferred bodies' invariants. The body walk's outputs (`end_flow_`, returns, yields,
+   `contains_this_`, `return_flow_`, `first_super_call_`, `ts_assigned_`, ...) behind materializing accessors; two raw
+   readers found (`declaring_constructor`'s `return_flow`, safe only because JS is eager). Gated runs parse the bodies
+   for syntax errors instead of restarting: gated sweep projects -25% wall. Every oracle unchanged.
 6. **Debt: the hacks audit** (plan 71's method): hacks.md grew 573 -> 677 lines over two windows. Pick the entries that
    are guesses on the checker side first (the JS emit guesses are acceptable where byte equality is the oracle), fix
    what is a session, write plans for the rest.

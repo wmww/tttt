@@ -11,6 +11,13 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Gated runs without the restart (2026-10-17, todo entry 5)
+A run gated by options or syntax diagnostics (1397 of the source sweep's 3566 projects have TS1xxx/TS5xxx/TS6xxx under
+tsc) parsed and resolved everything twice (the restart without deferral); it now parses only the deferred bodies for
+syntax errors. Source sweep, summed per-project wall at `-j` default (same load both): gated projects 301 -> 227 s
+(-25%), all projects 738 -> 661 s (-10%); angular-cli (TS5108) 1.44 -> 0.24 s. Outputs unchanged (sweep 3559 / 3566,
+`clidiff --emit` 400 / 410 at both builds). Instructions flat (the corpora aren't gated): vscode 93.954 -> 93.953 G.
+
 ## Plan 81 stage 2, cheaper recycles (2026-10-17, todo entry 4)
 The 4-vCPU box, against 38452d50 (stage 1) run alternately. **Two density fixes, merged.** `import * as ns` had a
 namespace type of its own per import (make_gather_target()) whose members were rebuilt per import: effect made 3068
