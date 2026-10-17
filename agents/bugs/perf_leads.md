@@ -8,6 +8,15 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Deferred bodies (plan 78, closed 2026-10-17)
+vscode K1 T1 is 13.5 s deferred against 13.1 eager (+3%; K1 T4 +1%, the defaults +2%, measurements.md "Plan 78 stage
+3"). Where it goes (`TTTT_DEFER_STATS=1`, `--time`): materializing the bodies the first time costs ~1.69 s against the
+eager parse and walk's ~1.38 (cold source text and binder state, per-file setup), re-materializing ~740 files 0.23 s,
+the skip scan ~8 instructions per body byte (`skip_balanced_braces()`, ~0.7 G on vscode). Leads: materialize single
+bodies for cross-file demands (95% are inferred return types; the walk's cross-body writes, `is_assigned*`,
+`referenced`, `flow_start`, would have to be proven irrelevant to them), a SIMD skip scan (words and whitespace runs 16
+bytes at a time), gated runs materializing every body for its syntax errors rather than restarting (hacks.md).
+
 ## tttt at its defaults (triage 2026-10-16, `scripts/perfsweep.py --defaults`, 4 cores)
 The first run at the default threads and checkers over the source sweep's 1786 checked projects (under load: only the
 quiet rerun of the worst 14 is trustworthy). Quiet: nothing worse than 1.25x its own K1 wall; the mid-size ones gain

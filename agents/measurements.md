@@ -11,6 +11,37 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 78 stage 3, huge-page materialization chunks, TSX deferral (2026-10-17, todo entry 4)
+The 4-vCPU box. `--time` RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s (best of 3), stage 2
+(6cae4848) against stage 3; K1 = `--checkers 1` (4 threads), defaults = 4 threads, 4 checkers:
+| corpus | K | stage 2 | stage 3 |
+|---|---|---|---|
+| vscode | 1 | 767 / 1028 / 1566 / 11.83 | 766 / 1027 / 1579 / **11.63** |
+| vscode | defaults | 766 / 1028 / 1875 / 5.73 | 768 / 1032 / 1845 / **5.66** |
+| effect | 1 / defaults | 136 / 203 / 545 / 1.26 ; 136 / 204 / 706 / 0.69 | 136 / 201 / 542 / 1.26 ; 137 / 200 / 707 / 0.68 |
+| webpack (JS) | 1 / defaults | 220 / 310 / 541 / 1.07 ; 222 / 315 / 637 / 0.63 | 222 / 311 / 542 / 1.07 ; 222 / 312 / 634 / 0.64 |
+| drizzle | 1 / defaults | 92 / 130 / 408 / 0.78 ; 93 / 128 / 597 / 0.49 | 91 / 129 / 407 / 0.79 ; 91 / 126 / 607 / 0.49 |
+| type-fest | 1 / defaults | 47 / 68 / 400 / 1.07 ; 49 / 71 / 626 / 0.54 | 47 / 71 / 403 / 1.06 ; 49 / 69 / 624 / 0.54 |
+| excalidraw | 1 / defaults | 134 / 183 / 387 / 0.77 ; 132 / 181 / 474 / 0.46 | **109 / 155** / 387 / 0.76 ; 110 / 156 / 475 / 0.46 |
+| tanstack-router | 1 / defaults | 77 / 108 / 349 / 0.60 ; 77 / 107 / 398 / 0.33 | **61 / 88** / 348 / 0.58 ; 59 / 89 / 405 / 0.33 |
+vscode against eager (`--no-defer-bodies`, same binary): K1 T4 11.53 s (deferred +1.1%), defaults 5.55 (+2.0%), K1 T1
+13.08 (deferred 13.47, +3%; stage 2 13.72). Where stage 2's +4% went: huge pages for the materialization slabs (sys
+time 0.66 -> 0.49 s, page faults 636k -> 307k at T1), given back by 2 MB chunk when all their materializations are
+dropped. Carrying owner-made materializations across recycles kept their chunks (K1 T1 peak 1543 -> 1697 MB, live
+chunks 350 MB for 188 MB of live materializations), hence the lasting small-page slab for cross-made ones (carried
+alone: 743 re-materializations instead of 737). Without any carry-over: 13.49 s, 1528 MB, 1110 re-materializations.
+The skip scan (table-driven): tsc corpus 85.6 -> 56.9 M instructions (12 -> 8 per skipped byte). Materializing costs
+~1.69 s single-threaded on vscode against the eager parse and walk's ~1.38, re-materializing 0.23 s (perf_leads.md).
+TSX: excalidraw skips 3.98 MB of bodies (1.75 before), tanstack-router 1.43 MB; peaks there are the checkers'.
+Source sweep `TTTT_DEFER_STATS`: 0 parse failures, 745 of 3363 projects restart (681 before .tsx deferral): gated by
+options errors (a second parse, by design) or signature collisions in projects with not-found names. The suite with
+deferral (now the harness default) 13.3 -> 13.6 s. Oracles all unchanged. `scripts/instrcount.sh` stage 2 -> 3: tsc
+4.664 -> 4.634, type-fest 14.104 -> 14.105, valibot 3.510 -> 3.500, react 1.429, nest 1.103 -> 1.102, webpack 9.680 ->
+9.679, zod 5.400 -> 5.383, xstate 2.716 -> 2.710, drizzle 6.654 -> 6.653, vue 6.559 -> 6.546, effect 10.251 -> 10.226,
+vscode 96.154 -> 95.684, excalidraw 7.695 -> 7.718 (+0.3%: its .tsx bodies skip-scanned now), tanstack-router 5.304 ->
+5.329 G (+0.5%). `scripts/scaleprobe.py` body kinds (stmts, locals, calls, inferfn, funcs, jsx and the new jsxbody: a
+.tsx function returning N elements) linear at 8000 / 32000, every one faster than tsgo.
+
 ## Plan 78 stage 2, materializations dropped with the last checker incarnation (2026-10-17, todo entry 3)
 The 4-vCPU box. RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s (best of 3), stage 1 (826d28fc)
 against stage 2; K1 = `--checkers 1` (4 threads: materialize-ahead helpers), defaults = 4 threads, 4 checkers:

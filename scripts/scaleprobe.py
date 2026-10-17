@@ -56,6 +56,9 @@ KINDS = {
     'aliases': ('ts', lambda n: ['export type A0 = { v: 0 };', *[f'export type A{i} = A{i - 1} | {{ v: {i} }};' for i in range(1, n)]]),
     'jsx': ('tsx', lambda n: ['declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }',
                               'export const e = <div>', *[f'  <div>{{{i}}}</div>' for i in range(n)], '</div>;']),
+    # (A deferred .tsx body: the skipper steps over its JSX, plan 78)
+    'jsxbody': ('tsx', lambda n: ['declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }',
+                                  'export function f(x: number) { return <div>', *[f'  <div title="{i}">{{x + {i}}} it\'s</div>' for i in range(n)], '</div>; }']),
     'comments': ('ts', lambda n: ['export interface I {', *[f'  /** Member {i}. */\n  m{i}: number;' for i in range(n)], '}']),
     'inferfn': ('ts', lambda n: ['export function f(x: number) { return {', *[f'  k{i}: x + {i},' for i in range(n)], '}; }']),
     'jsdoc': ('js', lambda n: [f'/** @param {{number}} x @returns {{number}} */ function f{i}(x) {{ return x + {i}; }}' for i in range(n)]),

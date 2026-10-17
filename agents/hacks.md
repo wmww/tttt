@@ -49,7 +49,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     constructors of classes with instance fields (unless useDefineForClassFields at ES2022+, then only those with a
     field without type and initializer: `constructor_locals()`, `field_type_from_assignments()`). Each is a reader of the
     body during the names phase. Correct: those readers lazy, or answered from the parse. Cost: vscode undefers 5.3k of
-    96k bodies (`TTTT_DEFER_STATS=1`).
+    96k bodies (`TTTT_DEFER_STATS=1`). The skipper also gives up on `import` and `require` anywhere in a body (they
+    add module names: vscode 384 bodies; recording `import("m")`'s ModuleRef from the skipper would need the
+    materialization's parse to find it again rather than add one, and a call with options to keep its attributes), on
+    `/` after `}` and `++`/`--` (regex or division), and in .tsx on what doesn't look like an element (`<T,>` generic
+    arrows, comments between attributes). JavaScript stays eager (expandos and `this.x =` declarations are names the
+    names phase needs); so do `-b`'s referenced projects' bodies without a written return type (`skip_typed_bodies`
+    never parses those with one; tsc-src -b peaks at 418 MB, typescript-eslint 552).
   - Drops (stage 2, `deferred_bodies_drop_locked()`): what a body's walk writes outside the materialization's memory must
     be put back or the next materialization finds the last one's (dangling into dropped pages). Handled: the function
     scope's locals and the outer flow nodes' flags and return label (`DeferredScopeSnapshot`), the function's walk
@@ -62,12 +68,19 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   - A dropped materialization leaks what its AST malloc'd outside the arena (the parser's cooked strings and `Value`
     strings: ~8 MB per round of all of vscode's bodies; a drop doesn't walk the AST, `block_drop()` cost 0.4 s there).
     Correct: those strings in the AST arena (plan 80's spans and text).
-  - Re-materialization is per file (vscode K1 ~740 files again, ~2% of its instructions with the carry-over of
-    cross-demanded files at a recycle): plan 78 stage 3's cross-demand policy.
+  - Re-materialization is per file (vscode K1 ~740 files again, 0.23 s of 13.5 single-threaded, ~2% of its
+    instructions, with the carry-over of cross-demanded files at a recycle): bugs/perf_leads.md "Deferred bodies".
+  - Materialization chunks (`ast_alloc.c` `chunks_ref()`): a 2 MB chunk is given back only when every materialization
+    in it is dropped, so a materialization that outlives its segment keeps its chunk; only those made for another file
+    are carried across recycles, and they come from a small-page slab (`AstArena.lasting`). A new way of keeping a
+    materialization alive (pinning more, longer carry-overs) must allocate it as lasting or the peak grows (owner
+    materializations carried: vscode K1 +155 MB).
   - Signature/body name collisions and syntax errors in bodies rerun the whole program without deferral
-    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. Correct
-    for the collision: walk the signature again after the body's names (its errors held back). Oracle: `defer: restarts`
-    on the sweeps (0 on the corpora).
+    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. So does a
+    run gated by options errors (a fifth of the source sweep's projects: TS5108, TS5102, TS6310, TS2688...), which must
+    report every body's syntax errors without checking. Correct for the collision: walk the signature again after the
+    body's names (its errors held back); for the gated runs: materialize every body for its syntax errors instead of
+    reparsing everything. Oracle: `defer: restarts` on the sweeps (0 on the corpora).
 
 ## Parser
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`

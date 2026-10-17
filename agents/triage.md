@@ -15,7 +15,7 @@ writes only through its buildinfo), the 12-core notes were already in plan 72 an
   walked, which is why plan 78 drops a body only when every checker incarnation that touched it is recycled. A
   copying recycle (plan 79) that keeps survivors would keep pointers into bodies too: its survivor census must count
   the materializations the survivors pin, and its design must hand their refs to the new incarnation. Plan 79's
-  planning session should read plan 78's "The finding that shapes stage 2" first.
+  planning session should read documentation.md "Deferred bodies" ("Memory and drops") first.
 - (plan 78 planning 2026-10-16) The machine this session ran on reported `nproc` 24 (the defaults gave 24 checkers,
   64 MB each on vscode) and had a Blender build running alongside: measurements.md's "Machine and caveats" describes
   the 4-vCPU box. If the shared machine changed, say so there (and which numbers in measurements.md came from which).

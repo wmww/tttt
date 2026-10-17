@@ -37,10 +37,13 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    lower; output identical, every oracle unchanged; wall **+4%** on vscode at K1 and the defaults, instructions +2.2%:
    re-materialization at file granularity, 737 files on vscode K1). Over the 3% budget: entry 4 starts by winning it
    back (plan 78 stage 3 "Cross demand, first").
-4. **Plan 78 stage 3**: cross-demand policy first (vscode's +4% wall back under 3%: single bodies for return-type
-   demands, or a better keep policy; measured with `TTTT_DEFER_STATS`), TSX skipper, `import()` in bodies,
-   `-b`, the harness default, kdiff/recycle, perfsweep, scaleprobe; plan 78 closed into documentation.md
-   ("Deferred bodies") and hacks.md.
+4. Done 2026-10-17: plan 78 stage 3, plan closed (documentation.md "Deferred bodies", hacks.md, perf_leads.md
+   "Deferred bodies"). Materialization chunks as huge pages given back whole, only cross-made materializations carried
+   (small pages): vscode K1 T4 11.83 -> 11.63 s, defaults 5.73 -> 5.66, T1 13.72 -> 13.47 (against eager +1% / +2% /
+   +3%), peaks unchanged; table-driven skipper (-33% of its instructions); .tsx bodies deferred (excalidraw after names
+   181 -> 156 MB, tanstack-router 108 -> 88); the harness defers by default. Not done, with reasons: single-body
+   cross demand and gated runs' second parse (perf_leads.md), `import()` and `-b` bodies (hacks.md). Every oracle
+   unchanged.
 5. **Plan 80** (AST boxing, spans, mmapped text; main + Opus agents in worktrees for the mechanical parts): Expr
    72 -> 40, the other fat unions, Span 16 -> 8 for AST nodes if the saving is still >= 50 MB after boxing, source
    text mmapped. Gate per item in the plan. instrcount flat.

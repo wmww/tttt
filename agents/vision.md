@@ -57,7 +57,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   cases, as fast as possible, features parked (plan 76: watch, incremental, the cheap modes). Diets are over (plan 75
   closed them; the small items left are plan 80's). The levers that are big enough: **deferred function bodies**
   (plan 78: bodies are most of the AST and of the binder's flow nodes and scopes, and nearly every body is needed by
-  one checker; expected vscode program ~2.2 -> ~1.1 GB, K1 near bun) and **a copying checker recycle** (plan 79:
+  one checker; done 2026-10-17: vscode after names 2161 -> 1027 MB, K1 peak 2490 -> ~1570 MB (bun 1443), defaults
+  2643 -> ~1850, at +1-3% wall against eager) and **a copying checker recycle** (plan 79:
   recycling re-derives the warm state today, which is why budgets are 64-128 MB per checker and the checkers dominate
   at 24 of them; copying the declaration-level survivors would let budgets be tens of MB, bun's per-thread scale).
   Both have prototype gates with numbers before stages are written. Plan 80 takes the mechanical items (Expr boxing,
