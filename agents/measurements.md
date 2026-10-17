@@ -11,6 +11,27 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 80, source text mapped and released, ResolvedModule cache dropped (2026-10-17, todo entry 5)
+The 4-vCPU box. `--time` RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s, best of 3, 8116490e
+against now (same session, alternating); K1 = `--checkers 1` (4 threads), K4 = the defaults:
+| corpus | K | before | after |
+|---|---|---|---|
+| vscode | 1 | 767 / 1029 / 1584 / 11.71 | 790 / **843 / 1447** / 11.86 |
+| vscode | 4 | 766 / 1028 / 1852 / 5.68 | 788 / **848 / 1706** / 5.79 |
+| effect | 1 / 4 | 136 / 202 / 544 / 1.25 ; 136 / 201 / 707 / 0.69 | 139 / 186 / 539 / 1.25 ; 139 / 186 / 705 / 0.68 |
+| webpack (JS) | 1 / 4 | 220 / 307 / 538 / 1.07 ; 220 / 315 / 635 / 0.64 | 222 / 283 / 541 / 1.08 ; 224 / 283 / 634 / 0.64 |
+| drizzle | 1 / 4 | 89 / 126 / 405 / 0.79 ; 89 / 126 / 605 / 0.50 | 95 / 119 / 403 / 0.80 ; 95 / 115 / 601 / 0.50 |
+| type-fest | 1 / 4 | 49 / 70 / 403 / 1.06 ; 47 / 68 / 623 / 0.54 | 48 / 63 / 399 / 1.07 ; 50 / 65 / 623 / 0.54 |
+vscode wall +1.3% (K1) / +1.9% (defaults): re-faulting text a recycle dropped (~+20k minor faults) and an open+mmap
+per file. After parse is a few MB higher (mappings are whole pages); the peaks of the small corpora are their
+checkers'. Mapping without releasing was *worse* than read() (vscode K1 1640 MB): the gain is the release. Releasing
+per file (11k madvises a recycle, a TLB shootdown each) cost +2.7% at the defaults; per 256 MB segment +0.9%. Census
+(vscode, after names): 1.32M Exprs, AST ~470 MB, source text ~175 MB, ResolvedModule table 33 MB (plan 80).
+Oracles all unchanged; scenarios 211 / 0, clidiff `--emit` 387 / 396. `scripts/instrcount.sh` (callgrind) stage 3 -> now: tsc
+4.634 -> 4.624, type-fest 14.105 -> 14.086, valibot 3.500 -> 3.494, react 1.429 -> 1.418, nest 1.102 -> 1.089, webpack
+9.679 -> 9.648, zod 5.383 -> 5.375, xstate 2.710 -> 2.706, drizzle 6.653 -> 6.643, vue 6.546 -> 6.531, effect 10.226 ->
+10.244, vscode 95.684 -> 95.495, excalidraw 7.718 -> 7.708, tanstack-router 5.329 -> 5.325 G (no copy of the text).
+
 ## Plan 78 stage 3, huge-page materialization chunks, TSX deferral (2026-10-17, todo entry 4)
 The 4-vCPU box. `--time` RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s (best of 3), stage 2
 (6cae4848) against stage 3; K1 = `--checkers 1` (4 threads), defaults = 4 threads, 4 checkers:

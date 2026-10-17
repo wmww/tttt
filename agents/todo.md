@@ -44,9 +44,11 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    181 -> 156 MB, tanstack-router 108 -> 88); the harness defers by default. Not done, with reasons: single-body
    cross demand and gated runs' second parse (perf_leads.md), `import()` and `-b` bodies (hacks.md). Every oracle
    unchanged.
-5. **Plan 80** (AST boxing, spans, mmapped text; main + Opus agents in worktrees for the mechanical parts): Expr
-   72 -> 40, the other fat unions, Span 16 -> 8 for AST nodes if the saving is still >= 50 MB after boxing, source
-   text mmapped. Gate per item in the plan. instrcount flat.
+5. Done 2026-10-17: plan 80, closed. With bodies deferred only the source text passed the gate: files mmapped into
+   reserved segments, their pages dropped after names and at every checker recycle, and the ResolvedModule cache
+   dropped after names: vscode peak K1 1584 -> **1447 MB**, defaults 1852 -> **1706**, after names 1029 -> 843; wall
+   +1.3% / +1.9%; other corpora's peaks flat. Expr boxing (~-15..20 MB now), the fat unions (ClassItem 448 B etc.,
+   ~20 each) and 8-byte spans (~-35) declined, leads in perf_leads.md "Memory". Every oracle unchanged.
 6. **Plan 79 planning + prototype** (a copying checker recycle): survivors from declaration-level roots at a recycle
    on vscode, dokploy, drizzle, type-fest (gate: < ~25% of the arena); a prototype copy's wall at B=64/32 (gate: < 3%
    at a budget halving the checkers' share on vscode K24); else the generational-arena alternative. Rewrite plan 79
