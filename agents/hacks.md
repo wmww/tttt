@@ -36,6 +36,25 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   once), so a TS2589 near the 5M limit, and circular variance measurements (which follow the files a checker saw), can
   depend on `--checkers`. Oracle: `scripts/kdiff.py`, `checkerdiff.py`.
 
+- Deferred bodies (plan 78, documentation.md "Deferred bodies"), what keeps them exact:
+  - `function_impl_walked()` / `function_impl_body()` are the only guard on what a body's walk writes outside the body
+    (FunctionImpl's `end_flow`, returns, yields, `contains_this`, rare `return_flow`/`first_super_call`/
+    `first_this_or_super`, a class field's `ts_assigned`, `ClassDecl.computed_this_assignments`): a new reader that skips
+    them reads a deferred function's unwalked state (cross-file only: a file's own check materializes it first). The
+    compiler finds `body` readers (the field is `body_`), not the others. Correct: those fields behind accessors too.
+    Oracle: the suite with `--defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
+  - What isn't deferred, decided by syntax in the parser (`skip_body()`, `undefer_body()`): parameters with expressions,
+    bodies starting with a string, expressions with a `(` in their signature after the parameter list's own (a function
+    type's walk asks `ty_function_is_context_sensitive()` of the enclosing function, which may read its body), IIFEs,
+    constructors of classes with instance fields (unless useDefineForClassFields at ES2022+, then only those with a
+    field without type and initializer: `constructor_locals()`, `field_type_from_assignments()`). Each is a reader of the
+    body during the names phase. Correct: those readers lazy, or answered from the parse. Cost: vscode undefers 5.3k of
+    96k bodies (`TTTT_DEFER_STATS=1`).
+  - Signature/body name collisions and syntax errors in bodies rerun the whole program without deferral
+    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. Correct
+    for the collision: walk the signature again after the body's names (its errors held back). Oracle: `defer: restarts`
+    on the sweeps (0 on the corpora).
+
 ## Parser
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`
   (`parse_type_inner`, `expect_annotation_type`), not on the tree (checkGrammarTypeOperatorNode), and never in JSDoc,

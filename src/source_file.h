@@ -318,10 +318,30 @@ typedef struct DeferredBodies {
     u32 count;
     _Atomic(uint8_t) state; // DeferredBodiesState
     pthread_mutex_t lock;
+    // Materialized by a thread without a checker (program.c's materialize-ahead): the walk's shard whose pending reports
+    // (they ask for types) the first checker to need the file makes. Owned
+    struct ResolveShard* _Atomic unfinished;
     // What parsing and walking the bodies reported (parse errors, grammar errors, resolve errors), merged into the
     // program's at the end of program_typecheck()
     struct ErrorCtx errs;
 } DeferredBodies;
+
+// program.c: materializes the file's deferred bodies in the current checker's program, unless they are already
+void deferred_bodies_materialize(SourceFile const* file);
+// Readers of a local's assignment marks (Symbol.is_assigned, is_definitely_assigned, is_assigned_in_closure,
+// last_assignment_end) go through this: the walks of its file's deferred bodies set them (plan 78), and code walked
+// up front (an arrow function's expression body, the top level) reads them from other files' checks
+static inline Symbol const* symbol_assignments(Symbol const* me) {
+    if (me->is_local && me->decl_count) {
+        SourceFile const* file = span_source(me->decls[0].full);
+        if (file && file->deferred_bodies &&
+            atomic_load_explicit(&file->deferred_bodies->state, memory_order_acquire) == DEFERRED_BODIES_PENDING
+        ) {
+            deferred_bodies_materialize(file);
+        }
+    }
+    return me;
+}
 
 // TTTT_DEFER_STATS (debug_env.defer_stats): counts printed at exit
 typedef enum DeferStat {

@@ -1,0 +1,30 @@
+//// [test/cases/ttttDeferredBodiesRestart.ts] ////
+
+=== a.ts ===
+export function sees(): typeof local { const local = { a: 1 }; return local; }
+>sees : () => { a: number; }
+>local : { a: number; }
+>local : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>local : { a: number; }
+
+export function missing(x: Unknwn) { const Unknown = 1; return x; }
+>missing : (x: Unknwn) => Unknwn
+>x : Unknwn
+>Unknown : 1
+>1 : 1
+>x : Unknwn
+
+=== b.ts ===
+import { sees } from "./a";
+>sees : () => { a: number; }
+
+export const a: string = sees().a;
+>a : string
+>sees().a : number
+>sees() : { a: number; }
+>sees : () => { a: number; }
+>a : number
+

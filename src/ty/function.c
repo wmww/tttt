@@ -1,5 +1,6 @@
 #include "ty/ty_internal.h"
 #include "program.h"
+#include "source_file.h"
 #include "statement.h"
 #include "compiler_options.h"
 
@@ -226,7 +227,7 @@ bool ty_is_recursive_return(Checker* me, Expr const* returned) {
     // (tsc's isConstantReference: a const, or a local `let` never assigned again. Parameters count too, left out)
     // (Or the name of a function expression, valueDeclaration a FunctionExpression: `function f() { return f(); }`)
     if (function->is_expression && !symbol->is_const &&
-        !(symbol->is_local && !symbol->is_assigned && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) &&
+        !(symbol->is_local && !symbol_assignments(symbol)->is_assigned && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) &&
         !(function->symbol && symbol == function->symbol)
     ) {
         return false;

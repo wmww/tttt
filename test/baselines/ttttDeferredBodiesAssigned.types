@@ -1,0 +1,39 @@
+//// [test/cases/ttttDeferredBodiesAssigned.ts] ////
+
+=== a.ts ===
+import "./b";
+let context: { name: string } | undefined = undefined;
+>context : { name: string; } | undefined
+>name : string
+>undefined : undefined
+
+export const getContext = () => context;
+>getContext : () => { name: string; } | undefined
+>() => context : () => { name: string; } | undefined
+>context : { name: string; } | undefined
+
+export function init() {
+>init : () => void
+
+    context ||= { name: "a" };
+>context ||= { name: "a" } : { name: string; }
+>context : { name: string; } | undefined
+>{ name: "a" } : { name: string; }
+>name : string
+>"a" : "a"
+}
+=== b.ts ===
+import { getContext } from "./a";
+>getContext : () => { name: string; } | undefined
+
+const found = getContext();
+>found : { name: string; } | undefined
+>getContext() : { name: string; } | undefined
+>getContext : () => { name: string; } | undefined
+
+export const name: string | undefined = found?.name;
+>name : string | undefined
+>found?.name : string | undefined
+>found : { name: string; } | undefined
+>name : string | undefined
+

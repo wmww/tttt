@@ -2384,7 +2384,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         // assumed to be assigned, to something control flow may not know: any unless every path leads to an
         // assignment in the closure. `x!` is what was assigned, non-nullable
         bool non_null = identifier->non_null_operand;
-        bool assume_initialized = non_null || (identifier->outer_reference && (symbol->is_assigned || type != auto_any));
+        bool assume_initialized = non_null || (identifier->outer_reference && (symbol_assignments(symbol)->is_assigned || type != auto_any));
         Ty const* initial = assume_initialized && !non_null ? type : ty_intrinsic(me, TY_UNDEFINED);
         my flow_substitutes_constraints = substituted;
         Ty const* flow_type = non_null_flow_type(me, expr, type, initial);

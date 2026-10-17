@@ -1,0 +1,27 @@
+//// [test/cases/ttttDeferredBodiesRestart.ts] ////
+
+=== a.ts ===
+export function sees(): typeof local { const local = { a: 1 }; return local; }
+>sees : Symbol(sees, Decl(a.ts, 0, 0))
+>local : Symbol(local, Decl(a.ts, 0, 44))
+>local : Symbol(local, Decl(a.ts, 0, 44))
+>a : Symbol(a, Decl(a.ts, 0, 54))
+>local : Symbol(local, Decl(a.ts, 0, 44))
+
+export function missing(x: Unknwn) { const Unknown = 1; return x; }
+>missing : Symbol(missing, Decl(a.ts, 0, 78))
+>x : Symbol(x, Decl(a.ts, 1, 24))
+>Unknwn : Symbol(Unknwn)
+>Unknown : Symbol(Unknown, Decl(a.ts, 1, 42))
+>x : Symbol(x, Decl(a.ts, 1, 24))
+
+=== b.ts ===
+import { sees } from "./a";
+>sees : Symbol(sees, Decl(b.ts, 0, 8))
+
+export const a: string = sees().a;
+>a : Symbol(a, Decl(b.ts, 1, 12))
+>sees().a : Symbol(a, Decl(a.ts, 0, 54))
+>sees : Symbol(sees, Decl(b.ts, 0, 8))
+>a : Symbol(a, Decl(a.ts, 0, 54))
+

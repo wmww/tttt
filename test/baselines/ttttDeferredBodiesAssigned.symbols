@@ -1,0 +1,34 @@
+//// [test/cases/ttttDeferredBodiesAssigned.ts] ////
+
+=== a.ts ===
+import "./b";
+let context: { name: string } | undefined = undefined;
+>context : Symbol(context, Decl(a.ts, 1, 3))
+>name : Symbol(name, Decl(a.ts, 1, 14))
+>undefined : Symbol(undefined)
+
+export const getContext = () => context;
+>getContext : Symbol(getContext, Decl(a.ts, 2, 12))
+>context : Symbol(context, Decl(a.ts, 1, 3))
+
+export function init() {
+>init : Symbol(init, Decl(a.ts, 2, 40))
+
+    context ||= { name: "a" };
+>context : Symbol(context, Decl(a.ts, 1, 3))
+>name : Symbol(name, Decl(a.ts, 4, 17))
+}
+=== b.ts ===
+import { getContext } from "./a";
+>getContext : Symbol(getContext, Decl(b.ts, 0, 8))
+
+const found = getContext();
+>found : Symbol(found, Decl(b.ts, 1, 5))
+>getContext : Symbol(getContext, Decl(b.ts, 0, 8))
+
+export const name: string | undefined = found?.name;
+>name : Symbol(name, Decl(b.ts, 2, 12))
+>found?.name : Symbol(name, Decl(a.ts, 1, 14))
+>found : Symbol(found, Decl(b.ts, 1, 5))
+>name : Symbol(name, Decl(a.ts, 1, 14))
+

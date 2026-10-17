@@ -689,7 +689,7 @@ static Symbol const* access_key_symbol(PropertyExpr const* access) {
     if (symbol->is_const) return symbol;
     // (A `let` of a script's top level is a global, not a mutable local: tsc's isMutableLocalVariableDeclaration)
     bool mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
-    return (symbol->is_parameter || mutable_local) && !symbol->is_assigned ? symbol : nullptr;
+    return (symbol->is_parameter || mutable_local) && !symbol_assignments(symbol)->is_assigned ? symbol : nullptr;
 }
 
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target) {
@@ -2769,7 +2769,7 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
             return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
         }
         Symbol const* symbol = reference->identifier.target;
-        if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol->is_assigned)) return nullptr;
+        if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol_assignments(symbol)->is_assigned)) return nullptr;
         return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
     }
     if (reference->tag != EXPR_PROPERTY) return nullptr;
@@ -3320,7 +3320,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
 
 // A local `let x: T;` that nothing ever assigns (tsc's isNeverInitialized): a closure doesn't get to assume it is
 bool ty_symbol_never_initialized(Symbol const* symbol) {
-    if (!symbol || !symbol->is_local || symbol->is_const || symbol->is_definitely_assigned || !(symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) {
+    if (!symbol || !symbol->is_local || symbol->is_const || symbol_assignments(symbol)->is_definitely_assigned || !(symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) {
         return false;
     }
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
@@ -3355,7 +3355,8 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     bool is_mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
     if (!symbol->is_parameter && !is_mutable_local) return false;
     // Past the last assignment
-    return !symbol->last_assignment_end || symbol->last_assignment_end < span_start_ptr(reference->inner_span);
+    char const* last_assignment_end = symbol_assignments(symbol)->last_assignment_end;
+    return !last_assignment_end || last_assignment_end < span_start_ptr(reference->inner_span);
 }
 
 // A call statement: an assertion narrows, after a call that never returns there is nothing. False: no effect
@@ -3540,7 +3541,7 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
 // Whether a symbol of a parameter's pattern (nested ones too) is assigned somewhere (tsc's isSomeSymbolAssigned)
 static bool some_pattern_symbol_assigned(Binding const* binding) {
     switch (binding->tag) {
-        case BINDING_IDENTIFIER: return binding->symbol && binding->symbol->is_assigned;
+        case BINDING_IDENTIFIER: return binding->symbol && symbol_assignments(binding->symbol)->is_assigned;
         case BINDING_ARRAY:
             for_each (i, vec_binding, &binding->array) {
                 if (some_pattern_symbol_assigned(i)) return true;
@@ -3743,7 +3744,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
             if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
             u32 at = index++;
             Symbol const* symbol = binding->tag == BINDING_IDENTIFIER ? binding->symbol : nullptr;
-            if (!symbol || i->rest || symbol->is_assigned) continue;
+            if (!symbol || i->rest || symbol_assignments(symbol)->is_assigned) continue;
             Ty const* init = ty_type_of_symbol(me, symbol);
             if (!init || (init->flags & TYF_BOOLEAN)) continue;
             Expr* reference = arena_new(&my arena, Expr);

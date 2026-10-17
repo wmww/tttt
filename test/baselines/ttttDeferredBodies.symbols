@@ -1,0 +1,124 @@
+//// [test/cases/ttttDeferredBodies.ts] ////
+
+=== a.ts ===
+// An inferred return type another file asks for first
+export const later = (x: number) => { if (x > 1) return "big"; return x; };
+>later : Symbol(later, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+
+export class Counter {
+>Counter : Symbol(Counter, Decl(a.ts, 1, 75))
+
+    count = 0;
+>count : Symbol(Counter.count, Decl(a.ts, 2, 22))
+
+    constructor(start: number) { this.count = start; }
+>start : Symbol(start, Decl(a.ts, 4, 16))
+>this.count : Symbol(Counter.count, Decl(a.ts, 2, 22))
+>this : Symbol(Counter, Decl(a.ts, 1, 75))
+>count : Symbol(Counter.count, Decl(a.ts, 2, 22))
+>start : Symbol(start, Decl(a.ts, 4, 16))
+
+    // A method whose body another file's call infers from
+    next() { return ++this.count; }
+>next : Symbol(Counter.next, Decl(a.ts, 4, 54))
+>this.count : Symbol(Counter.count, Decl(a.ts, 2, 22))
+>this : Symbol(Counter, Decl(a.ts, 1, 75))
+>count : Symbol(Counter.count, Decl(a.ts, 2, 22))
+}
+// A function type in an arrow function's parameters: its walk asks whether the arrow function is context sensitive
+export const apply = (f: (x: number) => number, y: number) => { return f(y); };
+>apply : Symbol(apply, Decl(a.ts, 9, 12))
+>f : Symbol(f, Decl(a.ts, 9, 22))
+>x : Symbol(x, Decl(a.ts, 9, 26))
+>y : Symbol(y, Decl(a.ts, 9, 47))
+>f : Symbol(f, Decl(a.ts, 9, 22))
+>y : Symbol(y, Decl(a.ts, 9, 47))
+
+// An immediately invoked function is part of the flow around it
+let assigned: string | undefined;
+>assigned : Symbol(assigned, Decl(a.ts, 11, 3))
+
+(() => { assigned = "yes"; })();
+>assigned : Symbol(assigned, Decl(a.ts, 11, 3))
+
+export const length: number = assigned.length;
+>length : Symbol(length, Decl(a.ts, 13, 12))
+>assigned.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>assigned : Symbol(assigned, Decl(a.ts, 11, 3))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+// Expandos of a function in a body
+export function withExpandos() {
+>withExpandos : Symbol(withExpandos, Decl(a.ts, 13, 46))
+
+    function inner() {}
+>inner : Symbol(inner, Decl(a.ts, 15, 32))
+
+    inner.tag = "t";
+>inner.tag : Symbol(inner.tag, Decl(a.ts, 16, 23))
+>inner : Symbol(inner, Decl(a.ts, 15, 32))
+>tag : Symbol(inner.tag, Decl(a.ts, 16, 23))
+
+    return inner;
+>inner : Symbol(inner, Decl(a.ts, 15, 32))
+}
+// Directives inside a body
+export function directive() {
+>directive : Symbol(directive, Decl(a.ts, 19, 1))
+
+    // @ts-expect-error
+    const n: number = "no";
+>n : Symbol(n, Decl(a.ts, 23, 9))
+
+    // @ts-expect-error
+    const fine: number = 1;
+>fine : Symbol(fine, Decl(a.ts, 25, 9))
+
+    return n + fine;
+>n : Symbol(n, Decl(a.ts, 23, 9))
+>fine : Symbol(fine, Decl(a.ts, 25, 9))
+}
+export function unused() {
+>unused : Symbol(unused, Decl(a.ts, 27, 1))
+
+    const notRead = 1;
+>notRead : Symbol(notRead, Decl(a.ts, 29, 9))
+}
+=== b.ts ===
+import { later, Counter, apply, withExpandos } from "./a";
+>later : Symbol(later, Decl(b.ts, 0, 8))
+>Counter : Symbol(Counter, Decl(b.ts, 0, 15))
+>apply : Symbol(apply, Decl(b.ts, 0, 24))
+>withExpandos : Symbol(withExpandos, Decl(b.ts, 0, 31))
+
+const big: string | number = later(2);
+>big : Symbol(big, Decl(b.ts, 1, 5))
+>later : Symbol(later, Decl(b.ts, 0, 8))
+
+const n: number = new Counter(1).next();
+>n : Symbol(n, Decl(b.ts, 2, 5))
+>new Counter(1).next : Symbol(Counter.next, Decl(a.ts, 4, 54))
+>Counter : Symbol(Counter, Decl(b.ts, 0, 15))
+>next : Symbol(Counter.next, Decl(a.ts, 4, 54))
+
+const applied: string = apply(x => x * 2, 1);
+>applied : Symbol(applied, Decl(b.ts, 3, 5))
+>apply : Symbol(apply, Decl(b.ts, 0, 24))
+>x : Symbol(x, Decl(b.ts, 3, 30))
+>x : Symbol(x, Decl(b.ts, 3, 30))
+
+const tag: number = withExpandos().tag;
+>tag : Symbol(tag, Decl(b.ts, 4, 5))
+>withExpandos().tag : Symbol(inner.tag, Decl(a.ts, 16, 23))
+>withExpandos : Symbol(withExpandos, Decl(b.ts, 0, 31))
+>tag : Symbol(inner.tag, Decl(a.ts, 16, 23))
+
+export { big, n, applied, tag };
+>big : Symbol(big, Decl(b.ts, 5, 8))
+>n : Symbol(n, Decl(b.ts, 5, 13))
+>applied : Symbol(applied, Decl(b.ts, 5, 16))
+>tag : Symbol(tag, Decl(b.ts, 5, 25))
+

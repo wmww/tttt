@@ -1,0 +1,155 @@
+//// [test/cases/ttttDeferredBodies.ts] ////
+
+=== a.ts ===
+// An inferred return type another file asks for first
+export const later = (x: number) => { if (x > 1) return "big"; return x; };
+>later : (x: number) => number | "big"
+>(x: number) => { if (x > 1) return "big"; return x; } : (x: number) => number | "big"
+>x : number
+>x > 1 : boolean
+>x : number
+>1 : 1
+>"big" : "big"
+>x : number
+
+export class Counter {
+>Counter : Counter
+
+    count = 0;
+>count : number
+>0 : 0
+
+    constructor(start: number) { this.count = start; }
+>start : number
+>this.count = start : number
+>this.count : number
+>this : this
+>count : number
+>start : number
+
+    // A method whose body another file's call infers from
+    next() { return ++this.count; }
+>next : () => number
+>++this.count : number
+>this.count : number
+>this : this
+>count : number
+}
+// A function type in an arrow function's parameters: its walk asks whether the arrow function is context sensitive
+export const apply = (f: (x: number) => number, y: number) => { return f(y); };
+>apply : (f: (x: number) => number, y: number) => number
+>(f: (x: number) => number, y: number) => { return f(y); } : (f: (x: number) => number, y: number) => number
+>f : (x: number) => number
+>x : number
+>y : number
+>f(y) : number
+>f : (x: number) => number
+>y : number
+
+// An immediately invoked function is part of the flow around it
+let assigned: string | undefined;
+>assigned : string | undefined
+
+(() => { assigned = "yes"; })();
+>(() => { assigned = "yes"; })() : void
+>(() => { assigned = "yes"; }) : () => void
+>() => { assigned = "yes"; } : () => void
+>assigned = "yes" : "yes"
+>assigned : string | undefined
+>"yes" : "yes"
+
+export const length: number = assigned.length;
+>length : number
+>assigned.length : number
+>assigned : string
+>length : number
+
+// Expandos of a function in a body
+export function withExpandos() {
+>withExpandos : () => { (): void; tag: string; }
+
+    function inner() {}
+>inner : { (): void; tag: string; }
+
+    inner.tag = "t";
+>inner.tag = "t" : "t"
+>inner.tag : string
+>inner : { (): void; tag: string; }
+>tag : string
+>"t" : "t"
+
+    return inner;
+>inner : { (): void; tag: string; }
+}
+// Directives inside a body
+export function directive() {
+>directive : () => number
+
+    // @ts-expect-error
+    const n: number = "no";
+>n : number
+>"no" : "no"
+
+    // @ts-expect-error
+    const fine: number = 1;
+>fine : number
+>1 : 1
+
+    return n + fine;
+>n + fine : number
+>n : number
+>fine : number
+}
+export function unused() {
+>unused : () => void
+
+    const notRead = 1;
+>notRead : 1
+>1 : 1
+}
+=== b.ts ===
+import { later, Counter, apply, withExpandos } from "./a";
+>later : (x: number) => number | "big"
+>Counter : typeof Counter
+>apply : (f: (x: number) => number, y: number) => number
+>withExpandos : () => { (): void; tag: string; }
+
+const big: string | number = later(2);
+>big : string | number
+>later(2) : number | "big"
+>later : (x: number) => number | "big"
+>2 : 2
+
+const n: number = new Counter(1).next();
+>n : number
+>new Counter(1).next() : number
+>new Counter(1).next : () => number
+>new Counter(1) : Counter
+>Counter : typeof Counter
+>1 : 1
+>next : () => number
+
+const applied: string = apply(x => x * 2, 1);
+>applied : string
+>apply(x => x * 2, 1) : number
+>apply : (f: (x: number) => number, y: number) => number
+>x => x * 2 : (x: number) => number
+>x : number
+>x * 2 : number
+>x : number
+>2 : 2
+>1 : 1
+
+const tag: number = withExpandos().tag;
+>tag : number
+>withExpandos().tag : string
+>withExpandos() : { (): void; tag: string; }
+>withExpandos : () => { (): void; tag: string; }
+>tag : string
+
+export { big, n, applied, tag };
+>big : string | number
+>n : number
+>applied : string
+>tag : number
+

@@ -350,6 +350,38 @@ own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_fil
 the file in (`SourceFile.included_at`). `scripts/scenarios.py` replays the first command of tsc's own tsbuild/tsc project
 reference baselines against tttt; `scripts/realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.
 
+### Deferred bodies (plan 78)
+The parser skips the body of every outermost function of a TypeScript file (not TSX, not a declaration file, not
+unchecked) where that's safe (`skip_body()`: `skip_balanced_braces()` is sure of its end; no expression in a parameter,
+whose walk sees the body's names; no string first, a "use strict" prologue; for an expression no `(` in its signature
+after the parameter list's own, a function type whose walk asks whether this one is context sensitive). The body is a
+`DeferredBody` (`FunctionImpl.deferred`, `body_.deferred`); an IIFE's is parsed after all when the call shows, so is a
+constructor's the class's walk looks into (`undefer_body()`). The skipper records the comments it steps over like the
+parser (comment directives, declaration emit's comments). The resolve walk (`function_impl_lookup_names_as()`) does
+everything up to the body, records the flow builder's state in the DeferredBody and lists it in the file's
+`DeferredBodies`; meanwhile every name the signature's walk looks up through the function's scope is recorded
+(`Scope.deferred_body`, `note_deferred_signature_name()`).
+
+**Materialization** (`program_materialize_file()`): the first checker that needs a body (`function_impl_body()`,
+`function_impl_walked()` for what the body's walk sets: `end_flow`, returns, yields, `contains_this`, constructors'
+`return_flow` and `first_super_call`, fields' `ts_assigned`) parses all of its file's (`parse_deferred_body()`, into
+the file's AST arena) and walks them in walk order (`function_impl_lookup_deferred_body()`) under the file's lock, in a
+`ResolveShard` of its own (`materialization`: a TypeScript function's expandos are its own locals', not deferred) with
+the thread's arenas (`binder_materialize_arenas()`); a check materializes its file before it starts. The walk's
+pending reports that ask for types (`resolve_shard_finish_materialized()`) run after the lock is released, into the
+file's `DeferredBodies.errs`, which `program_typecheck()` merges into the program's (`program_finish_deferred_bodies()`,
+with the resolve phase's comment directives). Nothing is dropped yet (stage 2: an arena per materialization, released
+with the last checker incarnation that used it).
+
+**Exactness**: a materialization that can be told from the eager parse and walk sets `program_defer_failed()` and the
+program runs again without deferral (`check_files()`, the harness's `run_baseline_test_case()`): a parse error in a
+body or an end other than the skipper's (syntax errors), a recorded signature name the body declares (or a name the
+signature didn't find while the body declares any: its suggestion could have been one of them). So does an output that
+needs every body's syntax errors without checking (gated by syntactic or options diagnostics, `--listFilesOnly`). Real
+code never pays; error runs pay a second parse. The CLI defers by default (`--no-defer-bodies`), the harness only with
+`baseline_tests --defer-bodies`; `TTTT_DEFER_STATS=1` prints counts at exit (bodies skipped, files materialized,
+cross-file materializations, failures, restarts).
+
 ### Typecheck
 The AST is now in it's finished state, so we can traverse it looking for type errors. This is the phase when the `*_evaluate_type()` functions are called (via `ty_from_node()` / `ty_expr_type()` -> `lazy_type_get()` -> `lazy_type_evaluate()` -> `*_evaluate_type()`), each returning a `Ty const*`. Before the walk, `ty_init_global_types()` creates the global types tsc's
 initializeTypeChecker creates (Array, Object, Function, String, ..., RegExp) in tsc's order: type ids break the stable

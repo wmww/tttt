@@ -33,6 +33,12 @@ def suite():
     names = [l.strip() for l in diff.split('gained:')[0].splitlines()[1:] if l.startswith('  ')]
     for n in names[:40]: print('   ', n)
     if len(names) > 40: print(f'    ... ({len(names) - 40} more: scripts/resultdiff.py --lost)')
+    # Deferred function bodies (plan 78) against the results just saved: what deferral loses
+    out = re.sub(r'\x1b\[[0-9;]*m', '', run(['release/baseline_tests', '--defer-bodies', '--summary']))
+    m = re.search(r'(\d+)\D*passed', out)
+    lost = re.findall(r'^ (?:ERR|SYM|TYP|DTS| - ).*?\s(\S+)\s+\(', out, re.M)
+    print(f'suite --defer-bodies: {m.group(1) if m else "?"} passed, {len(lost)} newly failing', flush=True)
+    for n in lost[:20]: print('   ', n)
 
 def corpora():
     rows = []

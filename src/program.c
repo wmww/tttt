@@ -139,6 +139,7 @@ typedef struct Program {
     bool emit_declarations; // program_set_emit_declarations()
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
+    atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
     // Output paths TS5055/TS5056 were reported for (relative to the working directory): tsc's hasEmitBlockingDiagnostics,
     // nothing is written there
     hmap_source_file_ptr emit_blocked;
@@ -3671,12 +3672,19 @@ static thread_local SourceFile const* materializing_file;
 // Parses and walks every deferred body of the file, once: the first checker that needs one does it, the others wait.
 // Then the walk's pending reports (they ask the checker for types: not under the lock, a type may need another file's
 // bodies) go to the file's DeferredBodies.errs, which program_typecheck() merges into the program's
+static void program_finish_materialized(SourceFile* file);
+
 static void program_materialize_file(Program* me, SourceFile* file) {
     DeferredBodies* list = file->deferred_bodies;
-    if (!list || atomic_load_explicit(&list->state, memory_order_acquire) != DEFERRED_BODIES_PENDING) return;
+    if (!list) return;
+    if (atomic_load_explicit(&list->state, memory_order_acquire) != DEFERRED_BODIES_PENDING) {
+        program_finish_materialized(file);
+        return;
+    }
     pthread_mutex_lock(&list->lock);
     if (atomic_load_explicit(&list->state, memory_order_relaxed) != DEFERRED_BODIES_PENDING) {
         pthread_mutex_unlock(&list->lock);
+        program_finish_materialized(file);
         return;
     }
     SourceFile const* outer = materializing_file;
@@ -3695,18 +3703,19 @@ static void program_materialize_file(Program* me, SourceFile* file) {
     Arena* arena;
     Arena* scope_arena;
     binder_materialize_arenas(my binder, &arena, &scope_arena);
-    ResolveShard shard = {
+    // (On the heap: the walk's deferred events point at its contexts, and a helper leaves it to a checker)
+    ResolveShard* shard = c_new(ResolveShard, {
         .binder = my binder, .arena = arena, .scope_arena = scope_arena,
         .errs = { .phase = ERROR_PHASE_RESOLVE_NAMES, .parent = my errs },
         .discarded = { .phase = ERROR_PHASE_RESOLVE_NAMES },
         .materialization = true,
-    };
+    });
     ResolveShard* outer_shard = resolve_shard;
     u32 suppressed = unused_marking_suppressed;
     unused_marking_suppressed = 0;
-    resolve_shard = &shard;
+    resolve_shard = shard;
     for (DeferredBody* i = list->first; i; i = i->next) {
-        bool walked = function_impl_lookup_deferred_body(i, &shard.errs);
+        bool walked = function_impl_lookup_deferred_body(i, &shard->errs);
         if (!walked) defer_stat_add(DEFER_STAT_COLLIDED, 1);
         same &= walked;
     }
@@ -3716,7 +3725,30 @@ static void program_materialize_file(Program* me, SourceFile* file) {
     if (!same) atomic_store(&my defer_failed, true);
     atomic_store_explicit(&list->state, same ? DEFERRED_BODIES_READY : DEFERRED_BODIES_FAILED, memory_order_release);
     pthread_mutex_unlock(&list->lock);
-    resolve_shard_finish_materialized(&shard, &list->errs);
+    if (current_checker) {
+        resolve_shard_finish_materialized(shard, &list->errs);
+        free(shard);
+    } else {
+        // (A materialize-ahead helper has no checker: the first checker to need the file reports them)
+        atomic_store_explicit(&list->unfinished, shard, memory_order_release);
+    }
+}
+
+// The pending reports of a file a materialize-ahead helper materialized, in the current checker (once)
+static void program_finish_materialized(SourceFile* file) {
+    DeferredBodies* list = file->deferred_bodies;
+    if (!list || !atomic_load_explicit(&list->unfinished, memory_order_acquire) || !current_checker) return;
+    ResolveShard* shard = atomic_exchange(&list->unfinished, nullptr);
+    if (!shard) return;
+    resolve_shard_finish_materialized(shard, &list->errs);
+    free(shard);
+}
+
+void deferred_bodies_materialize(SourceFile const* file) {
+    if (file == materializing_file) return;
+    Checker* checker = current_checker;
+    if (checker) program_materialize_file(checker->program, (SourceFile*)file);
+    else log_error("Deferred function bodies needed outside a checker");
 }
 
 Block* function_impl_deferred_body(FunctionImpl const* me) {
@@ -3744,6 +3776,7 @@ static void program_finish_deferred_bodies(Program* me) {
         if (!file->deferred_bodies) continue;
         any = true;
         if (!program_defer_failed(me)) program_materialize_file(me, file);
+        program_finish_materialized(file);
         error_ctx_merge(my errs, &file->deferred_bodies->errs);
         error_ctx_drop(&file->deferred_bodies->errs);
         file->deferred_bodies->errs = (ErrorCtx){ .phase = ERROR_PHASE_RESOLVE_NAMES };
@@ -3966,6 +3999,26 @@ static void* check_shares_thread(void* shares) {
     return nullptr;
 }
 
+// Plan 78's materialize-ahead: the threads the checkers leave idle (fewer checkers than threads: `--checkers 1`, a
+// small program) parse and walk the deferred bodies of the files in check order, as fast as they can. Without them a
+// lone checker does all of it itself (vscode at one checker and 4 threads: 12.6 s against 11.6 eager, with them 11.4).
+// Staying a window of files ahead of the checkers instead (32 files) took 14.2 s: the helpers' walks then run next to
+// the checker's the whole time, evicting its caches (stage 2, which drops bodies, has to bound it some cheaper way)
+static void* materialize_ahead_thread(void* arg) {
+    Program* me = arg;
+    set_compiler_options(&my options);
+    u32 total = (u32)vec_source_file_ptr_size(&my check_files);
+    for (u32 i; (i = atomic_fetch_add(&my ahead_next, 1)) < total;) {
+        SourceFile* file = vec_source_file_ptr_at(&my check_files, i)[0];
+        if (!file->deferred_bodies) continue;
+        if (atomic_load_explicit(&my defer_failed, memory_order_relaxed)) break;
+        program_materialize_file(me, file);
+    }
+    clear_compiler_options();
+    scope_release_thread();
+    return nullptr;
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
@@ -4005,6 +4058,19 @@ void program_typecheck(Program* me) {
     deal_files(me);
     CheckShares shares = { .program = me, .count = count };
     u32 threads = my threads ? my threads : 1;
+    u32 helpers = threads > count && program_has_deferred_bodies(me) ? threads - count : 0;
+    pthread_t* helper_threads = nullptr;
+    if (helpers) {
+        atomic_init(&my ahead_next, 0);
+        helper_threads = c_new_n(pthread_t, helpers);
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, worker_stack_size());
+        for (u32 t = 0; t < helpers; t++) {
+            panic_if(pthread_create(&helper_threads[t], &attr, materialize_ahead_thread, me), "couldn't start a materialize thread");
+        }
+        pthread_attr_destroy(&attr);
+    }
     if (threads > count) threads = count;
     if (threads <= 1) {
         check_shares_run(&shares);
@@ -4021,6 +4087,12 @@ void program_typecheck(Program* me) {
         for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
         free(workers);
         pthread_attr_destroy(&attr);
+    }
+    if (helpers) {
+        // (The checkers are done: what's left of the helpers' files no checker needs)
+        atomic_store(&my ahead_next, UINT32_MAX);
+        for (u32 t = 0; t < helpers; t++) pthread_join(helper_threads[t], nullptr);
+        free(helper_threads);
     }
     my binder->frozen = false;
     my errs->frozen = false;
