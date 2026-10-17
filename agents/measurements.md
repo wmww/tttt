@@ -11,6 +11,32 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 81 stage 2, cheaper recycles (2026-10-17, todo entry 4)
+The 4-vCPU box, against 38452d50 (stage 1) run alternately. **Two density fixes, merged.** `import * as ns` had a
+namespace type of its own per import (make_gather_target()) whose members were rebuilt per import: effect made 3068
+namespace types, 317k export props (255 imports of Schema's 423 exports), the 42 MB `namespace_export_prop` line; they
+now return the module namespace type's members. Mapper lists go through a 1024-entry content-checked cache
+(`mapper_list()`): effect's copied lists 37 -> 8 MB (headers stay, 22.6 MB: a shared mapper would hit the active-mapper
+cache where tsc's fresh one doesn't). Effect's K1 arena 359 -> 279 MB; K1 uncapped peak effect 691 -> 612, zod 456 ->
+434 MB, wall -3% / 0. At K1's 256 MB budget peak is the budget (effect 537 / 539). Defaults, best of 3, wall / peak /
+recycles: effect 0.69 / 342 / 26 -> 0.69 / 327 / 24, zod 272 -> 258 MB, xstate 193 -> 184, webpack 401 -> 397, others
+within noise (vscode 1148 -> 1170, 131 -> 124 recycles; drizzle 317 -> 312, type-fest 439 -> 436). K1 peaks
+(budgeted, best of 2): effect 537 -> 539, drizzle 400 -> 402, webpack 537 -> 529, vscode 1454 -> 1461, walls equal; the
+phases before checking unchanged. **The tail (174 projects, defaults): wall -0.4%, recycles
+1525 -> 1479, summed peak -0.7%**: density barely moves it.
+**What a recycle costs is the rebuild, not the recycle**: `checker_recycled()` itself (drop, new, global types) is ~1 ms
+(hop-protocol 39 recycles 33 ms, renovate 40 / 35, mikro-orm 51 / 62, summed over 4 threads). What costs is the next
+segment re-deriving a shared graph: react-select's tests rebuild csstype/React (~17-20 MB, ~120 ms) in the first file
+that touches it, often not the segment's first file (so the warm-up guard misses it). Same tail at
+`--checker-memory 256` (the old 4 x 96): mikro-orm 5.56 -> 4.78 s, renovate 1.38 -> 1.15 (50 -> 4 recycles, 528 -> 805
+MB), hop-protocol 1.42 -> 1.13, react-select's tests 0.68 -> 0.27.
+**Tried, not merged** (a policy point on stage 1's frontier, the insights' call): the warm-up as the most any one file of
+the segment added (not just its first file's footprint). Tail -5.8% wall, recycles 1525 -> 1119, summed peak +6%;
+corpora wall -0-5%, peaks drizzle 315 -> 347 and excalidraw 265 -> 288 (both above bun's then), type-fest 443 -> 496,
+tsc 220 -> 241, effect/zod/xstate/vue down 5-17 MB. About stage 1's "16 g4 b32" point.
+Instructions (`scripts/instrcount.sh`, K1) against stage 1: tsc 4.607, type-fest 10.952 (+0.1%), valibot 3.458, webpack
+9.573, zod 5.176 (-3.3%), drizzle 6.484 (-2.2%), effect 9.795 (-3.2%), vscode 93.954 G (-0.4%). Oracles unchanged.
+
 ## Plan 81 stage 1, the budget at several checkers against bun (2026-10-17, todo entry 3)
 The 4-vCPU box, 4 checkers, bun 1.4.3 at its defaults (`scripts/perfsweep.py --defaults-only --bun PATH`, which now
 runs `bun check` from an empty directory: in a corpus whose package.json has a `check` script, `bun check` runs the

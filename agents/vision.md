@@ -79,7 +79,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   it back. **Open question for the next insights**: at the defaults, plan 81 stage 1 traded wall for memory (several
   checkers start at 16 MB each): corpora 4 -> 9 of 14 at or below bun's peak for +12% wall, the sweep's tail -22.5%
   peak for +14% wall, still faster than bun on every corpus and 96% of the tail (bun itself pays 70-110% CPU at four
-  threads for its memory). Confirm that bound or restore the 3% rule there (`SHARED_CHECKER_MEMORY_MB` back to 96). Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
+  threads for its memory). Confirm that bound or restore the 3% rule there (`SHARED_CHECKER_MEMORY_MB` back to 96). Plan 81
+  stage 2 found nothing that makes a recycle cheap: its fixed cost is ~1 ms, the tail pays for re-deriving shared
+  graphs, and density hardly changes how often that happens. Only the policy moves it (measurements.md "Plan 81
+  stage 2" has one more point on the frontier). Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
   corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
   chosen by a different rule and report the day-one match rate (done once, 2026-10-17: 96.1%; the recipe is

@@ -32,25 +32,18 @@ first file doesn't show (react-select's tests: 0.28 -> 0.81 s, bun 0.25): that i
 and its measure is the tail's wall at today's policy (`scripts/perfsweep.py --defaults-only --min-arena 64 --bun
 PATH`, against the stage's table).
 
-## Stage 2: make a recycle cheaper to pay for (one session, after stage 1)
-At a low budget each recycle re-derives the warm state, so bytes per derived type now buy wall time. The two
-items that are a session each and hit effect, the worst corpus:
-1. **Namespace export props** (`namespace_export_prop()`, effect 42 MB at K1, zod 7, vscode 18). A namespace
-   object's property is Prop + a full 96 B PropDecl just to hold `symbol`. Back these with a decl-less Prop (the
-   symbol in a field `prop_decl_none()` props don't use, or a 16 B decl kind), or resolve them lazily per name.
-   tsgo's module type uses the export table itself.
-2. **Mappers** (`ty_mapper_new()`, effect ~60 MB of ~990k mappers, vscode ~95). Both lists are copied on every
-   mapper. `sources` is nearly always a declaration's stable type-parameter list, and `targets` often an interned
-   list. Copy only the lists that aren't stable (callers say which, or copy into a single allocation with the header
-   when not), and look at `inference_mapper_of()`'s 27 MB on effect: a fresh mapper per changed result.
-Measure recycles and wall at stage 1's budget on effect, zod, drizzle and the tail's top 20 (react-select's tests,
-mikro-orm, folo's renderer, hop-protocol, monkeytype: measurements.md "Plan 81 stage 1"); a recycle's fixed cost
-(the global and library types rebuilt, `check_segment_after()`) is a candidate too. Items that move neither
-don't merge.
+## Stage 2: done (2026-10-17, todo entry 4; measurements.md "Plan 81 stage 2")
+Namespace imports share the module namespace type's members (effect's 42 MB were 3068 per-import copies, not a
+PropDecl's size), and mapper lists come from a content-checked cache (effect 37 -> 8 MB). Effect's K1 arena -22%,
+defaults' peaks -0-15 MB, the tail's wall -0.4%: density doesn't buy the tail back. A recycle's fixed cost is ~1 ms;
+what the tail pays is the next segment re-deriving a shared graph. The only lever found that moves the tail is when to
+recycle (a warm-up guard over any file's growth: tail -5.8% wall, +6% peak, two corpora back above bun): a policy
+point on stage 1's frontier, left to the insights with stage 1's.
 
-## Stage 3 (only if stage 2 shows recycles still cost on the tail)
-Instantiated Prop and Signature compaction and the object literal PropDecl (vscode 184 MB, excalidraw 28), from the
-priced list in measurements.md. Each touches hundreds of readers, so plan each one as its own session, with an
+## Stage 3 (dropped unless the insights wants K1 density for its own sake)
+Stage 2 showed density hardly moves recycles on the tail (-22% of effect's arena: -3% of the tail's recycles), so
+these no longer pay the tail back; they only lower K1's arena. Instantiated Prop and Signature compaction and the
+object literal PropDecl (vscode 184 MB, excalidraw 28), from the priced list in measurements.md. Each touches hundreds of readers, so plan each one as its own session, with an
 accessor migration first (`prop_parent()`, `prop_decl()`).
 
 ## Rules

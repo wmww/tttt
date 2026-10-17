@@ -28,8 +28,9 @@ and the defaults, output byte-identical at every K and budget.
 3. Done (this commit): plan 81 stage 1. Several checkers start at 16 MB, doubling after segments under 16 files; gate
    missed on both sides by a little (corpora 9 / 14 at or below bun's peak, was 4, +12% wall; tail +14% wall, 96%
    faster than bun, -22.5% peak). measurements.md "Plan 81 stage 1"; the insights decides.
-4. **Plan 81 stage 2**: namespace export props and mappers (effect's 42 + ~60 MB at K1), and a recycle's fixed cost,
-   measured by recycles and the tail's wall at stage 1's policy (the tail's +14% is what it pays back).
+4. Done (this commit): plan 81 stage 2. Namespace imports share the module's members, mapper lists a cache: effect's
+   K1 arena -22%, the tail -0.4% wall. A recycle's fixed cost is ~1 ms; the tail pays for re-derivation, which only
+   the policy moves (one more frontier point, measurements.md "Plan 81 stage 2"). Stage 3 dropped as a tail lever.
 5. **Debt: deferred bodies' invariants** (hacks.md "Deferred bodies"): the body walk's outputs (`end_flow`, returns,
    yields, `contains_this`, ...) behind accessors so the compiler finds every reader, as the entry's "Correct:" says;
    whatever else in that entry is a session's fix. Delete or shrink hacks.md entries as they go.
