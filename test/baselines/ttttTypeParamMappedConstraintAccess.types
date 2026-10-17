@@ -1,0 +1,57 @@
+//// [test/cases/ttttTypeParamMappedConstraintAccess.ts] ////
+
+=== ttttTypeParamMappedConstraintAccess.ts ===
+// A type parameter constrained to a generic mapped type has the mapped type's members (resolveMappedTypeMembers over
+// the apparent modifiers type): what they lack is TS2339 on the type parameter (check_access let these through)
+interface A { a: number }
+>a : number
+
+function f<T, U extends Partial<T>>(u: U) { return u.foo; }
+>f : <T, U extends Partial<T>>(u: U) => any
+>u : U
+>u.foo : any
+>u : U
+>foo : any
+
+function g<T extends A, U extends Partial<T>>(u: U) { u.foo; return u.a; }
+>g : <T extends A, U extends Partial<T>>(u: U) => T["a"] | undefined
+>u : U
+>u.foo : any
+>u : U
+>foo : any
+>u.a : T["a"] | undefined
+>u : U
+>a : T["a"] | undefined
+
+function h<T extends A | { b: string }, U extends Readonly<T>>(u: U) { u.foo; return u.a; }
+>h : <T extends A | { b: string; }, U extends Readonly<T>>(u: U) => any
+>b : string
+>u : U
+>u.foo : any
+>u : U
+>foo : any
+>u.a : any
+>u : U
+>a : any
+
+function i<K extends string, U extends Record<K, number>>(u: U) { return u.foo; }
+>i : <K extends string, U extends Record<K, number>>(u: U) => any
+>u : U
+>u.foo : any
+>u : U
+>foo : any
+
+function j<T extends Record<string, number>, U extends Partial<T>>(u: U) { return u.foo; }
+>j : <T extends Record<string, number>, U extends Partial<T>>(u: U) => T[string] | undefined
+>u : U
+>u.foo : T[string] | undefined
+>u : U
+>foo : T[string] | undefined
+
+function k<T extends A, K extends keyof T, U extends Pick<T, K>>(u: U) { return u.foo; }
+>k : <T extends A, K extends keyof T, U extends Pick<T, K>>(u: U) => any
+>u : U
+>u.foo : any
+>u : U
+>foo : any
+

@@ -1,0 +1,81 @@
+//// [test/cases/ttttTypeParamMappedConstraintAccess.ts] ////
+
+=== ttttTypeParamMappedConstraintAccess.ts ===
+// A type parameter constrained to a generic mapped type has the mapped type's members (resolveMappedTypeMembers over
+// the apparent modifiers type): what they lack is TS2339 on the type parameter (check_access let these through)
+interface A { a: number }
+>A : Symbol(A, Decl(ttttTypeParamMappedConstraintAccess.ts, 0, 0))
+>a : Symbol(A.a, Decl(ttttTypeParamMappedConstraintAccess.ts, 2, 13))
+
+function f<T, U extends Partial<T>>(u: U) { return u.foo; }
+>f : Symbol(f, Decl(ttttTypeParamMappedConstraintAccess.ts, 2, 25))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 11))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 11))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 36))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 13))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 36))
+
+function g<T extends A, U extends Partial<T>>(u: U) { u.foo; return u.a; }
+>g : Symbol(g, Decl(ttttTypeParamMappedConstraintAccess.ts, 3, 59))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 11))
+>A : Symbol(A, Decl(ttttTypeParamMappedConstraintAccess.ts, 0, 0))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 23))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 11))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 46))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 23))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 46))
+>u.a : Symbol(a, Decl(ttttTypeParamMappedConstraintAccess.ts, 2, 13))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 46))
+>a : Symbol(a, Decl(ttttTypeParamMappedConstraintAccess.ts, 2, 13))
+
+function h<T extends A | { b: string }, U extends Readonly<T>>(u: U) { u.foo; return u.a; }
+>h : Symbol(h, Decl(ttttTypeParamMappedConstraintAccess.ts, 4, 74))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 11))
+>A : Symbol(A, Decl(ttttTypeParamMappedConstraintAccess.ts, 0, 0))
+>b : Symbol(b, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 26))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 39))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 11))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 63))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 39))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 63))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 63))
+
+function i<K extends string, U extends Record<K, number>>(u: U) { return u.foo; }
+>i : Symbol(i, Decl(ttttTypeParamMappedConstraintAccess.ts, 5, 91))
+>K : Symbol(K, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 11))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 11))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 58))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 28))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 58))
+
+function j<T extends Record<string, number>, U extends Partial<T>>(u: U) { return u.foo; }
+>j : Symbol(j, Decl(ttttTypeParamMappedConstraintAccess.ts, 6, 81))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 11))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 44))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 11))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 67))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 44))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 67))
+
+function k<T extends A, K extends keyof T, U extends Pick<T, K>>(u: U) { return u.foo; }
+>k : Symbol(k, Decl(ttttTypeParamMappedConstraintAccess.ts, 7, 90))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 11))
+>A : Symbol(A, Decl(ttttTypeParamMappedConstraintAccess.ts, 0, 0))
+>K : Symbol(K, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 23))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 11))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 42))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 11))
+>K : Symbol(K, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 23))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 65))
+>U : Symbol(U, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 42))
+>u : Symbol(u, Decl(ttttTypeParamMappedConstraintAccess.ts, 8, 65))
+

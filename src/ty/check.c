@@ -1853,7 +1853,7 @@ static bool is_union_of_fixed_tuples(Ty const* ty) {
 }
 
 // What a type parameter's property access looks into: its apparent type, unless that can't say a property is missing
-// (null: any, other type variables, a generic mapped type)
+// (null: any, other type variables)
 static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
     Ty const* apparent = ty_apparent_type(me, param);
     // (An apparent type that reduces to never has no properties either: `never[keyof T]`)
@@ -1867,10 +1867,6 @@ static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
         }
     }
     if (ty_is_js_literal_type(me, apparent)) return nullptr;
-    if (apparent->flags & TYF_OBJECT) {
-        Members const* members = ty_members(me, apparent);
-        if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
-    }
     return apparent;
 }
 
