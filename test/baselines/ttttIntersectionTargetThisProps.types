@@ -1,0 +1,58 @@
+//// [test/cases/ttttIntersectionTargetThisProps.ts] ////
+
+=== ttttIntersectionTargetThisProps.ts ===
+// The properties of an intersection target see the whole intersection as their `this` (tsc's getPropertiesOfType
+// through getApparentTypeOfIntersectionType), like the source's do: `self()` of `Mark<B>` returns `Mark<B>`
+
+declare class B {
+>B : B
+
+    tag: string;
+>tag : string
+
+    self(): this;
+>self : () => this
+}
+type Mark<T> = T & { mark: true };
+>Mark : Mark<T>
+>mark : true
+>true : true
+
+interface S {
+    tag: string;
+>tag : string
+
+    mark: true;
+>mark : true
+>true : true
+
+    self(): { tag: string; self(): any };
+>self : () => { tag: string; self(): any; }
+>tag : string
+>self : () => any
+}
+declare let s: S;
+>s : S
+
+let t: Mark<B> = s;
+>t : Mark<B>
+>s : S
+
+interface Ok {
+    tag: string;
+>tag : string
+
+    mark: true;
+>mark : true
+>true : true
+
+    self(): Ok;
+>self : () => Ok
+}
+declare let ok: Ok;
+>ok : Ok
+
+let u: Mark<B> = ok;
+>u : Mark<B>
+>ok : Ok
+

@@ -889,6 +889,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionTargetThisProps': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsClassThisMembersInDeclarationOrder': {
         errors: true,
         symbols: true,

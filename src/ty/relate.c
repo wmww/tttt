@@ -5320,6 +5320,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // (Only the members' own properties, not Object's: tsc's skipObjectFunctionPropertyAugment)
             Ty const* parts[16];
             Prop const* part_props[16];
+            u32 part_members[16];
             u32 part_count = 0;
             bool all_optional = true;
             u32 optional_parts = 0;
@@ -5327,6 +5328,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                 Prop const* part = ty_get_prop(me, members.data[j], name);
                 if (!part) continue;
                 if (part->flags & PROP_OPTIONAL) optional_parts |= 1u << part_count;
+                part_members[part_count] = j;
                 part_props[part_count++] = part;
                 all_optional &= (part->flags & PROP_OPTIONAL) != 0;
             }
@@ -5339,6 +5341,16 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // members flattened by inference, would otherwise resolve the types of properties still being resolved,
             // a spurious TS2502)
             if (part_count == 1 && source->kind == TY_INTERSECTION && sole_member_prop(me, source, name) == part_props[0]) continue;
+            // Each member sees the whole intersection as its `this`, as find_prop() has the source's (tsc's
+            // getPropertiesOfType goes through getApparentTypeOfIntersectionType): drizzle's `NotNull<this>`, `Builder &
+            // { _: ... }`, has a `default(): HasDefault<this>` returning `Builder & {...} & {...}`. (Else each round of a
+            // variance measurement compares one more member against one less: PgColumnBuilder's 1.2k comparisons 14k)
+            for (u32 k = 0; k < part_count; k++) {
+                Ty const* part_member = members.data[part_members[k]];
+                if (part_member->kind == TY_TYPE_PARAM || (part_member->kind == TY_REFERENCE && part_member->reference.this_arg)) continue;
+                Prop const* with_this = ty_get_prop(me, ty_with_this_arg(me, part_member, target), name);
+                if (with_this) part_props[k] = with_this;
+            }
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0 };
             // (Of two parts, the intersection is made with the property, of more only when its type is asked for: tsc's
             // createUnionOrIntersectionProperty defers `propTypes.length > 2`, which may explode when normalized. Of a

@@ -22,6 +22,21 @@ materializing instructions by count, 0.23 s of 1.96 s by `TTTT_DEFER_STATS` time
 vscode**: a *re*-materialization needs the one demanded body only, and its cross-body writes were all made by the first
 materialization (if they live outside the dropped arena: check `deferred_bodies_undo()`'s log, which puts some back).
 
+## What the recycle budget costs at the defaults (perf session 2026-10-17, todo entry 8)
+The corpora at the defaults against `--checker-memory off` (best of 2, 4 checkers): 11.43 s / 4573 MB against 9.99 s /
+10023 MB, +14% wall (drizzle +34%, excalidraw +27%, zod +22%, vscode +15%). Callgrind of excalidraw and zod at the
+defaults against off (and drizzle at K1 16 MB against off): ~90% of the extra instructions is re-deriving types
+(instantiation, interning, relations: the same profile as off, scaled), spread over every hot function; the intern
+tables growing again from 64 entries per incarnation (`intern_grow()`, its memsets) ~0.6% of the run; checker_new()
+and checker_drop() nothing. On vscode re-materializing deferred bodies is ~20% of it (0.65 s CPU of ~3.2 s; 1295
+re-materializations of 648 files). **Tried, declined**: never dropping a file's bodies again after its first
+re-materialization (vscode defaults 1293 -> 648 re-materializations, -0.1 s wall, **+160 MB peak**: the re-materialized
+files are big). What's left: per-body re-materialization (the lead above), or the policy (fewer recycles: plan 81's
+frontier). General instruction cuts pay back at every budget (entry 8: zod -7%, excalidraw -5%).
+Measured, not worth it alone: pre-sizing a recycled checker's tables (they count against the 16 MB budget: more
+recycles), a lower intern load factor (linear probing at up to 75% averages ~3 extra probes a lookup, ~3% of drizzle,
+but twice the table memory, also in the budget), a stronger intern hash (probe counts didn't move).
+
 ## tttt at its defaults (triage 2026-10-16, `scripts/perfsweep.py --defaults`, 4 cores)
 The first run at the default threads and checkers over the source sweep's 1786 checked projects (under load: only the
 quiet rerun of the worst 14 is trustworthy). Quiet: nothing worse than 1.25x its own K1 wall; the mid-size ones gain

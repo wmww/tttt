@@ -1,0 +1,38 @@
+ttttIntersectionTargetThisProps.ts(16,5): error TS2322: Type 'S' is not assignable to type 'Mark<B>'.
+  The types returned by 'self()' are incompatible between these types.
+    Type '{ tag: string; self(): any; }' is not assignable to type 'Mark<B>'.
+      Property 'mark' is missing in type '{ tag: string; self(): any; }' but required in type '{ mark: true; }'.
+
+
+==== ttttIntersectionTargetThisProps.ts (1 errors) ====
+    // The properties of an intersection target see the whole intersection as their `this` (tsc's getPropertiesOfType
+    // through getApparentTypeOfIntersectionType), like the source's do: `self()` of `Mark<B>` returns `Mark<B>`
+    
+    declare class B {
+        tag: string;
+        self(): this;
+    }
+    type Mark<T> = T & { mark: true };
+    
+    interface S {
+        tag: string;
+        mark: true;
+        self(): { tag: string; self(): any };
+    }
+    declare let s: S;
+    let t: Mark<B> = s;
+        ~
+!!! error TS2322: Type 'S' is not assignable to type 'Mark<B>'.
+!!! error TS2322:   The types returned by 'self()' are incompatible between these types.
+!!! error TS2322:     Type '{ tag: string; self(): any; }' is not assignable to type 'Mark<B>'.
+!!! error TS2322:       Property 'mark' is missing in type '{ tag: string; self(): any; }' but required in type '{ mark: true; }'.
+!!! related TS2728 ttttIntersectionTargetThisProps.ts:8:22: 'mark' is declared here.
+    
+    interface Ok {
+        tag: string;
+        mark: true;
+        self(): Ok;
+    }
+    declare let ok: Ok;
+    let u: Mark<B> = ok;
+    

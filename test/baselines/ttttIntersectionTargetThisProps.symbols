@@ -1,0 +1,68 @@
+//// [test/cases/ttttIntersectionTargetThisProps.ts] ////
+
+=== ttttIntersectionTargetThisProps.ts ===
+// The properties of an intersection target see the whole intersection as their `this` (tsc's getPropertiesOfType
+// through getApparentTypeOfIntersectionType), like the source's do: `self()` of `Mark<B>` returns `Mark<B>`
+
+declare class B {
+>B : Symbol(B, Decl(ttttIntersectionTargetThisProps.ts, 0, 0))
+
+    tag: string;
+>tag : Symbol(B.tag, Decl(ttttIntersectionTargetThisProps.ts, 3, 17))
+
+    self(): this;
+>self : Symbol(B.self, Decl(ttttIntersectionTargetThisProps.ts, 4, 16))
+}
+type Mark<T> = T & { mark: true };
+>Mark : Symbol(Mark, Decl(ttttIntersectionTargetThisProps.ts, 6, 1))
+>T : Symbol(T, Decl(ttttIntersectionTargetThisProps.ts, 7, 10))
+>T : Symbol(T, Decl(ttttIntersectionTargetThisProps.ts, 7, 10))
+>mark : Symbol(mark, Decl(ttttIntersectionTargetThisProps.ts, 7, 20))
+
+interface S {
+>S : Symbol(S, Decl(ttttIntersectionTargetThisProps.ts, 7, 34))
+
+    tag: string;
+>tag : Symbol(S.tag, Decl(ttttIntersectionTargetThisProps.ts, 9, 13))
+
+    mark: true;
+>mark : Symbol(S.mark, Decl(ttttIntersectionTargetThisProps.ts, 10, 16))
+
+    self(): { tag: string; self(): any };
+>self : Symbol(S.self, Decl(ttttIntersectionTargetThisProps.ts, 11, 15))
+>tag : Symbol(tag, Decl(ttttIntersectionTargetThisProps.ts, 12, 13))
+>self : Symbol(self, Decl(ttttIntersectionTargetThisProps.ts, 12, 26))
+}
+declare let s: S;
+>s : Symbol(s, Decl(ttttIntersectionTargetThisProps.ts, 14, 11))
+>S : Symbol(S, Decl(ttttIntersectionTargetThisProps.ts, 7, 34))
+
+let t: Mark<B> = s;
+>t : Symbol(t, Decl(ttttIntersectionTargetThisProps.ts, 15, 3))
+>Mark : Symbol(Mark, Decl(ttttIntersectionTargetThisProps.ts, 6, 1))
+>B : Symbol(B, Decl(ttttIntersectionTargetThisProps.ts, 0, 0))
+>s : Symbol(s, Decl(ttttIntersectionTargetThisProps.ts, 14, 11))
+
+interface Ok {
+>Ok : Symbol(Ok, Decl(ttttIntersectionTargetThisProps.ts, 15, 19))
+
+    tag: string;
+>tag : Symbol(Ok.tag, Decl(ttttIntersectionTargetThisProps.ts, 17, 14))
+
+    mark: true;
+>mark : Symbol(Ok.mark, Decl(ttttIntersectionTargetThisProps.ts, 18, 16))
+
+    self(): Ok;
+>self : Symbol(Ok.self, Decl(ttttIntersectionTargetThisProps.ts, 19, 15))
+>Ok : Symbol(Ok, Decl(ttttIntersectionTargetThisProps.ts, 15, 19))
+}
+declare let ok: Ok;
+>ok : Symbol(ok, Decl(ttttIntersectionTargetThisProps.ts, 22, 11))
+>Ok : Symbol(Ok, Decl(ttttIntersectionTargetThisProps.ts, 15, 19))
+
+let u: Mark<B> = ok;
+>u : Symbol(u, Decl(ttttIntersectionTargetThisProps.ts, 23, 3))
+>Mark : Symbol(Mark, Decl(ttttIntersectionTargetThisProps.ts, 6, 1))
+>B : Symbol(B, Decl(ttttIntersectionTargetThisProps.ts, 0, 0))
+>ok : Symbol(ok, Decl(ttttIntersectionTargetThisProps.ts, 22, 11))
+

@@ -46,3 +46,7 @@ caveats", the 12-core sections); this session ran on the 4-vCPU box again (`npro
   strings hacks.md's deferred-bodies entry counts). Real cost is small, but the "N net allocations!" list now hides any
   new leak. Fix the class (those vecs/strings from the AST arena, plan 80's direction) or, cheaper, free the bodies
   with a walk at program teardown in debug-allocator builds only and keep the drop walk-free.
+- **better-auth/packages/drizzle-adapter: types ratio 2.31** (perfsweep, 2026-10-17 perf session; the worst, above
+  date-fns docs' 1.62; a plan 77 repository, so new in the sweep, not a regression: 36787 types at b4129d18 too).
+  Above ~1.5 is a missing cache or a runaway (CLAUDE.md): compare tsgo's type count with `--extendedDiagnostics` and
+  bisect by file (`TTTT_FILE_TIMES=1`, `--time`).
