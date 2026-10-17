@@ -1020,6 +1020,7 @@ struct Checker {
     u32 painted_kept_count;
     u32 painted_kept_cap;
     double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
+    u32 files_taken; // Of them, the files it took from other checkers' shares (check_share())
     // Its share's checkers program_typecheck() dropped before it (Program.checker_memory) and the most any of them
     // held (checker_memory()), for tttt --time
     u32 recycles;

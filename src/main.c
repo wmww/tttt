@@ -790,7 +790,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
-                    " MB, ", checker->next_type_id, " types");
+                    " MB, ", checker->next_type_id, " types, ", checker->files_taken, " files taken from others");
                 if (checker->recycles) {
                     out_eprintln(out, "time: checker ", i, " recycled ", checker->recycles, " times, held at most ",
                         (i64)(checker->peak_memory >> 20), " MB");

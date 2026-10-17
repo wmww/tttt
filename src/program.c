@@ -129,7 +129,15 @@ typedef struct Program {
     u32 checker_count;
     // What program_typecheck() checks, in order: every checked file of source_files_ordered
     VecSourceFilePtr check_files;
-    u32* file_shares; // malloc'd: the checker of each file of check_files (see share_of())
+    u32* file_shares; // malloc'd: the checker deal_files() deals each file of check_files to
+    // malloc'd: the checker that checked each file of check_files (see share_of()), UINT32_MAX until one claims it:
+    // a checker done with its own files takes what's left of a running one's (steal_file())
+    _Atomic u32* file_checkers;
+    // malloc'd, per checker while typechecking: its share's state (0 not started, 1 running, 2 done) and the source bytes
+    // of its dealt files nobody claimed yet
+    _Atomic u32* share_states;
+    _Atomic u64* share_left;
+    bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
@@ -267,6 +275,7 @@ static void program_drop(Program* me) {
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
     free(my file_shares);
+    free(my file_checkers);
     vec_source_file_ptr_drop(&my check_files);
     free(my checkers);
     checker_drop(my checker);
@@ -3616,9 +3625,10 @@ Checker* program_checker_at(Program const* me, u32 index) {
     return my checkers[index];
 }
 
-// Which checker checks the index-th checked file
+// Which checker checked the index-th checked file (the one it was dealt to, when nobody did)
 static u32 share_of(Program const* me, u32 index) {
-    return my file_shares[index];
+    u32 c = atomic_load_explicit(&my file_checkers[index], memory_order_relaxed);
+    return c == UINT32_MAX ? my file_shares[index] : c;
 }
 
 // The checker that checked a file in program_typecheck() (the first one for a file nobody checked). Expression types
@@ -3683,8 +3693,8 @@ void program_report_global_diagnostics(Program* me) {
     clear_compiler_options();
 }
 
-// The checkers of program_typecheck(), taken by the threads in index order. Which files a checker checks depends only
-// on the file list and the checker count, never on which thread runs it
+// The checkers of program_typecheck(), taken by the threads in index order. Which files a checker is dealt depends only
+// on the file list and the checker count; which ones it checks also on timing (check_share() takes others' files)
 typedef struct CheckShares {
     Program* program;
     u32 count;
@@ -4087,12 +4097,12 @@ static bool declaration_walk_moot(Program* me) {
         atomic_load_explicit(&my declaration_diagnostics_moot, memory_order_relaxed);
 }
 
-// After a segment's files (from..to of check_files) are checked, in the checker that checked them: unused_report() reads
-// the marks the checker made on members while checking, the declaration walk the types it inferred
-static void check_segment_after(Program* me, Checker* checker, u32 c, u32 from, u32 to) {
-    for (u32 at = from; at < to; at++) {
-        if (share_of(me, at) != c) continue;
-        SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+// After a segment's files (indices into check_files, in the order it checked them) are checked, in the checker that
+// checked them: unused_report() reads the marks the checker made on members while checking, the declaration walk the
+// types it inferred
+static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const* segment, u32 count) {
+    for (u32 i = 0; i < count; i++) {
+        SourceFile* source = vec_source_file_ptr_at(&my check_files, segment[i])[0];
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
@@ -4136,13 +4146,6 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
     return checker;
 }
 
-// Checks share c of the files. With a checker memory budget the share is checked in segments: once the checker holds
-// more than the budget after a file, the segment's files get their after-check pass and the next file starts in a fresh
-// checker (tsgo keeps its checkers, but nothing tttt reports depends on a checker's history, plan 62: what bun does,
-// plan 67). A fresh checker builds the global and library types its files use again: a few milliseconds on vscode,
-// ~100 ms where the files share one big type graph (type-fest, drizzle). Nothing cheap predicts that cost (what the
-// segment's first file held doesn't: those are the default library's declarations), so the budget alone decides.
-// Where the cuts fall depends only on the checker's own work on its own files, not on the threads
 // The floor each checker keeps (today's default at 4 checkers): a table of every corpus and the source sweep's 169
 // biggest projects at 4 checkers of 128 / 96 / 80 / 64 MB (measurements.md "The checkers' budget") put the corpora at
 // +1.4 / +2.3 / +3.3% wall for -6.5 / -11 / -17% peak, the sweep's at +3 / +5 / +9% for -3 / -6 / -7%
@@ -4159,30 +4162,104 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // checker of 64 MB +4% wall; at 24 checkers of 64 MB +2.4% against 128, 1.75 GB less, measurements.md)
 #define CHECKER_MEMORY_CAP_FLOOR ((u64)64 << 20)
 
+// The source bytes a file counts for in its share's share_left (the default library's check in a few milliseconds)
+static u64 share_cost(SourceFile const* source) {
+    return source->is_stdlib ? 0 : cstr_size(&source->contents);
+}
+
+// Claims the index-th checked file for checker c: false if another checker has
+static bool claim_file(Program* me, u32 at, u32 c) {
+    u32 unclaimed = UINT32_MAX;
+    if (!atomic_compare_exchange_strong(&my file_checkers[at], &unclaimed, c)) return false;
+    SourceFile const* source = vec_source_file_ptr_at(&my check_files, at)[0];
+    atomic_fetch_sub_explicit(&my share_left[my file_shares[at]], share_cost(source), memory_order_relaxed);
+    return true;
+}
+
+// For checker c, done with its own files: the last unclaimed file of the running share with the most source left, or
+// UINT32_MAX. Its tail is the part its checker would reach last, and taking files in a row keeps neighbours (which share
+// types) together. Only a running share's: one no thread started yet (more checkers than threads) is all still to come
+static u32 steal_file(Program* me, u32 c, u32 count) {
+    for (;;) {
+        u32 victim = UINT32_MAX;
+        u64 most = 0;
+        for (u32 v = 0; v < count; v++) {
+            if (v == c || atomic_load_explicit(&my share_states[v], memory_order_acquire) != 1) continue;
+            u64 left = atomic_load_explicit(&my share_left[v], memory_order_relaxed);
+            if (left > most) most = left, victim = v;
+        }
+        if (victim == UINT32_MAX) return UINT32_MAX;
+        bool any = false;
+        for (u32 at = (u32)vec_source_file_ptr_size(&my check_files); at-- > 0;) {
+            if (my file_shares[at] != victim) continue;
+            u32 owner = atomic_load_explicit(&my file_checkers[at], memory_order_relaxed);
+            // (Its own checker takes its files in order: everything before one it took is taken)
+            if (owner == victim) break;
+            if (owner != UINT32_MAX) continue;
+            any = true;
+            if (claim_file(me, at, c)) return at;
+        }
+        // (Its left bytes are the default library's, or another thief was quicker: look again)
+        if (!any) atomic_store_explicit(&my share_left[victim], 0, memory_order_relaxed);
+    }
+}
+
+// Checks share c of the files, then helps the others: once its own files are all taken, it takes the last ones of the
+// running share with the most left (steal_file()), so that the checkers finish together. Which checker checks a file
+// then depends on timing, but what a file reports doesn't depend on the checker (plan 62; nor on its history, plan 67)
+// With a checker memory budget the share is checked in segments: once the checker holds more than the budget after a
+// file, the segment's files get their after-check pass and the next file starts in a fresh checker (tsgo keeps its
+// checkers, but nothing tttt reports depends on a checker's history, plan 62: what bun does, plan 67). A fresh checker
+// builds the global and library types its files use again: a few milliseconds on vscode, ~100 ms where the files share
+// one big type graph (type-fest, drizzle). Nothing cheap predicts that cost (what the segment's first file held
+// doesn't: those are the default library's declarations), so the budget alone decides
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
+    atomic_store_explicit(&my share_states[c], 1, memory_order_release);
     Checker* checker = my checkers[c];
     checker_make_current(checker);
     ty_init_global_types(checker);
     u32 total = (u32)vec_source_file_ptr_size(&my check_files);
-    u32 last = 0; // The last file of the share
-    for (u32 at = 0; at < total; at++) {
-        if (share_of(me, at) == c) last = at;
-    }
-    u32 segment_start = 0;
+    // The files of the current segment, in the order it checked them
+    u32* segment = c_new_n(u32, total ? total : 1);
+    u32 segment_count = 0;
+    bool recycle_due = false;
     // What the checker held after its segment's first file: its warm-up (the libraries' and the shared graph's types).
     // A recycle only pays when the checker has grown well past it (dokploy's trpc graph is ~150 MB, over a 128 MB
     // budget after any one file: recycled after nearly every file it was 20x slower)
     u64 segment_base = 0;
     u64 budget = my checker_start_budget;
+    u32 stolen = 0;
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
     bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
-    for (u32 at = 0; at < total; at++) {
-        if (share_of(me, at) != c) continue;
+    bool steal = my steal_files && count > 1;
+    for (u32 next = 0;;) {
+        u32 at = UINT32_MAX;
+        for (; next < total; next++) {
+            if (my file_shares[next] == c && claim_file(me, next, c)) {
+                at = next++;
+                break;
+            }
+        }
+        if (at == UINT32_MAX && steal) {
+            at = steal_file(me, c, count);
+            if (at != UINT32_MAX) stolen++;
+        }
+        if (at == UINT32_MAX) break;
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
         // (A failed materialization means a run without deferral: what's left needn't be checked, plan 78)
         if (atomic_load_explicit(&my defer_failed, memory_order_relaxed)) continue;
+        // (Not after the share's last file: due only once there is another)
+        if (recycle_due) {
+            check_segment_after(me, checker, c, segment, segment_count);
+            checker = checker_recycled(me, checker, c);
+            source_texts_release();
+            segment_count = 0;
+            segment_base = 0;
+            recycle_due = false;
+        }
+        segment[segment_count++] = at;
         checker->file_order = at;
         checker->flow_analysis_disabled = false;
         deferred_bodies_acquire(me, source);
@@ -4201,7 +4278,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->defer_checks = false;
         checker->checking_file = nullptr;
         if (debug_env.file_times) {
-            print_file_time("check", file_start, source);
+            print_file_time(my file_shares[at] == c ? "check" : "check (taken)", file_start, source);
             fprintf(stderr, "file time: checker %u holds %.1f MB\n", c, (double)checker_memory(checker) / (1 << 20));
         }
         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
@@ -4209,25 +4286,23 @@ static void check_share(Program* me, u32 c, u32 count) {
             atomic_store_explicit(&my declaration_diagnostics_moot, true, memory_order_relaxed);
             moot_watch = false;
         }
-        if (my checker_budget == UINT64_MAX || at == last) continue;
+        if (my checker_budget == UINT64_MAX) continue;
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
         if (!segment_base) segment_base = held;
         if (held <= budget || held <= 2 * segment_base) continue;
         // (A segment this short rebuilt a shared warm state the first file didn't show: the next may hold twice as
         // much, up to the full budget)
-        if (at + 1 - segment_start < CHECKER_MEMORY_BACKOFF_FILES) budget = 2 * budget < my checker_budget ? 2 * budget : my checker_budget;
+        if (segment_count < CHECKER_MEMORY_BACKOFF_FILES) budget = 2 * budget < my checker_budget ? 2 * budget : my checker_budget;
         if (debug_env.file_times) {
             fprintf(stderr, "file time: recycle checker %u after %u files, held %llu MB, warm-up %llu MB\n", c,
-                at + 1 - segment_start, (unsigned long long)(held >> 20), (unsigned long long)(segment_base >> 20));
+                segment_count, (unsigned long long)(held >> 20), (unsigned long long)(segment_base >> 20));
         }
-        check_segment_after(me, checker, c, segment_start, at + 1);
-        checker = checker_recycled(me, checker, c);
-        source_texts_release();
-        segment_start = at + 1;
-        segment_base = 0;
+        recycle_due = true;
     }
-    check_segment_after(me, checker, c, segment_start, total);
+    atomic_store_explicit(&my share_states[c], 2, memory_order_release);
+    check_segment_after(me, checker, c, segment, segment_count);
+    free(segment);
     u64 held = checker_memory(checker);
     if (held > checker->peak_memory) checker->peak_memory = held;
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
@@ -4245,10 +4320,11 @@ static void check_share(Program* me, u32 c, u32 count) {
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+    checker->files_taken = stolen;
 }
 
-// Deals the checked files to the checkers: which checker checks a file depends only on the file list, so the output
-// depends only on the checker count. Neighbours in program order (a file, then what it imports) share most of their
+// Deals the checked files to the checkers: which checker a file is dealt to depends only on the file list (a checker
+// done with its share takes the rest of a running one's, check_share(): the output doesn't depend on the checker). Neighbours in program order (a file, then what it imports) share most of their
 // types, and each checker instantiates what its files use again: the files are cut into 2 runs of about equal size
 // per checker, dealt round robin. One run each makes the least duplication (drizzle's peak 1688 -> 1277 MB at 4
 // checkers) but balances worse (valibot's test files sit together, type-fest's biggest file takes its neighbours);
@@ -4273,6 +4349,9 @@ static void deal_files(Program* me) {
     }
     free(my file_shares);
     my file_shares = c_new_n(u32, total ? total : 1);
+    free(my file_checkers);
+    my file_checkers = c_new_n(_Atomic u32, total ? total : 1);
+    for (u32 at = 0; at < total; at++) atomic_init(&my file_checkers[at], UINT32_MAX);
     u64 runs = (u64)my checker_count * RUNS_PER_CHECKER;
     u32 index = 0;
     u32 libs = 0;
@@ -4286,6 +4365,14 @@ static void deal_files(Program* me) {
         // (A file belongs to the run its middle byte falls in)
         my file_shares[index++] = (u32)((before + size / 2) * runs / (bytes ? bytes : 1) % my checker_count);
         before += size;
+    }
+    for (u32 c = 0; c < my checker_count; c++) {
+        atomic_init(&my share_states[c], 0);
+        atomic_init(&my share_left[c], 0);
+    }
+    for (u32 at = 0; at < total; at++) {
+        SourceFile const* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        atomic_fetch_add_explicit(&my share_left[my file_shares[at]], share_cost(source), memory_order_relaxed);
     }
 }
 
@@ -4389,6 +4476,9 @@ void program_typecheck(Program* me) {
         my checkers[c] = c ? checker_new(me) : my checker;
         my checkers[c]->errs = &checker_errs[c];
     }
+    my steal_files = !getenv("TTTT_NO_STEAL");
+    my share_states = c_new_n(_Atomic u32, count);
+    my share_left = c_new_n(_Atomic u64, count);
     deal_files(me);
     CheckShares shares = { .program = me, .count = count };
     u32 threads = my threads ? my threads : 1;
@@ -4451,6 +4541,10 @@ void program_typecheck(Program* me) {
         my checkers[c]->errs = my errs;
     }
     free(checker_errs);
+    free(my share_states);
+    free(my share_left);
+    my share_states = nullptr;
+    my share_left = nullptr;
     // (Recycled: the first share's last checker)
     my checker = my checkers[0];
     checker_make_current(my checker);
