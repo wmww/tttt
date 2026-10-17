@@ -13,3 +13,4 @@ typedef struct CachedFs CachedFs;
 CachedFs* cached_fs_new(Fs const* inner);
 void cached_fs_destroy(CachedFs* me);
 Fs const* cached_fs_fs(CachedFs const* me);
+Fs const* cached_fs_inner(CachedFs const* me);

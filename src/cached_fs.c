@@ -149,3 +149,7 @@ void cached_fs_destroy(CachedFs* me) {
 Fs const* cached_fs_fs(CachedFs const* me) {
     return &my fs;
 }
+
+Fs const* cached_fs_inner(CachedFs const* me) {
+    return my inner;
+}

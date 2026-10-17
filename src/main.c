@@ -494,6 +494,7 @@ static void dump_declarations(char const* dir, Program const* program) {
         cstr_append_sv(&out_path, path);
         cstr_append(&out_path, dts);
         try (fs_mkdir(fs, dirname_of(cstr_sv(&out_path)))) or_log(warn);
+        source_text_detach(cstr_sv(&out_path));
         try (fs_write_file(fs, cstr_sv(&out_path), cstr_sv(source->declaration_output))) or_log(warn);
         c_drop(cstr, &absolute, &out_path);
     }
@@ -515,6 +516,7 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
             cstr map_path = cstr_from_sv(path);
             cstr_append(&map_path, ".map");
             bool map_failed = false;
+            source_text_detach(cstr_sv(&map_path));
             try (fs_write_file(fs, cstr_sv(&map_path), cstr_sv(source->declaration_map))) if_err (e) {
                 ignore e;
                 int code = errno;
@@ -525,6 +527,7 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
             if (!map_failed && opts->list_emitted_files) cstr_append_d(&out->emitted, DEFAULT_DISPLAY, "TSFILE: ", map_path, "\n");
             cstr_drop(&map_path);
         }
+        if (!made.error) source_text_detach(path);
         FailableResult written = made.error ? made : fs_write_file(fs, path, cstr_sv(source->declaration_output));
         if (made.error) failable_result_drop(&written);
         try (written) if_err (e) {

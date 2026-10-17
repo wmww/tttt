@@ -127,6 +127,8 @@ typedef struct SourceFile {
     u32 id;
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
+    // Not 0: contents is a private read-only mapping of the file (source_text_map()), unmapped by source_file_drop()
+    u32 text_mapping;
     // Offset of the first character of each line, for span_line_index(). Diagnostics are sorted and printed by line,
     // counting newlines from the start of the file for each of them was a fifth of a run with 10k errors
     u32* line_starts;
@@ -402,6 +404,18 @@ void source_file_verbatim_cjs_error(SourceFile const* me, struct ErrorCtx* errs,
 // option decides)
 ModuleKind source_file_implied_format_for_emit(SourceFile const* me);
 void source_file_drop(SourceFile* me);
+// Source text as files mapped into memory (MAP_PRIVATE): the page cache holds them anyway, and their pages can leave
+// the process whenever nothing reads them (source_texts_release()) where read() copies would stay. Like clang's
+// MemoryBuffer, a file changed by another process during the run is read changed (or SIGBUS if truncated).
+// source_text_map(): the file at path mapped and wrapped in a cstr that must never be dropped or changed: the mapping's id
+// (SourceFile.text_mapping), 0 (out untouched) if it can't be mapped or the mapping has no terminator after it
+u32 source_text_map(csview path, cstr* out);
+void source_text_unmap(u32 id);
+// Drops every mapped text's pages from the process: they stay in the page cache, reading faults them back. After
+// names, and when a checker is recycled (what it read is mostly what it won't read again)
+void source_texts_release(void);
+// Before the process writes over the file at path: a mapping of it gets its own copy at the same address
+void source_text_detach(csview path);
 bool source_file_parse_error_within(Span node);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);

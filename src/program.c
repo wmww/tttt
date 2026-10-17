@@ -1403,6 +1403,20 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
 
 static SourceFile* program_make_source(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
     cstr contents;
+    ContentMapper const* mapper = my options.content_mapper_count && !is_stdlib ?
+        content_mapper_for_path(&my options, canonical_path) : nullptr;
+    // (Not a test's virtual files, nor text that changes: a UTF-16 file or what a content mapper reads)
+    u32 mapping = cached_fs_inner(my cached_fs) == fs && !mapper ? source_text_map(canonical_path, &contents) : 0;
+    if (mapping) {
+        unsigned char const* b = (unsigned char const*)cstr_str(&contents);
+        if ((b[0] == 0xFF && b[1] == 0xFE) || (b[0] == 0xFE && b[1] == 0xFF)) {
+            source_text_unmap(mapping);
+        } else {
+            SourceFile* made = program_make_source_text(me, canonical_path, contents, nullptr, nullptr, is_stdlib, errs);
+            made->text_mapping = mapping;
+            return made;
+        }
+    }
     try (fs_read_file(my fs, canonical_path, &contents)) if_err (e) {
         // Not worth reporting: the caller turns a null return into a TypeScript "file not found" error
         ignore e;
@@ -1411,8 +1425,6 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     }
     text_decode(&contents);
 
-    ContentMapper const* mapper = my options.content_mapper_count && !is_stdlib ?
-        content_mapper_for_path(&my options, canonical_path) : nullptr;
     ContentMapperOutput mapped = {0};
     if (mapper) {
         // (Parsed as its virtual name, tsgo's ParseResult; a failure is an empty TypeScript file)
@@ -3476,6 +3488,7 @@ void program_resolve_names(Program* me) {
     program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
     resolve_step_done("comment directives", &last);
 
+    source_texts_release();
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
@@ -4141,6 +4154,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (held <= my checker_budget || held <= 2 * segment_base) continue;
         check_segment_after(me, checker, c, segment_start, at + 1);
         checker = checker_recycled(me, checker, c);
+        source_texts_release();
         segment_start = at + 1;
         segment_base = 0;
     }

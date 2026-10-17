@@ -1,3 +1,5 @@
+// mmap(), madvise(), memfd_create(), which strict -std=c2x hides
+#define _GNU_SOURCE
 #include "source_file.h"
 #include "content_mapper.h"
 #include "import_attributes.h"
@@ -7,6 +9,10 @@
 #include "string_helpers.h"
 #include "compiler_options.h"
 #include <cleat/filesystem.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 ModuleKind source_file_implied_format_for_emit(SourceFile const* me) {
     CompilerOptions const* o = compiler_options();
@@ -155,7 +161,8 @@ void source_file_drop(SourceFile* me) {
     for (u32 i = 0; i < my include_reason_count; i++) cstr_drop(&my include_reasons[i].package_id);
     free(my include_reasons);
     cstr_drop(&my canonical_path);
-    cstr_drop(&my contents);
+    if (my text_mapping) source_text_unmap(my text_mapping);
+    else cstr_drop(&my contents);
     free(my line_starts);
     block_drop(&my ast);
     ast_arena_drop(&my arena);
@@ -669,4 +676,142 @@ bool source_file_deprecated_jsdoc_ends_at(SourceFile const* me, const char* end)
         else high = mid;
     }
     return low < my deprecated_jsdoc_count && my deprecated_jsdoc_ends[low] == end;
+}
+
+// Mapped source texts lie end to end in reserved segments, so that dropping all their pages is a madvise() per segment
+// rather than per file (each one a TLB shootdown on every thread). A slot is never reused: unmapping a text maps the
+// reservation back over it
+#define TEXT_SEGMENT ((size_t)256 << 20)
+// Each file is a mapping of its own (a VMA): leave most of vm.max_map_count (65530 by default) to everything else
+#define TEXT_MAX_MAPPED 16384
+typedef struct TextSegment {
+    char* base;
+    size_t used, size;
+} TextSegment;
+typedef struct TextMapping {
+    dev_t dev;
+    ino_t ino;
+    char* slot; // Null once unmapped
+    size_t size; // The file's
+} TextMapping;
+static struct {
+    pthread_mutex_t lock;
+    TextSegment* segments;
+    u32 count, cap;
+    TextMapping* mappings; // By SourceFile.text_mapping - 1
+    u32 mapping_count, mapping_cap;
+    u32 live;
+} texts = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+static size_t text_page_round(size_t n) {
+    size_t page = (size_t)sysconf(_SC_PAGESIZE);
+    return (n + page - 1) / page * page;
+}
+
+// A slot of size bytes (page-rounded) in the segments, null past TEXT_MAX_MAPPED. Under the lock
+static char* text_slot_locked(size_t size) {
+    if (texts.live >= TEXT_MAX_MAPPED) return nullptr;
+    TextSegment* last = texts.count ? &texts.segments[texts.count - 1] : nullptr;
+    if (!last || last->size - last->used < size) {
+        size_t reserve = size > TEXT_SEGMENT ? size : TEXT_SEGMENT;
+        void* base = mmap(nullptr, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+        if (base == MAP_FAILED) return nullptr;
+        if (texts.count == texts.cap) {
+            texts.cap = texts.cap ? texts.cap * 2 : 8;
+            texts.segments = realloc(texts.segments, texts.cap * sizeof(TextSegment));
+        }
+        texts.segments[texts.count++] = (TextSegment){ .base = base, .size = reserve };
+        last = &texts.segments[texts.count - 1];
+    }
+    char* slot = last->base + last->used;
+    last->used += size;
+    return slot;
+}
+
+u32 source_text_map(csview path, cstr* out) {
+    cstr z = cstr_from_sv(path);
+    int fd = open(cstr_str(&z), O_RDONLY | O_CLOEXEC);
+    cstr_drop(&z);
+    if (fd < 0) return 0;
+    struct stat st;
+    // (The mapping's last page is zero past the end of the file: the terminator the parser reads. A size that fills
+    // its last page has none)
+    if (fstat(fd, &st) || !S_ISREG(st.st_mode) || st.st_size == 0 || st.st_size > INT32_MAX ||
+        (size_t)st.st_size == text_page_round((size_t)st.st_size)) {
+        close(fd);
+        return 0;
+    }
+    size_t size = (size_t)st.st_size;
+    pthread_mutex_lock(&texts.lock);
+    char* slot = text_slot_locked(text_page_round(size));
+    if (slot) texts.live++;
+    pthread_mutex_unlock(&texts.lock);
+    // (A failed mapping leaves its slot reserved)
+    void* text = slot ? mmap(slot, size, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0) : MAP_FAILED;
+    close(fd);
+    pthread_mutex_lock(&texts.lock);
+    u32 id = 0;
+    if (text == MAP_FAILED) {
+        if (slot) texts.live--;
+    } else {
+        if (texts.mapping_count == texts.mapping_cap) {
+            texts.mapping_cap = texts.mapping_cap ? texts.mapping_cap * 2 : 1024;
+            texts.mappings = realloc(texts.mappings, texts.mapping_cap * sizeof(TextMapping));
+        }
+        texts.mappings[texts.mapping_count++] = (TextMapping){ .dev = st.st_dev, .ino = st.st_ino, .slot = slot, .size = size };
+        id = texts.mapping_count;
+    }
+    pthread_mutex_unlock(&texts.lock);
+    if (!id) return 0;
+    // A long cstr pointing at the mapping: read as any other, never dropped (source_file_drop() unmaps it)
+    cstr s = {0};
+    s.lon.data = text;
+    s.lon.size = size;
+    cstr_l_set_cap(&s, (isize)size);
+    check(cstr_is_long(&s) && (size_t)cstr_size(&s) == size && cstr_str(&s) == text);
+    *out = s;
+    return id;
+}
+
+void source_text_unmap(u32 id) {
+    pthread_mutex_lock(&texts.lock);
+    TextMapping* mapping = &texts.mappings[id - 1];
+    mmap(mapping->slot, text_page_round(mapping->size), PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0);
+    mapping->slot = nullptr;
+    texts.live--;
+    pthread_mutex_unlock(&texts.lock);
+}
+
+void source_texts_release(void) {
+    pthread_mutex_lock(&texts.lock);
+    for (u32 i = 0; i < texts.count; i++) madvise(texts.segments[i].base, texts.segments[i].used, MADV_DONTNEED);
+    pthread_mutex_unlock(&texts.lock);
+}
+
+void source_text_detach(csview path) {
+    cstr z = cstr_from_sv(path);
+    struct stat st;
+    bool exists = !stat(cstr_str(&z), &st);
+    cstr_drop(&z);
+    if (!exists) return;
+    pthread_mutex_lock(&texts.lock);
+    for (u32 i = 0; i < texts.mapping_count; i++) {
+        TextMapping* mapping = &texts.mappings[i];
+        if (!mapping->slot || mapping->dev != st.st_dev || mapping->ino != st.st_ino) continue;
+        // The text moves to a memory file mapped at the same address (anonymous memory would be zeroed by
+        // source_texts_release())
+        int fd = memfd_create("tttt-text", MFD_CLOEXEC);
+        bool copied = fd >= 0;
+        for (size_t at = 0; copied && at < mapping->size; ) {
+            ssize_t n = write(fd, mapping->slot + at, mapping->size - at);
+            if (n <= 0) copied = false;
+            else at += (size_t)n;
+        }
+        panic_if(!copied || mmap(mapping->slot, mapping->size, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0) == MAP_FAILED,
+            "can't keep the text of ", path, " before overwriting it");
+        close(fd);
+        mapping->dev = 0;
+        mapping->ino = 0;
+    }
+    pthread_mutex_unlock(&texts.lock);
 }
