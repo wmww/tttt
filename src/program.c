@@ -1559,7 +1559,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
     }
 
     // (Plan 78: not in a file that isn't checked, whose bodies' syntax errors no checker would find)
-    source_file->defer_bodies = my defer_bodies && !source_file->is_jsx && !source_file->is_json &&
+    source_file->defer_bodies = my defer_bodies && !source_file->is_js && !source_file->is_json &&
         !source_file->is_declaration && !is_stdlib && !source_file->skip_typed_bodies && !source_file->unchecked &&
         !source_file->content_mapped && !source_file->from_reference;
     parse_file(source_file, errs);

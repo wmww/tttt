@@ -1,0 +1,88 @@
+//// [test/cases/ttttDeferredBodiesJsx.tsx] ////
+
+=== a.tsx ===
+function view(items: string[], n: number) {
+>view : (items: string[], n: number) => any
+>items : string[]
+>n : number
+
+    const less = n < 2 && items.length >1;
+>less : boolean
+>n < 2 && items.length >1 : boolean
+>n < 2 : boolean
+>n : number
+>2 : 2
+>items.length >1 : boolean
+>items.length : number
+>items : string[]
+>length : number
+>1 : 1
+
+    return <div className="it's {fine}" data-n={n > 1 ? "a" : 'b'} {...{ title: id("t") }}>
+><div className="it's {fine}" data-n={n > 1 ? "a" : 'b'} {...{ title: id("t") }}>        don't "quote" / slash {items.map(i => <span key={i}>{i}</span>)}        <>{/* a comment */}{less ? <br/> : null}</>    </div> : any
+>div : any
+>className : string
+>data-n : string
+>n > 1 ? "a" : 'b' : "a" | "b"
+>n > 1 : boolean
+>n : number
+>1 : 1
+>"a" : "a"
+>'b' : "b"
+>{ title: id("t") } : { title: string; }
+>title : string
+>id("t") : string
+>id : (t: string) => string
+>"t" : "t"
+
+        don't "quote" / slash {items.map(i => <span key={i}>{i}</span>)}
+>items.map(i => <span key={i}>{i}</span>) : any[]
+>items.map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>items : string[]
+>map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>i => <span key={i}>{i}</span> : (i: string) => any
+>i : string
+><span key={i}>{i}</span> : any
+>span : any
+>key : string
+>i : string
+>i : string
+>span : any
+
+        <>{/* a comment */}{less ? <br/> : null}</>
+><>{/* a comment */}{less ? <br/> : null}</> : any
+>less ? <br/> : null : any
+>less : boolean
+><br/> : any
+>br : any
+
+    </div>;
+>div : any
+}
+function id(t: string) {
+>id : (t: string) => string
+>t : string
+
+    const f = <T,>(x: T) => x;
+>f : <T>(x: T) => T
+><T,>(x: T) => x : <T>(x: T) => T
+>x : T
+>x : T
+
+    return f(t);
+>f(t) : string
+>f : <T>(x: T) => T
+>t : string
+}
+const x = view([], 1);
+>x : any
+>view([], 1) : any
+>view : (items: string[], n: number) => any
+>[] : never[]
+>1 : 1
+
+=== b.tsx ===
+const x = "b";
+>x : "b"
+>"b" : "b"
+

@@ -294,12 +294,18 @@ typedef struct DeferredBody {
     bool ambient : 1;
     // The signature's walk reported a name it didn't find: its suggestion may have been one the body declares
     bool signature_not_found : 1;
-    // The names the signature's walk looked up through the function's scope (in the binder's arena): had the body's
-    // declarations been there, one of them could have been found (program_materialize_file() checks)
+    // The names the signature's walk looked up through the function's scope, with the meanings it looked for (in the
+    // binder's arena): had the body's declarations been there, one of them could have been found
+    // (function_impl_lookup_deferred_body() checks)
     u32 signature_name_count;
     u32 signature_name_cap;
-    csview* signature_names;
+    struct DeferredSignatureName* signature_names;
 } DeferredBody;
+
+typedef struct DeferredSignatureName {
+    csview name;
+    u32 meaning; // SymbolFlags
+} DeferredSignatureName;
 
 // program.c: materializes the file of a deferred function, returns its body
 Block* function_impl_deferred_body(FunctionImpl const* me);

@@ -1,0 +1,59 @@
+//// [test/cases/ttttDeferredBodiesJsx.tsx] ////
+
+=== a.tsx ===
+function view(items: string[], n: number) {
+>view : Symbol(view, Decl(a.tsx, 0, 0))
+>items : Symbol(items, Decl(a.tsx, 0, 14))
+>n : Symbol(n, Decl(a.tsx, 0, 30))
+
+    const less = n < 2 && items.length >1;
+>less : Symbol(less, Decl(a.tsx, 1, 9))
+>n : Symbol(n, Decl(a.tsx, 0, 30))
+>items.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>items : Symbol(items, Decl(a.tsx, 0, 14))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+
+    return <div className="it's {fine}" data-n={n > 1 ? "a" : 'b'} {...{ title: id("t") }}>
+>className : Symbol(className, Decl(a.tsx, 2, 15))
+>data-n : Symbol(data-n, Decl(a.tsx, 2, 39))
+>n : Symbol(n, Decl(a.tsx, 0, 30))
+>title : Symbol(title, Decl(a.tsx, 2, 72))
+>id : Symbol(id, Decl(a.tsx, 6, 1))
+
+        don't "quote" / slash {items.map(i => <span key={i}>{i}</span>)}
+>items.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>items : Symbol(items, Decl(a.tsx, 0, 14))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>i : Symbol(i, Decl(a.tsx, 3, 41))
+>key : Symbol(key, Decl(a.tsx, 3, 51))
+>i : Symbol(i, Decl(a.tsx, 3, 41))
+>i : Symbol(i, Decl(a.tsx, 3, 41))
+
+        <>{/* a comment */}{less ? <br/> : null}</>
+>less : Symbol(less, Decl(a.tsx, 1, 9))
+
+    </div>;
+}
+function id(t: string) {
+>id : Symbol(id, Decl(a.tsx, 6, 1))
+>t : Symbol(t, Decl(a.tsx, 7, 12))
+
+    const f = <T,>(x: T) => x;
+>f : Symbol(f, Decl(a.tsx, 8, 9))
+>T : Symbol(T, Decl(a.tsx, 8, 15))
+>x : Symbol(x, Decl(a.tsx, 8, 19))
+>T : Symbol(T, Decl(a.tsx, 8, 15))
+>x : Symbol(x, Decl(a.tsx, 8, 19))
+
+    return f(t);
+>f : Symbol(f, Decl(a.tsx, 8, 9))
+>t : Symbol(t, Decl(a.tsx, 7, 12))
+}
+const x = view([], 1);
+>x : Symbol(x, Decl(a.tsx, 11, 5))
+>view : Symbol(view, Decl(a.tsx, 0, 0))
+
+=== b.tsx ===
+const x = "b";
+>x : Symbol(x, Decl(b.tsx, 0, 5))
+

@@ -7050,11 +7050,11 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
 // The body skipper's character classes (skip_balanced_braces())
 enum {
     SKIP_OTHER, SKIP_SPACE, SKIP_WORD, SKIP_DIGIT, SKIP_SLASH, SKIP_QUOTE, SKIP_OPEN_BRACE, SKIP_CLOSE_BRACE,
-    SKIP_BACKTICK, SKIP_OPEN_PAREN, SKIP_CLOSE_PAREN, SKIP_END, SKIP_DOT, SKIP_CLOSE_BRACKET,
+    SKIP_BACKTICK, SKIP_OPEN_PAREN, SKIP_CLOSE_PAREN, SKIP_END, SKIP_DOT, SKIP_CLOSE_BRACKET, SKIP_LESS,
 };
 static const uint8_t skip_char_class[256] = {
     11, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 0, 5, 0, 2, 0, 0, 5, 9, 10, 0, 0, 0, 0, 12, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0,
+    1, 0, 5, 0, 2, 0, 0, 5, 9, 10, 0, 0, 0, 0, 12, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 14, 0, 0, 0,
     0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 13, 0, 2,
     8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 0, 7, 0, 0,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -7098,8 +7098,11 @@ static bool skip_template_part(char const** s) {
 // `)` a division, unless the parentheses are an `if`/`while`/`for`/`with` head (`if (a) /x/.test(b)`); after `}` (a
 // block before a statement, or an object literal) or `++`/`--` it could be either, which gives up. So does `import` or
 // `require` anywhere: they would add to the file's module names. The comments stepped over are recorded as the parser
-// would have (note_line_comment()): a skipped body keeps its comment directives
-static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
+// would have (note_line_comment()): a skipped body keeps its comment directives. In a JSX file a `<` where an expression
+// starts is a JSX element (skip_jsx_element()); `level` counts the elements and braces it is nested in
+static char const* skip_jsx_element(ParserShared* shared, char const* s, u32 level);
+
+static char const* skip_balanced_braces_at(ParserShared* shared, char const* s, u32 level) {
     enum { MAX_DEPTH = 128, MAX_PARENS = 256 };
     bool template[MAX_DEPTH]; // Per open brace: whether it's a template's `${`
     bool paren_head[MAX_PARENS]; // Per open parenthesis: whether it's an `if`/`while`/`for`/`with` head
@@ -7234,12 +7237,103 @@ static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
                 before_last_char = last_char;
                 last_char = c;
                 continue;
+            case SKIP_LESS: {
+                if (!shared->source->is_jsx) break;
+                bool expression = last == LAST_PUNCTUATOR ? last_char != '<' && (last_char != '>' || before_last_char == '=') : false;
+                for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
+                    if (csview_equals(word, regex_after[i])) expression = true;
+                }
+                if (!expression) break;
+                s = skip_jsx_element(shared, s, level + 1);
+                if (!s) return nullptr;
+                last = LAST_VALUE;
+                continue;
+            }
         }
         // A punctuator
         s++;
         last = LAST_PUNCTUATOR;
         before_last_char = last_char;
         last_char = c;
+    }
+}
+
+static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
+    return skip_balanced_braces_at(shared, s, 0);
+}
+
+static char const* skip_jsx_space(char const* s) {
+    while (skip_char_class[(uint8_t)*s] == SKIP_SPACE) s++;
+    return s;
+}
+
+// A JSX tag or attribute name
+static char const* skip_jsx_name(char const* s) {
+    while (skip_word_char(*s) || *s == '.' || *s == ':' || *s == '-') s++;
+    return s;
+}
+
+// Past the JSX element or fragment at the `<` at s, or null where that isn't certain. Its attributes' and children's
+// `{}`s are code (skip_balanced_braces_at()), its text anything but `{`, `}`, `<` and `>` (errors). What isn't an
+// element gives up: a generic arrow function's type parameters (`<T,>`, `<T extends U>`, `<T = U>`), a comment between
+// attributes, an element as an attribute's value. A closing tag's name isn't compared: a mismatch is a parse error, which
+// makes the materialization rerun the program without deferral. The file has JSX (moduleDetection: SourceFile.has_jsx)
+static char const* skip_jsx_element(ParserShared* shared, char const* s, u32 level) {
+    if (level > 64) return nullptr;
+    s++;
+    if (*s == '>') {
+        s++;
+    } else {
+        if (skip_char_class[(uint8_t)*s] != SKIP_WORD) return nullptr;
+        s = skip_jsx_name(s);
+        for (bool first = true;; first = false) {
+            s = skip_jsx_space(s);
+            if (s[0] == '/' && s[1] == '>') {
+                shared->saw_jsx = true;
+                return s + 2;
+            }
+            if (*s == '>') {
+                s++;
+                break;
+            }
+            if (*s == '{') {
+                if (!(s = skip_balanced_braces_at(shared, s, level + 1))) return nullptr;
+                continue;
+            }
+            if (skip_char_class[(uint8_t)*s] != SKIP_WORD) return nullptr;
+            char const* name = s;
+            s = skip_jsx_name(s);
+            if (first && skip_word_is(name, s, "extends", 7)) return nullptr;
+            s = skip_jsx_space(s);
+            if (*s != '=') continue;
+            s = skip_jsx_space(s + 1);
+            if (*s == '"' || *s == '\'') {
+                // (No escapes in a JSX string)
+                if (!(s = strchr(s + 1, *s))) return nullptr;
+                s++;
+            } else if (*s == '{') {
+                if (!(s = skip_balanced_braces_at(shared, s, level + 1))) return nullptr;
+            } else {
+                return nullptr;
+            }
+        }
+    }
+    // The children, up to the closing tag
+    while (true) {
+        char c = *s;
+        if (!c || c == '}' || c == '>') return nullptr;
+        if (c == '{') {
+            if (!(s = skip_balanced_braces_at(shared, s, level + 1))) return nullptr;
+        } else if (c == '<' && s[1] == '/') {
+            s = skip_jsx_space(skip_jsx_name(skip_jsx_space(s + 2)));
+            if (*s != '>') return nullptr;
+            shared->saw_jsx = true;
+            return s + 1;
+        } else if (c == '<') {
+            if (!(s = skip_jsx_element(shared, s, level + 1))) return nullptr;
+        } else {
+            s++;
+        }
     }
 }
 
@@ -14852,6 +14946,8 @@ bool parse_deferred_body(SourceFile* source, FunctionImpl* func, ErrorCtx* errs)
     Parser p = { .shared = &shared, .parent = nullptr, .pos = text + deferred->open };
     deferred->block = (Block){0};
     bool same = parse_block(&p, false, &deferred->block) && p.pos == text + deferred->end && !shared.unterminated_comment;
+    // (JSX the skipper didn't see: moduleDetection would have seen it)
+    same = same && (!shared.saw_jsx || source->has_jsx);
     for_each (i, vec_error, &shared.errors) {
         if (!(i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code))) same = false;
     }

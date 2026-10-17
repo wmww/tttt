@@ -153,19 +153,22 @@ static ResolveShard* binder_shard(Binder const* me) {
 }
 
 // A name the signature of a deferred body (plan 78) looks up through its function's scope
-[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name) {
+[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name, u32 meaning) {
     DeferredBody* body = function_scope->function->body_.deferred;
     for (u32 i = 0; i < body->signature_name_count; i++) {
-        if (csview_equals_sv(body->signature_names[i], name)) return;
+        if (csview_equals_sv(body->signature_names[i].name, name)) {
+            body->signature_names[i].meaning |= meaning;
+            return;
+        }
     }
     if (body->signature_name_count == body->signature_name_cap) {
         u32 cap = body->signature_name_cap ? body->signature_name_cap * 2 : 4;
-        csview* grown = arena_new_n(binder_arena(function_scope->binder), csview, cap);
-        if (body->signature_name_count) memcpy(grown, body->signature_names, sizeof(csview) * body->signature_name_count);
+        DeferredSignatureName* grown = arena_new_n(binder_arena(function_scope->binder), DeferredSignatureName, cap);
+        if (body->signature_name_count) memcpy(grown, body->signature_names, sizeof(DeferredSignatureName) * body->signature_name_count);
         body->signature_names = grown;
         body->signature_name_cap = cap;
     }
-    body->signature_names[body->signature_name_count++] = name;
+    body->signature_names[body->signature_name_count++] = (DeferredSignatureName){ name, meaning };
 }
 
 // A name the walk didn't find: in the signature of a deferred body (plan 78), its suggestion could have been one the
@@ -5258,7 +5261,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (__builtin_expect(scope->deferred_body, 0)) note_deferred_signature_name(scope, name);
+        if (__builtin_expect(scope->deferred_body, 0)) note_deferred_signature_name(scope, name, meaning);
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : scope_locals(scope);
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);

@@ -610,6 +610,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeferredBodiesJsx': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeferredBodiesRestart': {
         errors: true,
         symbols: true,

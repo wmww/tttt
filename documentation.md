@@ -351,8 +351,10 @@ the file in (`SourceFile.included_at`). `scripts/scenarios.py` replays the first
 reference baselines against tttt; `scripts/realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.
 
 ### Deferred bodies (plan 78)
-The parser skips the body of every outermost function of a TypeScript file (not TSX, not a declaration file, not
-unchecked) where that's safe (`skip_body()`: `skip_balanced_braces()` is sure of its end; no expression in a parameter,
+The parser skips the body of every outermost function of a TypeScript file (TSX too; not JavaScript, not a declaration
+file, not unchecked) where that's safe (`skip_body()`: `skip_balanced_braces()` is sure of its end, stepping over JSX
+where an expression starts in a .tsx file, `skip_jsx_element()`, and recording that the file has JSX for
+moduleDetection; it gives up on `import` and `require`, which would add module names; no expression in a parameter,
 whose walk sees the body's names; no string first, a "use strict" prologue; for an expression no `(` in its signature
 after the parameter list's own, a function type whose walk asks whether this one is context sensitive). The body is a
 `DeferredBody` (`FunctionImpl.deferred`, `body_.deferred`); an IIFE's is parsed after all when the call shows, so is a
@@ -385,7 +387,11 @@ log: the functions' walk fields, the outer flow nodes' reference counts and labe
 the next reader materializes them again (the same parse and walk; its diagnostics are dropped, the first's stand).
 A body declaration merged into a parameter pins the file (never dropped). At a recycle the new incarnation keeps what
 the old one read for other files (`Checker.cross_files`: modules many files import), so it isn't materialized again at
-once. The materialize-ahead helpers hold what they made until a checker takes it, at most `AHEAD_LIMIT_KB` of body
+once, if that materialization was made for another file (`AstArena.lasting`). The materializations' 2 MB chunks may be
+huge pages (a tenth of what materializing costs): each counts the materializations in it and is given back whole when
+the last is dropped (dropping part of a huge page splits it, and the kernel frees it only under memory pressure), so a
+lasting materialization comes from a slab of small pages of its own, given back page by page: kept across recycles,
+it would keep its chunk of a segment's files alive. The materialize-ahead helpers hold what they made until a checker takes it, at most `AHEAD_LIMIT_KB` of body
 source ahead (`TTTT_AHEAD_KB`), then wait until the checkers took most of it. `TTTT_AST_POISON=1` makes a dropped
 materialization's pages fault: a reader that doesn't hold it crashes; the suite runs drops with `baseline_tests
 --defer-bodies --checker-memory 0` (diagnostics only: recycled checkers take the expression types with them).

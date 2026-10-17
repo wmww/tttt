@@ -555,8 +555,10 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     // Had the body's names been there, would the signature's walk have found one of them (or suggested one)?
     bool collides = body->signature_not_found && scope_locals(function_scope)->count > before;
     for (u32 i = 0; i < body->signature_name_count && !collides; i++) {
-        Symbol const* found = symbol_table_get(scope_locals(function_scope), body->signature_names[i]);
-        collides = found && !found->is_parameter;
+        // (A body's value of the name of a type in the signature isn't found: `props: Props` and `...Props` in the body)
+        Symbol const* found = symbol_table_get(scope_locals(function_scope), body->signature_names[i].name);
+        u32 meaning = body->signature_names[i].meaning ? body->signature_names[i].meaning | SYMBOL_ALIAS : ~(u32)0;
+        collides = found && !found->is_parameter && ((found->flags & meaning) || found->is_placeholder);
     }
     function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
     function_scope->flow = nullptr;
