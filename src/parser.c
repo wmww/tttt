@@ -14919,6 +14919,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
     ast_arena_begin(&source->arena);
+    lazy_slots_new_block();
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
     }

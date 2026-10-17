@@ -12,11 +12,24 @@
 
 thread_local LazySlots* current_lazy_slots;
 
+// The thread's block of slots, a memo page's worth: the parse threads would interleave their files' slots one by one
+// otherwise, and every page a checker touches would be shared with files other checkers check (vscode at 4 checkers:
+// a third to a half of each checker's pages used)
+static thread_local u32 slot_next, slot_end;
+
 u32 lazy_slot_new(void) {
-    static _Atomic u32 next = 1;
-    u32 ret = next++;
-    panic_if(ret >> (LAZY_PAGE_BITS + LAZY_DIR_BITS + LAZY_TOP_BITS), "out of LazyType slots");
-    return ret;
+    if (slot_next == slot_end) {
+        static _Atomic u32 next_block = 1; // (Block 0 holds slot 0, which isn't one)
+        u32 block = next_block++;
+        panic_if(block >> (LAZY_DIR_BITS + LAZY_TOP_BITS), "out of LazyType slots");
+        slot_next = block << LAZY_PAGE_BITS;
+        slot_end = slot_next + (1 << LAZY_PAGE_BITS);
+    }
+    return slot_next++;
+}
+
+void lazy_slots_new_block(void) {
+    if (slot_next & ((1 << LAZY_PAGE_BITS) - 1)) slot_next = slot_end;
 }
 
 static LazyMemo* lazy_type_state(LazyType* me) {

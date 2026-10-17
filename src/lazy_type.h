@@ -40,6 +40,9 @@ typedef struct LazyType {
 
 // Slot numbers are process-wide and never reused, see hacks.md
 u32 lazy_slot_new(void);
+// The thread's next slot starts a memo page of its own: called when a file's parse starts (and its bodies'
+// materialization), so that a page holds one file's slots
+void lazy_slots_new_block(void);
 
 // The slot memos of one Checker. Three levels, allocated on first touch: most programs touch a tiny part of the lib
 #define LAZY_PAGE_BITS 8

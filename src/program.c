@@ -3767,6 +3767,7 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
     list->errs.parent = my errs;
     bool same = true;
     ast_materialize_begin(&list->memory, cross);
+    lazy_slots_new_block();
     for (DeferredBody* i = list->first; i; i = i->next) {
         bool parsed = parse_deferred_body(file, i->function, errs);
         if (!parsed) defer_stat_add(DEFER_STAT_PARSE_FAILED, 1);
