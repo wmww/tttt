@@ -4244,7 +4244,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         if (at == UINT32_MAX && steal) {
             at = steal_file(me, c, count);
-            if (at != UINT32_MAX) stolen++;
+            // (With a memory budget the first one starts in a fresh checker: its own files' types are little use in
+            // another's region, and kept they'd stack a second warm state on the first. The source sweep's 285 biggest
+            // at the defaults: wall -7.1%, peak +3.8% kept; -5.2%, +0.4% dropped)
+            if (at != UINT32_MAX && !stolen++ && my checker_budget != UINT64_MAX && segment_count) recycle_due = true;
         }
         if (at == UINT32_MAX) break;
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
