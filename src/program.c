@@ -3740,7 +3740,7 @@ static u64 defer_stats_now(void) {
     return (u64)now.tv_sec * 1000000 + (u64)now.tv_nsec / 1000;
 }
 
-static ResolveShard* program_materialize_locked(Program* me, SourceFile* file) {
+static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, bool cross) {
     u64 start = defer_stats_now();
     DeferredBodies* list = file->deferred_bodies;
     bool first = !atomic_load_explicit(&list->materialized, memory_order_relaxed);
@@ -3750,7 +3750,7 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file) {
     ErrorCtx* errs = first ? &list->errs : &scratch;
     list->errs.parent = my errs;
     bool same = true;
-    ast_materialize_begin(&list->memory);
+    ast_materialize_begin(&list->memory, cross);
     for (DeferredBody* i = list->first; i; i = i->next) {
         bool parsed = parse_deferred_body(file, i->function, errs);
         if (!parsed) defer_stat_add(DEFER_STAT_PARSE_FAILED, 1);
@@ -3939,8 +3939,9 @@ static void deferred_bodies_acquire(Program* me, SourceFile* file) {
         return;
     }
     if (atomic_load_explicit(&list->state, memory_order_relaxed) == DEFERRED_BODIES_PENDING) {
-        if (checker && checker->checking_file && checker->checking_file != file) defer_stat_add(DEFER_STAT_CROSS, 1);
-        unfinished = program_materialize_locked(me, file);
+        bool cross = checker && checker->checking_file && checker->checking_file != file;
+        if (cross) defer_stat_add(DEFER_STAT_CROSS, 1);
+        unfinished = program_materialize_locked(me, file, cross);
     }
     if (!checker) {
         list->ahead = true;
@@ -4057,11 +4058,12 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
     checker->peak_memory = old->peak_memory;
     // The deferred bodies the old one read for other files are likely read again (a module many import): the new one
     // holds them, as long as it reads them too (plan 78 stage 2: vscode at one checker materializes ~1100 files again
-    // without)
+    // without). Only those materialized for another file (lasting, ast_materialize_begin()): one a file's own check made
+    // would keep the huge page it shares with that segment's other files (vscode K1 +150 MB)
     for (u32 i = 0; i < old->held_count; i++) {
         DeferredBodies* list = old->held[i];
         SourceFile* file = deferred_bodies_file(list);
-        if (!(old->cross_files[file->id / 64] >> (file->id % 64) & 1)) continue;
+        if (!(old->cross_files[file->id / 64] >> (file->id % 64) & 1) || !list->memory.lasting) continue;
         pthread_mutex_lock(&list->lock);
         list->refs++;
         pthread_mutex_unlock(&list->lock);

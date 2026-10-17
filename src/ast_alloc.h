@@ -22,6 +22,7 @@ typedef struct AstArena {
     u32 range_cap;
     size_t total; // Bytes bumped
     bool materialization; // ast_materialize_begin()'s: ranges start on a page of their own and end on one
+    bool lasting; // A lasting materialization's
 } AstArena;
 
 // The current thread allocates into `arena` until ast_arena_end(); not nested
@@ -35,10 +36,13 @@ void ast_arena_drop(AstArena* arena);
 // ast_materialize_end() the thread's AST allocations go to it like a parsed file's (the bodies' parse, then what their
 // resolve walk attaches to them) and so do the binder's (an Arena.ast_backed: ast_materialize_alloc()). Whatever the
 // walk attaches to a node outside the bodies is undone before the drop (program.c's deferred_bodies_undo()), and a
-// list outside them it grows is copied out to malloc. A thread takes materializations out of slabs of their own, never
-// madvised for huge pages, each starting on a page of its own so that dropping one gives all its pages back; addresses
-// are never handed out twice, so nothing keyed by a dropped node's address can meet another node
-void ast_materialize_begin(AstArena* arena);
+// list outside them it grows is copied out to malloc. A thread takes materializations out of slabs of their own, each
+// starting on a page of its own; addresses are never handed out twice, so nothing keyed by a dropped node's address can
+// meet another node. Their 2 MB chunks may be huge pages, so a chunk is given back whole, once every materialization in
+// it is dropped (most go together, at a checker's recycle). A `lasting` one (made for another file than the checker's,
+// likely kept across recycles: program.c's checker_recycled()) would keep its chunk alive: those come from a slab of
+// small pages, given back page by page
+void ast_materialize_begin(AstArena* arena, bool lasting);
 void ast_materialize_end(void);
 // Zeroed, 8 (or 16) byte aligned, in the thread's current materialization (an Arena.ast_backed's allocation or chunk)
 void* ast_materialize_alloc(size_t size, bool align16);

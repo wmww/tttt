@@ -7047,9 +7047,29 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
     return parse_success(&p);
 }
 
-static bool skip_word_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||
-        c == '\\' || (unsigned char)c >= 0x80;
+// The body skipper's character classes (skip_balanced_braces())
+enum {
+    SKIP_OTHER, SKIP_SPACE, SKIP_WORD, SKIP_DIGIT, SKIP_SLASH, SKIP_QUOTE, SKIP_OPEN_BRACE, SKIP_CLOSE_BRACE,
+    SKIP_BACKTICK, SKIP_OPEN_PAREN, SKIP_CLOSE_PAREN, SKIP_END, SKIP_DOT, SKIP_CLOSE_BRACKET,
+};
+static const uint8_t skip_char_class[256] = {
+    11, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 0, 5, 0, 2, 0, 0, 5, 9, 10, 0, 0, 0, 0, 12, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0,
+    0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 13, 0, 2,
+    8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 0, 7, 0, 0,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+};
+
+// A letter, digit, `_`, `$`, `\` or non-ASCII byte
+static inline bool skip_word_char(char c) {
+    return (uint8_t)(skip_char_class[(uint8_t)c] - SKIP_WORD) <= SKIP_DIGIT - SKIP_WORD;
+}
+
+static inline bool skip_word_is(char const* start, char const* end, char const* keyword, size_t length) {
+    return (size_t)(end - start) == length && !memcmp(start, keyword, length);
 }
 
 // Steps over the rest of a template from s (inside it): to past its closing '`' (returns false), or past its next
@@ -7092,37 +7112,87 @@ static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
         "return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw", "instanceof", "yield",
         "await",
     };
-    while (s) {
+    while (true) {
         char c = *s;
-        if (!c) return nullptr;
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-            s++;
-        } else if (c == '/' && s[1] == '/') {
-            char const* start = s;
-            s += 2 + strcspn(s + 2, "\n\r");
-            note_line_comment(shared, start, s);
-        } else if (c == '/' && s[1] == '*') {
-            char const* close = strstr(s + 2, "*/");
-            if (!close) return nullptr;
-            char const* start = s;
-            s = close + 2;
-            char const* last_line_start = start;
-            if (memchr(start, '\n', (size_t)(s - start))) {
-                last_line_start = s;
-                while (last_line_start[-1] != '\n') last_line_start--;
+        switch (skip_char_class[(uint8_t)c]) {
+            case SKIP_END:
+                return nullptr;
+            case SKIP_SPACE:
+                s++;
+                while (skip_char_class[(uint8_t)*s] == SKIP_SPACE) s++;
+                continue;
+            case SKIP_WORD: {
+                char const* start = s;
+                for (s++; skip_word_char(*s); s++) {}
+                if (skip_word_is(start, s, "import", 6) || skip_word_is(start, s, "require", 7)) return nullptr;
+                word = (csview){ start, s - start };
+                last = LAST_WORD;
+                continue;
             }
-            note_block_comment(shared, start, last_line_start, s);
-        } else if (c == '{' || c == '`' || c == '}') {
-            bool template_continues;
-            if (c == '{') {
+            case SKIP_DIGIT:
+                for (s++; skip_word_char(*s) || *s == '.'; s++) {}
+                last = LAST_VALUE;
+                continue;
+            case SKIP_DOT:
+                if (s[1] >= '0' && s[1] <= '9') {
+                    for (s++; skip_word_char(*s) || *s == '.'; s++) {}
+                    last = LAST_VALUE;
+                    continue;
+                }
+                break;
+            case SKIP_QUOTE:
+                for (s++; *s != c; s++) {
+                    if (!*s || *s == '\n' || *s == '\r') return nullptr;
+                    if (*s == '\\' && s[1]) s++;
+                }
+                s++;
+                last = LAST_VALUE;
+                continue;
+            case SKIP_SLASH: {
+                if (s[1] == '/') {
+                    char const* start = s;
+                    s += 2 + strcspn(s + 2, "\n\r");
+                    note_line_comment(shared, start, s);
+                    continue;
+                }
+                if (s[1] == '*') {
+                    char const* close = strstr(s + 2, "*/");
+                    if (!close) return nullptr;
+                    char const* start = s;
+                    s = close + 2;
+                    char const* last_line_start = start;
+                    if (memchr(start, '\n', (size_t)(s - start))) {
+                        last_line_start = s;
+                        while (last_line_start[-1] != '\n') last_line_start--;
+                    }
+                    note_block_comment(shared, start, last_line_start, s);
+                    continue;
+                }
+                if (last == LAST_CLOSE_BRACE) return nullptr;
+                bool regex = last == LAST_PUNCTUATOR || (last == LAST_CLOSE_PAREN && closed_head);
+                if (regex && last == LAST_PUNCTUATOR && (last_char == '+' || last_char == '-') && before_last_char == last_char) {
+                    return nullptr;
+                }
+                for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
+                    if (csview_equals(word, regex_after[i])) regex = true;
+                }
+                if (!regex) break;
+                bool in_class = false;
+                for (s++; *s != '/' || in_class; s++) {
+                    if (!*s || *s == '\n' || *s == '\r') return nullptr;
+                    if (*s == '\\' && s[1]) s++;
+                    else if (*s == '[') in_class = true;
+                    else if (*s == ']') in_class = false;
+                }
+                for (s++; skip_word_char(*s); s++) {}
+                last = LAST_VALUE;
+                continue;
+            }
+            case SKIP_OPEN_BRACE:
                 if (depth == MAX_DEPTH) return nullptr;
                 template[depth++] = false;
-                s++;
-                last = LAST_PUNCTUATOR;
-                before_last_char = last_char;
-                last_char = '{';
-                continue;
-            } else if (c == '}') {
+                break;
+            case SKIP_CLOSE_BRACE:
                 if (!depth) return nullptr;
                 s++;
                 if (!template[--depth]) {
@@ -7130,77 +7200,47 @@ static char const* skip_balanced_braces(ParserShared* shared, char const* s) {
                     last = LAST_CLOSE_BRACE;
                     continue;
                 }
-                template_continues = skip_template_part(&s);
-            } else {
+                goto template_part;
+            case SKIP_BACKTICK:
                 s++;
-                template_continues = skip_template_part(&s);
-            }
-            if (template_continues) {
-                if (depth == MAX_DEPTH) return nullptr;
-                template[depth++] = true;
-                last = LAST_PUNCTUATOR;
-                last_char = '{';
-            } else {
-                last = LAST_VALUE;
-            }
-        } else if (c == '"' || c == '\'') {
-            for (s++; *s != c; s++) {
-                if (!*s || *s == '\n' || *s == '\r') return nullptr;
-                if (*s == '\\' && s[1]) s++;
-            }
-            s++;
-            last = LAST_VALUE;
-        } else if (c == '/') {
-            if (last == LAST_CLOSE_BRACE) return nullptr;
-            bool regex = last == LAST_PUNCTUATOR || (last == LAST_CLOSE_PAREN && closed_head);
-            if (regex && last == LAST_PUNCTUATOR && (last_char == '+' || last_char == '-') && before_last_char == last_char) {
-                return nullptr;
-            }
-            for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
-                if (csview_equals(word, regex_after[i])) regex = true;
-            }
-            if (!regex) {
-                s++;
-                last = LAST_PUNCTUATOR;
-                before_last_char = last_char;
-                last_char = '/';
+            template_part:
+                if (skip_template_part(&s)) {
+                    if (depth == MAX_DEPTH) return nullptr;
+                    template[depth++] = true;
+                    last = LAST_PUNCTUATOR;
+                    last_char = '{';
+                } else {
+                    if (!s) return nullptr;
+                    last = LAST_VALUE;
+                }
                 continue;
-            }
-            bool in_class = false;
-            for (s++; *s != '/' || in_class; s++) {
-                if (!*s || *s == '\n' || *s == '\r') return nullptr;
-                if (*s == '\\' && s[1]) s++;
-                else if (*s == '[') in_class = true;
-                else if (*s == ']') in_class = false;
-            }
-            for (s++; skip_word_char(*s); s++) {}
-            last = LAST_VALUE;
-        } else if ((c >= '0' && c <= '9') || (c == '.' && s[1] >= '0' && s[1] <= '9')) {
-            for (s++; skip_word_char(*s) || *s == '.'; s++) {}
-            last = LAST_VALUE;
-        } else if (skip_word_char(c)) {
-            char const* start = s;
-            while (skip_word_char(*s)) s++;
-            word = (csview){ start, s - start };
-            if (csview_equals(word, "import") || csview_equals(word, "require")) return nullptr;
-            last = LAST_WORD;
-        } else {
-            if (c == '(') {
+            case SKIP_OPEN_PAREN:
                 if (paren_depth == MAX_PARENS) return nullptr;
                 paren_head[paren_depth++] = last == LAST_WORD && (csview_equals(word, "if") || csview_equals(word, "while") ||
                     csview_equals(word, "for") || csview_equals(word, "with"));
-            } else if (c == ')') {
+                break;
+            case SKIP_CLOSE_PAREN:
                 // (An unbalanced one: it can't be told)
                 if (!paren_depth) return nullptr;
                 closed_head = paren_head[--paren_depth];
-            }
-            last = c == ']' ? LAST_VALUE : c == ')' ? LAST_CLOSE_PAREN : LAST_PUNCTUATOR;
-            before_last_char = last_char;
-            last_char = c;
-            s++;
+                s++;
+                last = LAST_CLOSE_PAREN;
+                before_last_char = last_char;
+                last_char = c;
+                continue;
+            case SKIP_CLOSE_BRACKET:
+                s++;
+                last = LAST_VALUE;
+                before_last_char = last_char;
+                last_char = c;
+                continue;
         }
+        // A punctuator
+        s++;
+        last = LAST_PUNCTUATOR;
+        before_last_char = last_char;
+        last_char = c;
     }
-    return nullptr;
 }
 
 // Whether a parameter has an expression in it (a default value, a computed name in its pattern): its walk sees the body's
