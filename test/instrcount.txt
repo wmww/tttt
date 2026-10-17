@@ -1,0 +1,14 @@
+drizzle 6418072696 callgrind
+effect 9329563428 callgrind
+excalidraw 7343726873 callgrind
+nest 1055630835 callgrind
+react 1356060876 callgrind
+tanstack-router 4978224300 callgrind
+tsc 4478678540 callgrind
+type-fest 10483268448 callgrind
+valibot 3276214430 callgrind
+vscode 89706824136 callgrind
+vue 6216493735 callgrind
+webpack 9230698465 callgrind
+xstate 2530244266 callgrind
+zod 4850500703 callgrind

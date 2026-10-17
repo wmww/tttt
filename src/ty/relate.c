@@ -5309,6 +5309,19 @@ static Prop const* sole_member_prop(Checker* me, Ty const* intersection, Atom co
 static Ternary intersection_props_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     Ternary result = TERNARY_TRUE;
     TyList members = target->composite.types;
+    // Each member sees the whole intersection as its `this`, as find_prop() has the source's (tsc's getPropertiesOfType
+    // goes through getApparentTypeOfIntersectionType): drizzle's `NotNull<this>`, `Builder & { _: ... }`, has a
+    // `default(): HasDefault<this>` returning `Builder & {...} & {...}`. (Else each round of a variance measurement
+    // compares one more member against one less: PgColumnBuilder's 1.2k comparisons 14k.) Null: the member as it is
+    Ty const* stack_with_this[8];
+    Ty const** with_this = members.len <= c_arraylen(stack_with_this) ? stack_with_this : malloc(sizeof(Ty const*) * members.len);
+    panic_if(!with_this, "out of memory");
+    for (u32 j = 0; j < members.len; j++) {
+        Ty const* member = members.data[j];
+        bool keeps = member->kind == TY_TYPE_PARAM || (member->kind == TY_REFERENCE && member->reference.this_arg);
+        with_this[j] = keeps ? nullptr : ty_with_this_arg(me, member, target);
+        if (with_this[j] == member) with_this[j] = nullptr;
+    }
     for (u32 m = 0; m < members.len && result; m++) {
         Members const* member = ty_members(me, members.data[m]);
         for (u32 i = 0; i < member->prop_count && result; i++) {
@@ -5341,15 +5354,10 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // members flattened by inference, would otherwise resolve the types of properties still being resolved,
             // a spurious TS2502)
             if (part_count == 1 && source->kind == TY_INTERSECTION && sole_member_prop(me, source, name) == part_props[0]) continue;
-            // Each member sees the whole intersection as its `this`, as find_prop() has the source's (tsc's
-            // getPropertiesOfType goes through getApparentTypeOfIntersectionType): drizzle's `NotNull<this>`, `Builder &
-            // { _: ... }`, has a `default(): HasDefault<this>` returning `Builder & {...} & {...}`. (Else each round of a
-            // variance measurement compares one more member against one less: PgColumnBuilder's 1.2k comparisons 14k)
             for (u32 k = 0; k < part_count; k++) {
-                Ty const* part_member = members.data[part_members[k]];
-                if (part_member->kind == TY_TYPE_PARAM || (part_member->kind == TY_REFERENCE && part_member->reference.this_arg)) continue;
-                Prop const* with_this = ty_get_prop(me, ty_with_this_arg(me, part_member, target), name);
-                if (with_this) part_props[k] = with_this;
+                Ty const* member_with_this = with_this[part_members[k]];
+                Prop const* prop = member_with_this ? ty_get_prop(me, member_with_this, name) : nullptr;
+                if (prop) part_props[k] = prop;
             }
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0 };
             // (Of two parts, the intersection is made with the property, of more only when its type is asked for: tsc's
@@ -5376,7 +5384,8 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                     report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(member->props[i]));
                     c_drop(cstr, &source_str, &target_str, &prop_name);
                 }
-                return TERNARY_FALSE;
+                result = TERNARY_FALSE;
+                break;
             }
             if (!target_prop.type) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
             Ty const* target_type = target_prop.type;
@@ -5395,6 +5404,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             result &= related;
         }
     }
+    if (with_this != stack_with_this) free(with_this);
     return result;
 }
 

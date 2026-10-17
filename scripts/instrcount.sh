@@ -2,11 +2,47 @@
 # Instructions (perf stat instructions:u, else callgrind) per pinned corpus, single-threaded: the stable
 # perf measure across sessions (agents/measurements.md).
 #
-#   scripts/instrcount.sh [--bin path/to/tttt] [corpus...]     (default: ./release/tttt, every corpus but zod-root)
+#   scripts/instrcount.sh [--bin path/to/tttt] [--save] [corpus...]     (default: ./release/tttt, every corpus but zod-root)
+#
+# Each count is printed with its change against test/instrcount.txt (the counts of the last --save, by the same tool),
+# and a change over 2% either way is flagged: drizzle's +50% of 2026-10-17 was recorded in measurements.md and went
+# unnoticed for two sessions. --save writes the counts there (commit it with the session's measurements)
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 BIN=./release/tttt
-if test "${1:-}" = --bin; then BIN="$2"; shift 2; else ninja -C release > /dev/null; fi
+SAVE=
+while test $# -gt 0; do
+    case "$1" in
+        --bin) BIN="$2"; shift 2 ;;
+        --save) SAVE=1; shift ;;
+        *) break ;;
+    esac
+done
+test "$BIN" != ./release/tttt || ninja -C release > /dev/null
+REF=test/instrcount.txt
+declare -A RESULT
+# The count of $1 (instructions) with its change against the reference of tool $2
+report() {
+    local n="$1" i="$2" tool="$3" g ref note=""
+    RESULT[$n]="$i"
+    g=$(echo "$i / 1000000000" | bc -l)
+    ref=$(awk -v n="$n" -v t="$tool" '$1 == n && $3 == t { print $2 }' "$REF" 2>/dev/null || true)
+    if test -n "$ref" && test "$ref" != 0; then
+        note=$(awk -v a="$i" -v b="$ref" 'BEGIN { d = (a - b) * 100 / b; printf "%+6.2f%%%s", d, (d > 2 || d < -2) ? "  <-- against " sprintf("%.3f", b / 1e9) " G" : "" }')
+    fi
+    printf '%-16s %8.3f G  %s\n' "$n" "$g" "$note"
+}
+save() {
+    test -n "$SAVE" || return 0
+    local tool="$1" tmp
+    tmp=$(mktemp)
+    # (Only the corpora measured are replaced)
+    { test -f "$REF" && awk -v t="$tool" -v names=" ${!RESULT[*]} " '$3 != t || index(names, " " $1 " ") == 0' "$REF"; true; } > "$tmp"
+    for n in "${!RESULT[@]}"; do echo "$n ${RESULT[$n]} $tool"; done >> "$tmp"
+    sort "$tmp" > "$REF"
+    rm -f "$tmp"
+    echo "saved to $REF"
+}
 declare -A C=(
     [tsc]=thirdparty/corpora/TypeScript6/src/compiler
     [type-fest]=thirdparty/corpora/type-fest
@@ -33,8 +69,9 @@ if perf stat -x, -e instructions:u true 2>&1 | grep -q instructions:u; then
         p=$(realpath "${C[$n]}")
         i=$(perf stat -x, -e instructions:u "$BIN" "${ARGS[@]}" "$p" \
             2>&1 >/dev/null | grep instructions:u | cut -d, -f1 || true)
-        printf '%-10s %8.3f G\n' "$n" "$(echo "$i / 1000000000" | bc -l)"
+        report "$n" "$i" perf
     done
+    save perf
 else
     echo "(perf unavailable: callgrind counts)"
     DIR=$(mktemp -d /tmp/instrcount.XXXXXX)
@@ -45,7 +82,8 @@ else
     wait
     for n in "${NAMES[@]}"; do
         i=$(grep -o 'Collected : [0-9]*' "$DIR/$n.log" | grep -o '[0-9]*$' || true)
-        printf '%-10s %8.3f G\n' "$n" "$(echo "${i:-0} / 1000000000" | bc -l)"
+        report "$n" "${i:-0}" callgrind
     done
     rm -rf "$DIR"
+    save callgrind
 fi

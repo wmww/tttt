@@ -161,7 +161,11 @@ The statement/expression walk (`statement_typecheck()`, `expr_typecheck()`, `bin
   the reference itself (`resolve_members_with_this()`); the declared type itself is its own this-argument. When only
   `this` is mapped, members whose declaration can't mention it (`Prop.thisless`, tsc's syntactic rules) are shared.
   The `this` expression is the `this` type parameter, and the apparent type of a type parameter is its constraint
-  with the type parameter as this-argument (`t.chain()` is `T` for `T extends C`).
+  with the type parameter as this-argument (`t.chain()` is `T` for `T extends C`). An intersection's members see the
+  whole intersection as their this-argument (tsc's getApparentTypeOfIntersectionType), wherever its properties are
+  read: `find_prop()`, `resolve_intersection_members()`, an intersection target's combined properties
+  (`intersection_props_related()`). A tuple reference may carry one too (tsc's tuple targets have a this-type), which
+  the array properties that mention `this` (`sort()`) are retargeted to (`resolve_tuple_members()`).
 - **Bases that depend on type arguments** (`members.c`): references instantiate the raw members of every class and
   interface (`Ty.declared.raw`), bases' included. That's only right while the members a base adds don't depend on the
   type arguments; when a base is a type parameter (`interface I<T extends object> extends T`), an intersection with
