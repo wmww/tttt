@@ -7,3 +7,7 @@ TS2676/TS2808, late-bound method overloads group by symbol (two own tests), the 
 to bugs/type_core.md, `-b`'s unchanged `.d.ts` writes and the lazy-slot counter to plan 76 (tsgo skips unchanged
 writes only through its buildinfo), the 12-core notes were already in plan 72 and measurements.md, and
 `scripts/perfsweep.py --defaults` now times tttt at its default threads and checkers (with recycle counts).
+
+- (insights 2026-10-16) `scripts/fasttest.sh --summary` prints "13808 total" where `scripts/passcount.py` on the same
+  saved file prints 13805: three configurations are counted by one and not the other (no components? skipped?). A
+  papercut; find which and make the two agree.

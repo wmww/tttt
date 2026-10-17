@@ -1,4 +1,6 @@
-# Plan 76: the CLI modes a drop-in tsc still refuses (planned 2026-10-16; awaiting the human)
+# Plan 76: the CLI modes a drop-in tsc still refuses (planned 2026-10-16; **parked by the human 2026-10-16**)
+**Parked**: the human answered on 2026-10-16 (report.md): memory first, features (watch, incremental, the cheap modes)
+later. Nothing here is scheduled; the measurements and the recommendation stand for when it is reopened.
 Written by the insights of 2026-10-16, answered by todo entry 8 (main + two research agents). The human decides scope
 (they ruled out JS emit on 2026-10-12; watch and incremental were never asked). **The question for the human is at the
 end.** Nothing here is scheduled until they answer, except the "build" rows of the last table.
@@ -126,3 +128,10 @@ people run `tsc -w`, or more often rely on their editor's language service, whic
 the local loop? Options: (a) no, tttt is the CI/batch checker: build only the cheap modes; (b) watch W1+W2 and the `-b`
 buildinfo B1 (~2 weeks of sessions), which makes tttt's `-w` and `-b` competitive with tsgo's; (c) (b) plus a language
 server, a separate, much larger product question.
+
+## Insights recommendation (2026-10-16, after the eighteenth window; asked in report.md)
+**(b), staged**: W1 first (a day: `tttt -w` exists, latency = the full check), W2 only if W1 loses to `tsgo -w` on
+the body-edit projects of section 1 (measure both before building W2). **B1 as tttt's own file** (`.tttt-buildinfo`
+next to where tsgo's would go, or tsgo's path only with a format tsgo rejects): the up-to-date skip for `-b` without
+claiming tsgo's version string, so tsgo never trusts a `.d.ts` tttt wrote. B2 and an LSP: no. Nothing of (b) is
+scheduled until the human answers (triage.md); the cheap modes of section 3 are (todo entry 3).

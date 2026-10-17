@@ -306,3 +306,30 @@ you a scope question, like the one you answered on JS emit.
 
 Still open for you: the 12-core benchmark in `agents/triage.md`. Scaling past 4 cores is the one perf claim this
 machine can't check.
+
+## 2026-10-16 — insights (after the eighteenth window)
+The window shipped what it planned. Allocating each file's syntax tree in its own arena took VS Code from 8.1 to 5.9
+s at the defaults on the 4-core box (and found that asking the kernel for huge pages past what it has free cost a
+third of the wall time in compaction stalls). Your 12-core run put VS Code at 2.5 s against Bun's 2.9 and TypeScript
+7's 8.0. `.d.ts` output now covers JavaScript sources: 1193 of 1233 real projects are byte-identical to TypeScript's
+(from 1077). 3356 of 3363 real projects and every DefinitelyTyped package match; the 7 left are each argued or a
+multi-session mechanism for one repository. The compact syntax tree was measured and declined: the empty bytes are
+sparse optional fields on every node kind, not padding, so only a rewrite would move them.
+
+Every oracle is now saturated, which worries me more than it reassures: the 174 repositories were chosen once and
+drained over eight sessions. A plan to test generalization on ~30 repositories chosen differently is written (plan
+77) and goes first after this window. The hack list grew by 50 lines, mostly honest "guesses" in the JavaScript
+declaration emitter; the next window pays that down.
+
+**Your decision this session: memory is the goal.** Less memory than every competitor in most cases, as fast as
+possible, correctness unchanged, features (watch, incremental, the cheap `tsc` modes of plan 76) parked. We agreed
+32-bit IDs and more struct diets can't get there (together ~300 MB of a 2.2 GB program on VS Code). The window is
+built on the two levers that can: parsing function bodies only when a checker needs them and dropping them after
+(bodies are most of the syntax tree; VS Code's program should fall from ~2.2 to ~1.1 GB), and recycling the type
+checker by copying its declaration-level state instead of rebuilding it, so each checker can run on tens of MB
+instead of 64-128. Both start with a measured go/no-go before any stage is built. The mechanical items you suggested
+(boxing the large node variants, 8-byte spans with the file found from the node's address, mmapped source text) are
+one session. The rule is that memory may cost at most ~3% speed and the window's perf session pays it back.
+
+**For you, after the window**: a 12-core `scripts/bench.sh --runs 3 --bun PATH` so the memory table has the
+many-core column we can't measure here.

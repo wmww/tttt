@@ -5,27 +5,29 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-16, insights after the seventeenth window)
+## State (2026-10-16, insights after the eighteenth window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-16 `next` was still `7.1.0-dev.20261015.1`). Its
-  native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test mechanisms,
-  bugs/tsgo_divergences.md); with own tests and the dts component **13698 / 13740**. Every oracle cache is tsgo
-  7.1's, every probe runs tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one `go build` away).
-- **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations** (plans 53, 64): tsc's
-  output formats, exit codes and flags, `.d.ts` and `.d.ts.map` written (`-b` too). dtsdiff **1077 / 1233** projects
-  byte-identical (JS sources are 77 of the 156 left: plan 64 stage 6), `clidiff.py --emit` 309 / 396. JS emit is out
-  of scope (the human, 2026-10-12). **Refused**: `--watch`, `--incremental`'s `.tsbuildinfo`, `--showConfig`,
-  `--explainFiles`, `--init` (plan 76 decides which a drop-in needs).
-- **Real code**: corpora 0 / 0 everywhere but vue (0 / 2), **DT sweep 8595 / 8595**, `$ExpectType` 68639 / 68640,
-  flagflip 18 / 6 / 3, scenarios 210 / 0 failed, **source sweep 3352 / 3363**, kdiff 1 / 3363, recycle 4 / 3363.
-- **Perf**: tttt is 2-6x faster than single-threaded tsgo and 1.3-3x faster than Bun's `bun check` (a Rust tsgo port)
-  at every core and single-threaded (plan 67 "Where it stands"). **Memory is the one axis we lose**: 1.6-2.3x bun's
-  at the defaults, up to 1.75x single-threaded (vscode 2.5 GB vs 1.4). Checker recycling (plan 67 stage 1) took
-  vscode 4.2 -> 2.6 GB; what remains is the program (the AST: 1.74 GB of vscode's 2.19 GB, 38% zero words) and each
-  checker's 128 MB floor plus its own copy of the libraries' types, which grows with the core count. On the
-  human's 12-core machine (2026-10-16): vscode 2.50 s vs bun 2.92 vs tsgo 7.95, but 6.5 GB vs 2.1; checkers past 12
-  buy 0-11% for ~170 MB each; the CLI's checkers now hold at most 1.5 GB together (64 MB each at K24: -1.75 GB for
-  +2.4%; unchanged at K <= 12, plan 75).
+  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-16 npm's `latest` was 7.0.2, `next`
+  7.1.0-dev.20261016.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
+  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13766 / 13805** (dts 1834 / 1859,
+  JavaScript's 351 / 352 in the headline since plan 64 stage 6). Every oracle cache is tsgo 7.1's, every probe runs
+  tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one `go build` away).
+- **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
+  sources alike (plans 53, 64): tsc's output formats, exit codes and flags, `.d.ts` and `.d.ts.map` written (`-b`
+  too). dtsdiff **1193 / 1233** projects (96627 / 96726 files) byte-identical, `clidiff.py --emit` 369 / 396. JS
+  emit is out of scope (the human, 2026-10-12). **Refused**: `--watch`, `--incremental`'s `.tsbuildinfo`,
+  `--showConfig`, `--explainFiles`, `--init`: measured and costed in plan 76, **parked by the human (2026-10-16:
+  memory first, features later)**.
+- **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, a tsgo in-flight artifact), **DT sweep 8595 / 8595**,
+  `$ExpectType` 68639 / 68640, flagflip 18 / 6 / 3, scenarios 210 / 0 failed, **source sweep 3356 / 3363** (the 7
+  left argued or plan-sized for one repository: bugs/sourcesweep_checker.md), kdiff 1 / 3363, recycle 4 / 3363,
+  mutation 7 / 2909 per seed (tsc order artifacts mostly).
+- **Perf**: tttt is 2-6x faster than single-threaded tsgo; against bun's `bun check` 1.2-2.5x at the defaults on
+  the human's 12 cores (vscode 2.50 s vs bun 2.92 vs tsgo 7.95) and 1.6-3.4x single-threaded. **Memory is the one
+  axis we lose, and it is now the goal**: vscode K1 ~2.55 GB peak (program ~2.2 GB after names: AST ~1.37 GB with
+  557 MB of zero words, binder ~0.5, text ~0.17) against bun's 1.4; at the defaults 1.6-3x bun's (12 cores K24 ~4.7
+  GB under plan 75's 1.5 GB checker cap vs bun 2.1). The compact AST was measured and declined (plan 75: the zero
+  words are sparse optional fields, not padding); per-file arenas (plan 63) and recycling (plan 67) are in.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow (return mappers included) and
@@ -33,42 +35,52 @@ types components) are the oracle, not the goal; real projects that are clean und
   deferred references, flow graph + narrowing, module resolution + tsconfig, iteration protocol, generators, `this`
   types, mixins, decorators, union origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS +
   expandos as 7 has them, parallel loading / resolving / checking with the output independent of the checker count,
-  checker recycling, declaration diagnostics, the declaration writer with comments and maps, project references /
-  `-b`, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language. ~145k lines of C.
+  checker recycling, per-file AST arenas, declaration diagnostics, the declaration writer with comments and maps for
+  TypeScript and JavaScript, project references / `-b`, 7.1's content mappers, tsc's laziness and deferred checks,
+  7.1's language. ~149k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
-  (cloneTypeAsModuleType), permissive instantiation, member identity (members aren't Symbols; a class's member symbols are one
-  checker table, interfaces merged with classes still apply rules on top), `.d.ts` for JS sources (plan 64
-  stage 6), the CLI modes above.
+  (cloneTypeAsModuleType), permissive instantiation, member identity (members aren't Symbols; a class's member
+  symbols are one checker table, interfaces merged with classes still apply rules on top), the CLI modes above.
 
-## Course correction (insights of 2026-10-16, end of the seventeenth window)
-- **The window did what it planned, in ten sessions and 114 commits**: memory (recycling: vscode -40% peak at +2-4%
-  wall, output byte-identical at any budget), `.d.ts` emit shipped through the CLI with maps (dtsdiff 932 -> 1077),
-  the hacks audit (908 -> 573 lines, four artifact hacks deleted rather than documented), core scaling planned with a
-  "not now" for parallel declare/link backed by numbers, six quadratic emit paths found by a new probe. The source
-  sweep and DT moved with it (3344 -> 3352, 8595 / 8595). 0 lost tests at every merge, no process failures. The
-  human paused the loop after entry 10 and restarted it (`claude-stop` is gitignored now: never commit it).
-- **Correctness on real code is in the long tail; the project's open questions are now product questions.** What is
-  left is (a) memory against bun, (b) scaling past 4 cores, which this box can't measure, (c) what a user replacing
-  `tsc` still can't do with tttt (watch, incremental). None of them is test-chasing, and all three decide whether tttt
-  is *the faster tsc* or a faster checker for CI only.
-- **Memory decision: go for the program's memory, staged with a prototype gate.** Plan 63 stage 2 (per-file parse
-  arenas) is done (2026-10-16: the AST in `ast_alloc.h` arenas, any size without malloc's classes; it also showed
-  that `MADV_HUGEPAGE` past the system's free 2 MB blocks costs vscode a third of its wall time in compaction stalls:
-  the glibc re-exec is gone, arenas take huge pages within a `/proc/buddyinfo` budget and prefault). Plan 75 (closed 2026-10-16) said **no to the compact AST**: of vscode's 1.37 GB AST
-  after names, 557 MB is zero words but only ~165 MB of it is union padding exact-size variants remove; the rest is
-  sparse optional fields over every node kind. The one cheap item left is Expr 72 -> 40 (~-100 MB, bugs/perf_leads.md).
-  Memory against bun at the program level now needs a bun-style index-based AST rewrite, which isn't worth it while
-  tttt is 1.2-2.5x faster than bun. The per-checker floor was the cheaper lever: a 1.5 GB cap on all checkers together.
-- **CLI completeness is the other gap (plan 76, planning).** `--watch` and `--incremental` are how most people run
-  tsc locally; a 2-6x faster full check may or may not beat tsgo's incremental rebuild on a one-line edit. Planning
-  measures that and recommends; building watch/incremental is a scope decision the report raises with the human.
-- **Debt is under control, keep paying it**: plans 73 and 74 delete a hack each and are scheduled; every fix still
-  gets a `test/cases` repro. Watch the instruction counts: recycling costs type-fest +16% at K1.
+## Course correction (insights of 2026-10-16, end of the eighteenth window)
+- **The window did what it planned, ten sessions and 102 commits**: the AST in per-file arenas (vscode 8.1 -> 5.9 s at
+  the defaults on 4 cores; huge pages only within a `/proc/buddyinfo` budget after finding that over-madvising cost a
+  third of vscode's wall in compaction stalls), JavaScript declaration emit (dtsdiff 1077 -> 1193, the suite's JS dts
+  0 -> 351 / 352), the loader's serial work -15%, two hacks deleted properly (plans 73, 74), the 1.5 GB checker cap,
+  plan 76 measured, a real-code fan-out (+4 source sweep projects, +39 dtsdiff), a perf session (type-fest -40%
+  instructions, every corpus -1..-4%). 0 lost at every merge.
+- **Every oracle is saturated**, and that is a risk, not a result: the 174 sweep repositories were chosen once by one
+  GitHub query and drained over eight sessions; 3356 / 3363 says nothing about code tttt has never seen. Plan 77
+  (fresh repositories chosen by a different rule; the number is the day-one match rate) is the first correctness
+  session after the memory window.
+- **The human chose memory as the next goal (2026-10-16, in chat)**: less memory than every competitor in most
+  cases, as fast as possible, features parked (plan 76: watch, incremental, the cheap modes). Diets are over (plan 75
+  closed them; the small items left are plan 80's). The levers that are big enough: **deferred function bodies**
+  (plan 78: bodies are most of the AST and of the binder's flow nodes and scopes, and nearly every body is needed by
+  one checker; expected vscode program ~2.2 -> ~1.1 GB, K1 near bun) and **a copying checker recycle** (plan 79:
+  recycling re-derives the warm state today, which is why budgets are 64-128 MB per checker and the checkers dominate
+  at 24 of them; copying the declaration-level survivors would let budgets be tens of MB, bun's per-thread scale).
+  Both have prototype gates with numbers before stages are written. Plan 80 takes the mechanical items (Expr boxing,
+  8-byte spans by address lookup, mmapped text) with a 50 MB gate each.
+- **Speed buys memory, not the reverse**: a memory change may cost ~3% wall at most, the window's perf session pays
+  it back from the single-thread leads, and no trade is made at a worse rate than another item offers. Output stays
+  byte-identical at every checker count and budget: the kdiff/checkerdiff/recycle oracles are the net for plan 79.
+- **Hacks grew again: 573 -> 623 lines (+11 entries, -3)**. Three are JavaScript declaration emit "guesses from one or
+  two suite tests" (comment margins, `@overload` comments), labelled as such; acceptable for an emitter whose oracle
+  is byte equality, not for the checker. The per-window debt session is skipped this window (memory takes all ten);
+  the next window takes two.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
   mechanism for one test; work them only if real code shows the mechanism or it falls out of other work. Fidelity to
   tsgo *artifacts* (a runaway's model, a cache collision) is special-casing in a respectable form: don't.
+- **Memory target** (2026-10-16, the human): less memory than every competitor (bun, tsgo) in most cases, as fast
+  as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Structural levers only
+  (plans 78, 79), mechanical items with a 50 MB gate (plan 80); a memory change costs at most ~3% wall and the
+  window's perf session pays it back. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
+  corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
+- **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
+  chosen by a different rule and report the day-one match rate (plan 77).
 - **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).
@@ -185,8 +197,10 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    planning memory against bun (plan 67), the `.d.ts` writer (plan 64 stages 1-3)~~ done.
 17. ~~Checker recycling (67 stage 1), the CLI writing `.d.ts` with maps (64 stages 4-5), the hacks audit (71),
    binder and struct diets, core scaling planned (72), a real-code fan-out, emit scale probes~~ done.
-18. **Now**: the loader's serial work (72 stage 1), plans 73-74, `.d.ts` for JS (64 stage 6), per-file parse arenas
-   (63 stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes (76). Plan 58 (7.1.0 stable re-pin, then plan
-   66 stage 5's fan-out) once it's on npm, whenever that falls.
-19. Then: what plan 76 and the human decide (watch / incremental), checker
-   balance, parallel declare/link only for webpack-like serial declare (12 cores: 5% on vscode, 15% webpack).
+18. ~~The loader's serial work (72 stage 1), plans 73-74, `.d.ts` for JS (64 stage 6), per-file parse arenas (63
+   stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes measured (76, parked)~~ done.
+19. **Now: memory** (the human's goal): deferred function bodies (78, gated), AST boxing / spans / mmapped text (80), a
+   copying checker recycle (79, gated), a perf session that pays for it, the memory bench against bun and tsgo. Plan
+   58 (7.1.0 stable re-pin, then plan 66 stage 5's fan-out) once it's on npm, whenever that falls.
+20. Then: fresh repositories (77), checker balance (72 "Lead"), the second memory window if the target isn't met
+   (what plans 78/79 left), plan 76 only if the human reopens it.
