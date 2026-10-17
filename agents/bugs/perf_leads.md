@@ -16,6 +16,11 @@ the skip scan ~8 instructions per body byte (`skip_balanced_braces()`, ~0.7 G on
 bodies for cross-file demands (95% are inferred return types; the walk's cross-body writes, `is_assigned*`,
 `referenced`, `flow_start`, would have to be proven irrelevant to them), a SIMD skip scan (words and whitespace runs 16
 bytes at a time), gated runs materializing every body for its syntax errors rather than restarting (hacks.md).
+Measured 2026-10-17 (callgrind, vscode K1 T1, 95.9 G): `program_materialize_locked()` is 16.1 G (parse 9.5, walk 6.6)
+for 115.8k body materializations of 90.6k bodies: the 724 re-materialized files are big ones (~25k bodies, ~22% of the
+materializing instructions by count, 0.23 s of 1.96 s by `TTTT_DEFER_STATS` time). **The cheapest lever left on
+vscode**: a *re*-materialization needs the one demanded body only, and its cross-body writes were all made by the first
+materialization (if they live outside the dropped arena: check `deferred_bodies_undo()`'s log, which puts some back).
 
 ## tttt at its defaults (triage 2026-10-16, `scripts/perfsweep.py --defaults`, 4 cores)
 The first run at the default threads and checkers over the source sweep's 1786 checked projects (under load: only the
@@ -31,10 +36,10 @@ any change to `check_share()` or the checker-count heuristics.
 Fixed: keyof of an object type rebuilt per instantiation (folo's i18next keys: one 10-line file 3.5 G), tuple
 element names printf'd per instance (26% of type-fest), qsort's indirect comparator in builder_finish(), a quadratic
 duplicate scan in intersection(). Left, measured:
-- **type-fest: tuple members per instance** (`resolve_tuple_members()` 16% after the fixes): 25.7k instances of ~213
-  elements each build and sort their members (elements, `length`, the array's ~40 inherited) from scratch;
-  builder_finish()'s sort is still ~0.7 G. A merge of three pre-sorted runs (index atoms sorted by address once per
-  checker, the array's props_by_name, `length`) would make it linear; or props_by_name built lazily.
+- **type-fest: tuple members per instance**: done 2026-10-17 (14.09 -> 10.94 G: weak/string-index-only checks skip
+  tuples, props_by_name merged from cached runs, packed tuple target keys, whole-tuple splices). What's left there is
+  inherent per-instance work tsgo does too (`ty_tuple_as_array()`'s union of the elements, ~0.37 G; normalizing
+  `[...T, X]` one element at a time) and relations; type-fest is ~3.5x faster than tsgo single-threaded.
 - **folo/apps/desktop/layer/renderer** (check ratio 0.67 before the keyof fix, the worst large project): rerun
   `scripts/perfsweep.py -f folo` on a quiet machine. **arktype** (0.56): declared.test.ts is the first file to touch
   arktype's types (148k types, 1.3 s alone); no pathology found.

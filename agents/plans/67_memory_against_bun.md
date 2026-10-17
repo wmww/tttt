@@ -128,32 +128,35 @@ tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
 Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react
 and nest are the sensitive ones: plan 63 stage 1 cost them 0.6-0.8%), the K1/T4 table rerun.
 
-## Where it stands (2026-10-15, todo entry 9's perf session, `scripts/bench.sh --runs 3 --bun`)
-Best wall s / peak MB; defaults = every core for both (tttt one checker per thread, recycling at 256 MB), single =
-`--singleThreaded` / `--threads=1`:
+## Where it stands (2026-10-17, the eighteenth window's perf session, `scripts/bench.sh --runs 3 --bun`)
+The 4-vCPU box. Best wall s / peak MB; defaults = every core for both (tttt 4 checkers, 96 MB each), single =
+`--singleThreaded` / `--threads=1` (tttt one checker at 256 MB). The window's start (2026-10-15 table, git history) in
+brackets for tttt:
 | corpus | tttt | bun | tttt single | bun single |
 |---|---|---|---|---|
-| TypeScript6 compiler | 0.30 / 271 | 0.46 / 216 | 0.58 / 217 | 0.84 / 213 |
-| type-fest | 0.84 / 613 | 2.05 / 563 | 1.66 / 379 | 3.79 / 1012 |
-| valibot | 0.24 / 308 | 0.48 / 154 | 0.45 / 251 | 1.05 / 278 |
-| react | 0.12 / 169 | 0.36 / 299 | 0.19 / 145 | 0.39 / 177 |
-| nest | 0.10 / 144 | 0.13 / 177 | 0.17 / 127 | 0.22 / 156 |
-| webpack | 0.70 / 628 | 1.12 / 362 | 1.34 / 525 | 2.17 / 380 |
-| zod | 0.38 / 522 | 0.71 / 321 | 0.72 / 383 | 1.38 / 389 |
-| xstate | 0.19 / 272 | 0.29 / 162 | 0.36 / 215 | 0.59 / 174 |
-| drizzle | 0.52 / 595 | 1.03 / 342 | 0.87 / 387 | 1.66 / 376 |
-| vue | 0.41 / 386 | 0.57 / 220 | 0.76 / 330 | 1.21 / 285 |
-| effect | 0.72 / 722 | 1.39 / 315 | 1.47 / 531 | 3.18 / 375 |
-| vscode | 6.13 / 2778 | 7.99 / 1572 | 13.67 / 2485 | 20.59 / 1417 |
-| excalidraw | 0.48 / 467 | 0.81 / 277 | 0.92 / 373 | 1.50 / 358 |
-| tanstack-router | 0.34 / 391 | 0.73 / 333 | 0.65 / 333 | 1.22 / 325 |
-tttt is 1.3-3x faster than bun at the defaults (vscode and nest 1.3x, the narrowest) and 1.3-2.3x single-threaded. Memory:
-single-threaded tttt is within 1.4x of bun except vscode (1.75x) and effect (1.4x), at or below it on type-fest,
-react, nest; at the defaults bun's per-thread state is far smaller (effect 2.3x, valibot 2.0x, vscode, webpack,
-drizzle, vue, zod 1.6-1.8x), because tttt's checkers each hold up to 128 MB and their own copy of the libraries' types.
-Two levers left: the program (the compact AST decision, stage 2 item 3) and the per-checker share at T4 (128 MB
-floor; 64 MB cost vscode +6% wall in stage 1). Recycling's warm-up isn't a lever: it is redone shared work
-(bugs/perf_leads.md "Recycling's cost").
+| TypeScript6 compiler | 0.29 / 274 [271] | 0.45 / 212 | 0.55 / 213 [217] | 0.82 / 213 |
+| type-fest | 0.49 / **501** [613] | 2.02 / 578 | 0.87 / **424** [379] | 3.69 / 1012 |
+| valibot | 0.24 / 314 [308] | 0.47 / 158 | 0.49 / **256** [251] | 1.02 / 278 |
+| react | 0.11 / **179** [169] | 0.35 / 298 | 0.18 / **143** [145] | 0.38 / 177 |
+| nest | 0.10 / **150** [144] | 0.12 / 182 | 0.19 / **128** [127] | 0.21 / 157 |
+| webpack | 0.63 / 621 [628] | 1.09 / 365 | 1.28 / 521 [525] | 2.12 / 380 |
+| zod | 0.38 / 492 [522] | 0.69 / 322 | 0.70 / **375** [383] | 1.36 / 389 |
+| xstate | 0.17 / 274 [272] | 0.28 / 161 | 0.34 / 206 [215] | 0.60 / 174 |
+| drizzle | 0.54 / 511 [595] | 0.99 / 332 | 0.89 / 389 [387] | 1.60 / 376 |
+| vue | 0.39 / 392 [386] | 0.55 / 223 | 0.74 / 330 [330] | 1.18 / 288 |
+| effect | 0.67 / 605 [722] | 1.37 / 315 | 1.42 / 496 [531] | 3.13 / 377 |
+| vscode | 5.78 / **1560** [2778] | 7.81 / 1552 | 13.51 / **1388** [2485] | 20.13 / 1414 |
+| excalidraw | 0.46 / 469 [467] | 0.81 / 277 | 0.92 / 371 [373] | 1.47 / 358 |
+| tanstack-router | 0.32 / 390 [391] | 0.73 / 333 | 0.64 / **322** [333] | 1.24 / 325 |
+tsgo (defaults / single): tttt uses less memory on all 14 at both (vscode 7975 / 6738 MB). **Against bun**: single-
+threaded tttt is at or below it on 7 of 14 (type-fest, valibot, react, nest, zod, vscode, tanstack-router; tsc
+equal) and within 1.35x elsewhere (effect 1.32x, webpack 1.37x); at the defaults on 3 of 14 (type-fest, react, nest)
+with vscode tied, mid-size corpora 1.5-1.9x (effect 1.9x, valibot 2.0x, webpack 1.7x, excalidraw 1.7x). Speed: faster
+than bun everywhere, 1.35x (vscode) to 4x (type-fest) at the defaults, 1.5-4.2x single-threaded. The window took vscode
+from 1.8x bun to parity (deferred bodies, released source text, the 96 MB floor); what's left at the defaults is the
+per-checker state of mid-size programs: 4 checkers each re-deriving the same declared world (effect's program is ~185
+MB after names, its peak 605). Levers: fewer checkers where the program is small for its type graph (perf_leads.md
+"tttt at its defaults": dokploy), or a cheaper re-derivation (plan 79 declined the copy).
 
 ## Not doing
 - Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer

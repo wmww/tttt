@@ -67,13 +67,13 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    within noise); drizzle's re-derivation isn't one memo kind (entry 7). The real K1 lever is the budget (vscode's
    peak is the checker's sawtooth: 128 MB is -15% peak / +2% wall on the corpora) but the sweep pays +6% (folo
    renderer +62%): K1 stays at 256 until something can tell a cheap recycle from an expensive one (perf_leads.md).
-9. **Perf session, paying for the window**: `scripts/instrcount.sh` against the starting point on every corpus
-   (find what entries 2-8 cost: bisect with `--bin`), then the single-thread leads of bugs/perf_leads.md (type-fest's
-   tuple members merge, lazy parameter types with a cheaper mapper composition, the Source-keyed Maybe cache then
-   hacks.md "Relations"' intersection_source rule, the parser's per-attempt copies), perfsweep (types ratio),
-   scaleprobe. Then **the memory bench**: `scripts/bench.sh --runs 3 --bun PATH` (measurements.md says how to get
-   bun) at the defaults and single-threaded, every corpus, against the window's start, into measurements.md and plan
-   67's "Where it stands"; report.md's question to the human is the 12-core rerun.
+9. Done 2026-10-17: perf session (measurements.md "Perf session paying for the window", plan 67 "Where it stands").
+   Instructions every corpus below entry 8 (type-fest 14.09 -> 10.94 G: tuple members; vscode 95.52 -> 94.34, still
+   +2.1% over the window's start: re-materialization, perf_leads.md "Deferred bodies" has the lever). The bench: vscode
+   1560 MB at the defaults (bun 1552, tsgo 7975), 1388 single (bun 1414); less than tsgo everywhere, than bun on 7 of 14
+   single-threaded and 3 of 14 at the defaults (mid-size corpora 1.5-2x bun there: per-checker state). Faster than bun
+   everywhere. Not done: lazy parameter types, the Source-keyed Maybe cache, the parser's per-attempt copies (no hot
+   spot in a flat vscode profile; the parser is ~15% of it with bodies).
 10. **Triage.**
 11. **Insights.** report.md: the memory table against bun and tsgo, what the window cost in speed, whether the
    target ("less than every competitor in most cases") is met at K1 and at the defaults.

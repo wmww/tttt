@@ -11,6 +11,27 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Perf session paying for the window (2026-10-17, todo entry 9)
+The 4-vCPU box. **Instructions** (`scripts/instrcount.sh`, callgrind, K1 T1) at the window's start (83923e4d) -> entry 8
+(5a01c278) -> now: tsc 4.546 -> 4.624 -> **4.606**, type-fest 14.099 -> 14.086 -> **10.939 (-22%)**, valibot 3.470 ->
+3.495 -> **3.460**, react 1.424 -> 1.416 -> **1.403**, nest 1.099 -> 1.089 -> **1.079**, webpack 9.677 -> 9.647 ->
+**9.598**, zod 5.339 -> 5.375 -> **5.354**, xstate 2.690 -> 2.705 -> **2.665**, drizzle 6.628 -> 6.644 -> **6.628**, vue
+6.488 -> 6.532 -> **6.512**, effect 10.127 -> 10.243 -> **10.120**, vscode 92.440 -> 95.517 -> **94.343** (+2.1% over
+the window's start: deferred bodies' re-materialization ~1.7% and skip scan ~0.9%, perf_leads.md "Deferred bodies"),
+excalidraw 7.658 -> 7.709 -> **7.688**, tanstack-router 5.300 -> 5.325 -> **5.263 G**. From: tuples' members (weak and
+string-index-only checks skip them, props_by_name merged from cached runs, packed target keys, whole splices) and the
+parser's whitespace hop leaving at an ASCII byte. **Memory** (`--time` RSS MB after parse / after names / peak
+`/usr/bin/time` / wall s; K1 = `--checkers 1` at 4 threads): vscode 790 / 846 / 1499 / 11.75, defaults 788 / 847 /
+1559 / 5.80; effect 139 / 185 / 555 / 1.24, defaults 139 / 184 / 616 / 0.68; webpack 226 / 284 / 551 / 1.08, defaults
+226 / 290 / 641 / 0.64; drizzle 97 / 117 / 410 / 0.80, defaults 95 / 119 / 523 / 0.54; type-fest 48 / 63 / 453 / 0.86,
+defaults 48 / 65 / 513 / 0.49. vscode's defaults peak is ~50 MB above entry 8 (1512 -> 1560 alternating with its
+binary) and type-fest's K1 ~40 MB: the recycle sawtooth's phase, not a cost (vscode without recycling makes 81 MB
+*less* arena, 1564 -> 1483 MB; 28 -> 26 recycles at the defaults, type-fest 2 -> 1). **The memory bench** against
+bun 1.4.3 and tsgo: plan 67 "Where it stands" (vscode at the defaults 1560 MB vs bun 1552, single 1388 vs 1414; less
+than tsgo on every corpus; less than bun on 7 of 14 single-threaded, 3 of 14 at the defaults). Perfsweep median check
+0.23, worst types ratio 1.62 (date-fns docs, unchanged); scaleprobe every kind linear and faster than tsgo. Oracles all
+unchanged (source sweep 3356 / 3363, kdiff and recycle 1 / 3363).
+
 ## The K1 budget, LazyType slot blocks (2026-10-17, todo entry 8)
 The 4-vCPU box. **The K1 budget** (`--checkers 1`, 4 threads, `--checker-memory MB`; wall s / peak MB / recycles,
 best of 2; 256 is the default at one checker):
