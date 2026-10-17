@@ -34,11 +34,11 @@ def suite():
     names = [l.strip() for l in diff.split('gained:')[0].splitlines()[1:] if l.startswith('  ')]
     for n in names[:40]: print('   ', n)
     if len(names) > 40: print(f'    ... ({len(names) - 40} more: scripts/resultdiff.py --lost)')
-    # Deferred function bodies (plan 78) against the results just saved: what deferral loses
-    out = re.sub(r'\x1b\[[0-9;]*m', '', run(['release/baseline_tests', '--defer-bodies', '--summary']))
+    # Every function body parsed up front (plan 78 defers them, the default) against the results just saved
+    out = re.sub(r'\x1b\[[0-9;]*m', '', run(['release/baseline_tests', '--no-defer-bodies', '--summary']))
     m = re.search(r'(\d+)\D*passed', out)
     lost = re.findall(r'^ (?:ERR|SYM|TYP|DTS| - ).*?\s(\S+)\s+\(', out, re.M)
-    print(f'suite --defer-bodies: {m.group(1) if m else "?"} passed, {len(lost)} newly failing', flush=True)
+    print(f'suite --no-defer-bodies: {m.group(1) if m else "?"} passed, {len(lost)} newly failing', flush=True)
     for n in lost[:20]: print('   ', n)
     # Their materializations dropped and made again (plan 78 stage 2): a fresh checker per file, whose diagnostics and
     # declarations must be the same (its expression types go with the checkers: not compared)
@@ -47,11 +47,11 @@ def suite():
         dirs = [os.path.join(tmp, d) for d in ('kept', 'dropped')]
         for d, extra in zip(dirs, ([], ['--checker-memory', '0'])):
             os.mkdir(d)
-            run(['release/baseline_tests', '--defer-bodies', '--dump', d] + extra)
+            run(['release/baseline_tests', '--dump', d] + extra)
         names = sorted(f for f in os.listdir(dirs[0]) if f.endswith(('.errors.txt', '.d.ts')))
         differing = [f for f in names if not os.path.exists(os.path.join(dirs[1], f)) or
                      not filecmp.cmp(os.path.join(dirs[0], f), os.path.join(dirs[1], f), shallow=False)]
-        print(f'suite --defer-bodies --checker-memory 0: {len(differing)} of {len(names)} diagnostics/declaration '
+        print(f'suite --checker-memory 0: {len(differing)} of {len(names)} diagnostics/declaration '
               f'outputs differ', flush=True)
         for n in differing[:20]: print('   ', n)
 

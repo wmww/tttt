@@ -42,7 +42,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     `first_this_or_super`, a class field's `ts_assigned`, `ClassDecl.computed_this_assignments`): a new reader that skips
     them reads a deferred function's unwalked state (cross-file only: a file's own check materializes it first). The
     compiler finds `body` readers (the field is `body_`), not the others. Correct: those fields behind accessors too.
-    Oracle: the suite with `--defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
+    Oracle: the suite against `--no-defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
   - What isn't deferred, decided by syntax in the parser (`skip_body()`, `undefer_body()`): parameters with expressions,
     bodies starting with a string, expressions with a `(` in their signature after the parameter list's own (a function
     type's walk asks `ty_function_is_context_sensitive()` of the enclosing function, which may read its body), IIFEs,
@@ -58,7 +58,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     file's unused registrations (`unused_before`). Monotonic writes are left (assignment marks, `referenced`,
     `contains_this`). A body declaration merged into a parameter pins the file instead. A new write outside the bodies
     needs one of those. Oracles: `TTTT_AST_POISON=1` with `--checker-memory 0` on the corpora (a dangling read faults),
-    the suite's `--defer-bodies --checker-memory 0` line in `scripts/oracles.py`, `kdiff.py -k 1 -m 0`.
+    the suite's `--checker-memory 0` line in `scripts/oracles.py`, `kdiff.py -k 1 -m 0`.
   - A dropped materialization leaks what its AST malloc'd outside the arena (the parser's cooked strings and `Value`
     strings: ~8 MB per round of all of vscode's bodies; a drop doesn't walk the AST, `block_drop()` cost 0.4 s there).
     Correct: those strings in the AST arena (plan 80's spans and text).

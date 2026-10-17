@@ -40,7 +40,8 @@ static void show_help(FILE* target) {
         "  --checkers [K]            check every test with K checkers (files dealt round robin; tsc's\n"
         "                            baselines are one checker's, the default)\n\n"
         "  --threads [N]             run those checkers on N threads (default 1; the results must not change)\n"
-        "  --defer-bodies            defer function bodies like the CLI (plan 78)\n"
+        "  --no-defer-bodies         parse and walk every function body up front (deferring them, plan 78,\n"
+        "                            like the CLI, is the default)\n"
         "  --checker-memory [MB]     recycle checkers past MB (0: after every file; the results must not change)\n\n"
         "  -d, --diffs               if to show all diffs for failing tests\n\n"
         "  --err                     show errors diffs for failing tests\n\n"
@@ -115,6 +116,8 @@ static_failable parse_args(int argc, const char** argv) {
             try (const char* count, next_arg_value(argc, argv, &i, &count)) bubble;
             if (atoi(count) < 1) return err_d("--threads takes a positive number, not ", count);
             baseline_test_threads = (u32)atoi(count);
+        } else if (streq(argv[i], "--no-defer-bodies")) {
+            baseline_test_defer_bodies = false;
         } else if (streq(argv[i], "--defer-bodies")) {
             baseline_test_defer_bodies = true;
         } else if (streq(argv[i], "--checker-memory")) {

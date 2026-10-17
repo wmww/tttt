@@ -394,15 +394,15 @@ lasting materialization comes from a slab of small pages of its own, given back 
 it would keep its chunk of a segment's files alive. The materialize-ahead helpers hold what they made until a checker takes it, at most `AHEAD_LIMIT_KB` of body
 source ahead (`TTTT_AHEAD_KB`), then wait until the checkers took most of it. `TTTT_AST_POISON=1` makes a dropped
 materialization's pages fault: a reader that doesn't hold it crashes; the suite runs drops with `baseline_tests
---defer-bodies --checker-memory 0` (diagnostics only: recycled checkers take the expression types with them).
+--checker-memory 0` (diagnostics only: recycled checkers take the expression types with them).
 
 **Exactness**: a materialization that can be told from the eager parse and walk sets `program_defer_failed()` and the
 program runs again without deferral (`check_files()`, the harness's `run_baseline_test_case()`): a parse error in a
 body or an end other than the skipper's (syntax errors), a recorded signature name the body declares (or a name the
 signature didn't find while the body declares any: its suggestion could have been one of them). So does an output that
 needs every body's syntax errors without checking (gated by syntactic or options diagnostics, `--listFilesOnly`). Real
-code never pays; error runs pay a second parse. The CLI defers by default (`--no-defer-bodies`), the harness only with
-`baseline_tests --defer-bodies`; `TTTT_DEFER_STATS=1` prints counts at exit (bodies skipped, files materialized,
+code never pays; error runs pay a second parse. The CLI and the harness defer by default (`--no-defer-bodies` for both: `scripts/oracles.py`
+runs the suite both ways); `TTTT_DEFER_STATS=1` prints counts at exit (bodies skipped, files materialized,
 cross-file materializations, failures, restarts).
 
 ### Typecheck

@@ -1090,7 +1090,7 @@ static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, Baseline
 u32 baseline_test_checkers = 0;
 csview baseline_test_lib_dir = {0};
 u32 baseline_test_threads = 0;
-bool baseline_test_defer_bodies = false;
+bool baseline_test_defer_bodies = true;
 i64 baseline_test_checker_memory = -1;
 
 static BaselineTestCase run_baseline_test_case_with(
