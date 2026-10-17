@@ -168,6 +168,10 @@ bool program_has_deferred_bodies(Program const* me);
 // After program_typecheck(): a deferred body's materialization could be told from the eager parse and walk (a syntax
 // error in a body, a signature that would have seen the body's names): the output is wrong, run again without deferral
 bool program_defer_failed(Program const* me);
+// Whether every deferred body that isn't materialized parses as the eager parse would have parsed it: a run that reports
+// the syntax errors without checking (gated by syntactic or options diagnostics) has them all then, the bodies' others
+// being semantic. Parsed and dropped. False: some body has one, run again without deferral
+bool program_deferred_bodies_parse(Program* me);
 
 // Makes this program's checker (created on first use) the one that types get evaluated in, until another program is
 // made current or this one is destroyed. program_typecheck() does this, call it yourself to look at types of a program

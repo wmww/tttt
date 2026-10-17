@@ -691,8 +691,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);
     // (The syntax errors of deferred bodies are only found when they're parsed: an output that has to have them all
-    // without checking runs again without deferral)
-    if (defer && program_has_deferred_bodies(program) && (opts->list_files_only || count_gating_diagnostics(errs, opts))) {
+    // without checking parses the bodies for them, and runs again without deferral if one has some)
+    bool bodies_parsed = false;
+    if (defer && program_has_deferred_bodies(program) && (opts->list_files_only || count_gating_diagnostics(errs, opts)) &&
+        !(bodies_parsed = program_deferred_bodies_parse(program))
+    ) {
         destroy_program(program, errs, false);
         defer_stat_add(DEFER_STAT_RESTARTS, 1);
         return check_files(opts, out, config, projects, project, redirects, last, counts, false, _OUTPUT_PARAM);
@@ -754,7 +757,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
         if (opts->dts_dump || (options->emit_declaration_only && emit_declarations)) program_set_emit_declarations(program, true);
         if (typecheck) program_typecheck(program);
-        if (defer && (program_defer_failed(program) || (gated && program_has_deferred_bodies(program)))) {
+        // (Checked, every body was materialized: program_typecheck() says if one parsed otherwise)
+        if (defer && (program_defer_failed(program) ||
+            (gated && !typecheck && !bodies_parsed && program_has_deferred_bodies(program) && !program_deferred_bodies_parse(program)))
+        ) {
             error_ctx_drop(&names);
             vec_error_drop(&shown);
             destroy_program(program, errs, false);

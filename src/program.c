@@ -3564,6 +3564,34 @@ bool program_has_deferred_bodies(Program const* me) {
     return false;
 }
 
+bool program_deferred_bodies_parse(Program* me) {
+    CompilerOptions const* saved = compiler_options_private;
+    bool ret = true;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* file = *i;
+        DeferredBodies* list = file->deferred_bodies;
+        if (!list || atomic_load(&list->materialized)) continue;
+        // (Parsed into the materialization's memory and dropped: the bodies are pending again, as the parser left them)
+        ErrorCtx scratch = { .phase = ERROR_PHASE_PARSE };
+        compiler_options_private = program_options_of(me, file);
+        bool same = true;
+        ast_materialize_begin(&list->memory, false);
+        for (DeferredBody* body = list->first; body && same; body = body->next) {
+            same = parse_deferred_body(file, body->function, &scratch);
+        }
+        ast_materialize_end();
+        for (DeferredBody* body = list->first; body; body = body->next) body->block = (Block){0};
+        ast_arena_drop(&list->memory);
+        error_ctx_drop(&scratch);
+        if (!same) {
+            ret = false;
+            break;
+        }
+    }
+    compiler_options_private = saved;
+    return ret;
+}
+
 bool program_defer_failed(Program const* me) {
     return atomic_load(&my defer_failed);
 }
