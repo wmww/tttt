@@ -319,13 +319,18 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Elaboration (`elaborate_error`) reads memos (`ty_mutable_location_type`, `ty_array_literal_as_tuple`) instead of
   re-checking; `type_decl_span` covers declared types, function type nodes and type literals only (renaming `as`
   properties lose declarations).
-- `RelationState.intersection_source`: tsc keeps IntersectionState.Source down into the members' properties, tttt only
-  for the members. tsc's rule (drop `st->intersection_source = false` in `structured_related_impl`) plus relating a
-  conditional's constraints without the state in `conditional_source_related()` (tsc's plain isRelatedTo; without it
-  mikro-orm's QueryBuilder.having gets a spurious TS2352, ttttIntersectionSourceConditionalConstraint) leaves every
-  oracle unchanged but costs the tsc corpus +8.2% instructions (zod +2.3%): `TKind -> PunctuationSyntaxKind` recurses
-  once more under the Source key, its Maybe results aren't cached, 20k `SK_i & TKind -> SK_j` pairs follow (60 before).
-  Fix that caching (tsc's maybe keys for Source-keyed pairs), then apply the rule.
+- `structured_related_members`, an intersection source against a union target: its members are related alone (unless
+  all are object types; never a type parameter member, which loops back to the effective constraint), standing in for tsc's
+  getEffectiveConstraintOfIntersection, which `effective_intersection_constraint()` doesn't always match
+  (intersectionConstraintReduction's `K1 & K2 & Extract<K1, keyof any>` fails without the members). tsc never relates
+  an intersection's members alone to a union. Correct: the effective constraint as tsc computes it, then drop the
+  stand-in.
+- `recursive_related()` relates a pair under IntersectionState.Source through its twin without it (cached or on the
+  maybe stack) unless the twin went through an inferable index signature (`CACHE_INDEX_INFERRED`), the only thing the
+  state changes; tsgo computes both (zod +1.6% instructions with the cache half alone, within 0.4% of the old
+  member-only state with both). The maybe-stack half rechecks a pair whose own comparison went through one (`no_twin`), but not a twin outside that comparison: a Source pair cached as part of
+  an inner success whose twin further out used an inferable index could be wrongly related (never seen; the recheck
+  itself ran 6 times on vue, 0 on the other corpora).
 - `structured_related_members`: the whole-source fallback for an intersection target covers conditional sources only
   (tsc: any instantiable source goes on to its constraints).
 - `props_related` skips the same property by `Prop` identity plus a rule for object literal accessors of one function

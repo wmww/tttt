@@ -1,0 +1,23 @@
+ttttIntersectionSourceMemberProperties.ts(5,7): error TS2322: Type '{ x: { a: number; }; } & { x: { b: string; }; }' is not assignable to type 'Target'.
+  Types of property 'x' are incompatible.
+    Type '{ a: number; } & { b: string; }' is not assignable to type '{ [k: string]: number; }'.
+      Property 'b' is incompatible with index signature.
+        Type 'string' is not assignable to type 'number'.
+
+
+==== ttttIntersectionSourceMemberProperties.ts (1 errors) ====
+    // A member of an intersection source has no inferable index signature, down into its properties too (tsc's
+    // IntersectionState.Source): `{ x: { a: number } }` alone doesn't make the intersection's `x` fit the index signature
+    type Target = { x: { [k: string]: number } };
+    declare let both: { x: { a: number } } & { x: { b: string } };
+    const t: Target = both;
+          ~
+!!! error TS2322: Type '{ x: { a: number; }; } & { x: { b: string; }; }' is not assignable to type 'Target'.
+!!! error TS2322:   Types of property 'x' are incompatible.
+!!! error TS2322:     Type '{ a: number; } & { b: string; }' is not assignable to type '{ [k: string]: number; }'.
+!!! error TS2322:       Property 'b' is incompatible with index signature.
+!!! error TS2322:         Type 'string' is not assignable to type 'number'.
+    
+    declare let one: { x: { a: number } } & { y: string };
+    const u: Target = one;
+    

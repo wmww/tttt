@@ -1,0 +1,33 @@
+//// [test/cases/ttttIntersectionSourceMemberProperties.ts] ////
+
+=== ttttIntersectionSourceMemberProperties.ts ===
+// A member of an intersection source has no inferable index signature, down into its properties too (tsc's
+// IntersectionState.Source): `{ x: { a: number } }` alone doesn't make the intersection's `x` fit the index signature
+type Target = { x: { [k: string]: number } };
+>Target : Symbol(Target, Decl(ttttIntersectionSourceMemberProperties.ts, 0, 0))
+>x : Symbol(x, Decl(ttttIntersectionSourceMemberProperties.ts, 2, 15))
+>k : Symbol(k, Decl(ttttIntersectionSourceMemberProperties.ts, 2, 22))
+
+declare let both: { x: { a: number } } & { x: { b: string } };
+>both : Symbol(both, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 11))
+>x : Symbol(x, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 19))
+>a : Symbol(a, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 24))
+>x : Symbol(x, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 42))
+>b : Symbol(b, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 47))
+
+const t: Target = both;
+>t : Symbol(t, Decl(ttttIntersectionSourceMemberProperties.ts, 4, 5))
+>Target : Symbol(Target, Decl(ttttIntersectionSourceMemberProperties.ts, 0, 0))
+>both : Symbol(both, Decl(ttttIntersectionSourceMemberProperties.ts, 3, 11))
+
+declare let one: { x: { a: number } } & { y: string };
+>one : Symbol(one, Decl(ttttIntersectionSourceMemberProperties.ts, 6, 11))
+>x : Symbol(x, Decl(ttttIntersectionSourceMemberProperties.ts, 6, 18))
+>a : Symbol(a, Decl(ttttIntersectionSourceMemberProperties.ts, 6, 23))
+>y : Symbol(y, Decl(ttttIntersectionSourceMemberProperties.ts, 6, 41))
+
+const u: Target = one;
+>u : Symbol(u, Decl(ttttIntersectionSourceMemberProperties.ts, 7, 5))
+>Target : Symbol(Target, Decl(ttttIntersectionSourceMemberProperties.ts, 0, 0))
+>one : Symbol(one, Decl(ttttIntersectionSourceMemberProperties.ts, 6, 11))
+

@@ -39,6 +39,9 @@ enum {
     // A top-level relation that ran out of its budget (with CACHE_FAILED): not computed again, even to explain it
     // (tsc's RelationComparisonResultComplexityOverflow)
     CACHE_OVERFLOW = 16,
+    // Succeeded through an inferable index signature (an object literal type's properties against an index signature),
+    // which a member of an intersection source has none of: the pair may not hold under IntersectionState.Source
+    CACHE_INDEX_INFERRED = 32,
 };
 
 #define MAX_RELATION_DEPTH 100
@@ -75,11 +78,16 @@ typedef struct RelationState {
     // the intersection as a whole had them
     bool intersection_target;
     // Relating the members of an intersection source (tsc's IntersectionState.Source): a member has no inferable index
-    // signature, the intersection as a whole is related afterwards. Set for the members' relations (part of their cache
-    // key), and turned into member_of_intersection_source for their own structure only. HACK: tsc keeps the state
-    // down into their properties; doing that here costs the tsc corpus 8% instructions (hacks.md, Relations)
+    // signature, the intersection as a whole is related afterwards. Part of the cache key, and kept down into the
+    // members' structure (their properties, signatures, type arguments...) like tsc's intersectionState
     bool intersection_source;
-    bool member_of_intersection_source;
+    // The relation being computed went through an inferable index signature (CACHE_INDEX_INFERRED): it is the only
+    // thing intersection_source changes, so a pair that holds without it holds under it too, and one that fails
+    // without it fails under it (recursive_related() looks the pair up under the other key before computing it)
+    bool index_inferred;
+    // A pair under IntersectionState.Source was assumed related because its twin without it is being compared
+    // (recursive_related()), and no_twin while comparing again without that
+    bool twin_assumed, no_twin;
     // Reporting: a tuple source related as the array it extends (structured_related_members) is still named as the
     // tuple where the explanation names the source (tsc relates the tuple reference itself)
     Ty const* tuple_array_source;
@@ -3107,7 +3115,8 @@ static Ternary index_signatures_related(
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (!st->member_of_intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || ty_is_fresh_object(source))) {
+        } else if (!st->intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || ty_is_fresh_object(source))) {
+            st->index_inferred = true;
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
             // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa. Of an
             // intersection, every property of every member, with the type they have together
@@ -5404,7 +5413,19 @@ static bool intersection_apparent_is_union(Checker* me, Ty const* source) {
 }
 
 // A conditional source: through its default constraint, then its distributive one (tsc's structuredTypeRelatedToWorker)
+static Ternary conditional_source_related_impl(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+
+// (Its constraints are related without IntersectionState.Source: tsc's plain isRelatedTo, so a conditional member of an
+// intersection source is as related as the conditional alone)
 static Ternary conditional_source_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    bool saved_source = st->intersection_source;
+    st->intersection_source = false;
+    Ternary ret = conditional_source_related_impl(me, st, source, target, report);
+    st->intersection_source = saved_source;
+    return ret;
+}
+
+static Ternary conditional_source_related_impl(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     // Already checking this conditional type as a source further up: don't recurse (tsc's
     // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
     if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
@@ -5504,14 +5525,11 @@ static bool alias_variance_applies(Checker* me, RelationState const* st, Ty cons
 static Ternary structured_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 ) {
-    bool saved_source = st->intersection_source, saved_member = st->member_of_intersection_source;
+    bool saved_source = st->intersection_source;
     Ty const* saved_array = st->tuple_array_source;
     Ty const* saved_tuple = st->tuple_source;
-    st->member_of_intersection_source = st->intersection_source;
-    st->intersection_source = false;
     Ternary ret = structured_related_members(me, st, source, target, report, use_variances);
     st->intersection_source = saved_source;
-    st->member_of_intersection_source = saved_member;
     st->tuple_array_source = saved_array;
     st->tuple_source = saved_tuple;
     return ret;
@@ -5568,10 +5586,7 @@ static Ternary structured_related_members(
         isize_t saved = vec_ty_report_line_size(&st->lines);
         // (A member of an intersection source relates to the union's members as one still: tsc's typeRelatedToSomeType
         // passes the intersectionState on, so `{}` of `{ a: number } & {}` has no inferable index signature there either)
-        bool saved_source = st->intersection_source;
-        st->intersection_source = st->member_of_intersection_source;
         Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report);
-        st->intersection_source = saved_source;
         if (!related && ((source->flags & TYF_OBJECT) || source->kind == TY_INTERSECTION)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
@@ -5664,7 +5679,16 @@ static Ternary structured_related_members(
         for (u32 i = 0; objects_only && i < source->composite.types.len; i++) {
             objects_only = (source->composite.types.data[i]->flags & TYF_OBJECT) && !(source->composite.types.data[i]->flags & TYF_DEFERRED);
         }
-        Ternary related = objects_only ? TERNARY_FALSE : some_related(me, st, source->composite.types, target, false);
+        // (Nor a type parameter alone against a union: tsc goes through its constraint intersected with the rest,
+        // below, and relating it alone reaches that same intersection again, assumed related while it's being
+        // compared, which leaves the members of a constraint like SyntaxKind all to be tried, each against every
+        // member of the union, rather than failing on the first)
+        Ternary related = TERNARY_FALSE;
+        for (u32 i = 0; !objects_only && !related && i < source->composite.types.len; i++) {
+            Ty const* member = source->composite.types.data[i];
+            if (target->kind == TY_UNION && member->kind == TY_TYPE_PARAM) continue;
+            related = is_related_to_side(me, st, member, target, false, 2);
+        }
         st->intersection_source = saved_source;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
@@ -6650,13 +6674,24 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     u64 intersection_bits = (st->intersection_target ? 1ull << 63 : 0) | (st->intersection_source ? 1ull << 62 : 0);
     key ^= intersection_bits;
     unsigned cached = relation_cache_get(cache, key);
+    // Not computed under this IntersectionState.Source yet: the pair under the other one may decide it (see
+    // index_inferred). tsc computes it again, with the same result
+    if (!cached && st->relation != TY_RELATION_IDENTITY) {
+        unsigned other = relation_cache_get(cache, key ^ (1ull << 62));
+        if (st->intersection_source ? (other & CACHE_FAILED) || (other & (CACHE_SUCCEEDED | CACHE_INDEX_INFERRED)) == CACHE_SUCCEEDED
+            : (other & CACHE_SUCCEEDED) != 0
+        ) {
+            cached = other & ~CACHE_OVERFLOW;
+        }
+    }
+    if (cached & CACHE_INDEX_INFERRED) st->index_inferred = true;
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
     if (cached & CACHE_UNMEASURABLE) report_variance(me, source, VARIANCE_UNMEASURABLE);
     if (debug_env.debug_variance && my variance_depth && cached) {
         variance_debug_log(me, st->source_depth, "CACHE", source, target, (cached & CACHE_SUCCEEDED) ? " = T" : " = F");
     }
-    cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE);
+    cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE | CACHE_INDEX_INFERRED);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
     // Explaining a pair that ran out of budget runs out again (TS2859), without the work
     if (cached & CACHE_OVERFLOW) {
@@ -6669,7 +6704,15 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
-    if (maybe_contains(st, key)) {
+    // (Or its twin under the other IntersectionState.Source, see index_inferred: tsc goes once more round the cycle.
+    // Assuming a pair under the state because it is being compared without it holds only if that comparison doesn't
+    // go through an inferable index signature, which twin_assumed has the comparison checked for)
+    bool twin = false;
+    if (!maybe_contains(st, key) && st->relation != TY_RELATION_IDENTITY && !(st->intersection_source && st->no_twin)) {
+        twin = maybe_contains(st, key ^ (1ull << 62));
+        if (twin && st->intersection_source) st->twin_assumed = true;
+    }
+    if (twin || maybe_contains(st, key)) {
         if (debug_env.debug_relate_nested) {
             cstr source_str = ty_to_cstr(me, source), target_str = ty_to_cstr(me, target);
             log_info("on the maybe stack ", st->depth + 1, ": '", source_str, "' -> '", target_str, "'");
@@ -6717,12 +6760,28 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 
     unsigned char saved_reports = my variance_reports;
     my variance_reports = 0;
+    bool saved_inferred = st->index_inferred, saved_twin = st->twin_assumed;
+    st->index_inferred = st->twin_assumed = false;
     if (debug_env.debug_variance && my variance_depth && st->expanding != 3) {
         variance_debug_log(me, st->source_depth, "REL>", source, target, "");
     }
+    isize_t saved_lines = vec_ty_report_line_size(&st->lines);
     Ternary result = st->expanding == 3 ? TERNARY_MAYBE : structured_related(me, st, source, target, report);
+    // About to be cached, but a pair related under IntersectionState.Source was assumed through its twin while
+    // something went through an inferable index signature: compared again, assuming nothing of the kind (rare)
+    if (result && (result == TERNARY_TRUE || st->depth == 1) && st->index_inferred && st->twin_assumed && !st->no_twin) {
+        maybe_truncate(st, maybe_start + 1);
+        report_truncate(st, saved_lines);
+        st->index_inferred = st->twin_assumed = false;
+        st->no_twin = true;
+        result = structured_related(me, st, source, target, report);
+        st->no_twin = false;
+    }
+    st->twin_assumed |= saved_twin;
     unsigned unreliable = (my variance_reports & VARIANCE_UNRELIABLE ? CACHE_UNRELIABLE : 0) |
         (my variance_reports & VARIANCE_UNMEASURABLE ? CACHE_UNMEASURABLE : 0);
+    unsigned inferred = st->index_inferred ? CACHE_INDEX_INFERRED : 0;
+    st->index_inferred |= saved_inferred;
     if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
@@ -6748,7 +6807,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             // tsgo's resetMaybeStack never records Ternary.Unknown)
             if (result != TERNARY_UNKNOWN) {
                 for (u32 i = maybe_start; i < st->maybe_count; i++) {
-                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable);
+                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred);
                 }
                 st->relation_count -= st->maybe_count - maybe_start;
             }
@@ -7679,7 +7738,7 @@ static bool check_related(
     st->lines = (VecTyReportLine){0};
     st->intersection_target = false;
     st->intersection_source = false;
-    st->member_of_intersection_source = false;
+    st->index_inferred = st->twin_assumed = st->no_twin = false;
     st->tuple_array_source = st->tuple_source = nullptr;
     st->maybe_keys = nullptr;
     st->maybe_next = st->maybe_heads = nullptr;
