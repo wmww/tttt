@@ -270,25 +270,20 @@ void baseline_test_result_run(
     cstr js_path = cstr_d(baselines, name, ".js");
     cstr_drop(&baselines);
 
-    // It's ok if errors file doesn't exist, and with @noTypesAndSymbols the other two don't either. Whether a test
-    // has that is only known after loading it, so a test without baselines runs and is then dropped if it turns out
-    // it should have had them (a handful of tests tsc itself doesn't produce baselines for)
-    bool has_baselines = fs_is_reg_file(fs, cstr_sv(&symbols_path)) && fs_is_reg_file(fs, cstr_sv(&types_path));
-
     bool dumping = csview_size(suite->dump_dir) != 0;
     if (dumping) {
         // Lets whatever reads our stderr attribute the log lines that follow to a test
         eprintln("### TEST ", name);
     }
 
+    // It's ok if errors file doesn't exist, and with @noTypesAndSymbols the other two don't either. tsgo writes no
+    // symbols or types baseline either when it has no content (none of the test's files is in the program, like a
+    // `.js` root without allowJs): compare_outputs reads a missing baseline as empty, so such a test still runs
     BaselineTestCase test_case = run_baseline_test_case(
         &suite->cache, cstr_sv(&my source_path), cstr_sv(&my config), noisy, dumping);
     my skipped = test_case.skipped;
     my errors_only = test_case.no_types_and_symbols;
-    my did_run = test_case.did_run && (has_baselines || my errors_only);
-    if (test_case.did_run && !my did_run && noisy) {
-        eprintln(color_error, name, ":", color_normal, " ", symbols_path, " or ", types_path, " does not exist");
-    }
+    my did_run = test_case.did_run;
     // An own test where tsgo reported nothing has an empty NAME.noerrors instead of NAME.errors.txt
     // (scripts/owntests.sh), so that a regeneration that went wrong can't pass as a clean test
     if (my did_run && own && !fs_is_reg_file(fs, cstr_sv(&errors_path))) {

@@ -1675,17 +1675,22 @@ static BaselineTestFile const* superseding_file(BaselineTestCase const* me, Base
     return ret;
 }
 
+// tsgo writes no symbols or types baseline at all (NoContent) when none of the files is in the program
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
+    isize start = cstr_size(target);
+    bool any = false;
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         BaselineTestFile const* walked = i->superseded || i->redirect_to ? superseding_file(me, i) : i;
         if (!walked || !walked->source) continue;
+        any = true;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, baseline_test_file_header(i),
             i->superseded ? cstr_sv(&i->raw_contents) : cstr_sv(&i->source->contents), &walked->symbols,
             false);
         remove_test_path_prefixes(target, from);
     }
+    if (!any) cstr_resize(target, start, '\0');
 }
 
 bool baseline_test_case_has_errors(BaselineTestCase const* me) {
@@ -1693,16 +1698,20 @@ bool baseline_test_case_has_errors(BaselineTestCase const* me) {
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors) {
+    isize start = cstr_size(target);
+    bool any = false;
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         BaselineTestFile const* walked = i->superseded || i->redirect_to ? superseding_file(me, i) : i;
         if (!walked || !walked->source) continue;
+        any = true;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, baseline_test_file_header(i),
             i->superseded ? cstr_sv(&i->raw_contents) : cstr_sv(&i->source->contents), &walked->types,
             !had_errors);
         remove_test_path_prefixes(target, from);
     }
+    if (!any) cstr_resize(target, start, '\0');
 }
 
 // The harness hides the positions in the libs and a test's own lib.d.ts: tsgo's isDefaultLibraryFile: `lib.*.d.ts` (6.0 matched `lib` anywhere in the name: `tslib.d.ts` too)

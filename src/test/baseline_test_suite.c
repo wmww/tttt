@@ -2,6 +2,7 @@
 #include "baseline_test_case.h"
 #include "baseline_test_result.h"
 #include "program.h"
+#include "string_helpers.h"
 #include "engine.h"
 #include "value.h"
 #include "result.h"
@@ -76,6 +77,7 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
             cstr contents = cstr_null;
             VecCStr configs = {0};
             try (fs_read_file(fs, item.path, &contents)) or_log(error);
+            text_decode_utf16_bom(&contents);
             baseline_test_configurations(cstr_sv(&contents), &configs);
             for_each (config, vec_cstr, &configs) {
                 vec_baseline_test_result_push(
@@ -274,7 +276,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
     println(
         "\n  ", color_good, passed, color_normal, " passed, ",
         color_error, failed, color_normal, " failed, ",
-        vec_baseline_test_result_size(&my results) - skipped, " total\n"
+        passed + failed, " total\n"
     );
     if (dts_total) {
         println("  dts (declaration emit, counted above): ", color_good, dts_passed, color_normal, " / ", dts_total,

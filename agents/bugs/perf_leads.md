@@ -257,7 +257,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/75_memory_endgame.md the compact AST; measurements.md "Memory breakdown" the corpus table)
+## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plan 75 declined the compact AST (deleted: `git show a458a07a~1:agents/plans/75_memory_endgame.md`); measurements.md "Memory breakdown" the corpus table)
 - **K1's peak is the checker's sawtooth** (2026-10-17, measurements.md "The K1 budget"): vscode at one checker sits at
   ~1050 MB after each recycle and ~1450 before the next (the budget, 256 MB at K1, counts the arena and tables; the
   materializations and LazyMemo pages ride on top). 128 MB at K1 is -15% peak / +2% wall on the corpora (vscode
@@ -289,7 +289,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by
     later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
     stack and copied out exact would remove the churn, not much memory.
-  - **After plan 78 the AST diet is small change** (plan 80, closed 2026-10-17): vscode after names holds 1.32M Exprs
+  - **After plan 78 the AST diet is small change** (plan 80, closed and deleted 2026-10-17: `git show 420b6ef4:agents/plans/80_ast_boxing.md`): vscode after names holds 1.32M Exprs
     (95 MB) and ~470 MB of AST, diffuse. Leads, each under the 50 MB gate: ClassItem 448 B: **not a lead**
     (counted 2026-10-17: vscode has 80k methods, 49k fields, 11k constructors, 63 MB; methods are the union's biggest
     variant, so boxing the FunctionImpl grows memory, +9 MB, and exact per-kind sizes save ~7 MB), FunctionArg 200, PortStatement 216 +

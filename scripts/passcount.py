@@ -13,8 +13,9 @@ if '--match' in args:
     del args[i:i + 2]
 text = open(args[0] if args else 'test/baseline_results.ts').read()
 # (dts, the declaration emit, where a test has it: part of a full pass since plan 64 stage 4)
-tests = re.findall(r"'([^']*)': \{\s*errors: (true|false),\s*symbols: (true|false),\s*types: (true|false),"
-                   r"(?:\s*dts: (true|false),)?", text)
+# ("did not run" tests are saved with undefined components: failing, like the suite counts them)
+tests = re.findall(r"'([^']*)': \{\s*errors: (true|false|undefined),\s*symbols: (true|false|undefined),"
+                   r"\s*types: (true|false|undefined),(?:\s*dts: (true|false),)?", text)
 if match:
     tests = [t for t in tests if match.search(t[0])]
 e = [t[1] == 'true' for t in tests]

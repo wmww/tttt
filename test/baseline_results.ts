@@ -4465,9 +4465,9 @@ const baselines = {
         types: true,
     },
     'checkJsFiles6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'checkJsFiles7': {
         errors: true,
@@ -20347,10 +20347,10 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'instanceofOperator': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'instanceofOperator(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'instanceofTypeAliasToGenericClass': {
         errors: true,
@@ -22219,9 +22219,9 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationWithoutJsExtensions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationWithoutOut': {
         errors: true,

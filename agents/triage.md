@@ -2,15 +2,10 @@
 Uninvestigated items: dump here what you don't want to deal with now. Triage sessions drain this into `bugs/*.md`,
 plans, or fixes.
 
-Last drained 2026-10-16 (triage session, todo entry 10 of the seventeenth window): computed accessor pairs get
-TS2676/TS2808, late-bound method overloads group by symbol (two own tests), the written/late-bound accessor pair went
-to bugs/type_core.md, `-b`'s unchanged `.d.ts` writes and the lazy-slot counter to plan 76 (tsgo skips unchanged
-writes only through its buildinfo), the 12-core notes were already in plan 72 and measurements.md, and
-`scripts/perfsweep.py --defaults` now times tttt at its default threads and checkers (with recycle counts).
-
-- (insights 2026-10-16) `scripts/fasttest.sh --summary` prints "13808 total" where `scripts/passcount.py` on the same
-  saved file prints 13805: three configurations are counted by one and not the other (no components? skipped?). A
-  papercut; find which and make the two agree.
-- (plan 78 planning 2026-10-16) The machine this session ran on reported `nproc` 24 (the defaults gave 24 checkers,
-  64 MB each on vscode) and had a Blender build running alongside: measurements.md's "Machine and caveats" describes
-  the 4-vCPU box. If the shared machine changed, say so there (and which numbers in measurements.md came from which).
+Last drained 2026-10-17 (triage session, todo entry 10 of the eighteenth window): the summary/passcount totals
+disagreed over three "did not run" tests. Two (checkJsFiles6, jsFileCompilationWithoutJsExtensions: a `.js` root
+without allowJs, nothing in the program) have no symbols/types baselines because tsgo writes none for NoContent; the
+harness now runs them and renders nothing there. instanceofOperator is UTF-16: the collector now decodes it before
+reading its `@target` variations. All three pass; passcount.py counts undefined components as failing and a filtered
+run's "total" is the filtered count. The 24-thread machine note was already in measurements.md ("Machine and
+caveats", the 12-core sections); this session ran on the 4-vCPU box again (`nproc` 4).

@@ -74,7 +74,8 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    single-threaded and 3 of 14 at the defaults (mid-size corpora 1.5-2x bun there: per-checker state). Faster than bun
    everywhere. Not done: lazy parameter types, the Source-keyed Maybe cache, the parser's per-attempt copies (no hot
    spot in a flat vscode profile; the parser is ~15% of it with bodies).
-10. **Triage.**
+10. Done 2026-10-17: triage (triage.md "Last drained"): three "did not run" harness tests fixed (tsgo's NoContent
+   symbols/types, a UTF-16 test's variations), suite **13773 / 13812**; plan 80 deleted.
 11. **Insights.** report.md: the memory table against bun and tsgo, what the window cost in speed, whether the
    target ("less than every competitor in most cases") is met at K1 and at the defaults.
 

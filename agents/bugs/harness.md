@@ -66,9 +66,6 @@
   of packages each); beyond DT, the shipped `.d.ts` of the top-N npm packages with a generated test importing each.
   `scripts/expecttypes.py` skips the ~600 assertions on declarations (`DECLARATION_KINDS`: type aliases, parameters,
   binding elements...): comparing them needs getTypeAtLocation of a declaration on tttt's side (`src/expect_types.c`).
-- instanceofOperator (UTF-16 LE with a BOM) "did not run": the harness doesn't read the `// @target: es5, es2015`
-  directive out of a UTF-16 file, so it looks for an unsplit `instanceofOperator.symbols` while tsgo's baseline is
-  `instanceofOperator(target=es2015)` (es5 is a skipped configuration). The bom-utf16 tests pass (no options).
 - Errors baseline of a file with both `\n` and lone `\r` breaks: tsc's iterateErrorBaseline splits its lines on `\n`
   only (a lone `\r` stays inside a printed line) while its squiggles index computeLineStarts (every break), so lines
   and squiggles drift apart; tttt places squiggles by every break. No suite test has such a file (a file with only
