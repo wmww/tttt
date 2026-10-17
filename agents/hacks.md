@@ -86,11 +86,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     materialization alive (pinning more, longer carry-overs) must allocate it as lasting or the peak grows (owner
     materializations carried: vscode K1 +155 MB).
   - Signature/body name collisions and syntax errors in bodies rerun the whole program without deferral
-    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. So does a
-    run gated by options errors (a fifth of the source sweep's projects: TS5108, TS5102, TS6310, TS2688...), which must
-    report every body's syntax errors without checking. Correct for the collision: walk the signature again after the
-    body's names (its errors held back); for the gated runs: materialize every body for its syntax errors instead of
-    reparsing everything. Oracle: `defer: restarts` on the sweeps (0 on the corpora).
+    (`program_defer_failed()`, `function_impl_lookup_deferred_body()`): exact, but an error run parses twice. A run
+    gated by options or syntax errors (two fifths of the source sweep's projects) parses the bodies alone for their
+    syntax errors (`program_deferred_bodies_parse()`) and reruns only if one has one. Correct for the collision: walk
+    the signature again after the body's names (its errors held back). Oracle: `defer: restarts` on the sweeps (0 on
+    the corpora).
 
 ## Parser
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`

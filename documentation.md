@@ -410,9 +410,10 @@ materialization's pages fault: a reader that doesn't hold it crashes; the suite 
 **Exactness**: a materialization that can be told from the eager parse and walk sets `program_defer_failed()` and the
 program runs again without deferral (`check_files()`, the harness's `run_baseline_test_case()`): a parse error in a
 body or an end other than the skipper's (syntax errors), a recorded signature name the body declares (or a name the
-signature didn't find while the body declares any: its suggestion could have been one of them). So does an output that
-needs every body's syntax errors without checking (gated by syntactic or options diagnostics, `--listFilesOnly`). Real
-code never pays; error runs pay a second parse. The CLI and the harness defer by default (`--no-defer-bodies` for both: `scripts/oracles.py`
+signature didn't find while the body declares any: its suggestion could have been one of them). An output that needs
+every body's syntax errors without checking (gated by syntactic or options diagnostics, `--listFilesOnly`) parses the
+unmaterialized bodies for them and drops them (`program_deferred_bodies_parse()`), running again only if one has one
+(the rest of a body's diagnostics are semantic, gated). Real code never pays; error runs pay a second parse. The CLI and the harness defer by default (`--no-defer-bodies` for both: `scripts/oracles.py`
 runs the suite both ways); `TTTT_DEFER_STATS=1` prints counts at exit (bodies skipped, files materialized,
 cross-file materializations, failures, restarts).
 
