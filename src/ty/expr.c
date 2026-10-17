@@ -223,7 +223,7 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
         ty_buf_push(&types, function->is_async ? ty_awaited_returned(me, type) : type);
     }
     FlowReachability end = ty_function_end_reachability(me, function);
-    if (compiler_options()->strict_null_checks && (function->has_bare_return || end == FLOW_REACH_YES)) {
+    if (compiler_options()->strict_null_checks && (function_impl_has_bare_return(function) || end == FLOW_REACH_YES)) {
         ty_buf_push(&types, ty_intrinsic(me, TY_UNDEFINED));
     }
     Ty const* body = ty_widened_return_type(me, ty_union_subtype_reduced(me, types.data, types.len), context);
@@ -1863,7 +1863,7 @@ static bool has_context_sensitive_params(FunctionImpl const* function) {
         if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this"))
         ) {
-            return function_impl_walked(function)->contains_this;
+            return function_impl_contains_this(function);
         }
     }
     return false;
@@ -1881,9 +1881,9 @@ bool ty_function_is_context_sensitive(FunctionImpl const* function) {
     // Or a generator one of whose yielded expressions is (tsc 6's hasContextSensitiveYieldExpression, whatever the
     // return type annotation): `function* () { yield x => x.length }`
     if (function->is_generator && function->has_body) {
-        FunctionImplRare const* rare = function_impl_rare(function_impl_walked(function));
-        for (u32 i = 0; i < rare->yield_count; i++) {
-            if (ty_expr_is_context_sensitive(&rare->yields[i]->unary_op->expr)) return true;
+        Expr const* const* yields = function_impl_yields(function);
+        for (u32 i = 0; i < function_impl_yield_count(function); i++) {
+            if (ty_expr_is_context_sensitive(&yields[i]->unary_op->expr)) return true;
         }
     }
     return false;
@@ -5780,7 +5780,7 @@ static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target || !access->flow) return nullptr;
     Symbol const* member = constructor_declared_member(access);
-    if (!member || !symbol_rare(member)->declaring_constructor || !function_impl_rare(symbol_rare(member)->declaring_constructor)->return_flow) return nullptr;
+    if (!member || !symbol_rare(member)->declaring_constructor || !function_impl_return_flow(symbol_rare(member)->declaring_constructor)) return nullptr;
     if (expr_this_keyword(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
     return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }

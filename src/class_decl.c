@@ -116,15 +116,16 @@ static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNo
 // constructor, or of the first static block that assigns more than null/undefined. Null: none (any)
 static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me) {
     // (In JavaScript always: tsc's getWidenedTypeForVariableLikeDeclaration)
-    if (!my field.ts_assigned || !(compiler_options()->no_implicit_any || (span_source(my field.name_span) && span_source(my field.name_span)->is_js))) return nullptr;
-    for_each (i, vec_class_item, &my field.ts_assigned_class->items) {
+    Expr const* assigned = class_untyped_field_ts_assigned(me);
+    if (!assigned || !(compiler_options()->no_implicit_any || (span_source(my field.name_span) && span_source(my field.name_span)->is_js))) return nullptr;
+    for_each (i, vec_class_item, &class_untyped_field_ts_assigned_class(me)->items) {
         if (my field.is_static && i->tag == CLASS_ITEM_STATIC_BLOCK && i->static_block_return_flow) {
-            Ty const* ret = field_flow_type(checker, my field.ts_assigned, i->static_block_return_flow);
+            Ty const* ret = field_flow_type(checker, assigned, i->static_block_return_flow);
             if (ret) return ret;
         }
         if (!my field.is_static && i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
-            FlowNode const* end = function_impl_rare(function_impl_walked(&i->constructor.func))->return_flow;
-            return end ? field_flow_type(checker, my field.ts_assigned, end) : nullptr;
+            FlowNode const* end = function_impl_return_flow(&i->constructor.func);
+            return end ? field_flow_type(checker, assigned, end) : nullptr;
         }
     }
     return nullptr;
@@ -212,7 +213,7 @@ void class_decl_drop(ClassDecl* me) {
     vec_type_drop(&my unchecked_implements);
     vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
-    vec_expr_cptr_drop(&my computed_this_assignments);
+    vec_expr_cptr_drop(&my computed_this_assignments_);
     drop_namesakes(me);
     if (my jsdoc_augments) {
         type_drop(my jsdoc_augments);
@@ -854,18 +855,19 @@ static bool contains_undefined(Ty const* ty) {
 }
 
 // tsc's isPropertyInitializedInConstructor: `this.x` isn't possibly undefined at the end of the constructor, when it
-// starts out undefined there. The reference is the constructor's first `this.x = v` (field.ts_assigned): without one
+// starts out undefined there. The reference is the constructor's first `this.x = v` (class_field_ts_assigned()): without one
 // it's undefined wherever the end can be reached
 static bool field_initialized_in_constructor(
     Checker* checker, ClassDecl const* me, ClassItem const* field, Ty const* type, ClassItem const* constructor
 ) {
-    FlowNode const* end = function_impl_rare(function_impl_walked(&constructor->constructor.func))->return_flow;
+    FlowNode const* end = function_impl_return_flow(&constructor->constructor.func);
     if (!end || flow_is_unreachable(end)) return true;
-    Expr const* reference = field->field.ts_assigned;
-    if (!reference && my computed_this_assignments.size) {
+    Expr const* reference = class_field_ts_assigned(field, constructor);
+    VecExprCPtr const* computed = class_decl_computed_this_assignments(me, constructor);
+    if (!reference && computed->size) {
         // `this[Flags.X] = v` (tsc's flow reference is `this.x`, which such an access matches by its key's literal)
         Atom const* name = item_member_name(checker, me, field);
-        for_each (i, vec_expr_cptr, &my computed_this_assignments) {
+        for_each (i, vec_expr_cptr, computed) {
             bool is_number = false;
             Ty const* key = ty_expr_type(checker, &(*i)->property->index);
             if (name && ty_property_name_of_key(checker, key, &is_number) == name) {
@@ -1550,7 +1552,7 @@ static void check_super_call_root(Span name, FunctionImpl const* func, Expr cons
             "identifiers.");
         return;
     }
-    Span first = function_impl_rare(function_impl_walked(func))->first_this_or_super;
+    Span first = function_impl_first_this_or_super(func);
     Span body = block_span(function_impl_body(func));
     if (span_valid(first) && span_valid(body) && span_start_ptr(first) >= span_start_ptr(body) &&
         span_start_ptr(first) < span_start_ptr(statement->span)
@@ -1992,7 +1994,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     // (Without an initializer, what the constructor assigns is its type: see field_type_from_assignments())
-    if (item->field.ts_assigned) return;
+    if (class_untyped_field_ts_assigned(item)) return;
     // (`static prototype;` merges into the class's prototype property, whose type is the instance type: tsc's
     // getTypeOfPrototypeProperty. TS2699 says the rest)
     if (item->field.is_static && !item->field.computed_key && cstr_equals(&item->field.name_string, "prototype")) return;
@@ -2470,7 +2472,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 function_impl_typecheck(&i->constructor.func, errs);
                 // tsc's checkConstructorDeclaration
                 if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
-                    Expr const* super_call = function_impl_rare(function_impl_walked(&i->constructor.func))->first_super_call;
+                    Expr const* super_call = function_impl_first_super_call(&i->constructor.func);
                     bool extends_null = my extends.tag == EXPR_LITERAL && my extends.literal.tag == VALUE_NULL;
                     if (super_call && extends_null) {
                         error_ctx_error_d(errs, super_call->inner_span, 17005,

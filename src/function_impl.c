@@ -38,7 +38,7 @@ void function_impl_drop(FunctionImpl* me) {
     }
     FunctionImplRare* rare = my rare;
     if (!rare) return;
-    ast_delete(rare->yields);
+    ast_delete(rare->yields_);
     if (rare->jsdoc_signature_type) {
         type_drop(rare->jsdoc_signature_type);
         ast_delete(rare->jsdoc_signature_type);
@@ -482,20 +482,20 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
     if (!skip_body) block_lookup_names_as(function_impl_body(me), function_scope, errs);
     type_flow_restore(saved_flow);
 
-    my end_flow = nullptr;
-    if (!flow_is_unreachable(flow->current) && my has_body) my end_flow = flow->current;
-    my has_explicit_return = flow->has_explicit_return;
-    my has_bare_return = flow->has_bare_return;
+    my end_flow_ = nullptr;
+    if (!flow_is_unreachable(flow->current) && my has_body) my end_flow_ = flow->current;
+    my has_explicit_return_ = flow->has_explicit_return;
+    my has_bare_return_ = flow->has_bare_return;
     if (flow->yields || my rare) {
         FunctionImplRare* rare = function_impl_rare_mut(me);
-        rare->yields = flow->yields;
-        rare->yield_count = flow->yield_count;
+        rare->yields_ = flow->yields;
+        rare->yield_count_ = flow->yield_count;
     }
     flow->yields = nullptr;
     if (flow->return_target) {
         flow_add_antecedent(flow, flow->return_target, flow->current);
         flow->current = flow_finish_label(flow->return_target);
-        if (my is_constructor || js_constructor_candidate) function_impl_rare_mut(me)->return_flow = flow->current;
+        if (my is_constructor || js_constructor_candidate) function_impl_rare_mut(me)->return_flow_ = flow->current;
     }
     flow_builder_finish(flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
     if (is_iife && !outer->dead) {
@@ -506,7 +506,7 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
 
 // A rare struct a deferred body's walk made (what of it the walk can have made)
 static void walk_rare_drop(void* rare) {
-    free(((FunctionImplRare*)rare)->yields);
+    free(((FunctionImplRare*)rare)->yields_);
     ast_free(rare, sizeof(FunctionImplRare));
 }
 
@@ -538,17 +538,17 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     function_scope->flow = &flow;
     // What the walk sets on the function, as before the first walk (plan 78 stage 2: a materialization after a drop
     // finds the last one's; some are only set if unset). The rare struct the walk makes goes with the materialization
-    me->end_flow = nullptr;
-    me->has_explicit_return = false;
-    me->has_bare_return = false;
+    me->end_flow_ = nullptr;
+    me->has_explicit_return_ = false;
+    me->has_bare_return_ = false;
     FunctionImplRare* rare = me->rare;
     if (rare) {
-        free(rare->yields);
-        rare->yields = nullptr;
-        rare->yield_count = 0;
-        rare->return_flow = nullptr;
-        rare->first_super_call = nullptr;
-        rare->first_this_or_super = span_null;
+        free(rare->yields_);
+        rare->yields_ = nullptr;
+        rare->yield_count_ = 0;
+        rare->return_flow_ = nullptr;
+        rare->first_super_call_ = nullptr;
+        rare->first_this_or_super_ = span_null;
     }
     u32 before = scope_locals(function_scope)->count;
     block_add_names(&body->block, function_scope);
@@ -1133,7 +1133,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     Span name = span_valid(my name) ? my name : function_impl_member_name(me);
     Span at = my ret_explicit ? function_impl_ret_span(me) : function_error_span(me); // (A getter's `@type` too: tsgo's reparsed Type)
 
-    if (my accessor == 1 && !my has_explicit_return) {
+    if (my accessor == 1 && !function_impl_has_explicit_return(me)) {
         // (tsc's checkAccessorDeclaration; checkAllCodePathsInNonVoidFunctionReturnOrThrow still runs after it)
         if (span_valid(name)) error_ctx_error_d(errs, name, 2378, "A 'get' accessor must return a value.");
     }
@@ -1161,7 +1161,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     }
     if (type && type->flags & TYF_NEVER) {
         error_ctx_error_d(errs, at, 2534, "A function returning 'never' cannot have a reachable end point.");
-    } else if (type && !my has_explicit_return) {
+    } else if (type && !function_impl_has_explicit_return(me)) {
         error_ctx_error_d(errs, at, 2355,
             "A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.");
     } else if (type && compiler_options()->strict_null_checks &&
@@ -1171,7 +1171,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
             "Function lacks ending return statement and return type does not include 'undefined'.");
     } else if (compiler_options()->no_implicit_returns) {
         if (!type) {
-            if (!my has_explicit_return) return;
+            if (!function_impl_has_explicit_return(me)) return;
             if (function_impl_return_void_any_or_undefined(me, ty_function_return_type(checker, me))) return;
         }
         error_ctx_error_d(errs, at, 7030, "Not all code paths return a value.");

@@ -586,9 +586,9 @@ static bool is_value_primitive_type_name(csview name) {
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
-            directly_in_constructor(names) && !span_valid(function_impl_rare(names->function)->first_this_or_super)
+            directly_in_constructor(names) && !span_valid(function_impl_rare(names->function)->first_this_or_super_)
         ) {
-            function_impl_rare_mut(names->function)->first_this_or_super = identifier_expr_name(me);
+            function_impl_rare_mut(names->function)->first_this_or_super_ = identifier_expr_name(me);
         }
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             scope_note_this_reference(names);
@@ -2212,10 +2212,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 for (Scope const* s = names; s && s->kind == SCOPE_BLOCK && !in_method_name; s = s->parent) {
                     in_method_name = s->no_super == NO_SUPER_LITERAL_METHOD_COMPUTED_NAME;
                 }
-                if (names->function && names->function->is_constructor && !function_impl_rare(names->function)->first_super_call &&
+                if (names->function && names->function->is_constructor && !function_impl_rare(names->function)->first_super_call_ &&
                     names->no_super != NO_SUPER_CONSTRUCTOR_ARGS && !in_method_name
                 ) {
-                    function_impl_rare_mut(names->function)->first_super_call = me;
+                    function_impl_rare_mut(names->function)->first_super_call_ = me;
                 }
             } else if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
                 // `new super()` isn't a super call: super is the base instance like in `super.x` (tsc's

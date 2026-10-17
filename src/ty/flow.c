@@ -103,7 +103,7 @@ FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow) {
 }
 
 FlowReachability ty_function_end_reachability(Checker* me, FunctionImpl const* function) {
-    return ty_flow_reachability(me, function_impl_walked(function)->end_flow);
+    return ty_flow_reachability(me, function_impl_end_flow(function));
 }
 
 // Narrowing: the type of a reference at a flow node (tsc's getFlowTypeOfReference(), whose structure this follows

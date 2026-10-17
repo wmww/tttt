@@ -45,12 +45,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   depend on `--checkers`. Oracle: `scripts/kdiff.py`, `checkerdiff.py`.
 
 - Deferred bodies (plan 78, documentation.md "Deferred bodies"), what keeps them exact:
-  - `function_impl_walked()` / `function_impl_body()` are the only guard on what a body's walk writes outside the body
-    (FunctionImpl's `end_flow`, returns, yields, `contains_this`, rare `return_flow`/`first_super_call`/
-    `first_this_or_super`, a class field's `ts_assigned`, `ClassDecl.computed_this_assignments`): a new reader that skips
-    them reads a deferred function's unwalked state (cross-file only: a file's own check materializes it first). The
-    compiler finds `body` readers (the field is `body_`), not the others. Correct: those fields behind accessors too.
-    Oracle: the suite against `--no-defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
+  - What a body's walk writes outside the body has a trailing `_` and is read through accessors that materialize first
+    (`function_impl_end_flow()`, `_has_explicit_return()`, `_has_bare_return()`, `_contains_this()`, `_return_flow()`,
+    `_first_super_call()`, `_first_this_or_super()`, `_yields()`; `class_field_ts_assigned(field, constructor)`,
+    `class_decl_computed_this_assignments()`): only the walk and the drop reset touch the raw fields. Left raw: a field
+    without type or initializer reads `ts_assigned_` without its constructor (`class_untyped_field_ts_assigned()`,
+    `check`s the field's shape: the parser keeps that constructor eager), `outer_this_function` (written by a `this` in
+    the body, read only from that `this`), `uses_arguments` (JavaScript, eager). Oracle: the suite against
+    `--no-defer-bodies` (lost components), kdiff/checkerdiff (a cross-file read is order dependent).
   - What isn't deferred, decided by syntax in the parser (`skip_body()`, `undefer_body()`): parameters with expressions,
     bodies starting with a string, expressions with a `(` in their signature after the parameter list's own (a function
     type's walk asks `ty_function_is_context_sensitive()` of the enclosing function, which may read its body), IIFEs,

@@ -87,9 +87,10 @@ typedef struct ClassItem {
             // TypeScript, without a type or initializer: the constructor (a static block, for a static field) assigns
             // `this.x` directly, which types the field under noImplicitAny (tsc's getFlowTypeInConstructor /
             // getFlowTypeInStaticBlocks) instead of it being implicitly any. The first such `this.x`, which the flow
-            // query at the end of the constructor / static blocks goes by, and the class. Set by the resolve walk
-            Expr const* ts_assigned;
-            struct ClassDecl const* ts_assigned_class;
+            // query at the end of the constructor / static blocks goes by, and the class. Set by the resolve walk of
+            // the constructor (deferred maybe, plan 78): read through class_field_ts_assigned() and co
+            Expr const* ts_assigned_;
+            struct ClassDecl const* ts_assigned_class_;
             // A property an accessor of its name after it joined (tsgo 7.1's binder: one symbol, see
             // bind_member_symbols()): that accessor pair's first item, whose type the symbol has (getTypeOfSymbol
             // types an accessor symbol by its accessors, the property's declaration is never typed). Set when looking up
@@ -110,6 +111,22 @@ bool class_item_is_static(ClassItem* me);
 Span class_item_private_name(ClassItem const* me);
 // Whether two methods are written with the same name (a computed literal by its value, `["kk"]` is `kk`; a private name
 // is its class's own, `#a` isn't `["#a"]`)
+// What the walk of a class's constructor `constructor` (or a static block) leaves on a field `me` (field.ts_assigned_):
+// the constructor is walked first if its body was deferred (plan 78)
+static inline Expr const* class_field_ts_assigned(ClassItem const* me, ClassItem const* constructor) {
+    function_impl_walked(&constructor->constructor.func);
+    return me->field.ts_assigned_;
+}
+// The same for a TypeScript field without a type or initializer, whose type it is, without the constructor: the parser
+// doesn't defer the constructor of a class with one of those (parse_class())
+static inline Expr const* class_untyped_field_ts_assigned(ClassItem const* me) {
+    check(!me->field.has_explicit_type && me->field.value.tag == EXPR_IMPLICIT_ANY);
+    return me->field.ts_assigned_;
+}
+static inline struct ClassDecl const* class_untyped_field_ts_assigned_class(ClassItem const* me) {
+    check(!me->field.has_explicit_type && me->field.value.tag == EXPR_IMPLICIT_ANY);
+    return me->field.ts_assigned_class_;
+}
 static inline bool class_methods_same_name(ClassItem const* a, ClassItem const* b) {
     return cstr_eq(&a->method.name_string, &b->method.name_string) &&
         span_valid(class_item_private_name(a)) == span_valid(class_item_private_name(b));
@@ -183,8 +200,9 @@ typedef struct ClassDecl {
     bool export_assigned;
     // `this[k] = v` directly in the constructor with a key that isn't a literal (`this[Flags.X]`, `this[key]`): which
     // field it assigns needs the key's type, so TS2564 (field_initialized_in_constructor()) tries these as the flow
-    // reference of fields no `this.x = v` names. Set by the resolve walk
-    VecExprCPtr computed_this_assignments;
+    // reference of fields no `this.x = v` names. Set by the resolve walk of the constructor (deferred maybe, plan 78):
+    // read through class_decl_computed_this_assignments()
+    VecExprCPtr computed_this_assignments_;
     // In a class of more than CLASS_NAMESAKES_FROM items (set when looking up names; null otherwise): per item, the
     // first and the next item (-1 at the end) with its name_string (methods and fields, computed keys by their text;
     // -1 for the others), and the items with a computed key in order. The loops over the declarations of a member
@@ -194,6 +212,12 @@ typedef struct ClassDecl {
     i32* computed_items;
     u32 computed_item_count;
 } ClassDecl;
+
+// ClassDecl.computed_this_assignments_ of its constructor `constructor`, walked first if its body was deferred (plan 78)
+static inline VecExprCPtr const* class_decl_computed_this_assignments(ClassDecl const* me, ClassItem const* constructor) {
+    function_impl_walked(&constructor->constructor.func);
+    return &me->computed_this_assignments_;
+}
 
 enum { CLASS_NAMESAKES_FROM = 16 };
 

@@ -3801,9 +3801,9 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
                 snapshot->flow_flags[n] = node ? node->flags : 0;
             }
             FunctionImpl const* f = i->function;
-            if (f->end_flow || f->has_explicit_return || f->has_bare_return || function_impl_rare(f)->yields ||
-                function_impl_rare(f)->return_flow || function_impl_rare(f)->first_super_call ||
-                span_valid(function_impl_rare(f)->first_this_or_super)
+            if (f->end_flow_ || f->has_explicit_return_ || f->has_bare_return_ || function_impl_rare(f)->yields_ ||
+                function_impl_rare(f)->return_flow_ || function_impl_rare(f)->first_super_call_ ||
+                span_valid(function_impl_rare(f)->first_this_or_super_)
             ) {
                 log_error("A deferred function has what its body's walk sets before it");
             }

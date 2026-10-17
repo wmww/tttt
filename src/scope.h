@@ -896,7 +896,7 @@ Expr* expando_initializer(Expr* init, bool js, bool annotated);
 // `name`: the expression's own name, else invalid (the host's name)
 bool expando_host_is_initializer(Symbol const* host, Span* name);
 // TypeScript `this.x = v` in a constructor or static block (`left` is `this.x`, also a target of a destructuring
-// assignment): marks the field it types (ClassItem.field.ts_assigned)
+// assignment): marks the field it types (ClassItem.field.ts_assigned_)
 void scope_note_ts_this_assignment(Scope const* me, struct Expr const* left);
 // JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
 // `this` is of (a static member in a static method), or of the object literal whose method it is in (tsgo's

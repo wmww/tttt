@@ -5410,7 +5410,7 @@ void scope_note_this_reference(Scope const* me) {
         if (scope_rare(scope)->this_ref.kind == THIS_INTERFACE) return;
         if (scope->kind != SCOPE_FUNCTION || !scope->function) continue;
         if (function_impl_is_arrow(scope->function) || scope->function->is_type) continue;
-        scope->function->contains_this = true;
+        scope->function->contains_this_ = true;
         return;
     }
 }
@@ -5944,15 +5944,15 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     if (!field && !is_static && prop &&
         (prop->tag == EXPR_IDENTIFIER || prop->tag == EXPR_PROPERTY)
     ) {
-        VecExprCPtr* assignments = &((ClassDecl*)class_decl)->computed_this_assignments;
+        VecExprCPtr* assignments = &((ClassDecl*)class_decl)->computed_this_assignments_;
         deferred_bodies_undo(assignments, sizeof(*assignments));
         vec_expr_cptr_push(assignments, left);
     }
-    if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned) {
-        deferred_bodies_undo(&field->field.ts_assigned, sizeof(field->field.ts_assigned));
-        deferred_bodies_undo(&field->field.ts_assigned_class, sizeof(field->field.ts_assigned_class));
-        field->field.ts_assigned = left;
-        field->field.ts_assigned_class = class_decl;
+    if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned_) {
+        deferred_bodies_undo(&field->field.ts_assigned_, sizeof(field->field.ts_assigned_));
+        deferred_bodies_undo(&field->field.ts_assigned_class_, sizeof(field->field.ts_assigned_class_));
+        field->field.ts_assigned_ = left;
+        field->field.ts_assigned_class_ = class_decl;
     }
 }
 

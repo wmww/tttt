@@ -99,21 +99,23 @@ typedef struct FunctionImplRare {
     // A function whose own `this` is used and is any: the function whose `this` is the one it shadows, when that's
     // also a function's (contextually typed, maybe: TS2738's related info on TS2683)
     struct FunctionImpl const* outer_this_function;
-    struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
+    // A constructor: the first `super(...)` in its body, not in a nested function. Read through
+    // function_impl_first_super_call() (the walk of a deferred body sets it, as the fields below marked "walk")
+    struct Expr const* first_super_call_;
     // A function expression or arrow written as an argument of `new X(...)`: the X when it's an identifier (TS2794:
     // tsc's isPromiseResolveArityError)
     struct Expr const* new_callee;
-    // A constructor: its first `this` or `super.x` (not `super(...)`), not in a nested function or arrow function
-    Span first_this_or_super;
+    // A constructor: its first `this` or `super.x` (not `super(...)`), not in a nested function or arrow function (walk)
+    Span first_this_or_super_;
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     // The type of its JSDoc `@type` tag (TS8030 for a declaration whose type has no call signature that takes as many
     // arguments as it needs: tsc's getContextualCallSignature in checkFunctionOrMethodDeclaration). The mismatch of a
     // written signature, which the parser moves into the function, is found by the parser
     Span jsdoc_signature_span;
-    FlowNode* return_flow; // Constructors: every way out
-    struct Expr const** yields; // Generators: every `yield` of the body, in source order (malloc'd, owned)
-    u32 yield_count;
+    FlowNode* return_flow_; // Constructors: every way out (walk)
+    struct Expr const** yields_; // Generators: every `yield` of the body, in source order (malloc'd, owned; walk)
+    u32 yield_count_;
     // JavaScript: the `@param` tags that name no parameter (tsc's checkUnmatchedJSDocParameters): TS8024 for a name,
     // TS8032 for a qualified name without its object (`left` valid). Found by the parser, reported when checking
     u32 jsdoc_param_issue_count;
@@ -196,7 +198,9 @@ typedef struct FunctionImpl {
     Block body_;
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
-    FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
+    // The end of the body if control can get there (before typed reachability), else null. Read through
+    // function_impl_end_flow(): the walk of a deferred body sets it, like has_explicit_return_ and co below
+    FlowNode* end_flow_;
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool ret_explicit : 1;
     bool is_constructor : 1;
@@ -260,12 +264,13 @@ typedef struct FunctionImpl {
     // (function_impl_body()). Set by the parser only, never cleared: `body_.deferred` is the body's state
     bool deferred : 1;
     // What the resolve walk of the body sets, apart from the bit-fields above (a memory location of their own: a deferred
-    // body's materialization writes these while other checkers read those, plan 78). Read through function_impl_walked()
-    bool has_explicit_return; // A reachable `return`
-    bool has_bare_return; // A reachable `return;`
+    // body's materialization writes these while other checkers read those, plan 78). Read through their accessors
+    // (function_impl_has_explicit_return() and co), which materialize a deferred body first; only the walk writes them
+    bool has_explicit_return_; // A reachable `return`
+    bool has_bare_return_; // A reachable `return;`
     // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included
     // (tsc's NodeFlags.ContainsThis, set by the resolve walk): without it, it isn't context sensitive for its `this`
-    bool contains_this;
+    bool contains_this_;
 } FunctionImpl;
 
 // A function body the parser skipped (plan 78, "Deferred bodies" in documentation.md): it is parsed, and its resolve walk
@@ -316,8 +321,8 @@ static inline Block const* function_impl_body(FunctionImpl const* me) {
 static inline Block* function_impl_body_mut(FunctionImpl* me) {
     return me->deferred ? function_impl_deferred_body(me) : &me->body_;
 }
-// The function once the resolve walk has been through its body (end_flow, has_explicit_return, contains_this, the rare
-// yields, return_flow, first_super_call... are set): materialized first if deferred
+// The function once the resolve walk has been through its body (its body_ and the fields below are set): materialized
+// first if deferred
 static inline FunctionImpl const* function_impl_walked(FunctionImpl const* me) {
     if (me->deferred) function_impl_deferred_body(me);
     return me;
@@ -347,6 +352,31 @@ static inline FunctionImplRare const* function_impl_rare(FunctionImpl const* me)
 }
 // Allocates them if needed
 FunctionImplRare* function_impl_rare_mut(FunctionImpl* me);
+
+// What the resolve walk of the body leaves on the function (the fields of the same names): a deferred body is walked
+// first. The walk itself writes and reads the fields
+static inline FlowNode* function_impl_end_flow(FunctionImpl const* me) { return function_impl_walked(me)->end_flow_; }
+static inline bool function_impl_has_explicit_return(FunctionImpl const* me) {
+    return function_impl_walked(me)->has_explicit_return_;
+}
+static inline bool function_impl_has_bare_return(FunctionImpl const* me) { return function_impl_walked(me)->has_bare_return_; }
+static inline bool function_impl_contains_this(FunctionImpl const* me) { return function_impl_walked(me)->contains_this_; }
+static inline FlowNode* function_impl_return_flow(FunctionImpl const* me) {
+    return function_impl_rare(function_impl_walked(me))->return_flow_;
+}
+static inline struct Expr const* function_impl_first_super_call(FunctionImpl const* me) {
+    return function_impl_rare(function_impl_walked(me))->first_super_call_;
+}
+static inline Span function_impl_first_this_or_super(FunctionImpl const* me) {
+    return function_impl_rare(function_impl_walked(me))->first_this_or_super_;
+}
+static inline u32 function_impl_yield_count(FunctionImpl const* me) {
+    return function_impl_rare(function_impl_walked(me))->yield_count_;
+}
+// The `yield`s of a generator's body, in source order (function_impl_yield_count() of them)
+static inline struct Expr const* const* function_impl_yields(FunctionImpl const* me) {
+    return (struct Expr const* const*)function_impl_rare(function_impl_walked(me))->yields_;
+}
 
 void function_impl_drop(FunctionImpl* me);
 // tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else

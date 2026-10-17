@@ -78,13 +78,14 @@ Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* typ
 // tsc's getReturnTypeFromBody for a generator: Generator<yielded, returned, what the context sends>
 static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function, TyBuf* returned) {
     bool async = function->is_async;
-    function_impl_walked(function);
+    Expr const* const* yield_exprs = function_impl_yields(function);
+    u32 yield_count = function_impl_yield_count(function);
     TyIterationTypes const* context = ty_generator_context(me, function);
     TyBuf yields = {0};
     TyBuf nexts = {0};
-    for (u32 i = 0; i < function_impl_rare(function)->yield_count; i++) {
-        UnaryOpExpr const* yield = function_impl_rare(function)->yields[i]->unary_op;
-        ty_expr_type(me, function_impl_rare(function)->yields[i]); // Checks the operand with the contextual type it gets from there
+    for (u32 i = 0; i < yield_count; i++) {
+        UnaryOpExpr const* yield = yield_exprs[i]->unary_op;
+        ty_expr_type(me, yield_exprs[i]); // Checks the operand with the contextual type it gets from there
         if (yield->op == UNARY_OP_YIELD) {
             Ty const* sent = intern_get(&my links, (u64[]){ KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield }, 2);
             // (Not checked with its context yet: the generator's type is asked before its body is checked, a function
@@ -129,10 +130,10 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
     bool implicit_return = ty_function_end_reachability(me, function) == FLOW_REACH_YES;
     Ty const* return_type = nullptr;
     Ty const* fallback = ty_intrinsic(me, TY_VOID);
-    if (!returned->len && !function->has_bare_return && !implicit_return && function->is_expression) {
+    if (!returned->len && !function_impl_has_bare_return(function) && !implicit_return && function->is_expression) {
         fallback = ty_intrinsic(me, TY_NEVER);
     } else if (returned->len) {
-        if (compiler_options()->strict_null_checks && (function->has_bare_return || implicit_return)) {
+        if (compiler_options()->strict_null_checks && (function_impl_has_bare_return(function) || implicit_return)) {
             ty_buf_push(returned, ty_intrinsic(me, TY_UNDEFINED));
         }
         return_type = ty_union_subtype_reduced(me, returned->data, returned->len);
@@ -261,8 +262,8 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     } else {
         // tsc: checkAndAggregateReturnExpressionTypes(). Only what is certain about the end of the body counts until
         // reachability knows about `never` calls and exhaustive switches
-        bool returns_nothing_somewhere = function->has_bare_return || end == FLOW_REACH_YES;
-        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && (function->is_expression || skipped) &&
+        bool returns_nothing_somewhere = function_impl_has_bare_return(function) || end == FLOW_REACH_YES;
+        if (!returned.len && !function_impl_has_bare_return(function) && end == FLOW_REACH_NO && (function->is_expression || skipped) &&
             !function->accessor
         ) {
             // Function expressions that can't return don't (declarations are `void`, accessors too: tsc's mayReturnNever)
