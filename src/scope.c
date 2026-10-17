@@ -4639,8 +4639,11 @@ static bool symbol_has_meaning(Symbol const* me, u32 meaning) {
     // global `Plugin` (feathers/docs)
     // (Only an `import { X }`: JavaScript's `const { X } = require()` stays a value, a `@typedef X` of the file
     // names the type, webpack's syntax-printer.js)
+    // (Not for a namespace, whose meaning shares only enums with a type's: an existing property is no namespace, so
+    // tsc's lookup goes past the import, to the module's UMD global of that name, `import type { debug } from "debug"`
+    // then `debug.Debugger` (ethereumjs); a missing one is TS2305 at the import already)
     PortItem const* item = my alias->item;
-    if (!(meaning & SYMBOL_TYPE) || !item || item->tag != PORT_IMPORT_SPECIFIC || item->require_binding) return false;
+    if (!(meaning & SYMBOL_TYPE & ~(u32)SYMBOL_ENUM) || !item || item->tag != PORT_IMPORT_SPECIFIC || item->require_binding) return false;
     Symbol const* target = symbol_resolve_alias((Symbol*)me);
     return target && target != me && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY;
 }

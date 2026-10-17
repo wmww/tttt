@@ -730,6 +730,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttHeritageConstraintLaterDefault': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportExportEqualsPropertyUmdNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportFromExportEqualsAnyAsType': {
         errors: true,
         symbols: true,

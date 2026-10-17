@@ -970,8 +970,12 @@ static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr 
         VecTyReportLine lines = {0};
         if (ty_relate_explaining(checker, arg_type, constraint, 2344, &lines, errs)) continue;
         // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
-        cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
-            ty_report_target(checker, arg_type, constraint), "'.");
+        // (A literal argument is its base type only against a target without literals: tsc's reportRelationError,
+        // `Pair<"y">` against `"x"`)
+        cstr arg_str, constraint_str;
+        ty_report_pair_cstr(checker, arg_type, ty_report_target(checker, arg_type, constraint), &arg_str, &constraint_str);
+        cstr head = cstr_d("Type '", arg_str, "' does not satisfy the constraint '", constraint_str, "'.");
+        c_drop(cstr, &arg_str, &constraint_str);
         ty_report_explained_with_head(errs, &lines, 2344, head, arg->span);
         return false;
     }

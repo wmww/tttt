@@ -1,0 +1,53 @@
+//// [test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts] ////
+
+=== /node_modules/@types/dbg/index.d.ts ===
+declare var dbg: dbg.Debug & { dbg: dbg.Debug };
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 2, 24))
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 2, 24))
+>Debug : Symbol(dbg.Debug, Decl(index.d.ts, 3, 23))
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 30))
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 2, 24))
+>Debug : Symbol(dbg.Debug, Decl(index.d.ts, 3, 23))
+
+export = dbg;
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 2, 24))
+
+export as namespace dbg;
+>dbg : Symbol(dbg, Decl(index.d.ts, 1, 13))
+
+declare namespace dbg {
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 2, 24))
+
+    interface Debug { (ns: string): Debugger; }
+>Debug : Symbol(Debug, Decl(index.d.ts, 3, 23))
+>ns : Symbol(ns, Decl(index.d.ts, 4, 23))
+>Debugger : Symbol(Debugger, Decl(index.d.ts, 4, 47))
+
+    interface Debugger { enabled: boolean; }
+>Debugger : Symbol(Debugger, Decl(index.d.ts, 4, 47))
+>enabled : Symbol(Debugger.enabled, Decl(index.d.ts, 5, 24))
+}
+=== /a.ts ===
+import type { dbg } from "dbg";
+>dbg : Symbol(dbg, Decl(a.ts, 0, 13))
+
+export interface I { d?: dbg.Debugger; e: typeof dbg }
+>I : Symbol(I, Decl(a.ts, 0, 31))
+>d : Symbol(I.d, Decl(a.ts, 1, 20))
+>dbg : Symbol(dbg, Decl(index.d.ts, 1, 13))
+>Debugger : Symbol(dbg.Debugger, Decl(index.d.ts, 4, 47))
+>e : Symbol(I.e, Decl(a.ts, 1, 38))
+>dbg : Symbol(dbg, Decl(a.ts, 0, 13))
+
+declare const i: I;
+>i : Symbol(i, Decl(a.ts, 2, 13))
+>I : Symbol(I, Decl(a.ts, 0, 31))
+
+export const enabled = i.d?.enabled;
+>enabled : Symbol(enabled, Decl(a.ts, 3, 12))
+>i.d?.enabled : Symbol(dbg.Debugger.enabled, Decl(index.d.ts, 5, 24))
+>i.d : Symbol(I.d, Decl(a.ts, 1, 20))
+>i : Symbol(i, Decl(a.ts, 2, 13))
+>d : Symbol(I.d, Decl(a.ts, 1, 20))
+>enabled : Symbol(dbg.Debugger.enabled, Decl(index.d.ts, 5, 24))
+

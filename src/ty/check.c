@@ -2731,19 +2731,27 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
     }
 }
 
-// Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments
+// The constraint type argument `index` must satisfy, given all the arguments: the ones not written are their parameters'
+// defaults, unknown without one (tsc's fillMissingTypeArguments: `extends Command<A, B>` whose `Input extends
+// ClientInput` has a later `ClientInput extends object = any`, @aws-sdk's commands)
 Ty const* ty_type_argument_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index) {
-    Ty const* lowered[32];
-    u32 len = 0;
-    for (; len < params.len && len < c_arraylen(lowered) && (isize_t)len < vec_spanned_type_size(args); len++) {
-        lowered[len] = ty_of_node(&vec_spanned_type_at(args, len)->type);
-    }
-    if (index >= len) return nullptr;
+    u32 given = (isize_t)params.len < vec_spanned_type_size(args) ? params.len : (u32)vec_spanned_type_size(args);
+    if (index >= given) return nullptr;
     Ty const* constraint = ty_param_constraint(me, params.data[index]);
     if (!constraint) return nullptr;
     // The constraint can mention the other type parameters, which stand for the arguments here
     // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
-    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = len }, (TyList){ .data = lowered, .len = len });
+    Ty const** filled = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) {
+        if (i < given) {
+            filled[i] = ty_of_node(&vec_spanned_type_at(args, i)->type);
+            continue;
+        }
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        TyMapper const* so_far = ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = filled, .len = i });
+        filled[i] = fallback ? ty_instantiate(me, fallback, so_far) : ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = filled, .len = params.len });
     return ty_instantiate(me, constraint, mapper);
 }
 

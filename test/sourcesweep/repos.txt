@@ -178,3 +178,39 @@ xterm https://github.com/xtermjs/xterm.js.git c58ea3637f3968e0e6e79cd92cf9aace7e
 yup https://github.com/jquense/yup.git ff31eee8a2b10c938bb3a22544d9e33957a8cf01
 zigbee2mqtt https://github.com/Koenkk/zigbee2mqtt.git 344b6e03b43644c97154a72ca9eae17193c553a2
 zustand https://github.com/pmndrs/zustand.git d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+# Plan 77 (2026-10-17), a second selection rule: GitHub search per topic (game, webgl, electron, discord-bot, cli,
+# angular, nestjs, data-visualization, monorepo, vscode-extension), language TypeScript, stars 300..3000, pushed after
+# 2025-06-01, size < 200 MB, sorted by stars; per topic the first 3 not in this manifest with a root package.json,
+# a root lockfile (pnpm, yarn or npm) and a tsconfig.json somewhere. Checked out at their default branch's HEAD that day.
+stage.js https://github.com/piqnt/stage.js.git 2535352e89cdbdcbee85e3a04931afbc799e0d95
+battle-city https://github.com/feichao93/battle-city.git 86c41c8c3c49cd27255bcf63167091d1061801fa
+rpg-js https://github.com/RSamaium/RPG-JS.git 7e6603a26ad2f488fb663110be751c41540cd3ff
+claw3d https://github.com/iamlukethedev/Claw3D.git 0565b7892909eca7bbc8f2d9b0fad171dd75ad7c
+three-vrm https://github.com/pixiv/three-vrm.git 68c7d6b1f73b79568f81139be62831968bff7876
+spector.js https://github.com/BabylonJS/Spector.js.git 970aa97e616c4dbe309ddcecd28438961dc80a93
+# everroom: dropped, its frozen pnpm 11 install fails fetching a git dependency
+#everroom https://github.com/NxcoreAI/EverRoom.git b0d58e5e8d0e46ccd697b5b2692c3dce6034d96d
+# thorium-reader: dropped, devEngines wants npm >= 12 (the pinned node 24 has npm 11)
+#thorium-reader https://github.com/edrlab/thorium-reader.git fa321a899c8a8d0de512f69a3872e848338b964a
+asar https://github.com/electron/asar.git 623d6addc0fe80c7fb2001ce611e1a645ab62bc4
+danghuangshang https://github.com/wanikua/danghuangshang.git acea185a9a1abb1788206fddc9c52a2693afaa39
+rawon https://github.com/stegripe/rawon.git 73b544411ed5643df16af71eb0d9d08ec476d18f
+discordbotclient https://github.com/aiko-chan-ai/DiscordBotClient.git 919bd693e4d78508ccb740c6408ededc1b48cb22
+rn-cli https://github.com/react-native-community/cli.git f4c4ef37ccf98e0205d4a8bc5d9f40f24f1120fd
+superplate https://github.com/pankod/superplate.git 3507f8398d2d833bfd41e6e8d91e5ef4ea8dcf90
+webcmd https://github.com/agentrhq/webcmd.git 9d8ea440fd3d86ddadf53e66b6f27db6134b0312
+ngx-formly https://github.com/ngx-formly/ngx-formly.git 1a13f84438590b5855a27458b425d9af35a319a1
+spartan https://github.com/spartan-ng/spartan.git 03b55602d140c4674b93248b943dce9b0161df3c
+egjs-flicking https://github.com/naver/egjs-flicking.git 158610f0897ac84ce570d9cc4c4fc9587a664bc6
+ultimate-backend https://github.com/juicycleff/ultimate-backend.git 0ae62a4b894c0e46baf75228ec88fae98f6abe06
+golevelup-nestjs https://github.com/golevelup/nestjs.git 503972ed78192ced08d8d5b16fa3f99ab6210736
+midway-ssr https://github.com/zhangyuang/ssr.git eb0d0fdc4d6e7415303d01420d5b0a3d5244f4ae
+unovis https://github.com/f5/unovis.git 9152934547fbce1167ba9e332985795de3cb4fd3
+calendar-heatmap https://github.com/DKirwan/calendar-heatmap.git 7574f8728c5903be65addd8043e187f457ffdba3
+responsible-ai-toolbox https://github.com/microsoft/responsible-ai-toolbox.git 28588f1b040ed3be8870e940aa3353c09eff3786
+hop-protocol https://github.com/hop-protocol/hop.git 3ae90badbed5708d72cec46d0efeb004a4d0c587
+ethereumjs-monorepo https://github.com/ethereumjs/ethereumjs-monorepo.git e806e9d0b6a18b89322aa080be1b04746c07726b
+changed-files https://github.com/tj-actions/changed-files.git 1254cca6ac8b9c3047ba83a11b20c9dd8d9b0572
+vscode-jest https://github.com/jest-community/vscode-jest.git b71edf0b1b80aa22a16222775fbd37dabab3aea0
+sqlite3-editor https://github.com/yy0931/sqlite3-editor.git e53fba4febe14231a4884193184f6dc9cc06c613
+vscode-project-manager https://github.com/alefragnani/vscode-project-manager.git aefcf11b422e2a260faeb63a7dfdd6adbf3b1e03

@@ -1,0 +1,45 @@
+//// [test/cases/ttttHeritageConstraintLaterDefault.ts] ////
+
+=== ttttHeritageConstraintLaterDefault.ts ===
+// A base class's type arguments are checked against constraints instantiated with the missing ones' defaults (tsc's
+// fillMissingTypeArguments): `Input extends ClientInput` where a later `ClientInput extends object = any` isn't
+// written is `Input extends any` (@aws-sdk's `extends $Command<XInput, XOutput, Config>`)
+declare abstract class Command<Input extends ClientInput, Output, ClientInput extends object = any> {
+>Command : Command<Input, Output, ClientInput>
+
+    input: Input;
+>input : Input
+
+    output?: Output;
+>output : Output | undefined
+}
+interface Req { a?: string }
+>a : string | undefined
+
+interface CmdInput extends Req {}
+export declare class C1 extends Command<CmdInput, number> {}
+>C1 : C1
+>Command : Command<CmdInput, number, any>
+
+export declare class C2 extends Command<string, number> {}
+>C2 : C2
+>Command : Command<string, number, any>
+
+declare abstract class Pair<A extends B, B extends string = "x"> { a: A; b: B }
+>Pair : Pair<A, B>
+>a : A
+>b : B
+
+export declare class P1 extends Pair<"x"> {}
+>P1 : P1
+>Pair : Pair<"x", "x">
+
+export declare class P2 extends Pair<"y"> {}
+>P2 : P2
+>Pair : Pair<"y", "x">
+
+const m = Command<CmdInput, number>;
+>m : (abstract new () => Command<CmdInput, number, any>) & { prototype: Command<any, any, any>; }
+>Command<CmdInput, number> : (abstract new () => Command<CmdInput, number, any>) & { prototype: Command<any, any, any>; }
+>Command : typeof Command
+

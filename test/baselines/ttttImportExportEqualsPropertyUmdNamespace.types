@@ -1,0 +1,43 @@
+//// [test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts] ////
+
+=== /node_modules/@types/dbg/index.d.ts ===
+declare var dbg: dbg.Debug & { dbg: dbg.Debug };
+>dbg : import("dbg").Debug & { dbg: dbg.Debug; }
+>dbg : any
+>dbg : import("dbg").Debug
+>dbg : any
+
+export = dbg;
+>dbg : import("dbg").Debug & { dbg: dbg.Debug; }
+
+export as namespace dbg;
+>dbg : import("dbg").Debug & { dbg: dbg.Debug; }
+
+declare namespace dbg {
+    interface Debug { (ns: string): Debugger; }
+>ns : string
+
+    interface Debugger { enabled: boolean; }
+>enabled : boolean
+}
+=== /a.ts ===
+import type { dbg } from "dbg";
+>dbg : any
+
+export interface I { d?: dbg.Debugger; e: typeof dbg }
+>d : import("dbg").Debugger | undefined
+>dbg : any
+>e : import("dbg").Debug
+>dbg : import("dbg").Debug
+
+declare const i: I;
+>i : I
+
+export const enabled = i.d?.enabled;
+>enabled : boolean | undefined
+>i.d?.enabled : boolean | undefined
+>i.d : import("dbg").Debugger | undefined
+>i : I
+>d : import("dbg").Debugger | undefined
+>enabled : boolean | undefined
+
