@@ -406,6 +406,36 @@ static MembersRare* members_rare_mut(Checker* me, Members* members) {
     return (MembersRare*)members->rare;
 }
 
+// MembersRare.by_name_order, null when a name is there twice
+static u32 const* members_by_name_order(Checker* me, Members const* members) {
+    MembersRare const* rare = members_rare(members);
+    if (rare->by_name_order || rare->by_name_order_none) return rare->by_name_order;
+    u32* order = arena_new_n(&my arena, u32, members->prop_count);
+    bool* taken = calloc(members->prop_count, sizeof(bool));
+    panic_if(!taken, "out of memory");
+    bool placed = true;
+    // Each prop goes where its name is in the sorted table
+    for (u32 i = 0; i < members->prop_count && placed; i++) {
+        uintptr_t name = (uintptr_t)members->props[i]->name;
+        u32 low = 0, high = members->prop_count;
+        while (low < high) {
+            u32 mid = low + (high - low) / 2;
+            if ((uintptr_t)members->props_by_name[mid]->name < name) low = mid + 1;
+            else high = mid;
+        }
+        placed = low < members->prop_count && members->props_by_name[low]->name == members->props[i]->name && !taken[low];
+        if (placed) {
+            taken[low] = true;
+            order[low] = i;
+        }
+    }
+    free(taken);
+    MembersRare* mut = members_rare_mut(me, (Members*)members);
+    if (placed) mut->by_name_order = order;
+    else mut->by_name_order_none = true;
+    return mut->by_name_order;
+}
+
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     builder_unindex(builder);
     Members* ret = arena_new(&my arena, Members);
@@ -415,19 +445,12 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
         Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
         Members const* same = builder->same_names;
         bool placed = same && same->props_by_name && same->prop_count == builder->props_count;
-        if (placed) {
-            // Each prop goes where its name is in the source's sorted table (unless a name is there twice)
-            for (u32 i = 0; i < builder->props_count && placed; i++) {
-                uintptr_t name = (uintptr_t)builder->props[i]->name;
-                u32 low = 0, high = same->prop_count;
-                while (low < high) {
-                    u32 mid = low + (high - low) / 2;
-                    if ((uintptr_t)same->props_by_name[mid]->name < name) low = mid + 1;
-                    else high = mid;
-                }
-                placed = low < same->prop_count && same->props_by_name[low]->name == builder->props[i]->name && !sorted[low];
-                if (placed) sorted[low] = builder->props[i];
-            }
+        // Each prop goes where its name is in the source's sorted table (unless a name is there twice)
+        u32 const* order = placed ? members_by_name_order(me, same) : nullptr;
+        placed = order;
+        for (u32 k = 0; k < builder->props_count && placed; k++) {
+            sorted[k] = builder->props[order[k]];
+            placed = sorted[k]->name == same->props_by_name[k]->name;
         }
         if (!placed) {
             memcpy(sorted, builder->props, sizeof(Prop*) * builder->props_count);
@@ -618,14 +641,12 @@ static bool function_is_thisless(FunctionImpl const* function) {
 
 // Adds the members written in (or, for classes/enums/namespaces, evaluated by the legacy checker into) an Interface
 static void set_decl_group(Checker* me, FunctionImpl const* function, TyDeclGroup const* group) {
-    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)function };
-    *intern_slot(me, &my links, key, 2) = group;
+    ty_link_set(me, KEY_DECL_GROUP, function, group);
 }
 
 // The interface declaration a method or call signature was written in, null if it's not an interface's
 TyDeclGroup const* ty_decl_group(Checker* me, FunctionImpl const* function) {
-    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)function };
-    return intern_get(&my links, key, 2);
+    return ty_link_get(me, KEY_DECL_GROUP, function);
 }
 
 // The group of a symbol's declarations in one place (tsc's reorderCandidates: the merged symbol and the declaration's

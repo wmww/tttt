@@ -14,7 +14,35 @@ typedef struct Arena {
 } Arena;
 enum { ARENA_AST_DIRECT = 1, ARENA_AST_CHUNKED = 2 };
 
-void* arena_alloc(Arena* me, size_t size); // zeroed, 8 byte aligned
+struct ArenaChunk {
+    ArenaChunk* next;
+    size_t used;
+    size_t cap;
+    size_t mapped; // Bytes mapped for the chunk, header included
+    size_t populated; // data's pages below this offset are faulted in (arena_populate()), at most cap
+    bool huge; // madvised for huge pages (huge_pages_take())
+    alignas(16) char data[];
+};
+
+// arena_alloc() past the current chunk's populated pages (`size` rounded up to 8)
+void* arena_alloc_slow(Arena* me, size_t size);
+#if defined(TTTT_ARENA_SITES) || defined(TTTT_SURVIVORS)
+void* arena_alloc(Arena* me, size_t size); // (Out of line: they record the caller)
+#else
+// Zeroed, 8 byte aligned. The bump inline, the rest out of line: as one function every call paid the slow path's
+// frame (36 instructions a call, 6M calls on zod: ~3% of its instructions)
+static inline void* arena_alloc(Arena* me, size_t size) {
+    size = (size + 7) & ~(size_t)7;
+    ArenaChunk* head = my head;
+    if (__builtin_expect(head && head->used + size <= head->populated, 1)) {
+        void* ret = head->data + head->used;
+        head->used += size;
+        my total += size;
+        return ret;
+    }
+    return arena_alloc_slow(me, size);
+}
+#endif
 void arena_drop(Arena* me);
 // Gives back the latest allocation (zeroed again) if `ptr` of `size` bytes is it, else false and nothing happens
 bool arena_pop_last(Arena* me, void* ptr, size_t size);

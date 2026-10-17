@@ -38,10 +38,12 @@ static bool alias_is_local(Symbol const* symbol) {
 static inline Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol) {
-    u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)symbol };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (!*slot) *slot = arena_new(&my arena, SymbolLinks);
-    return (SymbolLinks*)*slot;
+    SymbolLinks* ret = (SymbolLinks*)ty_link_get(me, KEY_SYMBOL_LINKS, symbol);
+    if (!ret) {
+        ret = arena_new(&my arena, SymbolLinks);
+        ty_link_set(me, KEY_SYMBOL_LINKS, symbol, ret);
+    }
+    return ret;
 }
 
 static inline SymbolLinks* symbol_links(Checker* me, Symbol const* symbol) {
@@ -1140,8 +1142,7 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
 typedef struct TyFreeParams { TyList params; bool known; } TyFreeParams;
 
 bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* out) {
-    u64 key[2] = { KEY_FUNCTION_FREE_PARAMS, (u64)(uintptr_t)function };
-    TyFreeParams const* cached = intern_get(&my links, key, 2);
+    TyFreeParams const* cached = ty_link_get(me, KEY_FUNCTION_FREE_PARAMS, function);
     if (!cached) {
         TyFreeParams* computed = arena_new(&my arena, TyFreeParams);
         bool eligible = !function->is_expression && !function->is_constructor && !function->accessor &&
@@ -1164,7 +1165,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
                 computed->known = true;
             }
         }
-        *intern_slot(me, &my links, key, 2) = computed;
+        ty_link_set(me, KEY_FUNCTION_FREE_PARAMS, function, computed);
         cached = computed;
     }
     *out = cached->params;
@@ -3851,9 +3852,8 @@ static bool is_unary_tuple_node(TypeNode const* node) {
 }
 
 static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ternary) {
-    u64 key[2] = { KEY_IMPLIED_CONSTRAINT, (u64)(uintptr_t)ternary };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (*slot) return (ImpliedConstraint*)*slot;
+    ImpliedConstraint* cached = (ImpliedConstraint*)ty_link_get(me, KEY_IMPLIED_CONSTRAINT, ternary);
+    if (cached) return cached;
     ImpliedConstraint* ret = arena_new(&my arena, ImpliedConstraint);
     TypeNode const* check_node = &ternary->maybe_sub;
     TypeNode const* extends_node = &ternary->maybe_super;
@@ -3863,7 +3863,7 @@ static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ter
     }
     ret->check_node = check_node;
     ret->extends_node = extends_node;
-    *slot = ret;
+    ty_link_set(me, KEY_IMPLIED_CONSTRAINT, ternary, ret);
     return ret;
 }
 

@@ -1449,8 +1449,8 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
 
 // tsc's getEffectsSignature(), remembered per call like there
 static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_statement) {
-    u64 key[3] = { KEY_FLOW_CALL, (u64)(uintptr_t)call_expr, is_statement };
-    CallEffects const* cached = intern_get(&my links, key, 3);
+    u32 kind = is_statement ? KEY_FLOW_CALL : KEY_FLOW_CALL_IN_EXPR;
+    CallEffects const* cached = ty_link_get(me, kind, call_expr);
     if (cached) return *cached;
     CallExpr const* call = call_expr->call;
     Expr const* callee_expr = &call->callable;
@@ -1474,7 +1474,7 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
     my flow_uncached--;
     CallEffects* stored = arena_new(&my arena, CallEffects);
     *stored = effects;
-    *intern_slot(me, &my links, key, 3) = stored;
+    ty_link_set(me, kind, call_expr, stored);
     return effects;
 }
 

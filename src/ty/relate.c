@@ -3444,15 +3444,13 @@ Ty const* ty_variance_check_instance(Checker* me, Symbol const* owner, u32 index
         *intern_slot(me, &my links, key, 3) = (void*)markers[which];
     }
     Ty const* ret = marker_instance(me, subject, index, markers[sub]);
-    u64 key[2] = { KEY_CHECK_MARKER_REF, ret->id };
-    *intern_slot(me, &my links, key, 2) = (void*)ret;
+    ty_link_set(me, KEY_CHECK_MARKER_REF, ret, ret);
     return ret;
 }
 
 // A reference made by ty_variance_check_instance(): related structurally, not by variances (tsc's isMarkerType)
 static bool is_check_marker(Checker* me, Ty const* ty) {
-    u64 key[2] = { KEY_CHECK_MARKER_REF, ty->id };
-    return intern_get(&my links, key, 2) != nullptr;
+    return ty_link_get(me, KEY_CHECK_MARKER_REF, ty) != nullptr;
 }
 
 static bool is_alias_marker(Checker* me, Ty const* ty) {
@@ -4718,8 +4716,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     ) {
         return ty;
     }
-    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    Ty const* cached = intern_get(&my links, key, 2);
+    Ty const* cached = ty_link_get(me, KEY_BASE_CONSTRAINT, ty);
     if (cached == &base_constraint_in_flight) {
         // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
         // resolution barrier, where it's computed again
@@ -4743,14 +4740,15 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     ConstraintStack inner = { .up = stack, .identity = identity, .len = len + 1 };
     // (tsc simplifies every type first: indexed accesses here, conditional types only where their branches as written
     // could make them simplify, see may_simplify_conditional())
-    *intern_slot(me, &my links, key, 2) = &base_constraint_in_flight;
+    ty_link_set(me, KEY_BASE_CONSTRAINT, ty, &base_constraint_in_flight);
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
     Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
         ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
-    void const** slot = intern_slot(me, &my links, key, 2);
     // (The first answer stays: one computed again below the barrier answered already)
-    if (*slot == &base_constraint_in_flight) *slot = circular ? &base_constraint_circular : ret ? ret : &base_constraint_none;
+    if (ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight) {
+        ty_link_set(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : ret ? ret : &base_constraint_none);
+    }
     return circular ? nullptr : ret;
 }
 
@@ -4765,16 +4763,14 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack cons
 // (Asked for while it's computed above the barrier: circular, tsc's pushTypeResolution failing, an answer for now only)
 static bool has_non_circular_base_constraint(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
-    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    bool in_flight = intern_get(&my links, key, 2) == &base_constraint_in_flight && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
+    bool in_flight = ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
     base_constraint(me, ty, nullptr);
-    return !in_flight && intern_get(&my links, key, 2) != &base_constraint_circular;
+    return !in_flight && ty_link_get(me, KEY_BASE_CONSTRAINT, ty) != &base_constraint_circular;
 }
 
 // Whether the base constraint is being computed (its circularity isn't known yet)
 bool ty_base_constraint_in_flight(Checker* me, Ty const* ty) {
-    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
-    return intern_get(&my links, key, 2) == &base_constraint_in_flight;
+    return ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight;
 }
 
 Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, nullptr); }

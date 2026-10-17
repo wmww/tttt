@@ -14,16 +14,6 @@
 
 #define ARENA_CHUNK_SIZE (8 * 1024 * 1024)
 
-struct ArenaChunk {
-    ArenaChunk* next;
-    size_t used;
-    size_t cap;
-    size_t mapped; // Bytes mapped for the chunk, header included
-    size_t populated; // data's pages below this offset are faulted in (arena_populate())
-    bool huge; // madvised for huge pages (huge_pages_take())
-    alignas(16) char data[];
-};
-
 // Faults the next MB of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
 // Chunks are bumped through in order, so those pages are about to be written anyway
 [[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
@@ -69,10 +59,6 @@ void arena_sites_print(void) {
         }
     }
 }
-static void* arena_alloc_inner(Arena* me, size_t size);
-#endif
-#ifdef TTTT_SURVIVORS
-static void* arena_alloc_inner(Arena* me, size_t size);
 #endif
 
 // An Arena.ast_backed's allocation, out of the thread's current materialization (plan 78 stage 2). A chunked one's
@@ -89,28 +75,8 @@ static void* arena_alloc_inner(Arena* me, size_t size);
     return chunk->data;
 }
 
-void* arena_alloc(Arena* me, size_t size) {
-    size = (size + 7) & ~(size_t)7;
-#ifdef TTTT_ARENA_SITES
-    arena_site_count(0, __builtin_return_address(0), size);
-#endif
-    my total += size;
-#ifdef TTTT_SURVIVORS
-    void* ret = arena_alloc_inner(me, size);
-    survivors_record(me, ret, size, __builtin_return_address(0));
-    return ret;
-}
-
-static void* arena_alloc_inner(Arena* me, size_t size) {
-#endif
-#ifdef TTTT_ARENA_SITES
-    void* ret = arena_alloc_inner(me, size);
-    arena_recent[arena_recent_next++ % ARENA_RECENT] = (typeof(arena_recent[0])){ ret, __builtin_return_address(0) };
-    return ret;
-}
-
-static void* arena_alloc_inner(Arena* me, size_t size) {
-#endif
+// The allocation itself (`size` rounded up to 8), counted in Arena.total by the caller
+static void* arena_alloc_chunk(Arena* me, size_t size) {
     if (!my head || my head->used + size > my head->cap) {
         if (my ast_backed) return arena_alloc_materialized(me, size);
         size_t cap = size > ARENA_CHUNK_SIZE ? size : ARENA_CHUNK_SIZE;
@@ -144,6 +110,29 @@ static void* arena_alloc_inner(Arena* me, size_t size) {
     if (my head->used > my head->populated) arena_populate(my head);
     return ret;
 }
+
+void* arena_alloc_slow(Arena* me, size_t size) {
+    my total += size;
+    return arena_alloc_chunk(me, size);
+}
+
+#if defined(TTTT_ARENA_SITES) || defined(TTTT_SURVIVORS)
+void* arena_alloc(Arena* me, size_t size) {
+    size = (size + 7) & ~(size_t)7;
+    my total += size;
+#ifdef TTTT_ARENA_SITES
+    arena_site_count(0, __builtin_return_address(0), size);
+#endif
+    void* ret = arena_alloc_chunk(me, size);
+#ifdef TTTT_ARENA_SITES
+    arena_recent[arena_recent_next++ % ARENA_RECENT] = (typeof(arena_recent[0])){ ret, __builtin_return_address(0) };
+#endif
+#ifdef TTTT_SURVIVORS
+    survivors_record(me, ret, size, __builtin_return_address(0));
+#endif
+    return ret;
+}
+#endif
 
 bool arena_pop_last(Arena* me, void* ptr, size_t size) {
     size = (size + 7) & ~(size_t)7;
@@ -186,12 +175,13 @@ void arena_drop(Arena* me) {
 
 // The hash with the word count in the top 16 bits (see InternEntry)
 static u64 hash_words(u64 const* words, u32 count) {
+    // (A word at a time two operations, multiplying by an odd constant: keys differing in one word differ. Then
+    // murmur3's finalizer: the product's high bits into the low ones table_index() reads)
     u64 h = 0x9e3779b97f4a7c15ull ^ count;
-    for (u32 i = 0; i < count; i++) {
-        h ^= words[i];
-        h *= 0xff51afd7ed558ccdull;
-        h ^= h >> 29;
-    }
+    for (u32 i = 0; i < count; i++) h = (h ^ words[i]) * 0xff51afd7ed558ccdull;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53ull;
+    h ^= h >> 29;
     // (Bit 47 keeps it from being 0 without touching the bits that index the table)
     return (h & 0x00007fffffffffffull) | 1ull << 47 | (u64)(count < INTERN_LONG_KEY ? count : INTERN_LONG_KEY) << 48;
 }

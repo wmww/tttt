@@ -178,12 +178,11 @@ static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) 
 Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
     if (!compiler_options()->strict_null_checks || (type->flags & TYF_UNDEFINED)) return type;
     // (Asked for every optional parameter of every signature relation and call)
-    u64 key[2] = { KEY_OPTIONAL_PARAM, type->id };
-    Ty const* cached = intern_get(&my links, key, 2);
+    Ty const* cached = ty_link_get(me, KEY_OPTIONAL_PARAM, type);
     if (cached) return cached;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     Ty const* ret = ty_union(me, parts, 2, nullptr, (TyList){0});
-    *intern_slot(me, &my links, key, 2) = ret;
+    ty_link_set(me, KEY_OPTIONAL_PARAM, type, ret);
     return ret;
 }
 

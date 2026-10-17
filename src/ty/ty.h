@@ -829,6 +829,10 @@ typedef struct MembersRare {
     // `interface ZodJSONSchema extends _ZodJSONSchema`, `type _ZodJSONSchema = ZodUnion<[..., ZodArray<ZodJSONSchema>]>`):
     // what an eager base's instantiation can get back to (see mentions_members_in_flight())
     bool recursive_bases;
+    // Members of more than 8 properties with distinct names that were instantiated (members_by_name_order()): the
+    // index in props of each of props_by_name, which an instantiation's props (the same names in the same order) take
+    u32 const* by_name_order;
+    bool by_name_order_none; // (Computed, and a name is there twice)
 } MembersRare;
 
 static inline MembersRare const* members_rare(Members const* me) {

@@ -1318,8 +1318,7 @@ Ty const* ty_contextual_parameter_type_unwidened(Checker* me, InitializedBinding
 }
 
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
-    u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
-    Ty const* ret = intern_get(&my links, key, 2);
+    Ty const* ret = ty_link_get(me, KEY_CONTEXT_PARAM, parameter);
     FunctionImpl const* this_of = initialized_binding_rare(parameter)->this_of;
     if (!ret && this_of) {
         // (A setter's: the getter's `this` parameter, tsc's getTypeForVariableLikeDeclaration)
@@ -1783,7 +1782,7 @@ static void assign_contextual_signature_as(
         if (is_this) {
             // An unannotated `this` parameter takes the contextual signature's (tsc's assignContextualParameterTypes)
             if (!i->initializer.binding.has_explicit_type && sig->this_type) {
-                *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer }, 2) = sig->this_type;
+                ty_link_set(me, KEY_CONTEXT_PARAM, &i->initializer, sig->this_type);
             }
             continue;
         }
@@ -1826,8 +1825,7 @@ static void assign_contextual_signature_as(
             u64 pattern_key[2] = { KEY_CONTEXT_PARAM_PATTERN, (u64)(uintptr_t)&i->initializer.binding };
             *intern_slot(me, &my links, pattern_key, 2) = type;
         }
-        u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
-        *intern_slot(me, &my links, key, 2) = type;
+        ty_link_set(me, KEY_CONTEXT_PARAM, &i->initializer, type);
         // (Per assignment: a later one that didn't widen clears what an earlier pass left)
         if (unwidened || intern_get(&my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)&i->initializer }, 2)) {
             *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)&i->initializer }, 2) = unwidened;
@@ -5542,9 +5540,7 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
             type = ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_UNDEFINED : TY_ANY);
         }
         if (!type) continue;
-        u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
-        void const** slot = intern_slot(me, &my links, key, 2);
-        if (!*slot) *slot = type;
+        if (!ty_link_get(me, KEY_CONTEXT_PARAM, &i->initializer)) ty_link_set(me, KEY_CONTEXT_PARAM, &i->initializer, type);
     }
     free(args);
 }

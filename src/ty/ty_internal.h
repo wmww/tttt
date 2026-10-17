@@ -37,7 +37,7 @@ enum {
     KEY_CONDITIONAL_INSTANCE, // (root conditional type id, what its outer type parameters map to) -> Ty
     // First word of every key in Checker.links
     KEY_TYPE_PARAM,     // Symbol -> Ty
-    KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks
+    KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks (node_links)
     KEY_GENERIC_PARAMS, // Generic -> TyList
     KEY_ALIAS_INSTANCE, // (alias Symbol, argument ids) -> Ty
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
@@ -56,11 +56,11 @@ enum {
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
     KEY_PROP_WRITE_TYPE, // Prop with .write_type_known -> prop_write_type() of it, null for none (members.c)
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)
-    KEY_BASE_CONSTRAINT, // type id -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)
+    KEY_BASE_CONSTRAINT, // type (node_links) -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)
     KEY_INFERRED_TRUE_BRANCH, // (conditional type id) -> inferred_true_branch() of it (relate.c, tsc's resolvedInferredTrueType)
     KEY_DISTRIBUTION_DEPENDENT, // (root conditional type id) -> 1 + ty_conditional_distribution_dependent() (conditional.c)
     KEY_DISTRIBUTIVE_CONSTRAINT, // (conditional type id) -> distributive_constraint() of it, the conditional itself for none (relate.c)
-    KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
+    KEY_IMPLIED_CONSTRAINT, // TernaryType (node_links) -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_TYPE_VARIABLE_REDUCTION, // (type variable id, primitive id) -> reduce_type_variable_intersection (checker.c)
     KEY_DEFINITELY_RELATED, // (source id, target id, which) -> 1 + ty_definitely_assignable/unassignable (conditional.c)
@@ -71,9 +71,9 @@ enum {
     KEY_ALIAS_VARIANCES, // alias Symbol -> variance array
     KEY_ALIAS_MARKER,   // type id -> non-null if it is an alias instantiation variances are measured with
     KEY_CHECK_MARKER,   // (type parameter name atom, which) -> `super-T`/`sub-T` of a variance annotation check
-    KEY_CHECK_MARKER_REF, // type id -> non-null if it is a reference a variance annotation is checked with
+    KEY_CHECK_MARKER_REF, // type (node_links) -> non-null if it is a reference a variance annotation is checked with
     KEY_GENERIC_RELATION, // (relation key words) -> number of a relation between generic references (relate.c generic_relation_key())
-    KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
+    KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter, node_links) -> Ty from the contextual signature
     KEY_CONTEXT_PARAM_UNWIDENED, // InitializedBinding -> its contextual type before a wider initializer replaced it
     KEY_CONTEXT_PARAM_PATTERN, // Binding (a parameter's pattern) -> non-null if its contextual type fell back to it
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
@@ -91,7 +91,7 @@ enum {
     KEY_LITERAL_INFERENCE, // Object literal Expr -> the serial (cast, never 0) of the OuterInference its KEY_LITERAL_CONTEXT came from
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
     KEY_LITERAL_ARG_OF, // Object literal Expr -> the CallExpr it is an argument of (set when the call is first resolved)
-    KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function -> TyDeclGroup
+    KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function (node_links) -> TyDeclGroup
     KEY_DECL_GROUP_OF,  // Symbol, declaration (block) -> TyDeclGroup
     KEY_JSX_ATTRIBUTE,  // JsxAttribute -> the type its element's attributes checked it as (last check)
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
@@ -118,9 +118,10 @@ enum {
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
-    KEY_FLOW_CALL,      // (call Expr, is a statement) -> CallEffects, see flow.c
+    KEY_FLOW_CALL,      // call Expr -> CallEffects as a statement's (node_links), see flow.c
+    KEY_FLOW_CALL_IN_EXPR, // call Expr -> CallEffects as an expression's (node_links)
     KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union
-    KEY_OPTIONAL_PARAM, // type -> ty_optional_param_type() of it (`T | undefined`)
+    KEY_OPTIONAL_PARAM, // type (node_links) -> ty_optional_param_type() of it (`T | undefined`)
     KEY_UNION_PAIR,     // (type id, type id) -> ty_union() of the two, without an alias
     KEY_INTERSECTION_OF, // (keep_empty_object, type ids...) -> intersection() of them, without an alias
     KEY_ASSIGNMENT_REDUCED, // (declared type id, assigned type id) -> assignment_reduced_type() (flow.c)
@@ -137,7 +138,7 @@ enum {
     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
     KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
     KEY_CONTEXT_FREE, // FunctionImpl -> its return-only type (tsc's links.contextFreeType, return_only_type())
-    KEY_FUNCTION_FREE_PARAMS, // FunctionImpl -> TyFreeParams of its annotations, see ty_function_free_params()
+    KEY_FUNCTION_FREE_PARAMS, // FunctionImpl (node_links) -> TyFreeParams of its annotations, see ty_function_free_params()
     KEY_FUNCTION_TYPE_MENTIONS, // function type -> FunctionMentions, see ty_function_type_mentions()
     KEY_CIRCULAR_BINDING, // Binding (or an `export default` SymbolDecl) -> non-null if its type references it (TS2502, TS7022, see ty_binding_type())
     KEY_ELEMENT_WIDENED_ANY, // binding element -> its type before widening, when that widens to any
