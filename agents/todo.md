@@ -39,8 +39,10 @@ and the defaults, output byte-identical at every K and budget.
    oracle unchanged, instructions flat or better); two entries were wrong about their cause (Awaited, intersection
    caching). Plans 82 (optional types carry undefined) and 83 (re-entrant member resolution) written; hacks.md 679 ->
    644 lines. Triage: the harness's leak list (157 tests) is deferred-body noise.
-7. Plan 77's fan-out if its rate was 70-90%, else **checker balance** (plan 72 "Lead": a cost known before checking,
-   or file-granularity work stealing with K-independent output; measure on the 4-vCPU box with `--checkers 4`).
+7. Done (this commit): checker balance by work stealing (plan 72): a checker done with its share takes the tail of
+   the running share with the most left, its first taken file in a fresh checker. Defaults: corpora -5..-15% wall but
+   tsc +7% (SMT), the sweep's 285 biggest -5.2% wall, +0.4% peak; every oracle unchanged. inbox-zero's gap to bun is a
+   deferral restart, not balance (triage).
 8. **Perf session**: pays back what entries 3-4 cost; perf_leads.md "Deferred bodies" (re-materialization, ~2% of
    vscode) first. Ends with `scripts/bench.sh --runs 3 --bun` and plan 67's "Where it stands" table refreshed.
 9. **Triage.**

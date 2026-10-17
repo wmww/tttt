@@ -26,13 +26,19 @@ caveats", the 12-core sections); this session ran on the 4-vCPU box again (`npro
 - **inbox-zero (and its apps/web), webcmd, solid are slower than bun at the defaults** (2026-10-17, plan 81 stage 1):
   inbox-zero 1.45 s vs bun 0.86 at 4 checkers, already before stage 1's budget (not recycles). Find where its K4
   time goes (`TTTT_FILE_TIMES=1`, per-checker times in `--time`): checker balance (plan 72) or a per-checker warm-up.
+  2026-10-17 (work stealing): not balance (4 checkers at 382-384 ms each, still 1.51 s). apps/web **restarts without
+  deferral** (`TTTT_DEFER_STATS=1`: "signature collided 1", "restarts 1"; `--time` shows load+parse and resolve
+  twice, and typecheck 754 ms against 384 per checker): one deferred body's lookup (`function_impl_lookup_deferred_body()`
+  in `deferred_bodies_materialize`) failed and the whole program is redone. Find the body (plan 78's collision case)
+  and why its signature's walk saw its names; that is likely ~0.5 s of the 1.5.
 - **TS5115/TS2589 depend on the checker's history** (2026-10-17, plan 81 stage 1): the instantiation depth limit
   reports where a checker first hits it, then the error type is cached (tsgo's `instantiateTypeWithAlias` does the
   same). Each fresh checker reports it again: flagflip's xstate sloppy/nosnc cells show 1 at K1 (tsc's 1), 2 at the
   old 96 MB defaults, 3 at stage 1's 16 MB (State.ts:395, graph/utils.ts:91, test/meta.test.ts:80; `--checker-memory
   0`: 5). kdiff/recycle don't see it (default flags). A fix would make the first report program-wide (an atomic
   "reported" per circular type set, kept across recycles), which still depends on which checker gets there first;
-  or accept it as tsgo's own K-dependence (tsgo at 4 checkers can do the same).
+  or accept it as tsgo's own K-dependence (tsgo at 4 checkers can do the same). Since work stealing (2026-10-17) which
+  checker gets there first depends on timing: flagflip's spurious count flickers 8 / 9 between identical runs.
 - **The harness's leak detector reports 157 tests since it defers bodies** (found in the hacks audit, 2026-10-17;
   bisected to 26914074, "Harness defers function bodies by default"; 0 with `baseline_tests --no-defer-bodies`): a
   materialized body's AST is in an arena dropped without a walk, so what its parse malloc'd outside the arena leaks

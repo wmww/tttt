@@ -11,6 +11,17 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Checker work stealing (2026-10-17, todo entry 7)
+Plan 72 "Checker balance: work stealing". Defaults on this box (4 checkers, best of 3, wall s, without -> with):
+webpack 0.68 -> 0.62, zod 0.43 -> 0.38, vue 0.42 -> 0.36, effect 0.67 -> 0.61, tanstack-router 0.36 -> 0.32, drizzle
+0.81 -> 0.78, valibot 0.27 -> 0.26, excalidraw 0.57 -> 0.55, vscode 6.42 -> 6.28, type-fest 0.49 -> 0.50, xstate
+0.21, **tsc 0.29 -> 0.31** (SMT: see plan 72). Peak RSS equal or lower but webpack 394 -> 408 MB (tanstack-router 264
+-> 226). Source sweep's 285 projects with a K1 arena over 40 MB (`perfsweep.py --defaults-only --min-arena 40`, one at
+a time, `TTTT_NO_STEAL=1` for the base): wall total -5.2% (102.5 -> 97.2 s), median -5.6%; peak RSS +0.4% total,
+median -0.6%, p90 +10% (keeping the thief's checker: -7.1% wall, +3.8% peak). Every oracle unchanged (flagflip 18 / 8
+/ 3, one run 18 / 9 / 3: the known TS5115 flicker). Instructions (K1, no stealing) flat: vscode 93.606 G, the rest
+within 0.05% of the hacks audit's.
+
 ## Hacks audit (2026-10-17, todo entry 6)
 Eleven checker-side guesses replaced by tsc's rule (merged from four worktrees): statement errors at function/namespace
 names, `alias_is_local()`, `super(...)` constructor arity filtering, ContainsSpread as a literal flag, `f(x.push)`

@@ -200,7 +200,9 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
 - **Checker balance**: whole-file partitioning is bounded by the biggest file (tsc's checker.ts, zod's
   deep-partial.test.ts). Dealing by content size was tried and reverted (bytes are a poor cost proxy: JS vs
   declarations, and scattering a directory's files duplicates shared types); `deal_files()` cuts program order into 2
-  runs per checker. Next: a cost model (per-file check time of a previous run, or type counts). Sharing types
+  runs per checker, and a checker done with its share takes the tail of a running one's (work stealing, plan 72,
+  2026-10-17). What's left is the biggest file: only a cost model (per-file check time of a previous run, or type
+  counts) could start it first. Sharing types
   between checkers is not a lever (2026-10-08, measurements.md "Perf session"). tsgo 7.1's import-graph FENNEL
   partitioner (compiler/checkerpool.go), prototyped with bytes for node counts, duplicated 2-21% more types than the
   contiguous runs (2026-10-13, plan 62).

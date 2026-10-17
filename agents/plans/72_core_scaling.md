@@ -1,7 +1,7 @@
 # Plan 72: core scaling
 Planned 2026-10-15 (todo entry 8). The answer: **parallel declare/link is a "not now"**. The biggest serial part is
-the loader thread's own work during loading, so stage 1 cut that (done 2026-10-16, below; the table is from before it). Checker imbalance is the biggest non-serial loss and
-stays a lead without a stage. Numbers are from this 4-vCPU box (2 cores x SMT), release build, best of a few runs, load
+the loader thread's own work during loading, so stage 1 cut that (done 2026-10-16, below; the table is from before it). Checker imbalance, the biggest non-serial loss, is
+now handled by work stealing (below). Numbers are from this 4-vCPU box (2 cores x SMT), release build, best of a few runs, load
 < 1. `TTTT_RESOLVE_TIMES=1` (added by this session) prints name resolution's steps.
 
 ## Where the time goes (vscode, 138 MB checked source; webpack; effect)
@@ -82,11 +82,23 @@ At T4 the loader waited 1 ms on vscode and 26 on webpack: discovery isn't starvi
 the critical path (stage 1). Redo the measurement at 12 threads on the human's machine (`TTTT_LOAD_POOL_STATS=1`:
 "the loader waited"). Only a wait of more than ~10% of the load phase would justify the pre-scan.
 
-## Lead: checker balance
-This is the biggest non-serial loss: 30-40% over the ideal on most corpora at 12, 3x on type-fest. A cost known
-before checking is the missing piece. Ideas, none measured: per-file node counts weighted by kind (type-level-heavy
-`.ts` against plain code); splitting a heavy checker's leftover files once it finishes last (work stealing at file
-granularity; the output must stay K-independent, `scripts/kdiff.py`). bugs/perf_leads.md "Checker balance" keeps it.
+## Checker balance: work stealing (done 2026-10-17, todo entry 7)
+A checker done with its dealt share takes the last unclaimed files of the running share with the most source left
+(`steal_file()` in program.c; `TTTT_NO_STEAL=1` turns it off to measure; `--time` prints each checker's "files taken
+from others"). The thief's first taken file starts in a fresh checker when there's a memory budget (the CLI's
+default): kept, its old warm state stacked under the new region's (peak +3.8% on the sweep's biggest). Output: the
+file -> checker map now depends on timing, which is fine because nothing a file reports depends on its checker or its
+history (kdiff, recycle and threadcheck unchanged), except the known exceptions (triage: TS5115/TS2589's first report
+per checker; flagflip's xstate cells flicker 8 / 9 spurious between runs).
+- 4-vCPU box, defaults (4 checkers), best of 3: webpack 0.68 -> 0.62 s, zod 0.43 -> 0.38, vue 0.42 -> 0.36, effect
+  0.67 -> 0.61, tanstack-router 0.36 -> 0.32, drizzle 0.81 -> 0.78, vscode 6.42 -> 6.28; type-fest flat (its biggest
+  file is the floor); **tsc 0.29 -> 0.31**: checker 0 holds checker.ts, the critical path, and the others now work
+  next to it instead of idling, which on 2 cores x SMT slows its core. Peak RSS mostly equal or lower.
+- Source sweep's 285 biggest (K1 arena > 40 MB, `perfsweep.py --defaults-only --min-arena 40`): wall total -5.2%
+  (median -5.6%), peak RSS +0.4% total (median -0.6%, p90 +10%).
+- Left: the biggest file is still the bound (type-fest, tsc). Only a cost known before checking could start it first;
+  stealing makes the deal's balance matter less, so a cost model would now only be worth it for that ordering. The
+  12-core machine should show more than this box (idle checkers there are idle cores, not idle SMT siblings).
 
 ## The 12-core bench (done 2026-10-16, measurements.md "The 12-core machine")
 vscode at 24 threads: load phase 389 ms (the loader waited 6 ms, workers 59% busy: the loader thread is still the
