@@ -11,6 +11,31 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 78 stage 2, materializations dropped with the last checker incarnation (2026-10-17, todo entry 3)
+The 4-vCPU box. RSS MB after parse / after names / peak (`/usr/bin/time`) / wall s (best of 3), stage 1 (826d28fc)
+against stage 2; K1 = `--checkers 1` (4 threads: materialize-ahead helpers), defaults = 4 threads, 4 checkers:
+| corpus | K | stage 1 | stage 2 |
+|---|---|---|---|
+| vscode | 1 | 768 / 1027 / 2490 / 11.35 | 766 / 1026 / **1574** / 11.82 |
+| vscode | defaults | 766 / 1024 / 2643 / 5.56 | 768 / 1028 / **1829** / 5.79 |
+| effect | 1 / defaults | 136 / 203 / 545 / 1.26 ; 136 / 202 / 716 / 0.68 | 136 / 204 / 544 / 1.26 ; 136 / 204 / 704 / 0.69 |
+| webpack (JS) | 1 / defaults | 220 / 311 / 542 / 1.07 ; 220 / 307 / 629 / 0.64 | 222 / 309 / 540 / 1.07 ; 222 / 313 / 634 / 0.64 |
+| drizzle | 1 / defaults | 93 / 130 / 415 / 0.78 ; 91 / 127 / 608 / 0.49 | 91 / 127 / 405 / 0.79 ; 93 / 129 / 597 / 0.49 |
+| type-fest | 1 / defaults | 45 / 67 / 412 / 1.07 ; 47 / 70 / 638 / 0.54 | 47 / 68 / 401 / 1.06 ; 47 / 69 / 621 / 0.54 |
+| tsc | 1 / defaults | 55 / 84 / 240 / 0.45 ; 57 / 84 / 286 / 0.29 | 59 / 87 / 228 / 0.46 ; 59 / 90 / 281 / 0.30 |
+vscode single-threaded (K1 T1): 2477 -> 1545 MB, 13.1 -> 13.7 s. Bun 1.4.3 on this box (plan 67): vscode 1443 MB at one
+thread, 1590 at four. The checkers' own budget (plan 67) is now most of what's left: vscode's program is ~1.0 GB after
+names. `TTTT_DEFER_STATS=1` vscode K1 T1: 8165 files materialized, 737 again after a drop (1110 without the carry-over
+of cross-demanded files at a recycle), 9014 drops; materializing 1.8 s, again 0.36 s, dropping 0.08 s (a
+`block_drop()` walk instead: 0.44 s). The defaults: 475 again. Never dropping (an experiment): 2511 MB, +1.8% wall at
++0.35% instructions over stage 1 (the 4 KB pages: huge pages -0.15 s). Callgrind vscode K1 T1: 94.04 -> 96.14 G
+(+2.2%: the re-materializations' parse and name lookups). `scripts/instrcount.sh` stage 1 -> 2: tsc 4.637 -> 4.664,
+type-fest 14.097 -> 14.104, valibot 3.502 -> 3.510, react 1.424 -> 1.429, nest 1.103 -> 1.103, webpack 9.680 -> 9.680,
+zod 5.385 -> 5.400, xstate 2.712 -> 2.716, drizzle 6.641 -> 6.654, vue 6.545 -> 6.559, effect 10.216 -> 10.251, vscode
+94.036 -> 96.154, excalidraw 7.685 -> 7.695, tanstack-router 5.304 -> 5.304 G. Oracles all unchanged (suite 0 lost with and without deferral, `--defer-bodies
+--checker-memory 0` 0 of 15952 outputs differ, kdiff/recycle 1 / 3363), TSan clean on effect, drizzle, tsc, vue at K2
+recycling after every file and K1 with helpers, `TTTT_AST_POISON=1` clean on every corpus at `--checker-memory 0`.
+
 ## Plan 78 stage 1, deferred bodies materialized at check (2026-10-17, todo entry 2)
 The 4-vCPU EPYC machine (default threads 4). `/tmp/memtable.sh`-style runs, `--time` RSS MB after parse / after names /
 peak (`/usr/bin/time`) / wall s, deferral (the CLI's default now) against `--no-defer-bodies`:

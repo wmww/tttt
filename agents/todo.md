@@ -32,9 +32,13 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    defaults 5.6 -> 5.5; instructions +0..2% (tsc +2.0, vscode +1.7); every oracle unchanged, kdiff/recycle 1 / 3363;
    0 restarts on the corpora; suite with `--defer-bodies` 0 lost). Stage 2 must bound the helpers without running them
    next to the checker (a 32-file window cost +25%: plan 78 "Stage 1: done").
-3. **Plan 78 stage 2**: one arena per materialization with an O(1) drop, refcounted by checker incarnations,
-   per-thread chunk pool, fixed LazyType slot ranges per file, the program-level node-key audit; the memory table.
-4. **Plan 78 stage 3**: cross-demand policy (file vs body granularity, measured), TSX skipper, `import()` in bodies,
+3. Done 2026-10-17: plan 78 stage 2 (materializations dropped with the last checker incarnation that read them, no
+   address reuse so no pool or audit; vscode peak K1 2490 -> **1574 MB**, defaults 2643 -> **1829**, others equal or
+   lower; output identical, every oracle unchanged; wall **+4%** on vscode at K1 and the defaults, instructions +2.2%:
+   re-materialization at file granularity, 737 files on vscode K1). Over the 3% budget: entry 4 starts by winning it
+   back (plan 78 stage 3 "Cross demand, first").
+4. **Plan 78 stage 3**: cross-demand policy first (vscode's +4% wall back under 3%: single bodies for return-type
+   demands, or a better keep policy; measured with `TTTT_DEFER_STATS`), TSX skipper, `import()` in bodies,
    `-b`, the harness default, kdiff/recycle, perfsweep, scaleprobe; plan 78 closed into documentation.md
    ("Deferred bodies") and hacks.md.
 5. **Plan 80** (AST boxing, spans, mmapped text; main + Opus agents in worktrees for the mechanical parts): Expr

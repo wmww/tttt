@@ -149,32 +149,42 @@ As designed, with these differences (documentation.md "Deferred bodies" has how 
 - Materializations allocate in per-thread arenas (`binder_materialize_arenas()`) and the file's AST arena; a helper's
   pending reports (they need a checker) wait in `DeferredBodies.unfinished`. `DeferredBody` is 144 bytes (vscode ~14
   MB): the block and the snapshot could shrink in stage 2.
-### Stage 2 (todo entry 3): drop at the last incarnation, O(1)
-- **One arena per materialization** holding everything it makes: the bodies' AST (`ast_malloc` bumps it while
-  materializing, as parse_file()'s thread does for the file arena), scopes, flow nodes, symbols, `AccessSite`s, rare
-  structs made by the walk, the yields arrays; the malloc'd leftovers of plan 63 (cooked string and template cstrs,
-  `Value` strings) become arena `csview`s for bodies at least. Then the drop is an arena release, no `block_drop()`
-  walk; at drop, the outermost FunctionImpls' `body` and DeferredBody state are reset (no reader holds it).
-- **Per-thread chunk pool** (no mmap/munmap or fresh faults per body; no prefault or huge-page budget): dropped
-  chunks go back to the dropping thread's pool, sized from the file's body source (~14 B per source byte). Addresses
-  *are* reused: safe for per-checker state (above); audit program-level node-keyed state (`Error.once_key`, the
-  binder's pending lists, Program caches written during check) and purge or re-key it. Chunk reuse must not assume
-  zeroed memory (check `ast_new()`/arena users that rely on fresh zero pages; memset if so).
-- **LazyType slots**: a materialization's LazyTypes get a slot range fixed per file at its first materialization
-  and reused by every later one (same parse, same count), so the process-wide counter (hacks.md) stops growing with
-  re-materializations and memo pages for a dropped incarnation go with its checker.
-- **Churn on vscode** (to measure): ~1.26 GB of materialized body memory per run once, plus cross-demand rounds
-  (591 files / 9.5 MB of source per round, ~130 MB) per incarnation that demands them (K1: up to 10): ~1.3-1.6 GB of
-  arena traffic. Fresh pages would be ~400k faults (~0.2-0.4 s, 2-3% of K1); with the pool, faults only up to the
-  pool's high-water mark (K1 ~130 MB of live bodies, ~33k pages).
-Validate: stage 1's oracles again (byte-identical, `TTTT_AST_POISON=1` for dropped materializations: every reader
-must hold a ref), **the memory table** (measurements.md "Plan 78": RSS after parse / after names / peak at K1 and T4,
-`/usr/bin/time`, vscode, effect, webpack, drizzle, type-fest, before and after, next to bun's), instrcount +3%.
+### Stage 2: done (2026-10-17, todo entry 3)
+documentation.md "Deferred bodies" ("Memory and drops") has how it works, hacks.md the debts. Against the design:
+- **No address reuse, so no chunk pool and no audit**: a materialization's memory comes from per-thread slabs of its
+  own (`ast_materialize_begin()`), page aligned, never madvised for huge pages, `MADV_DONTNEED`ed at the drop and never
+  handed out again. Nothing keyed by an address can meet another node; the cost is fresh pages for every
+  materialization (as stage 1 had). The walk's `ast_malloc()`s go to the arena too (14 MB on vscode); the parse's
+  malloc'd strings (~8 MB per round of vscode's bodies) leak at a drop instead of a `block_drop()` walk (0.4 s).
+- **Binder allocations**: the shard's arenas are `Arena.ast_backed`: the binder arena bumps the materialization
+  directly, the scope arena takes 1-16 KB chunks of it so that `scope_release()`'s pops still work (sharing one bump
+  pointer kept every scope: +100 MB).
+- **What a drop puts back** (the walk writes outside its bodies): the function scope's locals and the outer flow nodes'
+  flags and return label (`DeferredScopeSnapshot`, 72 B per body, made by the first materialization), the function's
+  walk fields (reset at the start of each walk; zero before the first, checked), a few undo-logged writes (fields'
+  `ts_assigned`, `computed_this_assignments`, expando containers, a rare struct the walk made), the file's unused
+  registrations. A generic undo log for all of it was ~70 MB live on vscode. A body declaration merged into a parameter
+  pins the file (0 on the corpora). `TTTT_AST_POISON=1` faults on a dropped page: clean on every corpus at
+  `--checker-memory 0`, vscode at 32, the suite at 0.
+- **LazyType slots**: not done (no need: re-materializations take ~10% more slots on vscode, far from the 1G limit).
+- **Diagnostics**: the first materialization's stand; a later one's parse and walk reports are dropped unmade.
+- **Policy**: at a recycle the new incarnation keeps the files the old one read for other files (`cross_files`):
+  vscode K1 re-materializations 1110 -> 737. Pinning every cross-demanded file: 511, +50 MB, no faster. The rest are
+  files checked and dropped in an earlier segment that a later file reads (stage 3).
+- **Helpers**: bounded at 4 MB of body source ahead (`AHEAD_LIMIT_KB`, `TTTT_AHEAD_KB`), woken by the checkers when
+  they took 7/8 of it (a condvar: polling cost +0.3 s on vscode K1 T4).
+- **Cost** (vscode, 4-core box): see measurements.md "Plan 78 stage 2". Instructions +2.2% on vscode (all of it parse
+  and name lookups of re-materializations; 0 to +0.5% elsewhere); wall ~+5% at K1 and at the defaults, of which ~1.5%
+  is the materialization slabs' 4 KB pages (huge pages would win it back, but a drop splitting a huge page frees its
+  memory only at the kernel's deferred split: leads for stage 3/the perf session). Over the 3% budget: stage 3's
+  cross-demand policy has to win it back.
 ### Stage 3 (todo entry 4): policy, breadth, closing
-- Cross demand: measure re-materialization cost at file granularity (count rounds per run); if it shows in
-  instructions, materialize single bodies when the demand is a return type (the 95% kind) and the resolve walk's
-  cross-body writes are proven not to matter for it (audit `is_assigned*`/`referenced`/`flow_start` readers), or keep
-  cross-demanded files alive across one recycle.
+- **Cross demand, first** (stage 2 left vscode ~+5% wall, budget 3%): re-materialization is measured (`TTTT_DEFER_STATS`:
+  `rematerialized`, `rematerialize us`; vscode K1 737 files, ~0.25 s single-threaded, +2.2% instructions). Materialize
+  single bodies when the demand is a return type (the 95% kind) and the resolve walk's cross-body writes are proven not
+  to matter for it (audit `is_assigned*`/`referenced`/`flow_start` readers), or a cheaper keep policy (stage 2 tried
+  carry-over of what an incarnation read for others: kept; pinning every cross-demanded file: no gain). The other
+  ~1.5%: the materialization slabs' 4 KB pages (huge pages: -0.15 s on vscode T1, but see stage 2 on splitting).
 - **TSX**: a JSX-aware skipper (JSX text with quotes and braces, `<` in expression position) or eager .tsx: measure on
   excalidraw, bulletproof-react, tanstack-router (app corpora are mostly .tsx). JavaScript stays eager (expandos,
   `this.x =` declarations inside bodies).
