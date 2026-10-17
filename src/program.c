@@ -4090,7 +4090,7 @@ void program_typecheck(Program* me) {
     }
     if (helpers) {
         // (The checkers are done: what's left of the helpers' files no checker needs)
-        atomic_store(&my ahead_next, UINT32_MAX);
+        atomic_store(&my ahead_next, (u32)vec_source_file_ptr_size(&my check_files));
         for (u32 t = 0; t < helpers; t++) pthread_join(helper_threads[t], nullptr);
         free(helper_threads);
     }

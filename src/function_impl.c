@@ -231,7 +231,7 @@ bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class
 }
 
 static DeferredBodies* deferred_bodies_of(SourceFile* file);
-static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow_, FlowBuilder* outer, Scope* function_scope,
+static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
     bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs);
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
@@ -474,35 +474,33 @@ static DeferredBodies* deferred_bodies_of(SourceFile* file) {
 
 // The end of function_impl_lookup_names_as(): the body's walk and what it leaves on the function. `outer` is null for a
 // deferred body
-static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow_, FlowBuilder* outer, Scope* function_scope,
+static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
     bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs
 ) {
-    #define flow (*flow_)
     TypeFlow const* saved_flow = type_flow_enter_statements();
     if (!skip_body) block_lookup_names_as(function_impl_body(me), function_scope, errs);
     type_flow_restore(saved_flow);
 
     my end_flow = nullptr;
-    if (!flow_is_unreachable(flow.current) && my has_body) my end_flow = flow.current;
-    my has_explicit_return = flow.has_explicit_return;
-    my has_bare_return = flow.has_bare_return;
-    if (flow.yields || my rare) {
+    if (!flow_is_unreachable(flow->current) && my has_body) my end_flow = flow->current;
+    my has_explicit_return = flow->has_explicit_return;
+    my has_bare_return = flow->has_bare_return;
+    if (flow->yields || my rare) {
         FunctionImplRare* rare = function_impl_rare_mut(me);
-        rare->yields = flow.yields;
-        rare->yield_count = flow.yield_count;
+        rare->yields = flow->yields;
+        rare->yield_count = flow->yield_count;
     }
-    flow.yields = nullptr;
-    if (flow.return_target) {
-        flow_add_antecedent(&flow, flow.return_target, flow.current);
-        flow.current = flow_finish_label(flow.return_target);
-        if (my is_constructor || js_constructor_candidate) function_impl_rare_mut(me)->return_flow = flow.current;
+    flow->yields = nullptr;
+    if (flow->return_target) {
+        flow_add_antecedent(flow, flow->return_target, flow->current);
+        flow->current = flow_finish_label(flow->return_target);
+        if (my is_constructor || js_constructor_candidate) function_impl_rare_mut(me)->return_flow = flow->current;
     }
-    flow_builder_finish(&flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
+    flow_builder_finish(flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
     if (is_iife && !outer->dead) {
-        outer->current = flow.current;
-        outer->has_flow_effects |= flow.has_flow_effects;
+        outer->current = flow->current;
+        outer->has_flow_effects |= flow->has_flow_effects;
     }
-    #undef flow
 }
 
 bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {

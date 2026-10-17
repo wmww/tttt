@@ -199,7 +199,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    binder and struct diets, core scaling planned (72), a real-code fan-out, emit scale probes~~ done.
 18. ~~The loader's serial work (72 stage 1), plans 73-74, `.d.ts` for JS (64 stage 6), per-file parse arenas (63
    stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes measured (76, parked)~~ done.
-19. **Now: memory** (the human's goal): deferred function bodies (78, gated), AST boxing / spans / mmapped text (80), a
+19. **Now: memory** (the human's goal): deferred function bodies (78; stage 1 in, the CLI's default: vscode's program
+   after names 2.16 -> 1.03 GB, peaks wait for stage 2's drop), AST boxing / spans / mmapped text (80), a
    copying checker recycle (79, gated), a perf session that pays for it, the memory bench against bun and tsgo. Plan
    58 (7.1.0 stable re-pin, then plan 66 stage 5's fan-out) once it's on npm, whenever that falls.
 20. Then: fresh repositories (77), checker balance (72 "Lead"), the second memory window if the target isn't met
