@@ -333,3 +333,25 @@ one session. The rule is that memory may cost at most ~3% speed and the window's
 
 **For you, after the window**: a 12-core `scripts/bench.sh --runs 3 --bun PATH` so the memory table has the
 many-core column we can't measure here.
+
+## 2026-10-17 — insights (after the nineteenth window)
+The memory window did what it set out to. The biggest change: function bodies are now parsed only when a checker
+needs them and dropped afterwards. With source text released after use and a smaller per-checker budget, VS Code's
+peak fell from 2.78 to 1.56 GB at the defaults (Bun: 1.55) and from 2.49 to 1.39 GB single-threaded (Bun: 1.41). tttt
+now uses less memory than TypeScript 7 on every corpus. It is still faster than Bun everywhere, 1.35-4x. The cost was
+about 3% wall time on VS Code, partly paid back by the perf session. Correctness didn't move: every oracle is unchanged.
+The copying-recycle idea was measured and declined at its gate, as the plan allowed.
+
+Your target is half met. Single-threaded, tttt is at or below Bun on 7 of 14 corpora and within 1.4x on the rest. At
+the defaults (every core) it is below Bun on only 3 of 14, with mid-size projects at 1.5-2x (effect 605 vs 315 MB).
+Those programs are small, so most of their memory is type-checker state, repeated once per checker. Tuning the budget
+only trades speed for memory. The real problem is density: on effect, tttt spends roughly 740 bytes per type. The next
+window measures this against TypeScript 7's own structures (plan 81), with a go/no-go gate. If it says no, the gap is
+duplication across checkers, and we will look again at sharing declared types between them.
+
+Also next: testing on ~30 fresh repositories, chosen by a different rule than the current sweep, to see whether our
+saturated oracles generalize (plan 77). Two debt sessions are also scheduled. Deferred bodies added a new set of
+invariants to keep: what a body's check writes outside itself must be undone when the body is dropped. Their oracles
+exist, but the code should make those invariants hard to break. TypeScript 7.1.0 stable isn't on npm yet; the re-pin
+waits for it. **For you**: the 12-core `scripts/bench.sh --runs 3 --bun` is still the one memory column we can't
+measure here.

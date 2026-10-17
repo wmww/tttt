@@ -5,11 +5,11 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-16, insights after the eighteenth window)
+## State (2026-10-17, insights after the nineteenth window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-16 npm's `latest` was 7.0.2, `next`
-  7.1.0-dev.20261016.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
-  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13766 / 13805** (dts 1834 / 1859,
+  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-17 npm's `latest` was 7.0.2, `next`
+  7.1.0-dev.20261017.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
+  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13773 / 13812** (dts 1834 / 1859,
   JavaScript's 351 / 352 in the headline since plan 64 stage 6). Every oracle cache is tsgo 7.1's, every probe runs
   tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
@@ -22,12 +22,12 @@ types components) are the oracle, not the goal; real projects that are clean und
   `$ExpectType` 68639 / 68640, flagflip 18 / 6 / 3, scenarios 210 / 0 failed, **source sweep 3356 / 3363** (the 7
   left argued or plan-sized for one repository: bugs/sourcesweep_checker.md), kdiff 1 / 3363, recycle 4 / 3363,
   mutation 7 / 2909 per seed (tsc order artifacts mostly).
-- **Perf**: tttt is 2-6x faster than single-threaded tsgo; against bun's `bun check` 1.2-2.5x at the defaults on
-  the human's 12 cores (vscode 2.50 s vs bun 2.92 vs tsgo 7.95) and 1.6-3.4x single-threaded. **Memory is the one
-  axis we lose, and it is now the goal**: vscode K1 ~2.55 GB peak (program ~2.2 GB after names: AST ~1.37 GB with
-  557 MB of zero words, binder ~0.5, text ~0.17) against bun's 1.4; at the defaults 1.6-3x bun's (12 cores K24 ~4.7
-  GB under plan 75's 1.5 GB checker cap vs bun 2.1). The compact AST was measured and declined (plan 75: the zero
-  words are sparse optional fields, not padding); per-file arenas (plan 63) and recycling (plan 67) are in.
+- **Perf and memory** (4-vCPU box, plan 67 "Where it stands"): faster than bun's `bun check` everywhere (1.35-4x
+  at the defaults, 1.5-4.2x single-threaded), 2-6x faster than single-threaded tsgo, and less memory than tsgo on every
+  corpus. **Against bun's memory**: single-threaded at or below it on 7 of 14 corpora (vscode 1388 vs 1414 MB) and
+  within 1.4x on the rest; at the defaults below it on 3 of 14, vscode tied (1560 vs 1552, from 2778), the mid-size
+  corpora 1.5-2x (effect 605 vs 315, valibot 314 vs 158). The program is at bun's level now (vscode 846 MB after
+  names, from ~2.2 GB: deferred bodies, released source text); what's left is per-checker state times K.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow (return mappers included) and
@@ -42,42 +42,35 @@ types components) are the oracle, not the goal; real projects that are clean und
   (cloneTypeAsModuleType), permissive instantiation, member identity (members aren't Symbols; a class's member
   symbols are one checker table, interfaces merged with classes still apply rules on top), the CLI modes above.
 
-## Course correction (insights of 2026-10-16, end of the eighteenth window)
-- **The window did what it planned, ten sessions and 102 commits**: the AST in per-file arenas (vscode 8.1 -> 5.9 s at
-  the defaults on 4 cores; huge pages only within a `/proc/buddyinfo` budget after finding that over-madvising cost a
-  third of vscode's wall in compaction stalls), JavaScript declaration emit (dtsdiff 1077 -> 1193, the suite's JS dts
-  0 -> 351 / 352), the loader's serial work -15%, two hacks deleted properly (plans 73, 74), the 1.5 GB checker cap,
-  plan 76 measured, a real-code fan-out (+4 source sweep projects, +39 dtsdiff), a perf session (type-fest -40%
-  instructions, every corpus -1..-4%). 0 lost at every merge.
-- **Every oracle is saturated**, and that is a risk, not a result: the 174 sweep repositories were chosen once by one
-  GitHub query and drained over eight sessions; 3356 / 3363 says nothing about code tttt has never seen. Plan 77
-  (fresh repositories chosen by a different rule; the number is the day-one match rate) is the first correctness
-  session after the memory window.
-- **The human chose memory as the next goal (2026-10-16, in chat)**: less memory than every competitor in most
-  cases, as fast as possible, features parked (plan 76: watch, incremental, the cheap modes). Diets are over (plan 75
-  closed them; the small items left are plan 80's). The levers that are big enough: **deferred function bodies**
-  (plan 78: bodies are most of the AST and of the binder's flow nodes and scopes, and nearly every body is needed by
-  one checker; done 2026-10-17: vscode after names 2161 -> 1027 MB, K1 peak 2490 -> ~1570 MB (bun 1443), defaults
-  2643 -> ~1850, at +1-3% wall against eager) and **a copying checker recycle** (plan 79, **declined 2026-10-17** at
-  its gate: a recycle's declaration-level survivors are 35% of vscode's arena at 64 MB and 37-57% of dokploy's, and
-  re-deriving them costs ~15-35 ms a recycle, what copying would; the defaults' lever is the per-checker budget
-  itself, vscode 1747 -> 1537 MB at +1% with 96 MB each, todo entry 7). Plan 80 takes the mechanical items (Expr boxing,
-  8-byte spans by address lookup, mmapped text) with a 50 MB gate each.
-- **Speed buys memory, not the reverse**: a memory change may cost ~3% wall at most, the window's perf session pays
-  it back from the single-thread leads, and no trade is made at a worse rate than another item offers. Output stays
-  byte-identical at every checker count and budget: the kdiff/checkerdiff/recycle oracles are the net for budget changes.
-- **Hacks grew again: 573 -> 623 lines (+11 entries, -3)**. Three are JavaScript declaration emit "guesses from one or
-  two suite tests" (comment margins, `@overload` comments), labelled as such; acceptable for an emitter whose oracle
-  is byte equality, not for the checker. The per-window debt session is skipped this window (memory takes all ten);
-  the next window takes two.
+## Course correction (insights of 2026-10-17, end of the nineteenth window)
+- **The memory window delivered its structural lever and declined its second at the gate, as designed.** Deferred
+  function bodies (plan 78, 3 sessions) halved vscode's program; source text mmapped and released (plan 80); the
+  copying recycle (plan 79) measured and declined; the per-checker budget floor 128 -> 96 MB; a perf session paid
+  most of the speed back (vscode +2.1% instructions over the window's start, every other corpus at or below; wall at
+  the defaults ~+3%). Correctness untouched: every oracle unchanged at every merge, suite 13773 / 13812.
+- **The human's target is half met.** Single-threaded, "less than every competitor in most cases" holds (7 of 14 at
+  or below bun, the rest within 1.4x; tsgo everywhere). At the defaults it doesn't: 3 of 14. The mid-size programs'
+  gap is checker state: effect's checker holds ~740 bytes per type at K1 where bun's whole run is 377 MB for, likely,
+  tsgo's ~940k types. **The budget is the wrong knob** (entries 7-8 only moved along a speed/memory frontier); the
+  right one is density, bytes per unit of checking work, which buys fewer recycles and a lower budget at once. Plan
+  81 measures it first and has a gate; below the gate the gap is duplication across checkers and the shared frozen
+  layer plan 67 rejected comes back for a second look with numbers.
+- **Deferred bodies are a new invariant surface** (hacks.md "Deferred bodies": +54 lines, what a body's walk writes
+  outside its memory must be undone at a drop, readers must go through `function_impl_walked()`). The oracles for it
+  exist (`TTTT_AST_POISON`, `kdiff -m 0`, the suite against `--no-defer-bodies`) and are in `scripts/oracles.py`; the
+  fix the hacks entry names (the walk's outputs behind accessors, so the compiler finds readers) belongs in a debt
+  session before the next feature touches the binder. The debt sessions skipped this window (two promised) are in the
+  next one.
+- **Plan 77 goes first**: every oracle is still saturated, and the memory work could not have exposed a
+  generalization gap. Its day-one match rate on fresh repositories decides how much of the next windows is breadth.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
   mechanism for one test; work them only if real code shows the mechanism or it falls out of other work. Fidelity to
   tsgo *artifacts* (a runaway's model, a cache collision) is special-casing in a respectable form: don't.
 - **Memory target** (2026-10-16, the human): less memory than every competitor (bun, tsgo) in most cases, as fast
-  as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Structural levers only
-  (plan 78; plan 79 declined at its gate), mechanical items with a 50 MB gate (plan 80); a memory change costs at most ~3% wall and the
+  as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Met single-threaded,
+  not at the defaults (2026-10-17): the lever now is checker density (plan 81), not the budget; a memory change costs at most ~3% wall and the
   window's perf session pays it back. Measure as `/usr/bin/time` peak at K1 and at the defaults next to bun's, every
   corpus (`scripts/bench.sh --bun`), and the 12-core run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
@@ -200,9 +193,10 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    binder and struct diets, core scaling planned (72), a real-code fan-out, emit scale probes~~ done.
 18. ~~The loader's serial work (72 stage 1), plans 73-74, `.d.ts` for JS (64 stage 6), per-file parse arenas (63
    stage 2), the memory endgame (75: no compact AST, a 1.5 GB checker cap), CLI modes measured (76, parked)~~ done.
-19. **Now: memory** (the human's goal): deferred function bodies (78; stage 1 in, the CLI's default: vscode's program
-   after names 2.16 -> 1.03 GB, peaks wait for stage 2's drop), AST boxing / spans / mmapped text (80), a
-   copying checker recycle (79, declined at its gate: the per-checker budget instead), a perf session that pays for it, the memory bench against bun and tsgo. Plan
-   58 (7.1.0 stable re-pin, then plan 66 stage 5's fan-out) once it's on npm, whenever that falls.
-20. Then: fresh repositories (77), checker balance (72 "Lead"), the second memory window if the target isn't met
-   (what plan 78 and the budget left), plan 76 only if the human reopens it.
+19. ~~Memory: deferred function bodies (78), mmapped source text (80), the copying recycle measured and declined
+   (79), the budget floor, a perf session, the memory bench against bun and tsgo~~ done.
+20. **Now**: fresh repositories (77), checker density (81: planning with a gate, then its stages), two debt sessions
+   (deferred bodies' accessors, JS emit guesses), checker balance (72 "Lead"), a perf session. Plan 58 (7.1.0 stable
+   re-pin, then plan 66 stage 5's fan-out) once it's on npm, expected after 2026-11-24.
+21. Then: the shared declared layer if plan 81 says the defaults' gap is duplication; plan 76 only if the human
+   reopens it.
