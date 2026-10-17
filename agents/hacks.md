@@ -32,8 +32,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `Checker.return_context` (`function_impl_enter_return_context`): the contextual type of `return`s is saved checker
   state where tsc walks up to the function (getContextualReturnType). Wrong for a `return` evaluated outside its body's
   check (shows as types-baseline/TS2322 differences on returns).
-- LazyType slots (`lazy_slot_new`): one process-wide counter, never reused, taken eagerly (sparse tables ~6% RSS, panic
-  past 1G slots); per-file numbering would fix both. `lazy_type_drop` resets a slot only if a checker is current, and AST
+- LazyType slots (`lazy_slot_new`): process-wide numbers, never reused, taken eagerly (panic past 1G slots: vscode
+  takes ~12M, re-materialized bodies take new ones). Handed out in per-thread blocks of a memo page, a fresh one per file
+  (2026-10-17), the pages a checker touches are still only ~60% used (vscode: ~7 MB a checker at 4 checkers, ~20 MB
+  at one): what's left of the sparseness is memos never evaluated, small. Per-file numbering would end the panic. `lazy_type_drop` resets a slot only if a checker is current, and AST
   slots rely on `checker_drop` running before the AST is freed.
 - Once-per-file diagnostics (`Error.once_key`, `error_ctx_keep_first_once()`; TS2343/TS2807 from
   `ty_check_emit_helpers`): with K checkers tttt keeps the one of the checker whose file comes first; tsgo keeps the

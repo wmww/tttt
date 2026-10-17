@@ -253,6 +253,12 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   CommonJS, JSDoc), not one regression.
 
 ## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plans/75_memory_endgame.md the compact AST; measurements.md "Memory breakdown" the corpus table)
+- **K1's peak is the checker's sawtooth** (2026-10-17, measurements.md "The K1 budget"): vscode at one checker sits at
+  ~1050 MB after each recycle and ~1450 before the next (the budget, 256 MB at K1, counts the arena and tables; the
+  materializations and LazyMemo pages ride on top). 128 MB at K1 is -15% peak / +2% wall on the corpora (vscode
+  -248 MB at +1.5%) but +6% / -8.5% on the sweep's 169 biggest (folo renderer +62%, mikro-orm/tests +19%: the shared
+  graph re-derived per recycle); 192 is +3% / -2% there. No signal found that tells the two apart (segment lengths
+  overlap): the budget would need a deterministic measure of what a recycle re-derives.
 - **A copying checker recycle (plan 79, declined 2026-10-17; measurements.md "Plan 79")**: what survives a recycle
   from declaration-level roots is 35% of vscode's arena at 64 MB (10-27 MB a recycle) and 37-57% of dokploy's, over
   the plan's 25% gate (drizzle 13%, type-fest 3%). On vscode a recycle's re-derivation costs ~15-35 ms, about what a
@@ -279,8 +285,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
     later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
     stack and copied out exact would remove the churn, not much memory.
   - **After plan 78 the AST diet is small change** (plan 80, closed 2026-10-17): vscode after names holds 1.32M Exprs
-    (95 MB) and ~470 MB of AST, diffuse. Leads, each under the 50 MB gate: ClassItem 448 B (an inline FunctionImpl
-    288; box it, 147 sites, ~-17 MB; box a field's value and type too, ~-25), FunctionArg 200, PortStatement 216 +
+    (95 MB) and ~470 MB of AST, diffuse. Leads, each under the 50 MB gate: ClassItem 448 B: **not a lead**
+    (counted 2026-10-17: vscode has 80k methods, 49k fields, 11k constructors, 63 MB; methods are the union's biggest
+    variant, so boxing the FunctionImpl grows memory, +9 MB, and exact per-kind sizes save ~7 MB), FunctionArg 200, PortStatement 216 +
     ModuleRef 112 per import (~67 MB of import/export after names), Expr boxing ~-15..20, 8-byte spans ~-35.
   - Struct diet leftovers (plan 63 stage 1b, < 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
     because of IdentifierExpr: `symbol` into the union when it differs from `target`, with a 2-bit kind and a per-file

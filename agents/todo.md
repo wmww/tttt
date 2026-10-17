@@ -61,9 +61,12 @@ byte-identical at every checker count and budget (kdiff, checkerdiff, recycle or
    fresh checker rebuilds their schema graph (dokploy ~70 MB in one file, drizzle +20-27 MB in each of several); a
    largest-growth warm-up guard only moved along the same frontier (and let type-fest grow to 767 MB): dropped. The
    12-core cap left as is (binds past 16 checkers), unmeasured. Every oracle unchanged; K1 untouched.
-8. **Expr/Span leftovers of plan 80** (perf_leads.md "Memory": ClassItem's inline FunctionImpl, ~-17..40 MB) or the
-   LazyType slots fallback, whichever the K1 peak table says is bigger; or a second session of entry 7 if drizzle's
-   re-derivation is one memo kind worth keeping across a recycle.
+8. Done 2026-10-17: none of the entry's leads was worth a session (measurements.md "The K1 budget, LazyType slot
+   blocks"). ClassItem boxing would *grow* vscode (+9 MB: methods are the biggest variant; exact sizes ~-7); the
+   LazyType slots now come in per-thread page blocks, a fresh one per file (pages touched -24% at 4 checkers, peaks
+   within noise); drizzle's re-derivation isn't one memo kind (entry 7). The real K1 lever is the budget (vscode's
+   peak is the checker's sawtooth: 128 MB is -15% peak / +2% wall on the corpora) but the sweep pays +6% (folo
+   renderer +62%): K1 stays at 256 until something can tell a cheap recycle from an expensive one (perf_leads.md).
 9. **Perf session, paying for the window**: `scripts/instrcount.sh` against the starting point on every corpus
    (find what entries 2-8 cost: bisect with `--bin`), then the single-thread leads of bugs/perf_leads.md (type-fest's
    tuple members merge, lazy parameter types with a cheaper mapper composition, the Source-keyed Maybe cache then

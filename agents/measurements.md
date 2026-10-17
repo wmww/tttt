@@ -11,6 +11,33 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## The K1 budget, LazyType slot blocks (2026-10-17, todo entry 8)
+The 4-vCPU box. **The K1 budget** (`--checkers 1`, 4 threads, `--checker-memory MB`; wall s / peak MB / recycles,
+best of 2; 256 is the default at one checker):
+| corpus | 256 | 192 | 128 | 96 |
+|---|---|---|---|---|
+| vscode | 11.95 / 1450 / 9 | 11.96 / 1317 / 13 | 12.13 / **1202** / 20 | 12.35 / 1125 / 28 |
+| effect | 1.26 / 542 / 1 | 1.27 / 476 / 2 | 1.28 / 408 / 3 | 1.32 / 371 / 5 |
+| webpack | 1.08 / 544 / 0 | 1.08 / 519 / 1 | 1.10 / 446 / 1 | 1.08 / 415 / 2 |
+| drizzle | 0.79 / 399 / 1 | 0.85 / 342 / 2 | 0.89 / 293 / 3 | 0.98 / 251 / 5 |
+| type-fest | 1.07 / 399 / 2 | 0.99 / 404 / 3 | 1.07 / 479 / 4 | 1.06 / 289 / 6 |
+| zod / zod-root | 0.64 / 396 ; 0.74 / 424 | 0.62 / 327 ; 0.73 / 356 | 0.65 / 274 ; 0.77 / 297 | 0.67 / 229 ; 0.81 / 259 |
+| all 15 -p corpora | 20.97 s / 6246 | 20.94 / 5807 | 21.40 / 5286 (+2% / -15%) | |
+The source sweep's 169 biggest (`--checkers 1 --threads 1`, alternating): 256 116.5 s / 49.2 GB summed peak (28
+recycles), 192 120.0 / 48.2 (+3% / -2%), 128 123.5 / 45.0 (+6% / -8.5%, 136 recycles; folo renderer 3.02 -> 4.90 s,
+mikro-orm/tests 5.74 -> 6.85, folo/apps/mobile 1.17 -> 1.77, react-select +36%). Over the window's 3%: K1 stays at 256.
+vscode's K1 peak is the checker's sawtooth (RSS ~1050 MB after each recycle, ~1450 before the next, sampled every
+0.25 s), so the budget is its lever, but only on programs whose files don't share a big graph. At the defaults the
+sweep's 169 run 4 checkers (165) and never see the K1/K2 budget: 128 total changed nothing there.
+**LazyType slot blocks** (slots per thread in memo-page blocks, a fresh one per file): memo pages touched on vscode
+(summed over recycles) 63.4k -> 57.8k at K1, 88.7k -> 67.0k at 4 checkers (~10 -> ~7 MB a checker; pages ~60% used
+now, 33-57% before). Peaks within noise (vscode defaults 1486 -> 1478 MB, K1 1447 -> 1448; effect, webpack, drizzle,
+type-fest +-8), walls unchanged (best of 3, alternating). **ClassItem** census (vscode): 80k methods, 49k fields, 11k
+constructors (63 MB at 448 B); boxing the FunctionImpl would grow it (methods are the biggest variant), exact sizes
+save ~7 MB: declined. Oracles all unchanged. `scripts/instrcount.sh` (callgrind): tsc 4.624, type-fest 14.086,
+valibot 3.495, react 1.416, nest 1.089, webpack 9.647, zod 5.375, xstate 2.705, drizzle 6.644, vue 6.532, effect
+10.243, vscode 95.517, excalidraw 7.709, tanstack-router 5.325 G (plan 80's within 0.03%).
+
 ## The checkers' budget at the defaults (2026-10-17, todo entry 7; floor 128 -> 96 MB)
 The 4-vCPU box, 4 threads, 4 checkers (`--checker-memory MB` = MB each below 128). Wall s / peak MB / recycles,
 best of 2, `scripts/perfsweep.py --corpora --defaults-only --defaults-args "--checker-memory MB"`:
