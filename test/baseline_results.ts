@@ -1180,6 +1180,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedTupleRestErrorElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMergedOwnerPossiblyReferenced': {
         errors: true,
         symbols: true,
