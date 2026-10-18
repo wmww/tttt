@@ -1,0 +1,99 @@
+//// [test/cases/ttttCollidingListMembersCountTwice.ts] ////
+
+=== ttttCollidingListMembersCountTwice.ts ===
+// Members of a list that print the same name but aren't the same reference (one alias's instantiations: tsc's
+// typesAreSameReference compares alias instances) are printed again after the list (tsc's mapToTypeNodes), counted
+// twice: past the truncation length sooner, and the reprint's own elisions are what shows
+type OptionalPropertyNames<T> = {
+>OptionalPropertyNames : OptionalPropertyNames<T>
+
+    [K in keyof T]-?: {} extends {
+        [P in K]: T[K];
+    } ? K : never;
+}[keyof T];
+type SpreadProperties<L, R, K extends keyof L & keyof R> = {
+>SpreadProperties : SpreadProperties<L, R, K>
+
+    [P in K]: L[P] | Exclude<R[P], undefined>;
+};
+type SpreadTwo<L, R> = Pick<L, Exclude<keyof L, keyof R>> & Pick<R, Exclude<keyof R, OptionalPropertyNames<R>>> & Pick<R, Exclude<OptionalPropertyNames<R>, keyof L>> & SpreadProperties<L, R, OptionalPropertyNames<R> & keyof L>;
+>SpreadTwo : SpreadTwo<L, R>
+
+type Spread<A extends readonly [...any]> = A extends [infer L, ...infer R] ? SpreadTwo<L, Spread<R>> : {};
+>Spread : Spread<A>
+
+type ExecutionArgs = { x: number };
+>ExecutionArgs : ExecutionArgs
+>x : number
+
+declare const v: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>;
+>v : SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>
+>req : any
+>res : any
+>params : any
+
+declare const o: { schema: any; operationName: any; document: any; variableValues: any; contextValue: typeof v; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; } };
+>o : { schema: any; operationName: any; document: any; variableValues: any; contextValue: typeof v; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }
+>schema : any
+>operationName : any
+>document : any
+>variableValues : any
+>contextValue : SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>
+>v : SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>
+>rootValue : { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }
+>execute : (args: ExecutionArgs) => any
+>args : ExecutionArgs
+>subscribe : (args: ExecutionArgs) => any
+>args : ExecutionArgs
+
+const h2: number = o;
+>h2 : number
+>o : { schema: any; operationName: any; document: any; variableValues: any; contextValue: typeof v; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }
+
+async function g() {
+>g : () => Promise<{ schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }>
+
+  const args = { schema: 1 as any, operationName: 1 as any, document: 1 as any, variableValues: 1 as any, contextValue: v, rootValue: { execute: (args: ExecutionArgs) => 1 as any, subscribe: (args: ExecutionArgs) => 1 as any } };
+>args : { schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }
+>{ schema: 1 as any, operationName: 1 as any, document: 1 as any, variableValues: 1 as any, contextValue: v, rootValue: { execute: (args: ExecutionArgs) => 1 as any, subscribe: (args: ExecutionArgs) => 1 as any } } : { schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }
+>schema : any
+>1 as any : any
+>1 : 1
+>operationName : any
+>1 as any : any
+>1 : 1
+>document : any
+>1 as any : any
+>1 : 1
+>variableValues : any
+>1 as any : any
+>1 : 1
+>contextValue : SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>
+>v : SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>
+>rootValue : { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }
+>{ execute: (args: ExecutionArgs) => 1 as any, subscribe: (args: ExecutionArgs) => 1 as any } : { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }
+>execute : (args: ExecutionArgs) => any
+>(args: ExecutionArgs) => 1 as any : (args: ExecutionArgs) => any
+>args : ExecutionArgs
+>1 as any : any
+>1 : 1
+>subscribe : (args: ExecutionArgs) => any
+>(args: ExecutionArgs) => 1 as any : (args: ExecutionArgs) => any
+>args : ExecutionArgs
+>1 as any : any
+>1 : 1
+
+  return args;
+>args : { schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }
+}
+const h: (req: string, params: number) => void = (req: any, res: any, params: any) => g();
+>h : (req: string, params: number) => void
+>req : string
+>params : number
+>(req: any, res: any, params: any) => g() : (req: any, res: any, params: any) => Promise<{ schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }>
+>req : any
+>res : any
+>params : any
+>g() : Promise<{ schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }>
+>g : () => Promise<{ schema: any; operationName: any; document: any; variableValues: any; contextValue: SpreadTwo<{ req: any; res: any; params: any; }, SpreadTwo<SpreadTwo<{}, {}>, SpreadTwo<unknown, {}>>>; rootValue: { execute: (args: ExecutionArgs) => any; subscribe: (args: ExecutionArgs) => any; }; }>
+

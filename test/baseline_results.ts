@@ -116,6 +116,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttCollidingListMembersCountTwice': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCollidingNamesNoModule': {
         errors: true,
         symbols: true,
@@ -9128,7 +9133,7 @@ const baselines = {
     'crossProductUnionIntersectionRepeatedPropDeclarationsNoOOM1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ctsFileInEsnextHelpers': {
         errors: true,

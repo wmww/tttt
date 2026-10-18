@@ -344,11 +344,30 @@ static Symbol const* reference_name_symbol(Checker* me, TyDisplay d, Ty const* t
     return declared->declared.symbol;
 }
 
-// tsc's mapToTypeNodes: members of a list (union, intersection, tuple, type arguments) that would print the same name
-// for different types (`[Yep, Yep]` of two namespaces) are printed fully qualified. Null if none are; else which are
-// (to free)
-static bool* name_collisions(Checker* me, TyDisplay d, TyList list) {
-    if (d.enclosing || d.fully_qualified || list.len < 2 || list.len > 256) return nullptr;
+// tsc's typesAreSameReference: the same type, or types with the same symbol (an interface's or class's references, a
+// type literal's instantiations); null for those without (intersections, unions... an alias's instantiations of one)
+static void const* reference_identity(Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    if (ty->kind == TY_DECLARED) return ty->declared.symbol;
+    if (ty->kind == TY_ANONYMOUS) {
+        for (u32 depth = 0; ty->anonymous.target && ty->anonymous.target->kind == TY_ANONYMOUS && depth < 64; depth++) ty = ty->anonymous.target;
+        return ty;
+    }
+    return nullptr;
+}
+
+static bool same_reference(Ty const* a, Ty const* b) {
+    if (a == b) return true;
+    void const* x = reference_identity(a);
+    return x && x == reference_identity(b);
+}
+
+// tsc's mapToTypeNodes: members of a list (union, intersection, tuple, type arguments) that print the same name, not
+// all the same reference (`[Yep, Yep]` of two namespaces, `X<A<1>, A<2>>` of an alias), are printed again fully
+// qualified after the list (counted twice: see ListReprint). Null if none are; else which are (to free)
+static uint8_t* name_collisions(Checker* me, TyDisplay d, TyList list) {
+    // (Printed from a place outside a message, nothing changes: the same text, nothing counted)
+    if ((d.enclosing && !d.approx) || d.fully_qualified || list.len < 2 || list.len > 256) return nullptr;
     Symbol const* stack_symbols[16];
     Symbol const** symbols = list.len <= c_arraylen(stack_symbols) ? stack_symbols : malloc(sizeof(Symbol const*) * list.len);
     u32 named = 0;
@@ -356,23 +375,120 @@ static bool* name_collisions(Checker* me, TyDisplay d, TyList list) {
         symbols[i] = reference_name_symbol(me, d, list.data[i]);
         named += symbols[i] != nullptr;
     }
-    bool* ret = nullptr;
+    uint8_t* ret = nullptr;
     for (u32 i = 0; named >= 2 && i < list.len; i++) {
-        if (!symbols[i]) continue;
-        for (u32 j = i + 1; j < list.len; j++) {
-            if (!symbols[j] || symbols[j] == symbols[i] || !csview_equals_sv(symbols[j]->name, symbols[i]->name)) continue;
-            if (same_symbol(me, symbols[i], symbols[j])) continue;
-            if (!ret) ret = calloc(list.len, sizeof(bool));
-            ret[i] = ret[j] = true;
+        if (!symbols[i] || (ret && ret[i])) continue;
+        // (The group of i's name, the first of it: tsc's arrayIsHomogeneous compares each with the first)
+        bool first = true;
+        for (u32 k = 0; k < i && first; k++) first = !symbols[k] || !csview_equals_sv(symbols[k]->name, symbols[i]->name);
+        if (!first) continue;
+        bool homogeneous = true;
+        for (u32 j = i + 1; j < list.len && homogeneous; j++) {
+            if (!symbols[j] || !csview_equals_sv(symbols[j]->name, symbols[i]->name)) continue;
+            // (An interface or class merged across programs is one symbol: binder_redirect())
+            homogeneous = same_reference(list.data[i], list.data[j]) ||
+                (!shows_alias(d, list.data[i]) && !shows_alias(d, list.data[j]) && same_symbol(me, symbols[i], symbols[j]));
+        }
+        if (homogeneous) continue;
+        if (!ret) ret = calloc(list.len, 1);
+        for (u32 j = i; j < list.len; j++) {
+            if (symbols[j] && csview_equals_sv(symbols[j]->name, symbols[i]->name)) ret[j] = 1;
         }
     }
     if (symbols != stack_symbols) free((void*)symbols);
     return ret;
 }
 
-static TyDisplay qualified_if(TyDisplay d, bool const* collisions, u32 i) {
-    if (collisions && collisions[i]) d.fully_qualified = d.qualified_without_modules = true;
-    return d;
+// The members of a list printed again (name_collisions()): tsc prints each plainly, then the colliding ones again with
+// UseFullyQualifiedType, replacing them; both count towards the approximate length
+typedef enum { LIST_ITEM_PLAIN, LIST_ITEM_PARENS, LIST_ITEM_UNION_MEMBER } ListItemHow;
+typedef struct ListReprint {
+    uint8_t const* collisions;
+    u32 count;
+    struct { isize_t start, end; Ty const* ty; uint8_t how; bool parens; } items[];
+} ListReprint;
+
+static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens);
+static void display_union_member(Checker* me, TyDisplay d, Ty const* ty);
+
+static void display_list_item(Checker* me, TyDisplay d, Ty const* ty, ListItemHow how, bool parens) {
+    switch (how) {
+        case LIST_ITEM_PLAIN: ty_display(me, d, ty); return;
+        case LIST_ITEM_PARENS: display_parenthesized_if(me, d, ty, parens); return;
+        case LIST_ITEM_UNION_MEMBER: display_union_member(me, d, ty); return;
+    }
+}
+
+static ListReprint* list_reprint_new(uint8_t const* collisions, u32 len) {
+    if (!collisions) return nullptr;
+    ListReprint* ret = malloc(sizeof(ListReprint) + sizeof(ret->items[0]) * len);
+    panic_if(!ret, "out of memory");
+    ret->collisions = collisions;
+    ret->count = 0;
+    return ret;
+}
+
+// Prints the list's i'th member, remembering it if it is printed again
+static void list_item(Checker* me, TyDisplay d, ListReprint* reprint, u32 i, Ty const* ty, ListItemHow how, bool parens) {
+    isize_t start = cstr_size(d.target);
+    display_list_item(me, d, ty, how, parens);
+    if (!reprint || !reprint->collisions[i]) return;
+    reprint->items[reprint->count].start = start;
+    reprint->items[reprint->count].end = cstr_size(d.target);
+    reprint->items[reprint->count].ty = ty;
+    reprint->items[reprint->count].how = (uint8_t)how;
+    reprint->items[reprint->count++].parens = parens;
+}
+
+// After the list: the remembered members again, fully qualified, in their places (frees `reprint`)
+static void list_reprint_finish(Checker* me, TyDisplay d, ListReprint* reprint) {
+    if (!reprint) return;
+    u32 n = reprint->count;
+    cstr* texts = calloc(n ? n : 1, sizeof(cstr));
+    panic_if(!texts, "out of memory");
+    for (u32 k = 0; k < n; k++) {
+        TyDisplay q = d;
+        q.target = &texts[k];
+        q.target_start = 0;
+        // (Printed from a place, its names are qualified as needed from there already: tttt's fully_qualified is for
+        // messages' bare names only. The reprint is past the truncation length more often: `SpreadTwo<...>`)
+        // (Without yielding a module: the message's flags keep UseAliasDefinedOutsideCurrentScope, an ambient module's
+        // export or an imported alias stays its bare name)
+        q.fully_qualified = q.qualified_without_modules = !d.enclosing;
+        display_list_item(me, q, reprint->items[k].ty, (ListItemHow)reprint->items[k].how, reprint->items[k].parens);
+    }
+    // (Prints remembered into the scratch texts go with them)
+    for (u32 i = 0; d.param_names && i < d.param_names->printed_len; i++) {
+        TyPrinted* printed = &d.param_names->printed[i];
+        if (printed->target >= texts && printed->target < texts + n) printed->ty = nullptr;
+    }
+    for (u32 k = n; k-- > 0;) {
+        isize_t start = reprint->items[k].start, end = reprint->items[k].end;
+        if (cstr_size(&texts[k]) == end - start && !memcmp(cstr_str(&texts[k]), cstr_str(d.target) + start, (size_t)(end - start))) {
+            cstr_drop(&texts[k]);
+            continue;
+        }
+        // (The prints remembered for reuse, TyPrinted: those inside go, those after move)
+        isize_t delta = cstr_size(&texts[k]) - (end - start);
+        for (u32 i = 0; d.param_names && i < d.param_names->printed_len; i++) {
+            TyPrinted* printed = &d.param_names->printed[i];
+            if (printed->target != d.target || printed->range.end <= start) continue;
+            if (printed->range.start >= end) {
+                printed->range.start += delta;
+                printed->range.end += delta;
+            } else {
+                printed->ty = nullptr;
+            }
+        }
+        cstr tail = cstr_from_sv(csview_slice(cstr_sv(d.target), end, cstr_size(d.target)));
+        cstr_resize(d.target, start, '\0');
+        cstr_append_s(d.target, texts[k]);
+        cstr_append_s(d.target, tail);
+        cstr_drop(&tail);
+        cstr_drop(&texts[k]);
+    }
+    free(texts);
+    free(reprint);
 }
 
 // Type arguments. The first one is parenthesized if it's a generic function type (tsc's parenthesizeTypeArguments:
@@ -383,7 +499,8 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
         out_elided(d);
         return;
     }
-    bool* collisions = name_collisions(me, d, list);
+    uint8_t* collisions = name_collisions(me, d, list);
+    ListReprint* reprint = list_reprint_new(collisions, list.len);
     for (u32 i = 0; i < list.len; i++) {
         if (i) out_lit(d, ", ");
         // (Past the truncation length: how many more and the last one, tsc's mapToTypeNodes)
@@ -394,8 +511,9 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
         approx_add(d, 2); // (tsc's mapToTypeNodes: whitespace and separator)
         // (A generic function type first isn't parenthesized, `X<<T>() => T>`: tsgo's printer has no
         // parenthesizeLeadingTypeArgument)
-        ty_display(me, qualified_if(d, collisions, i), list.data[i]);
+        list_item(me, d, reprint, i, list.data[i], LIST_ITEM_PLAIN, false);
     }
+    list_reprint_finish(me, d, reprint);
     free(collisions);
 }
 
@@ -6251,7 +6369,8 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
         out_lit(d, "]");
         return;
     }
-    bool* collisions = name_collisions(me, d, (TyList){ .data = args.data, .len = shape->arity });
+    uint8_t* collisions = name_collisions(me, d, (TyList){ .data = args.data, .len = shape->arity });
+    ListReprint* reprint = list_reprint_new(collisions, shape->arity);
     for (u32 i = 0; i < shape->arity; i++) {
         if (i) out_lit(d, ", ");
         if (display_over(d) && i + 3 < shape->arity - 1) {
@@ -6267,12 +6386,13 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
             out(d, atom_sv(shape->names[i]));
             if (optional) out_lit(d, "?");
             out_lit(d, ": ");
-            ty_display(me, qualified_if(d, collisions, i), element);
+            list_item(me, d, reprint, i, element, LIST_ITEM_PLAIN, false);
         } else {
-            display_parenthesized_if(me, qualified_if(d, collisions, i), element, optional && needs_parens_in_array(me, d, element));
+            list_item(me, d, reprint, i, element, LIST_ITEM_PARENS, optional && needs_parens_in_array(me, d, element));
             if (optional) out_lit(d, "?");
         }
     }
+    list_reprint_finish(me, d, reprint);
     free(collisions);
     out_lit(d, "]");
 }
@@ -6335,7 +6455,8 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     u32 display_count = d.approx || d.over ? union_display_count(me, types, &last) : 0;
     if (display_count < 3) last = nullptr; // (Nothing to elide)
     u32 display_index = 0;
-    bool* collisions = name_collisions(me, d, types);
+    uint8_t* collisions = name_collisions(me, d, types);
+    ListReprint* reprint = list_reprint_new(collisions, types.len);
     for (u32 i = 0; i < types.len; i++) {
         Ty const* t = types.data[i];
         if (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE)) {
@@ -6358,6 +6479,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             out_lit(d, " | ");
             out_more(d, display_count - 2, " | ");
             display_union_member(me, d, last);
+            list_reprint_finish(me, d, reprint);
             free(collisions);
             return;
         }
@@ -6365,6 +6487,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             out_lit(d, " | ");
             out_more(d, display_count - display_index, " | ");
             display_union_member(me, d, last);
+            list_reprint_finish(me, d, reprint);
             free(collisions);
             return;
         }
@@ -6394,8 +6517,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
-        display_union_member(me, qualified_if(d, collisions, i), t);
+        list_item(me, d, reprint, i, t, LIST_ITEM_UNION_MEMBER, false);
     }
+    list_reprint_finish(me, d, reprint);
     free(collisions);
     if (nullable & TYF_NULL) {
         approx_add(d, (display_count > 1 ? 2 : 0) + 4);
@@ -6908,7 +7032,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             break;
 
         case TY_INTERSECTION: {
-            bool* collisions = name_collisions(me, d, ty->composite.types);
+            uint8_t* collisions = name_collisions(me, d, ty->composite.types);
+            ListReprint* reprint = list_reprint_new(collisions, ty->composite.types.len);
             u32 count = ty->composite.types.len;
             for (u32 i = 0; i < count; i++) {
                 // (Past the truncation length: tsc's mapToTypeNodes of a bare list, the first, how many more and the
@@ -6931,10 +7056,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
                 // (`boolean` and a whole enum print as a name: no parentheses)
                 if (t->kind == TY_UNION && ((t->flags & TYF_BOOLEAN) || ty_is_enum_union(t))) keyof_origin = true;
-                display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
+                list_item(me, d, reprint, i, t, LIST_ITEM_PARENS, !shows_alias(d, t) &&
                     ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL || is_function_like(me, d, t) ||
                     class_literal_function_like(me, d, t) || displays_as_intersection(me, d, t) || mapped_as_conditional(me, d, t)));
             }
+            list_reprint_finish(me, d, reprint);
             free(collisions);
         }   break;
 
