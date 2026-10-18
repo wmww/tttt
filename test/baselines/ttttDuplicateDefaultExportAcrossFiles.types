@@ -1,0 +1,33 @@
+//// [test/cases/ttttDuplicateDefaultExportAcrossFiles.ts] ////
+
+=== a.d.ts ===
+declare module '*.png' {
+>'*.png' : typeof import("*.png")
+
+    const content: string
+>content : string
+
+    export default content
+>content : string
+}
+=== b.d.ts ===
+declare module '*.png' {
+>'*.png' : typeof import("*.png")
+
+    const src: string
+>src : string
+
+    export default src
+>src : string
+}
+=== c.d.ts ===
+declare module '*.png' {
+>'*.png' : typeof import("*.png")
+
+    const img: string
+>img : string
+
+    export default img
+>img : string
+}
+

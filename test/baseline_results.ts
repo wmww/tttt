@@ -789,6 +789,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDuplicateDefaultExportAcrossFiles': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDuplicatePropertyWithErrorType': {
         errors: true,
         symbols: true,
@@ -931,6 +936,11 @@ const baselines = {
         types: true,
     },
     'ttttImportTypeArgumentsResolvedLazily': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIndexSignatureMethodSuggestion': {
         errors: true,
         symbols: true,
         types: true,
@@ -1475,6 +1485,11 @@ const baselines = {
         types: true,
     },
     'ttttSpellingSuggestionTie': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSpellingSuggestionTieClass': {
         errors: true,
         symbols: true,
         types: true,

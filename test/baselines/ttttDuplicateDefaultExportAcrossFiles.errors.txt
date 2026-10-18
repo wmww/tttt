@@ -1,0 +1,34 @@
+a.d.ts(3,20): error TS2300: Duplicate identifier 'img'.
+a.d.ts(3,20): error TS2300: Duplicate identifier 'src'.
+b.d.ts(3,20): error TS2300: Duplicate identifier 'src'.
+c.d.ts(3,20): error TS2300: Duplicate identifier 'img'.
+
+
+==== a.d.ts (2 errors) ====
+    declare module '*.png' {
+        const content: string
+        export default content
+                       ~~~~~~~
+!!! error TS2300: Duplicate identifier 'img'.
+!!! related TS6203 c.d.ts:3:20: 'img' was also declared here.
+                       ~~~~~~~
+!!! error TS2300: Duplicate identifier 'src'.
+!!! related TS6203 b.d.ts:3:20: 'src' was also declared here.
+    }
+==== b.d.ts (1 errors) ====
+    declare module '*.png' {
+        const src: string
+        export default src
+                       ~~~
+!!! error TS2300: Duplicate identifier 'src'.
+!!! related TS6203 a.d.ts:3:20: 'src' was also declared here.
+    }
+==== c.d.ts (1 errors) ====
+    declare module '*.png' {
+        const img: string
+        export default img
+                       ~~~
+!!! error TS2300: Duplicate identifier 'img'.
+!!! related TS6203 a.d.ts:3:20: 'img' was also declared here.
+    }
+    

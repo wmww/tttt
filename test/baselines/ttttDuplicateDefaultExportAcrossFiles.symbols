@@ -1,0 +1,33 @@
+//// [test/cases/ttttDuplicateDefaultExportAcrossFiles.ts] ////
+
+=== a.d.ts ===
+declare module '*.png' {
+>'*.png' : Symbol("*.png", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0), Decl(c.d.ts, 0, 0))
+
+    const content: string
+>content : Symbol(content, Decl(a.d.ts, 1, 9))
+
+    export default content
+>content : Symbol(content, Decl(a.d.ts, 1, 9))
+}
+=== b.d.ts ===
+declare module '*.png' {
+>'*.png' : Symbol("*.png", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0), Decl(c.d.ts, 0, 0))
+
+    const src: string
+>src : Symbol(src, Decl(b.d.ts, 1, 9))
+
+    export default src
+>src : Symbol(src, Decl(b.d.ts, 1, 9))
+}
+=== c.d.ts ===
+declare module '*.png' {
+>'*.png' : Symbol("*.png", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0), Decl(c.d.ts, 0, 0))
+
+    const img: string
+>img : Symbol(img, Decl(c.d.ts, 1, 9))
+
+    export default img
+>img : Symbol(img, Decl(c.d.ts, 1, 9))
+}
+

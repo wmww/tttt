@@ -1033,12 +1033,12 @@ static void report_conflicts(
         // without a position)
         bool lib_too = span_source(name) && !span_source(name)->is_stdlib && lib_files_checked();
         Error* error = report_conflict_named(errs, at, code, display, lib_too, related);
-        if (related) add_duplicate_related(error, at, name);
+        if (related) add_duplicate_related_named(error, at, name, display.size ? display : span_sv(at));
     }
     if (!same_file && span_source(name) && span_source(name)->plain_js) return;
     Error* error = report_conflict_named(errs, name, code, display, false, related);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
-        add_duplicate_related(error, name, existing->decls[i].name);
+        add_duplicate_related_named(error, name, existing->decls[i].name, display.size ? display : span_sv(name));
     }
 }
 
@@ -1221,8 +1221,11 @@ static Symbol* declare_symbol(
             // ambient `declare module '*.css' { export default classes }`)
             bool same_file = existing->decl_count && span_source(default_error_span(&existing->decls[0])) == span_source(name_span);
             if (default_export && existing->decl_count && same_file) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
+            // (Every declaration of a conflict across files is named by the symbol merged in, the later one:
+            // reportMergeSymbolError's symbolToString(source), which a default export's differ in: `export default src`
+            // is 'src' at `export default content` too)
             else report_conflicts(binder_errs(scope->binder), existing, name_span, includes, false,
-                csview_equals(name, "export=") ? name : (csview){0});
+                csview_equals(name, "export=") ? name : default_export && !same_file && name_span.size ? span_sv(name_span) : (csview){0});
             return binder_new_symbol(binder, name, includes);
         }
         existing->decl_flags_before = existing->flags;
