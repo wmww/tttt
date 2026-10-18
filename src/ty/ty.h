@@ -2669,6 +2669,9 @@ typedef struct TyDisplay {
     // getSpecifierForModuleSymbol: originalImportAttributesType)
     struct ImportAttributes const* usage_attributes;
     bool fully_qualified;
+    // ... reprinting list members whose names collide (tsc's mapToTypeNodes keeps the message's
+    // UseAliasDefinedOutsideCurrentScope, so getSymbolChain doesn't yield a module: a module's export is its bare name)
+    bool qualified_without_modules;
     // Printing for the types baseline or declaration emit: tsc's typeToTypeNode, which reuses annotation nodes from the
     // source (see display_signature()) and can't name a local alias
     bool types_baseline;

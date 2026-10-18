@@ -371,7 +371,7 @@ static bool* name_collisions(Checker* me, TyDisplay d, TyList list) {
 }
 
 static TyDisplay qualified_if(TyDisplay d, bool const* collisions, u32 i) {
-    if (collisions && collisions[i]) d.fully_qualified = true;
+    if (collisions && collisions[i]) d.fully_qualified = d.qualified_without_modules = true;
     return d;
 }
 
@@ -633,13 +633,14 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     approx_add(d, entity_name_length(csview_slice(cstr_sv(d.target), start, cstr_size(d.target))));
 }
 
-// tsc's UseFullyQualifiedType without an enclosing declaration (two types that print the same in a message):
-// getSymbolChain from the globals alone, so a global (a UMD global's namespace too) is its name, anything else is named
-// from its module, `import("/path/to/file")` (no context file: the module's path)
+// tsc's UseFullyQualifiedType without an enclosing declaration (two types that print the same in a message, or list
+// members whose names collide): getSymbolChain from the globals alone, so a global (a UMD global's namespace too) is
+// its name, anything else is named from its module, `import("/path/to/file")` (no context file: the module's path),
+// except in a list (qualified_without_modules)
 static void out_fully_qualified_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     Scope const* globals = program_get_binder(my program)->global_scope;
     SymbolChain chain = symbol->flags & SYMBOL_TYPE_PARAMETER || !globals ?
-        (SymbolChain){ .items = { symbol }, .len = 1 } : symbol_chain_at(globals, symbol, meaning, true);
+        (SymbolChain){ .items = { symbol }, .len = 1 } : symbol_chain_at(globals, symbol, meaning, !d.qualified_without_modules);
     u32 start = 0;
     if (chain.len && !chain.items[0]->is_module && symbol_is_augmented_export_equals(chain.items[0])) {
         // (What an augmented `export =` assigns stands for its module: the file of its first declaration)

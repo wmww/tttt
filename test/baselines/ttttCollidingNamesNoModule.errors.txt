@@ -1,0 +1,19 @@
+/a.ts(3,14): error TS2322: Type 'number | NodeJS.WritableStream | WritableStream<any>' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+
+
+==== /node_modules/@types/node/index.d.ts (0 errors) ====
+    declare namespace NodeJS {
+        interface WritableStream { node: true }
+    }
+    declare module "stream/web" {
+        interface WritableStream<W = any> { web: W }
+    }
+==== /a.ts (1 errors) ====
+    import type * as web from "stream/web";
+    declare const x: NodeJS.WritableStream | web.WritableStream | number;
+    export const y: string = x;
+                 ~
+!!! error TS2322: Type 'number | NodeJS.WritableStream | WritableStream<any>' is not assignable to type 'string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    

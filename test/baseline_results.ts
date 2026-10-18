@@ -116,6 +116,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttCollidingNamesNoModule': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCommonJsModuleObjectNoInferableIndex': {
         errors: true,
         symbols: true,

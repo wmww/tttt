@@ -1,0 +1,27 @@
+//// [test/cases/ttttCollidingNamesNoModule.ts] ////
+
+=== /node_modules/@types/node/index.d.ts ===
+declare namespace NodeJS {
+    interface WritableStream { node: true }
+>node : true
+>true : true
+}
+declare module "stream/web" {
+>"stream/web" : typeof import("stream/web")
+
+    interface WritableStream<W = any> { web: W }
+>web : W
+}
+=== /a.ts ===
+import type * as web from "stream/web";
+>web : typeof web
+
+declare const x: NodeJS.WritableStream | web.WritableStream | number;
+>x : number | NodeJS.WritableStream | web.WritableStream<any>
+>NodeJS : any
+>web : any
+
+export const y: string = x;
+>y : string
+>x : number | NodeJS.WritableStream | web.WritableStream<any>
+
