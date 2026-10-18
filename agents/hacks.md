@@ -210,9 +210,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   property (getFlowTypeInConstructor). Oracle: JS suite tests.
 - `ty_merged_value_type`: a second `Ty` beside the unmerged one (`ty_static_type_of`, what static `this` sees). Correct:
   one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
-- Optional parameters are `T` in the signature, `| undefined` added at use (`value_entry_type()`,
-  `ty_optional_param_type()`); tsc's parameter type has it (addOptionality). Properties carry theirs since plan 82 stage 2;
-  parameters and tuple elements are its stage 3.
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
 

@@ -1683,7 +1683,7 @@ static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg co
     Signature const* sig = ty_function_signature(my checker, fn);
     if (sig) signature_resolve(my checker, sig);
     for (u32 i = 0; sig && i < sig->param_count; i++) {
-        if (sig->params[i].decl == arg) return sig->params[i].type;
+        if (sig->params[i].decl == arg) return ty_sig_param_symbol_type(my checker, &sig->params[i]);
     }
     return nullptr;
 }

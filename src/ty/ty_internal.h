@@ -121,7 +121,6 @@ enum {
     KEY_FLOW_CALL,      // call Expr -> CallEffects as a statement's (node_links), see flow.c
     KEY_FLOW_CALL_IN_EXPR, // call Expr -> CallEffects as an expression's (node_links)
     KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union
-    KEY_OPTIONAL_PARAM, // type (node_links) -> ty_optional_param_type() of it (`T | undefined`)
     KEY_UNION_PAIR,     // (type id, type id) -> ty_union() of the two, without an alias
     KEY_INTERSECTION_OF, // (keep_empty_object, type ids...) -> intersection() of them, without an alias
     KEY_ASSIGNMENT_REDUCED, // (declared type id, assigned type id) -> assignment_reduced_type() (flow.c)

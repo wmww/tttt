@@ -244,7 +244,7 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
         SigParam const* param = &sig->params[i];
         Ty const* type = ty_instantiate(me, param->type, mapper);
         if (!param->rest) {
-            shape.types[shape.count++] = ty_sig_param_type(me, param, type);
+            shape.types[shape.count++] = type;
             continue;
         }
         if (is_empty_tuple(type)) {

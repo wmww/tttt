@@ -1705,7 +1705,8 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 return ty_namespace_type(me, symbol);
             }
             Ty const* type = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
-            // `x?: T` is read as `T | undefined` inside the function. TODO: tsc also shows it in the signature
+            // `x?: T` is `T | undefined` (tsc's getTypeForVariableLikeDeclaration addOptionality; its signature's
+            // SigParam.type has it too)
             if (binding->optional_parameter && compiler_options()->strict_null_checks) {
                 // (An unresolved name's error type with undefined is the plain error type: tsc's getUnionType)
                 if (type->flags & TYF_ANY) return type->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : type;

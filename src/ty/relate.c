@@ -1671,7 +1671,7 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
 // optional parameter holds undefined too (tsc's getTypeAtPosition)
 static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
     if (i < sig->param_count && !sig->params[i].rest) {
-        return ty_sig_param_type(me, &sig->params[i], sig->params[i].type);
+        return sig->params[i].type;
     }
     if (sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 >= sig->param_count) {
         Ty const* rest = sig->params[sig->param_count - 1].type;
@@ -8001,7 +8001,6 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
             .type = is_rest ? ty_array(me, type, false) : type,
             .optional = optional && !is_rest,
             .rest = is_rest,
-            .optionality_included = true,
         };
     }
     if (extra_rest) {

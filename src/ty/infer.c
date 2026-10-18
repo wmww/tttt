@@ -182,18 +182,22 @@ static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) 
 // What an optional parameter holds: `undefined` too, under strictNullChecks (tsc's addOptionality)
 Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
     if (!compiler_options()->strict_null_checks || (type->flags & TYF_UNDEFINED)) return type;
-    // (Asked for every optional parameter of every signature relation and call)
-    Ty const* cached = ty_link_get(me, KEY_OPTIONAL_PARAM, type);
-    if (cached) return cached;
-    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
-    Ty const* ret = ty_union(me, parts, 2, nullptr, (TyList){0});
-    ty_link_set(me, KEY_OPTIONAL_PARAM, type, ret);
-    return ret;
+    return ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
 }
 
-// `type`: the parameter's type, instantiated or not
-Ty const* ty_sig_param_type(Checker* me, SigParam const* param, Ty const* type) {
-    return param->optional && !param->optionality_included ? ty_optional_param_type(me, type) : type;
+// Its type without the undefined its optionality added: what an annotation says (a setter's, tsc's
+// getAnnotatedAccessorType)
+Ty const* ty_sig_param_declared_type(Checker* me, SigParam const* param) {
+    return param->undefined_added ? ty_without_undefined(me, param->type) : param->type;
+}
+
+// The parameter symbol's type (tsc's getTypeOfSymbol): a `?` adds undefined, an initializer only to the signature's
+// (getTypeOfParameter), and a pattern without annotation is its pattern's type (getTypeForVariableLikeDeclaration)
+Ty const* ty_sig_param_symbol_type(Checker* me, SigParam const* param) {
+    FunctionArg const* arg = param->decl;
+    bool bare_pattern = arg && arg->initializer.binding.tag != BINDING_IDENTIFIER && !arg->initializer.binding.has_explicit_type;
+    bool question = arg && (arg->explicit_optional || arg->jsdoc_optional_initialized) && !bare_pattern;
+    return question ? param->type : ty_sig_param_declared_type(me, param);
 }
 
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
@@ -244,11 +248,8 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
         flags[j] = param->rest ? TUPLE_ELEMENT_REST : optional ? TUPLE_ELEMENT_OPTIONAL : 0;
         names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
         labels[j] = names[j] ? param->decl : nullptr;
-        // (An optional element includes undefined: tsc's createNormalizedTupleType addOptionality)
-        elements[j] = ty_instantiate(me, ty_sig_param_type(me, param, param->type), mapper);
-        if (optional && !param->optional && !param->rest) {
-            elements[j] = ty_optional_param_type(me, elements[j]);
-        }
+        // (An optional element gets its undefined from the tuple: tsc's createNormalizedTupleType addOptionality)
+        elements[j] = ty_instantiate(me, param->type, mapper);
     }
     if (rest_count) {
         TyList rest_args = ty_reference_args(me, rest_tuple);
@@ -289,8 +290,7 @@ static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* so
 static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapper const* mapper) {
     if (i < sig->param_count && !sig->params[i].rest) {
         // (An optional parameter's type has the undefined, tsc's getTypeAtPosition)
-        Ty const* type = ty_instantiate(me, sig->params[i].type, mapper);
-        return ty_sig_param_type(me, &sig->params[i], type);
+        return ty_instantiate(me, sig->params[i].type, mapper);
     }
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
     Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
@@ -360,8 +360,7 @@ static void infer_from_params(
             }
             break;
         }
-        infer_step(me, inf, step, source_type,
-            ty_sig_param_type(me, target_param, target_param->type));
+        infer_step(me, inf, step, source_type, target_param->type);
     }
 }
 

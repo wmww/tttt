@@ -2413,6 +2413,23 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
     if (!target->declared.type_params.len && !this_arg) return target;
     check(args.len == target->declared.type_params.len);
     if (tuple) {
+        // An optional element's type has its undefined (tsc's TupleNormalizer.add, addOptionality as a property's)
+        TupleShape const* shape = target->declared.tuple;
+        for (u32 i = 0; i < args.len; i++) {
+            if (!(shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) continue;
+            Ty const* added = ty_optional_prop_type(me, args.data[i]);
+            if (added == args.data[i]) continue;
+            Ty const* stack_args[16];
+            Ty const** copy = args.len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * args.len);
+            panic_if(!copy, "out of memory");
+            memcpy(copy, args.data, sizeof(Ty const*) * args.len);
+            for (u32 j = i; j < args.len; j++) {
+                if (shape->flags[j] & TUPLE_ELEMENT_OPTIONAL) copy[j] = ty_optional_prop_type(me, copy[j]);
+            }
+            Ty const* ret = ty_reference_with_this(me, target, (TyList){ .data = copy, .len = args.len }, this_arg);
+            if (copy != stack_args) free(copy);
+            return ret;
+        }
         Ty const* normalized = normalized_tuple(me, target, args);
         if (normalized && this_arg && normalized->kind == TY_REFERENCE && ty_is_tuple(normalized)) {
             return ty_reference_with_this(me, normalized->reference.target, ty_reference_args(me, normalized), this_arg);

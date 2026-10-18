@@ -827,12 +827,10 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
     TupleShape const* shape = tuple->reference.target->declared.tuple;
     u32 fixed = ty_tuple_fixed_length(shape);
     if ((a->first_spread == UINT32_MAX || a->index < a->first_spread) && a->index < fixed) {
-        // (tsc's optional elements hold undefined, tttt's don't)
-        Ty const* element = ty_reference_args(me, tuple).data[a->index];
-        // (Under exactOptionalPropertyTypes the missing type, which a contextual type leaves out: tsc's
+        // (An optional one's missing type, under exactOptionalPropertyTypes, is left out: tsc's
         // getTypeOfPropertyOfContextualType through removeMissingType)
-        if (!(shape->flags[a->index] & TUPLE_ELEMENT_OPTIONAL)) return element;
-        return compiler_options()->exact_optional_property_types ? ty_remove_missing(me, element, true) : ty_optional_param_type(me, element);
+        Ty const* element = ty_reference_args(me, tuple).data[a->index];
+        return ty_remove_missing(me, element, (shape->flags[a->index] & TUPLE_ELEMENT_OPTIONAL) != 0);
     }
     u32 offset = a->length != UINT32_MAX && (a->last_spread == UINT32_MAX || a->index > a->last_spread) ?
         a->length - a->index : 0;
@@ -1255,7 +1253,7 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
     for (u32 i = 0; i < sig->param_count; i++) {
         SigParam const* param = &sig->params[i];
         if (!param->rest) {
-            if (i == index && !as_rest) return ty_sig_param_type(me, param, param->type);
+            if (i == index && !as_rest) return param->type;
             continue;
         }
         if (index < i) return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
@@ -4699,7 +4697,7 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
         break;
     }
     signature_resolve(me, sig);
-    return sig->param_count ? sig->params[0].type : any_type(me);
+    return sig->param_count ? ty_sig_param_declared_type(me, &sig->params[0]) : any_type(me);
 }
 
 void ty_check_object_literal_late_members(Checker* me, Expr const* object, ErrorCtx* errs) {
@@ -4830,7 +4828,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
             Ty const* ret = signature_return_type(me, sig);
             return item->value.tag == EXPR_FUNCTION && item->value.function->ret_explicit ? ret : widen_literals(me, ret);
         }
-        return sig->param_count ? sig->params[0].type : any_type(me);
+        return sig->param_count ? ty_sig_param_declared_type(me, &sig->params[0]) : any_type(me);
     }
     return widen_literals(me, value);
 }
@@ -4913,10 +4911,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (element_context && !ctx.skip_sensitive && context_is_tuple_like(me, ctx.contextual, 0) && ty_expr_is_context_sensitive(i)) {
             ty_add_intra_expression_site(me, element, element_context);
         }
-        if (has_omitted) {
-            flags[count] = TUPLE_ELEMENT_OPTIONAL;
-            element = ty_optional_prop_type(me, element);
-        }
+        if (has_omitted) flags[count] = TUPLE_ELEMENT_OPTIONAL;
         elements[count++] = element;
     }
 

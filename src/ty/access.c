@@ -505,7 +505,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
             u32 at = (u32)n;
             u32 fixed = ty_tuple_fixed_length(shape);
             if (at < fixed) {
-                return shape->flags[at] & TUPLE_ELEMENT_OPTIONAL ? ty_optional_prop_type(me, elements.data[at]) : elements.data[at];
+                return elements.data[at];
             }
             // Past the leading fixed elements of a tuple with a rest element: any of the elements from there on
             // (tsc's getTupleElementTypeOutOfStartCount)

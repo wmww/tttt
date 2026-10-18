@@ -182,7 +182,7 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
         if (!binding->has_explicit_type) return ty_intrinsic(checker, TY_ANY);
         break;
     }
-    return sig->param_count ? sig->params[0].type : ty_intrinsic(checker, TY_ANY);
+    return sig->param_count ? ty_sig_param_declared_type(checker, &sig->params[0]) : ty_intrinsic(checker, TY_ANY);
 }
 
 Ty const* class_item_get_type(ClassItem* me) {

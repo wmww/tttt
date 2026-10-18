@@ -5157,12 +5157,11 @@ static bool setter_is_annotated(FunctionImpl const* setter) {
     return vec_function_arg_size(&setter->args) && vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type;
 }
 
-// tsc's maybeTypeOfKind(type, Undefined | Void)
-static bool maybe_undefined_or_void(Ty const* type) {
+bool ty_maybe_undefined_or_void(Ty const* type) {
     if (type->flags & (TYF_UNDEFINED | TYF_VOID)) return true;
     if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return false;
     for (u32 i = 0; i < type->composite.types.len; i++) {
-        if (maybe_undefined_or_void(type->composite.types.data[i])) return true;
+        if (ty_maybe_undefined_or_void(type->composite.types.data[i])) return true;
     }
     return false;
 }
@@ -5174,7 +5173,7 @@ static Ty const* instantiated_prop_type(Checker* me, Prop const* prop) {
     // A mapped type's property: optional ones get undefined unless the template's type may be undefined or void
     // already (tsc's getTypeOfMappedSymbol). An instantiation of another property has it from its target
     if (prop->target->is_template && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks &&
-        !maybe_undefined_or_void(type)
+        !ty_maybe_undefined_or_void(type)
     ) {
         return ty_optional_prop_type(me, type);
     }
@@ -5521,6 +5520,13 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 Ty const* parts[2] = { params[j].type, ty_intrinsic(me, TY_UNDEFINED) };
                 params[j].type = ty_union(me, parts, 2, nullptr, (TyList){0});
             }
+        }
+        // An optional parameter's type has its undefined (tsc's getTypeOfParameter, addOptionality)
+        for (u32 j = 0; j < count; j++) {
+            if (!params[j].optional || params[j].rest) continue;
+            Ty const* added = ty_optional_param_type(me, params[j].type);
+            params[j].undefined_added = added != params[j].type;
+            params[j].type = added;
         }
         // (Nor one with a contextual signature: tsgo's isUntypedSignatureInJSFile asks getContextualType)
         if (function_is_untyped_js(function) && !(function->is_expression && ty_function_assigned_contextual_signature(me, function))) {

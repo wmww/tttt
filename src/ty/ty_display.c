@@ -3948,11 +3948,13 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // `() => void` is instantiated with T)
         TyDisplay mapped_param_d = d;
         mapped_param_d.mapped_by = sig;
+        // (Its type without the undefined its optionality added: what its annotation says)
+        Ty const* declared = ty_sig_param_declared_type(me, param);
         bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != root->params[i].type &&
-            node_names_no_type_params(binding_type(binding), 0) && node_type(me, mapped_param_d, binding_type(binding)) == param->type;
+            node_names_no_type_params(binding_type(binding), 0) && node_type(me, mapped_param_d, binding_type(binding)) == declared;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
             (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type))) &&
-            !(fresh_anonymous && param->type->kind == TY_ANONYMOUS) &&
+            !(fresh_anonymous && declared->kind == TY_ANONYMOUS) &&
             // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
             // would say the undefined its type has: tsc doesn't reuse `T` there)
             !(function && function->jsdoc_callback && param->decl->explicit_optional && !binding_type(binding)->jsdoc_optional &&
@@ -3961,11 +3963,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         Expr const* initializer = param->decl ? initialized_binding_value(&param->decl->initializer) : nullptr;
         // An optional parameter's type has undefined under strictNullChecks (tsc's getOptionalType in
         // serializeTypeForDeclaration), which a reused annotation doesn't say
-        Ty const* shown = param->type;
         // (Not a binding pattern's without annotation or initializer: that type is the pattern's as it is, tsc's
         // getTypeForVariableLikeDeclaration returns getTypeFromBindingPattern without addOptionality)
         bool bare_pattern = binding && binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type &&
             initializer && initializer->tag == EXPR_IMPLICIT_ANY;
+        Ty const* shown = ty_sig_param_symbol_type(me, param);
         if (param->optional && (!param->rest || (binding && binding->optional_parameter)) && param->decl &&
             (param->decl->explicit_optional || param->decl->jsdoc_optional_initialized) &&
             compiler_options()->strict_null_checks && ty_without_undefined(me, shown) == shown && !bare_pattern
@@ -5020,7 +5022,7 @@ static void display_pseudo_params(Checker* me, TyDisplay d, PseudoParam const* p
         if (pseudo_is_this_param(&params[i])) {
             type = sig ? sig->this_type : nullptr;
         } else {
-            type = sig && index < sig->param_count ? sig->params[index].type : nullptr;
+            type = sig && index < sig->param_count ? ty_sig_param_symbol_type(me, &sig->params[index]) : nullptr;
             index++;
         }
         param_comments_begin(d, params[i].arg);
