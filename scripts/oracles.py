@@ -93,7 +93,9 @@ def sources():
 def perf():
     # (tttt only, tsgo's side is cached; -j 4 inflates the times of both sides alike, types are exact)
     out = run(['scripts/perfsweep.py', '--no-build', '-j', '4', '--summary'])
-    print('perfsweep (tttt/tsgo): ' + (out.strip().splitlines() or ['?'])[-1], flush=True)
+    # (Its stderr follows stdout in `out`: ensure-typescript's messages when tsgo's side ran for new projects)
+    lines = [l for l in out.strip().splitlines() if not l.startswith('ensure-typescript')]
+    print('perfsweep (tttt/tsgo): ' + (lines or ['?'])[-1], flush=True)
 
 def dts():
     # (Plan 64: tsgo's .d.ts files on the corpora and the declaration-emitting source sweep projects, byte for byte)
