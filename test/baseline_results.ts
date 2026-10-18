@@ -1216,6 +1216,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLateBoundMemberOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLateBoundMethodOverloadsBySymbol': {
         errors: true,
         symbols: true,

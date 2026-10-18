@@ -214,8 +214,8 @@ static void sort_props_by_name(Prop** props, u32 len) {
 }
 
 // A member named by a computed name that isn't a string or numeric literal (`[Symbol.iterator]`, `[k]`): tsc's binder
-// leaves it to be late bound (getDeclarationName), and late-bound members come after all the early-bound ones of all
-// declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables)
+// leaves it to be late bound (getDeclarationName). (tsgo's getNamedMembers then sorts every member by declaration, the
+// late-bound ones among the others)
 static bool name_span_is_late_bound(Span name) {
     csview sv = span_sv(name);
     if (!span_valid(name) || sv.size < 2 || sv.buf[0] != '[') return false;
@@ -234,24 +234,6 @@ static bool name_span_is_late_bound(Span name) {
         if (!((d >= '0' && d <= '9') || (d >= 'a' && d <= 'z') || (d >= 'A' && d <= 'Z') || d == '.' || d == '_')) return true;
     }
     return false;
-}
-
-// Moves the late-bound members after the others, keeping both groups' order
-static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
-    u32 late = 0;
-    for (u32 i = from; i < builder->props_count; i++) late += name_span_is_late_bound(builder->props[i]->decl->name_span);
-    if (!late || late == builder->props_count - from) return;
-    builder_unindex(builder);
-    Prop** moved = malloc(sizeof(Prop*) * late);
-    panic_if(!moved, "out of memory");
-    u32 kept = from, m = 0;
-    for (u32 i = from; i < builder->props_count; i++) {
-        Prop* prop = builder->props[i];
-        if (name_span_is_late_bound(prop->decl->name_span)) moved[m++] = prop;
-        else builder->props[kept++] = prop;
-    }
-    memcpy(builder->props + kept, moved, sizeof(Prop*) * late);
-    free(moved);
 }
 
 // tsgo's getNamedMembers (sortSymbols): properties in the order of their first declarations (file order, then
@@ -3121,7 +3103,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
                 builder.index_pass = 0;
             }
-            builder_late_bound_last(&builder, 0);
+            // (In declaration order, the late-bound members among the others: tsgo's getNamedMembers, compareSymbols)
+            builder_sort_stable_from(&builder, 0);
             u32 declared_props = builder.props_count;
             builder_add_assignment_members(me, &builder, decl);
             // (A JavaScript class's `this.x = v` members go among the others by where they're declared: tsgo's
@@ -3255,7 +3238,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (node->kind != SYMBOL_DECL_CLASS) continue;
                 early_static_members(me, ty, node->node);
                 builder_add_class_static_side(me, &builder, ty, node->node);
-                builder_late_bound_last(&builder, 0);
+                builder_sort_stable_from(&builder, 0);
                 // `var C = class {}; C.x = 1`
                 Symbol const* host = ((ClassDecl const*)node->node)->expando_host;
                 if (host && host != decl) {

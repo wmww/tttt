@@ -1,0 +1,33 @@
+a.ts(5,1): error TS2322: Type '{ a(): number; [Symbol.iterator](): { next(): number; }; entries(): { next(): number; }; b: string; }' is not assignable to type 'I'.
+  The types returned by '[Symbol.iterator]()' are incompatible between these types.
+    Property '[Symbol.dispose]' is missing in type '{ next(): number; }' but required in type 'It<number>'.
+a.ts(9,7): error TS2741: Property 'q' is missing in type 'C' but required in type '{ q: 1; }'.
+a.ts(10,7): error TS2739: Type '{}' is missing the following properties from type 'J': a, [Symbol.iterator], b
+a.ts(11,7): error TS2739: Type '{ prototype: never; }' is missing the following properties from type 'typeof C': [Symbol.dispose], z, [Symbol.iterator]
+
+
+==== a.ts (4 errors) ====
+    interface It<T> { next(): T; [Symbol.dispose](): void }
+    interface I { a(): number; [Symbol.iterator](): It<number>; entries(): It<number>; b: string }
+    declare let x: I;
+    declare const y: { a(): number; [Symbol.iterator](): { next(): number }; entries(): { next(): number }; b: string };
+    x = y;
+    ~
+!!! error TS2322: Type '{ a(): number; [Symbol.iterator](): { next(): number; }; entries(): { next(): number; }; b: string; }' is not assignable to type 'I'.
+!!! error TS2322:   The types returned by '[Symbol.iterator]()' are incompatible between these types.
+!!! error TS2322:     Property '[Symbol.dispose]' is missing in type '{ next(): number; }' but required in type 'It<number>'.
+!!! related TS2728 a.ts:1:30: '[Symbol.dispose]' is declared here.
+    interface J { a: 1 }
+    interface J { [Symbol.iterator]: 1; b: 1 }
+    class C { [Symbol.dispose]() {} x = 1; [Symbol.iterator]() {} y = 2; static [Symbol.dispose] = 1; static z = 1; static [Symbol.iterator] = 1; }
+    const c: { q: 1 } = new C();
+          ~
+!!! error TS2741: Property 'q' is missing in type 'C' but required in type '{ q: 1; }'.
+!!! related TS2728 a.ts:9:12: 'q' is declared here.
+    const j: J = {};
+          ~
+!!! error TS2739: Type '{}' is missing the following properties from type 'J': a, [Symbol.iterator], b
+    const d: typeof C = { prototype: null! };
+          ~
+!!! error TS2739: Type '{ prototype: never; }' is missing the following properties from type 'typeof C': [Symbol.dispose], z, [Symbol.iterator]
+    

@@ -1,0 +1,93 @@
+//// [test/cases/ttttLateBoundMemberOrder.ts] ////
+
+=== a.ts ===
+interface It<T> { next(): T; [Symbol.dispose](): void }
+>It : Symbol(It, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>next : Symbol(It.next, Decl(a.ts, 0, 17))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>[Symbol.dispose] : Symbol(It[Symbol.dispose], Decl(a.ts, 0, 28))
+>Symbol.dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+
+interface I { a(): number; [Symbol.iterator](): It<number>; entries(): It<number>; b: string }
+>I : Symbol(I, Decl(a.ts, 0, 55))
+>a : Symbol(I.a, Decl(a.ts, 1, 13))
+>[Symbol.iterator] : Symbol(I[Symbol.iterator], Decl(a.ts, 1, 26))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>It : Symbol(It, Decl(a.ts, 0, 0))
+>entries : Symbol(I.entries, Decl(a.ts, 1, 59))
+>It : Symbol(It, Decl(a.ts, 0, 0))
+>b : Symbol(I.b, Decl(a.ts, 1, 82))
+
+declare let x: I;
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>I : Symbol(I, Decl(a.ts, 0, 55))
+
+declare const y: { a(): number; [Symbol.iterator](): { next(): number }; entries(): { next(): number }; b: string };
+>y : Symbol(y, Decl(a.ts, 3, 13))
+>a : Symbol(a, Decl(a.ts, 3, 18))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 3, 31))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(a.ts, 3, 54))
+>entries : Symbol(entries, Decl(a.ts, 3, 72))
+>next : Symbol(next, Decl(a.ts, 3, 85))
+>b : Symbol(b, Decl(a.ts, 3, 103))
+
+x = y;
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>y : Symbol(y, Decl(a.ts, 3, 13))
+
+interface J { a: 1 }
+>J : Symbol(J, Decl(a.ts, 4, 6), Decl(a.ts, 5, 20))
+>a : Symbol(J.a, Decl(a.ts, 5, 13))
+
+interface J { [Symbol.iterator]: 1; b: 1 }
+>J : Symbol(J, Decl(a.ts, 4, 6), Decl(a.ts, 5, 20))
+>[Symbol.iterator] : Symbol(J[Symbol.iterator], Decl(a.ts, 6, 13))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>b : Symbol(J.b, Decl(a.ts, 6, 35))
+
+class C { [Symbol.dispose]() {} x = 1; [Symbol.iterator]() {} y = 2; static [Symbol.dispose] = 1; static z = 1; static [Symbol.iterator] = 1; }
+>C : Symbol(C, Decl(a.ts, 6, 42))
+>[Symbol.dispose] : Symbol(C[Symbol.dispose], Decl(a.ts, 7, 9))
+>Symbol.dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>x : Symbol(C.x, Decl(a.ts, 7, 31))
+>[Symbol.iterator] : Symbol(C[Symbol.iterator], Decl(a.ts, 7, 38))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>y : Symbol(C.y, Decl(a.ts, 7, 61))
+>[Symbol.dispose] : Symbol(C[Symbol.dispose], Decl(a.ts, 7, 68))
+>Symbol.dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>dispose : Symbol(SymbolConstructor.dispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>z : Symbol(C.z, Decl(a.ts, 7, 97))
+>[Symbol.iterator] : Symbol(C[Symbol.iterator], Decl(a.ts, 7, 111))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+const c: { q: 1 } = new C();
+>c : Symbol(c, Decl(a.ts, 8, 5))
+>q : Symbol(q, Decl(a.ts, 8, 10))
+>C : Symbol(C, Decl(a.ts, 6, 42))
+
+const j: J = {};
+>j : Symbol(j, Decl(a.ts, 9, 5))
+>J : Symbol(J, Decl(a.ts, 4, 6), Decl(a.ts, 5, 20))
+
+const d: typeof C = { prototype: null! };
+>d : Symbol(d, Decl(a.ts, 10, 5))
+>C : Symbol(C, Decl(a.ts, 6, 42))
+>prototype : Symbol(prototype, Decl(a.ts, 10, 21))
+

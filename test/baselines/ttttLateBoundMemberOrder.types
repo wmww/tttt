@@ -1,0 +1,93 @@
+//// [test/cases/ttttLateBoundMemberOrder.ts] ////
+
+=== a.ts ===
+interface It<T> { next(): T; [Symbol.dispose](): void }
+>next : () => T
+>[Symbol.dispose] : () => void
+>Symbol.dispose : unique symbol
+>Symbol : SymbolConstructor
+>dispose : unique symbol
+
+interface I { a(): number; [Symbol.iterator](): It<number>; entries(): It<number>; b: string }
+>a : () => number
+>[Symbol.iterator] : () => It<number>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>entries : () => It<number>
+>b : string
+
+declare let x: I;
+>x : I
+
+declare const y: { a(): number; [Symbol.iterator](): { next(): number }; entries(): { next(): number }; b: string };
+>y : { a(): number; [Symbol.iterator](): { next(): number; }; entries(): { next(): number; }; b: string; }
+>a : () => number
+>[Symbol.iterator] : () => { next(): number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => number
+>entries : () => { next(): number; }
+>next : () => number
+>b : string
+
+x = y;
+>x = y : { a(): number; [Symbol.iterator](): { next(): number; }; entries(): { next(): number; }; b: string; }
+>x : I
+>y : { a(): number; [Symbol.iterator](): { next(): number; }; entries(): { next(): number; }; b: string; }
+
+interface J { a: 1 }
+>a : 1
+
+interface J { [Symbol.iterator]: 1; b: 1 }
+>[Symbol.iterator] : 1
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>b : 1
+
+class C { [Symbol.dispose]() {} x = 1; [Symbol.iterator]() {} y = 2; static [Symbol.dispose] = 1; static z = 1; static [Symbol.iterator] = 1; }
+>C : C
+>[Symbol.dispose] : () => void
+>Symbol.dispose : unique symbol
+>Symbol : SymbolConstructor
+>dispose : unique symbol
+>x : number
+>1 : 1
+>[Symbol.iterator] : () => void
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>y : number
+>2 : 2
+>[Symbol.dispose] : number
+>Symbol.dispose : unique symbol
+>Symbol : SymbolConstructor
+>dispose : unique symbol
+>1 : 1
+>z : number
+>1 : 1
+>[Symbol.iterator] : number
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>1 : 1
+
+const c: { q: 1 } = new C();
+>c : { q: 1; }
+>q : 1
+>new C() : C
+>C : typeof C
+
+const j: J = {};
+>j : J
+>{} : {}
+
+const d: typeof C = { prototype: null! };
+>d : typeof C
+>C : typeof C
+>{ prototype: null! } : { prototype: never; }
+>prototype : never
+>null! : never
+
