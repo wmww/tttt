@@ -1,0 +1,14 @@
+//// [test/cases/ttttMtsFormatExplanation.ts] ////
+
+=== scripts/a.mts ===
+export const a = 1;
+>a : Symbol(a, Decl(a.mts, 0, 12))
+
+=== scripts/b.ts ===
+export const b = 1;
+>b : Symbol(b, Decl(b.ts, 0, 12))
+
+=== scripts/c.cts ===
+export const c = 1;
+>c : Symbol(c, Decl(c.cts, 0, 12))
+

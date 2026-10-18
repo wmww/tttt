@@ -859,6 +859,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExtendedIncludeReason': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -1267,6 +1272,11 @@ const baselines = {
         types: true,
     },
     'ttttMixinBaseNotConstructor': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMtsFormatExplanation': {
         errors: true,
         symbols: true,
         types: true,

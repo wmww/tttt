@@ -1,0 +1,44 @@
+error TS6059: File 'scripts/a.mts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by include pattern './scripts' in 'tsconfig.json'
+error TS6059: File 'scripts/b.ts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by include pattern './scripts' in 'tsconfig.json'
+  File is ECMAScript module because 'package.json' has field "type" with value "module"
+error TS6059: File 'scripts/c.cts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by include pattern './scripts' in 'tsconfig.json'
+  File is CommonJS module because 'package.json' does not have field "type"
+
+
+!!! error TS6059: File 'scripts/a.mts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Matched by include pattern './scripts' in 'tsconfig.json'
+!!! related TS1408 tsconfig.json:6:17: File is matched by include pattern specified here.
+!!! error TS6059: File 'scripts/b.ts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Matched by include pattern './scripts' in 'tsconfig.json'
+!!! error TS6059:   File is ECMAScript module because 'package.json' has field "type" with value "module"
+!!! related TS1408 tsconfig.json:6:17: File is matched by include pattern specified here.
+!!! error TS6059: File 'scripts/c.cts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Matched by include pattern './scripts' in 'tsconfig.json'
+!!! error TS6059:   File is CommonJS module because 'package.json' does not have field "type"
+!!! related TS1408 tsconfig.json:6:17: File is matched by include pattern specified here.
+==== tsconfig.json (0 errors) ====
+    {
+        "compilerOptions": {
+            "module": "nodenext",
+            "rootDir": "./src"
+        },
+        "include": ["./scripts"]
+    }
+==== scripts/a.mts (0 errors) ====
+    export const a = 1;
+==== scripts/b.ts (0 errors) ====
+    export const b = 1;
+==== scripts/c.cts (0 errors) ====
+    export const c = 1;
+    
+==== package.json (0 errors) ====
+    { "type": "module" }

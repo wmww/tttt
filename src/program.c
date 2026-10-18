@@ -1575,7 +1575,11 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         );
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
         source_file->has_format = true;
-        source_file->package_has_type = format.package_has_type;
+        // (tsc's loadSourceFileMetaData keeps package.json's `type` of a .mts/.cts/.mjs/.cjs file only in node_modules:
+        // its extension decides its format, and no "File is ECMAScript module because" explains it)
+        bool extension_format = csview_ends_with(canonical, ".mts") || csview_ends_with(canonical, ".cts") ||
+            csview_ends_with(canonical, ".mjs") || csview_ends_with(canonical, ".cjs");
+        source_file->package_has_type = format.package_has_type && (in_node_modules || !extension_format);
         if (cstr_size(&format.package_json)) {
             source_file->package_json = program_path_for_message(me, cstr_sv(&format.package_json));
         }
@@ -2999,13 +3003,14 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
             else cstr_drop(&text);
         }
     }
-    for (u32 i = 0; i < file->include_reason_count; i++) {
-        if (&file->include_reasons[i] != preferred) add_include_related_info(me, error, file, &file->include_reasons[i]);
-    }
+    // (The format's line is part of the chain: before the related information, which shares the sub-error vector)
     CompilerOptions const* saved = compiler_options_private;
     set_compiler_options(program_options_of(me, file));
     explain_implied_format(error, file);
     compiler_options_private = saved;
+    for (u32 i = 0; i < file->include_reason_count; i++) {
+        if (&file->include_reasons[i] != preferred) add_include_related_info(me, error, file, &file->include_reasons[i]);
+    }
 }
 
 // tsc's verifyCompilerOptions on the files of the program: a composite project lists every file it emits (TS6307),

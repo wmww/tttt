@@ -1,0 +1,17 @@
+//// [test/cases/ttttMtsFormatExplanation.ts] ////
+
+=== scripts/a.mts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+=== scripts/b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+
+=== scripts/c.cts ===
+export const c = 1;
+>c : 1
+>1 : 1
+
